@@ -19,6 +19,25 @@ describe("journal save ceremony integration contract", () => {
     expect(module).toContain("commitJournalSaveAndCaptureTheme");
     expect(module).toContain("useThemeStore.getState().appliedTheme");
     expect(module).toContain("appliedTheme: committedTheme");
+    expect(module).toContain("entryId: committedEntryId");
+    expect(module).toContain("resolveJournalSaveDeliveryState");
+  });
+
+  it("anchors only by an in-memory receipt and never exposes the entry id in the DOM", () => {
+    const module = source("src/features/journal/JournalModule.tsx");
+    const list = source("src/features/journal/JournalEntryList.tsx");
+    const card = source("src/features/journal/JournalEntryCard.tsx");
+    const host = source(
+      "src/features/journal/save-ceremony/JournalSaveCeremonyHost.tsx",
+    );
+
+    expect(module).toContain("saveCeremonyAnchorEntryId");
+    expect(module).toContain("setSaveCeremonyAnchor");
+    expect(module).toContain("onFinish={handleSaveCeremonyFinish}");
+    expect(list).toContain("saveCeremonyAnchorEntryId === entry.id");
+    expect(card).toContain('data-journal-save-anchor={isSaveCeremonyAnchor ? "true" : undefined}');
+    expect(host).toContain('[data-journal-save-anchor="true"]');
+    expect(host).not.toContain("activeReceipt.entryId");
   });
 
   it("preloads only after the editor reports a dirty state and motion remains allowed", () => {
@@ -95,13 +114,21 @@ describe("journal save ceremony integration contract", () => {
     expect(css).not.toContain("backdrop-filter");
   });
 
-  it("ships behind an explicit build flag and precaches TGS assets", () => {
+  it("ships behind the non-enabling capability receipt and conditionally precaches assets", () => {
     const env = source("src/lib/env.ts");
     const module = source("src/features/journal/JournalModule.tsx");
     const vite = source("vite.config.ts");
-    expect(env).toContain("VITE_ENABLE_JOURNAL_SAVE_CEREMONY");
+    const capability = source("scripts/feature-capability-build.cjs");
+    const policy = JSON.parse(source("config/feature-capabilities.json"));
+    expect(env).not.toContain("import.meta.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY");
     expect(env).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
     expect(vite).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
+    expect(vite).toContain("journalSaveCeremonyBuildDecision");
+    expect(capability).toContain("schema-v1 journalSaveCeremony must remain disabled");
+    expect(policy.capabilities.journalSaveCeremony).toMatchObject({
+      requested: false,
+      killSwitch: true,
+    });
     expect(module).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
     expect(module).not.toContain(
       'import { JournalSaveCeremonyHost } from "./save-ceremony/JournalSaveCeremonyHost"',

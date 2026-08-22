@@ -30,9 +30,16 @@ const SUPPORTED_TARGET_MODES = new Set([
   "web:development",
   "android:production",
   "ios:production",
+  "tauri:production",
 ]);
-const SAFE_TARGETS = new Set(["web", "android", "ios"]);
+const SAFE_TARGETS = new Set(["web", "android", "ios", "tauri"]);
 const SAFE_MODES = new Set(["production", "development"]);
+const FEATURE_CAPABILITY_PLATFORMS = Object.freeze({
+  web: "web-pages",
+  android: "android",
+  ios: "ios",
+  tauri: "tauri",
+});
 const ACTIVE_LEASES = new WeakSet();
 
 export class SharedDistBuildError extends Error {
@@ -510,6 +517,30 @@ function pruneCommand(rootDir, nodeExecutable, verify = false) {
   );
 }
 
+function featureCapabilityEnvironment(target, additional = {}) {
+  return {
+    ...additional,
+    ZENFLOW_FEATURE_CAPABILITY_PLATFORM: FEATURE_CAPABILITY_PLATFORMS[target],
+  };
+}
+
+function featureCapabilityReceiptCommand(rootDir, nodeExecutable, target) {
+  return nodeCommand(nodeExecutable, "feature capability receipt", [
+    path.join(rootDir, "scripts", "feature-capability-build.cjs"),
+    "--write-receipt",
+    "--platform",
+    FEATURE_CAPABILITY_PLATFORMS[target],
+  ]);
+}
+
+function featureCapabilityReceiptCheckCommand(rootDir, nodeExecutable, target) {
+  return nodeCommand(nodeExecutable, "feature capability receipt verify", [
+    path.join(rootDir, "scripts", "check-feature-capability-receipt.cjs"),
+    "--platform",
+    FEATURE_CAPABILITY_PLATFORMS[target],
+  ]);
+}
+
 export function createSharedDistBuildPlan({
   rootDir,
   target,
@@ -523,16 +554,25 @@ export function createSharedDistBuildPlan({
   }
 
   if (target === "web" && mode === "production") {
+    const webEnvironment = featureCapabilityEnvironment("web");
     return Object.freeze([
-      tokenCommand(canonicalRoot, nodeExecutable),
+      tokenCommand(canonicalRoot, nodeExecutable, webEnvironment),
       manifestCommand(
         canonicalRoot,
         nodeExecutable,
         "production-web manifest begin",
         "--bundle-manifest-begin"
       ),
-      viteCommand(canonicalRoot, nodeExecutable, "Vite production web build", "production"),
+      viteCommand(
+        canonicalRoot,
+        nodeExecutable,
+        "Vite production web build",
+        "production",
+        webEnvironment,
+      ),
       pruneCommand(canonicalRoot, nodeExecutable),
+      featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, "web"),
+      featureCapabilityReceiptCheckCommand(canonicalRoot, nodeExecutable, "web"),
       manifestCommand(
         canonicalRoot,
         nodeExecutable,
@@ -543,13 +583,42 @@ export function createSharedDistBuildPlan({
   }
 
   if (target === "web") {
+    const webEnvironment = featureCapabilityEnvironment("web");
     return Object.freeze([
-      tokenCommand(canonicalRoot, nodeExecutable),
-      viteCommand(canonicalRoot, nodeExecutable, "Vite development web build", "development"),
+      tokenCommand(canonicalRoot, nodeExecutable, webEnvironment),
+      viteCommand(
+        canonicalRoot,
+        nodeExecutable,
+        "Vite development web build",
+        "development",
+        webEnvironment,
+      ),
     ]);
   }
 
-  const capacitorEnv = { CAPACITOR_BUILD: "true" };
+  if (target === "tauri") {
+    const tauriEnvironment = featureCapabilityEnvironment("tauri", {
+      VITE_APP_BASE: "./",
+      VITE_DISABLE_PWA: "true",
+      VITE_DESKTOP_RUNTIME: "true",
+    });
+    return Object.freeze([
+      tokenCommand(canonicalRoot, nodeExecutable, tauriEnvironment),
+      viteCommand(
+        canonicalRoot,
+        nodeExecutable,
+        "Vite production tauri build",
+        "production",
+        tauriEnvironment,
+      ),
+      pruneCommand(canonicalRoot, nodeExecutable),
+      pruneCommand(canonicalRoot, nodeExecutable, true),
+      featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, "tauri"),
+      featureCapabilityReceiptCheckCommand(canonicalRoot, nodeExecutable, "tauri"),
+    ]);
+  }
+
+  const capacitorEnv = featureCapabilityEnvironment(target, { CAPACITOR_BUILD: "true" });
   return Object.freeze([
     tokenCommand(canonicalRoot, nodeExecutable, capacitorEnv),
     viteCommand(
@@ -567,6 +636,8 @@ export function createSharedDistBuildPlan({
     ),
     pruneCommand(canonicalRoot, nodeExecutable),
     pruneCommand(canonicalRoot, nodeExecutable, true),
+    featureCapabilityReceiptCommand(canonicalRoot, nodeExecutable, target),
+    featureCapabilityReceiptCheckCommand(canonicalRoot, nodeExecutable, target),
   ]);
 }
 

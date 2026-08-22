@@ -61,6 +61,7 @@ const EXPECTED_TABLES = [
   "journalPracticeSessions",
   "journalEntryLinks",
   "journalSpaceCaptures",
+  "journalPasswordRemovalMediaStage",
 ];
 
 // ─── Database Instance ───────────────────────────────────────────
@@ -216,6 +217,18 @@ describe("clearLocalUserData", () => {
     });
     await db.settings.put({ key: "journal_draft_new", value: { title: "private draft" } });
     await db.settings.put({ key: "journal_draft_entry-1", value: { title: "entry draft" } });
+    await db.journalPasswordRemovalMediaStage.put({
+      key: "operation-a:audio:audio-1",
+      operationRevision: "operation-a",
+      ownerUserId: "account-a",
+      mediaKind: "audio",
+      mediaId: "audio-1",
+      entryId: "entry-1",
+      sourceRecordSha256: "source-hash",
+      encryptedDataSha256: "0".repeat(64),
+      encryptedData: "media-enc:vault-key:ciphertext-only",
+      createdAt: 1,
+    });
 
     // Set some localStorage keys that should be cleared
     localStorage.setItem("zenflow-moods", "data");
@@ -244,6 +257,11 @@ describe("clearLocalUserData", () => {
     await clearLocalUserData();
     const count = await db.habits.count();
     expect(count).toBe(0);
+  });
+
+  it("clears password-removal ciphertext staging", async () => {
+    await clearLocalUserData();
+    await expect(db.journalPasswordRemovalMediaStage.count()).resolves.toBe(0);
   });
 
   it("clears focusSessions table", async () => {

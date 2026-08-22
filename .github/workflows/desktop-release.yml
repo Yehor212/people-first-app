@@ -82,6 +82,9 @@ jobs:
       - name: Build desktop app
         run: npm run desktop:build
 
+      - name: Check Desktop feature capability receipt
+        run: node scripts/check-feature-capability-receipt.cjs --platform tauri
+
       - name: Check desktop web bundle data integrity
         run: npm run check:production-data-integrity:bundle
 

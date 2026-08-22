@@ -157,9 +157,18 @@ function generateOperationId(): string {
     .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
+type OfflineQueueDeferredReason =
+  | "password-removal-paused"
+  | "connectivity"
+  | "bounded-work";
+
 export type OfflineQueueHandlerResult =
   | { status: "committed" }
-  | { status: "obsolete"; reason: string };
+  | { status: "obsolete"; reason: string }
+  | {
+      status: "deferred";
+      reason: OfflineQueueDeferredReason;
+    };
 
 export interface OfflineQueueHandlerContext {
   /** Owner persisted on the queue row and re-verified by the queue. */
@@ -192,6 +201,15 @@ class OfflineQueueAttemptTimeoutError extends Error {
   constructor(timeoutMs: number) {
     super(`Offline queue handler timed out after ${timeoutMs}ms`);
     this.name = "TimeoutError";
+  }
+}
+
+class OfflineQueueAttemptUnsettledError extends Error {
+  constructor() {
+    super(
+      "Offline queue account boundary is blocked until an aborted network attempt settles"
+    );
+    this.name = "OfflineQueueAttemptUnsettledError";
   }
 }
 
@@ -361,13 +379,15 @@ interface QueueState {
   isProcessing: boolean;
 }
 
-type QueueProcessingOutcome = "completed" | "paused";
+type QueueProcessingOutcome =
+  | "completed"
+  | { status: "paused"; reason: OfflineQueueDeferredReason };
 type OfflineQueueLifecycleTrigger =
   | "visibility"
   | "service-worker"
   | "handler-registration"
   | "enqueue"
-  | "abort-retry"
+  | "non-failure-retry"
   | "account-boundary-resume"
   | "manual-retry"
   | "online"
@@ -378,7 +398,8 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 const DEFAULT_MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 1000; // 1 second
 const RETRY_MAX_DELAY = 60000; // 1 minute
-const ABORT_RETRY_DELAY = 1000;
+const CONNECTIVITY_NON_FAILURE_RETRY_DELAY = 1_000;
+const PASSWORD_REMOVAL_RETRY_DELAYS_MS = [15_000, 60_000, 300_000, 900_000] as const;
 const LIFECYCLE_PROCESS_RETRY_DELAYS_MS = [1_000, 5_000, 15_000] as const;
 const HANDLER_ATTEMPT_TIMEOUT_MS = 30_000;
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
@@ -407,11 +428,19 @@ class OfflineQueue {
   private requeuedDuringProcessing = new Set<string>();
   private observedAuthOwnerUserId: string | null | undefined;
   private authOwnerGeneration = 0;
-  private abortRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private nonFailureRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private nonFailureRetryReason: OfflineQueueDeferredReason | null = null;
+  private passwordRemovalDeferredRetryCount = 0;
   private lifecycleProcessRetryTimer: ReturnType<typeof setTimeout> | null = null;
   private lifecycleProcessFailureCount = 0;
   private destroyed = false;
   private activeAttemptController: AbortController | null = null;
+  /**
+   * Promises that ignored abort after their queue attempt was released. Their
+   * durable rows remain unacknowledged, and account transitions fail closed
+   * until the underlying mutation has reached a known terminal state.
+   */
+  private unsettledAttemptSettlements = new Set<Promise<void>>();
 
   // Promise to track initialization - operations must await this before modifying queue
   private initPromise: Promise<void> | null = null;
@@ -477,10 +506,12 @@ class OfflineQueue {
         navigator.serviceWorker.removeEventListener("message", this.boundHandleSWMessage);
       }
     }
-    if (this.abortRetryTimer !== null) {
-      clearTimeout(this.abortRetryTimer);
-      this.abortRetryTimer = null;
+    if (this.nonFailureRetryTimer !== null) {
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
     }
+    this.nonFailureRetryReason = null;
+    this.passwordRemovalDeferredRetryCount = 0;
     if (this.lifecycleProcessRetryTimer !== null) {
       clearTimeout(this.lifecycleProcessRetryTimer);
       this.lifecycleProcessRetryTimer = null;
@@ -916,6 +947,22 @@ class OfflineQueue {
       !this.canAttemptNetwork(options)
     )
       return;
+    if (this.unsettledAttemptSettlements.size > 0) {
+      // Lifecycle wakes remain non-blocking, but a newer caller with fresh,
+      // abortable same-origin connectivity evidence may wait for the released
+      // handler to settle and then retry the still-durable row. It cannot run
+      // concurrently with the ambiguous older mutation.
+      if (!options?.verifiedConnectivity) return;
+      await Promise.all([...this.unsettledAttemptSettlements]);
+      if (
+        this.accountBoundarySuspended ||
+        readPendingLocalBackupAccountClaim().status !== "none" ||
+        !this.canAttemptNetwork(options)
+      ) {
+        return;
+      }
+      return this.processQueue(options);
+    }
 
     // A promise guards this realm; the named origin lock guards every tab and
     // worker. The winning realm refreshes from IndexedDB before choosing work,
@@ -960,10 +1007,13 @@ class OfflineQueue {
       this.processingPromise = null;
     }
 
-    if (outcome === "paused") {
-      this.scheduleAbortRetry();
+    if (outcome !== "completed") {
+      this.scheduleNonFailureRetry(outcome.reason);
       return;
     }
+
+    this.clearNonFailureRetry();
+    this.passwordRemovalDeferredRetryCount = 0;
 
     const currentOwnerUserId = await getCurrentSessionUserId();
     this.observeAuthStateOwner(currentOwnerUserId);
@@ -978,17 +1028,48 @@ class OfflineQueue {
     }
   }
 
-  private scheduleAbortRetry(): void {
-    if (this.abortRetryTimer !== null || this.accountBoundarySuspended) return;
+  private clearNonFailureRetry(): void {
+    if (this.nonFailureRetryTimer !== null) {
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
+    }
+    this.nonFailureRetryReason = null;
+  }
+
+  private scheduleNonFailureRetry(reason: OfflineQueueDeferredReason): void {
+    if (this.accountBoundarySuspended) return;
     if (!navigator.onLine) return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
 
-    this.abortRetryTimer = setTimeout(() => {
-      this.abortRetryTimer = null;
+    if (this.nonFailureRetryTimer !== null) {
+      if (this.nonFailureRetryReason === reason) return;
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
+    }
+
+    const delay =
+      reason === "password-removal-paused"
+        ? PASSWORD_REMOVAL_RETRY_DELAYS_MS[
+            Math.min(
+              this.passwordRemovalDeferredRetryCount,
+              PASSWORD_REMOVAL_RETRY_DELAYS_MS.length - 1,
+            )
+          ]
+        : CONNECTIVITY_NON_FAILURE_RETRY_DELAY;
+    if (reason === "password-removal-paused") {
+      this.passwordRemovalDeferredRetryCount = Math.min(
+        this.passwordRemovalDeferredRetryCount + 1,
+        PASSWORD_REMOVAL_RETRY_DELAYS_MS.length - 1,
+      );
+    }
+    this.nonFailureRetryReason = reason;
+    this.nonFailureRetryTimer = setTimeout(() => {
+      this.nonFailureRetryTimer = null;
+      this.nonFailureRetryReason = null;
       if (!this.accountBoundarySuspended && navigator.onLine) {
-        this.launchLifecycleProcessing("abort-retry");
+        this.launchLifecycleProcessing("non-failure-retry");
       }
-    }, ABORT_RETRY_DELAY);
+    }, delay);
   }
 
   private launchLifecycleProcessing(trigger: OfflineQueueLifecycleTrigger): void {
@@ -1049,7 +1130,9 @@ class OfflineQueue {
     ownerGeneration: number,
     options?: OfflineQueueProcessOptions
   ): Promise<QueueProcessingOutcome> {
-    if (this.state.isProcessing) return "paused";
+    if (this.state.isProcessing) {
+      return { status: "paused", reason: "connectivity" };
+    }
 
     this.state.isProcessing = true;
     this.notifyListeners();
@@ -1058,7 +1141,7 @@ class OfflineQueue {
 
     // Process actions in order (FIFO)
     const actionsToProcess = [...this.state.actions];
-    let pausedByAbort = false;
+    let pausedReason: OfflineQueueDeferredReason | null = null;
 
     for (const action of actionsToProcess) {
       if (this.accountBoundarySuspended) {
@@ -1067,7 +1150,7 @@ class OfflineQueue {
       }
       if (!this.canAttemptNetwork(options)) {
         logger.log("[OfflineQueue] Went offline during processing, pausing");
-        pausedByAbort = true;
+        pausedReason = "connectivity";
         break;
       }
 
@@ -1129,6 +1212,18 @@ class OfflineQueue {
           Promise.resolve().then(() => handler(attemptAction, handlerContext)),
           attemptController
         );
+        if (result?.status === "deferred") {
+          // A known server or connectivity fence is neither a successful
+          // acknowledgement nor a failed mutation. Keep the durable row and
+          // retry it later without spending its finite failure budget.
+          logger.log(
+            "[OfflineQueue] Action deferred without consuming retry budget:",
+            action.type,
+            result.reason,
+          );
+          pausedReason = result.reason;
+          break;
+        }
         if (result?.status !== "committed" && result?.status !== "obsolete") {
           throw new Error("Offline queue handler returned without an explicit acknowledgement");
         }
@@ -1185,17 +1280,28 @@ class OfflineQueue {
             action.type,
             action.entityId
           );
-          pausedByAbort = true;
+          pausedReason = "connectivity";
           break;
         }
 
-        logger.error("[OfflineQueue] Action failed:", action.type, error);
+        const isJournalSecurityMigration = action.type === "MIGRATE_JOURNAL_SECURITY";
+        if (isJournalSecurityMigration) {
+          logger.error("[OfflineQueue] Diary security migration failed", {
+            code: "storage-failed",
+          });
+        } else {
+          logger.error("[OfflineQueue] Action failed:", action.type, error);
+        }
         recordSyncHealthReceipt({
           kind: "failed",
           source: "queue",
           actionType: action.type,
           priority: action.priority || "normal",
-          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorName: isJournalSecurityMigration
+            ? "JournalSecurityMigrationError"
+            : error instanceof Error
+              ? error.name
+              : "UnknownError",
         });
 
         const operationId = action.operationId;
@@ -1204,7 +1310,11 @@ class OfflineQueue {
           continue;
         }
         const retries = action.retries + 1;
-        const lastError = error instanceof Error ? error.message : String(error);
+        const lastError = isJournalSecurityMigration
+          ? "storage-failed"
+          : error instanceof Error
+            ? error.message
+            : String(error);
         const persistedFailure = await this.persistAttemptFailure(
           action.id,
           operationId,
@@ -1222,16 +1332,27 @@ class OfflineQueue {
 
         if (persistedFailure.retries >= persistedFailure.maxRetries) {
           if (isCriticalAction(persistedFailure)) {
-            logger.error(
-              "[OfflineQueue] Critical action blocked after max retries:",
-              persistedFailure.id
-            );
+            if (persistedFailure.type === "MIGRATE_JOURNAL_SECURITY") {
+              logger.error("[OfflineQueue] Diary security migration requires retry", {
+                code: "storage-failed",
+              });
+            } else {
+              logger.error(
+                "[OfflineQueue] Critical action blocked after max retries:",
+                persistedFailure.id
+              );
+            }
             recordSyncHealthReceipt({
               kind: "queue-blocked",
               source: "queue",
               actionType: persistedFailure.type,
               priority: persistedFailure.priority || "normal",
-              errorName: error instanceof Error ? error.name : "UnknownError",
+              errorName:
+                persistedFailure.type === "MIGRATE_JOURNAL_SECURITY"
+                  ? "JournalSecurityMigrationError"
+                  : error instanceof Error
+                    ? error.name
+                    : "UnknownError",
             });
             this.dispatchBlockedAction(persistedFailure);
           } else {
@@ -1258,11 +1379,13 @@ class OfflineQueue {
     }
 
     this.state.isProcessing = false;
-    if (!pausedByAbort) this.state.lastProcessedAt = Date.now();
+    if (pausedReason === null) this.state.lastProcessedAt = Date.now();
     this.notifyListeners();
 
     logger.log("[OfflineQueue] Queue processing complete, remaining:", this.state.actions.length);
-    return pausedByAbort ? "paused" : "completed";
+    return pausedReason === null
+      ? "completed"
+      : { status: "paused", reason: pausedReason };
   }
 
   private hasProcessableActionsForOwner(ownerUserId: string | null): boolean {
@@ -1445,6 +1568,9 @@ class OfflineQueue {
     if (this.initPromise) await this.initPromise;
     if (this.enqueueLock) await this.enqueueLock;
     if (this.processingPromise) await this.processingPromise;
+    if (this.unsettledAttemptSettlements.size > 0) {
+      throw new OfflineQueueAttemptUnsettledError();
+    }
 
     this.state.isProcessing = false;
     this.notifyListeners();
@@ -1692,7 +1818,10 @@ class OfflineQueue {
     return new Promise<T>((resolve, reject) => {
       const { signal } = controller;
       let settled = false;
+      let handlerSettled = false;
+      let unsettledTracked = false;
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let abortReason: Error | null = null;
 
       const cleanup = () => {
         if (timeoutId !== null) clearTimeout(timeoutId);
@@ -1705,11 +1834,19 @@ class OfflineQueue {
         callback();
       };
       const handleAbort = () => {
-        const reason =
+        abortReason =
           signal.reason instanceof Error
             ? signal.reason
             : new DOMException("Offline queue attempt was aborted", "AbortError");
-        settle(() => reject(reason));
+        if (!handlerSettled && !unsettledTracked) {
+          unsettledTracked = true;
+          this.trackUnsettledHandler(handlerPromise);
+        }
+        // A handler is required to observe the signal, but a third-party or
+        // regressed handler may never settle. Release queue processing now;
+        // the durable row cannot be acknowledged by this late result and an
+        // account boundary remains blocked by trackUnsettledHandler().
+        settle(() => reject(abortReason!));
       };
 
       signal.addEventListener("abort", handleAbort, { once: true });
@@ -1717,11 +1854,46 @@ class OfflineQueue {
         controller.abort(new OfflineQueueAttemptTimeoutError(HANDLER_ATTEMPT_TIMEOUT_MS));
       }, HANDLER_ATTEMPT_TIMEOUT_MS);
       handlerPromise.then(
-        (result) => settle(() => resolve(result)),
-        (error) => settle(() => reject(normalizeHandlerRejection(error)))
+        (result) => {
+          handlerSettled = true;
+          settle(() => {
+            if (abortReason) reject(abortReason);
+            else resolve(result);
+          });
+        },
+        (error) => {
+          handlerSettled = true;
+          settle(() => reject(abortReason ?? normalizeHandlerRejection(error)));
+        }
       );
       if (signal.aborted) handleAbort();
     });
+  }
+
+  private trackUnsettledHandler(handlerPromise: Promise<unknown>): void {
+    const settlement = handlerPromise
+      .then(
+        () => undefined,
+        () => undefined
+      )
+      .finally(() => {
+        this.unsettledAttemptSettlements.delete(settlement);
+        // Defer one task turn: the released queue pass may still own
+        // processingPromise while it handles the abort result. An immediate
+        // launch can become a pending request that is discarded by the paused
+        // pass, leaving the durable row asleep until another browser event.
+        setTimeout(() => {
+          if (
+            !this.destroyed &&
+            !this.accountBoundarySuspended &&
+            navigator.onLine &&
+            (typeof document === "undefined" || document.visibilityState === "visible")
+          ) {
+            this.launchLifecycleProcessing("bounded-retry");
+          }
+        }, 0);
+      });
+    this.unsettledAttemptSettlements.add(settlement);
   }
 
   private abortActiveAttempt(message: string): void {

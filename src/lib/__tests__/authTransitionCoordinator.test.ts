@@ -222,6 +222,7 @@ describe("origin-wide Supabase auth transition coordination", () => {
       expect.stringMatching(/src\/components\/auth-screen\/useAuthHandlers\.ts:\d+:signInWithOAuth/),
       expect.stringMatching(/src\/components\/settings\/account-section\/useAccountAuth\.ts:\d+:signInWithOAuth/),
       expect.stringMatching(/src\/features\/journal\/JournalModule\.tsx:\d+:signInWithOtp/),
+      expect.stringMatching(/src\/features\/journal\/JournalModule\.tsx:\d+:signInWithOAuth/),
     ]);
     expect(violations).toEqual([]);
   });

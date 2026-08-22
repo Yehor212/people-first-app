@@ -9,6 +9,7 @@ import {
   createOriginWideAuthLock,
 } from "@/lib/authTransitionCoordinator";
 import { createAttemptScopedAuthStorage } from "@/lib/pkceAttemptStorage";
+import { getJournalPasswordResetNonceFromUrl } from "@/lib/journalPasswordResetHandoff";
 
 /**
  * Zod schema for validating Supabase user object
@@ -119,8 +120,16 @@ export function getSupabaseAuthStorageKey(supabaseUrl: string): string {
  * - Web: true (handles OAuth callback in URL)
  * - Native: false (handled via deep links separately)
  */
-const shouldDetectSessionInUrl = (): boolean => {
-  return !isNative;
+export const shouldDetectSessionInUrl = (
+  rawUrl = typeof window !== "undefined" ? window.location.href : "",
+): boolean => {
+  if (isNative) return false;
+
+  // Journal password removal needs proof that this exact PKCE callback was
+  // exchanged for the owner named by the returned session. Let the explicit
+  // callback handler own that exchange; a generic SIGNED_IN notification can
+  // also be emitted for an older persisted session or on tab refocus.
+  return !getJournalPasswordResetNonceFromUrl(rawUrl);
 };
 
 function createConfiguredSupabaseClient(): SupabaseClient<Database> | null {

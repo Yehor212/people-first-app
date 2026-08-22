@@ -65,9 +65,11 @@ cache-busted GitHub Pages URL when validating a deployed artifact.
      state unless the two cursors are explicitly unified in the same change.
 
 2. **Fetch is not sync unless apply succeeds.**
-   - Any delta pull path must call `applyDelta()` or a wrapper that does.
+   - Any delta pull path must call `applyDelta()` or the bounded
+     `fetchAndApplyDeltasInPages()` wrapper that applies and persists one page
+     before fetching the next.
    - Resume, visibility, online, native app-active, and broadcast paths must not
-     stop at `fetchAllDeltas()`.
+     stop at `fetchAllDeltas()` or accumulate an unbounded tail before apply.
 
 3. **One remote-change owner per feature flag state.**
    - When `deltaSync` is enabled, remote broadcast signals are owned by

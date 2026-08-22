@@ -1,228 +1,365 @@
-/**
- * FeatureFlagsContext Tests
- *
- * Tests for the feature flags provider, including toggle behavior,
- * onboarding-gated visibility, and default flag values.
- */
+import { act, renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { ReactNode } from "react";
-
-// --- Mocks ---
-
-let mockFlags: any;
-let mockSetFlags: any;
+const mocks = vi.hoisted(() => {
+  const mutableState: { flags: Record<string, boolean> } = { flags: {} };
+  return {
+  ...mutableState,
+  setFlags: vi.fn(),
+  journalCount: vi.fn<() => Promise<number>>(),
+  refreshListener: null as null | ((signal: AbortSignal) => Promise<void>),
+  boundaryListener: null as null | (() => void),
+  waitForBoundarySettlement: vi.fn<() => Promise<void>>(),
+  isFeatureUnlocked: vi.fn(() => true),
+  store: {
+    habits: [] as Array<{ entries?: Record<string, { value: number }> }>,
+    focusSessions: [] as unknown[],
+    moods: [] as Array<{ date?: string }>,
+  },
+  };
+});
 
 vi.mock("@/hooks/useLocalStorage", () => ({
-  useLocalStorage: vi.fn(() => [mockFlags, mockSetFlags]),
+  useLocalStorage: () => [mocks.flags, mocks.setFlags],
 }));
 
-vi.mock("@/lib/onboardingFlow", () => ({
-  isFeatureUnlocked: vi.fn(() => true),
-  computeGardenGateStage: vi.fn(() => "seed"),
-  getFeaturesForGardenStage: vi.fn(() => ["mood", "habits"]),
+vi.mock("@/lib/onboardingFlow", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/onboardingFlow")>();
+  return { ...actual, isFeatureUnlocked: mocks.isFeatureUnlocked };
+});
+
+vi.mock("@/storage/db", () => ({
+  db: { journalEntries: { count: mocks.journalCount } },
 }));
 
-vi.mock("@/lib/storageKeys", () => ({
-  SK: { FEATURE_FLAGS: "zenflow-feature-flags" },
+vi.mock("@/hooks/useIndexedDB", () => ({
+  captureDataWriteBoundaryGeneration: () => 0,
+  assertDataWriteBoundaryGeneration: vi.fn(),
+  subscribeDataRefresh: (listener: (signal: AbortSignal) => Promise<void>) => {
+    mocks.refreshListener = listener;
+    return () => {
+      if (mocks.refreshListener === listener) mocks.refreshListener = null;
+    };
+  },
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", () => ({
+  captureOriginAccountBoundaryGeneration: () => "origin-generation",
+  assertOriginAccountBoundaryGeneration: vi.fn(),
+  subscribeOriginAccountBoundaryObservation: (listener: () => void) => {
+    mocks.boundaryListener = listener;
+    return () => {
+      if (mocks.boundaryListener === listener) mocks.boundaryListener = null;
+    };
+  },
+  waitForAccountBoundaryDataSettlement: mocks.waitForBoundarySettlement,
 }));
 
 vi.mock("@/stores", () => ({
-  useUserDataStore: vi.fn((selector: (s: any) => any) =>
-    selector({ habits: [], focusSessions: [], moods: [] })
-  ),
+  useUserDataStore: (selector: (state: typeof mocks.store) => unknown) => selector(mocks.store),
 }));
 
-vi.mock("@/lib/utils", () => ({
-  getToday: vi.fn(() => "2026-02-19"),
+vi.mock("@/lib/utils", () => ({ getToday: () => "2026-08-03" }));
+vi.mock("@/lib/logger", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), log: vi.fn() },
 }));
 
-import { FeatureFlagsProvider, useFeatureFlags, useFeatureVisible } from "../FeatureFlagsContext";
-import { isFeatureUnlocked } from "@/lib/onboardingFlow";
-
-// --- Helpers ---
+import {
+  DEFAULT_FEATURE_FLAGS,
+  FeatureFlagsProvider,
+  requireFeatureFlagsProvider,
+  useFeatureFlags,
+  useFeatureVisible,
+} from "../FeatureFlagsContext";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <FeatureFlagsProvider>{children}</FeatureFlagsProvider>
 );
 
-const DEFAULT_FLAGS = {
-  focusTimer: true,
-  breathingExercise: true,
-  gratitudeJournal: true,
-  quests: true,
-  tasks: true,
-  challenges: true,
-  aiCoach: false,
-  innerWorld: true,
-  deltaSync: true,
-};
-
-// --- Tests ---
+function setSevenActiveDays(): void {
+  mocks.store.moods = Array.from({ length: 7 }, (_, index) => ({
+    date: `2026-07-${String(index + 1).padStart(2, "0")}`,
+  }));
+}
 
 describe("FeatureFlagsContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFlags = { ...DEFAULT_FLAGS };
-    mockSetFlags = vi.fn((updater: any) => {
-      if (typeof updater === "function") {
-        mockFlags = updater(mockFlags);
-      } else {
-        mockFlags = updater;
+    mocks.flags = { ...DEFAULT_FEATURE_FLAGS };
+    mocks.setFlags.mockImplementation(
+      (
+        value:
+          | Record<string, boolean>
+          | ((current: Record<string, boolean>) => Record<string, boolean>)
+      ) => {
+        mocks.flags = typeof value === "function" ? value(mocks.flags) : value;
       }
-    });
+    );
+    mocks.journalCount.mockResolvedValue(0);
+    mocks.refreshListener = null;
+    mocks.boundaryListener = null;
+    mocks.waitForBoundarySettlement.mockReset();
+    mocks.waitForBoundarySettlement.mockResolvedValue(undefined);
+    mocks.isFeatureUnlocked.mockReturnValue(true);
+    mocks.store.habits = [];
+    mocks.store.focusSessions = [];
+    mocks.store.moods = [];
   });
 
-  // 1. Default flags
-  it("provides default flags with all features enabled except aiCoach", () => {
+  it("provides reviewed defaults and keeps AI Coach disabled", () => {
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
 
-    expect(result.current.flags.focusTimer).toBe(true);
-    expect(result.current.flags.breathingExercise).toBe(true);
-    expect(result.current.flags.gratitudeJournal).toBe(true);
-    expect(result.current.flags.quests).toBe(true);
-    expect(result.current.flags.tasks).toBe(true);
-    expect(result.current.flags.challenges).toBe(true);
-    expect(result.current.flags.aiCoach).toBe(false);
-    expect(result.current.flags.innerWorld).toBe(true);
-  });
-
-  // 2. isFeatureEnabled returns true for enabled feature
-  it("isFeatureEnabled returns true for an enabled feature", () => {
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-
+    expect(result.current.flags).toEqual(DEFAULT_FEATURE_FLAGS);
     expect(result.current.isFeatureEnabled("focusTimer")).toBe(true);
-    expect(result.current.isFeatureEnabled("breathingExercise")).toBe(true);
-  });
-
-  // 3. isFeatureEnabled returns false for disabled feature (aiCoach)
-  it("isFeatureEnabled returns false for aiCoach (disabled by default)", () => {
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-
     expect(result.current.isFeatureEnabled("aiCoach")).toBe(false);
+    expect(result.current.getFeatureAvailability("aiCoach")).toMatchObject({
+      visible: false,
+      state: "blocked",
+      reason: "service-not-approved",
+    });
   });
 
-  // 4. setFlag toggles a single flag without affecting others
-  it("setFlag toggles a single flag without affecting others", () => {
+  it("updates one stored choice without changing unrelated choices", () => {
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
 
-    act(() => {
-      result.current.setFlag("focusTimer", false);
+    act(() => result.current.setFlag("focusTimer", false));
+
+    expect(mocks.flags.focusTimer).toBe(false);
+    expect(mocks.flags.challenges).toBe(true);
+    expect(mocks.flags.aiCoach).toBe(false);
+  });
+
+  it("uses a real settled IndexedDB count to unlock the blooming stage", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    mocks.journalCount.mockResolvedValue(3);
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.journalEntryCountState).toEqual({
+        status: "ready",
+        count: 3,
+      })
+    );
+    expect(result.current.getFeatureAvailability("challenges")).toMatchObject({
+      visible: true,
+      source: "local-truth",
+    });
+  });
+
+  it("keeps journal-dependent eligibility unknown while the count is loading", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    let resolveCount!: (count: number) => void;
+    mocks.journalCount.mockReturnValue(
+      new Promise<number>((resolve) => {
+        resolveCount = resolve;
+      })
+    );
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+
+    expect(result.current.getFeatureAvailability("challenges")).toMatchObject({
+      visible: false,
+      reason: "journal-count-loading",
+    });
+    resolveCount(3);
+    await waitFor(() => expect(result.current.isFeatureVisible("challenges")).toBe(true));
+  });
+
+  it("does not read a stale diary count when the provider mounts during an account purge", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    let postPurge = false;
+    mocks.journalCount.mockImplementation(async () => (postPurge ? 0 : 3));
+    let releaseSettlement!: () => void;
+    mocks.waitForBoundarySettlement.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        releaseSettlement = resolve;
+      })
+    );
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+
+    expect(result.current.journalEntryCountState).toEqual({ status: "loading" });
+    expect(result.current.isFeatureVisible("challenges")).toBe(false);
+    expect(mocks.journalCount).not.toHaveBeenCalled();
+
+    postPurge = true;
+    await act(async () => releaseSettlement());
+
+    await waitFor(() =>
+      expect(result.current.journalEntryCountState).toEqual({
+        status: "ready",
+        count: 0,
+      })
+    );
+    expect(mocks.journalCount).toHaveBeenCalledTimes(1);
+    expect(result.current.isFeatureVisible("challenges")).toBe(false);
+  });
+
+  it("reports unavailable local truth instead of a verified empty journal", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    mocks.journalCount.mockRejectedValue(new Error("IndexedDB unavailable"));
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.getFeatureAvailability("challenges")).toMatchObject({
+        visible: false,
+        reason: "journal-count-unavailable",
+      })
+    );
+    expect(result.current.journalEntryCountState).toEqual({ status: "error" });
+  });
+
+  it("keeps calendar onboarding independent from journal-count failure", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(true);
+    setSevenActiveDays();
+    mocks.journalCount.mockRejectedValue(new Error("IndexedDB unavailable"));
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+
+    await waitFor(() => expect(result.current.journalEntryCountState.status).toBe("error"));
+    expect(result.current.getFeatureAvailability("challenges")).toMatchObject({
+      visible: true,
+      source: "onboarding",
+    });
+  });
+
+  it("replaces the count after a settled data refresh", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    mocks.journalCount.mockResolvedValueOnce(0).mockResolvedValueOnce(3);
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+    await waitFor(() =>
+      expect(result.current.journalEntryCountState).toEqual({
+        status: "ready",
+        count: 0,
+      })
+    );
+    expect(result.current.isFeatureVisible("challenges")).toBe(false);
+
+    await act(async () => {
+      await mocks.refreshListener!(new AbortController().signal);
     });
 
-    expect(mockSetFlags).toHaveBeenCalledTimes(1);
-    // The updater should produce new flags with focusTimer=false
-    expect(mockFlags.focusTimer).toBe(false);
-    // Other flags remain unchanged
-    expect(mockFlags.breathingExercise).toBe(true);
-    expect(mockFlags.quests).toBe(true);
-    expect(mockFlags.aiCoach).toBe(false);
+    expect(result.current.journalEntryCountState).toEqual({ status: "ready", count: 3 });
+    expect(result.current.isFeatureVisible("challenges")).toBe(true);
   });
 
-  // 5. setFlag can enable aiCoach
-  it("setFlag can enable aiCoach", () => {
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+  it("discards an older count after an account-boundary observation", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    let resolveOldCount!: (count: number) => void;
+    mocks.journalCount
+      .mockReturnValueOnce(
+        new Promise<number>((resolve) => {
+          resolveOldCount = resolve;
+        })
+      )
+      .mockResolvedValueOnce(0);
 
-    act(() => {
-      result.current.setFlag("aiCoach", true);
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+    await waitFor(() => expect(mocks.journalCount).toHaveBeenCalledTimes(1));
+    act(() => mocks.boundaryListener!());
+    await waitFor(() =>
+      expect(result.current.journalEntryCountState).toEqual({
+        status: "ready",
+        count: 0,
+      })
+    );
+
+    resolveOldCount(3);
+    await act(async () => Promise.resolve());
+    expect(result.current.journalEntryCountState).toEqual({ status: "ready", count: 0 });
+  });
+
+  it("keeps account-B eligibility loading until account-A data has finished purging", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    let postPurge = false;
+    mocks.journalCount.mockImplementation(async () => (postPurge ? 0 : 3));
+    let releaseSettlement!: () => void;
+    mocks.waitForBoundarySettlement
+      .mockResolvedValueOnce(undefined)
+      .mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          releaseSettlement = resolve;
+        })
+      );
+
+    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
+    await waitFor(() =>
+      expect(result.current.journalEntryCountState).toEqual({
+        status: "ready",
+        count: 3,
+      })
+    );
+    expect(result.current.isFeatureVisible("challenges")).toBe(true);
+
+    act(() => mocks.boundaryListener!());
+
+    expect(result.current.journalEntryCountState).toEqual({ status: "loading" });
+    expect(result.current.getFeatureAvailability("challenges")).toMatchObject({
+      visible: false,
+      reason: "journal-count-loading",
     });
+    expect(mocks.journalCount).toHaveBeenCalledTimes(1);
 
-    expect(mockFlags.aiCoach).toBe(true);
+    postPurge = true;
+    await act(async () => releaseSettlement());
+
+    await waitFor(() =>
+      expect(result.current.journalEntryCountState).toEqual({
+        status: "ready",
+        count: 0,
+      })
+    );
+    expect(mocks.journalCount).toHaveBeenCalledTimes(2);
+    expect(result.current.isFeatureVisible("challenges")).toBe(false);
   });
 
-  // 6. isFeatureVisible returns true when enabled AND unlocked
-  it("isFeatureVisible returns true when feature is enabled and unlocked", () => {
-    vi.mocked(isFeatureUnlocked).mockReturnValue(true);
-
+  it("keeps the boolean adapter exactly equal to structured visibility", async () => {
+    mocks.isFeatureUnlocked.mockReturnValue(false);
+    setSevenActiveDays();
+    mocks.journalCount.mockResolvedValue(3);
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
 
-    expect(result.current.isFeatureVisible("focusTimer")).toBe(true);
+    await waitFor(() => expect(result.current.journalEntryCountState.status).toBe("ready"));
+    for (const feature of ["focusTimer", "quests", "challenges", "deltaSync"] as const) {
+      expect(result.current.isFeatureVisible(feature)).toBe(
+        result.current.getFeatureAvailability(feature).visible
+      );
+    }
   });
 
-  // 7. isFeatureVisible returns false when disabled (even if unlocked)
-  it("isFeatureVisible returns false when feature is disabled even if unlocked", () => {
-    vi.mocked(isFeatureUnlocked).mockReturnValue(true);
-
+  it("uses a reviewed default for a missing stored key and never a permissive catch-all", () => {
+    delete mocks.flags.innerWorld;
+    delete mocks.flags.aiCoach;
     const { result } = renderHook(() => useFeatureFlags(), { wrapper });
 
-    // aiCoach is disabled by default
-    expect(result.current.isFeatureVisible("aiCoach")).toBe(false);
-  });
-
-  // 8. isFeatureVisible returns false when enabled but NOT unlocked (onboarding requirement)
-  it("isFeatureVisible returns false when enabled but not unlocked via onboarding", () => {
-    vi.mocked(isFeatureUnlocked).mockReturnValue(false);
-
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-
-    // focusTimer is enabled but onboarding says not unlocked
-    expect(result.current.isFeatureVisible("focusTimer")).toBe(false);
-  });
-
-  // 9. isFeatureVisible returns true for features WITHOUT onboarding requirement
-  it("isFeatureVisible returns true for features without onboarding requirement even when isFeatureUnlocked returns false", () => {
-    vi.mocked(isFeatureUnlocked).mockReturnValue(false);
-
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-
-    // breathingExercise has no onboarding mapping, so isFeatureUnlocked is never checked
-    expect(result.current.isFeatureVisible("breathingExercise")).toBe(true);
-    expect(result.current.isFeatureVisible("gratitudeJournal")).toBe(true);
-    expect(result.current.isFeatureVisible("innerWorld")).toBe(true);
-  });
-
-  // 10. resetFlags restores all defaults
-  it("resetFlags restores all flags to defaults", () => {
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-
-    // First modify some flags
-    act(() => {
-      result.current.setFlag("focusTimer", false);
-      result.current.setFlag("aiCoach", true);
-    });
-
-    // Then reset
-    act(() => {
-      result.current.resetFlags();
-    });
-
-    // mockSetFlags should have been called with DEFAULT_FLAGS object
-    const lastCall = mockSetFlags.mock.calls[mockSetFlags.mock.calls.length - 1];
-    expect(lastCall[0]).toEqual(DEFAULT_FLAGS);
-  });
-
-  // 11. useFeatureFlags throws when used outside provider
-  it("useFeatureFlags throws when used outside FeatureFlagsProvider", () => {
-    // Suppress console.error for the expected error
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    expect(() => {
-      renderHook(() => useFeatureFlags());
-    }).toThrow("useFeatureFlags must be used within a FeatureFlagsProvider");
-
-    consoleSpy.mockRestore();
-  });
-
-  // 12. useFeatureVisible convenience hook returns correct value
-  it("useFeatureVisible returns correct visibility for a feature", () => {
-    vi.mocked(isFeatureUnlocked).mockReturnValue(true);
-
-    const { result } = renderHook(() => useFeatureVisible("focusTimer"), { wrapper });
-
-    expect(result.current).toBe(true);
-  });
-
-  // 13. isFeatureEnabled returns true for unknown feature flag (defaults via nullish coalescing)
-  it("isFeatureEnabled defaults to true for a feature not in flags via nullish coalescing", () => {
-    // Simulate a flag key that is missing from the flags object
-    mockFlags = { ...DEFAULT_FLAGS };
-    const mutable: Record<string, unknown> = mockFlags;
-    delete mutable.innerWorld;
-
-    const { result } = renderHook(() => useFeatureFlags(), { wrapper });
-
-    // flags[feature] is undefined, so ?? true returns true
     expect(result.current.isFeatureEnabled("innerWorld")).toBe(true);
+    expect(result.current.isFeatureEnabled("aiCoach")).toBe(false);
+    expect(result.current.isFeatureVisible("innerWorld")).toBe(false);
+  });
+
+  it("resets stored choices and exposes the convenience hook", () => {
+    const flags = renderHook(() => useFeatureFlags(), { wrapper });
+    act(() => flags.result.current.resetFlags());
+    expect(mocks.setFlags).toHaveBeenLastCalledWith(DEFAULT_FEATURE_FLAGS);
+
+    const visible = renderHook(() => useFeatureVisible("focusTimer"), { wrapper });
+    expect(visible.result.current).toBe(true);
+  });
+
+  it("rejects context access outside the provider", () => {
+    expect(() => requireFeatureFlagsProvider(undefined)).toThrow(
+      "useFeatureFlags must be used within a FeatureFlagsProvider"
+    );
   });
 });

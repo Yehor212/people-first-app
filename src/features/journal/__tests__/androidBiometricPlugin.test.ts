@@ -13,14 +13,14 @@ describe("Android diary biometric unlock bridge", () => {
     expect(existsSync(resolve(process.cwd(), pluginPath))).toBe(true);
 
     const pluginSource = readSource(pluginPath);
-    const activitySource = readSource("android/app/src/main/java/com/zenflow/app/MainActivity.java");
+    const activitySource = readSource(
+      "android/app/src/main/java/com/zenflow/app/MainActivity.java"
+    );
     const manifest = readSource("android/app/src/main/AndroidManifest.xml");
     const gradle = readSource("android/app/build.gradle");
     const pluginBridgeSource = readSource("src/plugins/BiometricPlugin.ts");
     const journalSecuritySource = readSource("src/features/journal/useJournalSecurity.ts");
-    const credentialCleanupSource = readSource(
-      "src/lib/journalBiometricCredentials.ts",
-    );
+    const credentialCleanupSource = readSource("src/lib/journalBiometricCredentials.ts");
 
     expect(pluginSource).toContain('@CapacitorPlugin(name = "BiometricAuth")');
     expect(pluginSource).toContain("BiometricManager.Authenticators.BIOMETRIC_STRONG");
@@ -29,7 +29,9 @@ describe("Android diary biometric unlock bridge", () => {
     expect(pluginSource).toContain("KeyProperties.AUTH_BIOMETRIC_STRONG");
     expect(pluginSource).toContain("setUserAuthenticationParameters(0");
     expect(pluginSource).toContain("setInvalidatedByBiometricEnrollment(true)");
-    expect(pluginSource).toContain('private static final String ANDROID_KEYSTORE = "AndroidKeyStore"');
+    expect(pluginSource).toContain(
+      'private static final String ANDROID_KEYSTORE = "AndroidKeyStore"'
+    );
     expect(pluginSource).toContain("KeyStore.getInstance(ANDROID_KEYSTORE)");
     expect(pluginSource).toContain("successResult(decryptedSecret)");
     expect(pluginSource).not.toContain("Arrays.equals");
@@ -47,21 +49,25 @@ describe("Android diary biometric unlock bridge", () => {
     expect(gradle).toContain("androidx.biometric:biometric");
     expect(pluginBridgeSource).toContain("enroll(options: { reason: string; secret?: string })");
     expect(pluginBridgeSource).toContain("unenroll(): Promise<BiometricAuthResult>");
-    expect(journalSecuritySource).toContain("const result = await BiometricAuth.enroll");
+    expect(journalSecuritySource).toContain("enrollNativeJournalBiometricCredential");
     expect(journalSecuritySource).toContain("await clearNativeJournalBiometricCredential()");
+    expect(credentialCleanupSource).toContain("const result = await BiometricAuth.enroll(input)");
     expect(credentialCleanupSource).toContain("const result = await BiometricAuth.unenroll()");
     expect(credentialCleanupSource).toContain("if (!result?.success)");
   });
 
   it("returns the enrolled journal vault secret after biometric authentication", () => {
-    const pluginSource = readSource("android/app/src/main/java/com/zenflow/app/BiometricAuthPlugin.java");
+    const pluginSource = readSource(
+      "android/app/src/main/java/com/zenflow/app/BiometricAuthPlugin.java"
+    );
 
     expect(pluginSource).toContain('String secret = call.getString("secret", null);');
-    expect(pluginSource).toContain('if (secret == null || secret.isEmpty())');
-    expect(pluginSource).toContain('authenticatedCipher.doFinal(secretToStore.getBytes(StandardCharsets.UTF_8))');
-    expect(pluginSource).toContain('new String(decrypted, StandardCharsets.UTF_8)');
-    expect(pluginSource).toContain('successResult(decryptedSecret)');
-    expect(pluginSource).not.toContain('CREDENTIAL_PAYLOAD');
+    expect(pluginSource).toContain("if (secret == null || secret.isEmpty())");
+    expect(pluginSource).toContain(
+      "authenticatedCipher.doFinal(secretToStore.getBytes(StandardCharsets.UTF_8))"
+    );
+    expect(pluginSource).toContain("new String(decrypted, StandardCharsets.UTF_8)");
+    expect(pluginSource).toContain("successResult(decryptedSecret)");
+    expect(pluginSource).not.toContain("CREDENTIAL_PAYLOAD");
   });
-
 });

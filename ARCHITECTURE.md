@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-07-22 (account-boundary closure + freshness metrics refreshed — Law 6 Reality Anchor).
+> Last updated: 2026-08-03 (Epic 002 regression-recovery source/test inventory refreshed — Law 6 Reality Anchor).
 
 ---
 
@@ -40,10 +40,10 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
-| Source files                 |   **935** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **592** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Source files                 |   **946** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
+| Test files                   |   **608** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
-| React.memo                   |   **120** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
+| React.memo                   |   **121** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
 | index.css LOC                | **7,602** | `readFileSync(...).split("\\n").length` (constitution guard) |
 | Inline style={{}}            |   **358** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
 | exhaustive-deps suppressions |    **17** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |

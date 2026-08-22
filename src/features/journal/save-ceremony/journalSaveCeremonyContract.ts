@@ -4,10 +4,18 @@ export const JOURNAL_SAVE_COMMIT_RECEIPT_TTL_MS = 5_000;
 
 export type JournalSaveOperation = "create" | "update";
 export type JournalSaveCeremonyVariant = "night" | "day";
+export type JournalSaveDeliveryState =
+  | "local-saved"
+  | "cloud-pending"
+  | "cloud-failed";
+export type JournalSaveSyncScheduleOutcome = "scheduled" | "unavailable";
 
 export interface JournalSaveCommitReceipt {
   nonce: string;
   operation: JournalSaveOperation;
+  /** Ephemeral only: used to mark the already-rendered saved card, never persisted or logged. */
+  entryId: string;
+  deliveryState: JournalSaveDeliveryState;
   committedAt: number;
   appliedTheme: AppliedTheme;
   variant: JournalSaveCeremonyVariant;
@@ -42,8 +50,20 @@ export function resolveJournalSaveCeremonyVariant(
   return appliedTheme === "paper" ? "night" : "day";
 }
 
+export function resolveJournalSaveDeliveryState(
+  schedule: () => JournalSaveSyncScheduleOutcome,
+): JournalSaveDeliveryState {
+  try {
+    return schedule() === "scheduled" ? "cloud-pending" : "local-saved";
+  } catch {
+    return "cloud-failed";
+  }
+}
+
 export function createJournalSaveCommitReceipt(input: {
   operation: JournalSaveOperation;
+  entryId: string;
+  deliveryState: JournalSaveDeliveryState;
   appliedTheme: AppliedTheme;
   committedAt?: number;
   nonce?: string;
@@ -52,6 +72,8 @@ export function createJournalSaveCommitReceipt(input: {
   return {
     nonce: input.nonce ?? createReceiptNonce(),
     operation: input.operation,
+    entryId: input.entryId,
+    deliveryState: input.deliveryState,
     committedAt,
     appliedTheme: input.appliedTheme,
     variant: resolveJournalSaveCeremonyVariant(input.appliedTheme),

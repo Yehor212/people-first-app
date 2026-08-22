@@ -18,9 +18,7 @@ describe("iOS diary biometric unlock bridge", () => {
     const bridgeSource = readSource(bridgePath);
     const pluginBridgeSource = readSource("src/plugins/BiometricPlugin.ts");
     const journalSecuritySource = readSource("src/features/journal/useJournalSecurity.ts");
-    const credentialCleanupSource = readSource(
-      "src/lib/journalBiometricCredentials.ts",
-    );
+    const credentialCleanupSource = readSource("src/lib/journalBiometricCredentials.ts");
     const storyboard = readSource("ios/App/App/Base.lproj/Main.storyboard");
     const project = readSource("ios/App/App.xcodeproj/project.pbxproj");
 
@@ -53,11 +51,12 @@ describe("iOS diary biometric unlock bridge", () => {
     expect(pluginBridgeSource).toContain("secret?: string");
     expect(pluginBridgeSource).toContain("enroll(options: { reason: string; secret?: string })");
     expect(pluginBridgeSource).toContain("unenroll(): Promise<BiometricAuthResult>");
-    expect(journalSecuritySource).toContain("const result = await BiometricAuth.enroll");
+    expect(journalSecuritySource).toContain("enrollNativeJournalBiometricCredential");
     expect(journalSecuritySource).toContain("secret: vaultKey");
     expect(journalSecuritySource).toContain("if (!result.success || !result.secret)");
     expect(journalSecuritySource).toContain("setVaultKey(result.secret)");
     expect(journalSecuritySource).toContain("await clearNativeJournalBiometricCredential()");
+    expect(credentialCleanupSource).toContain("const result = await BiometricAuth.enroll(input)");
     expect(credentialCleanupSource).toContain("const result = await BiometricAuth.unenroll()");
     expect(credentialCleanupSource).toContain("if (!result?.success)");
     expect(journalSecuritySource).toContain("setBiometricEnabledState(true)");

@@ -76,6 +76,26 @@ describe("journal write protection authority", () => {
     expect(mocks.clearJournalContentSession).not.toHaveBeenCalled();
   });
 
+  it("blocks a newly started edit after a remote password-removal wake is durable", async () => {
+    mocks.vaultKey = "active-vault-key";
+    mocks.vaultRevision = 2;
+    mocks.settings.set("journal_vault_key", {
+      key: "journal_vault_key",
+      value: { wrappedKey: "wrapped", createdAt: 1, updatedAt: 2 },
+    });
+    mocks.settings.set("journal_security_removal_v1", {
+      key: "journal_security_removal_v1",
+      value: {
+        version: 2,
+        operationRevision: "100:remoteoperation",
+        phase: "remote-recovery",
+      },
+    });
+
+    await expect(getJournalVaultKeyForWrite()).rejects.toBeInstanceOf(JournalWriteLockedError);
+    expect(mocks.clearJournalContentSession).toHaveBeenCalledWith("manual-lock");
+  });
+
   it("rejects a key from an older vault revision after protection is removed and re-enabled", async () => {
     mocks.vaultKey = "stale-vault-key";
     mocks.vaultRevision = 1;

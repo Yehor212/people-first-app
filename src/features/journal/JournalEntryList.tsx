@@ -20,6 +20,7 @@ import {
   Briefcase,
   Lightbulb,
   LockKeyhole,
+  AlertCircle,
   CheckCircle2,
   Trash2,
 } from "lucide-react";
@@ -64,7 +65,7 @@ import { Quote } from "lucide-react";
 import { getJournalListDateFilter } from "./journalListFilters";
 import { getJournalQuote } from "./journalQuotes";
 import { useJournalToday } from "./useJournalToday";
-import { formatLocalizedCount } from "./journalWordCount";
+import { formatLocalizedCount, formatLocalizedInvariantCount } from "./journalWordCount";
 import { getLocale } from "@/lib/timeUtils";
 import { useThemeStore } from "@/stores/themeStore";
 import { scheduleIdle } from "@/lib/scheduleIdle";
@@ -81,6 +82,7 @@ import {
   isJournalRequestTimeoutError,
   withJournalRequestTimeout,
 } from "./journalRequestTimeout";
+import type { JournalEntryPageState } from "./journalStorage";
 
 const JOURNAL_AI_AVAILABLE = Boolean(SUPABASE_URL && SUPABASE_PUBLIC_API_KEY);
 const JOURNAL_SPACE_MEMORY_FALLBACK_MS = import.meta.env.MODE === "test" ? 650 : 4500;
@@ -324,6 +326,9 @@ interface JournalEntryListProps {
   onNewEntry: () => void;
   onAddGratitude?: (entry: GratitudeEntry) => void | Promise<void>;
   totalCount: number;
+  unavailableCount?: number;
+  entryPageState?: JournalEntryPageState;
+  onRetryUnavailable?: () => void;
   loading?: boolean;
   selectedDate?: string | null;
   today?: string;
@@ -345,6 +350,8 @@ interface JournalEntryListProps {
   selectedDateOnly?: boolean;
   releaseTraceSummaries?: Map<string, JournalReleaseTraceSummary>;
   onReleaseThought?: () => void | Promise<void>;
+  /** Ephemeral in-memory selector for the decorative save ceremony. */
+  saveCeremonyAnchorEntryId?: string;
 }
 
 export const JournalEntryList = memo(function JournalEntryList({
@@ -356,6 +363,9 @@ export const JournalEntryList = memo(function JournalEntryList({
   onNewEntry,
   onAddGratitude,
   totalCount,
+  unavailableCount = 0,
+  entryPageState = totalCount === 0 ? "empty" : "ready",
+  onRetryUnavailable,
   loading = false,
   selectedDate,
   today,
@@ -369,6 +379,7 @@ export const JournalEntryList = memo(function JournalEntryList({
   selectedDateOnly = false,
   releaseTraceSummaries,
   onReleaseThought,
+  saveCeremonyAnchorEntryId,
 }: JournalEntryListProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -380,6 +391,56 @@ export const JournalEntryList = memo(function JournalEntryList({
   const isPaperTheme = useThemeStore((state) => state.appliedTheme === "paper");
   const activeContainerVariants = reducedMotion ? staticVariants : containerVariants;
   const activeItemVariants = reducedMotion ? staticVariants : itemVariants;
+  const unavailableCountMessage = formatLocalizedInvariantCount(
+    unavailableCount,
+    language,
+    t,
+    "journalEntriesUnavailableCount",
+    "diary entries are temporarily unavailable. Your other entries are still shown.",
+  );
+  const allUnavailableCountMessage = formatLocalizedInvariantCount(
+    unavailableCount,
+    language,
+    t,
+    "journalEntriesUnavailableAllCount",
+    "diary entries cannot be shown right now. Your saved data was not deleted.",
+  );
+
+  const renderUnavailableNotice = (allUnavailable: boolean) => {
+    if (privateMode || unavailableCount < 1) return null;
+
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid={
+          allUnavailable
+            ? "journal-entries-unavailable"
+            : "journal-entries-degraded"
+        }
+        className="journal-diary-glass-panel rounded-2xl border border-border/40 bg-card/70 p-4 text-foreground"
+      >
+        <div className="flex min-w-0 items-start gap-3">
+          <AlertCircle
+            className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <p className="min-w-0 flex-1 whitespace-normal break-words text-sm leading-relaxed">
+            {allUnavailable ? allUnavailableCountMessage : unavailableCountMessage}
+          </p>
+        </div>
+        {onRetryUnavailable ? (
+          <button
+            type="button"
+            onClick={onRetryUnavailable}
+            className="mt-3 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-muted px-4 text-sm font-semibold text-foreground"
+          >
+            {ts.journalEntriesUnavailableRetry || "Try loading again"}
+          </button>
+        ) : null}
+      </div>
+    );
+  };
 
   // Stable handlers that accept ID — prevents inline arrows from defeating memo on JournalEntryCard
   const handleTap = useCallback(
@@ -1757,6 +1818,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                         searchQuery={debouncedSearch}
                         isActive={activeEntryId === entry.id}
                         dimmed={!!activeEntryId && activeEntryId !== entry.id}
+                        isSaveCeremonyAnchor={saveCeremonyAnchorEntryId === entry.id}
                       />
                     }
                     items={[
@@ -1992,6 +2054,20 @@ export const JournalEntryList = memo(function JournalEntryList({
     );
   }
 
+  if (
+    entryPageState === "unavailable" &&
+    unavailableCount > 0 &&
+    !spacesSheetOpen &&
+    !activeSpaceMode
+  ) {
+    return (
+      <div className="relative isolate space-y-3 pb-24">
+        {!useSharedDiaryWallpaper && <JournalMemoryBackdrop />}
+        {renderUnavailableNotice(true)}
+      </div>
+    );
+  }
+
   // Empty state
   if (compact && totalCount === 0 && !showSpaces && !spacesSheetOpen && !activeSpaceMode) {
     return (
@@ -2104,6 +2180,9 @@ export const JournalEntryList = memo(function JournalEntryList({
   return (
     <div className="relative isolate space-y-3 pb-24">
       {!useSharedDiaryWallpaper && <JournalMemoryBackdrop />}
+      {entryPageState === "degraded"
+        ? renderUnavailableNotice(false)
+        : null}
 
       {/* Daily first-party reflection prompt */}
       {!activeSpaceMode && renderDailyReflectionPrompt()}
@@ -2858,6 +2937,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                           searchQuery={debouncedSearch}
                           isActive={activeEntryId === entry.id}
                           dimmed={!!activeEntryId && activeEntryId !== entry.id}
+                          isSaveCeremonyAnchor={saveCeremonyAnchorEntryId === entry.id}
                         />
                       }
                       items={[
@@ -2924,6 +3004,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                       searchQuery={debouncedSearch}
                       isActive={activeEntryId === entry.id}
                       dimmed={!!activeEntryId && activeEntryId !== entry.id}
+                      isSaveCeremonyAnchor={saveCeremonyAnchorEntryId === entry.id}
                     />
                   }
                   items={[

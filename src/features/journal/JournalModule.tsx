@@ -23,7 +23,9 @@ import {
   Settings,
   Loader2,
   CheckCircle2,
+  KeyRound,
   Mail,
+  Smartphone,
   PenLine,
   Plus,
   BarChart3,
@@ -32,7 +34,7 @@ import {
   Star,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup, useIsPresent, useReducedMotion } from "framer-motion";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { cn, formatDate } from "@/lib/utils";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -47,6 +49,18 @@ import { createFocusTrap, getFocusableElements, announceSuccess, announceError }
 import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";
 import { createPkceAttemptRedirectUrl } from "@/lib/pkceAttemptStorage";
 import {
+  buildOAuthCredentials,
+  getAuthProviderConfig,
+  getEnabledAccountAuthProviders,
+  isTrustedOAuthRedirectUrl,
+  type SocialAuthProviderId,
+} from "@/lib/authProviders";
+import { getLinkedAuthProviderIds } from "@/lib/authUser";
+import { isAndroid, isNative, platform } from "@/lib/platform";
+import { authenticateWithGoogleNative } from "@/lib/nativeGoogleAuth";
+import { openOAuthUrl } from "@/lib/nativeOAuthBrowser";
+import { cancelPkceAttemptFromUrl } from "@/lib/authTransitionCoordinator";
+import {
   ENABLE_JOURNAL_SAVE_CEREMONY,
   IS_DESKTOP_RUNTIME,
 } from "@/lib/env";
@@ -58,6 +72,10 @@ import type { Database } from "@/types/supabase";
 import { useJournal } from "./useJournal";
 import { useJournalToday } from "./useJournalToday";
 import { useJournalSecurity } from "./useJournalSecurity";
+import {
+  getJournalPasswordRemovalBlockerMessage,
+  getJournalPasswordRemovalCleanupMessage,
+} from "./journalPasswordRemovalPresentation";
 import { JournalLockScreen } from "./JournalLockScreen";
 import { SidebarCompact, type DiarySidebarSection } from "./SidebarCompact";
 import { DiaryEntrySuggestionCard } from "./DiaryEntrySuggestionCard";
@@ -94,6 +112,7 @@ import {
   consumeJournalPasswordResetProof,
   getJournalPasswordResetNonceFromUrl,
   hasStoredJournalPasswordResetProof,
+  persistJournalPasswordResetProofFromUrl,
 } from "@/lib/journalPasswordResetHandoff";
 import { scheduleIdle } from "@/lib/scheduleIdle";
 import { useJournalReminder, getDaysSinceLastEntry } from "./useJournalReminder";
@@ -123,6 +142,7 @@ import type {
 import {
   commitJournalSaveAndCaptureTheme,
   createJournalSaveCommitReceipt,
+  resolveJournalSaveDeliveryState,
   type JournalSaveCommitReceipt,
   type JournalSaveCompletion,
 } from "./save-ceremony/journalSaveCeremonyContract";
@@ -133,7 +153,6 @@ import {
   mayPresentJournalSaveCeremony,
   type JournalSaveCeremonyLifecycleToken,
 } from "./save-ceremony/journalSaveCeremonyLifecycle";
-import { isNative, platform } from "@/lib/platform";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { DiaryWallpaper } from "./DiaryWallpaper";
 import { getJournalPreviewText } from "./journalDisplay";
@@ -142,6 +161,11 @@ import { isFavoriteJournalEntry, setJournalEntryFavorite } from "./journalFavori
 interface JournalSaveCeremonyPresentation {
   receipt: JournalSaveCommitReceipt;
   lifecycle: JournalSaveCeremonyLifecycleToken;
+}
+
+interface JournalSaveCeremonyAnchor {
+  nonce: string;
+  entryId: string;
 }
 
 function getPrefillSpaceIds(prefill: JournalEntryPrefill | null | undefined): string[] {
@@ -332,8 +356,15 @@ async function accountHasRemoteJournalData(
   return results.some((result) => (result.count ?? 0) > 0);
 }
 
+type JournalPasswordResetPurpose = "forgot-lock" | "removal-reauth";
+type JournalPasswordResetMethod = "email" | "phone" | "oauth";
+
 type JournalPasswordResetRequest = {
+  purpose: JournalPasswordResetPurpose;
+  method: JournalPasswordResetMethod;
   email: string;
+  phone: string;
+  provider: SocialAuthProviderId | null;
   userId: string;
   nonce: string;
   startedAt: number;
@@ -431,9 +462,21 @@ function hasJournalPasswordResetProof(pending: JournalPasswordResetRequest): boo
   );
 }
 
-function serializeJournalPasswordResetRequest(email: string, userId: string, nonce: string): string {
+function serializeJournalPasswordResetRequest(
+  email: string,
+  userId: string,
+  nonce: string,
+  purpose: JournalPasswordResetPurpose = "forgot-lock",
+  method: JournalPasswordResetMethod = "email",
+  phone = "",
+  provider: SocialAuthProviderId | null = null,
+): string {
   return JSON.stringify({
+    purpose,
+    method,
     email: normalizeJournalResetEmail(email),
+    phone: phone.trim(),
+    provider,
     userId: userId.trim(),
     nonce,
     startedAt: Date.now(),
@@ -446,11 +489,28 @@ function parseJournalPasswordResetRequest(raw: string | null): JournalPasswordRe
   try {
     const parsed = JSON.parse(raw) as Partial<JournalPasswordResetRequest>;
     const email = normalizeJournalResetEmail(parsed.email);
+    const phone = typeof parsed.phone === "string" ? parsed.phone.trim() : "";
     const userId = typeof parsed.userId === "string" ? parsed.userId.trim() : "";
     const nonce = typeof parsed.nonce === "string" ? parsed.nonce.trim() : "";
     const startedAt = Number(parsed.startedAt);
-    if (!email || !userId || !nonce || !Number.isFinite(startedAt)) return null;
-    return { email, userId, nonce, startedAt };
+    const purpose = parsed.purpose === "removal-reauth" ? "removal-reauth" : "forgot-lock";
+    const method: JournalPasswordResetMethod | null =
+      parsed.method === "phone" || parsed.method === "oauth"
+        ? parsed.method
+        : parsed.method === undefined || parsed.method === "email"
+          ? "email"
+          : null;
+    const provider =
+      parsed.provider === "google" ||
+      parsed.provider === "facebook" ||
+      parsed.provider === "telegram" ||
+      parsed.provider === "apple"
+        ? parsed.provider
+        : null;
+    const methodHasContact =
+      method === "email" ? Boolean(email) : method === "phone" ? Boolean(phone) : Boolean(provider);
+    if (!method || !methodHasContact || !userId || !nonce || !Number.isFinite(startedAt)) return null;
+    return { purpose, method, email, phone, provider, userId, nonce, startedAt };
   } catch {
     return null;
   }
@@ -886,9 +946,21 @@ type ResetStep =
     | "confirm"
     | "sending"
     | "sent"
+    | "phone-confirm"
+    | "phone-sending"
+    | "phone-code"
+    | "phone-verifying"
+    | "provider-choice"
+    | "provider-starting"
+    | "reauth-verified"
     | "success";
   const [resetStep, setResetStep] = useState<ResetStep>("idle");
+  const [resetPurpose, setResetPurpose] = useState<JournalPasswordResetPurpose>("forgot-lock");
+  const [resetMethod, setResetMethod] = useState<JournalPasswordResetMethod>("email");
   const [resetEmail, setResetEmail] = useState("");
+  const [resetPhone, setResetPhone] = useState("");
+  const [resetOtpCode, setResetOtpCode] = useState("");
+  const [resetProviders, setResetProviders] = useState<SocialAuthProviderId[]>([]);
   const [resetOwnerUserId, setResetOwnerUserId] = useState("");
   const [resetError, setResetError] = useState("");
   const [resetResendRemaining, setResetResendRemaining] = useState(0);
@@ -907,6 +979,15 @@ type ResetStep =
     ts.journalResetEncryptedUnavailable ||
       "This diary is encrypted with your password. Email verification cannot remove this lock while encrypted content is locked. Nothing changed; your entries remain protected. Unlock with your password to remove it.",
   );
+  const isRemovalReauthentication = resetPurpose === "removal-reauth";
+  const resetAccountCheck = isRemovalReauthentication
+    ? ts.journalLockReauthChecking || "Checking the account that owns this diary..."
+    : ts.journalResetChecking || "Checking your account...";
+  const resetAccountCheckHint = isRemovalReauthentication
+    ? ts.journalLockReauthCheckingHint ||
+      "ZenFlow will verify the same account without changing the diary or its password."
+    : ts.journalResetCheckingHint ||
+      "Keep this window open while we confirm email lock removal is available.";
   const [importing, setImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<{
     type: "success" | "error";
@@ -922,6 +1003,8 @@ type ResetStep =
   const [celebratingStreak, setCelebratingStreak] = useState<number | null>(null);
   const [saveCeremonyPresentation, setSaveCeremonyPresentation] =
     useState<JournalSaveCeremonyPresentation | null>(null);
+  const [saveCeremonyAnchor, setSaveCeremonyAnchor] =
+    useState<JournalSaveCeremonyAnchor | null>(null);
   const saveCeremonyPreloadRequestedRef = useRef(false);
   const saveCeremonyPreloadHandleRef =
     useRef<ReturnType<typeof scheduleIdle> | null>(null);
@@ -944,7 +1027,10 @@ type ResetStep =
     : null;
   const settingsReturnFocusRef = useRef<HTMLElement | null>(null);
   const getPasswordRemovalFocusFallback = useCallback(
-    () => document.querySelector<HTMLElement>('[data-testid="journal-password-setup-action"]'),
+    () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="journal-protection-removal-retry-action"], [data-testid="journal-password-setup-action"], [data-testid="journal-mobile-settings-close"], [data-testid="journal-desktop-settings-close"]',
+      ),
     [],
   );
   const settingsReturnTabRef = useRef<DiarySidebarSection>("entry");
@@ -1174,7 +1260,12 @@ type ResetStep =
       clearJournalPasswordResetProof();
     }
     setResetStep("idle");
+    setResetPurpose("forgot-lock");
+    setResetMethod("email");
     setResetEmail("");
+    setResetPhone("");
+    setResetOtpCode("");
+    setResetProviders([]);
     setResetOwnerUserId("");
     setResetError("");
   }, []);
@@ -1211,10 +1302,12 @@ type ResetStep =
 
   // Consolidated Escape key handler for inline sub-dialogs (password, export, remove-confirm)
   useEffect(() => {
+    // The removal dialog owns Escape through the shared modal stack. Keeping
+    // this capture handler active underneath it would close the destructive
+    // layer before a newer global modal can consume the same key press.
+    if (showRemovePasswordConfirm) return;
     const activeDialog = resetStep !== "idle"
       ? "reset"
-      : showRemovePasswordConfirm
-      ? "remove"
       : showExportPicker
         ? "export"
         : showPasswordSettings
@@ -1234,9 +1327,6 @@ type ResetStep =
       } else if (activeDialog === "export") {
         if (exporting) return;
         setShowExportPicker(false);
-      } else if (activeDialog === "remove") {
-        if (removePasswordSubmitting) return;
-        setShowRemovePasswordConfirm(false);
       } else if (activeDialog === "mobile-sidebar") {
         closeMobileDiarySidebar();
       }
@@ -1252,7 +1342,6 @@ type ResetStep =
     showRemovePasswordConfirm,
     showMobileDiarySidebar,
     exporting,
-    removePasswordSubmitting,
     closeResetDialog,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2062,31 +2151,32 @@ type ResetStep =
       draftContext: NonNullable<Parameters<typeof journal.createEntry>[1]>,
     ): Promise<JournalSaveCompletion> => {
       const saveLifecycle = captureJournalSaveCeremonyLifecycle();
-      const isNew = !journal.activeEntryId;
+      const activeEntryId = journal.activeEntryId;
+      const isNew = !activeEntryId;
       const operation = isNew ? "create" : "update";
       const spaceIds = getPrefillSpaceIds(activeEntryPrefill);
-      const { appliedTheme: committedTheme } =
+      const {
+        result: committedEntryId,
+        appliedTheme: committedTheme,
+      } =
         await commitJournalSaveAndCaptureTheme(
           async () => {
-            if (journal.activeEntryId) {
+            if (activeEntryId) {
               await journal.updateEntry(
-                journal.activeEntryId,
+                activeEntryId,
                 data,
                 draftContext,
               );
-            } else {
-              await journal.createEntry(data, draftContext, spaceIds);
+              return activeEntryId;
             }
+            const entry = await journal.createEntry(data, draftContext, spaceIds);
+            return entry.id;
           },
           () => useThemeStore.getState().appliedTheme,
         );
       setPortalEntryPrefill(null);
       // Secondary effects must never turn a durable local save into a failed save.
-      try {
-        triggerSync();
-      } catch {
-        /* graceful: cloud sync is secondary; data already saved to IndexedDB */
-      }
+      const deliveryState = resolveJournalSaveDeliveryState(() => triggerSync());
 
       let isStreakMilestone = false;
       // Streak milestone celebration (only for new entries on today's date)
@@ -2129,10 +2219,16 @@ type ResetStep =
         mayPresentJournalSaveCeremony(saveLifecycle)
         ? createJournalSaveCommitReceipt({
             operation,
+            entryId: committedEntryId,
+            deliveryState,
             appliedTheme: committedTheme,
           })
         : null;
       if (ceremonyReceipt) {
+        setSaveCeremonyAnchor({
+          nonce: ceremonyReceipt.nonce,
+          entryId: ceremonyReceipt.entryId,
+        });
         setSaveCeremonyPresentation({
           receipt: ceremonyReceipt,
           lifecycle: saveLifecycle,
@@ -2154,6 +2250,12 @@ type ResetStep =
   const handleSaveCeremonyConsume = useCallback((nonce: string) => {
     setSaveCeremonyPresentation((current) =>
       current?.receipt.nonce === nonce ? null : current,
+    );
+  }, []);
+
+  const handleSaveCeremonyFinish = useCallback((nonce: string) => {
+    setSaveCeremonyAnchor((current) =>
+      current?.nonce === nonce ? null : current,
     );
   }, []);
 
@@ -2297,10 +2399,18 @@ type ResetStep =
     return `${local[0]}${"*".repeat(Math.min(local.length - 1, 5))}@${domain}`;
   };
 
+  const maskPhone = (phone: string) => {
+    const normalized = phone.trim();
+    const suffix = normalized.slice(-4);
+    return suffix ? `••• ${suffix}` : "";
+  };
+
   const handleForgotPassword = async () => {
     const requestSeq = ++resetRequestSeqRef.current;
     const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
 
+    setResetPurpose("forgot-lock");
+    setResetMethod("email");
     setResetStep("checking");
     setResetError("");
     try {
@@ -2344,12 +2454,85 @@ type ResetStep =
     }
   };
 
+  const handleRemovalReauthentication = async () => {
+    const requestSeq = ++resetRequestSeqRef.current;
+    const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
+
+    setResetPurpose("removal-reauth");
+    setResetStep("checking");
+    setResetError("");
+    try {
+      const supabase = await loadJournalSupabase();
+      if (!isCurrentResetRequest()) return;
+      if (!supabase) {
+        setResetStep("no-account");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!isCurrentResetRequest()) return;
+      if (!session?.user?.id) {
+        setResetError(
+          ts.journalLockReauthNoAccount ||
+            "Sign in to the account that owns this diary, then start verification again. Nothing changed.",
+        );
+        setResetStep("no-account");
+        return;
+      }
+
+      setResetOwnerUserId(session.user.id);
+      if (session.user.email) {
+        setResetMethod("email");
+        setResetEmail(session.user.email);
+        setResetStep("confirm");
+        return;
+      }
+
+      if (session.user.phone) {
+        setResetMethod("phone");
+        setResetPhone(session.user.phone);
+        setResetStep("phone-confirm");
+        return;
+      }
+
+      const enabledProviderIds = new Set(
+        getEnabledAccountAuthProviders().map((provider) => provider.id),
+      );
+      const linkedProviders = getLinkedAuthProviderIds(session.user).filter((provider) =>
+        enabledProviderIds.has(provider),
+      );
+      if (linkedProviders.length > 0) {
+        setResetMethod("oauth");
+        setResetProviders(linkedProviders);
+        setResetStep("provider-choice");
+        return;
+      }
+
+      setResetError(
+        ts.journalLockReauthMethodUnavailable ||
+          "This account has no available sign-in method on this device. Open account settings and verify a sign-in method first.",
+      );
+      setResetStep("no-account");
+    } catch (error) {
+      if (!isCurrentResetRequest()) return;
+      logger.warn("[Journal] Removal reauthentication account check failed", getJournalAuthErrorDebugInfo(error));
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      setResetStep("service-error");
+    }
+  };
+
   const handleSendResetLink = async () => {
     if (resetStep === "sending") return;
     if (!resetEmail || !resetOwnerUserId) return;
     const requestSeq = ++resetRequestSeqRef.current;
     const requestedEmail = resetEmail;
     const requestedUserId = resetOwnerUserId;
+    const requestedPurpose = resetPurpose;
 
     const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
 
@@ -2380,7 +2563,12 @@ type ResetStep =
     resetSendInFlightRef.current = true;
     storageSetRaw(
       SK.JOURNAL_PASSWORD_RESET,
-      serializeJournalPasswordResetRequest(requestedEmail, requestedUserId, resetNonce),
+      serializeJournalPasswordResetRequest(
+        requestedEmail,
+        requestedUserId,
+        resetNonce,
+        requestedPurpose,
+      ),
     );
     clearJournalPasswordResetProof();
     try {
@@ -2440,7 +2628,12 @@ type ResetStep =
       updateResetResendRemaining(now);
       storageSetRaw(
         SK.JOURNAL_PASSWORD_RESET,
-        serializeJournalPasswordResetRequest(requestedEmail, requestedUserId, resetNonce),
+        serializeJournalPasswordResetRequest(
+          requestedEmail,
+          requestedUserId,
+          resetNonce,
+          requestedPurpose,
+        ),
       );
       clearJournalPasswordResetProof();
       setResetStep("sent");
@@ -2468,6 +2661,190 @@ type ResetStep =
     }
   };
 
+  const handleSendPhoneReauthenticationCode = async () => {
+    if (resetStep === "phone-sending" || !resetPhone || !resetOwnerUserId) return;
+    const requestSeq = ++resetRequestSeqRef.current;
+    const requestedPhone = resetPhone.trim();
+    const requestedUserId = resetOwnerUserId;
+    const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
+    const now = Date.now();
+    const remaining = updateResetResendRemaining(now);
+    if (remaining > 0) {
+      setResetError(
+        formatJournalDuration(
+          ts.journalResetCooldown || "Please wait {duration} before requesting another code.",
+          remaining,
+          language,
+        ),
+      );
+      return;
+    }
+
+    const nonce = createJournalPasswordResetNonce();
+    if (!nonce) {
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      return;
+    }
+
+    const pendingRaw = serializeJournalPasswordResetRequest(
+      "",
+      requestedUserId,
+      nonce,
+      "removal-reauth",
+      "phone",
+      requestedPhone,
+    );
+    if (!storageSetRaw(SK.JOURNAL_PASSWORD_RESET, pendingRaw)) {
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      return;
+    }
+
+    setResetStep("phone-sending");
+    setResetError("");
+    resetSendInFlightRef.current = true;
+    clearJournalPasswordResetProof();
+    try {
+      const supabase = await loadJournalSupabase();
+      if (!isCurrentResetRequest()) return;
+      if (!supabase) throw new Error("Supabase unavailable");
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (
+        !isCurrentResetRequest() ||
+        session?.user?.id !== requestedUserId ||
+        session.user.phone?.trim() !== requestedPhone
+      ) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        setResetError(
+          ts.journalResetWrongAccount ||
+            "Verify the same account that requested diary protection removal.",
+        );
+        setResetStep("phone-confirm");
+        return;
+      }
+
+      const { error } = await withJournalRequestTimeout(
+        supabase.auth.signInWithOtp({
+          phone: requestedPhone,
+          options: { shouldCreateUser: false },
+        }),
+      );
+      if (!isCurrentResetRequest()) return;
+      if (error) throw error;
+
+      lastResetOtpRef.current = now;
+      updateResetResendRemaining(now);
+      setResetOtpCode("");
+      setResetStep("phone-code");
+    } catch (error) {
+      if (!isCurrentResetRequest()) return;
+      logger.warn("[Journal] Phone reauthentication code failed", getJournalAuthErrorDebugInfo(error));
+      if (!isJournalRequestTimeoutError(error)) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      }
+      setResetError(
+        isJournalRequestTimeoutError(error)
+          ? ts.journalResetSendTimedOut ||
+            "This is taking longer than expected. Check your messages before trying again."
+          : ts.journalLockRemoveReauthStartFailed ||
+            "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      setResetStep("phone-confirm");
+    } finally {
+      if (isCurrentResetRequest()) resetSendInFlightRef.current = false;
+    }
+  };
+
+  const handleVerifyPhoneReauthentication = async () => {
+    if (resetStep === "phone-verifying") return;
+    const code = resetOtpCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      setResetError(
+        ts.journalLockReauthPhoneCodeInvalid || "Enter the 6-digit verification code.",
+      );
+      return;
+    }
+
+    const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
+    if (
+      !pending ||
+      pending.purpose !== "removal-reauth" ||
+      pending.method !== "phone" ||
+      pending.userId !== resetOwnerUserId ||
+      pending.phone !== resetPhone.trim()
+    ) {
+      setResetError(
+        ts.journalResetMissingProof ||
+          "This verification attempt could not be confirmed. Request a new code.",
+      );
+      setResetStep("phone-confirm");
+      return;
+    }
+    if (Date.now() - pending.startedAt >= JOURNAL_PASSWORD_RESET_WINDOW_MS) {
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      setResetError(ts.journalResetExpired || "This verification code expired. Request a new code.");
+      setResetStep("phone-confirm");
+      return;
+    }
+
+    const requestSeq = ++resetRequestSeqRef.current;
+    const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
+    setResetStep("phone-verifying");
+    setResetError("");
+    try {
+      const supabase = await loadJournalSupabase();
+      if (!isCurrentResetRequest() || !supabase) throw new Error("Supabase unavailable");
+      const { data, error } = await withJournalRequestTimeout(
+        supabase.auth.verifyOtp({
+          phone: pending.phone,
+          token: code,
+          type: "sms",
+        }),
+      );
+      if (!isCurrentResetRequest()) return;
+      if (
+        error ||
+        data.session?.user?.id !== pending.userId ||
+        data.session.user.phone?.trim() !== pending.phone
+      ) {
+        setResetError(
+          error
+            ? ts.journalLockReauthPhoneCodeInvalid || "The verification code was not accepted. Try again."
+            : ts.journalResetWrongAccount ||
+              "Verify the same account that requested diary protection removal.",
+        );
+        setResetStep("phone-code");
+        return;
+      }
+
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      clearJournalPasswordResetProof();
+      clearJournalPasswordResetParamFromCurrentUrl();
+      setResetOtpCode("");
+      setResetStep("reauth-verified");
+      announceSuccess(
+        ts.journalLockReauthVerified ||
+          "Account verified. Unlock the diary if needed, then try removing protection again.",
+      );
+    } catch (error) {
+      if (!isCurrentResetRequest()) return;
+      logger.warn("[Journal] Phone reauthentication failed", getJournalAuthErrorDebugInfo(error));
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not finish. Nothing changed. Check your connection and try again.",
+      );
+      setResetStep("phone-code");
+    }
+  };
+
   const showResetLinkConfirmationError = useCallback((email: string, message?: string) => {
     setResetEmail(email);
     setResetError(withJournalResetProtectedDetail(
@@ -2477,65 +2854,72 @@ type ResetStep =
   }, [ts.journalResetCodeWrong]);
 
   const consumeVerifiedPasswordReset = useCallback(
-    async (
-      sessionEmail: string | null | undefined,
-      sessionUserId: string | null | undefined,
-    ) => {
+    async (session: Session | null | undefined) => {
       const pending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
       if (!pending) return false;
+      if (pending.method === "phone") return false;
 
       const existingFlight = resetConsumeFlightRef.current;
       if (existingFlight?.nonce === pending.nonce) return existingFlight.promise;
 
       const flight = Promise.resolve().then(async (): Promise<boolean> => {
-
         if (Date.now() - pending.startedAt >= JOURNAL_PASSWORD_RESET_WINDOW_MS) {
-        storageRemove(SK.JOURNAL_PASSWORD_RESET);
-        clearJournalPasswordResetProof();
-        clearJournalPasswordResetParamFromCurrentUrl();
-        showResetLinkConfirmationError(
-          pending.email,
-          ts.journalResetExpired || "This verification link expired. Send a new link.",
-        );
-        return false;
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
+          clearJournalPasswordResetProof();
+          clearJournalPasswordResetParamFromCurrentUrl();
+          setResetPurpose(pending.purpose);
+          showResetLinkConfirmationError(
+            pending.email,
+            ts.journalResetExpired || "This verification link expired. Send a new link.",
+          );
+          return false;
         }
 
-        const signedInEmail = normalizeJournalResetEmail(sessionEmail);
+        const sessionUserId = session?.user?.id;
+        const signedInEmail = normalizeJournalResetEmail(session?.user?.email);
+        const emailOwnerMismatch =
+          pending.method === "email" &&
+          (!signedInEmail || signedInEmail !== pending.email);
         if (
-          !signedInEmail ||
-          signedInEmail !== pending.email ||
+          emailOwnerMismatch ||
           !sessionUserId ||
           sessionUserId !== pending.userId
         ) {
-        logger.warn("[Journal] Ignored password reset sign-in for a different account");
-        clearJournalPasswordResetProof();
-        clearJournalPasswordResetParamFromCurrentUrl();
-        showResetLinkConfirmationError(
-          pending.email,
-          ts.journalResetWrongAccount || "Open this link while signed in to the same account that requested it.",
-        );
-        return false;
+          logger.warn("[Journal] Ignored password reset sign-in for a different account");
+          clearJournalPasswordResetProof();
+          clearJournalPasswordResetParamFromCurrentUrl();
+          setResetPurpose(pending.purpose);
+          showResetLinkConfirmationError(
+            pending.email,
+            ts.journalResetWrongAccount || "Open this link while signed in to the same account that requested it.",
+          );
+          return false;
         }
 
         if (!hasJournalPasswordResetProof(pending)) {
-        logger.warn("[Journal] Ignored password reset session without redirect proof");
-        clearJournalPasswordResetProof();
-        clearJournalPasswordResetParamFromCurrentUrl();
-        showResetLinkConfirmationError(
-          pending.email,
-          ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
-        );
-        return false;
+          logger.warn("[Journal] Ignored password reset session without redirect proof");
+          clearJournalPasswordResetProof();
+          clearJournalPasswordResetParamFromCurrentUrl();
+          setResetPurpose(pending.purpose);
+          showResetLinkConfirmationError(
+            pending.email,
+            ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
+          );
+          return false;
         }
 
-        if (!(await checkEmailLockRemovalAvailable())) {
-        storageRemove(SK.JOURNAL_PASSWORD_RESET);
-        clearJournalPasswordResetProof();
-        clearJournalPasswordResetParamFromCurrentUrl();
-        setResetEmail(pending.email);
-        setResetError("");
-        setResetStep("unavailable");
-        return false;
+        if (
+          pending.purpose === "forgot-lock" &&
+          !(await checkEmailLockRemovalAvailable())
+        ) {
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
+          clearJournalPasswordResetProof();
+          clearJournalPasswordResetParamFromCurrentUrl();
+          setResetPurpose(pending.purpose);
+          setResetEmail(pending.email);
+          setResetError("");
+          setResetStep("unavailable");
+          return false;
         }
 
         if (!consumeJournalPasswordResetProof(
@@ -2543,42 +2927,78 @@ type ResetStep =
           pending.userId,
           JOURNAL_PASSWORD_RESET_WINDOW_MS,
         )) {
-        logger.warn("[Journal] Ignored password reset session after proof could not be consumed");
-        clearJournalPasswordResetParamFromCurrentUrl();
-        showResetLinkConfirmationError(
-          pending.email,
-          ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
-        );
-        return false;
+          logger.warn("[Journal] Ignored password reset session after proof could not be consumed");
+          clearJournalPasswordResetParamFromCurrentUrl();
+          setResetPurpose(pending.purpose);
+          showResetLinkConfirmationError(
+            pending.email,
+            ts.journalResetMissingProof || "This browser could not confirm the email link. Open the link on the same device or request a new one.",
+          );
+          return false;
         }
         clearJournalPasswordResetParamFromCurrentUrl();
 
+        setResetPurpose(pending.purpose);
         setResetEmail(pending.email);
+        setResetOwnerUserId(pending.userId);
+
+        if (pending.purpose === "removal-reauth") {
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
+          clearJournalPasswordResetProof();
+          setResetError("");
+          setResetStep("reauth-verified");
+          announceSuccess(
+            ts.journalLockReauthVerified ||
+              "Account verified. Unlock the diary if needed, then try removing protection again.",
+          );
+          return true;
+        }
 
         try {
-        await security.removePassword({ allowVerifiedEmptyDiary: true });
-        storageRemove(SK.JOURNAL_PASSWORD_RESET);
-        clearJournalPasswordResetProof();
-        setResetError("");
-        setResetStep("success");
-        announceSuccess(
-          ts.journalPasswordRemoveSuccess || ts.journalResetSuccess || "Diary lock removed",
-        );
-        return true;
-        } catch (error) {
-        logger.warn("[Journal] Verified reset could not remove the diary lock:", error);
-        storageRemove(SK.JOURNAL_PASSWORD_RESET);
-        clearJournalPasswordResetProof();
-        const lockRemoveMessage =
-          ts.journalLockRemoveFailed ||
-          "Unlock your diary first, then try removing the lock again.";
-        setResetError(
-          lockRemoveMessage.includes("entries remain protected")
-            ? lockRemoveMessage
-            : `${lockRemoveMessage} Nothing changed; your entries remain protected.`,
-        );
-        setResetStep("unavailable");
-        return false;
+          const removalResult = await security.removePassword({
+            allowVerifiedEmptyDiary: true,
+          });
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
+          clearJournalPasswordResetProof();
+
+          if (removalResult.status === "blocked") {
+            setResetError(
+              getJournalPasswordRemovalBlockerMessage(ts, removalResult.blocker),
+            );
+            setResetStep("unavailable");
+            return false;
+          }
+
+          const cleanupNotice =
+            removalResult.status === "removed-cleanup-pending"
+              ? getJournalPasswordRemovalCleanupMessage(ts, removalResult.pending)
+              : "";
+          setResetError(cleanupNotice);
+          setResetStep("success");
+          announceSuccess(
+            cleanupNotice ||
+              ts.journalPasswordRemoveSuccess ||
+              ts.journalResetSuccess ||
+              "Diary lock removed",
+          );
+          return true;
+        } catch {
+          logger.warn(
+            "[Journal] Verified reset could not remove the diary lock",
+            "journal-password-removal:storage-failed",
+          );
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
+          clearJournalPasswordResetProof();
+          const lockRemoveMessage =
+            ts.journalLockRemoveFailed ||
+            "Unlock your diary first, then try removing the lock again.";
+          setResetError(
+            lockRemoveMessage.includes("entries remain protected")
+              ? lockRemoveMessage
+              : `${lockRemoveMessage} Nothing changed; your entries remain protected.`,
+          );
+          setResetStep("unavailable");
+          return false;
         }
       });
 
@@ -2591,8 +3011,130 @@ type ResetStep =
         }
       }
     },
-    [checkEmailLockRemovalAvailable, security, showResetLinkConfirmationError, ts.journalLockRemoveFailed, ts.journalPasswordRemoveSuccess, ts.journalResetExpired, ts.journalResetMissingProof, ts.journalResetSuccess, ts.journalResetWrongAccount],
+    [checkEmailLockRemovalAvailable, security, showResetLinkConfirmationError, ts],
   );
+
+  const handleStartOAuthReauthentication = async (provider: SocialAuthProviderId) => {
+    if (!resetProviders.includes(provider) || !resetOwnerUserId) return;
+    const requestSeq = ++resetRequestSeqRef.current;
+    const requestedUserId = resetOwnerUserId;
+    const isCurrentResetRequest = () => requestSeq === resetRequestSeqRef.current;
+    const nonce = createJournalPasswordResetNonce();
+    if (!nonce) {
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      return;
+    }
+
+    const pendingRaw = serializeJournalPasswordResetRequest(
+      "",
+      requestedUserId,
+      nonce,
+      "removal-reauth",
+      "oauth",
+      "",
+      provider,
+    );
+    if (!storageSetRaw(SK.JOURNAL_PASSWORD_RESET, pendingRaw)) {
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      return;
+    }
+
+    clearJournalPasswordResetProof();
+    setResetMethod("oauth");
+    setResetStep("provider-starting");
+    setResetError("");
+    let redirectUrl: string | null = null;
+    let providerNavigationStarted = false;
+    try {
+      const supabase = await loadJournalSupabase();
+      if (!isCurrentResetRequest() || !supabase) throw new Error("Supabase unavailable");
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+      if (
+        !isCurrentResetRequest() ||
+        currentSession?.user?.id !== requestedUserId ||
+        !getLinkedAuthProviderIds(currentSession.user).includes(provider)
+      ) {
+        storageRemove(SK.JOURNAL_PASSWORD_RESET);
+        setResetError(
+          ts.journalResetWrongAccount ||
+            "Verify the same account that requested diary protection removal.",
+        );
+        setResetStep("provider-choice");
+        return;
+      }
+
+      redirectUrl = createPkceAttemptRedirectUrl(
+        withJournalPasswordResetNonce(getAuthRedirectUrl(), nonce),
+        "oauth",
+      ).redirectUrl;
+
+      if (provider === "google" && isAndroid) {
+        const result = await authenticateWithGoogleNative();
+        if (!isCurrentResetRequest()) return;
+        if (!result.success) {
+          if (result.error === "cancelled") {
+            setResetStep("provider-choice");
+            return;
+          }
+          throw new Error("Native provider verification failed");
+        }
+        const {
+          data: { session: verifiedSession },
+        } = await supabase.auth.getSession();
+        if (verifiedSession?.user?.id !== requestedUserId) {
+          throw new Error("Authenticated owner changed");
+        }
+        persistJournalPasswordResetProofFromUrl(redirectUrl, requestedUserId);
+        await consumeVerifiedPasswordReset(verifiedSession);
+        return;
+      }
+
+      const { data, error } = await withJournalRequestTimeout(
+        supabase.auth.signInWithOAuth({
+          ...buildOAuthCredentials(provider, {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: isNative,
+          }),
+        }),
+      );
+      if (!isCurrentResetRequest()) return;
+      if (error) throw error;
+
+      if (isNative) {
+        if (!data?.url || !isTrustedOAuthRedirectUrl(data.url, provider)) {
+          throw new Error("Untrusted provider redirect");
+        }
+        await openOAuthUrl(data.url);
+        providerNavigationStarted = true;
+      }
+    } catch (error) {
+      if (!isCurrentResetRequest()) return;
+      if (redirectUrl && !providerNavigationStarted) {
+        try {
+          const supabase = await loadJournalSupabase();
+          if (supabase) await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
+        } catch {
+          logger.warn("[Journal] OAuth reauthentication attempt cleanup failed");
+        }
+      }
+      storageRemove(SK.JOURNAL_PASSWORD_RESET);
+      clearJournalPasswordResetProof();
+      logger.warn("[Journal] OAuth reauthentication failed", getJournalAuthErrorDebugInfo(error));
+      setResetError(
+        ts.journalLockRemoveReauthStartFailed ||
+          "Account verification could not start. Nothing changed. Check your connection and try again.",
+      );
+      setResetStep("provider-choice");
+    }
+  };
 
   const handleSetNewPasswordAfterReset = useCallback(() => {
     resetRequestSeqRef.current += 1;
@@ -2602,6 +3144,22 @@ type ResetStep =
     setResetError("");
     openSettings("password-setup");
   }, [openSettings]);
+
+  const handleReturnToPasswordRemoval = useCallback(() => {
+    resetRequestSeqRef.current += 1;
+    setResetStep("idle");
+    setResetPurpose("forgot-lock");
+    setResetMethod("email");
+    setResetEmail("");
+    setResetPhone("");
+    setResetOtpCode("");
+    setResetProviders([]);
+    setResetOwnerUserId("");
+    setResetError("");
+    if (!security.isLocked) {
+      setShowRemovePasswordConfirm(true);
+    }
+  }, [security.isLocked]);
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
   useScrollLock(moduleState === "open" && !isPagePresentation);
@@ -2656,6 +3214,9 @@ type ResetStep =
   // Android back button handling
   useEffect(() => {
     if (moduleState !== "open") return;
+    // RemovePasswordConfirmDialog registers the topmost callback itself.
+    // Do not add a second parent callback that can outlive or undercut it.
+    if (showRemovePasswordConfirm) return;
     if (showExportPicker)
       return registerModalCloseCallback(() => {
         if (exporting) return true;
@@ -2665,12 +3226,6 @@ type ResetStep =
     if (resetStep !== "idle")
       return registerModalCloseCallback(() => {
         closeResetDialog();
-        return true;
-      });
-    if (showRemovePasswordConfirm)
-      return registerModalCloseCallback(() => {
-        if (removePasswordSubmitting) return true;
-        setShowRemovePasswordConfirm(false);
         return true;
       });
     if (showMobileDiarySidebar)
@@ -2715,7 +3270,6 @@ type ResetStep =
     exporting,
     resetStep,
     showRemovePasswordConfirm,
-    removePasswordSubmitting,
     showPasswordSettings,
     showMobileDiarySidebar,
     closeMobileDiarySidebar,
@@ -2754,11 +3308,53 @@ type ResetStep =
       storageRemove(SK.JOURNAL_PASSWORD_RESET);
       clearJournalPasswordResetProof();
       clearJournalPasswordResetParamFromCurrentUrl();
-      showResetLinkConfirmationError(
-        pending.email,
-        ts.journalResetExpired || "This verification link expired. Send a new link.",
-      );
+      setResetPurpose(pending.purpose);
+      setResetMethod(pending.method);
+      setResetOwnerUserId(pending.userId);
+      setResetEmail(pending.email);
+      setResetPhone(pending.phone);
+      setResetProviders((current) => {
+        if (!pending.provider) return current.length === 0 ? current : [];
+        return current.length === 1 && current[0] === pending.provider
+          ? current
+          : [pending.provider];
+      });
+      if (pending.method === "phone") {
+        setResetError(ts.journalResetExpired || "This verification code expired. Request a new code.");
+        setResetStep("phone-confirm");
+      } else if (pending.method === "oauth") {
+        setResetError(ts.journalResetExpired || "This verification attempt expired. Try again.");
+        setResetStep("provider-choice");
+      } else {
+        showResetLinkConfirmationError(
+          pending.email,
+          ts.journalResetExpired || "This verification link expired. Send a new link.",
+        );
+      }
       return;
+    }
+
+    if (pending.purpose === "removal-reauth") {
+      setResetPurpose(pending.purpose);
+      setResetMethod(pending.method);
+      setResetEmail(pending.email);
+      setResetPhone(pending.phone);
+      setResetOwnerUserId(pending.userId);
+      setResetProviders((current) => {
+        if (!pending.provider) return current.length === 0 ? current : [];
+        return current.length === 1 && current[0] === pending.provider
+          ? current
+          : [pending.provider];
+      });
+      if (resetStep === "idle" && !hasJournalPasswordResetProof(pending)) {
+        setResetStep(
+          pending.method === "phone"
+            ? "phone-code"
+            : pending.method === "oauth"
+              ? "provider-starting"
+              : "sent",
+        );
+      }
     }
 
     if (lastResetOtpRef.current < pending.startedAt) {
@@ -2775,7 +3371,12 @@ type ResetStep =
         if (disposed || !supabase) return;
 
         const completeFromCurrentSessionIfProofReady = async () => {
-          if (disposed || (resetStep !== "idle" && resetStep !== "sent")) return;
+          if (
+            disposed ||
+            (resetStep !== "idle" &&
+              resetStep !== "sent" &&
+              resetStep !== "provider-starting")
+          ) return;
 
           const currentPending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
           if (!currentPending || !hasJournalPasswordResetProof(currentPending)) return;
@@ -2785,7 +3386,7 @@ type ResetStep =
               data: { session },
             } = await supabase.auth.getSession();
             if (!disposed) {
-              await consumeVerifiedPasswordReset(session?.user?.email, session?.user?.id);
+              await consumeVerifiedPasswordReset(session);
             }
           } catch (error) {
             logger.warn(
@@ -2809,11 +3410,16 @@ type ResetStep =
           if (!JOURNAL_PASSWORD_RESET_AUTH_EVENTS.has(event)) return;
           const currentPending = parseJournalPasswordResetRequest(storageGetRaw(SK.JOURNAL_PASSWORD_RESET));
           if (!currentPending) return;
-          void consumeVerifiedPasswordReset(session?.user?.email, session?.user?.id);
+          void consumeVerifiedPasswordReset(session);
         });
         subscription = data.subscription;
       })
-      .catch((err) => logger.warn("[Journal]", "Password reset listener failed:", err));
+      .catch(() =>
+        logger.warn(
+          "[Journal] Password reset listener failed",
+          "journal-password-reset-listener:failed",
+        )
+      );
 
     return () => {
       disposed = true;
@@ -3045,7 +3651,13 @@ type ResetStep =
                 aria-modal="true"
                 aria-labelledby={resetTitleId}
                 aria-describedby={resetError ? `${resetDescriptionId} ${resetErrorId}` : resetDescriptionId}
-                aria-busy={resetStep === "checking" || resetStep === "sending"}
+                aria-busy={
+                  resetStep === "checking" ||
+                  resetStep === "sending" ||
+                  resetStep === "phone-sending" ||
+                  resetStep === "phone-verifying" ||
+                  resetStep === "provider-starting"
+                }
                 tabIndex={-1}
                 initial={reducedMotion ? false : { scale: 0.98 }}
                 animate={{ scale: 1 }}
@@ -3054,7 +3666,11 @@ type ResetStep =
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id={resetTitleId} className="sr-only">
-                  {resetStep === "success"
+                  {resetStep === "reauth-verified"
+                    ? ts.journalLockReauthVerifiedTitle || "Account verified"
+                    : isRemovalReauthentication
+                      ? ts.journalLockRemoveVerifyAccount || "Verify account"
+                    : resetStep === "success"
                     ? ts.journalResetSuccess || "Diary lock removed"
                     : resetStep === "sent"
                       ? ts.journalResetLinkSent || "Check your email"
@@ -3063,7 +3679,22 @@ type ResetStep =
                         : ts.journalResetViaEmail || "Remove lock by email"}
                 </h3>
                 <p id={resetDescriptionId} className="sr-only">
-                  {resetStep === "sent"
+                  {resetStep === "reauth-verified"
+                    ? ts.journalLockReauthVerifiedDetail ||
+                      "Unlock the diary if needed, then try removing protection again. Verification alone did not change your diary."
+                    : isRemovalReauthentication && resetStep === "sent"
+                      ? ts.journalLockReauthCheckEmail ||
+                        "Open the verification link on this device, then return to ZenFlow. Your diary stays protected until you explicitly retry removal."
+                    : isRemovalReauthentication && resetMethod === "phone"
+                      ? ts.journalLockReauthPhoneDescription ||
+                        "We'll send a one-time code to the phone on this account. Verification alone will not change the diary."
+                    : isRemovalReauthentication && resetMethod === "oauth"
+                      ? ts.journalLockReauthProviderDescription ||
+                        "Use a linked sign-in method for this account. Verification alone will not change the diary."
+                    : isRemovalReauthentication
+                      ? ts.journalLockReauthConfirm ||
+                        "We'll send a verification link to the email on the account that owns this diary."
+                    : resetStep === "sent"
                     ? ts.journalResetCheckEmail ||
                       "Click the link in your email to remove the diary lock. This page will update automatically."
                     : resetStep === "no-account"
@@ -3085,11 +3716,10 @@ type ResetStep =
                     <Loader2 className="w-6 h-6 motion-safe:animate-spin text-primary" aria-hidden="true" />
                     <div className="space-y-1 text-center">
                       <p className="text-sm font-medium text-foreground">
-                        {ts.journalResetChecking || "Checking your account..."}
+                        {resetAccountCheck}
                       </p>
                       <p className="text-xs leading-relaxed text-muted-foreground">
-                        {ts.journalResetCheckingHint ||
-                          "Keep this window open while we confirm email lock removal is available."}
+                        {resetAccountCheckHint}
                       </p>
                     </div>
                     <button
@@ -3112,11 +3742,16 @@ type ResetStep =
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
-                      {ts.journalPasswordForgot || "Can't open the lock?"}
+                      {isRemovalReauthentication
+                        ? ts.journalLockRemoveVerifyAccount || "Verify account"
+                        : ts.journalPasswordForgot || "Can't open the lock?"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-4">
-                      {ts.journalResetNoAccount ||
-                        "Sign in to your account in Settings to use email lock removal"}
+                      {resetError || (isRemovalReauthentication
+                        ? ts.journalLockReauthNoAccount ||
+                          "Sign in to the account that owns this diary, then start verification again. Nothing changed."
+                        : ts.journalResetNoAccount ||
+                          "Sign in to your account in Settings to use email lock removal")}
                     </p>
                     <div className="grid gap-2">
                       <button
@@ -3128,7 +3763,7 @@ type ResetStep =
                       </button>
                       <button
                         type="button"
-                        onClick={handleForgotPassword}
+                        onClick={isRemovalReauthentication ? handleRemovalReauthentication : handleForgotPassword}
                         className="w-full py-2.5 rounded-xl bg-background/70 text-foreground text-sm font-medium min-h-[44px] border border-border/45"
                       >
                         {ts.journalResetTryAgain || "Check again"}
@@ -3154,7 +3789,9 @@ type ResetStep =
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-2">
-                      {ts.journalPasswordForgot || "Can't open the lock?"}
+                      {isRemovalReauthentication
+                        ? ts.journalLockRemoveVerifyAccount || "Verify account"
+                        : ts.journalPasswordForgot || "Can't open the lock?"}
                     </h3>
                     <p id={resetErrorId} role="alert" className="text-sm text-muted-foreground text-center mb-4">
                       {resetError ||
@@ -3163,7 +3800,7 @@ type ResetStep =
                     </p>
                     <button
                       type="button"
-                      onClick={handleForgotPassword}
+                      onClick={isRemovalReauthentication ? handleRemovalReauthentication : handleForgotPassword}
                       className="mb-2 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
                     >
                       {ts.journalResetTryAgain || "Try again"}
@@ -3205,6 +3842,175 @@ type ResetStep =
                   </>
                 )}
 
+                {/* Phone-only account reauthentication */}
+                {(resetStep === "phone-confirm" || resetStep === "phone-sending") && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Smartphone className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <h3 className="mb-1 text-center text-base font-semibold text-foreground">
+                      {ts.journalLockReauthPhoneTitle || "Verify by phone"}
+                    </h3>
+                    <p className="mb-1 text-center text-sm text-muted-foreground">
+                      {ts.journalLockReauthPhoneConfirm || "Send a one-time verification code to"}
+                    </p>
+                    <p className="mb-4 text-center text-sm font-medium text-foreground" dir="ltr">
+                      <bdi>{maskPhone(resetPhone)}</bdi>
+                    </p>
+                    {resetError ? (
+                      <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">
+                        {resetError}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <button
+                        ref={resetCancelRef}
+                        type="button"
+                        onClick={closeResetDialog}
+                        disabled={resetStep === "phone-sending"}
+                        className="min-h-[44px] flex-1 rounded-xl bg-muted px-3 py-2.5 text-sm font-medium text-foreground disabled:opacity-50"
+                      >
+                        {ts.cancel || "Cancel"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleSendPhoneReauthenticationCode()}
+                        disabled={resetStep === "phone-sending"}
+                        className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                      >
+                        {resetStep === "phone-sending" ? (
+                          <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
+                        ) : null}
+                        {ts.journalLockReauthPhoneSend || "Send code"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {(resetStep === "phone-code" || resetStep === "phone-verifying") && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <KeyRound className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <h3 className="mb-2 text-center text-base font-semibold text-foreground">
+                      {ts.journalLockReauthPhoneCodeTitle || "Enter verification code"}
+                    </h3>
+                    <label htmlFor="journal-removal-reauth-phone-code" className="mb-2 block text-sm font-medium text-foreground">
+                      {ts.journalLockReauthPhoneCodeLabel || "Verification code"}
+                    </label>
+                    <input
+                      id="journal-removal-reauth-phone-code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={resetOtpCode}
+                      onChange={(event) => setResetOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                      disabled={resetStep === "phone-verifying"}
+                      className="mb-3 min-h-[44px] w-full rounded-xl border border-border bg-background px-3 py-2 text-center text-lg tracking-[0.35em] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      dir="ltr"
+                    />
+                    {resetError ? (
+                      <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">
+                        {resetError}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <button
+                        ref={resetCancelRef}
+                        type="button"
+                        onClick={closeResetDialog}
+                        disabled={resetStep === "phone-verifying"}
+                        className="min-h-[44px] flex-1 rounded-xl bg-muted px-3 py-2.5 text-sm font-medium text-foreground disabled:opacity-50"
+                      >
+                        {ts.cancel || "Cancel"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleVerifyPhoneReauthentication()}
+                        disabled={resetStep === "phone-verifying" || resetOtpCode.length !== 6}
+                        className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                      >
+                        {resetStep === "phone-verifying" ? (
+                          <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
+                        ) : null}
+                        {ts.journalLockReauthPhoneVerify || "Verify"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Provider-only accounts use only providers already linked to the exact owner. */}
+                {(resetStep === "provider-choice" || resetStep === "provider-starting") && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <KeyRound className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <h3 className="mb-2 text-center text-base font-semibold text-foreground">
+                      {ts.journalLockReauthProviderTitle || "Use a linked sign-in method"}
+                    </h3>
+                    <p className="mb-4 text-center text-sm leading-relaxed text-muted-foreground">
+                      {ts.journalLockReauthProviderDescription ||
+                        "Choose a method already linked to this account. Your diary stays unchanged until you explicitly retry removal."}
+                    </p>
+                    {resetError ? (
+                      <p id={resetErrorId} role="alert" className="mb-3 text-center text-xs text-destructive">
+                        {resetError}
+                      </p>
+                    ) : null}
+                    <div className="grid gap-2">
+                      {resetProviders.map((provider) => {
+                        const config = getAuthProviderConfig(provider);
+                        const providerName = ts[config.nameKey] || config.fallbackName;
+                        const providerActionTemplate =
+                          ts.journalLockReauthProviderAction || "Verify with {provider}";
+                        const providerPlaceholderIndex =
+                          providerActionTemplate.indexOf("{provider}");
+                        return (
+                          <button
+                            key={provider}
+                            type="button"
+                            onClick={() => void handleStartOAuthReauthentication(provider)}
+                            disabled={resetStep === "provider-starting"}
+                            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                          >
+                            {resetStep === "provider-starting" ? (
+                              <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
+                            ) : null}
+                            {providerPlaceholderIndex >= 0 ? (
+                              <>
+                                {providerActionTemplate.slice(0, providerPlaceholderIndex)}
+                                <bdi dir="auto">{providerName}</bdi>
+                                {providerActionTemplate.slice(
+                                  providerPlaceholderIndex + "{provider}".length,
+                                )}
+                              </>
+                            ) : (
+                              providerActionTemplate
+                            )}
+                          </button>
+                        );
+                      })}
+                      <button
+                        ref={resetCancelRef}
+                        type="button"
+                        onClick={closeResetDialog}
+                        disabled={resetStep === "provider-starting"}
+                        className="min-h-[44px] w-full rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-foreground disabled:opacity-50"
+                      >
+                        {ts.cancel || "Cancel"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
                 {/* Confirm send */}
                 {(resetStep === "confirm" || resetStep === "sending") && (
                   <>
@@ -3214,10 +4020,15 @@ type ResetStep =
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
-                      {ts.journalResetViaEmail || "Remove lock by email"}
+                      {isRemovalReauthentication
+                        ? ts.journalLockRemoveVerifyAccount || "Verify account"
+                        : ts.journalResetViaEmail || "Remove lock by email"}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-1">
-                      {ts.journalResetConfirm || "We'll send a verification link to"}
+                      {isRemovalReauthentication
+                        ? ts.journalLockReauthConfirm ||
+                          "We'll send a verification link to the account email"
+                        : ts.journalResetConfirm || "We'll send a verification link to"}
                     </p>
                     <p
                       className="mb-4 min-w-0 max-w-full whitespace-normal break-words text-center text-sm font-medium text-foreground [overflow-wrap:anywhere]"
@@ -3277,8 +4088,11 @@ type ResetStep =
                       <bdi>{maskEmail(resetEmail)}</bdi>
                     </p>
                     <p className="text-xs text-muted-foreground text-center mb-4">
-                      {ts.journalResetCheckEmail ||
-                        "Open the link on this device or browser, then return to the diary. It verifies your account and removes the lock without revealing the old password."}
+                      {isRemovalReauthentication
+                        ? ts.journalLockReauthCheckEmail ||
+                          "Open the link on this device or browser, then return to ZenFlow. It verifies the account but does not remove diary protection."
+                        : ts.journalResetCheckEmail ||
+                          "Open the link on this device or browser, then return to the diary. It verifies your account and removes the lock without revealing the old password."}
                     </p>
                     <p className="mb-4 text-center text-xs leading-relaxed text-muted-foreground">
                       {ts.journalResetTroubleshooting ||
@@ -3338,6 +4152,34 @@ type ResetStep =
                   </>
                 )}
 
+                {/* Fresh account verification never changes diary protection by itself. */}
+                {resetStep === "reauth-verified" && (
+                  <div className="py-4">
+                    <div className="flex justify-center mb-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <CheckCircle2 className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                    </div>
+                    <h3 className="mb-2 text-center text-base font-semibold text-foreground">
+                      {ts.journalLockReauthVerifiedTitle || "Account verified"}
+                    </h3>
+                    <p className="mb-4 text-center text-sm leading-relaxed text-muted-foreground">
+                      {ts.journalLockReauthVerifiedDetail ||
+                        "Unlock the diary if needed, then try removing protection again. Verification alone did not change your diary or password."}
+                    </p>
+                    <button
+                      ref={resetCancelRef}
+                      type="button"
+                      onClick={handleReturnToPasswordRemoval}
+                      className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground min-h-[44px]"
+                    >
+                      {security.isLocked
+                        ? ts.journalLockReauthUnlockAction || "Close and unlock diary"
+                        : ts.journalLockReauthRetryAction || "Try removal again"}
+                    </button>
+                  </div>
+                )}
+
                 {/* Success */}
                 {resetStep === "success" && (
                   <div className="py-4">
@@ -3362,6 +4204,16 @@ type ResetStep =
                       {ts.journalResetSuccessDetail ||
                         "Your diary is now open without a diary password on this device. Set a new password if you want to keep it protected."}
                     </p>
+                    {resetError ? (
+                      <p
+                        id={resetErrorId}
+                        role="status"
+                        aria-live="polite"
+                        className="mb-4 text-center text-sm leading-relaxed text-foreground"
+                      >
+                        {resetError}
+                      </p>
+                    ) : null}
                     <button
                       type="button"
                       onClick={handleSetNewPasswordAfterReset}
@@ -3561,6 +4413,9 @@ type ResetStep =
                               onNewEntry={handleNewEntryFromShell}
                               onNewEntryWithPrefill={handleNewEntryWithPrefill}
                               totalCount={journal.totalCount}
+                              unavailableCount={journal.unavailableCount}
+                              entryPageState={journal.entryPageState}
+                              onRetryUnavailable={journal.refresh}
                               loading={journal.loading}
                               selectedDate={journal.selectedDate}
                               daysSinceLastEntry={daysSinceLastEntry}
@@ -3574,6 +4429,7 @@ type ResetStep =
                               useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                               activeEntryId={journal.activeEntryId}
                               selectedDateOnly
+                              saveCeremonyAnchorEntryId={saveCeremonyAnchor?.entryId}
                             />
                           </Suspense>
                         )}
@@ -3595,6 +4451,8 @@ type ResetStep =
                       data-testid="journal-settings-panel"
                       aria-busy={settingsDismissBlocked}
                       aria-describedby={settingsDismissBlocked ? desktopSettingsBusyStatusId : undefined}
+                      aria-hidden={showRemovePasswordConfirm || undefined}
+                      {...(showRemovePasswordConfirm ? { inert: "" } : {})}
                     >
                       <div className="flex items-center justify-between gap-3 border-b border-border/20 px-5 py-4">
                         <div className="min-w-0">
@@ -3622,8 +4480,9 @@ type ResetStep =
                           onClick={() => closeSettings()}
                           disabled={settingsDismissBlocked}
                           aria-describedby={settingsDismissBlocked ? desktopSettingsBusyStatusId : undefined}
-                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={ts.close || "Close"}
+                          data-testid="journal-desktop-settings-close"
                         >
                           <X className="h-5 w-5" />
                         </button>
@@ -3660,6 +4519,7 @@ type ResetStep =
                             importFeedback={importFeedback}
                             onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
                             onBusyChange={setSettingsBusy}
+                            announceCloudProtectionPending={!showRemovePasswordConfirm}
                           />
                         </Suspense>
                       </div>
@@ -4153,7 +5013,8 @@ type ResetStep =
                                 ) : null}
 
                                 <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
-                                  {journal.entries.length === 0 ? (
+                                  {journal.entries.length === 0 &&
+                                  journal.entryPageState !== "unavailable" ? (
                                     <LazyDiaryEmptyCanvas
                                       onNewEntry={handleNewEntry}
                                       onNewEntryWithPrompt={(prompt) => {
@@ -4172,7 +5033,10 @@ type ResetStep =
                                       onSwipeDelete={handleDeleteEntry}
                                       onNewEntry={handleNewEntry}
                                       onNewEntryWithPrefill={handleNewEntryWithPrefill}
-                                      totalCount={journal.entries.length}
+                                      totalCount={journal.totalCount}
+                                      unavailableCount={journal.unavailableCount}
+                                      entryPageState={journal.entryPageState}
+                                      onRetryUnavailable={journal.refresh}
                                       loading={journal.loading}
                                       selectedDate={journal.selectedDate}
                                       daysSinceLastEntry={daysSinceLastEntry}
@@ -4182,6 +5046,7 @@ type ResetStep =
                                       onReleaseThought={handleReleaseThought}
                                       useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                                       selectedDateOnly
+                                      saveCeremonyAnchorEntryId={saveCeremonyAnchor?.entryId}
                                     />
                                   )}
                                 </Suspense>
@@ -4370,6 +5235,9 @@ type ResetStep =
                                         handleNewEntryWithPrefill(prefill);
                                       }}
                                       totalCount={journal.totalCount}
+                                      unavailableCount={journal.unavailableCount}
+                                      entryPageState={journal.entryPageState}
+                                      onRetryUnavailable={journal.refresh}
                                       loading={journal.loading}
                                       selectedDate={journal.selectedDate}
                                       daysSinceLastEntry={daysSinceLastEntry}
@@ -4381,6 +5249,7 @@ type ResetStep =
                                       showFab={false}
                                       showSpaces={false}
                                       activeEntryId={journal.activeEntryId}
+                                      saveCeremonyAnchorEntryId={saveCeremonyAnchor?.entryId}
                                       useSharedDiaryWallpaper={showJournalSidebarAtmosphere}
                                       selectedDateOnly
                                     />
@@ -4418,10 +5287,12 @@ type ResetStep =
                           />
                           <div
                             role="dialog"
-                            aria-modal="true"
+                            aria-modal={!showRemovePasswordConfirm}
                             aria-label={ts.journalSettings || "Diary Settings"}
                             aria-busy={settingsDismissBlocked}
                             aria-describedby={settingsDismissBlocked ? mobileSettingsBusyStatusId : undefined}
+                            aria-hidden={showRemovePasswordConfirm || undefined}
+                            {...(showRemovePasswordConfirm ? { inert: "" } : {})}
                             ref={mobileSettingsPanelRef}
                             data-testid="journal-mobile-settings-panel"
                             className={cn(
@@ -4524,6 +5395,7 @@ type ResetStep =
                                   importFeedback={importFeedback}
                                   onRequestRemovePassword={() => setShowRemovePasswordConfirm(true)}
                                   onBusyChange={setSettingsBusy}
+                                  announceCloudProtectionPending={!showRemovePasswordConfirm}
                                 />
                               </Suspense>
 
@@ -4684,13 +5556,24 @@ type ResetStep =
             onConfirm={async () => {
               setRemovePasswordSubmitting(true);
               try {
-                await security.removePassword();
-                announceSuccess(ts.journalPasswordRemoveSuccess || "Password lock removed.");
-                setShowRemovePasswordConfirm(false);
-                setSettingsSection("overview");
+                return await security.removePassword();
               } finally {
                 setRemovePasswordSubmitting(false);
               }
+            }}
+            onResult={(result) => {
+              if (result.status === "blocked") return;
+              setSettingsSection("overview");
+              // Partial success remains visible in the still-open dialog's
+              // polite status region. A second global live-region message
+              // would announce the same state twice to screen-reader users.
+              if (result.status === "removed-cleanup-pending") return;
+              announceSuccess(ts.journalPasswordRemoveSuccess || "Password lock removed.");
+            }}
+            onRecoveryAction={async (result) => {
+              if (result.recoveryAction !== "reauthenticate") return;
+              setShowRemovePasswordConfirm(false);
+              await handleRemovalReauthentication();
             }}
           />
         </Suspense>
@@ -4716,6 +5599,7 @@ type ResetStep =
               (isDiaryDesktopLayout || !mobileEditorSurfacePresent)
             }
             onConsume={handleSaveCeremonyConsume}
+            onFinish={handleSaveCeremonyFinish}
           />
         </Suspense>
       ) : null}

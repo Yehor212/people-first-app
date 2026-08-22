@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const backupCryptoMocks = vi.hoisted(() => ({
   vaultKey: null as string | null,
+  vaultRevision: 2,
 }));
 
 const backupOwnerMocks = vi.hoisted(() => ({
@@ -10,6 +11,9 @@ const backupOwnerMocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/journalContentSession", () => ({
   getJournalContentVaultKey: vi.fn(() => backupCryptoMocks.vaultKey),
+  getJournalContentVaultRevision: vi.fn(() =>
+    backupCryptoMocks.vaultKey ? backupCryptoMocks.vaultRevision : null
+  ),
   consumeJournalReplaceAuthorization: vi.fn(() => true),
 }));
 

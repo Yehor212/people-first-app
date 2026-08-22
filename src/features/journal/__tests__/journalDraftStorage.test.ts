@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 
 const cryptoMocks = vi.hoisted(() => ({
   getJournalContentVaultKey: vi.fn<() => string | null>(() => null),
+  getJournalContentVaultRevision: vi.fn<() => number | null>(() => 2),
   encryptJournalContent: vi.fn((content: string, key: string) =>
     Promise.resolve(`enc:${key}:${content}`),
   ),
@@ -49,6 +50,7 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("../journalContentSession", () => ({
   getJournalContentVaultKey: cryptoMocks.getJournalContentVaultKey,
+  getJournalContentVaultRevision: cryptoMocks.getJournalContentVaultRevision,
 }));
 
 vi.mock("../journalWriteSecurity", () => ({
@@ -107,6 +109,7 @@ describe("journalDraftStorage", () => {
     mocks.syncSetting.mockResolvedValue(undefined);
     mocks.deleteSettingFromCloud.mockResolvedValue(undefined);
     cryptoMocks.getJournalContentVaultKey.mockReturnValue(null);
+    cryptoMocks.getJournalContentVaultRevision.mockReturnValue(2);
     writeSecurityMocks.getJournalVaultKeyForWrite.mockResolvedValue(null);
     writeSecurityMocks.runWithJournalSecurityWriteLock.mockImplementation(
       <T>(operation: () => Promise<T>) => operation()
@@ -404,7 +407,7 @@ describe("journalDraftStorage", () => {
     expect(mocks.settingsRepo.bulkPut).toHaveBeenCalledWith([
       {
         key: draftKey,
-        value: { ...draft, content: `enc:vault-key:${draft.content}` },
+        value: { ...draft, content: `enc:vault-key:${draft.content}`, vaultRevision: 2 },
       },
     ]);
   });

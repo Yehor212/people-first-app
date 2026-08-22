@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   discardSuspendedActionsForAccountBoundary: vi.fn(),
   resumeAfterAccountBoundary: vi.fn(),
   hasPendingJournalSecurityMigrationForOwner: vi.fn(),
+  hasPendingJournalSecurityRemovalForOwner: vi.fn(),
   getPendingJournalSecurityMigrationRevisionForOwner: vi.fn(),
   removePushToken: vi.fn(),
   clearAccountNotificationsForBoundary: vi.fn(),
@@ -108,6 +109,8 @@ vi.mock("@/lib/accountBoundaryState", () => ({
 vi.mock("@/features/journal", () => ({
   hasPendingJournalSecurityMigrationForOwner:
     mocks.hasPendingJournalSecurityMigrationForOwner,
+  hasPendingJournalSecurityRemovalForOwner:
+    mocks.hasPendingJournalSecurityRemovalForOwner,
   getPendingJournalSecurityMigrationRevisionForOwner:
     mocks.getPendingJournalSecurityMigrationRevisionForOwner,
 }));
@@ -278,6 +281,7 @@ describe("owner-safe sign-out cleanup", () => {
       status: "discarded",
     });
     mocks.hasPendingJournalSecurityMigrationForOwner.mockResolvedValue(false);
+    mocks.hasPendingJournalSecurityRemovalForOwner.mockResolvedValue(false);
     mocks.getPendingJournalSecurityMigrationRevisionForOwner.mockResolvedValue(null);
     mocks.removePushToken.mockResolvedValue({
       status: "revoked",
@@ -1238,6 +1242,31 @@ describe("owner-safe sign-out cleanup", () => {
     expect(localStorage.getItem(PENDING_CLEANUP_KEY)).toBeNull();
     expect(mocks.resumeCloudSync).toHaveBeenCalledTimes(1);
     expect(mocks.resumeAfterAccountBoundary).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks sign-out when a removal intent remains even with an empty queue", async () => {
+    mocks.hasPendingJournalSecurityRemovalForOwner.mockResolvedValue(true);
+
+    const result = await performOwnerSafeSignOut();
+
+    expect(result).toEqual({ status: "pending-changes" });
+    expect(mocks.hasPendingActionsForOwnerReady).toHaveBeenCalledWith("account-a");
+    expect(mocks.hasPendingJournalSecurityRemovalForOwner).toHaveBeenCalledWith(
+      "account-a"
+    );
+    expect(mocks.signOutExpectedOwnerLocally).not.toHaveBeenCalled();
+    expect(mocks.clearLocalUserData).not.toHaveBeenCalled();
+  });
+
+  it("never treats generic discard consent as authority to purge a removal intent", async () => {
+    mocks.hasPendingJournalSecurityRemovalForOwner.mockResolvedValue(true);
+
+    const result = await performOwnerSafeSignOut({ discardPendingChanges: true });
+
+    expect(result).toEqual({ status: "pending-changes" });
+    expect(mocks.signOutExpectedOwnerLocally).not.toHaveBeenCalled();
+    expect(mocks.clearLocalUserData).not.toHaveBeenCalled();
+    expect(localStorage.getItem(PENDING_CLEANUP_KEY)).toBeNull();
   });
 
   it("blocks sign-out when another tab enqueues after the initial pending check", async () => {

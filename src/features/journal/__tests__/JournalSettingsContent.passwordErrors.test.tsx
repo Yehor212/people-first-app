@@ -29,6 +29,11 @@ const ts = {
   journalSettings: "Diary Settings",
   journalProtectionRemovalCloudPending:
     "The diary lock is off on this device. ZenFlow is still finishing this change online; keep the app open and connect to the internet.",
+  journalProtectionRemovalPreflightPending:
+    "The diary lock is still on. ZenFlow paused before changing your entries. Unlock the diary, stay online, and continue removal.",
+  journalPasswordRemovalResume: "Continue removing diary lock",
+  journalProtectionRemovalRetry: "Retry online cleanup",
+  journalProtectionRemovalRetryPending: "Trying again...",
   journalImport: "Import backup",
   journalImportHint: "Restore entries from a ZenFlow JSON backup. Existing entries stay in place.",
   journalImporting: "Importing backup...",
@@ -50,6 +55,7 @@ function makeSecurity(overrides: Partial<JournalSecurityState> = {}): JournalSec
     loadError: false,
     lock: vi.fn(),
     removePassword: vi.fn(),
+    retryPasswordRemovalCleanup: vi.fn().mockResolvedValue("pending"),
     setBiometricEnabled: vi.fn(),
     setPassword: vi.fn().mockResolvedValue(undefined),
     touch: vi.fn(),
@@ -261,7 +267,43 @@ describe("JournalSettingsContent password error handling", () => {
     expect(screen.queryByText("Use fingerprint or face to unlock")).not.toBeInTheDocument();
   });
 
-  it("does not claim local protection after removal while online completion is pending", () => {
+  it("does not claim local protection and retries cleanup after removal is pending", async () => {
+    const retryPasswordRemovalCleanup = vi.fn().mockResolvedValue("pending");
+    render(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity({
+          hasPassword: false,
+          cloudProtectionPending: true,
+          cloudProtectionPendingKind: "removal",
+          retryPasswordRemovalCleanup,
+        })}
+        section="overview"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestRemovePassword={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "The diary lock is off on this device. ZenFlow is still finishing this change online",
+    );
+    expect(screen.queryByRole("button", { name: "Set Diary Password" })).not.toBeInTheDocument();
+    const retry = screen.getByRole("button", { name: "Retry online cleanup" });
+    expect(retry).toBeEnabled();
+    expect(retry).toHaveClass("min-h-[48px]");
+    expect(retry).toHaveAttribute(
+      "data-testid",
+      "journal-protection-removal-retry-action",
+    );
+    fireEvent.click(retry);
+    await act(async () => undefined);
+    expect(retryPasswordRemovalCleanup).toHaveBeenCalledOnce();
+  });
+
+  it("keeps pending cleanup copy visible without a second live region under the removal dialog", () => {
     render(
       <JournalSettingsContent
         ts={ts}
@@ -276,13 +318,47 @@ describe("JournalSettingsContent password error handling", () => {
         onPrivateModeChange={vi.fn()}
         onOpenExport={vi.fn()}
         onRequestRemovePassword={vi.fn()}
+        announceCloudProtectionPending={false}
       />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "The diary lock is off on this device. ZenFlow is still finishing this change online",
+    expect(
+      screen.getByText(/The diary lock is off on this device/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("keeps the owner recovery action reachable while protected removal is pending", () => {
+    const onRequestRemovePassword = vi.fn();
+    render(
+      <JournalSettingsContent
+        ts={ts}
+        security={makeSecurity({
+          hasPassword: true,
+          cloudProtectionPending: true,
+          cloudProtectionPendingKind: "removal",
+        })}
+        section="overview"
+        onSectionChange={vi.fn()}
+        privateMode={false}
+        onPrivateModeChange={vi.fn()}
+        onOpenExport={vi.fn()}
+        onRequestRemovePassword={onRequestRemovePassword}
+      />,
     );
-    expect(screen.getByRole("button", { name: "Set Diary Password" })).toBeEnabled();
+
+    const resume = screen.getByRole("button", {
+      name: "Continue removing diary lock",
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "The diary lock is still on. ZenFlow paused before changing your entries.",
+    );
+    expect(screen.getByRole("status")).not.toHaveTextContent(
+      "The diary lock is off on this device",
+    );
+    expect(resume).toBeEnabled();
+    fireEvent.click(resume);
+    expect(onRequestRemovePassword).toHaveBeenCalledOnce();
   });
 
   it("clears password setup secrets when leaving the setup form", () => {

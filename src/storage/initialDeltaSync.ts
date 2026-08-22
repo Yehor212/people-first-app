@@ -1,8 +1,6 @@
 import {
-  applyDelta,
-  fetchAllDeltas,
+  fetchAndApplyDeltasInPages,
   getLastSeq,
-  getPersistentDeviceId,
   getServerMaxSeq,
   saveLastSeq,
   type PullAndApplyDeltaResult,
@@ -33,20 +31,11 @@ export async function bootstrapSnapshotThenDelta(
   const localSeq = await getLastSeq();
   await assertOwnerCurrent();
   if (localSeq > 0) {
-    const events = await fetchAllDeltas(localSeq, signal);
-    await assertOwnerCurrent();
-    if (events.length === 0) {
-      return { fetched: 0, applied: 0, lastSeq: localSeq };
-    }
-
-    const deviceId = await getPersistentDeviceId();
-    await assertOwnerCurrent();
-    const applied = await applyDelta(events, deviceId, {
+    return fetchAndApplyDeltasInPages(localSeq, {
+      signal,
       expectedOwnerUserId: ownerUserId,
       assertOwnerCurrent,
     });
-    await assertOwnerCurrent();
-    return { fetched: events.length, applied, lastSeq: events[events.length - 1].seq };
   }
 
   const baselineSeq = await getServerMaxSeq(ownerUserId);
@@ -57,9 +46,13 @@ export async function bootstrapSnapshotThenDelta(
     throw new Error("[InitialDeltaSync] Snapshot bootstrap failed");
   }
 
-  const tailEvents = await fetchAllDeltas(baselineSeq, signal);
+  const tailResult = await fetchAndApplyDeltasInPages(baselineSeq, {
+    signal,
+    expectedOwnerUserId: ownerUserId,
+    assertOwnerCurrent,
+  });
   await assertOwnerCurrent();
-  if (tailEvents.length === 0) {
+  if (tailResult.fetched === 0) {
     await assertOwnerCurrent();
     await saveLastSeq(baselineSeq, {
       expectedOwnerUserId: ownerUserId,
@@ -67,13 +60,5 @@ export async function bootstrapSnapshotThenDelta(
     });
     return { fetched: 0, applied: 0, lastSeq: baselineSeq };
   }
-
-  const deviceId = await getPersistentDeviceId();
-  await assertOwnerCurrent();
-  const applied = await applyDelta(tailEvents, deviceId, {
-    expectedOwnerUserId: ownerUserId,
-    assertOwnerCurrent,
-  });
-  await assertOwnerCurrent();
-  return { fetched: tailEvents.length, applied, lastSeq: tailEvents[tailEvents.length - 1].seq };
+  return tailResult;
 }

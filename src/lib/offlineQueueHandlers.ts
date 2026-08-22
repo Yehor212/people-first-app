@@ -81,12 +81,12 @@ function isValidGratitudeEntry(payload: unknown): payload is GratitudeEntry {
   return validated !== null;
 }
 
-async function runOwnerBoundCloudMutation(
+async function runOwnerBoundCloudMutation<T>(
   context: OfflineQueueHandlerContext,
-  operation: () => Promise<void>
-): Promise<void> {
+  operation: () => Promise<T>
+): Promise<T> {
   try {
-    await context.runIfOwnerCurrent(operation);
+    return await context.runIfOwnerCurrent(operation);
   } catch (error) {
     if (error instanceof SyncOwnerBoundaryError) {
       // Convert the helper's verified owner mismatch into the queue's own
@@ -271,10 +271,9 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", async (action, context) => {
-    await runOwnerBoundCloudMutation(context, () =>
+    return runOwnerBoundCloudMutation(context, () =>
       deleteJournalEntryFromCloud(action.entityId, context.ownerUserId, context.signal)
     );
-    return COMMITTED;
   });
 
   offlineQueue.registerHandler("UPLOAD_JOURNAL_PHOTO_STORAGE", async (action, context) => {
@@ -322,9 +321,12 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   offlineQueue.registerHandler("MIGRATE_JOURNAL_SECURITY", async (action, context) => {
-    await runOwnerBoundCloudMutation(context, () =>
-      runJournalSecurityMigration(action.payload, context.ownerUserId)
+    const result = await runOwnerBoundCloudMutation(context, () =>
+      runJournalSecurityMigration(action.payload, context.ownerUserId, context.signal)
     );
+    if (result === "deferred") {
+      return { status: "deferred", reason: "bounded-work" };
+    }
     return COMMITTED;
   });
 

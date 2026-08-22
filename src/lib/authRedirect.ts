@@ -1,6 +1,6 @@
 import { isNative } from "@/lib/platform";
 import { logger } from "./logger";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { BASE_URL } from "@/lib/env";
 import {
   JOURNAL_PASSWORD_RESET_PARAM,
@@ -154,7 +154,10 @@ export const getAuthRedirectUrl = () => {
 
 export const isNativePlatform = () => isNative;
 
-export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: string) => {
+export const handleAuthCallback = async (
+  supabaseClient: SupabaseClient,
+  url: string,
+): Promise<Session | undefined> => {
   if (!supabaseClient || !url) return;
 
   let parsed: URL;
@@ -209,7 +212,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       `user:${data.session.user.id.slice(0, 8)}`
     );
     persistJournalPasswordResetProofFromUrl(url, data.session.user.id);
-    return;
+    return data.session;
   }
 
   // Fallback: Implicit flow - tokens directly in URL hash (used by Supabase for mobile)
@@ -238,7 +241,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       "[Auth] Implicit flow session set, user:",
       `user:${data.session.user.id.slice(0, 8)}`
     );
-    return;
+    return data.session;
   }
 
   // No valid authentication method found

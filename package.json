@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "cross-env ZENFLOW_FEATURE_CAPABILITY_PLATFORM=web-pages vite",
     "tokens:build": "style-dictionary build --config src/design-tokens/sd.config.mjs",
     "prebuild": "npm run check:journal-save-ceremony-assets",
     "build": "node scripts/run-shared-dist-build.mjs --target web --mode production",
@@ -35,7 +35,7 @@
     "prebuild:dev": "npm run check:journal-save-ceremony-assets",
     "build:dev": "node scripts/run-shared-dist-build.mjs --target web --mode development",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "cross-env ZENFLOW_FEATURE_CAPABILITY_PLATFORM=web-pages vite preview",
     "test": "vitest run --configLoader runner --exclude 'output/**'",
     "test:watch": "vitest --configLoader runner",
     "test:agent-orchestra": "vitest run --configLoader runner --exclude 'output/**' scripts/__tests__/persistent-agent-orchestra-registry.test.mjs scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs scripts/__tests__/codex-agent-orchestra-integration.test.mjs scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/spec-kit-safety-hook.test.ts && npm run test:agent-workspace",
@@ -51,6 +51,8 @@
     "build:android": "node scripts/run-shared-dist-build.mjs --target android --mode production",
     "prebuild:ios": "npm run check:journal-save-ceremony-assets",
     "build:ios": "node scripts/run-shared-dist-build.mjs --target ios --mode production",
+    "prebuild:tauri": "npm run check:journal-save-ceremony-assets",
+    "build:tauri": "node scripts/run-shared-dist-build.mjs --target tauri --mode production",
     "desktop:dev": "node scripts/run-with-msvc.cjs \"tauri dev\"",
     "desktop:build": "node scripts/run-with-msvc.cjs \"tauri build\"",
     "desktop:check": "node scripts/check-desktop-exe-contract.cjs && node scripts/run-with-msvc.cjs \"node scripts/check-desktop-toolchain.cjs && tauri info\"",

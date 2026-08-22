@@ -18,7 +18,7 @@ export const IS_DESKTOP_RUNTIME = import.meta.env.VITE_DESKTOP_RUNTIME === "true
 export const ENABLE_JOURNAL_SAVE_CEREMONY =
   typeof __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__ === "boolean"
     ? __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__
-    : import.meta.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY === "true";
+    : false;
 // Supabase
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 export const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as

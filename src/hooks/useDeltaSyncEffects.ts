@@ -13,11 +13,10 @@ import { runWithSyncLeaderLock } from "@/lib/syncLeader";
 import { offlineQueue } from "@/lib/offlineQueue";
 import { getCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
 import {
-  fetchAllDeltas,
-  applyDelta,
+  fetchAndApplyDeltasInPages,
   getServerMaxSeq,
-  getPersistentDeviceId,
   getLastSeq,
+  saveLastSeq,
 } from "@/storage/eventSync";
 import { bootstrapSnapshotThenDelta } from "@/storage/initialDeltaSync";
 import { syncReducer, INITIAL_STATE, getRetryDelay } from "@/lib/syncStateMachine";
@@ -70,8 +69,8 @@ function pendingQueueCounts(ownerUserId: string): {
 }
 
 export function useDeltaSyncEffects(): void {
-  const { isFeatureEnabled } = useFeatureFlags();
-  const isDeltaSyncEnabled = isFeatureEnabled("deltaSync");
+  const { isFeatureVisible } = useFeatureFlags();
+  const isDeltaSyncEnabled = isFeatureVisible("deltaSync");
 
   const [, dispatch] = useReducer(syncReducer, INITIAL_STATE);
   const stateRef = useRef(INITIAL_STATE);
@@ -215,32 +214,29 @@ export function useDeltaSyncEffects(): void {
         }
 
         const lastSeq = localSeq;
-        const events = await fetchAllDeltas(lastSeq, controller.signal);
+        const result = await fetchAndApplyDeltasInPages(lastSeq, {
+          signal: controller.signal,
+          expectedOwnerUserId: operation.ownerUserId,
+          assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+        });
         await assertOwnerOperationCurrent(operation);
 
-        if (events.length === 0) {
+        if (result.fetched === 0) {
           gapDetectorRef.current?.resetTo(lastSeq);
           dispatchAndSync({ type: "RESET", lastSeq });
           recordSyncHealthReceipt({ kind: "delta-empty", source: "delta", seq: lastSeq });
           return;
         }
 
-        const deviceId = await getPersistentDeviceId();
-        await assertOwnerOperationCurrent(operation);
-        const applied = await applyDelta(events, deviceId, {
-          expectedOwnerUserId: operation.ownerUserId,
-          assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
-        });
-        await assertOwnerOperationCurrent(operation);
-        const maxSeq = events[events.length - 1].seq;
+        const maxSeq = result.lastSeq;
 
-        logger.sync("[DeltaSync] Applied " + applied + " events, seq=" + maxSeq);
+        logger.sync("[DeltaSync] Applied " + result.applied + " events, seq=" + maxSeq);
         dispatchAndSync({ type: "DELTA_SUCCESS", lastSeq: maxSeq });
         recordSyncHealthReceipt({
           kind: "delta-applied",
           source: "delta",
-          fetched: events.length,
-          applied,
+          fetched: result.fetched,
+          applied: result.applied,
           seq: maxSeq,
         });
 
@@ -310,21 +306,45 @@ export function useDeltaSyncEffects(): void {
 
     try {
       await assertOwnerOperationCurrent(operation);
+      const baselineSeq = await getServerMaxSeq(operation.ownerUserId);
+      await assertOwnerOperationCurrent(operation);
       const snapshotApplied = await pullFromCloud(operation.ownerUserId);
       await assertOwnerOperationCurrent(operation);
       if (!snapshotApplied) {
         throw new Error("[DeltaSync] Snapshot pull failed");
       }
-      const serverMax = await getServerMaxSeq(operation.ownerUserId);
+      const tailResult = await fetchAndApplyDeltasInPages(baselineSeq, {
+        signal: controller.signal,
+        expectedOwnerUserId: operation.ownerUserId,
+        assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+      });
       await assertOwnerOperationCurrent(operation);
-      dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq: serverMax });
-      recordSyncHealthReceipt({ kind: "snapshot-applied", source: "delta", seq: serverMax });
+      let lastSeq = baselineSeq;
+      let applied = 0;
+      if (tailResult.fetched > 0) {
+        applied = tailResult.applied;
+        lastSeq = tailResult.lastSeq;
+      } else {
+        await saveLastSeq(baselineSeq, {
+          expectedOwnerUserId: operation.ownerUserId,
+          assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+        });
+        await assertOwnerOperationCurrent(operation);
+      }
+      dispatchAndSync({ type: "SNAPSHOT_SUCCESS", lastSeq });
+      recordSyncHealthReceipt({
+        kind: "snapshot-applied",
+        source: "delta",
+        seq: lastSeq,
+        fetched: tailResult.fetched,
+        applied,
+      });
 
       if (gapDetectorRef.current) {
-        gapDetectorRef.current.resetTo(serverMax);
+        gapDetectorRef.current.resetTo(lastSeq);
       }
 
-      logger.sync("[DeltaSync] Snapshot complete, seq=" + serverMax);
+      logger.sync("[DeltaSync] Snapshot complete, seq=" + lastSeq);
     } catch (err) {
       if (isAbortError(err)) return;
       if (isOwnerBoundaryError(err)) {
@@ -366,23 +386,20 @@ export function useDeltaSyncEffects(): void {
         gapAbortRef.current = controller;
         try {
           await assertOwnerOperationCurrent(operation);
-          const events = await fetchAllDeltas(fromSeq, controller.signal);
+          const result = await fetchAndApplyDeltasInPages(fromSeq, {
+            signal: controller.signal,
+            expectedOwnerUserId: operation.ownerUserId,
+            assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
+          });
           await assertOwnerOperationCurrent(operation);
-          if (events.length > 0) {
-            const deviceId = await getPersistentDeviceId();
-            await assertOwnerOperationCurrent(operation);
-            await applyDelta(events, deviceId, {
-              expectedOwnerUserId: operation.ownerUserId,
-              assertOwnerCurrent: () => assertOwnerOperationCurrent(operation),
-            });
-            await assertOwnerOperationCurrent(operation);
-            const maxSeq = events[events.length - 1].seq;
+          if (result.fetched > 0) {
+            const maxSeq = result.lastSeq;
             gapDetectorRef.current?.resetTo(maxSeq);
             dispatchAndSync({ type: "RESET", lastSeq: maxSeq });
             recordSyncHealthReceipt({
               kind: "gap-recovered",
               source: "delta",
-              fetched: events.length,
+              fetched: result.fetched,
               seq: maxSeq,
             });
           }

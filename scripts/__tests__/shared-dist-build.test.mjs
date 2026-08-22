@@ -106,6 +106,10 @@ describe("shared dist build input boundary", () => {
       ["--target", "ios", "--mode", "production"],
       { kind: "build", target: "ios", mode: "production" },
     ],
+    [
+      ["--target", "tauri", "--mode", "production"],
+      { kind: "build", target: "tauri", mode: "production" },
+    ],
     [["--validate-production-web"], { kind: "validate-production-web" }],
   ])("accepts one exact supported invocation", (argv, expected) => {
     expect(parseSharedDistBuildArgs(argv)).toEqual(expected);
@@ -139,6 +143,8 @@ describe("shared dist build plans", () => {
       "production-web manifest begin",
       "Vite production web build",
       "dist duplicate-artifact prune",
+      "feature capability receipt",
+      "feature capability receipt verify",
       "production-web manifest complete",
     ]);
     expect(plan.every((command) => command.executable === "/portable/node")).toBe(true);
@@ -148,6 +154,15 @@ describe("shared dist build plans", () => {
     expect(plan.find((command) => command.label === "Vite production web build")?.args).toContain(
       "production"
     );
+    expect(
+      plan.find((command) => command.label === "Vite production web build")?.env,
+    ).toMatchObject({ ZENFLOW_FEATURE_CAPABILITY_PLATFORM: "web-pages" });
+    expect(plan.find((command) => command.label === "feature capability receipt")?.args).toEqual([
+      path.join(REPO_ROOT, "scripts", "feature-capability-build.cjs"),
+      "--write-receipt",
+      "--platform",
+      "web-pages",
+    ]);
   });
 
   it("preserves development build semantics while still producing a lockable plan", () => {
@@ -181,16 +196,69 @@ describe("shared dist build plans", () => {
         "Capacitor asset prune",
         "dist duplicate-artifact prune",
         "dist duplicate-artifact verify",
+        "feature capability receipt",
+        "feature capability receipt verify",
       ]);
       expect(plan.slice(0, 3).every((command) => command.env?.CAPACITOR_BUILD === "true")).toBe(
         true
       );
       expect(plan[2].args).toEqual([path.join(REPO_ROOT, "scripts", "capacitor-prune-assets.cjs")]);
       expect(plan.slice(3).every((command) => command.env === undefined)).toBe(true);
-      expect(plan.at(-1)?.args).toContain("--verify");
+      expect(plan.at(-3)?.args).toContain("--verify");
+      expect(plan.at(-2)?.args).toEqual([
+        path.join(REPO_ROOT, "scripts", "feature-capability-build.cjs"),
+        "--write-receipt",
+        "--platform",
+        target,
+      ]);
+      expect(plan.at(-1)?.args).toEqual([
+        path.join(REPO_ROOT, "scripts", "check-feature-capability-receipt.cjs"),
+        "--platform",
+        target,
+      ]);
+      expect(plan[1].env).toMatchObject({
+        CAPACITOR_BUILD: "true",
+        ZENFLOW_FEATURE_CAPABILITY_PLATFORM: target,
+      });
       expect(plan.some((command) => command.args.includes("--bundle-manifest-begin"))).toBe(false);
     }
   );
+
+  it("uses one shared Tauri plan with desktop-only environment and no Capacitor prune", () => {
+    const plan = createSharedDistBuildPlan({
+      rootDir: REPO_ROOT,
+      target: "tauri",
+      mode: "production",
+      nodeExecutable: "/portable/node",
+    });
+
+    expect(plan.map((command) => command.label)).toEqual([
+      "design tokens",
+      "Vite production tauri build",
+      "dist duplicate-artifact prune",
+      "dist duplicate-artifact verify",
+      "feature capability receipt",
+      "feature capability receipt verify",
+    ]);
+    expect(plan[1].env).toEqual({
+      VITE_APP_BASE: "./",
+      VITE_DISABLE_PWA: "true",
+      VITE_DESKTOP_RUNTIME: "true",
+      ZENFLOW_FEATURE_CAPABILITY_PLATFORM: "tauri",
+    });
+    expect(plan.some((command) => command.label === "Capacitor asset prune")).toBe(false);
+    expect(plan.at(-2)?.args).toEqual([
+      path.join(REPO_ROOT, "scripts", "feature-capability-build.cjs"),
+      "--write-receipt",
+      "--platform",
+      "tauri",
+    ]);
+    expect(plan.at(-1)?.args).toEqual([
+      path.join(REPO_ROOT, "scripts", "check-feature-capability-receipt.cjs"),
+      "--platform",
+      "tauri",
+    ]);
+  });
 });
 
 describe("shared dist build lock", () => {

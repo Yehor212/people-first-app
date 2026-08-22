@@ -84,6 +84,23 @@ export function formatLocalizedCount(
   return fallbackUnit ? `${formattedCount} ${fallbackUnit}` : formattedCount;
 }
 
+export function formatLocalizedInvariantCount(
+  count: number,
+  language: Language,
+  translations: JournalWordCountTranslations,
+  key: string,
+  fallbackUnit?: string
+): string {
+  const formattedCount = formatNumber(count, getLocale(language));
+  const template = readTranslation(translations, key);
+  if (template) {
+    return template.includes("{count}")
+      ? applyCountTemplate(template, formattedCount)
+      : `${template} ${formattedCount}`;
+  }
+  return fallbackUnit ? `${formattedCount} ${fallbackUnit}` : formattedCount;
+}
+
 export function formatJournalWordCount(
   count: number,
   language: Language,

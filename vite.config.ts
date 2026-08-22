@@ -1,16 +1,27 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
+import { createRequire } from "node:module";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import { compression } from "vite-plugin-compression2";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { changelogPlugin } from "./vite-plugin-changelog.ts";
 import { versionPlugin } from "./vite-plugin-version.ts";
+import { createCompactI18nBuildPlugin } from "./scripts/compact-i18n-build-plugin.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const { journalSaveCeremonyBuildDecision } = createRequire(import.meta.url)(
+  "./scripts/feature-capability-build.cjs"
+) as {
+  journalSaveCeremonyBuildDecision: (input: {
+    mode: "production" | "development";
+    platform?: string;
+    developmentOverride?: boolean;
+  }) => boolean;
+};
 
 function normalizeBasePath(value: string): string {
   if (!value || value === "/") return "/";
@@ -92,16 +103,20 @@ function hasUsableSentryUploadEnv(values: Array<string | undefined>): boolean {
 }
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const fileEnvironment = loadEnv(mode, __dirname, "VITE_");
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
   const base = isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
-  const journalSaveCeremonyBuildEnabled =
-    (process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY ??
-      fileEnvironment.VITE_ENABLE_JOURNAL_SAVE_CEREMONY) === "true";
+  const journalSaveCeremonyBuildEnabled = journalSaveCeremonyBuildDecision({
+    mode: mode === "development" ? "development" : "production",
+    platform: process.env.ZENFLOW_FEATURE_CAPABILITY_PLATFORM,
+    // This override exists only for local development review. Production always
+    // consumes the strict schema-v1 capability policy and remains disabled.
+    developmentOverride:
+      mode === "development" && process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY === "true",
+  });
 
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
@@ -144,9 +159,7 @@ export default defineConfig(({ mode }) => {
       __APP_BUILD_TIME__: JSON.stringify(appBuildTime),
       // Keep the default-disabled ceremony runtime out of production bundles.
       // A literal build constant lets Rolldown prune its dynamic import graph.
-      __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: JSON.stringify(
-        journalSaveCeremonyBuildEnabled,
-      ),
+      __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: JSON.stringify(journalSaveCeremonyBuildEnabled),
       // Sentry tree-shaking (docs: getsentry/sentry-javascript CONTRIBUTING.md)
       // Replaces __DEBUG_BUILD__ → false in Sentry's bundles, strips all logger.* calls.
       __SENTRY_DEBUG__: false,
@@ -157,6 +170,7 @@ export default defineConfig(({ mode }) => {
       __RRWEB_EXCLUDE_SHADOW_DOM__: true,
     },
     plugins: [
+      mode !== "development" && createCompactI18nBuildPlugin({ root: __dirname }),
       react(),
       changelogPlugin(),
       versionPlugin({ buildTime: appBuildTime }),
@@ -367,10 +381,7 @@ export default defineConfig(({ mode }) => {
                 "assets/OrbPage-*.css",
                 "assets/orbWorker-*.js",
                 ...(journalSaveCeremonyBuildEnabled
-                  ? [
-                      "assets/atelier-v12-3-*.tgs",
-                      "assets/atelier-v12-3-*-reduced*.svg",
-                    ]
+                  ? ["assets/atelier-v12-3-*.tgs", "assets/atelier-v12-3-*-reduced*.svg"]
                   : []),
                 "assets/*.woff2",
               ],

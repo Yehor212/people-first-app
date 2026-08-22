@@ -37,14 +37,20 @@ vi.mock("../save-ceremony/journalSaveCeremonyRuntime", () => ({
 const receipt: JournalSaveCommitReceipt = {
   nonce: "receipt-nonce",
   operation: "create",
+  entryId: "entry-private-id",
+  deliveryState: "cloud-pending",
   committedAt: 10_000,
   appliedTheme: "paper",
   variant: "night",
 };
 let validLifecycle: JournalSaveCeremonyLifecycleToken;
+let anchor: HTMLDivElement;
 
 describe("JournalSaveCeremonyHost", () => {
   beforeEach(() => {
+    document
+      .querySelectorAll('[data-journal-save-anchor="true"]')
+      .forEach((element) => element.remove());
     vi.useFakeTimers();
     vi.setSystemTime(10_500);
     shouldAnimateMock.mockReturnValue(true);
@@ -52,16 +58,32 @@ describe("JournalSaveCeremonyHost", () => {
     vi.mocked(startJournalSaveCeremony).mockClear();
     markJournalSaveCeremonyLifecycleActive();
     validLifecycle = captureJournalSaveCeremonyLifecycle();
+    anchor = document.createElement("div");
+    anchor.dataset.journalSaveAnchor = "true";
+    anchor.getBoundingClientRect = () => ({
+      x: 300,
+      y: 240,
+      left: 300,
+      top: 240,
+      right: 380,
+      bottom: 320,
+      width: 80,
+      height: 80,
+      toJSON: () => ({}),
+    });
+    document.body.append(anchor);
   });
 
   it("consumes once, plays the snapshotted variant and removes it after completion", async () => {
     const onConsume = vi.fn();
+    const onFinish = vi.fn();
     render(
       <JournalSaveCeremonyHost
         receipt={receipt}
         lifecycleToken={validLifecycle}
         eligible
         onConsume={onConsume}
+        onFinish={onFinish}
       />,
     );
 
@@ -75,6 +97,18 @@ describe("JournalSaveCeremonyHost", () => {
       "data-playback",
       "lottie",
     );
+    expect(screen.getByTestId("journal-save-ceremony")).toHaveAttribute(
+      "data-anchor",
+      "entry",
+    );
+    expect(screen.getByTestId("journal-save-ceremony")).toHaveAttribute(
+      "data-delivery-state",
+      "cloud-pending",
+    );
+    expect(
+      screen.getByTestId("journal-save-ceremony-player"),
+    ).toHaveStyle({ left: "340px", top: "280px" });
+    expect(document.body.innerHTML).not.toContain("entry-private-id");
     expect(screen.getByTestId("journal-save-ceremony-veil")).toHaveAttribute(
       "data-tone",
       "night",
@@ -87,7 +121,34 @@ describe("JournalSaveCeremonyHost", () => {
     await act(async () => {
       vi.advanceTimersByTime(2_983);
     });
+    expect(onFinish).toHaveBeenCalledTimes(1);
+    expect(onFinish).toHaveBeenCalledWith(receipt.nonce);
     expect(screen.queryByTestId("journal-save-ceremony")).not.toBeInTheDocument();
+  });
+
+  it("uses the static fallback when the saved entry is not present on the visible surface", async () => {
+    anchor.remove();
+    render(
+      <JournalSaveCeremonyHost
+        receipt={{ ...receipt, deliveryState: "local-saved" }}
+        lifecycleToken={validLifecycle}
+        eligible
+        onConsume={vi.fn()}
+      />,
+    );
+
+    await act(async () => Promise.resolve());
+
+    expect(startJournalSaveCeremony).not.toHaveBeenCalled();
+    expect(screen.getByTestId("journal-save-ceremony-static")).toBeInTheDocument();
+    expect(screen.getByTestId("journal-save-ceremony")).toHaveAttribute(
+      "data-anchor",
+      "fallback",
+    );
+    expect(screen.getByTestId("journal-save-ceremony")).toHaveAttribute(
+      "data-delivery-state",
+      "local-saved",
+    );
   });
 
   it("uses the exact decorative SVG for 800ms without constructing Lottie when motion is off", async () => {
@@ -177,17 +238,21 @@ describe("JournalSaveCeremonyHost", () => {
   it("consumes an expired receipt without rendering or replaying it", async () => {
     vi.setSystemTime(20_001);
     const onConsume = vi.fn();
+    const onFinish = vi.fn();
     render(
       <JournalSaveCeremonyHost
         receipt={receipt}
         lifecycleToken={validLifecycle}
         eligible
         onConsume={onConsume}
+        onFinish={onFinish}
       />,
     );
 
     await act(async () => Promise.resolve());
     expect(onConsume).toHaveBeenCalledWith(receipt.nonce);
+    expect(onFinish).toHaveBeenCalledOnce();
+    expect(onFinish).toHaveBeenCalledWith(receipt.nonce);
     expect(startJournalSaveCeremony).not.toHaveBeenCalled();
     expect(screen.queryByTestId("journal-save-ceremony")).not.toBeInTheDocument();
   });
@@ -197,17 +262,21 @@ describe("JournalSaveCeremonyHost", () => {
     const staleLifecycle = captureJournalSaveCeremonyLifecycle();
     invalidateJournalSaveCeremonyLifecycle();
     const onConsume = vi.fn();
+    const onFinish = vi.fn();
     const { rerender } = render(
       <JournalSaveCeremonyHost
         receipt={receipt}
         lifecycleToken={staleLifecycle}
         eligible
         onConsume={onConsume}
+        onFinish={onFinish}
       />,
     );
 
     await act(async () => Promise.resolve());
     expect(onConsume).toHaveBeenCalledWith(receipt.nonce);
+    expect(onFinish).toHaveBeenCalledOnce();
+    expect(onFinish).toHaveBeenCalledWith(receipt.nonce);
     expect(startJournalSaveCeremony).not.toHaveBeenCalled();
     expect(screen.queryByTestId("journal-save-ceremony")).not.toBeInTheDocument();
 
@@ -218,11 +287,13 @@ describe("JournalSaveCeremonyHost", () => {
         lifecycleToken={staleLifecycle}
         eligible
         onConsume={onConsume}
+        onFinish={onFinish}
       />,
     );
     await act(async () => Promise.resolve());
 
     expect(onConsume).toHaveBeenCalledTimes(1);
+    expect(onFinish).toHaveBeenCalledTimes(1);
     expect(startJournalSaveCeremony).not.toHaveBeenCalled();
     expect(screen.queryByTestId("journal-save-ceremony")).not.toBeInTheDocument();
   });
@@ -234,12 +305,14 @@ describe("JournalSaveCeremonyHost", () => {
       ready: Promise.resolve(),
     });
     const onConsume = vi.fn();
+    const onFinish = vi.fn();
     render(
       <JournalSaveCeremonyHost
         receipt={receipt}
         lifecycleToken={validLifecycle}
         eligible
         onConsume={onConsume}
+        onFinish={onFinish}
       />,
     );
     await act(async () => Promise.resolve());
@@ -248,6 +321,8 @@ describe("JournalSaveCeremonyHost", () => {
       window.dispatchEvent(new Event(JOURNAL_SAVE_CEREMONY_CANCEL_EVENT));
     });
     expect(destroy).toHaveBeenCalledTimes(1);
+    expect(onFinish).toHaveBeenCalledOnce();
+    expect(onFinish).toHaveBeenCalledWith(receipt.nonce);
     expect(screen.queryByTestId("journal-save-ceremony")).not.toBeInTheDocument();
   });
 

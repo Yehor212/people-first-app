@@ -46,6 +46,24 @@ export interface DeadLetterItem {
   failedAt: number;
 }
 
+/**
+ * Operation-bound ciphertext scratch space used while removing journal
+ * protection. Only authenticated encrypted media is stored here; plaintext is
+ * decrypted one object at a time inside the final atomic transaction.
+ */
+export interface JournalPasswordRemovalMediaStage {
+  key: string;
+  operationRevision: string;
+  ownerUserId: string;
+  mediaKind: "photo" | "audio";
+  mediaId: string;
+  entryId: string;
+  sourceRecordSha256: string;
+  encryptedDataSha256: string;
+  encryptedData: string;
+  createdAt: number;
+}
+
 // Определяем схему базы данных
 export class ZenFlowDB extends Dexie {
   moods!: Table<MoodEntry, string>;
@@ -63,6 +81,7 @@ export class ZenFlowDB extends Dexie {
   journalPracticeSessions!: Table<JournalPracticeSession, string>;
   journalEntryLinks!: Table<JournalEntryLink, string>;
   journalSpaceCaptures!: Table<JournalSpaceCapture, string>;
+  journalPasswordRemovalMediaStage!: Table<JournalPasswordRemovalMediaStage, string>;
 
   constructor() {
     super("ZenFlowDB");
@@ -199,6 +218,29 @@ export class ZenFlowDB extends Dexie {
       journalEntryLinks: "id, entryId, targetType, targetId, createdAt",
       journalSpaceCaptures: "id, spaceId, date, createdAt, updatedAt",
     });
+
+    // Version 11: encrypted, owner-bound scratch space for resumable journal
+    // password removal. It is excluded from backups and always cleared at an
+    // account boundary.
+    this.version(11).stores({
+      moods: "id, timestamp, date, valence, updatedAt",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date, updatedAt",
+      gratitudeEntries: "id, timestamp, date, updatedAt",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      deadLetterQueue: "id, type, entityId, failedAt",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
+      journalHubPreferences: "id, updatedAt",
+      journalSpaces: "id, sortOrder, updatedAt",
+      journalPracticeSessions: "id, practiceId, entryId, startedAt, completedAt",
+      journalEntryLinks: "id, entryId, targetType, targetId, createdAt",
+      journalSpaceCaptures: "id, spaceId, date, createdAt, updatedAt",
+      journalPasswordRemovalMediaStage:
+        "key, operationRevision, ownerUserId, [operationRevision+ownerUserId], [operationRevision+mediaKind+mediaId], createdAt",
+    });
   }
 }
 
@@ -216,6 +258,7 @@ export const journalSpacesRepo = db.journalSpaces;
 export const journalPracticeSessionsRepo = db.journalPracticeSessions;
 export const journalEntryLinksRepo = db.journalEntryLinks;
 export const journalSpaceCapturesRepo = db.journalSpaceCaptures;
+export const journalPasswordRemovalMediaStageRepo = db.journalPasswordRemovalMediaStage;
 
 /**
  * User-specific settings keys stored in db.settings IndexedDB table.
@@ -348,6 +391,7 @@ const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
   SK.JOURNAL_SECURITY_MIGRATION,
   SK.JOURNAL_SECURITY_REMOVAL,
   SK.JOURNAL_VAULT_REVISION,
+  SK.JOURNAL_VAULT_SYNC_PENDING,
   SK.JOURNAL_PENDING_ENTRY_DELETES,
 ];
 
@@ -401,6 +445,7 @@ export const clearLocalUserData = async (
         db.journalPracticeSessions,
         db.journalEntryLinks,
         db.journalSpaceCaptures,
+        db.journalPasswordRemovalMediaStage,
         db.offlineQueue,
         db.deadLetterQueue,
         db.settings,
@@ -424,6 +469,7 @@ export const clearLocalUserData = async (
         await db.journalPracticeSessions.clear();
         await db.journalEntryLinks.clear();
         await db.journalSpaceCaptures.clear();
+        await db.journalPasswordRemovalMediaStage.clear();
         await db.offlineQueue.clear();
         await db.deadLetterQueue.clear();
         // Delete account-bound settings and local-only sync state, including

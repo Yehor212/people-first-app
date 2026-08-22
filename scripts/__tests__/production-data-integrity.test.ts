@@ -1326,6 +1326,278 @@ describe("production data integrity checker", () => {
     expectRule(run(root), "PDI008");
   });
 
+  it("distinguishes inert stored-routine DDL from migration-time user-data writes", () => {
+    const inertRoutineRoot = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000011_runtime_event_writer.sql": [
+        "CREATE OR REPLACE FUNCTION private.record_real_sync_event(p_user_id uuid, p_entity_id text)",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.sync_events (user_id, entity_type, entity_id, op, payload, device_id)",
+        "  VALUES (p_user_id, 'journal', p_entity_id, 'delete', NULL, 'server');",
+        "END;",
+        "$$;",
+      ].join("\n"),
+    });
+    const inertRoutine = run(inertRoutineRoot);
+    expect(
+      inertRoutine.status,
+      JSON.stringify(inertRoutine.report, null, 2),
+    ).toBe(0);
+    expect(inertRoutine.report.status).toBe("PASS");
+
+    const immediateCases = [
+      [
+        "DO $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-1', 'user-1', 'good');",
+        "END;",
+        "$$;",
+      ].join("\n"),
+      [
+        "CREATE OR REPLACE FUNCTION public.seed_moods()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-1', 'user-1', 'good');",
+        "END;",
+        "$$;",
+        "SELECT public.seed_moods();",
+      ].join("\n"),
+      [
+        "CREATE OR REPLACE FUNCTION public.seed_moods_nested()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-2', 'user-2', 'good');",
+        "END;",
+        "$$;",
+        "CREATE OR REPLACE FUNCTION public.invoke_seed_moods_nested()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  PERFORM public.seed_moods_nested();",
+        "END;",
+        "$$;",
+        "SELECT public.invoke_seed_moods_nested();",
+      ].join("\n"),
+    ];
+    for (const sql of immediateCases) {
+      const root = fixture({
+        "src/main.ts": "export {};",
+        "supabase/migrations/20260709000012_immediate_seed.sql": sql,
+      });
+      expectRule(run(root), "PDI008");
+    }
+  });
+
+  it.each([
+    "SELECT coalesce(public.seed_moods_wrapped(), 0);",
+    "VALUES(public.seed_moods_wrapped());",
+    [
+      "DO $invoke$",
+      "DECLARE",
+      "  v_result bigint;",
+      "BEGIN",
+      "  v_result := public.seed_moods_wrapped();",
+      "END;",
+      "$invoke$;",
+    ].join("\n"),
+  ])("blocks a migration-time user-data writer wrapped as %s", (invocation) => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000013_wrapped_seed.sql": [
+        "CREATE OR REPLACE FUNCTION public.seed_moods_wrapped()",
+        "RETURNS bigint LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-wrapped', 'user-wrapped', 'good');",
+        "  RETURN 1;",
+        "END;",
+        "$body$;",
+        invocation,
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("keeps routine grants and trigger installation inert until runtime", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000014_runtime_trigger.sql": [
+        "CREATE OR REPLACE FUNCTION private.record_runtime_mood()",
+        "RETURNS trigger LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES (NEW.id, NEW.user_id, 'good');",
+        "  RETURN NEW;",
+        "END;",
+        "$body$;",
+        "REVOKE ALL ON FUNCTION private.record_runtime_mood() FROM PUBLIC;",
+        "CREATE TRIGGER record_runtime_mood",
+        "  AFTER INSERT ON public.profiles",
+        "  FOR EACH ROW EXECUTE FUNCTION private.record_runtime_mood();",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("blocks a user-data writer reached by a trigger fired later in the same migration", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000015_invoked_runtime_trigger.sql": [
+        "CREATE OR REPLACE FUNCTION private.write_triggered_mood()",
+        "RETURNS void LANGUAGE plpgsql AS $inner$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('triggered', 'real-user', 'good');",
+        "END;",
+        "$inner$;",
+        "CREATE OR REPLACE FUNCTION private.fire_runtime_trigger()",
+        "RETURNS trigger LANGUAGE plpgsql AS $trigger$",
+        "BEGIN",
+        "  PERFORM private.write_triggered_mood();",
+        "  RETURN NEW;",
+        "END;",
+        "$trigger$;",
+        "CREATE TRIGGER fire_runtime_trigger",
+        "  AFTER INSERT ON public.runtime_control",
+        "  FOR EACH ROW EXECUTE FUNCTION private.fire_runtime_trigger();",
+        "INSERT INTO public.runtime_control (key, value)",
+        "VALUES ('activate', 'now');",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("resolves a trigger helper declared after installation but before the trigger fires", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000016_late_trigger_helper.sql": [
+        "CREATE OR REPLACE FUNCTION private.fire_runtime_trigger()",
+        "RETURNS trigger LANGUAGE plpgsql AS $trigger$",
+        "BEGIN",
+        "  PERFORM private.write_triggered_mood();",
+        "  RETURN NEW;",
+        "END;",
+        "$trigger$;",
+        "CREATE TRIGGER fire_runtime_trigger",
+        "  AFTER INSERT ON public.runtime_control",
+        "  FOR EACH ROW EXECUTE FUNCTION private.fire_runtime_trigger();",
+        "CREATE OR REPLACE FUNCTION private.write_triggered_mood()",
+        "RETURNS void LANGUAGE plpgsql AS $helper$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('triggered-late', 'real-user', 'good');",
+        "END;",
+        "$helper$;",
+        "INSERT INTO public.runtime_control (key, value)",
+        "VALUES ('activate', 'now');",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("does not execute a trigger for a table mutation that occurs before installation", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000017_pre_install_write.sql": [
+        "CREATE OR REPLACE FUNCTION private.write_runtime_mood()",
+        "RETURNS trigger LANGUAGE plpgsql AS $trigger$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('runtime-only', NEW.user_id, 'good');",
+        "  RETURN NEW;",
+        "END;",
+        "$trigger$;",
+        "INSERT INTO public.runtime_control (key, value)",
+        "VALUES ('before-install', 'now');",
+        "CREATE TRIGGER write_runtime_mood",
+        "  AFTER INSERT ON public.runtime_control",
+        "  FOR EACH ROW EXECUTE FUNCTION private.write_runtime_mood();",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.status).toBe("PASS");
+  });
+
+  it("blocks a trigger fired by a transitively invoked migration helper", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000018_transitive_trigger_write.sql": [
+        "CREATE OR REPLACE FUNCTION private.write_runtime_mood()",
+        "RETURNS trigger LANGUAGE plpgsql AS $trigger$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('transitive-trigger', NEW.user_id, 'good');",
+        "  RETURN NEW;",
+        "END;",
+        "$trigger$;",
+        "CREATE OR REPLACE FUNCTION private.insert_runtime_control()",
+        "RETURNS void LANGUAGE plpgsql AS $inner$",
+        "BEGIN",
+        "  INSERT INTO public.runtime_control (key, value)",
+        "  VALUES ('helper-trigger', 'now');",
+        "END;",
+        "$inner$;",
+        "CREATE OR REPLACE FUNCTION private.invoke_runtime_control()",
+        "RETURNS void LANGUAGE plpgsql AS $outer$",
+        "BEGIN",
+        "  PERFORM private.insert_runtime_control();",
+        "END;",
+        "$outer$;",
+        "CREATE TRIGGER write_runtime_mood",
+        "  AFTER INSERT ON public.runtime_control",
+        "  FOR EACH ROW EXECUTE FUNCTION private.write_runtime_mood();",
+        "SELECT private.invoke_runtime_control();",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("blocks a user-data write reached through a cascade of installed triggers", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000019_cascaded_trigger_write.sql": [
+        "CREATE OR REPLACE FUNCTION private.forward_runtime_control()",
+        "RETURNS trigger LANGUAGE plpgsql AS $first$",
+        "BEGIN",
+        "  INSERT INTO public.runtime_events (key, user_id)",
+        "  VALUES (NEW.key, NEW.user_id);",
+        "  RETURN NEW;",
+        "END;",
+        "$first$;",
+        "CREATE OR REPLACE FUNCTION private.write_cascaded_mood()",
+        "RETURNS trigger LANGUAGE plpgsql AS $second$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('cascaded-trigger', NEW.user_id, 'good');",
+        "  RETURN NEW;",
+        "END;",
+        "$second$;",
+        "CREATE TRIGGER forward_runtime_control",
+        "  AFTER INSERT ON public.runtime_control",
+        "  FOR EACH ROW EXECUTE FUNCTION private.forward_runtime_control();",
+        "CREATE TRIGGER write_cascaded_mood",
+        "  AFTER INSERT ON public.runtime_events",
+        "  FOR EACH ROW EXECUTE FUNCTION private.write_cascaded_mood();",
+        "INSERT INTO public.runtime_control (key, user_id)",
+        "VALUES ('cascade', 'real-user');",
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
   it("rejects semantic config weakening and broad exclusions", () => {
     const mutations: Array<(config: Record<string, unknown>) => void> = [
       (config) => {

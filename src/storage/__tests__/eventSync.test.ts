@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   journalPhotosWhere: vi.fn(),
   journalPhotosEquals: vi.fn(),
   journalPhotosDelete: vi.fn(),
+  journalPhotosGet: vi.fn(),
+  journalPhotosBulkPut: vi.fn(),
   journalPhotosBulkDelete: vi.fn(),
   journalAudioWhere: vi.fn(),
   journalAudioEquals: vi.fn(),
@@ -29,7 +31,16 @@ const mocks = vi.hoisted(() => ({
   journalAudioBulkPut: vi.fn(),
   journalAudioBulkDelete: vi.fn(),
   journalAudioMetadataIn: vi.fn(),
+  journalPhotoMetadataIn: vi.fn(),
+  journalEntryRefetchIn: vi.fn(),
+  offlineQueueWhere: vi.fn(),
+  offlineQueueEquals: vi.fn(),
+  offlineQueueAnd: vi.fn(),
+  offlineQueueFirst: vi.fn(),
   runJournalSecurityWriteLock: vi.fn(),
+  recoverRemoteRemoval: vi.fn(),
+  captureJournalBoundary: vi.fn(),
+  recordRemoteRecovery: vi.fn(),
   triggerDataRefresh: vi.fn(),
   broadcastChange: vi.fn(),
   enqueue: vi.fn(),
@@ -76,6 +87,15 @@ vi.mock("@/features/journal/journalSecurityWriteLock", () => ({
   runWithJournalSecurityWriteLock: mocks.runJournalSecurityWriteLock,
 }));
 
+vi.mock("@/storage/sync/journalRemovalRemote", () => ({
+  recoverRemoteJournalPasswordRemoval: mocks.recoverRemoteRemoval,
+}));
+
+vi.mock("@/features/journal/journalSecurityMigration", () => ({
+  captureJournalSecurityBoundary: mocks.captureJournalBoundary,
+  recordOrphanedRemoteJournalPasswordRemoval: mocks.recordRemoteRecovery,
+}));
+
 vi.mock("@/storage/db", () => ({
   getLocalDataOwnerId: vi.fn(async () => mocks.localOwnerUserId),
   db: {
@@ -91,6 +111,8 @@ vi.mock("@/storage/db", () => ({
     },
     journalPhotos: {
       where: mocks.journalPhotosWhere,
+      get: mocks.journalPhotosGet,
+      bulkPut: mocks.journalPhotosBulkPut,
       bulkDelete: mocks.journalPhotosBulkDelete,
     },
     journalAudio: {
@@ -98,6 +120,9 @@ vi.mock("@/storage/db", () => ({
       get: mocks.journalAudioGet,
       bulkPut: mocks.journalAudioBulkPut,
       bulkDelete: mocks.journalAudioBulkDelete,
+    },
+    offlineQueue: {
+      where: mocks.offlineQueueWhere,
     },
     table: mocks.table,
     transaction: mocks.transaction,
@@ -111,6 +136,7 @@ import {
   getServerMaxSeq,
   normalizeSyncEventWriteIntent,
   pullAndApplyDeltasFromLastSeq,
+  assertSyncEventMatchesIntent,
   writeEventAndBroadcast,
 } from "@/storage/eventSync";
 import { markPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
@@ -181,6 +207,8 @@ describe("eventSync auth guards", () => {
     mocks.journalPhotosWhere.mockReturnValue({ equals: mocks.journalPhotosEquals });
     mocks.journalPhotosEquals.mockReturnValue({ delete: mocks.journalPhotosDelete });
     mocks.journalPhotosDelete.mockResolvedValue(0);
+    mocks.journalPhotosGet.mockResolvedValue(undefined);
+    mocks.journalPhotosBulkPut.mockResolvedValue(undefined);
     mocks.journalPhotosBulkDelete.mockResolvedValue(undefined);
     mocks.journalAudioWhere.mockReturnValue({ equals: mocks.journalAudioEquals });
     mocks.journalAudioEquals.mockReturnValue({ delete: mocks.journalAudioDelete });
@@ -189,9 +217,22 @@ describe("eventSync auth guards", () => {
     mocks.journalAudioBulkPut.mockResolvedValue(undefined);
     mocks.journalAudioBulkDelete.mockResolvedValue(undefined);
     mocks.journalAudioMetadataIn.mockResolvedValue({ data: [], error: null });
+    mocks.journalPhotoMetadataIn.mockResolvedValue({ data: [], error: null });
+    mocks.journalEntryRefetchIn.mockResolvedValue({ data: [], error: null });
+    mocks.offlineQueueWhere.mockReturnValue({ equals: mocks.offlineQueueEquals });
+    mocks.offlineQueueEquals.mockReturnValue({ and: mocks.offlineQueueAnd });
+    mocks.offlineQueueAnd.mockReturnValue({ first: mocks.offlineQueueFirst });
+    mocks.offlineQueueFirst.mockResolvedValue(undefined);
     mocks.runJournalSecurityWriteLock.mockImplementation(
       async (operation: () => Promise<unknown>) => operation()
     );
+    mocks.recoverRemoteRemoval.mockResolvedValue({ status: "not-pending" });
+    mocks.captureJournalBoundary.mockResolvedValue({
+      generation: 1,
+      sessionOwnerUserId: "user-1",
+      localOwnerUserId: "user-1",
+    });
+    mocks.recordRemoteRecovery.mockResolvedValue("recorded");
     mocks.enqueue.mockResolvedValue(undefined);
     mocks.table.mockImplementation((tableName: string) => {
       if (tableName === "habits") {
@@ -232,6 +273,24 @@ describe("eventSync auth guards", () => {
           select: () => ({
             eq: () => ({
               in: mocks.journalAudioMetadataIn,
+            }),
+          }),
+        };
+      }
+      if (table === "journal_photos") {
+        return {
+          select: () => ({
+            eq: () => ({
+              in: mocks.journalPhotoMetadataIn,
+            }),
+          }),
+        };
+      }
+      if (table === "journal_entries") {
+        return {
+          select: () => ({
+            eq: () => ({
+              in: mocks.journalEntryRefetchIn,
             }),
           }),
         };
@@ -305,6 +364,36 @@ describe("eventSync auth guards", () => {
     expect(mocks.habitTablePut).toHaveBeenCalledWith(remoteHabit);
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 11 });
     expect(result).toEqual({ fetched: 1, applied: 1, lastSeq: 11 });
+  });
+
+  it("applies a 501-event backlog in bounded ordered pages", async () => {
+    const buildEvents = (from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, offset) => {
+        const seq = from + offset;
+        return {
+          id: `event-page-${seq}`,
+          seq,
+          entity_type: "habit" as const,
+          entity_id: `habit-page-${seq}`,
+          op: "upsert" as const,
+          payload: { id: `habit-page-${seq}`, updatedAt: seq },
+          device_id: "remote-device",
+          created_at: "2026-08-03T12:00:00.000Z",
+        };
+      });
+    mocks.limit
+      .mockResolvedValueOnce({ data: buildEvents(11, 211), error: null })
+      .mockResolvedValueOnce({ data: buildEvents(211, 411), error: null })
+      .mockResolvedValueOnce({ data: buildEvents(411, 511), error: null });
+    mocks.transaction.mockClear();
+
+    const result = await pullAndApplyDeltasFromLastSeq();
+
+    expect(result).toEqual({ fetched: 501, applied: 501, lastSeq: 511 });
+    expect(mocks.transaction).toHaveBeenCalledTimes(3);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 210 });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 410 });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 511 });
   });
 
   it("revalidates the expected owner inside the apply transaction before writing", async () => {
@@ -482,6 +571,735 @@ describe("eventSync auth guards", () => {
       value: true,
     });
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
+  });
+
+  it("preserves the local diary password and vault when a verified remote removal completes", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_password") return { key, value: { hash: "local-password" } };
+      if (key === "journal_vault_key") {
+        return { key, value: { wrappedKey: "local-wrapper", createdAt: 100, updatedAt: 101 } };
+      }
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      if (key === "sync-last-seq") return { key, value: 14 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "100:serveroperation",
+      vaultRevision: 101,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-remote-vault-removal",
+          seq: 15,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "delete",
+          payload: {
+            key: "journal_vault_key",
+            operationRevision: "100:serveroperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.recoverRemoteRemoval).toHaveBeenCalledWith({
+      expectedOwnerUserId: "user-1",
+    });
+    expect(mocks.recordRemoteRecovery).toHaveBeenCalledWith(
+      {
+        operationRevision: "100:serveroperation",
+        vaultRevision: 101,
+        remoteStatus: "complete",
+      },
+      expect.objectContaining({
+        sessionOwnerUserId: "user-1",
+        localOwnerUserId: "user-1",
+      }),
+    );
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_password");
+    expect(mocks.storageRemove).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.runJournalSecurityWriteLock).toHaveBeenCalledTimes(1);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
+  });
+
+  it("does not advance past a vault removal refetch while this device is still protected", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_password") return { key, value: { hash: "local-password" } };
+      if (key === "journal_vault_key") {
+        return { key, value: { wrappedKey: "local-wrapper", createdAt: 100, updatedAt: 101 } };
+      }
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      if (key === "sync-last-seq") return { key, value: 29 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "100:serveroperation",
+      vaultRevision: 101,
+    });
+
+    await expect(
+      applyDelta(
+        [
+          {
+            id: "event-remote-vault-removal",
+            seq: 30,
+            entity_type: "setting",
+            entity_id: "journal_vault_key",
+            op: "delete",
+            payload: {
+              key: "journal_vault_key",
+              operationRevision: "100:serveroperation",
+              removalOperationRevision: "100:serveroperation",
+              vaultRevision: 101,
+            },
+            device_id: "server:journal-password-removal",
+            created_at: "2026-08-03T12:00:00.000Z",
+          },
+          {
+            id: "event-remote-entry-refetch",
+            seq: 31,
+            entity_type: "journal",
+            entity_id: "entry-remote",
+            op: "upsert",
+            payload: {
+              journalRemovalRefetch: true,
+              removalOperationRevision: "100:serveroperation",
+              vaultRevision: 101,
+            },
+            device_id: "server:journal-password-removal",
+            created_at: "2026-08-03T12:00:01.000Z",
+          },
+        ],
+        "current-device",
+        { expectedOwnerUserId: "user-1" },
+      )
+    ).rejects.toThrow(/protected|unlock|recovery/i);
+
+    expect(mocks.recordRemoteRecovery).toHaveBeenCalled();
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "sync-last-seq",
+      value: 31,
+    });
+  });
+
+  it("consumes obsolete removal markers after a newer protection epoch without touching the vault", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_password") return { key, value: { hash: "new-password" } };
+      if (key === "journal_vault_key") {
+        return { key, value: { wrappedKey: "new-wrapper", createdAt: 200, updatedAt: 201 } };
+      }
+      if (key === "journal_vault_revision_v1") return { key, value: 202 };
+      if (key === "sync-last-seq") return { key, value: 49 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+    mocks.recoverRemoteRemoval.mockResolvedValue({ status: "not-pending" });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-old-vault-removal",
+          seq: 50,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "delete",
+          payload: {
+            key: "journal_vault_key",
+            operationRevision: "100:oldoperation",
+            removalOperationRevision: "100:oldoperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:00.000Z",
+        },
+        {
+          id: "event-old-entry-refetch",
+          seq: 51,
+          entity_type: "journal",
+          entity_id: "entry-from-old-removal",
+          op: "upsert",
+          payload: {
+            journalRemovalRefetch: true,
+            removalOperationRevision: "100:oldoperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:01.000Z",
+        },
+        {
+          id: "event-after-old-removal",
+          seq: 52,
+          entity_type: "habit",
+          entity_id: "habit-after-old-removal",
+          op: "upsert",
+          payload: { id: "habit-after-old-removal", updatedAt: 52 },
+          device_id: "remote-device",
+          created_at: "2026-08-03T12:00:02.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.recoverRemoteRemoval).toHaveBeenCalledTimes(1);
+    expect(mocks.recordRemoteRecovery).not.toHaveBeenCalled();
+    expect(mocks.journalEntryRefetchIn).not.toHaveBeenCalled();
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "habit-after-old-removal" }),
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 52 });
+  });
+
+  it("refetches a canonical plaintext row only after this device is unprotected", async () => {
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "100:serveroperation",
+      vaultRevision: 101,
+    });
+    mocks.journalEntryRefetchIn.mockResolvedValue({
+      data: [
+        {
+          id: "entry-remote",
+          user_id: "user-1",
+          date: "2026-08-03",
+          title: "Recovered title",
+          content: "Recovered content",
+          stickers: [],
+          mood: null,
+          tags: ["recovered"],
+          template_id: null,
+          habit_snapshot: null,
+          photo_ids: [],
+          audio_ids: [],
+          photo_layout: null,
+          theme: null,
+          font: null,
+          ink_color: null,
+          paper_texture: null,
+          bg_pattern: null,
+          paper_color: null,
+          bg_intensity: null,
+          particle_speed: null,
+          font_size: null,
+          created_at: 10,
+          updated_at: 20,
+          vault_revision: null,
+        },
+      ],
+      error: null,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-remote-vault-removal-ready",
+          seq: 40,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "delete",
+          payload: {
+            key: "journal_vault_key",
+            operationRevision: "100:serveroperation",
+            removalOperationRevision: "100:serveroperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:00.000Z",
+        },
+        {
+          id: "event-remote-entry-refetch-ready",
+          seq: 41,
+          entity_type: "journal",
+          entity_id: "entry-remote",
+          op: "upsert",
+          payload: {
+            journalRemovalRefetch: true,
+            removalOperationRevision: "100:serveroperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:01.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(2);
+    expect(mocks.journalTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "entry-remote",
+        title: "Recovered title",
+        content: "Recovered content",
+        tags: ["recovered"],
+        vaultRevision: undefined,
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 41 });
+  });
+
+  it("refetches exact media metadata while retaining installation-local binary bytes", async () => {
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "100:serveroperation",
+      vaultRevision: 101,
+    });
+    mocks.journalEntryRefetchIn.mockResolvedValue({
+      data: [
+        {
+          id: "entry-with-media",
+          user_id: "user-1",
+          date: "2026-08-03",
+          title: "Recovered title",
+          content: "Recovered content",
+          stickers: [],
+          mood: null,
+          tags: [],
+          template_id: null,
+          habit_snapshot: null,
+          photo_ids: ["photo-remote"],
+          audio_ids: ["audio-remote"],
+          photo_layout: null,
+          theme: null,
+          font: null,
+          ink_color: null,
+          paper_texture: null,
+          bg_pattern: null,
+          paper_color: null,
+          bg_intensity: null,
+          particle_speed: null,
+          font_size: null,
+          created_at: 10,
+          updated_at: 20,
+          vault_revision: null,
+        },
+      ],
+      error: null,
+    });
+    mocks.journalPhotoMetadataIn.mockResolvedValue({
+      data: [
+        {
+          id: "photo-remote",
+          entry_id: "entry-with-media",
+          width: 1200,
+          height: 800,
+          storage_path: "user-1/photos/photo-remote.jpg",
+          vault_revision: null,
+          created_at: 11,
+        },
+      ],
+      error: null,
+    });
+    mocks.journalAudioMetadataIn.mockResolvedValue({
+      data: [
+        {
+          id: "audio-remote",
+          entry_id: "entry-with-media",
+          duration: 12.5,
+          mime_type: "audio/webm",
+          storage_path: "user-1/audio/audio-remote.webm",
+          vault_revision: null,
+          created_at: 12,
+        },
+      ],
+      error: null,
+    });
+    mocks.journalPhotosGet.mockResolvedValue({
+      id: "photo-remote",
+      entryId: "entry-with-media",
+      data: "local-photo-bytes",
+      thumbnail: "local-thumbnail-bytes",
+    });
+    mocks.journalAudioGet.mockResolvedValue({
+      id: "audio-remote",
+      entryId: "entry-with-media",
+      data: "local-audio-bytes",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-media-refetch",
+          seq: 42,
+          entity_type: "journal",
+          entity_id: "entry-with-media",
+          op: "upsert",
+          payload: {
+            journalRemovalRefetch: true,
+            removalOperationRevision: "100:serveroperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:02.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.journalPhotosBulkPut).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "photo-remote",
+        entryId: "entry-with-media",
+        data: "local-photo-bytes",
+        thumbnail: "local-thumbnail-bytes",
+        width: 1200,
+        height: 800,
+        vaultRevision: undefined,
+      }),
+    ]);
+    expect(mocks.journalAudioBulkPut).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "audio-remote",
+        entryId: "entry-with-media",
+        data: "local-audio-bytes",
+        duration: 12.5,
+        mimeType: "audio/webm",
+        vaultRevision: undefined,
+      }),
+    ]);
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 42 });
+  });
+
+  it("keeps the cursor before a refetch whose referenced media metadata is invalid", async () => {
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "100:serveroperation",
+      vaultRevision: 101,
+    });
+    mocks.journalEntryRefetchIn.mockResolvedValue({
+      data: [
+        {
+          id: "entry-invalid-media",
+          user_id: "user-1",
+          date: "2026-08-03",
+          title: "Recovered title",
+          content: "Recovered content",
+          stickers: [],
+          mood: null,
+          tags: [],
+          template_id: null,
+          habit_snapshot: null,
+          photo_ids: ["photo-wrong-owner"],
+          audio_ids: [],
+          photo_layout: null,
+          theme: null,
+          font: null,
+          ink_color: null,
+          paper_texture: null,
+          bg_pattern: null,
+          paper_color: null,
+          bg_intensity: null,
+          particle_speed: null,
+          font_size: null,
+          created_at: 10,
+          updated_at: 20,
+          vault_revision: null,
+        },
+      ],
+      error: null,
+    });
+    mocks.journalPhotoMetadataIn.mockResolvedValue({
+      data: [
+        {
+          id: "photo-wrong-owner",
+          entry_id: "entry-invalid-media",
+          width: 1200,
+          height: 800,
+          storage_path: "another-user/photo.jpg",
+          vault_revision: null,
+          created_at: 11,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      applyDelta(
+        [
+          {
+            id: "event-invalid-media-refetch",
+            seq: 43,
+            entity_type: "journal",
+            entity_id: "entry-invalid-media",
+            op: "upsert",
+            payload: {
+              journalRemovalRefetch: true,
+              removalOperationRevision: "100:serveroperation",
+              vaultRevision: 101,
+            },
+            device_id: "server:journal-password-removal",
+            created_at: "2026-08-03T12:00:03.000Z",
+          },
+        ],
+        "current-device",
+        { expectedOwnerUserId: "user-1" },
+      ),
+    ).rejects.toThrow(/refetch|pending|recovery/i);
+
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.journalPhotosBulkPut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "sync-last-seq",
+      value: 43,
+    });
+  });
+
+  it("keeps the cursor before a refetch whose canonical row is missing", async () => {
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "100:serveroperation",
+      vaultRevision: 101,
+    });
+    mocks.journalEntryRefetchIn.mockResolvedValue({ data: [], error: null });
+
+    await expect(
+      applyDelta(
+        [
+          {
+            id: "event-missing-entry-refetch",
+            seq: 42,
+            entity_type: "journal",
+            entity_id: "entry-missing",
+            op: "upsert",
+            payload: {
+              journalRemovalRefetch: true,
+              removalOperationRevision: "100:serveroperation",
+              vaultRevision: 101,
+            },
+            device_id: "server:journal-password-removal",
+            created_at: "2026-08-03T12:00:02.000Z",
+          },
+        ],
+        "current-device",
+        { expectedOwnerUserId: "user-1" },
+      )
+    ).rejects.toBeInstanceOf(Error);
+
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith({
+      key: "sync-last-seq",
+      value: 42,
+    });
+  });
+
+  it("preserves a newer local row with a durable pending upsert instead of overwriting it", async () => {
+    const localEntry = {
+      id: "entry-conflict",
+      date: "2026-08-03",
+      title: "Local unsynced edit",
+      content: "Local content",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 10,
+      updatedAt: 200,
+    };
+    mocks.journalTableGet.mockResolvedValue(localEntry);
+    mocks.offlineQueueFirst.mockResolvedValue({
+      id: "queue-entry-conflict",
+      type: "SYNC_JOURNAL_ENTRY",
+      entityId: "entry-conflict",
+      ownerUserId: "user-1",
+    });
+    mocks.journalEntryRefetchIn.mockResolvedValue({
+      data: [
+        {
+          id: "entry-conflict",
+          user_id: "user-1",
+          date: "2026-08-03",
+          title: "Remote older edit",
+          content: "Remote content",
+          stickers: [],
+          mood: null,
+          tags: [],
+          template_id: null,
+          habit_snapshot: null,
+          photo_ids: [],
+          audio_ids: [],
+          photo_layout: null,
+          theme: null,
+          font: null,
+          ink_color: null,
+          paper_texture: null,
+          bg_pattern: null,
+          paper_color: null,
+          bg_intensity: null,
+          particle_speed: null,
+          font_size: null,
+          created_at: 10,
+          updated_at: 100,
+          vault_revision: null,
+        },
+      ],
+      error: null,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-conflict-refetch",
+          seq: 43,
+          entity_type: "journal",
+          entity_id: "entry-conflict",
+          op: "upsert",
+          payload: {
+            journalRemovalRefetch: true,
+            removalOperationRevision: "100:serveroperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:00:03.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 43 });
+  });
+
+  it("ignores a malformed remote diary vault delete without touching local protection", async () => {
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-malformed-vault-removal",
+          seq: 16,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "delete",
+          payload: {
+            key: "journal_vault_key",
+            operationRevision: "not-a-server-operation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:01:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.recoverRemoteRemoval).not.toHaveBeenCalled();
+    expect(mocks.recordRemoteRecovery).not.toHaveBeenCalled();
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.storageRemove).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
+  });
+
+  it("uses the current recovery RPC identity to consume a lagging older delete marker", async () => {
+    mocks.recoverRemoteRemoval.mockResolvedValue({
+      status: "complete",
+      operationRevision: "200:currentoperation",
+      vaultRevision: 202,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-stale-vault-wake",
+          seq: 17,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "delete",
+          payload: {
+            key: "journal_vault_key",
+            operationRevision: "100:olderoperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:02:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.recordRemoteRecovery).toHaveBeenCalledWith(
+      {
+        operationRevision: "200:currentoperation",
+        vaultRevision: 202,
+        remoteStatus: "complete",
+      },
+      expect.anything(),
+    );
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 17 });
+  });
+
+  it("consumes a stale vault-delete wake without blocking a newer vault upsert", async () => {
+    const newerVault = { wrappedKey: "newer-wrapper", createdAt: 200, updatedAt: 202 };
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      if (key === "sync-last-seq") return { key, value: 17 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+    mocks.recoverRemoteRemoval.mockResolvedValue({ status: "not-pending" });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-stale-vault-delete",
+          seq: 18,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "delete",
+          payload: {
+            key: "journal_vault_key",
+            operationRevision: "100:olderoperation",
+            vaultRevision: 101,
+          },
+          device_id: "server:journal-password-removal",
+          created_at: "2026-08-03T12:03:00.000Z",
+        },
+        {
+          id: "event-newer-vault-upsert",
+          seq: 19,
+          entity_type: "setting",
+          entity_id: "journal_vault_key",
+          op: "upsert",
+          payload: { key: "journal_vault_key", value: newerVault },
+          device_id: "remote-device",
+          created_at: "2026-08-03T12:04:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" },
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.recordRemoteRecovery).not.toHaveBeenCalled();
+    expect(mocks.settingsDelete).not.toHaveBeenCalledWith("journal_vault_key");
+    expect(mocks.settingsPut).toHaveBeenCalledWith({
+      key: "journal_vault_key",
+      value: newerVault,
+    });
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 19 });
   });
 
   it("ignores remote deletes for local-only unsaved journal drafts", async () => {
@@ -831,6 +1649,120 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 20 });
   });
 
+  it("accepts the exact active vault epoch for a protected journal delta and linked audio", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_password") return { key, value: "protected" };
+      if (key === "journal_vault_key") {
+        return { key, value: { wrappedKey: "vault", createdAt: 100, updatedAt: 101 } };
+      }
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      if (key === "sync-last-seq") return { key, value: 20 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+    mocks.journalAudioMetadataIn.mockResolvedValue({
+      data: [
+        {
+          id: "audio-exact",
+          entry_id: "journal-exact",
+          duration: 18,
+          mime_type: "audio/webm",
+          storage_path: "user-1/audio-exact.v101.bin",
+          vault_revision: 101,
+          created_at: 12,
+        },
+      ],
+      error: null,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-journal-exact",
+          seq: 21,
+          entity_type: "journal",
+          entity_id: "journal-exact",
+          op: "upsert",
+          payload: {
+            id: "journal-exact",
+            date: "2026-08-03",
+            title: "Protected",
+            content: "zenflow:journal-content:v1:ciphertext",
+            stickers: [],
+            tags: [],
+            photoIds: [],
+            audioIds: ["audio-exact"],
+            vaultRevision: 101,
+            createdAt: 10,
+            updatedAt: 20,
+          },
+          device_id: "remote-device",
+          created_at: "2026-08-03T12:00:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" }
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.journalTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "journal-exact", vaultRevision: 101 })
+    );
+    expect(mocks.journalAudioBulkPut).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "audio-exact",
+        storagePath: "user-1/audio-exact.v101.bin",
+        vaultRevision: 101,
+      }),
+    ]);
+  });
+
+  it("rejects a protected journal delta from a stale vault epoch", async () => {
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "journal_password") return { key, value: "protected" };
+      if (key === "journal_vault_key") {
+        return { key, value: { wrappedKey: "vault", createdAt: 100, updatedAt: 101 } };
+      }
+      if (key === "journal_vault_revision_v1") return { key, value: 101 };
+      if (key === "sync-last-seq") return { key, value: 21 };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-journal-stale",
+          seq: 22,
+          entity_type: "journal",
+          entity_id: "journal-stale",
+          op: "upsert",
+          payload: {
+            id: "journal-stale",
+            date: "2026-08-03",
+            title: "Stale",
+            content: "zenflow:journal-content:v1:ciphertext",
+            stickers: [],
+            tags: [],
+            photoIds: [],
+            audioIds: [],
+            vaultRevision: 100,
+            createdAt: 10,
+            updatedAt: 20,
+          },
+          device_id: "remote-device",
+          created_at: "2026-08-03T12:00:00.000Z",
+        },
+      ],
+      "current-device",
+      { expectedOwnerUserId: "user-1" }
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.journalTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 22 });
+  });
+
   it("rejects every remote diary vault while owner-bound removal is pending", async () => {
     mocks.settingsGet.mockImplementation(async (key: string) => {
       if (key === "sync-last-seq") return { key, value: 18 };
@@ -1163,5 +2095,59 @@ describe("eventSync auth guards", () => {
     });
 
     expect(normalized.idempotencyKey).toEqual(expect.stringMatching(UUID_RE));
+  });
+
+  it("rejects a duplicate idempotency key when the durable event payload differs", () => {
+    const intent = {
+      entityType: "journal" as const,
+      entityId: "journal-1",
+      op: "upsert" as const,
+      payload: { id: "journal-1", content: "expected" },
+      deviceId: "device-1",
+      idempotencyKey: "11111111-1111-4111-8111-111111111111",
+    };
+
+    expect(() =>
+      assertSyncEventMatchesIntent(
+        {
+          id: "event-existing",
+          seq: 22,
+          entity_type: "journal",
+          entity_id: "journal-1",
+          op: "upsert",
+          payload: { id: "journal-1", content: "different" },
+          device_id: "device-1",
+          created_at: "2026-08-04T00:00:00.000Z",
+        },
+        intent,
+      ),
+    ).toThrow(/idempotency collision/i);
+  });
+
+  it("accepts an exact duplicate event even when JSON object key order differs", () => {
+    const intent = {
+      entityType: "journal" as const,
+      entityId: "journal-1",
+      op: "upsert" as const,
+      payload: { content: "expected", id: "journal-1", nested: { b: 2, a: 1 } },
+      deviceId: "device-1",
+      idempotencyKey: "11111111-1111-4111-8111-111111111111",
+    };
+
+    expect(() =>
+      assertSyncEventMatchesIntent(
+        {
+          id: "event-existing",
+          seq: 22,
+          entity_type: "journal",
+          entity_id: "journal-1",
+          op: "upsert",
+          payload: { nested: { a: 1, b: 2 }, id: "journal-1", content: "expected" },
+          device_id: "device-1",
+          created_at: "2026-08-04T00:00:00.000Z",
+        },
+        intent,
+      ),
+    ).not.toThrow();
   });
 });

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { SK } from "@/lib/storageKeys";
 import type { JournalEntry } from "../types";
 
 const mocks = vi.hoisted(() => ({
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   photoUpdate: vi.fn(() => Promise.resolve(1)),
   audioGet: vi.fn(() => Promise.resolve(undefined)),
   audioUpdate: vi.fn(() => Promise.resolve(1)),
-  settingsGet: vi.fn<() => Promise<{ value: unknown } | undefined>>(() =>
+  settingsGet: vi.fn<(key: string) => Promise<{ value: unknown } | undefined>>(() =>
     Promise.resolve(undefined)
   ),
   transaction: vi.fn((_mode: string, _tables: unknown, fn: () => unknown) => Promise.resolve(fn())),
@@ -128,6 +129,18 @@ function baseEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
   };
 }
 
+function mockProtectedVault(wrappedKey = "persisted"): void {
+  mocks.settingsGet.mockImplementation((key: string) =>
+    Promise.resolve(
+      key === SK.JOURNAL_VAULT_KEY
+        ? {
+            value: { wrappedKey, createdAt: 1, updatedAt: 2 },
+          }
+        : undefined,
+    ),
+  );
+}
+
 describe("journalStorage content encryption", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -151,9 +164,7 @@ describe("journalStorage content encryption", () => {
 
   it("stores and syncs encrypted content while returning plaintext to the UI", async () => {
     setJournalContentVaultKey(sessionKey, 2);
-    mocks.settingsGet.mockResolvedValue({
-      value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 },
-    });
+    mockProtectedVault();
 
     const result = await saveEntry({
       date: "2026-06-18",
@@ -183,10 +194,31 @@ describe("journalStorage content encryption", () => {
     );
   });
 
-  it("rejects plaintext writes from a stale tab when diary protection is persisted", async () => {
-    mocks.settingsGet.mockResolvedValue({
-      value: { wrappedKey: "protected-in-another-tab", createdAt: 1, updatedAt: 2 },
+  it("stores a protected title-only entry with an encrypted empty body", async () => {
+    setJournalContentVaultKey(sessionKey, 2);
+    mockProtectedVault();
+
+    const result = await saveEntry({
+      date: "2026-06-18",
+      title: "Private title",
+      content: "",
+      stickers: [],
+      photoIds: [],
+      tags: [],
     });
+
+    expect(result.content).toBe("");
+    expect(mocks.encryptJournalContent).toHaveBeenCalledWith("", sessionKey);
+    expect(mocks.addEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: `enc:${sessionKey}:`,
+        vaultRevision: 2,
+      }),
+    );
+  });
+
+  it("rejects plaintext writes from a stale tab when diary protection is persisted", async () => {
+    mockProtectedVault("protected-in-another-tab");
 
     await expect(
       saveEntry({
@@ -217,23 +249,19 @@ describe("journalStorage content encryption", () => {
     expect(mocks.decryptJournalContentIfNeeded).toHaveBeenCalledWith(stored.content, sessionKey);
   });
 
-  it("redacts encrypted content instead of exposing ciphertext while the diary is locked", async () => {
+  it("fails closed instead of fabricating blank content while the diary is locked", async () => {
     const stored = baseEntry({ content: `enc:${sessionKey}:A quiet journal line` });
     const toArray = vi.fn(() => Promise.resolve([stored]));
     const reverse = vi.fn(() => ({ toArray }));
     mocks.orderBy.mockReturnValue({ reverse });
 
-    const result = await getAllEntries();
-
-    expect(result).toEqual([baseEntry({ content: "" })]);
+    await expect(getAllEntries()).rejects.toThrow(/unavailable/i);
     expect(mocks.decryptJournalContentIfNeeded).not.toHaveBeenCalled();
   });
 
   it("encrypts content updates before storage and sync", async () => {
     setJournalContentVaultKey(sessionKey, 2);
-    mocks.settingsGet.mockResolvedValue({
-      value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 },
-    });
+    mockProtectedVault();
     mocks.getEntry.mockResolvedValue(
       baseEntry({
         content: `enc:${sessionKey}:Updated line`,
@@ -264,12 +292,13 @@ describe("journalStorage content encryption", () => {
   it("migrates existing plaintext entries into encrypted stored rows", async () => {
     mocks.entriesToArray.mockResolvedValue([
       baseEntry({ id: "plain-1", content: "Legacy line" }),
+      baseEntry({ id: "title-only", title: "Private title", content: "" }),
       baseEntry({ id: "enc-1", content: `enc:${sessionKey}:Already safe` }),
     ]);
 
     const migrated = await encryptPlaintextJournalEntries(sessionKey);
 
-    expect(migrated).toBe(1);
+    expect(migrated).toBe(2);
     expect(mocks.updateEntry).toHaveBeenCalledWith(
       "plain-1",
       expect.objectContaining({
@@ -283,6 +312,13 @@ describe("journalStorage content encryption", () => {
         content: `enc:${sessionKey}:Legacy line`,
       }),
       "user-1"
+    );
+    expect(mocks.updateEntry).toHaveBeenCalledWith(
+      "title-only",
+      expect.objectContaining({
+        content: `enc:${sessionKey}:`,
+        updatedAt: expect.any(Number),
+      }),
     );
   });
 

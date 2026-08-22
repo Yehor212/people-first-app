@@ -1,75 +1,83 @@
 /**
- * Feature Flags Context
- *
- * Resolves optional app modules from onboarding and progressive unlocks.
- * Works alongside the progressive unlock system from onboardingFlow.ts
- * AND the behavioral Garden Gate system (IA Blueprint Phase 5).
- *
- * Core features (mood, habits) are always enabled.
- * Other features can be toggled by the user after being unlocked.
+ * Resolves optional ZenFlow modules from reviewed user defaults, onboarding,
+ * and authoritative local activity. Release/security capabilities are
+ * classified by the manifest but cannot be enabled by this provider.
  */
 
-import { createContext, useContext, ReactNode, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
-  isFeatureUnlocked,
-  FeatureId,
   computeGardenGateStage,
   getFeaturesForGardenStage,
+  isFeatureUnlocked,
+  type FeatureId,
+  type GardenGateStage,
 } from "@/lib/onboardingFlow";
+import {
+  evaluateFeatureAvailability,
+  getReviewedFeatureDefault,
+  type BehavioralUnlockState,
+  type FeatureAvailability,
+  type ToggleableFeature,
+} from "@/lib/featureAvailability";
 import { SK } from "@/lib/storageKeys";
-import { useUserDataStore } from "@/stores";
 import { getToday } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { useUserDataStore } from "@/stores";
+import { db } from "@/storage/db";
+import {
+  assertDataWriteBoundaryGeneration,
+  captureDataWriteBoundaryGeneration,
+  subscribeDataRefresh,
+} from "@/hooks/useIndexedDB";
+import {
+  assertOriginAccountBoundaryGeneration,
+  captureOriginAccountBoundaryGeneration,
+  subscribeOriginAccountBoundaryObservation,
+  waitForAccountBoundaryDataSettlement,
+} from "@/storage/accountBoundaryRuntime";
 
-// All toggleable features
-export type ToggleableFeature =
-  | "focusTimer"
-  | "breathingExercise"
-  | "gratitudeJournal"
-  | "quests"
-  | "tasks"
-  | "challenges"
-  | "aiCoach"
-  | "innerWorld"
-  | "deltaSync";
+export type { FeatureAvailability, ToggleableFeature } from "@/lib/featureAvailability";
 
-// Feature flags state
-export interface FeatureFlags {
-  focusTimer: boolean;
-  breathingExercise: boolean;
-  gratitudeJournal: boolean;
-  quests: boolean;
-  tasks: boolean;
-  challenges: boolean;
-  aiCoach: boolean;
-  innerWorld: boolean;
-  deltaSync: boolean;
-}
+export type FeatureFlags = Record<ToggleableFeature, boolean>;
 
-// Default: all features enabled (except AI Coach and deltaSync - gradual rollout)
-const DEFAULT_FLAGS: FeatureFlags = {
+export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   focusTimer: true,
   breathingExercise: true,
   gratitudeJournal: true,
   quests: true,
   tasks: true,
   challenges: true,
-  aiCoach: false, // Hidden until AI is working
+  aiCoach: false,
   innerWorld: true,
-  deltaSync: true, // Enabled: event-based incremental sync (migration 20260405 applied)
+  deltaSync: true,
 };
+
+export type JournalEntryCountState =
+  | { status: "loading" }
+  | { status: "ready"; count: number }
+  | { status: "error" };
 
 interface FeatureFlagsContextType {
   flags: FeatureFlags;
+  journalEntryCountState: JournalEntryCountState;
   setFlag: (feature: ToggleableFeature, enabled: boolean) => void;
   isFeatureEnabled: (feature: ToggleableFeature) => boolean;
+  getFeatureAvailability: (feature: ToggleableFeature) => FeatureAvailability;
   isFeatureVisible: (feature: ToggleableFeature) => boolean;
   resetFlags: () => void;
 }
 
 const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
 
-// Map toggleable features to onboarding feature IDs
 const FEATURE_TO_ONBOARDING: Partial<Record<ToggleableFeature, FeatureId>> = {
   focusTimer: "focusTimer",
   quests: "quests",
@@ -77,107 +85,225 @@ const FEATURE_TO_ONBOARDING: Partial<Record<ToggleableFeature, FeatureId>> = {
   challenges: "challenges",
 };
 
+interface GardenAvailabilitySnapshot {
+  features: FeatureId[];
+  daysActive: number;
+}
+
+function knownGardenStageWithoutJournal(input: {
+  habitsCompleted: number;
+  focusSessionsCompleted: number;
+  daysActive: number;
+}): GardenGateStage {
+  if (input.daysActive >= 14) return "flourishing";
+  if (input.focusSessionsCompleted >= 1 && input.habitsCompleted >= 5) return "growing";
+  if (input.habitsCompleted >= 3) return "sprout";
+  return "seed";
+}
+
+function journalCountCouldChangeUnlock(
+  feature: ToggleableFeature,
+  daysActive: number,
+  state: JournalEntryCountState
+): boolean {
+  return (
+    state.status !== "ready" &&
+    daysActive >= 7 &&
+    daysActive < 14 &&
+    (feature === "quests" || feature === "challenges")
+  );
+}
+
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
-  const [flags, setFlags] = useLocalStorage<FeatureFlags>(SK.FEATURE_FLAGS, DEFAULT_FLAGS);
+  const [flags, setFlags] = useLocalStorage<FeatureFlags>(SK.FEATURE_FLAGS, DEFAULT_FEATURE_FLAGS);
+  const [journalEntryCountState, setJournalEntryCountState] = useState<JournalEntryCountState>({
+    status: "loading",
+  });
 
-  // Garden Gate stats from user data (IA Blueprint Phase 5)
-  const habits = useUserDataStore((s) => s.habits);
-  const focusSessions = useUserDataStore((s) => s.focusSessions);
-  const moods = useUserDataStore((s) => s.moods);
+  const habits = useUserDataStore((state) => state.habits);
+  const focusSessions = useUserDataStore((state) => state.focusSessions);
+  const moods = useUserDataStore((state) => state.moods);
 
-  // Compute garden gate features from behavioral stats
-  const gardenGateFeatures = useMemo(() => {
+  useEffect(() => {
+    let active = true;
+    let requestSequence = 0;
+    // A newly opened tab may mount after the durable generation advances but
+    // before the originating tab finishes purging the previous owner's rows.
+    // Acquire DATA once on mount so that late observers cannot publish a stale
+    // count under the already-new generation.
+    let pendingBoundarySettlement: Promise<void> | null =
+      waitForAccountBoundaryDataSettlement();
+
+    const loadJournalCount = async (
+      signal?: AbortSignal,
+      resetToLoading = false
+    ): Promise<void> => {
+      const requestId = ++requestSequence;
+      let awaitedSettlement: Promise<void> | null = null;
+      if (resetToLoading && active) setJournalEntryCountState({ status: "loading" });
+      try {
+        awaitedSettlement = pendingBoundarySettlement;
+        if (awaitedSettlement) {
+          await awaitedSettlement;
+          if (pendingBoundarySettlement === awaitedSettlement) {
+            pendingBoundarySettlement = null;
+          }
+        }
+        if (!active || signal?.aborted || requestId !== requestSequence) return;
+        // Capture both generations only after DATA proves the account purge and
+        // its final refresh have released the owner boundary.
+        const dataGeneration = captureDataWriteBoundaryGeneration();
+        const originGeneration = captureOriginAccountBoundaryGeneration();
+        const count = await db.journalEntries.count();
+        if (!Number.isSafeInteger(count) || count < 0) {
+          throw new Error("Invalid diary count");
+        }
+        if (!active || signal?.aborted || requestId !== requestSequence) return;
+        assertDataWriteBoundaryGeneration(dataGeneration);
+        assertOriginAccountBoundaryGeneration(originGeneration);
+        setJournalEntryCountState({ status: "ready", count });
+      } catch {
+        if (awaitedSettlement && pendingBoundarySettlement === awaitedSettlement) {
+          pendingBoundarySettlement = null;
+        }
+        if (!active || signal?.aborted || requestId !== requestSequence) return;
+        logger.warn("[FeatureAvailability] Authoritative diary count is unavailable");
+        setJournalEntryCountState({ status: "error" });
+      }
+    };
+
+    const unsubscribeRefresh = subscribeDataRefresh((signal) => loadJournalCount(signal, false));
+    const unsubscribeBoundary = subscribeOriginAccountBoundaryObservation(() => {
+      pendingBoundarySettlement = waitForAccountBoundaryDataSettlement();
+      void loadJournalCount(undefined, true);
+    });
+    void loadJournalCount(undefined, true);
+
+    return () => {
+      active = false;
+      requestSequence += 1;
+      unsubscribeRefresh();
+      unsubscribeBoundary();
+    };
+  }, []);
+
+  const gardenAvailability = useMemo<GardenAvailabilitySnapshot>(() => {
     const today = getToday();
     const habitsCompleted = habits.reduce(
-      (sum, h) => sum + Object.values(h.entries || {}).filter((e) => e.value === 2).length,
+      (sum, habit) =>
+        sum + Object.values(habit.entries || {}).filter((entry) => entry.value === 2).length,
       0
     );
     const focusSessionsCompleted = focusSessions.length;
-    // Approximate daysActive from unique mood dates
-    const uniqueDates = new Set(moods.map((m) => m.date || today));
-    const daysActive = uniqueDates.size;
+    const daysActive = new Set(moods.map((mood) => mood.date || today)).size;
+    const stage =
+      journalEntryCountState.status === "ready"
+        ? computeGardenGateStage({
+            habitsCompleted,
+            focusSessionsCompleted,
+            journalEntries: journalEntryCountState.count,
+            daysActive,
+          })
+        : knownGardenStageWithoutJournal({
+            habitsCompleted,
+            focusSessionsCompleted,
+            daysActive,
+          });
 
-    const stage = computeGardenGateStage({
-      habitsCompleted,
-      focusSessionsCompleted,
-      journalEntries: 0, // Journal entries not in store — blooming requires calendar-based unlock
-      daysActive,
-    });
+    return { features: getFeaturesForGardenStage(stage), daysActive };
+  }, [focusSessions, habits, journalEntryCountState, moods]);
 
-    return getFeaturesForGardenStage(stage);
-  }, [habits, focusSessions, moods]);
-
-  // Set a single feature flag
   const setFlag = useCallback(
     (feature: ToggleableFeature, enabled: boolean) => {
-      setFlags((prev) => ({
-        ...prev,
-        [feature]: enabled,
-      }));
+      setFlags((previous) => ({ ...previous, [feature]: enabled }));
     },
     [setFlags]
   );
 
-  // Check if feature is enabled by user
   const isFeatureEnabled = useCallback(
     (feature: ToggleableFeature): boolean => {
-      return flags[feature] ?? true;
+      const storedValue = flags?.[feature];
+      if (typeof storedValue === "boolean") return storedValue;
+      return getReviewedFeatureDefault(feature) ?? false;
     },
     [flags]
   );
 
-  // Check if feature should be visible (unlocked by onboarding OR garden gate, AND enabled by user)
-  const isFeatureVisible = useCallback(
-    (feature: ToggleableFeature): boolean => {
-      // Check user toggle first
-      if (!isFeatureEnabled(feature)) {
-        return false;
-      }
-
-      // Check if feature has onboarding unlock requirement
+  const getFeatureAvailability = useCallback(
+    (feature: ToggleableFeature): FeatureAvailability => {
       const onboardingFeature = FEATURE_TO_ONBOARDING[feature];
-      if (onboardingFeature) {
-        // Calendar-based unlock OR behavioral garden gate unlock
-        if (isFeatureUnlocked(onboardingFeature)) return true;
-        if (gardenGateFeatures.includes(onboardingFeature)) return true;
-        return false;
+      const calendarUnlocked = onboardingFeature ? isFeatureUnlocked(onboardingFeature) : false;
+      let behavioralUnlock: BehavioralUnlockState = onboardingFeature
+        ? gardenAvailability.features.includes(onboardingFeature)
+          ? "unlocked"
+          : "locked"
+        : "locked";
+
+      if (
+        behavioralUnlock === "locked" &&
+        journalCountCouldChangeUnlock(
+          feature,
+          gardenAvailability.daysActive,
+          journalEntryCountState
+        )
+      ) {
+        behavioralUnlock =
+          journalEntryCountState.status === "error" ? "unknown-error" : "unknown-loading";
       }
 
-      // Features without onboarding requirements are always unlocked
-      return true;
+      return evaluateFeatureAvailability(feature, {
+        userFlags: flags,
+        calendarUnlocked,
+        behavioralUnlock,
+      });
     },
-    [isFeatureEnabled, gardenGateFeatures]
+    [flags, gardenAvailability, journalEntryCountState]
   );
 
-  // Reset all flags to defaults
+  const isFeatureVisible = useCallback(
+    (feature: ToggleableFeature): boolean => getFeatureAvailability(feature).visible,
+    [getFeatureAvailability]
+  );
+
   const resetFlags = useCallback(() => {
-    setFlags(DEFAULT_FLAGS);
+    setFlags(DEFAULT_FEATURE_FLAGS);
   }, [setFlags]);
 
-  const value = useMemo(
+  const value = useMemo<FeatureFlagsContextType>(
     () => ({
       flags,
+      journalEntryCountState,
       setFlag,
       isFeatureEnabled,
+      getFeatureAvailability,
       isFeatureVisible,
       resetFlags,
     }),
-    [flags, setFlag, isFeatureEnabled, isFeatureVisible, resetFlags]
+    [
+      flags,
+      getFeatureAvailability,
+      isFeatureEnabled,
+      isFeatureVisible,
+      journalEntryCountState,
+      resetFlags,
+      setFlag,
+    ]
   );
 
   return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;
 }
 
-export function useFeatureFlags() {
-  const context = useContext(FeatureFlagsContext);
+export function useFeatureFlags(): FeatureFlagsContextType {
+  return requireFeatureFlagsProvider(useContext(FeatureFlagsContext));
+}
+
+export function requireFeatureFlagsProvider<T>(context: T | undefined): T {
   if (!context) {
     throw new Error("useFeatureFlags must be used within a FeatureFlagsProvider");
   }
   return context;
 }
 
-// Convenience hook for checking a single feature
 export function useFeatureVisible(feature: ToggleableFeature): boolean {
-  const { isFeatureVisible } = useFeatureFlags();
-  return isFeatureVisible(feature);
+  return useFeatureFlags().isFeatureVisible(feature);
 }

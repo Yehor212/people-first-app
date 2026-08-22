@@ -4,6 +4,7 @@ import {
   formatJournalRelativeTime,
   formatJournalWordCount,
   formatLocalizedCount,
+  formatLocalizedInvariantCount,
 } from "../journalWordCount";
 import type { Language } from "@/i18n/translations";
 import { ar } from "@/i18n/languages/ar";
@@ -133,6 +134,19 @@ describe("formatLocalizedCount", () => {
     };
 
     expect(formatLocalizedCount(3, "ja", ja, "journalEntryCount")).toBe("3件");
+  });
+
+  it("formats the invariant French unavailable-page reassurance without plural-key copies", () => {
+    expect(
+      formatLocalizedInvariantCount(
+        1,
+        "fr",
+        fr,
+        "journalEntriesUnavailableAllCount",
+      ),
+    ).toBe(
+      "Entrées du journal indisponibles pour le moment : 1. Vos données enregistrées n’ont pas été supprimées.",
+    );
   });
 
   it("uses a complete Ukrainian inactivity sentence with the correct day form", () => {

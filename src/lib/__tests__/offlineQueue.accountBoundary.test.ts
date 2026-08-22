@@ -342,6 +342,40 @@ describe("offline queue account boundary", () => {
     expect(testState.persistedItems).toHaveLength(1);
   });
 
+  it("persists and logs only a stable failure code for diary security migration", async () => {
+    const { offlineQueue } = await loadFreshQueue();
+    offlineQueue.registerHandler("MIGRATE_JOURNAL_SECURITY", async () => {
+      throw new Error("ciphertext entry-enc:secret for account-a");
+    });
+    await offlineQueue.enqueue(
+      "MIGRATE_JOURNAL_SECURITY",
+      "removal-operation",
+      { revision: "removal-operation" },
+      {
+        expectedOwnerUserId: "account-a",
+        maxRetries: 1,
+        priority: "critical",
+      },
+    );
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(testState.persistedItems).toEqual([
+      expect.objectContaining({
+        type: "MIGRATE_JOURNAL_SECURITY",
+        retries: 1,
+        lastError: "storage-failed",
+      }),
+    ]);
+    const serializedLogs = JSON.stringify([
+      ...loggerMocks.error.mock.calls,
+      ...loggerMocks.warn.mock.calls,
+    ]);
+    expect(serializedLogs).not.toContain("entry-enc:secret");
+    expect(serializedLogs).not.toContain("account-a");
+  });
+
   it("processes a verified retry when navigator.onLine is stale false", async () => {
     const { offlineQueue } = await loadFreshQueue();
     const handler = vi.fn(async () => COMMITTED);
@@ -462,7 +496,7 @@ describe("offline queue account boundary", () => {
     releaseFirst();
     await Promise.all([olderPass, newerPass]);
 
-    expect(handler).toHaveBeenCalledTimes(3);
+    await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(3));
     expect(handler.mock.calls.map(([action]) => action.entityId)).toEqual([
       "older-verified-retry",
       "older-verified-retry",
@@ -1101,6 +1135,89 @@ describe("offline queue account boundary", () => {
     }
   });
 
+  it("does not acknowledge a journal upsert whose durable identity rotates during password removal", async () => {
+    const oldOperationId = "11111111-1111-4111-8111-111111111111";
+    const plaintextOperationId = "22222222-2222-4222-8222-222222222222";
+    testState.persistedItems.push({
+      id: "journal-removal-upsert",
+      operationId: oldOperationId,
+      type: "SYNC_JOURNAL_ENTRY",
+      entityId: "entry-removal",
+      payload: {
+        id: "entry-removal",
+        content: "entry-enc:vault-key:ciphertext",
+        vaultRevision: 7,
+      },
+      timestamp: 1,
+      retries: 3,
+      maxRetries: 5,
+      priority: "critical",
+      ownerUserId: "account-a",
+    });
+    const { offlineQueue } = await loadFreshQueue();
+    const delivered: Array<{ operationId?: string; payload: unknown }> = [];
+    let allowPlaintextCommit = false;
+
+    offlineQueue.registerHandler("SYNC_JOURNAL_ENTRY", async (action) => {
+      delivered.push({ operationId: action.operationId, payload: action.payload });
+      if (delivered.length === 1) {
+        await dbMocks.offlineQueueTable.update(action.id, {
+          operationId: plaintextOperationId,
+          payload: {
+            id: "entry-removal",
+            content: "plaintext after local removal",
+            vaultRevision: null,
+          },
+        });
+      }
+      if (action.operationId === plaintextOperationId && !allowPlaintextCommit) {
+        return {
+          status: "deferred" as const,
+          reason: "password-removal-paused" as const,
+        };
+      }
+      return COMMITTED;
+    });
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(delivered).toEqual([
+      expect.objectContaining({ operationId: oldOperationId }),
+      expect.objectContaining({
+        operationId: plaintextOperationId,
+        payload: expect.objectContaining({ content: "plaintext after local removal" }),
+      }),
+    ]);
+    expect(testState.persistedItems).toEqual([
+      expect.objectContaining({
+        id: "journal-removal-upsert",
+        operationId: plaintextOperationId,
+        payload: expect.objectContaining({
+          content: "plaintext after local removal",
+          vaultRevision: null,
+        }),
+        retries: 3,
+      }),
+    ]);
+
+    allowPlaintextCommit = true;
+    await offlineQueue.processQueue();
+
+    expect(delivered).toEqual([
+      expect.objectContaining({ operationId: oldOperationId }),
+      expect.objectContaining({
+        operationId: plaintextOperationId,
+        payload: expect.objectContaining({ content: "plaintext after local removal" }),
+      }),
+      expect.objectContaining({
+        operationId: plaintextOperationId,
+        payload: expect.objectContaining({ content: "plaintext after local removal" }),
+      }),
+    ]);
+    expect(testState.persistedItems).toEqual([]);
+  });
+
   it("waits for persisted actions before answering an owner pending check", async () => {
     let releaseLoad!: (items: PersistedQueueItem[]) => void;
     dbMocks.offlineQueueTable.toArray.mockReturnValueOnce(
@@ -1197,7 +1314,7 @@ describe("offline queue account boundary", () => {
     ]);
   });
 
-  it("does not let a non-cooperative handler block an account boundary or acknowledge late success", async () => {
+  it("fails an account boundary closed while an aborted handler remains unsettled", async () => {
     const { offlineQueue } = await loadFreshQueue();
     let markHandlerStarted!: () => void;
     let releaseHandler!: () => void;
@@ -1225,21 +1342,24 @@ describe("offline queue account boundary", () => {
     await handlerStarted;
     const boundary = offlineQueue.suspendForAccountBoundary();
     const boundaryOutcome = await Promise.race([
-      boundary.then(() => "resolved" as const),
+      boundary.then(
+        () => "resolved" as const,
+        () => "blocked" as const,
+      ),
       new Promise<"timed-out">((resolve) => setTimeout(() => resolve("timed-out"), 50)),
     ]);
 
-    releaseHandler();
     await processing;
-    await boundary;
 
-    expect(boundaryOutcome).toBe("resolved");
+    expect(boundaryOutcome).toBe("blocked");
+    expect(offlineQueue.isSuspendedForAccountBoundary()).toBe(true);
     expect(offlineQueue.getState().actions).toEqual([
       expect.objectContaining({
         entityId: "non-cooperative-boundary-setting",
         retries: 0,
       }),
     ]);
+    releaseHandler();
   });
 
   it("normalizes non-Error handler rejections at the attempt boundary", async () => {
@@ -1288,9 +1408,9 @@ describe("offline queue account boundary", () => {
       await handlerStarted;
       await vi.advanceTimersByTimeAsync(30_000);
       const signalWasAborted = (observedSignal as unknown as AbortSignal).aborted;
-      releaseHandler();
       await processing;
       const stateAfterDeadline = offlineQueue.getState().actions;
+      releaseHandler();
 
       expect(signalWasAborted).toBe(true);
       expect(stateAfterDeadline).toEqual([
@@ -1896,6 +2016,68 @@ describe("offline queue account boundary", () => {
 
       await vi.advanceTimersByTimeAsync(1_000);
       await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(offlineQueue.getState().actions).toEqual([]));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("backs off a server-paused journal delete without changing its durable identity", async () => {
+    vi.useFakeTimers();
+    try {
+      const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
+      const { offlineQueue } = await loadFreshQueue();
+      const handler = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: "deferred" as const,
+          reason: "password-removal-paused" as const,
+        })
+        .mockResolvedValueOnce({
+          status: "deferred" as const,
+          reason: "password-removal-paused" as const,
+        })
+        .mockResolvedValue(COMMITTED);
+      offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", handler);
+      await offlineQueue.enqueue(
+        "DELETE_JOURNAL_ENTRY",
+        "journal-entry-paused-delete",
+        { id: "journal-entry-paused-delete" },
+        { expectedOwnerUserId: "account-a", maxRetries: 1, priority: "critical" },
+      );
+
+      setOnline(true);
+      await offlineQueue.processQueue();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(timeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 15_000);
+      const pausedAction = offlineQueue.getState().actions[0];
+      expect(offlineQueue.getState().actions).toEqual([
+        expect.objectContaining({
+          entityId: "journal-entry-paused-delete",
+          retries: 0,
+          operationId: expect.any(String),
+        }),
+      ]);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(14_000);
+      await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(2));
+      expect(offlineQueue.getState().actions).toEqual([
+        expect.objectContaining({
+          id: pausedAction.id,
+          operationId: pausedAction.operationId,
+          entityId: "journal-entry-paused-delete",
+          retries: 0,
+        }),
+      ]);
+
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(handler).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(3));
       await vi.waitFor(() => expect(offlineQueue.getState().actions).toEqual([]));
     } finally {
       vi.useRealTimers();

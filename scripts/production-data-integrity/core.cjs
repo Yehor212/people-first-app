@@ -2023,22 +2023,304 @@ function analyzeProductionTextFile(root, relativePath, config, findings, reportP
   }
 }
 
+function maskSqlRangePreservingLines(value, start, end) {
+  return (
+    value.slice(0, start) +
+    value.slice(start, end).replace(/[^\n]/g, " ") +
+    value.slice(end)
+  );
+}
+
+function escapeSqlRoutinePattern(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findDollarQuotedSqlRoutines(sql) {
+  const routinePattern =
+    /\bcreate\s+(?:or\s+replace\s+)?(?:function|procedure)\s+((?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\s*\.\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?)\s*\(/gi;
+  const routines = [];
+  let match;
+  while ((match = routinePattern.exec(sql)) !== null) {
+    const headerEnd = routinePattern.lastIndex;
+    const bodyMarkerPattern = /\bas\s+(\$[a-zA-Z_][a-zA-Z0-9_]*\$|\$\$)/gi;
+    bodyMarkerPattern.lastIndex = headerEnd;
+    const bodyMarker = bodyMarkerPattern.exec(sql);
+    if (!bodyMarker) break;
+    const statementEnd = sql.indexOf(";", headerEnd);
+    if (statementEnd !== -1 && statementEnd < bodyMarker.index) {
+      routinePattern.lastIndex = statementEnd + 1;
+      continue;
+    }
+    const delimiter = bodyMarker[1];
+    const bodyStart = bodyMarkerPattern.lastIndex;
+    const bodyEnd = sql.indexOf(delimiter, bodyStart);
+    if (bodyEnd === -1) break;
+    const normalizedName = match[1].replace(/["\s]/g, "").toLowerCase();
+    routines.push({
+      normalizedName,
+      bodyStart,
+      bodyEnd,
+      body: sql.slice(bodyStart, bodyEnd),
+    });
+    routinePattern.lastIndex = bodyEnd + delimiter.length;
+  }
+  return routines;
+}
+
+function findSqlRoutineCallPositions(sql, normalizedName) {
+  const parts = normalizedName.split(".");
+  const qualified = parts.map(escapeSqlRoutinePattern).join("\\s*\\.\\s*");
+  const unqualified = escapeSqlRoutinePattern(parts[parts.length - 1]);
+  const routineNamePattern =
+    qualified === unqualified ? unqualified : `(?:${qualified}|${unqualified})`;
+  const invocationPattern = new RegExp(
+    `\\b(?:${routineNamePattern})\\s*\\(`,
+    "gi"
+  );
+  const positions = [];
+  let match;
+  while ((match = invocationPattern.exec(sql)) !== null) {
+    const prefix = sql.slice(Math.max(0, match.index - 192), match.index);
+    // Signatures and trigger/policy wiring name a routine but do not execute
+    // its body while the migration is applied. Calls nested in SELECT/VALUES,
+    // assignments, DO blocks, or another invoked routine have no such marker
+    // immediately before the routine name and therefore remain visible.
+    if (/\b(?:function|procedure|routine)\s+(?:if\s+exists\s+)?$/i.test(prefix)) {
+      continue;
+    }
+    positions.push(match.index);
+  }
+  return positions;
+}
+
+function sqlCallsRoutine(sql, normalizedName) {
+  return findSqlRoutineCallPositions(sql, normalizedName).length > 0;
+}
+
+function normalizeSqlObjectName(value) {
+  return String(value).replace(/["\s]/g, "").toLowerCase();
+}
+
+function findSqlMutations(sql) {
+  const identifier =
+    '(?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\\s*\\.\\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?';
+  const mutationPattern = new RegExp(
+    `\\b(insert\\s+into|update|delete\\s+from|truncate(?:\\s+table)?|merge\\s+into|copy)\\s+(?:only\\s+)?(${identifier})(?=\\s|\\(|;|$)`,
+    "gi"
+  );
+  const mutations = [];
+  let match;
+  while ((match = mutationPattern.exec(sql)) !== null) {
+    const operation = match[1].toLowerCase();
+    const event = operation.startsWith("insert") || operation.startsWith("copy")
+      ? "insert"
+      : operation.startsWith("update") || operation.startsWith("merge")
+        ? "update"
+        : operation.startsWith("delete")
+          ? "delete"
+          : "truncate";
+    mutations.push({
+      index: match.index,
+      table: normalizeSqlObjectName(match[2]),
+      event,
+    });
+  }
+  return mutations;
+}
+
+function findSqlTriggerInstallations(sql) {
+  const identifier =
+    '(?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\\s*\\.\\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?';
+  const triggerPattern = new RegExp(
+    `\\bcreate\\s+(?:or\\s+replace\\s+)?(?:constraint\\s+)?trigger\\b([\\s\\S]*?)\\bon\\s+(?:only\\s+)?(${identifier})([\\s\\S]*?)\\bexecute\\s+(?:function|procedure)\\s+(${identifier})\\s*\\([^;]*?\\)\\s*;`,
+    "gi"
+  );
+  const triggers = [];
+  let triggerMatch;
+  while ((triggerMatch = triggerPattern.exec(sql)) !== null) {
+    const eventClause = `${triggerMatch[1]} ${triggerMatch[3]}`.toLowerCase();
+    const events = new Set(
+      ["insert", "update", "delete", "truncate"].filter((event) =>
+        new RegExp(`\\b${event}\\b`, "i").test(eventClause)
+      )
+    );
+    triggers.push({
+      installedAt: triggerPattern.lastIndex,
+      targetTable: normalizeSqlObjectName(triggerMatch[2]),
+      events,
+      routineName: normalizeSqlObjectName(triggerMatch[4]),
+    });
+  }
+  return triggers;
+}
+
+function sqlObjectNamesMatch(left, right) {
+  if (left === right) return true;
+  const leftParts = left.split(".");
+  const rightParts = right.split(".");
+  if (leftParts.length > 1 && rightParts.length > 1) return false;
+  return leftParts[leftParts.length - 1] === rightParts[rightParts.length - 1];
+}
+
+function matchingSqlRoutines(routines, normalizedName) {
+  const exact = routines.filter(
+    (routine) => routine.normalizedName === normalizedName
+  );
+  if (exact.length > 0) return exact;
+  const unqualified = normalizedName.split(".").pop();
+  return routines.filter(
+    (routine) => routine.normalizedName.split(".").pop() === unqualified
+  );
+}
+
+function findMigrationExecutedSqlRoutines(routines, outsideRoutineBodies) {
+  const triggers = findSqlTriggerInstallations(outsideRoutineBodies);
+  const routinesByName = new Map(
+    routines.map((routine) => [routine.normalizedName, routine])
+  );
+  const calleesByRoutine = new Map();
+  const mutationsByRoutine = new Map();
+  for (const caller of routines) {
+    const callees = new Set();
+    for (const callee of routines) {
+      if (sqlCallsRoutine(caller.body, callee.normalizedName)) {
+        callees.add(callee.normalizedName);
+      }
+    }
+    calleesByRoutine.set(caller.normalizedName, callees);
+    mutationsByRoutine.set(caller.normalizedName, findSqlMutations(caller.body));
+  }
+
+  const executedRoutineNames = new Set();
+  const routineExecutions = [];
+  const queuedRoutineExecutions = new Set();
+  const mutationExecutions = [];
+  const queuedMutationExecutions = new Set();
+
+  function enqueueRoutine(routineName, executionPosition) {
+    const routine = routinesByName.get(routineName);
+    if (!routine) return;
+    const key = `${routineName}@${executionPosition}`;
+    if (queuedRoutineExecutions.has(key)) return;
+    queuedRoutineExecutions.add(key);
+    routineExecutions.push({ routineName, executionPosition });
+  }
+
+  function enqueueMutation(mutation, executionPosition, sourceKey) {
+    const key = `${sourceKey}@${executionPosition}`;
+    if (queuedMutationExecutions.has(key)) return;
+    queuedMutationExecutions.add(key);
+    mutationExecutions.push({ ...mutation, executionPosition });
+  }
+
+  for (const mutation of findSqlMutations(outsideRoutineBodies)) {
+    enqueueMutation(mutation, mutation.index, `top:${mutation.index}`);
+  }
+  for (const routine of routines) {
+    for (const position of findSqlRoutineCallPositions(
+      outsideRoutineBodies,
+      routine.normalizedName
+    )) {
+      enqueueRoutine(routine.normalizedName, position);
+    }
+  }
+
+  let routineCursor = 0;
+  let mutationCursor = 0;
+  while (
+    routineCursor < routineExecutions.length ||
+    mutationCursor < mutationExecutions.length
+  ) {
+    while (routineCursor < routineExecutions.length) {
+      const execution = routineExecutions[routineCursor];
+      routineCursor += 1;
+      executedRoutineNames.add(execution.routineName);
+
+      for (const calleeName of calleesByRoutine.get(execution.routineName) || []) {
+        enqueueRoutine(calleeName, execution.executionPosition);
+      }
+      for (const mutation of mutationsByRoutine.get(execution.routineName) || []) {
+        enqueueMutation(
+          mutation,
+          execution.executionPosition,
+          `${execution.routineName}:${mutation.index}`
+        );
+      }
+    }
+
+    while (mutationCursor < mutationExecutions.length) {
+      const mutation = mutationExecutions[mutationCursor];
+      mutationCursor += 1;
+      for (const trigger of triggers) {
+        if (trigger.installedAt > mutation.executionPosition) continue;
+        if (!trigger.events.has(mutation.event)) continue;
+        if (!sqlObjectNamesMatch(trigger.targetTable, mutation.table)) continue;
+        for (const routine of matchingSqlRoutines(routines, trigger.routineName)) {
+          enqueueRoutine(routine.normalizedName, mutation.executionPosition);
+        }
+      }
+    }
+  }
+
+  return executedRoutineNames;
+}
+
+/**
+ * CREATE FUNCTION/PROCEDURE stores a body but does not execute it while the
+ * migration is applied. PDI008 therefore scans immediate SQL plus routines
+ * reached by top-level SQL or by a trigger that is already installed at the
+ * effective execution point. Routine calls and table mutations are expanded
+ * to a fixed point, including helper chains and cascaded triggers. This is not
+ * a path/table allowlist: any migration-time reachable user-data write remains
+ * visible to the existing detector while runtime-only trigger DDL stays inert.
+ */
+function maskInertSqlRoutineBodies(sql) {
+  const routines = findDollarQuotedSqlRoutines(sql);
+  if (routines.length === 0) return sql;
+
+  let outsideRoutineBodies = sql;
+  for (const routine of [...routines].sort((left, right) => right.bodyStart - left.bodyStart)) {
+    outsideRoutineBodies = maskSqlRangePreservingLines(
+      outsideRoutineBodies,
+      routine.bodyStart,
+      routine.bodyEnd
+    );
+  }
+
+  const invoked = findMigrationExecutedSqlRoutines(
+    routines,
+    outsideRoutineBodies
+  );
+
+  let immediateSql = sql;
+  for (const routine of [...routines].sort((left, right) => right.bodyStart - left.bodyStart)) {
+    if (invoked.has(routine.normalizedName)) continue;
+    immediateSql = maskSqlRangePreservingLines(
+      immediateSql,
+      routine.bodyStart,
+      routine.bodyEnd
+    );
+  }
+  return immediateSql;
+}
+
 function analyzeSqlFile(root, relativePath, config, findings, reportPath) {
   if (!reportPath(relativePath) || classifyPath(relativePath, config) === "test") return;
   const text = readText(root, relativePath, config.limits.maxSourceFileBytes);
   if (text === null) return;
   const withoutComments = text.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  const immediateSql = maskInertSqlRoutineBodies(withoutComments);
   const userDataTables = new Set(
     config.userDataTables.map((table) => table.split(".").pop().toLowerCase())
   );
   const pattern =
     /\b(?:insert\s+into\s+(?:only\s+)?|merge\s+into\s+|copy\s+)((?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\s*\.\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?)(?=\s|\(|;|$)/gi;
   let match;
-  while ((match = pattern.exec(withoutComments)) !== null) {
+  while ((match = pattern.exec(immediateSql)) !== null) {
     const normalizedTarget = match[1].replace(/["\s]/g, "").toLowerCase();
     const table = normalizedTarget.split(".").pop();
     if (!userDataTables.has(table)) continue;
-    const before = withoutComments.slice(0, match.index);
+    const before = immediateSql.slice(0, match.index);
     const line = before.split("\n").length;
     findings.push(
       makeFinding(config, {

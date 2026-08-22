@@ -431,7 +431,15 @@ describe("getEntriesByDate", () => {
 
     expect(mockWhere).toHaveBeenCalledWith("date");
     expect(mockEquals).toHaveBeenCalledWith("2026-02-17");
-    expect(result).toEqual(entries);
+    expect(result).toEqual({
+      entries,
+      totalCount: 1,
+      requestedCount: 1,
+      unavailableCount: 0,
+      state: "ready",
+      hasMore: false,
+      nextCursor: null,
+    });
   });
 });
 

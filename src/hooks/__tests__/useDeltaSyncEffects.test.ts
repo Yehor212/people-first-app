@@ -1,13 +1,12 @@
 import { renderHook, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  applyDelta: vi.fn(),
   bootstrapSnapshotThenDelta: vi.fn(),
-  fetchAllDeltas: vi.fn(),
+  fetchAndApplyDeltasInPages: vi.fn(),
   getCurrentSessionUserId: vi.fn<() => Promise<string | null>>(),
   getLastSeq: vi.fn(),
-  getPersistentDeviceId: vi.fn(),
+  saveLastSeq: vi.fn(),
   getServerMaxSeq: vi.fn(),
   authChangeCallback: null as
     | ((event: string, session: { user: { id: string } } | null) => void)
@@ -39,7 +38,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
   useFeatureFlags: () => ({
-    isFeatureEnabled: (flag: string) => flag === "deltaSync",
+    isFeatureVisible: (flag: string) => flag === "deltaSync",
   }),
 }));
 
@@ -112,11 +111,10 @@ vi.mock("@/lib/supabaseClient", () => ({
 }));
 
 vi.mock("@/storage/eventSync", () => ({
-  applyDelta: mocks.applyDelta,
-  fetchAllDeltas: mocks.fetchAllDeltas,
+  fetchAndApplyDeltasInPages: mocks.fetchAndApplyDeltasInPages,
   getLastSeq: mocks.getLastSeq,
-  getPersistentDeviceId: mocks.getPersistentDeviceId,
   getServerMaxSeq: mocks.getServerMaxSeq,
+  saveLastSeq: mocks.saveLastSeq,
 }));
 
 vi.mock("@/storage/initialDeltaSync", () => ({
@@ -142,6 +140,14 @@ vi.mock("@capacitor/app", () => ({
 import { useDeltaSyncEffects } from "../useDeltaSyncEffects";
 
 describe("useDeltaSyncEffects", () => {
+  beforeEach(() => {
+    mocks.fetchAndApplyDeltasInPages.mockResolvedValue({
+      fetched: 0,
+      applied: 0,
+      lastSeq: 10,
+    });
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
     mocks.offlineActions = [];
@@ -168,7 +174,7 @@ describe("useDeltaSyncEffects", () => {
     });
 
     expect(mocks.runWithSyncLeaderLock).not.toHaveBeenCalled();
-    expect(mocks.fetchAllDeltas).not.toHaveBeenCalled();
+    expect(mocks.fetchAndApplyDeltasInPages).not.toHaveBeenCalled();
     expect(mocks.bootstrapSnapshotThenDelta).not.toHaveBeenCalled();
     expect(mocks.pullFromCloud).not.toHaveBeenCalled();
     expect(mocks.loggerSync).toHaveBeenCalledWith("[DeltaSync] Skipped; no authenticated session");
@@ -180,7 +186,11 @@ describe("useDeltaSyncEffects", () => {
   it("drains queued local actions before fetching remote deltas", async () => {
     mocks.getCurrentSessionUserId.mockResolvedValue("user-1");
     mocks.getLastSeq.mockResolvedValue(10);
-    mocks.fetchAllDeltas.mockResolvedValue([]);
+    mocks.fetchAndApplyDeltasInPages.mockResolvedValue({
+      fetched: 0,
+      applied: 0,
+      lastSeq: 10,
+    });
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -206,11 +216,14 @@ describe("useDeltaSyncEffects", () => {
     mocks.scheduleIdleCallbacks[0]();
 
     await waitFor(() => {
-      expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(10, expect.any(AbortSignal));
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledWith(
+        10,
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     expect(mocks.processQueue.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.fetchAllDeltas.mock.invocationCallOrder[0]
+      mocks.fetchAndApplyDeltasInPages.mock.invocationCallOrder[0]
     );
     expect(mocks.recordSyncHealthReceipt).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "queue-draining", actionType: "WRITE_SYNC_EVENT" })
@@ -230,7 +243,11 @@ describe("useDeltaSyncEffects", () => {
     mocks.waitForQueueInit.mockReturnValue(queueInit);
     mocks.getCurrentSessionUserId.mockResolvedValue("account-a");
     mocks.getLastSeq.mockResolvedValue(10);
-    mocks.fetchAllDeltas.mockResolvedValue([]);
+    mocks.fetchAndApplyDeltasInPages.mockResolvedValue({
+      fetched: 0,
+      applied: 0,
+      lastSeq: 10,
+    });
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -243,7 +260,8 @@ describe("useDeltaSyncEffects", () => {
     mocks.authChangeCallback?.("SIGNED_IN", { user: { id: "account-a" } });
 
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    const fetchedBeforeHydration = mocks.fetchAllDeltas.mock.calls.length > 0;
+    const fetchedBeforeHydration =
+      mocks.fetchAndApplyDeltasInPages.mock.calls.length > 0;
 
     mocks.offlineActions = [
       {
@@ -262,11 +280,14 @@ describe("useDeltaSyncEffects", () => {
 
     expect(fetchedBeforeHydration).toBe(false);
     await waitFor(() => {
-      expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(10, expect.any(AbortSignal));
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledWith(
+        10,
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
     expect(mocks.processQueue).toHaveBeenCalledTimes(1);
     expect(mocks.processQueue.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.fetchAllDeltas.mock.invocationCallOrder[0]
+      mocks.fetchAndApplyDeltasInPages.mock.invocationCallOrder[0]
     );
 
     unmount();
@@ -302,8 +323,7 @@ describe("useDeltaSyncEffects", () => {
       );
     });
 
-    expect(mocks.fetchAllDeltas).not.toHaveBeenCalled();
-    expect(mocks.applyDelta).not.toHaveBeenCalled();
+    expect(mocks.fetchAndApplyDeltasInPages).not.toHaveBeenCalled();
     expect(mocks.syncActions).not.toContainEqual(
       expect.objectContaining({ type: "QUEUE_DRAINED" })
     );
@@ -341,8 +361,7 @@ describe("useDeltaSyncEffects", () => {
       );
     });
 
-    expect(mocks.fetchAllDeltas).not.toHaveBeenCalled();
-    expect(mocks.applyDelta).not.toHaveBeenCalled();
+    expect(mocks.fetchAndApplyDeltasInPages).not.toHaveBeenCalled();
 
     unmount();
   });
@@ -350,7 +369,11 @@ describe("useDeltaSyncEffects", () => {
   it("lets the current owner pull deltas while legacy and other-owner actions stay quarantined", async () => {
     mocks.getCurrentSessionUserId.mockResolvedValue("account-a");
     mocks.getLastSeq.mockResolvedValue(10);
-    mocks.fetchAllDeltas.mockResolvedValue([]);
+    mocks.fetchAndApplyDeltasInPages.mockResolvedValue({
+      fetched: 0,
+      applied: 0,
+      lastSeq: 10,
+    });
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -384,7 +407,10 @@ describe("useDeltaSyncEffects", () => {
     mocks.scheduleIdleCallbacks[0]();
 
     await waitFor(() => {
-      expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(10, expect.any(AbortSignal));
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledWith(
+        10,
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     expect(mocks.processQueue).not.toHaveBeenCalled();
@@ -398,17 +424,24 @@ describe("useDeltaSyncEffects", () => {
 
   it("aborts and discards a delayed account A delta after a non-null switch to account B", async () => {
     let activeOwner = "account-a";
-    let resolveAccountADelta!: (events: Array<Record<string, unknown>>) => void;
-    const accountADelta = new Promise<Array<Record<string, unknown>>>((resolve) => {
+    let resolveAccountADelta!: (result: {
+      fetched: number;
+      applied: number;
+      lastSeq: number;
+    }) => void;
+    const accountADelta = new Promise<{
+      fetched: number;
+      applied: number;
+      lastSeq: number;
+    }>((resolve) => {
       resolveAccountADelta = resolve;
     });
 
     mocks.getCurrentSessionUserId.mockImplementation(async () => activeOwner);
     mocks.getLastSeq.mockResolvedValue(10);
-    mocks.getPersistentDeviceId.mockResolvedValue("device-current");
-    mocks.fetchAllDeltas
+    mocks.fetchAndApplyDeltasInPages
       .mockImplementationOnce(() => accountADelta)
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce({ fetched: 0, applied: 0, lastSeq: 10 });
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -418,32 +451,24 @@ describe("useDeltaSyncEffects", () => {
     mocks.scheduleIdleCallbacks[0]();
 
     await waitFor(() => {
-      expect(mocks.fetchAllDeltas).toHaveBeenCalledTimes(1);
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledTimes(1);
     });
-    const accountASignal = mocks.fetchAllDeltas.mock.calls[0][1] as AbortSignal;
+    const accountASignal = (
+      mocks.fetchAndApplyDeltasInPages.mock.calls[0][1] as {
+        signal: AbortSignal;
+      }
+    ).signal;
 
     activeOwner = "account-b";
     mocks.authChangeCallback?.("SIGNED_IN", { user: { id: "account-b" } });
 
     expect(accountASignal.aborted).toBe(true);
 
-    resolveAccountADelta([
-      {
-        id: "event-a-11",
-        seq: 11,
-        entity_type: "habit",
-        entity_id: "habit-a",
-        op: "upsert",
-        payload: { id: "habit-a" },
-        device_id: "device-a",
-        created_at: "2026-07-10T00:00:00.000Z",
-      },
-    ]);
+    resolveAccountADelta({ fetched: 1, applied: 1, lastSeq: 11 });
 
     await waitFor(() => {
-      expect(mocks.fetchAllDeltas).toHaveBeenCalledTimes(2);
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledTimes(2);
     });
-    expect(mocks.applyDelta).not.toHaveBeenCalled();
 
     unmount();
   });
@@ -457,7 +482,11 @@ describe("useDeltaSyncEffects", () => {
 
     mocks.getCurrentSessionUserId.mockImplementation(async () => activeOwner);
     mocks.getLastSeq.mockResolvedValue(10);
-    mocks.fetchAllDeltas.mockResolvedValue([]);
+    mocks.fetchAndApplyDeltasInPages.mockResolvedValue({
+      fetched: 0,
+      applied: 0,
+      lastSeq: 50,
+    });
     mocks.pullFromCloud.mockImplementationOnce(() => accountASnapshot);
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
@@ -476,24 +505,77 @@ describe("useDeltaSyncEffects", () => {
     resolveAccountASnapshot(true);
 
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    expect(mocks.getServerMaxSeq).not.toHaveBeenCalled();
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledTimes(1);
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledWith("account-a");
+    expect(mocks.fetchAndApplyDeltasInPages).not.toHaveBeenCalledWith(
+      50,
+      expect.anything()
+    );
+
+    unmount();
+  });
+
+  it("applies a vault-removal event that lands during a gap-fallback snapshot before advancing the cursor", async () => {
+    let finishSnapshot!: (applied: boolean) => void;
+    const snapshot = new Promise<boolean>((resolve) => {
+      finishSnapshot = resolve;
+    });
+    mocks.getCurrentSessionUserId.mockResolvedValue("account-a");
+    mocks.getServerMaxSeq.mockResolvedValue(50);
+    mocks.pullFromCloud.mockReturnValue(snapshot);
+    mocks.fetchAndApplyDeltasInPages.mockResolvedValue({
+      fetched: 1,
+      applied: 1,
+      lastSeq: 51,
+    });
+
+    const { unmount } = renderHook(() => useDeltaSyncEffects());
+    mocks.remoteChangeCallback?.({ eventSeq: 2002 });
+
+    await waitFor(() => {
+      expect(mocks.pullFromCloud).toHaveBeenCalledWith("account-a");
+    });
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledBefore(mocks.pullFromCloud);
+
+    finishSnapshot(true);
+
+    await waitFor(() => {
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledWith(
+        50,
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+          expectedOwnerUserId: "account-a",
+        }),
+      );
+    });
+    expect(mocks.pullFromCloud).toHaveBeenCalledBefore(
+      mocks.fetchAndApplyDeltasInPages
+    );
+    expect(mocks.syncActions).toContainEqual({ type: "SNAPSHOT_SUCCESS", lastSeq: 51 });
 
     unmount();
   });
 
   it("aborts and discards delayed account A gap recovery after switching to account B", async () => {
     let activeOwner = "account-a";
-    let resolveAccountAGap!: (events: Array<Record<string, unknown>>) => void;
-    const accountAGap = new Promise<Array<Record<string, unknown>>>((resolve) => {
+    let resolveAccountAGap!: (result: {
+      fetched: number;
+      applied: number;
+      lastSeq: number;
+    }) => void;
+    const accountAGap = new Promise<{
+      fetched: number;
+      applied: number;
+      lastSeq: number;
+    }>((resolve) => {
       resolveAccountAGap = resolve;
     });
 
     mocks.getCurrentSessionUserId.mockImplementation(async () => activeOwner);
     mocks.getLastSeq.mockResolvedValue(10);
-    mocks.getPersistentDeviceId.mockResolvedValue("device-current");
-    mocks.fetchAllDeltas
+    mocks.fetchAndApplyDeltasInPages
       .mockImplementationOnce(() => accountAGap)
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce({ fetched: 0, applied: 0, lastSeq: 10 });
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -504,34 +586,26 @@ describe("useDeltaSyncEffects", () => {
 
     await waitFor(
       () => {
-        expect(mocks.fetchAllDeltas).toHaveBeenCalledTimes(1);
+        expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledTimes(1);
       },
       { timeout: 1500 }
     );
-    const accountAGapSignal = mocks.fetchAllDeltas.mock.calls[0][1] as AbortSignal;
+    const accountAGapSignal = (
+      mocks.fetchAndApplyDeltasInPages.mock.calls[0][1] as {
+        signal: AbortSignal;
+      }
+    ).signal;
 
     activeOwner = "account-b";
     mocks.authChangeCallback?.("SIGNED_IN", { user: { id: "account-b" } });
 
     expect(accountAGapSignal.aborted).toBe(true);
 
-    resolveAccountAGap([
-      {
-        id: "event-a-gap-11",
-        seq: 11,
-        entity_type: "habit",
-        entity_id: "habit-a-gap",
-        op: "upsert",
-        payload: { id: "habit-a-gap" },
-        device_id: "device-a",
-        created_at: "2026-07-10T00:00:00.000Z",
-      },
-    ]);
+    resolveAccountAGap({ fetched: 1, applied: 1, lastSeq: 11 });
 
     await waitFor(() => {
-      expect(mocks.fetchAllDeltas).toHaveBeenCalledTimes(2);
+      expect(mocks.fetchAndApplyDeltasInPages).toHaveBeenCalledTimes(2);
     });
-    expect(mocks.applyDelta).not.toHaveBeenCalled();
 
     unmount();
   });

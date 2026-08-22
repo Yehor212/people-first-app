@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const journalModuleSource = readFileSync("src/features/journal/JournalModule.tsx", "utf8");
 const useAuthSessionSource = readFileSync("src/hooks/useAuthSession.ts", "utf8");
+const authRedirectSource = readFileSync("src/lib/authRedirect.ts", "utf8");
 const journalEntryListSource = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
 const journalAiConsentDialogSource = readFileSync(
   "src/features/journal/JournalAiConsentDialog.tsx",
@@ -47,12 +48,11 @@ describe("web diary privacy and reset contracts", () => {
     expect(resetListenerBlock).toContain("window.addEventListener(AUTH_COMPLETE_EVENT");
     expect(resetListenerBlock).toContain("hasJournalPasswordResetProof(currentPending)");
     expect(resetListenerBlock).toContain("parseJournalPasswordResetRequest");
-    expect(resetListenerBlock).toContain("session?.user?.email");
-    expect(resetListenerBlock).toContain("session?.user?.id");
+    expect(resetListenerBlock).toContain("consumeVerifiedPasswordReset(session)");
     expect(resetConsumerBlock).toContain("hasJournalPasswordResetProof(pending)");
     expect(resetConsumerBlock).toContain("signedInEmail !== pending.email");
     expect(resetConsumerBlock).toContain("sessionUserId !== pending.userId");
-    const removePasswordIndex = resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })");
+    const removePasswordIndex = resetConsumerBlock.indexOf("security.removePassword(");
     expect(removePasswordIndex).toBeGreaterThanOrEqual(0);
     expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(removePasswordIndex);
     expect(resetConsumerBlock.indexOf("sessionUserId !== pending.userId")).toBeLessThan(removePasswordIndex);
@@ -75,19 +75,37 @@ describe("web diary privacy and reset contracts", () => {
     expect(consumeIndex).toBeGreaterThanOrEqual(0);
     expect(successCleanupIndex).toBeGreaterThan(consumeIndex);
     expect(successCleanupIndex).toBeLessThan(
-      resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })"),
+      resetConsumerBlock.indexOf("security.removePassword("),
     );
   });
 
   it("stores journal reset proof before notifying auth completion on web callbacks", () => {
     const completeWebOAuthSessionBlock =
       /const completeWebOAuthSession = \([\s\S]*?\n\s{4}};/.exec(useAuthSessionSource)?.[0] ?? "";
-
-    expect(completeWebOAuthSessionBlock).toContain("persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)");
-    expect(completeWebOAuthSessionBlock).toContain("notifyAuthComplete()");
-    expect(completeWebOAuthSessionBlock.indexOf("persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)")).toBeLessThan(
-      completeWebOAuthSessionBlock.indexOf("notifyAuthComplete()"),
+    const callbackExchangeBlock = sliceRequiredBlock(
+      useAuthSessionSource,
+      "const completeManualWebOAuthCallback = async (",
+      "const {\n      data: { subscription },",
     );
+    const pkceCallbackBlock = sliceRequiredBlock(
+      authRedirectSource,
+      "if (code) {",
+      "// Fallback: Implicit flow",
+    );
+
+    expect(pkceCallbackBlock).toContain(
+      "persistJournalPasswordResetProofFromUrl(url, data.session.user.id)",
+    );
+    expect(pkceCallbackBlock.indexOf("persistJournalPasswordResetProofFromUrl")).toBeLessThan(
+      pkceCallbackBlock.indexOf("return data.session"),
+    );
+    expect(callbackExchangeBlock).toContain(
+      "const callbackSession = await handleAuthCallback(supabase, window.location.href)",
+    );
+    expect(callbackExchangeBlock).toContain(
+      "completeWebOAuthSession(callbackSession)",
+    );
+    expect(completeWebOAuthSessionBlock).toContain("notifyAuthComplete()");
   });
 
   it("uses WebView-safe spaced calc syntax for journal security dialog safe areas", () => {

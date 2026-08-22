@@ -125,8 +125,7 @@ function main() {
   requireIncludes("src/hooks/useDeltaSyncEffects.ts", [
     "bootstrapSnapshotThenDelta",
     "getLastSeq()",
-    "fetchAllDeltas",
-    "applyDelta",
+    "fetchAndApplyDeltasInPages",
     "SyncGapDetector",
     "onRemoteChange",
     "runWithSyncLeaderLock",
@@ -227,10 +226,10 @@ function main() {
   requireIncludes("src/storage/initialDeltaSync.ts", [
     "getServerMaxSeq(ownerUserId)",
     "pullFromCloud(ownerUserId)",
-    "fetchAllDeltas(baselineSeq",
+    "fetchAndApplyDeltasInPages(baselineSeq",
     "saveLastSeq(baselineSeq, {",
     "assertOwnerCurrent",
-    "applyDelta(tailEvents",
+    "expectedOwnerUserId: ownerUserId",
   ]);
 
   requireIncludes("src/storage/realtimeSync.ts", [

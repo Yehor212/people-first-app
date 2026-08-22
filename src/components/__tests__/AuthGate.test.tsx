@@ -355,6 +355,24 @@ describe("AuthGate", () => {
     expect(screen.queryByText("Private account A content")).not.toBeInTheDocument();
   });
 
+  it("keeps a verified returning owner in local-only recovery while remote reconciliation is pending", () => {
+    appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
+    appState.hasValidSession = false;
+    appState.isAccountBoundaryInProgress = false;
+    appState.authBypassFlag = false;
+    userState.authGateChecked = true;
+
+    render(
+      <AuthGate isLoading={false} splashTheme="ink">
+        <div>Owner-bound local recovery</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByText("Owner-bound local recovery")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-auth-screen")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("mock-splash")).not.toBeInTheDocument();
+  });
+
   it("renders children immediately when dev bypass query is present", () => {
     window.history.pushState({}, "", "/people-first-app/diary?nav=v2&dev=true");
 

@@ -44,7 +44,7 @@ vi.mock("@/storage/realtimeSync", () => ({
   syncGratitude: vi.fn(() => Promise.resolve()),
   deleteGratitudeFromCloud: vi.fn(() => Promise.resolve()),
   syncJournalEntry: vi.fn(() => Promise.resolve()),
-  deleteJournalEntryFromCloud: vi.fn(() => Promise.resolve()),
+  deleteJournalEntryFromCloud: vi.fn(() => Promise.resolve({ status: "committed" })),
   syncSetting: vi.fn(() => Promise.resolve()),
   deleteSettingFromCloud: vi.fn(() => Promise.resolve()),
 }));
@@ -423,13 +423,29 @@ describe("offlineQueueHandlers", () => {
 
     it("DELETE_JOURNAL_ENTRY handler calls deleteJournalEntryFromCloud", async () => {
       const handler = getHandler("DELETE_JOURNAL_ENTRY");
-      await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
+      const result = await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
 
       expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith(
         "journal-del",
         "account-a",
         expect.any(AbortSignal),
       );
+      expect(result).toEqual({ status: "committed" });
+    });
+
+    it("DELETE_JOURNAL_ENTRY handler preserves the server-paused intent", async () => {
+      vi.mocked(deleteJournalEntryFromCloud).mockResolvedValueOnce({
+        status: "deferred",
+        reason: "password-removal-paused",
+      });
+      const handler = getHandler("DELETE_JOURNAL_ENTRY");
+
+      await expect(
+        handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-paused")),
+      ).resolves.toEqual({
+        status: "deferred",
+        reason: "password-removal-paused",
+      });
     });
 
     it("UPLOAD_JOURNAL_PHOTO_STORAGE handler retries photo upload from an id-only payload", async () => {
@@ -501,7 +517,13 @@ describe("offlineQueueHandlers", () => {
     });
 
     it("MIGRATE_JOURNAL_SECURITY runs the durable migration for the queue owner", async () => {
-      const handler = getHandler("MIGRATE_JOURNAL_SECURITY");
+      const controller = new AbortController();
+      const handler = getHandler("MIGRATE_JOURNAL_SECURITY", {
+        ownerUserId: "account-a",
+        operationId: "11111111-1111-4111-8111-111111111111",
+        signal: controller.signal,
+        runIfOwnerCurrent: async (operation) => operation(),
+      });
       const payload = { revision: "revision-1" };
 
       await handler(
@@ -512,7 +534,11 @@ describe("offlineQueueHandlers", () => {
         ),
       );
 
-      expect(runJournalSecurityMigration).toHaveBeenCalledWith(payload, "account-a");
+      expect(runJournalSecurityMigration).toHaveBeenCalledWith(
+        payload,
+        "account-a",
+        controller.signal,
+      );
     });
 
     it("WRITE_SYNC_EVENT handler retries the durable event-log write", async () => {

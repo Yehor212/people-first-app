@@ -328,11 +328,12 @@ describe('handleAuthCallback', () => {
   it('stores journal reset proof after a successful PKCE journal callback', async () => {
     const mockSupabase = createMockSupabase();
 
-    await handleAuthCallback(
+    const exchangedSession = await handleAuthCallback(
       mockSupabase,
       'com.zenflow.app://login-callback?code=validCode&journalReset=native-proof-1',
     );
 
+    expect(exchangedSession).toMatchObject({ user: { id: 'user-123' } });
     expect(JSON.parse(localStorage.getItem(SK.JOURNAL_PASSWORD_RESET_PROOF) || '{}')).toMatchObject({
       nonce: 'native-proof-1',
       userId: 'user-123',

@@ -88,8 +88,11 @@ for (const scenario of [
     const runtimePreload = page.waitForResponse(
       (response) =>
         response.ok() &&
-        response.url().includes("/assets/lottie_light-") &&
-        response.url().endsWith(".js"),
+        (response.url().includes("/assets/lottie_light-") ||
+          response.url().includes(
+            "lottie-web_build_player_lottie___light.js",
+          )) &&
+        response.url().split("?")[0].endsWith(".js"),
       { timeout: 10_000 },
     );
     await editor.fill(`Atelier integration proof for ${scenario.theme}.`);
@@ -108,6 +111,11 @@ for (const scenario of [
       () =>
         new Promise<{
           ariaHidden: string | null;
+          anchor: string | undefined;
+          anchorAttributeNames: string[];
+          anchorCenterDistance: number;
+          anchorMarkerCount: number;
+          deliveryState: string | undefined;
           hostBottom: number;
           hostLeft: number;
           hostRight: number;
@@ -134,13 +142,37 @@ for (const scenario of [
               sawStaticFallback = true;
             }
             const player = host?.lastElementChild;
-            if (!host || !player || !host.querySelector("svg")) return false;
+            const anchors = Array.from(
+              document.querySelectorAll<HTMLElement>(
+                '[data-journal-save-anchor="true"]',
+              ),
+            ).filter((candidate) => {
+              const rect = candidate.getBoundingClientRect();
+              return rect.width > 0 && rect.height > 0;
+            });
+            const anchor = anchors[0];
+            if (!host || !player || !anchor || !host.querySelector("svg")) {
+              return false;
+            }
             const hostRect = host.getBoundingClientRect();
             const playerRect = player.getBoundingClientRect();
+            const anchorRect = anchor.getBoundingClientRect();
             window.clearTimeout(timeout);
             observer.disconnect();
             resolve({
               ariaHidden: host.getAttribute("aria-hidden"),
+              anchor: host.dataset.anchor,
+              anchorAttributeNames: Array.from(anchor.attributes, (item) =>
+                item.name.toLowerCase(),
+              ),
+              anchorCenterDistance: Math.hypot(
+                playerRect.left + playerRect.width / 2 -
+                  (anchorRect.left + anchorRect.width / 2),
+                playerRect.top + playerRect.height / 2 -
+                  (anchorRect.top + anchorRect.height / 2),
+              ),
+              anchorMarkerCount: anchors.length,
+              deliveryState: host.dataset.deliveryState,
               hostBottom: hostRect.bottom,
               hostLeft: hostRect.left,
               hostRight: hostRect.right,
@@ -194,6 +226,13 @@ for (const scenario of [
         };
       });
     expect(proof.ariaHidden).toBe("true");
+    expect(proof.anchor).toBe("entry");
+    expect(proof.anchorMarkerCount).toBe(1);
+    expect(proof.anchorAttributeNames).toContain("data-journal-save-anchor");
+    expect(proof.anchorAttributeNames).not.toContain("data-entry-id");
+    expect(proof.anchorAttributeNames).not.toContain("id");
+    expect(proof.anchorCenterDistance).toBeLessThanOrEqual(proof.playerWidth);
+    expect(proof.deliveryState).toBe("local-saved");
     expect(proof.playback).toBe("lottie");
     expect(proof.pointerEvents).toBe("none");
     expect(proof.sawStaticFallback).toBe(false);

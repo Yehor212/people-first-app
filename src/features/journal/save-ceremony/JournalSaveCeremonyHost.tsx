@@ -50,11 +50,41 @@ interface JournalSaveCeremonyHostProps {
   lifecycleToken: JournalSaveCeremonyLifecycleToken | null;
   eligible: boolean;
   onConsume: (nonce: string) => void;
+  onFinish?: (nonce: string) => void;
 }
 
 interface PlayerLayout {
   minimum: number;
   size: number;
+}
+
+interface AnchorCenter {
+  x: number;
+  y: number;
+}
+
+const ANCHOR_SELECTOR = '[data-journal-save-anchor="true"]';
+const PLAYER_EDGE_GAP_PX = 16;
+
+function isUsableAnchorRect(
+  rect: DOMRect,
+  bounds: { left: number; top: number; right: number; bottom: number },
+): boolean {
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.right > bounds.left &&
+    rect.left < bounds.right &&
+    rect.bottom > bounds.top &&
+    rect.top < bounds.bottom
+  );
+}
+
+function clampPlayerCenter(value: number, available: number, size: number): number {
+  const minimum = size / 2 + PLAYER_EDGE_GAP_PX;
+  const maximum = available - minimum;
+  if (maximum < minimum) return available / 2;
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function readInset(style: CSSStyleDeclaration | null, name: string): number {
@@ -101,6 +131,7 @@ export function JournalSaveCeremonyHost({
   lifecycleToken,
   eligible,
   onConsume,
+  onFinish,
 }: JournalSaveCeremonyHostProps) {
   const shouldAnimate = useShouldAnimate();
   const [activeReceipt, setActiveReceipt] =
@@ -112,17 +143,22 @@ export function JournalSaveCeremonyHost({
       ? { minimum: PHONE_MINIMUM_LOTTIE_SIZE_PX, size: 0 }
       : resolvePlayerLayout(window.innerWidth, window.innerHeight),
   );
+  const [anchorCenter, setAnchorCenter] = useState<AnchorCenter | null>(null);
   const [measuredNonce, setMeasuredNonce] = useState<string | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const playbackRef = useRef<JournalSaveCeremonyPlayback | null>(null);
+  const activeReceiptRef = useRef<JournalSaveCommitReceipt | null>(null);
   const seenNoncesRef = useRef(new Set<string>());
+  const finishedNoncesRef = useRef(new Set<string>());
   const receiptRef = useRef(receipt);
   const onConsumeRef = useRef(onConsume);
+  const onFinishRef = useRef(onFinish);
   const cancelCurrentRef = useRef<() => void>(() => {});
 
   receiptRef.current = receipt;
   onConsumeRef.current = onConsume;
+  onFinishRef.current = onFinish;
 
   const rememberReceipt = useCallback((nonce: string): boolean => {
     const remembered = seenNoncesRef.current;
@@ -136,18 +172,50 @@ export function JournalSaveCeremonyHost({
     return true;
   }, []);
 
-  const finish = useCallback(() => {
-    playbackRef.current?.destroy();
-    playbackRef.current = null;
-    setActiveReceipt(null);
-    setPlaybackDecision(null);
+  const rememberFinishedReceipt = useCallback((nonce: string): boolean => {
+    const remembered = finishedNoncesRef.current;
+    if (remembered.has(nonce)) return false;
+    remembered.add(nonce);
+    while (remembered.size > MAX_REMEMBERED_RECEIPTS) {
+      const oldest = remembered.values().next().value;
+      if (!oldest) break;
+      remembered.delete(oldest);
+    }
+    return true;
   }, []);
+
+  const finish = useCallback(
+    (nonce: string) => {
+      const current = activeReceiptRef.current;
+      if (current?.nonce === nonce) {
+        playbackRef.current?.destroy();
+        playbackRef.current = null;
+        activeReceiptRef.current = null;
+        setActiveReceipt(null);
+        setPlaybackDecision(null);
+        setAnchorCenter(null);
+        setMeasuredNonce((measured) => (measured === nonce ? null : measured));
+      }
+      if (rememberFinishedReceipt(nonce)) {
+        onFinishRef.current?.(nonce);
+      }
+    },
+    [rememberFinishedReceipt],
+  );
   cancelCurrentRef.current = () => {
     const pendingReceipt = receiptRef.current;
+    const playingReceipt = activeReceiptRef.current;
     if (pendingReceipt && rememberReceipt(pendingReceipt.nonce)) {
       onConsumeRef.current(pendingReceipt.nonce);
     }
-    finish();
+    if (playingReceipt && playingReceipt.nonce !== pendingReceipt?.nonce) {
+      finish(playingReceipt.nonce);
+    }
+    if (pendingReceipt) {
+      finish(pendingReceipt.nonce);
+    } else if (playingReceipt) {
+      finish(playingReceipt.nonce);
+    }
   };
 
   useEffect(() => {
@@ -158,16 +226,32 @@ export function JournalSaveCeremonyHost({
     ) {
       rememberReceipt(receipt.nonce);
       onConsume(receipt.nonce);
-      finish();
+      const playingReceipt = activeReceiptRef.current;
+      if (playingReceipt && playingReceipt.nonce !== receipt.nonce) {
+        finish(playingReceipt.nonce);
+      }
+      finish(receipt.nonce);
       return;
     }
     if (!eligible) return;
     rememberReceipt(receipt.nonce);
     onConsume(receipt.nonce);
-    if (!isJournalSaveCommitReceiptFresh(receipt)) return;
+    if (!isJournalSaveCommitReceiptFresh(receipt)) {
+      const playingReceipt = activeReceiptRef.current;
+      if (playingReceipt && playingReceipt.nonce !== receipt.nonce) {
+        finish(playingReceipt.nonce);
+      }
+      finish(receipt.nonce);
+      return;
+    }
+    const playingReceipt = activeReceiptRef.current;
+    if (playingReceipt && playingReceipt.nonce !== receipt.nonce) {
+      finish(playingReceipt.nonce);
+    }
     playbackRef.current?.destroy();
     playbackRef.current = null;
     setPlaybackDecision(null);
+    activeReceiptRef.current = receipt;
     setActiveReceipt(receipt);
   }, [
     eligible,
@@ -181,11 +265,57 @@ export function JournalSaveCeremonyHost({
   useLayoutEffect(() => {
     const measure = () => {
       const parent = hostRef.current?.parentElement;
-      const rect = parent?.getBoundingClientRect();
-      const width = rect?.width || window.innerWidth;
-      const height = rect?.height || window.innerHeight;
+      const parentRect = parent?.getBoundingClientRect();
+      const width = parentRect?.width || window.innerWidth;
+      const height = parentRect?.height || window.innerHeight;
       const style = parent ? window.getComputedStyle(parent) : null;
-      setPlayerLayout(resolvePlayerLayout(width, height, style));
+      const nextLayout = resolvePlayerLayout(width, height, style);
+      const safeInlineStart = readInset(style, "--safe-inline-start");
+      const safeInlineEnd = readInset(style, "--safe-inline-end");
+      const safeTop = readInset(style, "--safe-top");
+      const safeBottom = readInset(style, "--safe-bottom");
+      const parentLeft = parentRect?.left ?? 0;
+      const parentTop = parentRect?.top ?? 0;
+      const safeWidth = Math.max(0, width - safeInlineStart - safeInlineEnd);
+      const safeHeight = Math.max(0, height - safeTop - safeBottom);
+      const visibleBounds = {
+        left: parentLeft + safeInlineStart,
+        top: parentTop + safeTop,
+        right: parentLeft + width - safeInlineEnd,
+        bottom: parentTop + height - safeBottom,
+      };
+      const scopedAnchors = parent?.querySelectorAll<HTMLElement>(ANCHOR_SELECTOR);
+      const anchors = scopedAnchors?.length
+        ? Array.from(scopedAnchors)
+        : Array.from(document.querySelectorAll<HTMLElement>(ANCHOR_SELECTOR));
+      const measuredAnchor = anchors
+        .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+        .find(
+          ({ element, rect }) =>
+            element.isConnected && isUsableAnchorRect(rect, visibleBounds),
+        );
+
+      setPlayerLayout(nextLayout);
+      setAnchorCenter(
+        measuredAnchor
+          ? {
+              x: clampPlayerCenter(
+                measuredAnchor.rect.left +
+                  measuredAnchor.rect.width / 2 -
+                  visibleBounds.left,
+                safeWidth,
+                nextLayout.size,
+              ),
+              y: clampPlayerCenter(
+                measuredAnchor.rect.top +
+                  measuredAnchor.rect.height / 2 -
+                  visibleBounds.top,
+                safeHeight,
+                nextLayout.size,
+              ),
+            }
+          : null,
+      );
       setMeasuredNonce(activeReceipt?.nonce ?? null);
     };
     measure();
@@ -196,9 +326,11 @@ export function JournalSaveCeremonyHost({
       observer.observe(hostRef.current.parentElement);
     }
     window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
     return () => {
       observer?.disconnect();
       window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
     };
   }, [activeReceipt?.nonce]);
 
@@ -237,6 +369,7 @@ export function JournalSaveCeremonyHost({
 
   const fallbackRequired =
     !shouldAnimate ||
+    !anchorCenter ||
     playerLayout.size < playerLayout.minimum ||
     !isJournalSaveCeremonyRuntimePreloaded() ||
     isJournalSaveCeremonyCircuitOpen();
@@ -276,7 +409,10 @@ export function JournalSaveCeremonyHost({
       return;
     }
     if (useStaticFallback) {
-      const timer = window.setTimeout(finish, STATIC_FALLBACK_DURATION_MS);
+      const timer = window.setTimeout(
+        () => finish(activeReceipt.nonce),
+        STATIC_FALLBACK_DURATION_MS,
+      );
       return () => window.clearTimeout(timer);
     }
 
@@ -297,7 +433,7 @@ export function JournalSaveCeremonyHost({
       container,
       variant: activeReceipt.variant,
       signal: abortController.signal,
-      onComplete: finish,
+      onComplete: () => finish(activeReceipt.nonce),
       onError: () => {
         if (!cancelled) {
           logger.warn("[JournalSaveCeremony] player unavailable", {
@@ -324,7 +460,7 @@ export function JournalSaveCeremonyHost({
             if (cancelled) return;
             window.clearTimeout(readyTimer);
             safetyTimer = window.setTimeout(
-              finish,
+              () => finish(activeReceipt.nonce),
               LOTTIE_SAFETY_TIMEOUT_MS,
             );
           })
@@ -379,8 +515,10 @@ export function JournalSaveCeremonyHost({
       data-testid="journal-save-ceremony"
       data-variant={activeReceipt.variant}
       data-playback={playbackMode}
+      data-anchor={anchorCenter ? "entry" : "fallback"}
+      data-delivery-state={activeReceipt.deliveryState}
       aria-hidden="true"
-      className="journal-save-ceremony pointer-events-none absolute z-40 flex items-center justify-center overflow-hidden"
+      className="journal-save-ceremony pointer-events-none absolute z-40 overflow-hidden"
       dir="ltr"
     >
       <div
@@ -390,10 +528,14 @@ export function JournalSaveCeremonyHost({
         className="journal-save-ceremony-veil"
       />
       <div
-        className="relative z-10"
+        data-testid="journal-save-ceremony-player"
+        className="absolute z-10"
         style={{
           width: playerLayout.size,
           height: playerLayout.size,
+          left: anchorCenter ? anchorCenter.x : "50%",
+          top: anchorCenter ? anchorCenter.y : "50%",
+          transform: "translate(-50%, -50%)",
           direction: "ltr",
         }}
       >

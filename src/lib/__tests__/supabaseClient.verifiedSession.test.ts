@@ -49,6 +49,7 @@ describe("getVerifiedCurrentSessionUserId", () => {
     mocks.getSession.mockReset();
     mocks.supabaseUrl = "https://example.supabase.co";
     mocks.supabaseKey = "public-anon-key";
+    window.history.replaceState({}, "", "/");
   });
 
   it("returns null only after Supabase confirms that no session exists", async () => {
@@ -64,9 +65,31 @@ describe("getVerifiedCurrentSessionUserId", () => {
       mocks.supabaseKey,
       expect.objectContaining({
         auth: expect.objectContaining({
+          detectSessionInUrl: true,
           storageKey: "sb-example-auth-token",
           lock: expect.any(Function),
           lockAcquireTimeout: -1,
+        }),
+      }),
+    );
+  });
+
+  it("disables SDK URL auto-detection for an owner-bound journal reset callback", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/orb?code=journal-code&journalReset=journal-proof&zenflowAuthAttempt=197f0d13-4f91-4b70-9f2f-105b3c9b1262",
+    );
+    mocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
+
+    await loadVerifiedSessionReader();
+
+    expect(mocks.createClient).toHaveBeenCalledWith(
+      mocks.supabaseUrl,
+      mocks.supabaseKey,
+      expect.objectContaining({
+        auth: expect.objectContaining({
+          detectSessionInUrl: false,
         }),
       }),
     );

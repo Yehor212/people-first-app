@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "capabilities": {
+    "journalSaveCeremony": {
+      "requested": false,
+      "killSwitch": true,
+      "admission": {
+        "technical": "unverified",
+        "accessibility": "unverified",
+        "performance": "unverified",
+        "visualRuntime": "unverified",
+        "artisticCraft": "unverified",
+        "userApproval": "unverified"
+      }
+    }
+  }
+}

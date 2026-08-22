@@ -35,13 +35,18 @@ export async function hasPersistentJournalProtection(): Promise<boolean> {
 export async function getJournalVaultKeyForWrite(): Promise<string | null> {
   const vaultKey = getJournalContentVaultKey();
   const vaultRevision = getJournalContentVaultRevision();
-  const [passwordRecord, vaultRecord, revisionRecord] = await Promise.all([
+  const [passwordRecord, vaultRecord, revisionRecord, removalRecord] = await Promise.all([
     db.settings.get(SK.JOURNAL_PASSWORD),
     db.settings.get(SK.JOURNAL_VAULT_KEY),
     db.settings.get(SK.JOURNAL_VAULT_REVISION),
+    db.settings.get(SK.JOURNAL_SECURITY_REMOVAL),
   ]);
 
   const hasPersistentProtection = Boolean(passwordRecord?.value || vaultRecord?.value);
+  if (hasPersistentProtection && removalRecord) {
+    if (vaultKey) clearJournalContentSession("manual-lock");
+    throw new JournalWriteLockedError();
+  }
   const persistentVaultRevision = Number(
     (vaultRecord?.value as { updatedAt?: unknown } | undefined)?.updatedAt
   );

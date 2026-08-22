@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { SK } from "@/lib/storageKeys";
 
 // ─── Mocks ────────────────────────────────────────────────────
 
@@ -39,9 +40,9 @@ vi.mock("@/storage/db", () => ({
   getLocalDataOwnerId: vi.fn(() => Promise.resolve(null)),
   db: {
     settings: {
-      get: vi.fn(() =>
+      get: vi.fn((key: string) =>
         Promise.resolve(
-          mockVaultKey
+          mockVaultKey && key === SK.JOURNAL_VAULT_KEY
             ? { value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 } }
             : undefined
         )

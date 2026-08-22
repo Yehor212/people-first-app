@@ -40,6 +40,15 @@ const MAX_ENCRYPTED_AUDIO_SIZE = MAX_AUDIO_SIZE + ENCRYPTED_MEDIA_OVERHEAD_BYTES
 /** Characters forbidden in storage path segments (null byte checked separately) */
 const UNSAFE_PATH_CHARS = /[/\\:*?"<>|]/;
 
+export interface JournalMediaStorageIdentity {
+  bucket: "journal-photos" | "journal-audio";
+  path: string;
+  objectId: string;
+  version: string;
+  etag: string | null;
+  size: number | null;
+}
+
 // ============================================
 // HELPERS
 // ============================================
@@ -80,14 +89,129 @@ function storagePath(userId: string, fileId: string, ext: string): string {
   return `${userId}/${fileId}.${ext}`;
 }
 
+function passwordRemovalStoragePath(
+  userId: string,
+  operationRevision: string,
+  fileId: string,
+  ext: string
+): string {
+  if (!/^[0-9]+:[a-z0-9]+$/.test(operationRevision) || operationRevision.length > 128) {
+    throw new Error("Invalid diary removal operation revision");
+  }
+  const basePath = storagePath(userId, fileId, ext);
+  return `${userId}/removal/${operationRevision}/${basePath.slice(userId.length + 1)}`;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function throwIfJournalStorageAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new DOMException("Journal media storage request was aborted", "AbortError");
+}
+
+async function awaitJournalStorageRequest<T>(
+  request: PromiseLike<T>,
+  signal?: AbortSignal
+): Promise<T> {
+  throwIfJournalStorageAborted(signal);
+  if (!signal) return Promise.resolve(request);
+  // Supabase Storage's public upload/remove methods do not expose a transport
+  // AbortSignal. Do not report an aborted attempt as unwound while its request
+  // can still mutate the previous owner's bucket. Wait for the underlying
+  // request to settle, then surface the abort before any acknowledgement or
+  // local progress write. The queue account-boundary barrier waits for this
+  // handler promise, so a late Storage response cannot cross accounts.
+  const result = await Promise.resolve(request);
+  throwIfJournalStorageAborted(signal);
+  return result;
+}
+
+async function resolveJournalMediaDeletePaths(
+  bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
+  fileId: string,
+  expectedOwnerUserId: string,
+  legacyExtensions: readonly string[]
+): Promise<string[]> {
+  const client = supabase?.storage.from(bucket);
+  if (!client) return [];
+  const legacyPaths = legacyExtensions.map((ext) => storagePath(expectedOwnerUserId, fileId, ext));
+  const { data, error } = await client.list(expectedOwnerUserId, {
+    limit: 100,
+    search: fileId,
+  });
+  if (error) throw error;
+
+  const escapedId = escapeRegExp(fileId);
+  const exactVersionedName = new RegExp(`^${escapedId}\\.v[0-9]+\\.bin$`, "i");
+  const versionedPaths = (data ?? [])
+    .map((item) => item.name)
+    .filter((name): name is string => typeof name === "string" && exactVersionedName.test(name))
+    .map((name) => `${expectedOwnerUserId}/${name}`);
+  return [...new Set([...legacyPaths, ...versionedPaths])];
+}
+
 async function assertExpectedOwnerCurrent(expectedOwnerUserId: string): Promise<void> {
   await validateSyncOwner(expectedOwnerUserId, "Journal media storage");
+}
+
+/**
+ * Reads the immutable identity used by the password-removal fence. Supabase's
+ * object version changes when the same path is overwritten, so callers can
+ * compare a before/after identity around a decryptability download and then
+ * bind that exact version in the server-side inventory transaction.
+ */
+export async function readJournalMediaStorageIdentity(
+  bucket: "journal-photos" | "journal-audio",
+  path: string,
+  expectedOwnerUserId: string,
+  signal?: AbortSignal
+): Promise<JournalMediaStorageIdentity | null> {
+  if (!supabase) return null;
+  throwIfJournalStorageAborted(signal);
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (!path.startsWith(`${expectedOwnerUserId}/`) || path.includes("..") || path.includes("\0")) {
+    throw new Error("Journal media path does not belong to the expected account");
+  }
+
+  const { data, error } = await awaitJournalStorageRequest(
+    supabase.storage.from(bucket).info(path),
+    signal
+  );
+  throwIfJournalStorageAborted(signal);
+  if (error || !data) {
+    logger.warn("[Storage] Journal media identity read failed", { bucket });
+    return null;
+  }
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  if (
+    typeof data.id !== "string" ||
+    data.id.length === 0 ||
+    typeof data.version !== "string" ||
+    data.version.length === 0 ||
+    data.name !== path ||
+    data.bucketId !== bucket
+  ) {
+    logger.warn("[Storage] Journal media identity read rejected", { bucket });
+    return null;
+  }
+
+  return {
+    bucket,
+    path,
+    objectId: data.id,
+    version: data.version,
+    etag: typeof data.etag === "string" && data.etag.length > 0 ? data.etag : null,
+    size: Number.isSafeInteger(data.size) && Number(data.size) >= 0 ? Number(data.size) : null,
+  };
 }
 
 function isAllowedDownloadedBlob(
   bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
   path: string,
-  blob: Blob,
+  blob: Blob
 ): boolean {
   const isEncrypted = path.endsWith(`.${ENCRYPTED_MEDIA_EXTENSION}`);
   const maxSize =
@@ -99,7 +223,11 @@ function isAllowedDownloadedBlob(
         ? MAX_ENCRYPTED_AUDIO_SIZE
         : MAX_AUDIO_SIZE;
   if (blob.size > maxSize) {
-    logger.warn(`[Storage] Download rejected (${bucket}/${path}): file too large`, blob.size);
+    logger.warn("[Storage] Journal media download rejected", {
+      bucket,
+      reason: "size",
+      size: blob.size,
+    });
     return false;
   }
 
@@ -109,10 +237,27 @@ function isAllowedDownloadedBlob(
       ? ALLOWED_IMAGE_MIMES.includes(blob.type)
       : normalizeJournalAudioMimeType(blob.type) !== null;
   if (!hasAllowedMime) {
-    logger.warn(`[Storage] Download rejected (${bucket}/${path}): disallowed MIME type`, blob.type);
+    logger.warn("[Storage] Journal media download rejected", {
+      bucket,
+      reason: "mime",
+    });
     return false;
   }
   return true;
+}
+
+function maximumJournalMediaDownloadBytes(
+  bucket: typeof PHOTO_BUCKET | typeof AUDIO_BUCKET,
+  path: string
+): number {
+  const isEncrypted = path.endsWith(`.${ENCRYPTED_MEDIA_EXTENSION}`);
+  return bucket === PHOTO_BUCKET
+    ? isEncrypted
+      ? MAX_ENCRYPTED_PHOTO_SIZE
+      : MAX_PHOTO_SIZE
+    : isEncrypted
+      ? MAX_ENCRYPTED_AUDIO_SIZE
+      : MAX_AUDIO_SIZE;
 }
 
 // ============================================
@@ -124,50 +269,209 @@ async function uploadRawStorageBlob(
   blob: Blob,
   expectedOwnerUserId: string,
   options: { contentType: string; ext: string; maxSize: number; label: string },
+  signal?: AbortSignal
 ): Promise<UploadResult | null> {
   if (!supabase) return null;
+  throwIfJournalStorageAborted(signal);
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     if (blob.size > options.maxSize) {
-      logger.warn("[Storage] " + options.label + " upload rejected: file too large", blob.size);
+      logger.warn("[Storage] Journal media upload rejected", {
+        bucket,
+        reason: "size",
+        size: blob.size,
+      });
       throw new Error(options.label + " too large.");
     }
 
     const path = storagePath(expectedOwnerUserId, fileId, options.ext);
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, blob, {
-      contentType: options.contentType,
-      upsert: true,
-    });
+    const { error: uploadError } = await awaitJournalStorageRequest(
+      supabase.storage.from(bucket).upload(path, blob, {
+        contentType: options.contentType,
+        upsert: true,
+      }),
+      signal
+    );
+    throwIfJournalStorageAborted(signal);
 
     if (uploadError) {
-      logger.warn("[Storage] " + options.label + " upload failed:", uploadError.message);
+      logger.warn("[Storage] Journal media upload failed", { bucket, stage: "provider" });
       return null;
     }
 
     return { path, signedUrl: "" };
-  } catch (err) {
-    logger.warn("[Storage] " + options.label + " upload error:", err);
+  } catch {
+    throwIfJournalStorageAborted(signal);
+    logger.warn("[Storage] Journal media upload failed", { bucket, stage: "client" });
     return null;
   }
 }
-
 
 export interface UploadResult {
   path: string;
   signedUrl: string;
 }
 
+export interface JournalPasswordRemovalPreparedUpload {
+  bucket: "journal-photos" | "journal-audio";
+  entityId: string;
+  path: string;
+  contentSha256: string;
+  contentSize: number;
+  mimeType: string;
+  blob: Blob;
+}
+
+async function journalPasswordRemovalBlobSha256(blob: Blob): Promise<string> {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) throw new Error("Diary media hashing is unavailable");
+  const bytes =
+    typeof blob.arrayBuffer === "function"
+      ? await blob.arrayBuffer()
+      : await new Promise<ArrayBuffer>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(reader.error ?? new Error("Diary media read failed"));
+          reader.onload = () =>
+            reader.result instanceof ArrayBuffer
+              ? resolve(reader.result)
+              : reject(new Error("Diary media read returned an invalid result"));
+          reader.readAsArrayBuffer(blob);
+        });
+  const digest = await subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+}
+
+export async function preparePhotoForPasswordRemovalUpload(
+  photoId: string,
+  dataUrl: string,
+  expectedOwnerUserId: string,
+  operationRevision: string,
+  signal?: AbortSignal
+): Promise<JournalPasswordRemovalPreparedUpload> {
+  throwIfJournalStorageAborted(signal);
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  const blob = base64ToBlob(dataUrl);
+  if (!ALLOWED_IMAGE_MIMES.includes(blob.type)) {
+    throw new Error("Diary photo MIME type is not allowed");
+  }
+  if (blob.size <= 0 || blob.size > MAX_PHOTO_SIZE) {
+    throw new Error("Diary photo size is outside the removal limit");
+  }
+  const path = passwordRemovalStoragePath(
+    expectedOwnerUserId,
+    operationRevision,
+    photoId,
+    extFromMime(blob.type)
+  );
+  return {
+    bucket: PHOTO_BUCKET,
+    entityId: photoId,
+    path,
+    contentSha256: await journalPasswordRemovalBlobSha256(blob),
+    contentSize: blob.size,
+    mimeType: blob.type,
+    blob,
+  };
+}
+
+export async function prepareAudioForPasswordRemovalUpload(
+  audioId: string,
+  dataUrl: string,
+  mimeType: string,
+  expectedOwnerUserId: string,
+  operationRevision: string,
+  signal?: AbortSignal
+): Promise<JournalPasswordRemovalPreparedUpload> {
+  throwIfJournalStorageAborted(signal);
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  const inspectedAudio = inspectJournalAudioDataUrl(dataUrl, mimeType);
+  if (!inspectedAudio) throw new Error("Diary audio MIME type is not allowed");
+  const blob = base64ToBlob(dataUrl);
+  if (blob.size <= 0 || blob.size > MAX_AUDIO_SIZE) {
+    throw new Error("Diary audio size is outside the removal limit");
+  }
+  const normalizedMimeType = inspectedAudio.mimeType;
+  const path = passwordRemovalStoragePath(
+    expectedOwnerUserId,
+    operationRevision,
+    audioId,
+    extFromMime(normalizedMimeType)
+  );
+  return {
+    bucket: AUDIO_BUCKET,
+    entityId: audioId,
+    path,
+    contentSha256: await journalPasswordRemovalBlobSha256(blob),
+    contentSize: blob.size,
+    mimeType: normalizedMimeType,
+    blob,
+  };
+}
+
+export async function uploadPreparedJournalPasswordRemovalMedia(
+  prepared: JournalPasswordRemovalPreparedUpload,
+  expectedOwnerUserId: string,
+  operationRevision: string,
+  signal?: AbortSignal
+): Promise<UploadResult | null> {
+  if (!supabase) return null;
+  throwIfJournalStorageAborted(signal);
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  const expectedPath = passwordRemovalStoragePath(
+    expectedOwnerUserId,
+    operationRevision,
+    prepared.entityId,
+    extFromMime(prepared.mimeType)
+  );
+  if (
+    prepared.path !== expectedPath ||
+    prepared.contentSize !== prepared.blob.size ||
+    prepared.contentSize <= 0 ||
+    prepared.contentSha256 !== (await journalPasswordRemovalBlobSha256(prepared.blob))
+  ) {
+    throw new Error("Diary media removal receipt changed before upload");
+  }
+  const { error } = await awaitJournalStorageRequest(
+    supabase.storage.from(prepared.bucket).upload(prepared.path, prepared.blob, {
+      contentType: prepared.mimeType,
+      upsert: true,
+      metadata: {
+        zenflowSha256: prepared.contentSha256,
+        zenflowEntityId: prepared.entityId,
+        zenflowOperationRevision: operationRevision,
+        zenflowMimeType: prepared.mimeType,
+      },
+    }),
+    signal
+  );
+  throwIfJournalStorageAborted(signal);
+  if (error) {
+    logger.warn("[Storage] Journal removal media upload failed", {
+      bucket: prepared.bucket,
+      stage: "provider",
+    });
+    return null;
+  }
+  await assertExpectedOwnerCurrent(expectedOwnerUserId);
+  return { path: prepared.path, signedUrl: "" };
+}
+
 /**
  * Upload a photo (base64 data URL) to Supabase Storage.
  * Returns the storage path only; signed URLs are minted on demand.
  */
-export async function uploadPhoto(
+async function uploadPhotoAtRemovalBoundary(
   photoId: string,
   dataUrl: string,
   expectedOwnerUserId: string,
+  signal?: AbortSignal,
+  operationRevision?: string
 ): Promise<UploadResult | null> {
   if (!supabase) return null;
+  throwIfJournalStorageAborted(signal);
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
@@ -175,26 +479,42 @@ export async function uploadPhoto(
 
     // M12: Validate MIME type against allowlist
     if (!ALLOWED_IMAGE_MIMES.includes(blob.type)) {
-      logger.warn("[Storage] Photo upload rejected: disallowed MIME type", blob.type);
+      logger.warn("[Storage] Journal media upload rejected", {
+        bucket: PHOTO_BUCKET,
+        reason: "mime",
+      });
       throw new Error(`Unsupported image type "${blob.type}". Allowed: JPEG, PNG, WebP.`);
     }
 
     // M12: Enforce file size limit
     if (blob.size > MAX_PHOTO_SIZE) {
-      logger.warn("[Storage] Photo upload rejected: file too large", blob.size);
+      logger.warn("[Storage] Journal media upload rejected", {
+        bucket: PHOTO_BUCKET,
+        reason: "size",
+        size: blob.size,
+      });
       throw new Error("Photo too large. Maximum size is 1 MB.");
     }
 
     const ext = extFromMime(blob.type);
-    const path = storagePath(expectedOwnerUserId, photoId, ext);
+    const path = operationRevision
+      ? passwordRemovalStoragePath(expectedOwnerUserId, operationRevision, photoId, ext)
+      : storagePath(expectedOwnerUserId, photoId, ext);
 
-    const { error: uploadError } = await supabase.storage.from(PHOTO_BUCKET).upload(path, blob, {
-      contentType: blob.type,
-      upsert: true,
-    });
+    const { error: uploadError } = await awaitJournalStorageRequest(
+      supabase.storage.from(PHOTO_BUCKET).upload(path, blob, {
+        contentType: blob.type,
+        upsert: true,
+      }),
+      signal
+    );
+    throwIfJournalStorageAborted(signal);
 
     if (uploadError) {
-      logger.warn("[Storage] Photo upload failed:", uploadError.message);
+      logger.warn("[Storage] Journal media upload failed", {
+        bucket: PHOTO_BUCKET,
+        stage: "provider",
+      });
       return null;
     }
 
@@ -202,42 +522,95 @@ export async function uploadPhoto(
       path,
       signedUrl: "",
     };
-  } catch (err) {
-    logger.warn("[Storage] Photo upload error:", err);
+  } catch {
+    throwIfJournalStorageAborted(signal);
+    logger.warn("[Storage] Journal media upload failed", {
+      bucket: PHOTO_BUCKET,
+      stage: "client",
+    });
     return null;
   }
+}
+
+export async function uploadPhoto(
+  photoId: string,
+  dataUrl: string,
+  expectedOwnerUserId: string,
+  signal?: AbortSignal
+): Promise<UploadResult | null> {
+  return uploadPhotoAtRemovalBoundary(photoId, dataUrl, expectedOwnerUserId, signal);
+}
+
+export async function uploadPhotoForPasswordRemoval(
+  photoId: string,
+  dataUrl: string,
+  expectedOwnerUserId: string,
+  operationRevision: string,
+  signal?: AbortSignal
+): Promise<UploadResult | null> {
+  const prepared = await preparePhotoForPasswordRemovalUpload(
+    photoId,
+    dataUrl,
+    expectedOwnerUserId,
+    operationRevision,
+    signal
+  );
+  return uploadPreparedJournalPasswordRemovalMedia(
+    prepared,
+    expectedOwnerUserId,
+    operationRevision,
+    signal
+  );
 }
 
 export async function uploadEncryptedPhoto(
   photoId: string,
   encryptedPayload: Blob,
   expectedOwnerUserId: string,
+  vaultRevision: number,
+  signal?: AbortSignal
 ): Promise<UploadResult | null> {
-  return uploadRawStorageBlob(PHOTO_BUCKET, photoId, encryptedPayload, expectedOwnerUserId, {
-    contentType: ENCRYPTED_MEDIA_MIME,
-    ext: ENCRYPTED_MEDIA_EXTENSION,
-    maxSize: MAX_ENCRYPTED_PHOTO_SIZE,
-    label: "Encrypted photo",
-  });
+  if (!Number.isSafeInteger(vaultRevision) || vaultRevision < 0) {
+    throw new Error("Encrypted diary photo requires an exact vault revision");
+  }
+  return uploadRawStorageBlob(
+    PHOTO_BUCKET,
+    photoId,
+    encryptedPayload,
+    expectedOwnerUserId,
+    {
+      contentType: ENCRYPTED_MEDIA_MIME,
+      ext: `v${vaultRevision}.${ENCRYPTED_MEDIA_EXTENSION}`,
+      maxSize: MAX_ENCRYPTED_PHOTO_SIZE,
+      label: "Encrypted photo",
+    },
+    signal
+  );
 }
 
 /**
  * Upload an audio recording (base64 data URL) to Supabase Storage.
  */
-export async function uploadAudio(
+async function uploadAudioAtRemovalBoundary(
   audioId: string,
   dataUrl: string,
   mimeType: string,
   expectedOwnerUserId: string,
+  signal?: AbortSignal,
+  operationRevision?: string
 ): Promise<UploadResult | null> {
   if (!supabase) return null;
+  throwIfJournalStorageAborted(signal);
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     // M13: Validate MIME type against allowlist
     const inspectedAudio = inspectJournalAudioDataUrl(dataUrl, mimeType);
     if (!inspectedAudio) {
-      logger.warn("[Storage] Audio upload rejected: disallowed MIME type", mimeType);
+      logger.warn("[Storage] Journal media upload rejected", {
+        bucket: AUDIO_BUCKET,
+        reason: "mime",
+      });
       throw new Error(`Unsupported audio type "${mimeType}". Allowed: WebM, MP4, OGG, WAV.`);
     }
 
@@ -245,21 +618,34 @@ export async function uploadAudio(
 
     // M13: Enforce file size limit
     if (blob.size > MAX_AUDIO_SIZE) {
-      logger.warn("[Storage] Audio upload rejected: file too large", blob.size);
+      logger.warn("[Storage] Journal media upload rejected", {
+        bucket: AUDIO_BUCKET,
+        reason: "size",
+        size: blob.size,
+      });
       throw new Error("Audio recording too large. Maximum size is 20 MB.");
     }
 
     const normalizedMimeType = inspectedAudio.mimeType;
     const ext = extFromMime(normalizedMimeType);
-    const path = storagePath(expectedOwnerUserId, audioId, ext);
+    const path = operationRevision
+      ? passwordRemovalStoragePath(expectedOwnerUserId, operationRevision, audioId, ext)
+      : storagePath(expectedOwnerUserId, audioId, ext);
 
-    const { error: uploadError } = await supabase.storage.from(AUDIO_BUCKET).upload(path, blob, {
-      contentType: normalizedMimeType,
-      upsert: true,
-    });
+    const { error: uploadError } = await awaitJournalStorageRequest(
+      supabase.storage.from(AUDIO_BUCKET).upload(path, blob, {
+        contentType: normalizedMimeType,
+        upsert: true,
+      }),
+      signal
+    );
+    throwIfJournalStorageAborted(signal);
 
     if (uploadError) {
-      logger.warn("[Storage] Audio upload failed:", uploadError.message);
+      logger.warn("[Storage] Journal media upload failed", {
+        bucket: AUDIO_BUCKET,
+        stage: "provider",
+      });
       return null;
     }
 
@@ -267,23 +653,79 @@ export async function uploadAudio(
       path,
       signedUrl: "",
     };
-  } catch (err) {
-    logger.warn("[Storage] Audio upload error:", err);
+  } catch {
+    throwIfJournalStorageAborted(signal);
+    logger.warn("[Storage] Journal media upload failed", {
+      bucket: AUDIO_BUCKET,
+      stage: "client",
+    });
     return null;
   }
+}
+
+export async function uploadAudio(
+  audioId: string,
+  dataUrl: string,
+  mimeType: string,
+  expectedOwnerUserId: string,
+  signal?: AbortSignal
+): Promise<UploadResult | null> {
+  return uploadAudioAtRemovalBoundary(
+    audioId,
+    dataUrl,
+    mimeType,
+    expectedOwnerUserId,
+    signal
+  );
+}
+
+export async function uploadAudioForPasswordRemoval(
+  audioId: string,
+  dataUrl: string,
+  mimeType: string,
+  expectedOwnerUserId: string,
+  operationRevision: string,
+  signal?: AbortSignal
+): Promise<UploadResult | null> {
+  const prepared = await prepareAudioForPasswordRemovalUpload(
+    audioId,
+    dataUrl,
+    mimeType,
+    expectedOwnerUserId,
+    operationRevision,
+    signal
+  );
+  return uploadPreparedJournalPasswordRemovalMedia(
+    prepared,
+    expectedOwnerUserId,
+    operationRevision,
+    signal
+  );
 }
 
 export async function uploadEncryptedAudio(
   audioId: string,
   encryptedPayload: Blob,
   expectedOwnerUserId: string,
+  vaultRevision: number,
+  signal?: AbortSignal
 ): Promise<UploadResult | null> {
-  return uploadRawStorageBlob(AUDIO_BUCKET, audioId, encryptedPayload, expectedOwnerUserId, {
-    contentType: ENCRYPTED_MEDIA_MIME,
-    ext: ENCRYPTED_MEDIA_EXTENSION,
-    maxSize: MAX_ENCRYPTED_AUDIO_SIZE,
-    label: "Encrypted audio",
-  });
+  if (!Number.isSafeInteger(vaultRevision) || vaultRevision < 0) {
+    throw new Error("Encrypted diary audio requires an exact vault revision");
+  }
+  return uploadRawStorageBlob(
+    AUDIO_BUCKET,
+    audioId,
+    encryptedPayload,
+    expectedOwnerUserId,
+    {
+      contentType: ENCRYPTED_MEDIA_MIME,
+      ext: `v${vaultRevision}.${ENCRYPTED_MEDIA_EXTENSION}`,
+      maxSize: MAX_ENCRYPTED_AUDIO_SIZE,
+      label: "Encrypted audio",
+    },
+    signal
+  );
 }
 
 // ============================================
@@ -298,18 +740,40 @@ export async function downloadAsBase64(
   bucket: "journal-photos" | "journal-audio",
   path: string,
   expectedOwnerUserId: string,
+  signal?: AbortSignal
 ): Promise<string | null> {
   if (!supabase) return null;
+  throwIfJournalStorageAborted(signal);
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
   if (!path.startsWith(`${expectedOwnerUserId}/`)) {
     throw new Error("Journal media path does not belong to the expected account");
   }
 
   try {
-    const { data, error } = await supabase.storage.from(bucket).download(path);
+    // Supabase Storage exposes metadata without transferring the object. Reject
+    // an oversized file before allocating its Blob and base64/FileReader copy.
+    const storageBucket = supabase.storage.from(bucket);
+    const infoRequest = storageBucket.info(path);
+    const { data: fileInfo, error: infoError } = await awaitJournalStorageRequest(
+      infoRequest,
+      signal
+    );
+    throwIfJournalStorageAborted(signal);
+    if (
+      infoError ||
+      !fileInfo ||
+      !Number.isSafeInteger(fileInfo.size) ||
+      Number(fileInfo.size) < 0 ||
+      Number(fileInfo.size) > maximumJournalMediaDownloadBytes(bucket, path)
+    ) {
+      logger.warn("[Storage] Journal media metadata rejected", { bucket });
+      return null;
+    }
+    const { data, error } = await awaitJournalStorageRequest(storageBucket.download(path), signal);
+    throwIfJournalStorageAborted(signal);
 
     if (error || !data) {
-      logger.warn(`[Storage] Download failed (${bucket}/${path}):`, error?.message);
+      logger.warn("[Storage] Journal media download failed", { bucket });
       return null;
     }
 
@@ -322,10 +786,12 @@ export async function downloadAsBase64(
       reader.readAsDataURL(data);
     });
     await assertExpectedOwnerCurrent(expectedOwnerUserId);
+    throwIfJournalStorageAborted(signal);
     return dataUrl;
   } catch (err) {
+    throwIfJournalStorageAborted(signal);
     if (err instanceof SyncOwnerBoundaryError) throw err;
-    logger.warn("[Storage] Download error:", err);
+    logger.warn("[Storage] Journal media download failed", { bucket, stage: "client" });
     return null;
   }
 }
@@ -352,7 +818,7 @@ export async function getSignedUrl(
       .createSignedUrl(path, expiresInSeconds);
 
     if (error) {
-      logger.warn(`[Storage] Signed URL failed (${bucket}/${path}):`, error.message);
+      logger.warn("[Storage] Journal media signed URL failed", { bucket, stage: "provider" });
       return null;
     }
 
@@ -360,7 +826,7 @@ export async function getSignedUrl(
     return data.signedUrl;
   } catch (err) {
     if (err instanceof SyncOwnerBoundaryError) throw err;
-    logger.warn("[Storage] getSignedUrl error:", err);
+    logger.warn("[Storage] Journal media signed URL failed", { bucket, stage: "client" });
     return null;
   }
 }
@@ -373,18 +839,25 @@ export async function deleteJournalMediaStoragePath(
   bucket: "journal-photos" | "journal-audio",
   path: string,
   expectedOwnerUserId: string,
+  signal?: AbortSignal
 ): Promise<void> {
   if (!supabase) return;
+  throwIfJournalStorageAborted(signal);
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
   if (!path.startsWith(`${expectedOwnerUserId}/`)) {
     throw new Error("Journal media path does not belong to the expected account");
   }
 
   try {
-    const { error } = await supabase.storage.from(bucket).remove([path]);
+    const { error } = await awaitJournalStorageRequest(
+      supabase.storage.from(bucket).remove([path]),
+      signal
+    );
+    throwIfJournalStorageAborted(signal);
     if (error) throw error;
   } catch (err) {
-    logger.warn("[Storage] Journal media path delete error:", err);
+    throwIfJournalStorageAborted(signal);
+    logger.warn("[Storage] Journal media delete failed", { bucket });
     throw err;
   }
 }
@@ -394,19 +867,23 @@ export async function deleteJournalMediaStoragePath(
  */
 export async function deletePhotoFromStorage(
   photoId: string,
-  expectedOwnerUserId: string,
+  expectedOwnerUserId: string
 ): Promise<void> {
   if (!supabase) return;
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
-    // Try common extensions since we may not know the exact one
     const exts = ["jpg", "png", "webp", "bin"];
-    const paths = exts.map((ext) => storagePath(expectedOwnerUserId, photoId, ext));
+    const paths = await resolveJournalMediaDeletePaths(
+      PHOTO_BUCKET,
+      photoId,
+      expectedOwnerUserId,
+      exts
+    );
     const { error } = await supabase.storage.from(PHOTO_BUCKET).remove(paths);
     if (error) throw error;
   } catch (err) {
-    logger.warn("[Storage] Photo delete error:", err);
+    logger.warn("[Storage] Journal media delete failed", { bucket: PHOTO_BUCKET });
     throw err;
   }
 }
@@ -416,18 +893,23 @@ export async function deletePhotoFromStorage(
  */
 export async function deleteAudioFromStorage(
   audioId: string,
-  expectedOwnerUserId: string,
+  expectedOwnerUserId: string
 ): Promise<void> {
   if (!supabase) return;
   await assertExpectedOwnerCurrent(expectedOwnerUserId);
 
   try {
     const exts = ["webm", "mp4", "mp3", "ogg", "wav", "bin"];
-    const paths = exts.map((ext) => storagePath(expectedOwnerUserId, audioId, ext));
+    const paths = await resolveJournalMediaDeletePaths(
+      AUDIO_BUCKET,
+      audioId,
+      expectedOwnerUserId,
+      exts
+    );
     const { error } = await supabase.storage.from(AUDIO_BUCKET).remove(paths);
     if (error) throw error;
   } catch (err) {
-    logger.warn("[Storage] Audio delete error:", err);
+    logger.warn("[Storage] Journal media delete failed", { bucket: AUDIO_BUCKET });
     throw err;
   }
 }
@@ -438,7 +920,7 @@ export async function deleteAudioFromStorage(
 export async function deleteEntryMediaFromStorage(
   photoIds: string[],
   audioIds: string[],
-  expectedOwnerUserId: string,
+  expectedOwnerUserId: string
 ): Promise<void> {
   const tasks: Promise<void>[] = [];
   for (const id of photoIds) tasks.push(deletePhotoFromStorage(id, expectedOwnerUserId));

@@ -1,7 +1,60 @@
 import type { Translations } from "../types";
+import { defineJournalRecoveryTranslations } from "../journalRecoveryTranslations";
 
 export const de: Translations = {
   appName: "ZenFlow",
+  ...defineJournalRecoveryTranslations([
+    "Diese Funktion ist in deinen ZenFlow-Einstellungen deaktiviert.",
+    "Diese Funktion erscheint, sobald du etwas mehr Aktivität in ZenFlow erfasst hast.",
+    "ZenFlow prüft gerade deine letzten Aktivitäten. Versuche es gleich noch einmal.",
+    "ZenFlow konnte deine letzten Aktivitäten auf diesem Gerät nicht prüfen. Es wurde nichts geändert. Versuche es erneut.",
+    "Vorübergehend nicht verfügbare Tagebucheinträge: {count}. Deine anderen Einträge werden weiterhin angezeigt.",
+    "Derzeit können keine Tagebucheinträge angezeigt werden. Deine gespeicherten Daten wurden nicht gelöscht.",
+    "Tagebucheinträge, die derzeit nicht angezeigt werden können: {count}. Deine gespeicherten Daten wurden nicht gelöscht.",
+    "Erneut laden",
+    "Das neue Tagebuch-Passwort funktioniert bereits auf diesem Gerät. ZenFlow aktualisiert den verschlüsselten Schlüssel noch online; lass die App geöffnet und mit dem Internet verbunden.",
+    "Der Tagebuchschutz ist noch aktiv. ZenFlow hat angehalten, bevor Einträge geändert wurden. Entsperre das Tagebuch, bleibe online und setze das Entfernen fort.",
+    "Tagebuch-Sperre weiter entfernen",
+    "Online-Bereinigung erneut versuchen",
+    "Erneuter Versuch...",
+    "Entsperre dein Tagebuch und versuche dann erneut, den Schutz zu entfernen. Es wurde nichts geändert.",
+    "Schließe zuerst die Einrichtung des Tagebuchschutzes ab und versuche es dann erneut. Es wurde nichts geändert.",
+    "Eine frühere Entfernung wird noch abgeschlossen. Bleib mit diesem Konto angemeldet und versuche es gleich noch einmal.",
+    "Dein Tagebuch wurde während der Prüfung geändert. Lade es neu, entsperre es und versuche es erneut. Es wurde nichts geändert.",
+    "Ein Teil der geschützten Tagebuchinhalte konnte nicht geöffnet werden. Stelle eine Internetverbindung her, entsperre das Tagebuch und versuche es erneut. Es wurde nichts gelöscht.",
+    "Dein Tagebuch wird noch mit diesem Konto verknüpft. Lass die App geöffnet und bleib angemeldet. Versuche es dann erneut. Es wurde nichts geändert.",
+    "Das angemeldete Konto hat sich geändert. Kehre zum Konto dieses Tagebuchs zurück und versuche es erneut. Es wurde nichts geändert.",
+    "Dieses Gerät konnte das Tagebuch nicht vollständig lesen. Lass die App geöffnet, lade sie neu und versuche es erneut. Es wurde nichts geändert.",
+    "Bestätige dieses Konto erneut, bevor du den Tagebuchschutz entfernst. Es wurde nichts geändert.",
+    "Konto bestätigen",
+    "Bestätigung wird gestartet...",
+    "Die Kontobestätigung konnte nicht gestartet werden. Es wurde nichts geändert. Prüfe die Verbindung und versuche es erneut.",
+    "Das Konto dieses Tagebuchs wird geprüft...",
+    "ZenFlow bestätigt nur dasselbe Konto und ändert weder das Tagebuch noch sein Passwort.",
+    "Melde dich beim Konto dieses Tagebuchs an und starte die Bestätigung erneut. Es wurde nichts geändert.",
+    "Für dieses Konto ist auf diesem Gerät keine Anmeldemethode verfügbar. Öffne die Kontoeinstellungen und bestätige zuerst eine Anmeldemethode.",
+    "Wir senden einen Bestätigungslink an die E-Mail-Adresse des Kontos, dem dieses Tagebuch gehört.",
+    "Öffne den Link auf diesem Gerät und kehre zu ZenFlow zurück. Er bestätigt das Konto, entfernt aber nicht den Tagebuchschutz.",
+    "Konto bestätigt. Entsperre bei Bedarf das Tagebuch und versuche erneut, den Schutz zu entfernen.",
+    "Konto bestätigt",
+    "Entsperre bei Bedarf das Tagebuch und versuche erneut, den Schutz zu entfernen. Die Bestätigung allein hat weder Tagebuch noch Passwort geändert.",
+    "Schließen und Tagebuch entsperren",
+    "Entfernen erneut versuchen",
+    "Wir senden einen einmaligen Code an die Telefonnummer dieses Kontos. Die Bestätigung allein ändert das Tagebuch nicht.",
+    "Per Telefon bestätigen",
+    "Einmaligen Bestätigungscode senden an",
+    "Code senden",
+    "Bestätigungscode eingeben",
+    "Bestätigungscode",
+    "Gib den sechsstelligen Bestätigungscode ein.",
+    "Bestätigen",
+    "Wähle eine bereits mit diesem Konto verknüpfte Anmeldemethode. Das Tagebuch bleibt unverändert, bis du das Entfernen ausdrücklich erneut versuchst.",
+    "Verknüpfte Anmeldemethode verwenden",
+    "Mit {provider} bestätigen",
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet. Die Bereinigung der biometrischen Entsperrung steht noch aus. Lass die App geöffnet und versuche es erneut.",
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet. Die Änderung für deine anderen Geräte steht noch aus. Bleib angemeldet und versuche es mit Internetverbindung erneut.",
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet. Die Bereinigung der biometrischen Entsperrung und die Änderung für deine anderen Geräte stehen noch aus. Lass die App geöffnet, bleib angemeldet und versuche es mit Internetverbindung erneut.",
+  ]),
   goodMorning: "Guten Morgen",
   goodAfternoon: "Guten Tag",
   goodEvening: "Guten Abend",
@@ -172,9 +225,9 @@ export const de: Translations = {
   insightMorning: "am Morgen",
   insightAfternoon: "am Nachmittag",
   insightEvening: "am Abend",
-  insightHabitImprovesMood: 'Deine Aufzeichnungen verbinden „{habit}“ mit höherer Stimmung',
+  insightHabitImprovesMood: "Deine Aufzeichnungen verbinden „{habit}“ mit höherer Stimmung",
   insightHabitImprovesMoodDesc:
-    'An {sampleDays} erfassten Tagen mit „{habit}“ lag die durchschnittliche Stimmung bei {avgMoodWith}/5, gegenüber {avgMoodWithout}/5 an {comparisonDays} anderen erfassten Tagen. Das ist ein Zusammenhang in deinen Aufzeichnungen, kein Beleg dafür, dass die Gewohnheit die Veränderung verursacht hat.',
+    "An {sampleDays} erfassten Tagen mit „{habit}“ lag die durchschnittliche Stimmung bei {avgMoodWith}/5, gegenüber {avgMoodWithout}/5 an {comparisonDays} anderen erfassten Tagen. Das ist ein Zusammenhang in deinen Aufzeichnungen, kein Beleg dafür, dass die Gewohnheit die Veränderung verursacht hat.",
   insightFocusBestLabel: 'Du fokussierst dich am besten auf "{label}"',
   insightFocusBestLabelDesc:
     'Deine durchschnittliche Fokuszeit für "{label}" beträgt {minutes} Minuten, höher als bei anderen Aktivitäten.',
@@ -184,9 +237,9 @@ export const de: Translations = {
   insightBestTimeForHabit: "Beste Zeit für {habit}: {time}",
   insightBestTimeForHabitDesc:
     'Du erledigst "{habit}" {time} mit {percent}% höherer Wahrscheinlichkeit als {worstTime} ({worstPercent}%).',
-  insightTagBoostsMood: 'Deine Aufzeichnungen verbinden den Tag „{tag}“ mit höherer Stimmung',
+  insightTagBoostsMood: "Deine Aufzeichnungen verbinden den Tag „{tag}“ mit höherer Stimmung",
   insightTagBoostsMoodDesc:
-    'In {occurrences} Einträgen mit dem Tag „{tag}“ lag die durchschnittliche Stimmung bei {avgMoodWith}/5, gegenüber {avgMoodWithout}/5 in {untaggedEntries} Einträgen ohne Tags. Das ist ein Zusammenhang in deinen Aufzeichnungen, kein Beleg dafür, dass der Tag die Veränderung verursacht hat.',
+    "In {occurrences} Einträgen mit dem Tag „{tag}“ lag die durchschnittliche Stimmung bei {avgMoodWith}/5, gegenüber {avgMoodWithout}/5 in {untaggedEntries} Einträgen ohne Tags. Das ist ein Zusammenhang in deinen Aufzeichnungen, kein Beleg dafür, dass der Tag die Veränderung verursacht hat.",
 
   // Module names (v1.6.1 - OnboardingFlow)
   moduleFocus: "Fokus-Timer",
@@ -3288,12 +3341,10 @@ export const de: Translations = {
   journalPasswordRemoveConfirm: "Bist du sicher? Dein Tagebuch wird ohne Passwort zugänglich sein.",
   journalLockRemoveDetail:
     "Deine Einträge bleiben gespeichert, aber die Tagebuch-Sperre und die biometrische Tagebuch-Entsperrung werden deaktiviert. Du kannst später eine neue Sperre einrichten.",
-  journalLockRemoveFailed:
-    "Entsperre zuerst dein Tagebuch und versuche dann erneut, die Sperre zu entfernen.",
   journalLockRemoveUnexpected:
     "Die Tagebuch-Sperre konnte nicht entfernt werden. Es wurde nichts geändert. Versuche es noch einmal.",
   journalLockRemovePartial:
-    "Die Tagebuch-Sperre ist noch aktiv, aber die biometrische Entsperrung wurde deaktiviert. Entsperre das Tagebuch mit deinem Passwort und versuche es erneut.",
+    "Der Tagebuchschutz ist auf diesem Gerät ausgeschaltet, aber zusätzliche Bereinigungen stehen noch aus. Lass die App geöffnet, bleib angemeldet und versuche es mit Internetverbindung erneut.",
   journalPasswordRemovePending: "Sperre wird entfernt...",
   journalPasswordRemoveSuccess: "Tagebuch-Sperre entfernt.",
   journalPasswordSetupFailed:

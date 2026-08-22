@@ -19,6 +19,7 @@ import Dexie, { type IndexableType, type Table } from "dexie";
 import type { LoopHabitType } from "@/types";
 import { decodeHabitCompletionFromCloud } from "@/storage/sync/habitCompletionCodec";
 import { storageRemove } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 import {
   getDeletionTrackerKeyForSyncEntity,
   normalizeDeletedIdsForStorage,
@@ -26,7 +27,6 @@ import {
 import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 import { applyIncomingAccountSetting } from "@/storage/sync/journalVaultSyncPolicy";
 import { SyncOwnerBoundaryError, validateSyncOwner } from "@/storage/sync/syncOwner";
-import { SK } from "@/lib/storageKeys";
 import {
   MAX_AUDIO_PER_ENTRY,
   MAX_AUDIO_DURATION_SEC,
@@ -34,12 +34,23 @@ import {
   MAX_STICKERS_PER_ENTRY,
   type JournalAudio,
   type JournalEntry,
+  type JournalPhoto,
 } from "@/features/journal/types";
 import { normalizeJournalAudioMimeType } from "@/features/journal/journalAudioValidation";
 import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
-import { normalizeJournalStyleFields } from "@/features/journal/journalStyleFields";
-import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
+import {
+  normalizeJournalStyleFields,
+  normalizeJournalStyleFieldsFromCloud,
+} from "@/features/journal/journalStyleFields";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
+import {
+  canApplyJournalEntryForVaultEpoch,
+  canApplyJournalMediaForVaultEpoch,
+  normalizeJournalVaultRevision,
+  readDurableJournalVaultEpochForIngress,
+} from "@/features/journal/journalVaultEpoch";
+import { recoverRemoteJournalPasswordRemoval } from "@/storage/sync/journalRemovalRemote";
+import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -77,6 +88,53 @@ export interface SyncEventWriteIntent {
   payload: Record<string, unknown> | null;
   deviceId: string;
   idempotencyKey?: string;
+}
+
+export class SyncEventIdempotencyCollisionError extends Error {
+  constructor() {
+    super("[EventSync] Sync event idempotency collision");
+    this.name = "SyncEventIdempotencyCollisionError";
+  }
+}
+
+function canonicalSyncEventJson(value: unknown, arrayItem = false): string {
+  if (value === null || (arrayItem && value === undefined)) return "null";
+  if (typeof value === "string" || typeof value === "boolean") return JSON.stringify(value);
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new SyncEventIdempotencyCollisionError();
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalSyncEventJson(item, true)).join(",")}]`;
+  }
+  if (isRecord(value)) {
+    const fields = Object.keys(value)
+      .filter((key) => value[key] !== undefined)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalSyncEventJson(value[key])}`);
+    return `{${fields.join(",")}}`;
+  }
+  throw new SyncEventIdempotencyCollisionError();
+}
+
+/**
+ * A reused idempotency key is an exact replay only when every durable event
+ * identity field and the complete JSON payload match. Returning a row merely
+ * because the key exists could acknowledge a different journal mutation.
+ */
+export function assertSyncEventMatchesIntent(
+  event: SyncEvent,
+  intent: SyncEventWriteIntent,
+): void {
+  if (
+    event.entity_type !== intent.entityType ||
+    event.entity_id !== intent.entityId ||
+    event.op !== intent.op ||
+    event.device_id !== intent.deviceId ||
+    canonicalSyncEventJson(event.payload) !== canonicalSyncEventJson(intent.payload)
+  ) {
+    throw new SyncEventIdempotencyCollisionError();
+  }
 }
 
 class AccountOwnerChangedError extends Error {
@@ -190,6 +248,13 @@ function normalizeJournalDeltaPayload(
   if (payload.habitSnapshot !== undefined && payload.habitSnapshot !== null && !habitSnapshot) {
     return null;
   }
+  const vaultRevision =
+    payload.vaultRevision === undefined || payload.vaultRevision === null
+      ? undefined
+      : normalizeJournalVaultRevision(payload.vaultRevision);
+  if (payload.vaultRevision !== undefined && payload.vaultRevision !== null && vaultRevision === null) {
+    return null;
+  }
 
   return {
     id: entityId,
@@ -210,6 +275,7 @@ function normalizeJournalDeltaPayload(
     ...normalizeJournalStyleFields(payload),
     createdAt: payload.createdAt,
     updatedAt: payload.updatedAt,
+    vaultRevision: vaultRevision ?? undefined,
   };
 }
 
@@ -241,7 +307,7 @@ async function fetchLinkedJournalAudioMetadata(
 
   const { data, error } = await supabase
     .from("journal_audio")
-    .select("id, entry_id, duration, mime_type, storage_path, created_at")
+    .select("id, entry_id, duration, mime_type, storage_path, vault_revision, created_at")
     .eq("user_id", ownerUserId)
     .in("id", requestedIds);
   if (error) throw error;
@@ -265,7 +331,7 @@ async function fetchLinkedJournalAudioMetadata(
       typeof row.created_at !== "number" ||
       !Number.isFinite(row.created_at)
     ) {
-      logger.warn("[EventSync] Ignored invalid journal audio metadata:", row.id);
+      logger.warn("[EventSync] Ignored invalid journal audio metadata");
       continue;
     }
 
@@ -277,6 +343,80 @@ async function fetchLinkedJournalAudioMetadata(
       mimeType: normalizedMimeType,
       storagePath,
       createdAt: row.created_at,
+      vaultRevision: row.vault_revision ?? undefined,
+    });
+  }
+  return result;
+}
+
+async function fetchLinkedJournalPhotoMetadata(
+  events: SyncEvent[],
+  ownerUserId: string
+): Promise<Map<string, JournalPhoto>> {
+  if (!supabase) return new Map();
+
+  const requestedParents = new Map<string, string>();
+  const conflictingIds = new Set<string>();
+  for (const event of events) {
+    if (event.entity_type !== "journal" || event.op !== "upsert" || !event.payload) continue;
+    const entry = normalizeJournalDeltaPayload(event.payload, event.entity_id);
+    if (!entry) continue;
+    for (const photoId of entry.photoIds) {
+      const existingParent = requestedParents.get(photoId);
+      if (existingParent && existingParent !== entry.id) {
+        conflictingIds.add(photoId);
+        requestedParents.delete(photoId);
+      } else if (!conflictingIds.has(photoId)) {
+        requestedParents.set(photoId, entry.id);
+      }
+    }
+  }
+
+  const requestedIds = [...requestedParents.keys()];
+  if (requestedIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("journal_photos")
+    .select("id, entry_id, width, height, storage_path, vault_revision, created_at")
+    .eq("user_id", ownerUserId)
+    .in("id", requestedIds);
+  if (error) throw error;
+
+  const result = new Map<string, JournalPhoto>();
+  for (const row of data ?? []) {
+    const expectedParent = requestedParents.get(row.id);
+    const storagePath = row.storage_path;
+    if (
+      !expectedParent ||
+      row.entry_id !== expectedParent ||
+      typeof row.width !== "number" ||
+      !Number.isFinite(row.width) ||
+      row.width <= 0 ||
+      row.width > 20_000 ||
+      typeof row.height !== "number" ||
+      !Number.isFinite(row.height) ||
+      row.height <= 0 ||
+      row.height > 20_000 ||
+      typeof storagePath !== "string" ||
+      !storagePath.startsWith(`${ownerUserId}/`) ||
+      storagePath.includes("..") ||
+      typeof row.created_at !== "number" ||
+      !Number.isFinite(row.created_at)
+    ) {
+      logger.warn("[EventSync] Ignored invalid journal photo metadata");
+      continue;
+    }
+
+    result.set(row.id, {
+      id: row.id,
+      entryId: row.entry_id,
+      data: "",
+      thumbnail: "",
+      width: row.width,
+      height: row.height,
+      storagePath,
+      createdAt: row.created_at,
+      vaultRevision: row.vault_revision ?? undefined,
     });
   }
   return result;
@@ -438,7 +578,10 @@ async function writeEventStrict(
   if (error) {
     if (stableIntent.idempotencyKey && isDuplicateIdempotencyError(error)) {
       const existing = await fetchEventByIdempotencyKey(userId, stableIntent.idempotencyKey);
-      if (existing) return existing;
+      if (existing) {
+        assertSyncEventMatchesIntent(existing, stableIntent);
+        return existing;
+      }
     }
     throw new Error(`[EventSync] writeEvent failed: ${error.message}`);
   }
@@ -543,6 +686,23 @@ export async function writeQueuedEventAndBroadcast(
   return event;
 }
 
+/**
+ * Strict operation-bound event publication. The caller supplies the stable
+ * UUID returned by the server mutation receipt; failures remain visible so the
+ * outer durable journal-removal intent can retry the same exact event.
+ */
+export async function writeExactEventAndBroadcast(
+  intent: SyncEventWriteIntent & { idempotencyKey: string },
+  expectedOwnerUserId: string,
+): Promise<SyncEvent> {
+  if (!isUuid(intent.idempotencyKey)) {
+    throw new SyncEventIdempotencyCollisionError();
+  }
+  const event = await writeEventStrict(intent, expectedOwnerUserId);
+  broadcastChange(SYNC_ENTITY_BROADCAST_MAP[intent.entityType], event.seq);
+  return event;
+}
+
 // ── Fetch delta (keyset pagination) ───────────────────────────────────
 
 /**
@@ -610,6 +770,10 @@ export interface ApplyDeltaOwnerOptions {
   assertOwnerCurrent?: () => Promise<void>;
 }
 
+export interface FetchAndApplyDeltaPagesOptions extends ApplyDeltaOwnerOptions {
+  signal?: AbortSignal;
+}
+
 async function resolveDeltaOwner(
   options: ApplyDeltaOwnerOptions | undefined,
   operation: string
@@ -641,6 +805,43 @@ async function assertDeltaOwnerCurrent(
 }
 
 /**
+ * Fetches and commits one ordered event-log page at a time. Each page advances
+ * the durable cursor in its own IndexedDB transaction, so a large password-
+ * removal manifest cannot create one unbounded network buffer or transaction.
+ */
+export async function fetchAndApplyDeltasInPages(
+  lastSeq: number,
+  options: FetchAndApplyDeltaPagesOptions = {}
+): Promise<PullAndApplyDeltaResult> {
+  const ownerUserId = await resolveDeltaOwner(options, "Paged delta pull and apply");
+  let cursor = lastSeq;
+  let fetched = 0;
+  let applied = 0;
+  let deviceId: string | null = null;
+
+  while (true) {
+    if (options.signal?.aborted) {
+      throw new DOMException("Delta sync aborted", "AbortError");
+    }
+    await assertDeltaOwnerCurrent(ownerUserId, options, "Paged delta fetch");
+    const page = await fetchDelta(cursor, 200);
+    await assertDeltaOwnerCurrent(ownerUserId, options, "Paged delta fetch acknowledgement");
+    if (page.events.length === 0) break;
+
+    deviceId ??= await getPersistentDeviceId();
+    applied += await applyDelta(page.events, deviceId, {
+      expectedOwnerUserId: ownerUserId,
+      assertOwnerCurrent: options.assertOwnerCurrent,
+    });
+    fetched += page.events.length;
+    cursor = page.events[page.events.length - 1].seq;
+    if (!page.hasMore) break;
+  }
+
+  return { fetched, applied, lastSeq: cursor };
+}
+
+/**
  * Pull and apply events from the same cursor used by eventSync.
  * Keep lifecycle callers away from syncCursor-v2; eventSync persists its cursor
  * in SYNC_SEQ_KEY after a successful IndexedDB transaction.
@@ -650,19 +851,10 @@ export async function pullAndApplyDeltasFromLastSeq(
 ): Promise<PullAndApplyDeltaResult> {
   const ownerUserId = await resolveDeltaOwner(undefined, "Delta pull and apply");
   const lastSeq = await getLastSeq();
-  const events = await fetchAllDeltas(lastSeq, signal);
-
-  if (events.length === 0) {
-    return { fetched: 0, applied: 0, lastSeq };
-  }
-
-  const deviceId = await getPersistentDeviceId();
-  const applied = await applyDelta(events, deviceId, {
+  return fetchAndApplyDeltasInPages(lastSeq, {
+    signal,
     expectedOwnerUserId: ownerUserId,
   });
-  const maxSeq = events[events.length - 1].seq;
-
-  return { fetched: events.length, applied, lastSeq: maxSeq };
 }
 
 function readHabitCompletionIdentity(event: SyncEvent): { habitId: string; date: string } | null {
@@ -784,13 +976,291 @@ async function applyHabitCompletionEvent(
   return true;
 }
 
-async function applySettingEvent(event: SyncEvent): Promise<boolean> {
+const JOURNAL_VAULT_REMOVAL_EVENT_DEVICE = "server:journal-password-removal";
+const JOURNAL_REMOVAL_OPERATION_REVISION_RE = /^[0-9]+:[a-z0-9]+$/;
+const JOURNAL_REMOVAL_REFETCH_PAYLOAD_KEYS = [
+  "journalRemovalRefetch",
+  "removalOperationRevision",
+  "vaultRevision",
+] as const;
+const JOURNAL_REMOVAL_DELETE_PAYLOAD_KEYS = ["removalOperationRevision"] as const;
+const JOURNAL_REMOVAL_REFETCH_CHUNK_SIZE = 100;
+const JOURNAL_REMOVAL_REFETCH_MAX_ENTRIES = 500;
+
+export class JournalRemovalRefetchPendingError extends Error {
+  constructor() {
+    super("Protected diary recovery must finish before remote entries can be refreshed");
+    this.name = "JournalRemovalRefetchPendingError";
+  }
+}
+
+function hasExactObjectKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[]
+): boolean {
+  return (
+    Object.keys(value).sort().join("\n") === [...expected].sort().join("\n")
+  );
+}
+
+function journalRemovalEventKind(event: SyncEvent): "refetch" | "delete" | null {
+  if (
+    event.device_id !== JOURNAL_VAULT_REMOVAL_EVENT_DEVICE ||
+    event.entity_type !== "journal" ||
+    !event.entity_id ||
+    !event.payload
+  ) {
+    return null;
+  }
+  const operationRevision = event.payload.removalOperationRevision;
+  if (
+    typeof operationRevision !== "string" ||
+    !JOURNAL_REMOVAL_OPERATION_REVISION_RE.test(operationRevision)
+  ) {
+    return null;
+  }
+  if (
+    event.op === "delete" &&
+    hasExactObjectKeys(event.payload, JOURNAL_REMOVAL_DELETE_PAYLOAD_KEYS)
+  ) {
+    return "delete";
+  }
+  const vaultRevision = normalizeJournalVaultRevision(event.payload.vaultRevision);
+  if (
+    event.op === "upsert" &&
+    hasExactObjectKeys(event.payload, JOURNAL_REMOVAL_REFETCH_PAYLOAD_KEYS) &&
+    event.payload.journalRemovalRefetch === true &&
+    vaultRevision !== null
+  ) {
+    return "refetch";
+  }
+  return null;
+}
+
+function journalEntryPayloadFromCloudRow(
+  row: Record<string, unknown>,
+  expectedEntityId: string,
+  ownerUserId: string
+): Record<string, unknown> | null {
+  if (
+    row.id !== expectedEntityId ||
+    row.user_id !== ownerUserId ||
+    row.vault_revision !== null ||
+    typeof row.content !== "string" ||
+    isEncryptedJournalContent(row.content)
+  ) {
+    return null;
+  }
+  const payload: Record<string, unknown> = {
+    id: row.id,
+    date: row.date,
+    title: row.title,
+    content: row.content,
+    stickers: row.stickers,
+    mood: row.mood,
+    tags: row.tags,
+    templateId: row.template_id ?? undefined,
+    habitSnapshot: row.habit_snapshot ?? undefined,
+    photoIds: row.photo_ids,
+    audioIds: row.audio_ids,
+    photoLayout: row.photo_layout ?? undefined,
+    ...normalizeJournalStyleFieldsFromCloud(row),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    vaultRevision: undefined,
+  };
+  const normalized = normalizeJournalDeltaPayload(payload, expectedEntityId);
+  return normalized
+    ? (normalized as unknown as Record<string, unknown>)
+    : null;
+}
+
+async function hydrateJournalRemovalEvents(
+  events: SyncEvent[],
+  ownerUserId: string
+): Promise<{ events: SyncEvent[]; removalEventIds: ReadonlySet<string> }> {
+  const removalEvents = events.filter((event) => journalRemovalEventKind(event) !== null);
+  if (removalEvents.length === 0) {
+    return { events, removalEventIds: new Set() };
+  }
+  if (removalEvents.length > JOURNAL_REMOVAL_REFETCH_MAX_ENTRIES) {
+    throw new JournalRemovalRefetchPendingError();
+  }
+
+  const durableVault = await readDurableJournalVaultEpochForIngress();
+  if (durableVault.protected) {
+    throw new JournalRemovalRefetchPendingError();
+  }
+
+  const refetchIds = removalEvents
+    .filter((event) => journalRemovalEventKind(event) === "refetch")
+    .map((event) => event.entity_id);
+  if (new Set(refetchIds).size !== refetchIds.length) {
+    throw new JournalRemovalRefetchPendingError();
+  }
+  if (refetchIds.length > 0 && !supabase) {
+    throw new JournalRemovalRefetchPendingError();
+  }
+
+  const payloads = new Map<string, Record<string, unknown>>();
+  for (let offset = 0; offset < refetchIds.length; offset += JOURNAL_REMOVAL_REFETCH_CHUNK_SIZE) {
+    const chunk = refetchIds.slice(offset, offset + JOURNAL_REMOVAL_REFETCH_CHUNK_SIZE);
+    const { data, error } = await supabase!
+      .from("journal_entries")
+      .select(
+        "id, user_id, date, title, content, stickers, mood, tags, template_id, habit_snapshot, photo_ids, audio_ids, photo_layout, theme, font, ink_color, paper_texture, bg_pattern, paper_color, bg_intensity, particle_speed, font_size, created_at, updated_at, vault_revision"
+      )
+      .eq("user_id", ownerUserId)
+      .in("id", chunk);
+    if (error) throw error;
+    for (const value of data ?? []) {
+      const row = value as unknown as Record<string, unknown>;
+      const id = typeof row.id === "string" ? row.id : "";
+      if (!chunk.includes(id) || payloads.has(id)) {
+        throw new JournalRemovalRefetchPendingError();
+      }
+      const payload = journalEntryPayloadFromCloudRow(row, id, ownerUserId);
+      if (!payload) throw new JournalRemovalRefetchPendingError();
+      payloads.set(id, payload);
+    }
+  }
+  if (payloads.size !== refetchIds.length) {
+    throw new JournalRemovalRefetchPendingError();
+  }
+
+  const removalEventIds = new Set(removalEvents.map((event) => event.id));
+  return {
+    removalEventIds,
+    events: events.map((event) => {
+      if (journalRemovalEventKind(event) !== "refetch") return event;
+      const payload = payloads.get(event.entity_id);
+      if (!payload) throw new JournalRemovalRefetchPendingError();
+      return { ...event, payload };
+    }),
+  };
+}
+
+function isJournalVaultDeleteEvent(event: SyncEvent): boolean {
+  const key = typeof event.payload?.key === "string" ? event.payload.key : event.entity_id;
+  return (
+    event.entity_type === "setting" &&
+    event.op === "delete" &&
+    event.entity_id === SK.JOURNAL_VAULT_KEY &&
+    key === SK.JOURNAL_VAULT_KEY
+  );
+}
+
+function isValidJournalVaultRemovalWake(event: SyncEvent): boolean {
+  if (!isJournalVaultDeleteEvent(event)) return false;
+  const operationRevision = event.payload?.operationRevision;
+  const vaultRevision = Number(event.payload?.vaultRevision);
+  return (
+    event.device_id === JOURNAL_VAULT_REMOVAL_EVENT_DEVICE &&
+    typeof operationRevision === "string" &&
+    JOURNAL_REMOVAL_OPERATION_REVISION_RE.test(operationRevision) &&
+    Number.isSafeInteger(vaultRevision) &&
+    vaultRevision >= 0
+  );
+}
+
+/**
+ * A vault-delete event is only a wake signal. The owner-bound recovery RPC is
+ * the authority for the current removal operation; the event payload itself
+ * must never delete a local wrapper or advance the cursor before a durable
+ * remote-recovery intent exists.
+ */
+async function prepareJournalVaultRemovalEvents(
+  events: SyncEvent[],
+  ownerUserId: string,
+): Promise<{
+  handledVaultDeletes: ReadonlySet<SyncEvent>;
+  obsoleteEventIds: ReadonlySet<string>;
+}> {
+  const markers = events
+    .map((event) => {
+      if (isValidJournalVaultRemovalWake(event)) {
+        return {
+          event,
+          operationRevision: event.payload!.operationRevision as string,
+          vaultRevision: normalizeJournalVaultRevision(event.payload!.vaultRevision),
+          vaultWake: true,
+        };
+      }
+      const kind = journalRemovalEventKind(event);
+      if (!kind) return null;
+      return {
+        event,
+        operationRevision: event.payload!.removalOperationRevision as string,
+        vaultRevision:
+          kind === "refetch"
+            ? normalizeJournalVaultRevision(event.payload!.vaultRevision)
+            : null,
+        vaultWake: false,
+      };
+    })
+    .filter((marker): marker is NonNullable<typeof marker> => marker !== null);
+  if (markers.length === 0) {
+    return { handledVaultDeletes: new Set(), obsoleteEventIds: new Set() };
+  }
+
+  const recovery = await recoverRemoteJournalPasswordRemoval({
+    expectedOwnerUserId: ownerUserId,
+  });
+  if (recovery.status === "not-pending") {
+    return {
+      handledVaultDeletes: new Set(),
+      obsoleteEventIds: new Set(markers.map(({ event }) => event.id)),
+    };
+  }
+
+  const {
+    captureJournalSecurityBoundary,
+    recordOrphanedRemoteJournalPasswordRemoval,
+  } = await import("@/features/journal/journalSecurityMigration");
+  const boundary = await captureJournalSecurityBoundary();
+  const disposition = await recordOrphanedRemoteJournalPasswordRemoval(
+    {
+      operationRevision: recovery.operationRevision,
+      vaultRevision: recovery.vaultRevision,
+      remoteStatus: recovery.status,
+    },
+    boundary,
+  );
+  if (disposition === "stale") {
+    return {
+      handledVaultDeletes: new Set(),
+      obsoleteEventIds: new Set(markers.map(({ event }) => event.id)),
+    };
+  }
+
+  const handledVaultDeletes = new Set<SyncEvent>();
+  const obsoleteEventIds = new Set<string>();
+  for (const marker of markers) {
+    const isCurrent =
+      marker.operationRevision === recovery.operationRevision &&
+      (marker.vaultRevision === null || marker.vaultRevision === recovery.vaultRevision);
+    if (!isCurrent) {
+      obsoleteEventIds.add(marker.event.id);
+    } else if (marker.vaultWake) {
+      handledVaultDeletes.add(marker.event);
+    }
+  }
+  return { handledVaultDeletes, obsoleteEventIds };
+}
+
+async function applySettingEvent(
+  event: SyncEvent,
+  handledJournalVaultDeletes: ReadonlySet<SyncEvent>,
+): Promise<boolean> {
   const payload = event.payload || {};
   const key = typeof payload.key === "string" ? payload.key : event.entity_id;
   if (!key) return false;
   if (!isAccountSyncedSettingKey(key)) return false;
 
   if (event.op === "delete") {
+    if (key === SK.JOURNAL_VAULT_KEY) {
+      return handledJournalVaultDeletes.has(event);
+    }
     await db.settings.delete(key);
     storageRemove(key);
     return true;
@@ -849,7 +1319,7 @@ export async function applyDelta(
   const assertOwnerInTransaction = () =>
     Dexie.waitFor(assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply transaction"));
 
-  const remoteEvents = events.filter((e) => e.device_id !== currentDeviceId);
+  let remoteEvents = events.filter((e) => e.device_id !== currentDeviceId);
   if (remoteEvents.length === 0) {
     const maxSeq = events[events.length - 1].seq;
     await db.transaction("rw", [db.settings], async () => {
@@ -860,7 +1330,42 @@ export async function applyDelta(
     return 0;
   }
 
+  const journalRemovalClassification = await prepareJournalVaultRemovalEvents(
+    remoteEvents,
+    ownerUserId,
+  );
+  remoteEvents = remoteEvents.filter(
+    (event) => !journalRemovalClassification.obsoleteEventIds.has(event.id)
+  );
+  const handledJournalVaultDeletes = journalRemovalClassification.handledVaultDeletes;
+
+  const hydratedJournalRemoval = await hydrateJournalRemovalEvents(
+    remoteEvents,
+    ownerUserId
+  );
+  remoteEvents = hydratedJournalRemoval.events;
+  const journalRemovalEventIds = hydratedJournalRemoval.removalEventIds;
+
+  const linkedJournalPhotos = await fetchLinkedJournalPhotoMetadata(remoteEvents, ownerUserId);
   const linkedJournalAudio = await fetchLinkedJournalAudioMetadata(remoteEvents, ownerUserId);
+  for (const event of remoteEvents) {
+    if (
+      !journalRemovalEventIds.has(event.id) ||
+      event.entity_type !== "journal" ||
+      event.op !== "upsert" ||
+      !event.payload
+    ) {
+      continue;
+    }
+    const entry = normalizeJournalDeltaPayload(event.payload, event.entity_id);
+    if (
+      !entry ||
+      entry.photoIds.some((id) => !linkedJournalPhotos.has(id)) ||
+      (entry.audioIds ?? []).some((id) => !linkedJournalAudio.has(id))
+    ) {
+      throw new JournalRemovalRefetchPendingError();
+    }
+  }
 
   const tableNames = new Set<string>();
   for (const event of remoteEvents) {
@@ -876,6 +1381,9 @@ export async function applyDelta(
   if (includesJournalEvent) {
     tables.push(db.journalPhotos as unknown as TransactionTable);
     tables.push(db.journalAudio as unknown as TransactionTable);
+  }
+  if (journalRemovalEventIds.size > 0) {
+    tables.push(db.offlineQueue as unknown as TransactionTable);
   }
   if (!tableNames.has("settings")) {
     tables.push(db.settings as unknown as TransactionTable);
@@ -916,11 +1424,41 @@ export async function applyDelta(
             continue;
           }
           if (event.entity_type === "setting") {
-            if (await applySettingEvent(event)) txApplied++;
+            if (await applySettingEvent(event, handledJournalVaultDeletes)) txApplied++;
             continue;
           }
 
           const table = db.table(tableName);
+
+          if (
+            journalRemovalEventIds.has(event.id) &&
+            event.entity_type === "journal"
+          ) {
+            const localEntry = (await table.get(event.entity_id)) as JournalEntry | undefined;
+            if (localEntry) {
+              const pendingLocalUpsert = await db.offlineQueue
+                .where("type")
+                .equals("SYNC_JOURNAL_ENTRY")
+                .and(
+                  (item) =>
+                    item.entityId === event.entity_id &&
+                    item.ownerUserId === ownerUserId
+                )
+                .first();
+              const remoteUpdatedAt =
+                event.op === "upsert" && event.payload
+                  ? Number(event.payload.updatedAt)
+                  : Number.NaN;
+              if (
+                pendingLocalUpsert &&
+                (event.op === "delete" ||
+                  !Number.isFinite(remoteUpdatedAt) ||
+                  localEntry.updatedAt >= remoteUpdatedAt)
+              ) {
+                continue;
+              }
+            }
+          }
 
           switch (event.op) {
             case "upsert":
@@ -930,6 +1468,9 @@ export async function applyDelta(
                 }
                 let payload: Record<string, unknown> = event.payload;
                 let normalizedJournalEntry: JournalEntry | null = null;
+                let durableJournalVaultAtCommit: Awaited<
+                  ReturnType<typeof readDurableJournalVaultEpochForIngress>
+                > | null = null;
                 if (event.entity_type === "journal") {
                   normalizedJournalEntry = normalizeJournalDeltaPayload(
                     event.payload,
@@ -937,13 +1478,12 @@ export async function applyDelta(
                   );
                   if (!normalizedJournalEntry) break;
 
-                  const protectedJournalAtCommit = Boolean(
-                    await db.settings.get(SK.JOURNAL_PASSWORD)
-                  );
+                  durableJournalVaultAtCommit = await readDurableJournalVaultEpochForIngress();
                   if (
-                    protectedJournalAtCommit &&
-                    normalizedJournalEntry.content &&
-                    !isEncryptedJournalContent(normalizedJournalEntry.content)
+                    !canApplyJournalEntryForVaultEpoch(
+                      normalizedJournalEntry,
+                      durableJournalVaultAtCommit
+                    )
                   ) {
                     break;
                   }
@@ -974,10 +1514,50 @@ export async function applyDelta(
                   }
                 }
                 await table.put(payload);
+                if (normalizedJournalEntry?.photoIds.length) {
+                  const linkedPhotos = normalizedJournalEntry.photoIds
+                    .map((photoId) => linkedJournalPhotos.get(photoId))
+                    .filter((photo): photo is JournalPhoto =>
+                      Boolean(
+                        photo &&
+                          durableJournalVaultAtCommit &&
+                          canApplyJournalMediaForVaultEpoch(
+                            photo,
+                            durableJournalVaultAtCommit,
+                            ownerUserId
+                          )
+                      )
+                    );
+                  if (linkedPhotos.length > 0) {
+                    const mergedPhotos = await Promise.all(
+                      linkedPhotos.map(async (remotePhoto) => {
+                        const localPhoto = await db.journalPhotos.get(remotePhoto.id);
+                        return localPhoto
+                          ? {
+                              ...remotePhoto,
+                              data: localPhoto.data,
+                              thumbnail: localPhoto.thumbnail,
+                            }
+                          : remotePhoto;
+                      })
+                    );
+                    await db.journalPhotos.bulkPut(mergedPhotos);
+                  }
+                }
                 if (normalizedJournalEntry?.audioIds?.length) {
                   const linkedAudio = normalizedJournalEntry.audioIds
                     .map((audioId) => linkedJournalAudio.get(audioId))
-                    .filter((audio): audio is JournalAudio => Boolean(audio));
+                    .filter((audio): audio is JournalAudio =>
+                      Boolean(
+                        audio &&
+                          durableJournalVaultAtCommit &&
+                          canApplyJournalMediaForVaultEpoch(
+                            audio,
+                            durableJournalVaultAtCommit,
+                            ownerUserId
+                          )
+                      )
+                    );
                   if (linkedAudio.length > 0) {
                     const mergedAudio = await Promise.all(
                       linkedAudio.map(async (remoteAudio) => {
@@ -1010,7 +1590,11 @@ export async function applyDelta(
         await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
       });
     };
-    if (remoteEvents.some((event) => event.entity_type === "journal")) {
+    if (
+      remoteEvents.some(
+        (event) => event.entity_type === "journal" || isJournalVaultDeleteEvent(event),
+      )
+    ) {
       await runWithJournalSecurityWriteLock(applyTransaction);
     } else {
       await applyTransaction();

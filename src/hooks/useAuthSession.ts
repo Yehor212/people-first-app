@@ -12,10 +12,7 @@ import {
   getCleanAuthCallbackUrl,
   sanitizeAuthErrorMessage,
 } from "@/lib/authRedirect";
-import {
-  getJournalPasswordResetNonceFromUrl,
-  persistJournalPasswordResetProofFromUrl,
-} from "@/lib/journalPasswordResetHandoff";
+import { getJournalPasswordResetNonceFromUrl } from "@/lib/journalPasswordResetHandoff";
 import { AUTH_SESSION_EXPIRED_EVENT } from "@/lib/apiClient";
 import {
   getCloudSyncAccountBoundaryEpoch,
@@ -62,7 +59,14 @@ import {
   LEGACY_OFFLINE_QUEUE_RECOVERY_EVENT,
 } from "@/lib/authErrors";
 import { clearNativeJournalBiometricCredential } from "@/lib/journalBiometricCredentials";
-import { hasPendingJournalSecurityMigrationForOwner } from "@/features/journal";
+import {
+  ensureOwnerBoundJournalSecurityMigration,
+  recoverInstallationJournalSecurityRemovalBeforeAdoption,
+  hasPendingJournalSecurityMigrationForOwner,
+  hasPendingJournalSecurityRemovalForOwner,
+  resumePendingJournalPasswordRemoval,
+  runJournalSecurityMigration,
+} from "@/features/journal";
 import { clearAccountNotificationsForBoundary } from "@/lib/localNotifications";
 import { clearAccountDeviceSurfaces } from "@/lib/accountDeviceCleanup";
 import { signOutExpectedOwnerLocally } from "@/lib/ownerBoundAuthSession";
@@ -115,6 +119,7 @@ export function useAuthSession(isLoading: boolean): void {
   const finalizeAdmittedSessionRef = useRef<
     ((session: Session, trackAppVersion: boolean) => Promise<void>) | null
   >(null);
+  const journalResetCallbackFailureRef = useRef(false);
 
   // Refs for values used inside effects to prevent listener re-subscription
   const authGateCheckedRef = useRef(authGateChecked);
@@ -217,15 +222,13 @@ export function useAuthSession(isLoading: boolean): void {
     let settled = false;
 
     const completeWebOAuthSession = (session: import("@supabase/supabase-js").Session) => {
+      journalResetCallbackFailureRef.current = false;
       setAuthBypassFlag(true);
       setHasValidSession(false);
       setWebOAuthError(null);
       setIsProcessingWebOAuth(false);
       setAuthGateChecked(true);
 
-      if (hasCode) {
-        persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id);
-      }
       notifyAuthComplete();
       endAuthFlow();
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
@@ -238,13 +241,21 @@ export function useAuthSession(isLoading: boolean): void {
     };
 
     const failWebOAuthSession = (message: string) => {
+      if (requiresVerifiedJournalResetCallback) {
+        // A still-valid pre-existing account session may finish its ordinary
+        // startup sync after this callback fails. Preserve the scoped reauth
+        // error instead of letting that unrelated success erase it.
+        journalResetCallbackFailureRef.current = true;
+      }
       setIsProcessingWebOAuth(false);
       setWebOAuthError(message);
       endAuthFlow();
       window.history.replaceState({}, "", getCleanAuthCallbackUrl(window.location.href));
     };
 
-    const completeManualWebOAuthCallback = async (source: "hash" | "fallback") => {
+    const completeManualWebOAuthCallback = async (
+      source: "hash" | "fallback" | "journal",
+    ) => {
       const completeFromCurrentSession = async () => {
         const { data } = await supabase.auth.getSession();
         if (settled) return true;
@@ -260,8 +271,15 @@ export function useAuthSession(isLoading: boolean): void {
       };
 
       try {
-        await handleAuthCallback(supabase, window.location.href);
+        const callbackSession = await handleAuthCallback(supabase, window.location.href);
         if (settled) return;
+
+        if (callbackSession) {
+          settled = true;
+          logger.log(`[Index] Web OAuth ${source} callback processed successfully`);
+          completeWebOAuthSession(callbackSession);
+          return;
+        }
 
         if (await completeFromCurrentSession()) return;
 
@@ -290,8 +308,8 @@ export function useAuthSession(isLoading: boolean): void {
       if (settled) return;
 
       if (
-        (event === "SIGNED_IN" ||
-          (!requiresVerifiedJournalResetCallback && event === "INITIAL_SESSION")) &&
+        !requiresVerifiedJournalResetCallback &&
+        (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
         session
       ) {
         settled = true;
@@ -300,7 +318,9 @@ export function useAuthSession(isLoading: boolean): void {
       }
     });
 
-    if (!hasQueryCode && (hasHashCode || hasImplicitTokens)) {
+    if (requiresVerifiedJournalResetCallback && (hasCode || hasImplicitTokens)) {
+      void completeManualWebOAuthCallback("journal");
+    } else if (!hasQueryCode && (hasHashCode || hasImplicitTokens)) {
       void completeManualWebOAuthCallback("hash");
     }
 
@@ -617,6 +637,15 @@ export function useAuthSession(isLoading: boolean): void {
             await runWithDataWriteBarrier(
               async () => {
                 assertOwnedWriterSuspension(suspension);
+                if (
+                  await hasPendingJournalSecurityRemovalForOwner(
+                    suspension.sourceOwnerUserId!,
+                  )
+                ) {
+                  throw new Error(
+                    "Diary protection removal must finish before account-switch recovery",
+                  );
+                }
                 const currentOwnerUserId = await getLocalDataOwnerId();
                 if (
                   currentOwnerUserId !== suspension.sourceOwnerUserId &&
@@ -721,6 +750,24 @@ export function useAuthSession(isLoading: boolean): void {
         lastSyncedUserIdRef.current = null;
         return;
       }
+      if (persistedOwnerUserId === null) {
+        const installationRemovalRecovery =
+          await recoverInstallationJournalSecurityRemovalBeforeAdoption(userId);
+        if (!isCurrentTransition(userId, generation)) return;
+        if (installationRemovalRecovery === "blocked") {
+          setHasValidSession(false);
+          setAuthBypassFlag(false);
+          setAuthGateChecked(false);
+          setWebOAuthError(AUTH_ACCOUNT_SWITCH_PENDING_WRITES_ERROR);
+          setAccountBoundaryInProgress(false);
+          lastSyncedUserIdRef.current = null;
+          hadSignOutRef.current = true;
+          logger.warn(
+            "[Auth] Account adoption is blocked until installation-bound diary removal is recovered",
+          );
+          return;
+        }
+      }
       const hasUnownedLegacyActions = await offlineQueue.hasUnownedLegacyActionsReady();
       if (!isCurrentTransition(userId, generation) || lastSyncedUserIdRef.current === userId)
         return;
@@ -799,7 +846,8 @@ export function useAuthSession(isLoading: boolean): void {
         previousOwnerUserId &&
         previousOwnerUserId !== userId &&
         ((await offlineQueue.hasPendingActionsForOwnerReady(previousOwnerUserId)) ||
-          (await hasPendingJournalSecurityMigrationForOwner(previousOwnerUserId)))
+          (await hasPendingJournalSecurityMigrationForOwner(previousOwnerUserId)) ||
+          (await hasPendingJournalSecurityRemovalForOwner(previousOwnerUserId)))
       ) {
         setHasValidSession(false);
         setAuthBypassFlag(false);
@@ -853,7 +901,8 @@ export function useAuthSession(isLoading: boolean): void {
               previousOwnerUserId &&
               previousOwnerUserId !== userId &&
               ((await offlineQueue.hasPendingActionsForOwnerReady(previousOwnerUserId)) ||
-                (await hasPendingJournalSecurityMigrationForOwner(previousOwnerUserId)))
+                (await hasPendingJournalSecurityMigrationForOwner(previousOwnerUserId)) ||
+                (await hasPendingJournalSecurityRemovalForOwner(previousOwnerUserId)))
             ) {
               setHasValidSession(false);
               setAuthBypassFlag(false);
@@ -915,6 +964,15 @@ export function useAuthSession(isLoading: boolean): void {
                     if (queueFinalization.status === "blocked") {
                       throw new Error(
                         "Offline writes appeared while the account boundary was being prepared"
+                      );
+                    }
+                    if (
+                      await hasPendingJournalSecurityRemovalForOwner(
+                        previousOwnerUserId,
+                      )
+                    ) {
+                      throw new Error(
+                        "Diary protection removal must finish before account-switch cleanup",
                       );
                     }
                     assertOwnedWriterSuspension(writerSuspension);
@@ -1037,8 +1095,43 @@ export function useAuthSession(isLoading: boolean): void {
           logger.warn("[Auth] Stale imported backup account-claim marker could not be cleared");
         }
 
+        const journalRemovalRecovery = await resumePendingJournalPasswordRemoval();
+        if (!isCurrentTransition(userId, generation)) return;
+        if (journalRemovalRecovery === "pending") {
+          lastSyncedUserIdRef.current = null;
+          setHasValidSession(false);
+          setAccountBoundaryInProgress(false);
+          logger.warn(
+            "[Auth] Cloud sync remains paused until diary protection removal is reconciled",
+          );
+          return;
+        }
+
+        const journalProtectionMigration =
+          await ensureOwnerBoundJournalSecurityMigration(userId);
+        let journalProtectionMigrationRan = false;
+        if (journalProtectionMigration) {
+          try {
+            await runJournalSecurityMigration(
+              { revision: journalProtectionMigration.revision },
+              userId,
+            );
+            journalProtectionMigrationRan = true;
+          } catch {
+            lastSyncedUserIdRef.current = null;
+            setHasValidSession(false);
+            setAccountBoundaryInProgress(false);
+            logger.warn(
+              "[Auth] Cloud sync remains paused until diary protection is reconciled",
+            );
+            return;
+          }
+        }
+
         // Use 'replace' on account switch to avoid merging different users' data
-        await syncWithCloud(isAccountSwitch ? "replace" : "merge", userId);
+        if (!journalProtectionMigrationRan) {
+          await syncWithCloud(isAccountSwitch ? "replace" : "merge", userId);
+        }
         if (!isCurrentTransition(userId, generation)) return;
         if (hasWriterSuspension()) {
           gateSessionForWriterSuspension();
@@ -1065,7 +1158,9 @@ export function useAuthSession(isLoading: boolean): void {
         // Start auto-sync only after the privacy boundary is clean.
         startAutoSync();
         if (active) {
-          setWebOAuthError(null);
+          if (!journalResetCallbackFailureRef.current) {
+            setWebOAuthError(null);
+          }
           setAuthGateChecked(true);
           setAccountBoundaryInProgress(false);
           setHasValidSession(true);

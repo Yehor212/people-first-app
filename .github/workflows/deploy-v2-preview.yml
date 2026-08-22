@@ -195,6 +195,10 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build
 
+      - name: Check V2 Pages feature capability receipt
+        working-directory: v2-src
+        run: node scripts/check-feature-capability-receipt.cjs --platform web-pages
+
       - name: Check V2 production bundle data integrity
         working-directory: v2-src
         run: npm run check:production-data-integrity:bundle

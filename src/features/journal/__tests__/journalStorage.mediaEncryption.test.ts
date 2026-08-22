@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { SK } from "@/lib/storageKeys";
 import type { JournalAudio, JournalPhoto } from "../types";
 
 const mocks = vi.hoisted(() => ({
@@ -23,8 +24,10 @@ const mocks = vi.hoisted(() => ({
   syncJournalPhoto: vi.fn(() => Promise.resolve()),
   triggerSync: vi.fn(),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
-  uploadEncryptedAudio: vi.fn(() => Promise.resolve({ path: "user-1/audio-1.bin", signedUrl: "" })),
-  settingsGet: vi.fn<() => Promise<{ value: unknown } | undefined>>(() =>
+  uploadEncryptedAudio: vi.fn(() =>
+    Promise.resolve({ path: "user-1/audio-1.v2.bin", signedUrl: "" })
+  ),
+  settingsGet: vi.fn<(key: string) => Promise<{ value: unknown } | undefined>>(() =>
     Promise.resolve(undefined)
   ),
 }));
@@ -102,6 +105,18 @@ import {
 
 const vaultKey = "vault-key";
 
+function mockProtectedVault(): void {
+  mocks.settingsGet.mockImplementation((key: string) =>
+    Promise.resolve(
+      key === SK.JOURNAL_VAULT_KEY
+        ? {
+            value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 },
+          }
+        : undefined,
+    ),
+  );
+}
+
 describe("journalStorage media encryption", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -146,9 +161,7 @@ describe("journalStorage media encryption", () => {
 
   it("stores encrypted audio locally and uploads the encrypted payload while returning plaintext to the UI", async () => {
     setJournalContentVaultKey(vaultKey, 2);
-    mocks.settingsGet.mockResolvedValue({
-      value: { wrappedKey: "persisted", createdAt: 1, updatedAt: 2 },
-    });
+    mockProtectedVault();
 
     const result = await storeAudio("entry-1", "data:audio/webm;base64,dm9pY2U=", 12, "audio/webm");
     await Promise.resolve();
@@ -164,6 +177,7 @@ describe("journalStorage media encryption", () => {
       "audio-1",
       expect.any(Blob),
       "user-1",
+      2,
     );
   });
 

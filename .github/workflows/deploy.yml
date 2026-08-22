@@ -253,6 +253,9 @@ jobs:
           VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE: ${{ vars.VITE_DESKTOP_SIGNED_RELEASE_AUTHENTICODE }}
         run: npm run build
 
+      - name: Check Pages feature capability receipt
+        run: node scripts/check-feature-capability-receipt.cjs --platform web-pages
+
       - name: Check production bundle data integrity
         run: npm run check:production-data-integrity:bundle
 
@@ -501,6 +504,9 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build:android
 
+      - name: Check Android feature capability receipt
+        run: node scripts/check-feature-capability-receipt.cjs --platform android
+
       - name: Check Android web bundle data integrity
         run: npm run check:production-data-integrity:bundle
 
@@ -597,6 +603,9 @@ jobs:
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npm run build:ios
+
+      - name: Check iOS feature capability receipt
+        run: node scripts/check-feature-capability-receipt.cjs --platform ios
 
       - name: Check iOS web bundle data integrity
         run: npm run check:production-data-integrity:bundle

@@ -46,6 +46,8 @@ interface JournalEntryCardProps {
   isActive?: boolean;
   /** Dim card when another entry is selected */
   dimmed?: boolean;
+  /** Boolean-only DOM marker; the private entry identifier is never rendered. */
+  isSaveCeremonyAnchor?: boolean;
 }
 
 export const JournalEntryCard = memo(function JournalEntryCard({
@@ -59,6 +61,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   searchQuery,
   isActive = false,
   dimmed = false,
+  isSaveCeremonyAnchor = false,
 }: JournalEntryCardProps) {
   const { t, isRTL, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -315,6 +318,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       {/* Existing card */}
       <motion.div
         layoutId={animate ? `entry-${entry.id}` : undefined}
+        data-journal-save-anchor={isSaveCeremonyAnchor ? "true" : undefined}
         role="button"
         tabIndex={0}
         aria-disabled={privateMode || undefined}
