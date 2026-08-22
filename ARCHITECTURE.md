@@ -16,9 +16,9 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Hooks (src/hooks, non-test) | **76** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **278** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **260** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **39** | `ls src/components/ -d` |
-| Features modules | 1 | `ls src/features/ -d` |
+| Features modules | 2 | `ls src/features/ -d` |
 | V2 coexistence files | 52 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 7 | regex walk |
 | `as any` total | 167 (167 in tests, ~0 prod) | regex walk |
@@ -40,10 +40,10 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
-| Source files                 |   **935** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **592** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Source files                 |   **944** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
+| Test files                   |   **603** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
-| React.memo                   |   **120** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
+| React.memo                   |   **121** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
 | index.css LOC                | **7,602** | `readFileSync(...).split("\\n").length` (constitution guard) |
 | Inline style={{}}            |   **358** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
 | exhaustive-deps suppressions |    **17** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
@@ -88,10 +88,17 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 | Local DB         | Dexie (IndexedDB)                                    |
 | Backend          | Supabase (Auth, Database, Realtime)                  |
 | Native           | Capacitor 8                                          |
-| Analytics        | Firebase (Crashlytics + Analytics)                   |
-| Ads              | AdMob via @capacitor-community/admob                 |
+| Analytics        | Opt-in web `gtag` adapter; no Firebase Analytics native dependency |
+| Native crash reporting | Firebase Crashlytics                          |
+| Ads              | OFF; legacy AdMob package retained but excluded from production/native graphs |
 | Error Monitoring | Sentry                                               |
 | i18n             | Custom (8 languages: en, uk, es, de, fr, ja, ar, he) |
+
+T177 keeps advertising fail-closed and OFF. The legacy package and modules are
+retained for a future owner decision, but the app entry and generated Android
+and iOS plugin/package graphs do not reach them. `nativePluginAllowlist` in
+`capacitor.config.ts` is the native registration boundary; any future native
+plugin must be added there explicitly and re-synced on both platforms.
 
 ---
 
@@ -185,7 +192,7 @@ src/
     LanguageContext.tsx          # i18n with 8 languages
     EmotionThemeContext.tsx      # Dynamic background based on mood
     FeatureFlagsContext.tsx      # Module visibility flags
-    AdContext.tsx                # AdMob integration
+    AdContext.tsx                # Legacy AdMob integration; retained, not production-reachable while ads are OFF
 
   lib/                          # Utilities & platform services
   storage/                      # Dexie DB, cloud sync, realtime
@@ -988,7 +995,7 @@ On PR to main:
 | TD-21 | ~~MEDIUM~~ → DONE                 | ~~Scattered Capacitor platform checks~~                            | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`.                                    | src/lib/platform.ts                                       |
 | TD-22 | ~~MEDIUM~~ → DONE                 | ~~Scattered import.meta.env access~~                               | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated.                                                                                                                               | src/lib/env.ts                                            |
 | TD-23 | ~~MEDIUM~~ → DONE                 | ~~Direct Supabase calls in UI components~~                         | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21.             | src/lib/feedbackService.ts, src/lib/accountService.ts     |
-| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **120 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                                   |
+| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **121 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                                   |
 | TD-25 | P2                                | index.css monolith                                                 | **7,602 lines** remain in a single CSS file. Further split work needs feature ownership and regression proof.                                                                                                                                                                   | src/index.css                                             |
 | TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                       |
 | TD-27 | P2                                | Inline style={{}} proliferation                                    | **358 instances** across TSX files by the 2026-07-26 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                                   |

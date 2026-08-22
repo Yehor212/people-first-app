@@ -108,7 +108,7 @@ export function useHabitHandlers({
       trackTimeOfDayCompletion();
       // §15 retention cohort — emit the total active-habit count so the
       // aggregator can compute the 7-day completion rate for ≥3-habit users.
-      analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+      analytics.habitCompleted(habits.filter((h) => !h.isArchived).length);
       plantSeed("habit");
       waterPlants("habit");
 

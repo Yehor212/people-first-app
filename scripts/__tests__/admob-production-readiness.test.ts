@@ -240,12 +240,13 @@ describe("AdMob production readiness guards", () => {
 
 
 describe("Android release Gradle guard", () => {
-  it("fails release builds instead of falling back to Google sample AdMob app id", () => {
+  it("keeps AdMob release wiring absent while advertising is OFF", () => {
     const buildGradle = readFileSync("android/app/build.gradle", "utf8");
+    const manifest = readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
 
-    expect(buildGradle).toContain("ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS");
-    expect(buildGradle).toContain("throw new GradleException");
-    expect(buildGradle).toContain("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID");
-    expect(buildGradle).toContain("gradle.taskGraph.whenReady");
+    expect(buildGradle).not.toContain("ZENFLOW_ADMOB_ANDROID_APP_ID");
+    expect(buildGradle).not.toContain("adMobApplicationId");
+    expect(manifest).not.toContain("com.google.android.gms.ads.APPLICATION_ID");
+    expect(manifest).not.toContain("${adMobApplicationId}");
   });
 });

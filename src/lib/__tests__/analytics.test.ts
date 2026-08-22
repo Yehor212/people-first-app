@@ -32,40 +32,40 @@ describe("analytics.init", () => {
   it("enables tracking when analytics=true and noTracking=false", () => {
     window.gtag = mockGtag;
     analytics.init({ analytics: true, noTracking: false });
-    analytics.track("test_event");
-    expect(mockGtag).toHaveBeenCalledWith("event", "test_event", undefined);
+    analytics.signIn();
+    expect(mockGtag).toHaveBeenCalledWith("event", "sign_in", undefined);
   });
 
   it("disables tracking when analytics=false", () => {
     window.gtag = mockGtag;
     analytics.init({ analytics: false, noTracking: false });
-    analytics.track("test_event");
+    analytics.signIn();
     expect(mockGtag).not.toHaveBeenCalled();
   });
 
   it("disables tracking when noTracking=true", () => {
     window.gtag = mockGtag;
     analytics.init({ analytics: true, noTracking: true });
-    analytics.track("test_event");
+    analytics.signIn();
     expect(mockGtag).not.toHaveBeenCalled();
   });
 });
 
-// ─── track ──────────────────────────────────────────────────────
+// ─── fixed event boundary ───────────────────────────────────────
 
-describe("analytics.track", () => {
+describe("analytics fixed event boundary", () => {
   it("does nothing when disabled", () => {
     window.gtag = mockGtag;
     analytics.init({ analytics: false, noTracking: false });
-    analytics.track("test_event");
+    analytics.signIn();
     expect(mockGtag).not.toHaveBeenCalled();
   });
 
   it("calls window.gtag when enabled", () => {
     window.gtag = mockGtag;
     analytics.init({ analytics: true, noTracking: false });
-    analytics.track("click", { button: "ok" });
-    expect(mockGtag).toHaveBeenCalledWith("event", "click", { button: "ok" });
+    analytics.signIn();
+    expect(mockGtag).toHaveBeenCalledWith("event", "sign_in", undefined);
   });
 
   it("swallows errors from gtag", () => {
@@ -73,7 +73,7 @@ describe("analytics.track", () => {
       throw new Error("gtag broke");
     });
     analytics.init({ analytics: true, noTracking: false });
-    expect(() => analytics.track("test")).not.toThrow();
+    expect(() => analytics.signIn()).not.toThrow();
   });
 });
 
@@ -85,9 +85,13 @@ describe("analytics convenience methods", () => {
     analytics.init({ analytics: true, noTracking: false });
   });
 
-  it("page() calls track with page_view", () => {
-    analytics.page("home");
-    expect(mockGtag).toHaveBeenCalledWith("event", "page_view", { page: "home" });
+  it("rejects forged free-form enum values before gtag", () => {
+    const canary = "PRIVATE_JOURNAL_CANARY_DO_NOT_SEND";
+    analytics.habitCreated(canary as never, 1);
+    analytics.insightStripRendered(canary as never, canary as never);
+    analytics.achievementUnlocked(canary as never);
+    expect(JSON.stringify(mockGtag.mock.calls)).not.toContain(canary);
+    expect(mockGtag).not.toHaveBeenCalled();
   });
 
   it("signIn() tracks sign_in", () => {
@@ -100,14 +104,14 @@ describe("analytics convenience methods", () => {
     expect(mockGtag).toHaveBeenCalledWith("event", "sign_out", undefined);
   });
 
-  it("habitCompleted() tracks habit_completed with length only (PII safe)", () => {
-    analytics.habitCompleted("Meditation");
-    expect(mockGtag).toHaveBeenCalledWith("event", "habit_completed", { habit_length: 10 });
+  it("habitCompleted() never accepts private habit content", () => {
+    analytics.habitCompleted(4);
+    expect(mockGtag).toHaveBeenCalledWith("event", "habit_completed", { total_habits: 4 });
   });
 
-  it("moodTracked() tracks mood_tracked with mood", () => {
-    analytics.moodTracked("great");
-    expect(mockGtag).toHaveBeenCalledWith("event", "mood_tracked", { mood: "great" });
+  it("moodTracked() emits only a fixed event and no emotional payload", () => {
+    analytics.moodTracked();
+    expect(mockGtag).toHaveBeenCalledWith("event", "mood_tracked", undefined);
   });
 
   it("focusSessionCompleted() tracks focus_session with duration", () => {
@@ -189,26 +193,20 @@ describe("analytics.habitCompleted (§15 retention)", () => {
     analytics.init({ analytics: true, noTracking: false });
   });
 
-  it("omits total_habits when caller does not provide it (backwards-compat)", () => {
-    analytics.habitCompleted("Morning run");
-    expect(mockGtag).toHaveBeenCalledWith("event", "habit_completed", {
-      habit_length: 11,
-    });
+  it("omits properties when caller does not provide an operational count", () => {
+    analytics.habitCompleted();
+    expect(mockGtag).toHaveBeenCalledWith("event", "habit_completed", undefined);
   });
 
   it("includes total_habits when provided — enables ≥3-habit cohort filter", () => {
-    analytics.habitCompleted("Read", 5);
+    analytics.habitCompleted(5);
     expect(mockGtag).toHaveBeenCalledWith("event", "habit_completed", {
-      habit_length: 4,
       total_habits: 5,
     });
   });
 
-  it("never leaks the habit name", () => {
-    analytics.habitCompleted("Take meds at 8pm — sertraline 50mg", 3);
-    const call = mockGtag.mock.calls[0];
-    const payload = call?.[2] as Record<string, unknown>;
-    expect(Object.values(payload).some((v) => typeof v === "string")).toBe(false);
+  it("does not expose a public arbitrary track method", () => {
+    expect("track" in analytics).toBe(false);
   });
 });
 
@@ -243,16 +241,16 @@ describe("analytics.insightStripRendered (§15 cross-habit)", () => {
   });
 
   it("emits finite enum fields only — no free text", () => {
-    analytics.insightStripRendered("mood-habit", "positive");
+    analytics.insightStripRendered("mood-habit-correlation", "celebration");
     expect(mockGtag).toHaveBeenCalledWith("event", "insight_strip_rendered", {
-      insight_type: "mood-habit",
-      insight_severity: "positive",
+      insight_type: "mood-habit-correlation",
+      insight_severity: "celebration",
     });
   });
 
   it("does not emit when disabled", () => {
     analytics.init({ analytics: false, noTracking: false });
-    analytics.insightStripRendered("mood-habit", "positive");
+    analytics.insightStripRendered("mood-habit-correlation", "celebration");
     expect(mockGtag).not.toHaveBeenCalled();
   });
 });

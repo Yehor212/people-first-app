@@ -1,9 +1,82 @@
 import { storageGetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import type { OfflineActionPriority, OfflineActionType } from "@/lib/offlineQueue";
 
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
 const DISABLED_VALUES = new Set(["0", "false", "no", "off"]);
 const MAX_RECEIPTS = 30;
+const RECEIPT_KINDS = new Set<SyncHealthReceipt["kind"]>([
+  "startup",
+  "queued",
+  "processed",
+  "failed",
+  "offline",
+  "session-missing",
+  "leader-skipped",
+  "queue-draining",
+  "queue-drained",
+  "queue-blocked",
+  "delta-empty",
+  "delta-applied",
+  "snapshot-applied",
+  "gap-recovered",
+  "error",
+]);
+const RECEIPT_SOURCES = new Set<SyncHealthReceipt["source"]>([
+  "runtime",
+  "delta",
+  "queue",
+  "resume",
+]);
+const SAFE_ACTION_TYPES = new Set<OfflineActionType | "offline-queue">([
+  "CREATE_MOOD",
+  "UPDATE_MOOD",
+  "DELETE_MOOD",
+  "CREATE_HABIT",
+  "UPDATE_HABIT",
+  "DELETE_HABIT",
+  "TOGGLE_HABIT",
+  "CREATE_FOCUS_SESSION",
+  "CREATE_GRATITUDE",
+  "DELETE_GRATITUDE",
+  "UPDATE_SETTINGS",
+  "DELETE_SETTINGS",
+  "SYNC_JOURNAL_ENTRY",
+  "DELETE_JOURNAL_ENTRY",
+  "UPLOAD_JOURNAL_PHOTO_STORAGE",
+  "UPLOAD_JOURNAL_AUDIO_STORAGE",
+  "DELETE_JOURNAL_PHOTO_STORAGE",
+  "DELETE_JOURNAL_AUDIO_STORAGE",
+  "MIGRATE_JOURNAL_SECURITY",
+  "WRITE_SYNC_EVENT",
+  "offline-queue",
+]);
+const SAFE_PRIORITIES = new Set<OfflineActionPriority>([
+  "critical",
+  "high",
+  "normal",
+  "low",
+]);
+const SAFE_ERROR_NAMES = new Set([
+  "Error",
+  "TypeError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "URIError",
+  "EvalError",
+  "AggregateError",
+  "AbortError",
+  "QuotaExceededError",
+  "NotAllowedError",
+  "NotFoundError",
+  "InvalidStateError",
+  "NetworkError",
+  "TimeoutError",
+  "OfflineQueueLifecycleError",
+  "DeviceSessionError",
+  "UnknownError",
+]);
 
 export const SYNC_HEALTH_RECEIPT_EVENT = "zenflow:sync-health-receipt";
 
@@ -86,7 +159,58 @@ function normalizeFlag(value: string | null | undefined): boolean {
 }
 
 function currentRoute(): string {
-  return `${window.location.pathname}${window.location.search}`;
+  return sanitizeRoute(`${window.location.pathname}${window.location.search}`);
+}
+
+function sanitizeRoute(route: unknown): string {
+  if (typeof route !== "string") return "/";
+  try {
+    const url = new URL(route, window.location.origin);
+    return url.origin === window.location.origin && url.pathname.startsWith("/")
+      ? url.pathname
+      : "/";
+  } catch {
+    return "/";
+  }
+}
+
+function finiteNonNegative(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function sanitizeReceipt(
+  receipt: Omit<SyncHealthReceipt, "at" | "route"> & { at?: number; route?: string },
+): SyncHealthReceipt {
+  const kind = RECEIPT_KINDS.has(receipt.kind) ? receipt.kind : "error";
+  const source = RECEIPT_SOURCES.has(receipt.source) ? receipt.source : "runtime";
+  const entry: SyncHealthReceipt = {
+    kind,
+    source,
+    at: finiteNonNegative(receipt.at) ?? Date.now(),
+    route: sanitizeRoute(receipt.route ?? currentRoute()),
+  };
+
+  const seq = finiteNonNegative(receipt.seq);
+  const fetched = finiteNonNegative(receipt.fetched);
+  const applied = finiteNonNegative(receipt.applied);
+  if (seq !== undefined) entry.seq = seq;
+  if (fetched !== undefined) entry.fetched = fetched;
+  if (applied !== undefined) entry.applied = applied;
+  if (
+    receipt.actionType &&
+    SAFE_ACTION_TYPES.has(receipt.actionType as OfflineActionType | "offline-queue")
+  ) {
+    entry.actionType = receipt.actionType;
+  }
+  if (receipt.priority && SAFE_PRIORITIES.has(receipt.priority as OfflineActionPriority)) {
+    entry.priority = receipt.priority;
+  }
+  if (receipt.errorName && SAFE_ERROR_NAMES.has(receipt.errorName)) {
+    entry.errorName = receipt.errorName;
+  }
+  return entry;
 }
 
 function defaultQueueSnapshot(): SyncHealthQueueSnapshot {
@@ -179,20 +303,37 @@ export function installSyncHealthRecorder(
       receipts: snapshot.receipts.map((receipt) => ({ ...receipt })),
     }),
     update: (patch) => {
-      snapshot = {
-        ...snapshot,
-        ...patch,
-        queue: patch.queue ? { ...patch.queue } : snapshot.queue,
-        route: patch.route || snapshot.route,
-        updatedAt: Date.now(),
-      };
+      // Construct from known fields so a forged caller cannot persist extra
+      // private payload through object spread.
+      const next: SyncHealthSnapshot = { ...snapshot, updatedAt: Date.now() };
+      if (patch.route !== undefined) next.route = sanitizeRoute(patch.route);
+      if (typeof patch.online === "boolean") next.online = patch.online;
+      if (["authenticated", "anonymous", "unknown"].includes(patch.auth ?? "")) {
+        next.auth = patch.auth!;
+      }
+      const lastSeq = finiteNonNegative(patch.lastSeq);
+      if (lastSeq !== undefined) next.lastSeq = lastSeq;
+      if (patch.queue) {
+        next.queue = {
+          pending: finiteNonNegative(patch.queue.pending) ?? snapshot.queue.pending,
+          criticalPending:
+            finiteNonNegative(patch.queue.criticalPending) ?? snapshot.queue.criticalPending,
+          processing:
+            typeof patch.queue.processing === "boolean"
+              ? patch.queue.processing
+              : snapshot.queue.processing,
+          lastProcessedAt:
+            patch.queue.lastProcessedAt === null
+              ? null
+              : finiteNonNegative(patch.queue.lastProcessedAt) ?? snapshot.queue.lastProcessedAt,
+        };
+      }
+      snapshot = next;
     },
     record: (receipt) => {
-      const entry: SyncHealthReceipt = {
-        ...receipt,
-        at: receipt.at ?? Date.now(),
-        route: receipt.route ?? currentRoute(),
-      };
+      // FR-031: construct from an allowlist. A forged object cannot smuggle
+      // journal, mood, habit, auth, or PII fields into debug evidence.
+      const entry = sanitizeReceipt(receipt);
       const receipts = [...snapshot.receipts, entry].slice(-MAX_RECEIPTS);
       snapshot = {
         ...snapshot,
@@ -219,10 +360,11 @@ export function recordSyncHealthReceipt(
   receipt: Omit<SyncHealthReceipt, "at" | "route"> & { at?: number; route?: string },
 ): void {
   if (typeof window !== "undefined") {
-    window.__zenflowSyncHealth?.record(receipt);
+    const safeReceipt = sanitizeReceipt(receipt);
+    window.__zenflowSyncHealth?.record(safeReceipt);
     window.dispatchEvent(
       new CustomEvent(SYNC_HEALTH_RECEIPT_EVENT, {
-        detail: receipt,
+        detail: safeReceipt,
       }),
     );
   }

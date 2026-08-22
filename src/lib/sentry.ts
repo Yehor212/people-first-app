@@ -49,10 +49,39 @@ const SENSITIVE_FIELD_NAME_PATTERN =
 // Structured telemetry must never carry ZenFlow's private writing or wellbeing
 // payloads. Exact generic names cover producer-neutral objects, while semantic
 // prefixes cover the camelCase/snake_case names used by journal, mood, coach,
-// reflection, and audio features. The boundary deliberately does not redact
-// operational names such as `contentType`, `responseStatus`, or `errorMessage`.
+// reflection, and audio features. The stricter FR-031 boundary below also
+// redacts string values under otherwise operational field names.
 const SENSITIVE_CONTENT_FIELD_NAME_PATTERN =
   /(^|[_-])((?:journal|diary)[_-]?(?:entry|text|content|note|notes)?|mood[_-]?(?:note|notes|text|content)|(?:reflection|gratitude)[_-]?(?:text|content|note|notes)?|coach[_-]?(?:prompt|response|message|content)|audio[_-]?(?:transcript|note|notes|content)|entry[_-]?(?:title|text|content|note|notes)|content|body|text|title|note|notes|prompt|response|transcript)s?($|[_-])/i;
+const REDACTED = "[REDACTED]";
+const SAFE_ERROR_NAMES = new Set([
+  "Error",
+  "TypeError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "URIError",
+  "EvalError",
+  "AggregateError",
+  "AbortError",
+  "QuotaExceededError",
+  "NotAllowedError",
+  "NotFoundError",
+  "InvalidStateError",
+  "NetworkError",
+  "TimeoutError",
+]);
+const SAFE_BREADCRUMB_CATEGORIES = new Set([
+  "app",
+  "audio",
+  "cache",
+  "friends",
+  "general",
+  "network",
+  "storage",
+  "sync",
+  "version-mismatch",
+]);
 
 function scrubString(str: string): string {
   return SENSITIVE_PATTERNS.reduce((result, pattern) => result.replace(pattern, "[REDACTED]"), str);
@@ -82,6 +111,38 @@ function scrubSentryPayload(value: unknown, seen = new WeakSet<object>()): unkno
     scrubbed[key] = shouldRedactField(key) ? "[REDACTED]" : scrubSentryPayload(nestedValue, seen);
   }
   return scrubbed;
+}
+
+/**
+ * FR-031 telemetry boundary. Caller-provided strings are free-form even when
+ * their property name looks operational (`error`, `detail`, `url`, etc.).
+ * Preserve only scalar measurements; redact every string recursively before
+ * the value reaches Sentry or a retained event receipt.
+ */
+function redactFreeformTelemetryStrings(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value === "string") return REDACTED;
+  if (value === null || typeof value !== "object") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (seen.has(value)) return "[Circular]";
+
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => redactFreeformTelemetryStrings(item, seen));
+  }
+
+  const scrubbed: Record<string, unknown> = {};
+  for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
+    scrubbed[key] = shouldRedactField(key)
+      ? REDACTED
+      : redactFreeformTelemetryStrings(nestedValue, seen);
+  }
+  return scrubbed;
+}
+
+function telemetrySafeError(error: Error): Error {
+  const safe = new Error("Application error");
+  safe.name = SAFE_ERROR_NAMES.has(error.name) ? error.name : "Error";
+  return safe;
 }
 
 function getSentryPlatform(): "android" | "ios" | "web" {
@@ -186,70 +247,105 @@ export function initSentry(): void {
         return null;
       }
 
-      // Remove user email and IP
+      // Only locally pseudonymized identifiers are admissible. Other user
+      // fields may contain auth IDs or PII and are removed as a unit.
       if (event.user) {
-        delete event.user.email;
-        delete event.user.ip_address;
-        delete event.user.username;
+        event.user = {};
       }
 
       // Scrub top-level strings too. Auth callback failures and manually
       // captured messages can carry token-bearing URLs outside request fields.
       if (event.message) {
-        event.message = scrubString(event.message);
+        event.message = REDACTED;
       }
       if (event.transaction) {
-        event.transaction = scrubString(event.transaction);
+        event.transaction = REDACTED;
       }
       if (event.exception) {
         event.exception = scrubSentryPayload(event.exception) as typeof event.exception;
+        for (const exception of event.exception.values ?? []) {
+          if (exception.value) exception.value = REDACTED;
+          if (exception.type && !SAFE_ERROR_NAMES.has(exception.type)) exception.type = "Error";
+          if (exception.mechanism?.data) {
+            exception.mechanism.data = redactFreeformTelemetryStrings(
+              exception.mechanism.data,
+            ) as typeof exception.mechanism.data;
+          }
+          for (const frame of exception.stacktrace?.frames ?? []) {
+            if (frame.vars) {
+              frame.vars = redactFreeformTelemetryStrings(frame.vars) as typeof frame.vars;
+            }
+            if (frame.context_line) frame.context_line = REDACTED;
+            if (frame.pre_context) frame.pre_context = frame.pre_context.map(() => REDACTED);
+            if (frame.post_context) frame.post_context = frame.post_context.map(() => REDACTED);
+          }
+        }
       }
       if (event.fingerprint) {
-        event.fingerprint = scrubSentryPayload(event.fingerprint) as typeof event.fingerprint;
+        event.fingerprint = redactFreeformTelemetryStrings(event.fingerprint) as typeof event.fingerprint;
       }
       if (event.tags) {
-        event.tags = scrubSentryPayload(event.tags) as typeof event.tags;
+        event.tags = redactFreeformTelemetryStrings(event.tags) as typeof event.tags;
       }
 
       // Scrub breadcrumb messages, request metadata, and caller-provided context.
       if (event.breadcrumbs) {
         event.breadcrumbs = event.breadcrumbs.map((bc) => ({
           ...bc,
-          message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data ? (scrubSentryPayload(bc.data) as Breadcrumb["data"]) : bc.data,
+          category: bc.category && SAFE_BREADCRUMB_CATEGORIES.has(bc.category)
+            ? bc.category
+            : bc.category ? REDACTED : bc.category,
+          message: bc.message ? REDACTED : bc.message,
+          data: bc.data
+            ? (redactFreeformTelemetryStrings(bc.data) as Breadcrumb["data"])
+            : bc.data,
         }));
       }
 
       // Scrub request URLs and payload-like fields.
       if (event.request?.url) {
-        event.request.url = scrubString(event.request.url);
+        event.request.url = REDACTED;
       }
       if (event.request?.query_string) {
-        const scrubbedQueryString = scrubSentryPayload(event.request.query_string);
+        const scrubbedQueryString = redactFreeformTelemetryStrings(event.request.query_string);
         event.request.query_string =
           typeof scrubbedQueryString === "string"
             ? scrubbedQueryString
             : JSON.stringify(scrubbedQueryString);
       }
       if (event.request?.cookies) {
-        event.request.cookies = scrubSentryPayload(event.request.cookies) as typeof event.request.cookies;
+        event.request.cookies = redactFreeformTelemetryStrings(
+          event.request.cookies,
+        ) as typeof event.request.cookies;
       }
       if (event.request?.data) {
-        event.request.data = scrubSentryPayload(event.request.data);
+        event.request.data = redactFreeformTelemetryStrings(event.request.data);
       }
       if (event.request?.headers) {
         const headers: Record<string, string> = {};
-        for (const [key, value] of Object.entries(event.request.headers)) {
-          headers[key] = shouldRedactField(key) ? "[REDACTED]" : scrubString(String(value));
+        for (const key of Object.keys(event.request.headers)) {
+          headers[key] = REDACTED;
         }
         event.request.headers = headers;
       }
 
       if (event.extra) {
-        event.extra = scrubSentryPayload(event.extra) as typeof event.extra;
+        event.extra = redactFreeformTelemetryStrings(event.extra) as typeof event.extra;
       }
       if (event.contexts) {
-        event.contexts = scrubSentryPayload(event.contexts) as typeof event.contexts;
+        event.contexts = redactFreeformTelemetryStrings(event.contexts) as typeof event.contexts;
+      }
+      if (event.logentry) {
+        event.logentry = redactFreeformTelemetryStrings(event.logentry) as typeof event.logentry;
+      }
+      if (event.spans) {
+        event.spans = event.spans.map((span) => ({
+          ...span,
+          description: span.description ? REDACTED : span.description,
+          data: span.data
+            ? (redactFreeformTelemetryStrings(span.data) as typeof span.data)
+            : span.data,
+        }));
       }
 
       // Don't send events in development
@@ -286,8 +382,10 @@ export type ErrorCategory =
  * Capture a custom error with context
  */
 export function captureError(error: Error, context?: Record<string, unknown>): void {
-  Sentry.captureException(error, {
-    extra: context,
+  Sentry.captureException(telemetrySafeError(error), {
+    extra: context
+      ? (redactFreeformTelemetryStrings(context) as Record<string, unknown>)
+      : undefined,
   });
 }
 
@@ -306,7 +404,7 @@ export function captureErrorWithCategory(
     // Add extra context based on error type
     if (error.name === "AbortError") {
       scope.setTag("error_type", "abort");
-      scope.setExtra("abort_reason", error.message);
+      scope.setExtra("abort_reason", REDACTED);
     } else if (error.message.includes("Database deleted")) {
       scope.setTag("error_type", "database_deleted");
       scope.setExtra("likely_cause", "User cleared site data or Safari ITP");
@@ -316,10 +414,10 @@ export function captureErrorWithCategory(
     }
 
     if (context) {
-      scope.setExtras(context);
+      scope.setExtras(redactFreeformTelemetryStrings(context) as Record<string, unknown>);
     }
 
-    Sentry.captureException(error);
+    Sentry.captureException(telemetrySafeError(error));
   });
 }
 
@@ -334,9 +432,11 @@ export function addCategorizedBreadcrumb(
 ): void {
   Sentry.addBreadcrumb({
     category,
-    message,
+    message: message ? REDACTED : message,
     level,
-    data,
+    data: data
+      ? (redactFreeformTelemetryStrings(data) as Record<string, unknown>)
+      : undefined,
   });
 }
 
@@ -344,20 +444,19 @@ export function addCategorizedBreadcrumb(
  * Capture a custom message
  */
 export function captureMessage(message: string, level: SeverityLevel = "info"): void {
-  Sentry.captureMessage(message, level);
+  Sentry.captureMessage(message ? "Application diagnostic event" : "Application event", level);
 }
 
 /**
  * Set user context (anonymized)
  */
 export function setUserContext(userId: string): void {
-  // Hash userId to avoid sending raw PII to Sentry (GDPR pseudonymization)
-  let hash = 5381;
-  for (let i = 0; i < userId.length; i++) {
-    hash = ((hash << 5) + hash + userId.charCodeAt(i)) >>> 0;
-  }
+  // FR-031: do not create a stable cross-event identifier from an auth ID.
+  // Reading the argument only preserves the public API; no input bytes cross
+  // the telemetry boundary.
+  void userId;
   Sentry.setUser({
-    id: `u-${hash.toString(36)}`,
+    id: "anonymous",
   });
 }
 
@@ -373,5 +472,18 @@ export function clearUserContext(): void {
  * instead of Sentry packages directly.
  */
 export function addBreadcrumb(breadcrumb: Breadcrumb, hint?: BreadcrumbHint): void {
-  Sentry.addBreadcrumb(breadcrumb, hint);
+  Sentry.addBreadcrumb(
+    {
+      ...breadcrumb,
+      category:
+        breadcrumb.category && SAFE_BREADCRUMB_CATEGORIES.has(breadcrumb.category)
+          ? breadcrumb.category
+          : breadcrumb.category ? REDACTED : breadcrumb.category,
+      message: breadcrumb.message ? REDACTED : breadcrumb.message,
+      data: breadcrumb.data
+        ? (redactFreeformTelemetryStrings(breadcrumb.data) as Breadcrumb["data"])
+        : breadcrumb.data,
+    },
+    hint,
+  );
 }

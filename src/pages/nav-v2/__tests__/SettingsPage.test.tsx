@@ -2681,7 +2681,7 @@ describe("SettingsPage", () => {
     );
   });
 
-  it("uses quiet tokenized surfaces for real privacy controls and import options", () => {
+  it("keeps advertising controls excluded and uses tokenized import options", () => {
     adContextMock.adsSupported = true;
     appStoreMock.hasValidSession = false;
     accountAuthMock.hasSession = false;
@@ -2690,12 +2690,8 @@ describe("SettingsPage", () => {
 
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
-    for (const testId of ["settings-v2-ad-consent"]) {
-      const row = screen.getByTestId(testId);
-      expect(row).toHaveAttribute("data-surface-weight", "quiet");
-      expect(row.className).toContain("border-transparent");
-      expect(within(row).getByRole("switch")).toHaveAccessibleName();
-    }
+    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-open-ad-privacy-options")).not.toBeInTheDocument();
 
     const importOptions = screen.getByTestId("settings-v2-import-options");
     expect(importOptions.className).toContain("border-t");
@@ -2870,32 +2866,15 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("shows an immediate privacy choice but rolls it back if durable storage rejects it", async () => {
+  it("does not enter the ad-consent persistence path when legacy support is forged on", () => {
     adContextMock.adsSupported = true;
-    const deferred = createDeferred<void>();
-    void deferred.promise.catch(() => undefined);
     const controls = createSettingsControls();
-    controls.onPrivacyChange.mockReturnValue(deferred.promise);
 
     render(<SettingsPage controls={controls} />);
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
-    const toggle = within(screen.getByTestId("settings-v2-ad-consent")).getByRole("switch", {
-      name: "Rewarded videos",
-    });
 
-    fireEvent.click(toggle);
-    expect(toggle).toBeChecked();
-    expect(toggle).toBeDisabled();
-
-    await act(async () => {
-      deferred.reject(new Error("IndexedDB unavailable"));
-      await deferred.promise.catch(() => undefined);
-    });
-
-    expect(toggle).not.toBeChecked();
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Couldn’t save this change. Your previous setting is still active."
-    );
+    expect(screen.queryByRole("switch", { name: "Rewarded videos" })).not.toBeInTheDocument();
+    expect(controls.onPrivacyChange).not.toHaveBeenCalled();
   });
 
   it("falls back to Account & backup when a removed section is requested initially", () => {
@@ -4485,19 +4464,15 @@ describe("SettingsPage", () => {
     );
   });
 
-  it("describes optional privacy services without sync jargon", () => {
+  it("keeps private data controls free of advertising copy even when legacy support is forged on", () => {
     adContextMock.adsSupported = true;
     render(
       <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />
     );
 
-    const privacyPanel = screen.getByTestId("settings-v2-panel-privacy");
-    expect(privacyPanel).toHaveTextContent("Choose which optional services ZenFlow may use.");
-    expect(privacyPanel).toHaveTextContent("Rewarded videos");
-    expect(privacyPanel).toHaveTextContent(
-      "They load only when you turn them on. Google may ask for your privacy choice when required."
-    );
-    expect(privacyPanel).not.toHaveTextContent(/device sync|turn it on for backup/i);
+    const dataPanel = screen.getByTestId("settings-v2-panel-data");
+    expect(dataPanel).toHaveTextContent("Backups & reports");
+    expect(dataPanel).not.toHaveTextContent(/Rewarded videos|Google ad privacy|optional ad/i);
   });
 
   it("does not expose retired analytics, no-tracking, or unavailable rewarded-video controls", () => {
@@ -4514,27 +4489,25 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
   });
 
-  it("shows rewarded-video privacy only when that service is available on this build", () => {
+  it("keeps rewarded-video privacy excluded when legacy support is forged on", () => {
     adContextMock.adsSupported = true;
     render(<SettingsPage controls={createSettingsControls()} />);
 
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
-    expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rewarded videos")).not.toBeInTheDocument();
   });
 
-  it("shows a retryable error when Google ad privacy choices do not open", async () => {
+  it("does not invoke Google ad privacy options from the excluded Settings route", () => {
     adContextMock.adsSupported = true;
     adContextMock.privacyOptionsRequired = true;
     adContextMock.openAdPrivacyOptions.mockResolvedValueOnce(false);
 
     render(<SettingsPage controls={createSettingsControls()} />);
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
-    fireEvent.click(screen.getByTestId("settings-v2-open-ad-privacy-options"));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Could not open Google ad privacy choices. Try again."
-    );
+    expect(screen.queryByTestId("settings-v2-open-ad-privacy-options")).not.toBeInTheDocument();
+    expect(adContextMock.openAdPrivacyOptions).not.toHaveBeenCalled();
   });
 
   it("wires account reminder alerts to explicit privacy consent", () => {
@@ -4942,16 +4915,16 @@ describe("SettingsPage", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
-  it("summarizes rewarded-video consent only when that Privacy control is available", () => {
+  it("does not summarize forged rewarded-video consent on the private Settings card", () => {
     adContextMock.adsSupported = true;
     const controls = createSettingsControls();
     controls.privacy = { ...controls.privacy, adConsent: true };
 
     render(<SettingsPage controls={controls} />);
 
-    expect(screen.getByTestId("settings-module-card-privacy")).toHaveTextContent(
-      "Optional services on"
-    );
+    const privacyCard = screen.getByTestId("settings-module-card-privacy");
+    expect(privacyCard).not.toHaveTextContent("Optional services on");
+    expect(privacyCard).not.toHaveTextContent("Optional services off");
   });
 
   it("preserves child sound choices but disables them while the app sound master is muted", () => {

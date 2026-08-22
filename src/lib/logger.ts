@@ -8,32 +8,93 @@ import { IS_DEV } from "@/lib/env";
 
 const isDev = IS_DEV;
 
+const REDACTED = "[REDACTED]";
+const SAFE_ERROR_NAMES = new Set([
+  "Error",
+  "TypeError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "URIError",
+  "EvalError",
+  "AggregateError",
+  "AbortError",
+  "QuotaExceededError",
+  "NotAllowedError",
+  "NotFoundError",
+  "InvalidStateError",
+  "NetworkError",
+  "TimeoutError",
+]);
+const SENSITIVE_FIELD_NAME_PATTERN =
+  /(?:^|[_-])(?:user[_-]?id|user[_-]?name|display[_-]?name|friend[_-]?name|authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|session[_-]?token|token|jwt|(?:recovery)?secret|password|cookie|email|(?:journal|diary)(?:[_-]?(?:entry|text|content|note|notes))?|mood[_-]?(?:note|notes|text|content)?|habit[_-]?(?:name|content|note|notes|text)|(?:reflection|gratitude)[_-]?(?:text|content|note|notes)?|coach[_-]?(?:prompt|response|message|content)|audio[_-]?(?:transcript|note|notes|content)|entry[_-]?(?:title|text|content|note|notes)|content|body|text|title|note|notes|prompt|response|transcript|message|detail|error)(?:s|name)?(?:$|[_-])/i;
+function sanitizeError(error: Error): { name: string } {
+  return { name: SAFE_ERROR_NAMES.has(error.name) ? error.name : "Error" };
+}
+
+function sanitizeValue(value: unknown, seen = new WeakSet<object>()): unknown {
+  // FR-031: strings are free-form. A generic key or positional argument can
+  // still contain diary prose, a habit name, a mood note, a token, or PII.
+  if (typeof value === "string") return REDACTED;
+  if (value === null || typeof value !== "object") return value;
+  if (value instanceof Error) return sanitizeError(value);
+  if (value instanceof Date) return value.toISOString();
+  if (seen.has(value)) return "[Circular]";
+
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeValue(item, seen));
+  }
+  if (Object.getPrototypeOf(value) !== Object.prototype) {
+    return "[Unsupported object]";
+  }
+  return sanitizeLogData(value as Record<string, unknown>, seen);
+}
+
+function sanitizeArgs(args: unknown[]): unknown[] {
+  return args.map((arg) => sanitizeValue(arg));
+}
+
+function sanitizeLogData(
+  data: Record<string, unknown>,
+  seen = new WeakSet<object>(),
+): Record<string, unknown> {
+  const safe: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    safe[key] = SENSITIVE_FIELD_NAME_PATTERN.test(key)
+      ? REDACTED
+      : sanitizeValue(value, seen);
+  }
+  return safe;
+}
+
 export const logger = {
   log: (...args: unknown[]) => {
     if (isDev) {
-      console.log(...sanitizeArgs(args));
+      console.log("[Log]", ...sanitizeArgs(args));
     }
   },
 
   info: (...args: unknown[]) => {
     if (isDev) {
-      console.log(...sanitizeArgs(args));
+      console.log("[Info]", ...sanitizeArgs(args));
     }
   },
 
   warn: (...args: unknown[]) => {
     if (isDev) {
-      console.warn(...sanitizeArgs(args));
+      console.warn("[Warn]", ...sanitizeArgs(args));
     }
   },
 
   error: (...args: unknown[]) => {
     // Always log errors, but sanitize in production
     if (isDev) {
-      console.error(...sanitizeArgs(args));
+      console.error("[Error]", ...sanitizeArgs(args));
     } else {
-      // In production, only log generic error message
-      console.error("[Error]", args[0] instanceof Error ? args[0].message : "An error occurred");
+      // FR-031: error messages can contain diary prose, habit content, mood
+      // notes, auth tokens, or PII. Production gets only a fixed marker.
+      console.error("[Error]");
     }
   },
 
@@ -42,65 +103,18 @@ export const logger = {
     if (isDev) {
       // Remove sensitive fields from logged data
       const safeData = data ? sanitizeLogData(data) : undefined;
-      console.log(`[Sync] ${message}`, safeData);
+      void message;
+      console.log("[Sync]", safeData);
     }
   },
 
   // For auth operations
   auth: (message: string) => {
     if (isDev) {
-      console.log(`[Auth] ${message}`);
+      void message;
+      console.log("[Auth]");
     }
   },
-};
-
-// Sanitize each argument: plain objects go through sanitizeLogData,
-// primitives, Errors, arrays, and other non-plain values pass through unchanged.
-const sanitizeArgs = (args: unknown[]): unknown[] =>
-  args.map((arg) => {
-    if (
-      typeof arg === "object" &&
-      arg !== null &&
-      !(arg instanceof Error) &&
-      !Array.isArray(arg) &&
-      Object.getPrototypeOf(arg) === Object.prototype
-    ) {
-      return sanitizeLogData(arg as Record<string, unknown>);
-    }
-    return arg;
-  });
-
-// Remove sensitive fields from log data
-const sanitizeLogData = (data: Record<string, unknown>): Record<string, unknown> => {
-  const sensitiveKeys = [
-    "user_id",
-    "userId",
-    "token",
-    "access_token",
-    "refresh_token",
-    "password",
-    "email",
-    "secret",
-  ];
-  const safe: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(data)) {
-    if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk.toLowerCase()))) {
-      safe[key] = "[REDACTED]";
-    } else if (Array.isArray(value)) {
-      safe[key] = value.map((item) =>
-        typeof item === "object" && item !== null && !Array.isArray(item)
-          ? sanitizeLogData(item as Record<string, unknown>)
-          : item
-      );
-    } else if (typeof value === "object" && value !== null) {
-      safe[key] = sanitizeLogData(value as Record<string, unknown>);
-    } else {
-      safe[key] = value;
-    }
-  }
-
-  return safe;
 };
 
 export default logger;

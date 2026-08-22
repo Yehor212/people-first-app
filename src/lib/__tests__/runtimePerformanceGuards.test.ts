@@ -187,7 +187,7 @@ describe("runtime performance guards", () => {
     const project = readSource("ios/App/App.xcodeproj/project.pbxproj");
     const targetBlock = extractBlock(
       project,
-      "buildPhases = (\n\t\t\t\t7D20A1B62F92000100AA0001 /* Verify Release AdMob App ID */,",
+      "buildPhases = (\n\t\t\t\t504EC3001FED79650016851F /* Sources */,",
       "\n\t\t\t);"
     );
 

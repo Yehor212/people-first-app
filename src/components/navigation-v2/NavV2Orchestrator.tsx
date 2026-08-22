@@ -10,6 +10,8 @@ import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
+import { selectAnyModalOpen, useUIStore } from "@/stores/uiStore";
+import { evaluateSensitiveAdvertisingPolicy } from "@/features/ads";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
@@ -20,7 +22,6 @@ import { getNavV2RouteLabel, NavV2RouteFallback, NavV2RoutePending } from "./Nav
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
-
 const loadCommandPalette = () => import("@/components/desktop/CommandPalette");
 const loadOrbPage = () => import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage }));
 const loadHabitsPage = () =>
@@ -31,14 +32,12 @@ const loadPlanningPage = () =>
   import("@/pages/nav-v2/planning/PlanningPage").then((m) => ({ default: m.PlanningPage }));
 const loadSettingsPage = () =>
   import("@/pages/nav-v2/SettingsPage").then((m) => ({ default: m.SettingsPage }));
-
 const CommandPalette = lazy(loadCommandPalette);
 const OrbPage = lazy(loadOrbPage);
 const HabitsPage = lazy(loadHabitsPage);
 const DiaryPage = lazy(loadDiaryPage);
 const PlanningPage = lazy(loadPlanningPage);
 const SettingsPage = lazy(loadSettingsPage);
-
 type RouteLoader = () => Promise<unknown>;
 const NAV_V2_ROUTE_LOADERS: Record<NavV2Page, RouteLoader> = {
   orb: loadOrbPage,
@@ -48,7 +47,6 @@ const NAV_V2_ROUTE_LOADERS: Record<NavV2Page, RouteLoader> = {
   settings: loadSettingsPage,
 };
 const preloadedNavV2Routes = new Map<NavV2Page, Promise<unknown>>();
-
 function preloadNavV2Route(page: NavV2Page) {
   if (preloadedNavV2Routes.has(page)) {
     return;
@@ -182,7 +180,14 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const drawerWasOpenRef = useRef(drawerOpen);
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
-
+  const privateOverlayOpen = useUIStore(selectAnyModalOpen);
+  const advertisingOverlayOpen = drawerOpen || commandPaletteOpen || privateOverlayOpen;
+  const advertisingDecision = evaluateSensitiveAdvertisingPolicy({
+    surface: unknownPath ? "error" : activePage,
+    lifecycle: routePendingPage ? "navigation" : advertisingOverlayOpen ? "overlay" : "direct",
+    stateId: unknownPath ? "error.unknown-route-not-found" : `${activePage}.route-shell`,
+    privateOverlayOpen: advertisingOverlayOpen,
+  });
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
 
   useEffect(() => {
@@ -211,7 +216,6 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     [isWebNavigation, setActivePage, tier]
   );
 
-  // Register Android back handler — drawer close > palette close > let native back
   useEffect(() => {
     const unregister = registerModalCloseCallback(() => handleBackButton());
     return unregister;
@@ -315,6 +319,9 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       data-active-page={activePage}
       data-nav-layout={isWebNavigation ? "web" : "phone"}
       data-nav-rail={effectiveSidebarCollapsed ? "compact" : "expanded"}
+      data-advertising-access={advertisingDecision.decision}
+      data-advertising-denial-reason={advertisingDecision.reason}
+      data-advertising-lifecycle={advertisingDecision.lifecycle}
     >
       {isWebNavigation && (
         <SidebarV2

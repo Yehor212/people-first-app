@@ -1,5 +1,20 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
+// T177: native plugins are allowlisted so the installed-but-runtime-dead
+// advertising package cannot be linked or auto-registered while ads are OFF.
+const nativePluginAllowlist = [
+  "@capacitor-community/safe-area",
+  "@capacitor/app",
+  "@capacitor/browser",
+  "@capacitor/filesystem",
+  "@capacitor/haptics",
+  "@capacitor/local-notifications",
+  "@capacitor/push-notifications",
+  "@capacitor/share",
+  "@capacitor/splash-screen",
+  "@capgo/capacitor-social-login",
+];
+
 const config: CapacitorConfig = {
   appId: "com.zenflow.app",
   appName: "ZenFlow",
@@ -7,10 +22,12 @@ const config: CapacitorConfig = {
   android: {
     webContentsDebuggingEnabled: false,
     allowMixedContent: false,
+    includePlugins: [...nativePluginAllowlist],
   },
   ios: {
     scheme: "zenflow",
     contentInset: "never",
+    includePlugins: [...nativePluginAllowlist],
   },
   server: {
     androidScheme: "https",

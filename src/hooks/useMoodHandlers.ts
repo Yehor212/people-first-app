@@ -38,7 +38,7 @@ export function commitMoodEntry(
   } else {
     playSound("success");
   }
-  analytics.moodTracked(entry.mood);
+  analytics.moodTracked();
   updateChallengeProgress();
   triggerSync();
   void syncMood(stamped).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
@@ -83,11 +83,11 @@ export function useMoodHandlers({ updateChallengeProgress, rewardsEnabled = true
       } else {
         playSound("success");
       }
-      analytics.moodTracked(mood);
+      analytics.moodTracked();
 
       triggerSync();
       void syncMood(entry).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
-      logger.log("Quick mood logged from notification:", mood);
+      logger.log("Quick mood logged from notification");
     },
     [rewardUser, rewardsEnabled, setMoods]
   );

@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { AccountPanel } from "./V2SettingsAccountPanel";
 import { DataPanel } from "./V2SettingsDataPanels";
-import { PrivacyPanel } from "./V2SettingsPrivacyPanel";
 import { NotificationsPanel } from "./V2SettingsNotificationsPanel";
 import { SoundPanel } from "./V2SettingsSoundPanel";
 import { AppearancePanel, LanguagePanel, ProfilePanel } from "./V2SettingsProfilePanels";
@@ -34,12 +33,7 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
     case "notifications":
       return <NotificationsPanel controls={controls} />;
     case "privacy":
-      return (
-        <>
-          <PrivacyPanel controls={controls} />
-          <DataPanel controls={controls} accountViewState={accountViewState} />
-        </>
-      );
+      return <DataPanel controls={controls} accountViewState={accountViewState} />;
     case "account":
       return (
         <>

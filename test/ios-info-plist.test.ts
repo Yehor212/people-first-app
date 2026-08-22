@@ -6,10 +6,6 @@ import { describe, expect, it } from "vitest";
 
 const IOS_INFO_PLIST = resolve(process.cwd(), "ios/App/App/Info.plist");
 const IOS_PROJECT = resolve(process.cwd(), "ios/App/App.xcodeproj/project.pbxproj");
-const ANDROID_ADMOB_SAMPLE_APP_ID = "ca-app-pub-3940256099942544~3347511713";
-const IOS_ADMOB_SAMPLE_APP_ID = "ca-app-pub-3940256099942544~1458002511";
-const IOS_ADMOB_BUILD_SETTING = "$(ZENFLOW_ADMOB_IOS_APP_ID)";
-
 function extractPlistString(plist: string, key: string): string | undefined {
   const keyTag = `<key>${key}</key>`;
   const keyIndex = plist.indexOf(keyTag);
@@ -26,22 +22,20 @@ function extractPlistString(plist: string, key: string): string | undefined {
 }
 
 describe("iOS native Info.plist", () => {
-  it("declares a valid Google Mobile Ads application id", () => {
+  it("keeps Google Mobile Ads application metadata absent while advertising is OFF", () => {
     const plist = readFileSync(IOS_INFO_PLIST, "utf8");
     const appId = extractPlistString(plist, "GADApplicationIdentifier");
 
-    expect(appId, "Info.plist must include GADApplicationIdentifier").toBeDefined();
-    expect(appId).toBe(IOS_ADMOB_BUILD_SETTING);
-    expect(appId).not.toBe(ANDROID_ADMOB_SAMPLE_APP_ID);
-    expect(appId).not.toBe(IOS_ADMOB_SAMPLE_APP_ID);
+    expect(appId).toBeUndefined();
+    expect(plist).not.toContain("SKAdNetworkItems");
+    expect(plist).not.toContain("ca-app-pub-");
   });
 
-  it("fails Release builds that do not inject a non-sample iOS AdMob id", () => {
+  it("keeps the legacy AdMob release-injection phase absent while advertising is OFF", () => {
     const project = readFileSync(IOS_PROJECT, "utf8");
 
-    expect(project).toContain("Verify Release AdMob App ID");
-    expect(project).toContain("ZENFLOW_ADMOB_IOS_APP_ID must be injected for Release builds");
-    expect(project).toContain(ANDROID_ADMOB_SAMPLE_APP_ID);
-    expect(project).toContain(IOS_ADMOB_SAMPLE_APP_ID);
+    expect(project).not.toContain("Verify Release AdMob App ID");
+    expect(project).not.toContain("ZENFLOW_ADMOB_IOS_APP_ID");
+    expect(project).not.toContain("ca-app-pub-");
   });
 });

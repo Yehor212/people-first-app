@@ -12,6 +12,7 @@ describe("sync health recorder", () => {
   afterEach(() => {
     delete window.__zenflowSyncHealth;
     storageRemove(SK.SYNC_HEALTH_RECORDER);
+    window.history.replaceState({}, "", "/");
     vi.restoreAllMocks();
   });
 
@@ -79,6 +80,35 @@ describe("sync health recorder", () => {
       kind: "delta-applied",
       seq: 7,
     });
+
+    window.removeEventListener("zenflow:sync-health-receipt", listener);
+  });
+
+  it("drops forged private payload, query secrets, and non-allowlisted receipt strings", () => {
+    window.history.replaceState({}, "", "/diary?access_token=PRIVATE_AUTH_CANARY");
+    expect(installSyncHealthRecorder("?syncHealth=1", "", false)).toBe(true);
+    updateSyncHealthSnapshot({
+      route: "/diary?note=PRIVATE_UPDATE_CANARY",
+      privatePayload: "PRIVATE_UPDATE_CANARY",
+    } as never);
+    const listener = vi.fn();
+    window.addEventListener("zenflow:sync-health-receipt", listener);
+
+    recordSyncHealthReceipt({
+      kind: "error",
+      source: "queue",
+      actionType: "PRIVATE_HABIT_CANARY",
+      errorName: "PRIVATE_JOURNAL_CANARY",
+      privatePayload: "PRIVATE_MOOD_NOTE_CANARY",
+    } as never);
+
+    const serialized = JSON.stringify({
+      snapshot: window.__zenflowSyncHealth?.snapshot(),
+      detail: (listener.mock.calls[0]?.[0] as CustomEvent | undefined)?.detail,
+    });
+    expect(serialized).not.toContain("PRIVATE_");
+    expect(serialized).not.toContain("access_token");
+    expect(window.__zenflowSyncHealth?.snapshot().route).toBe("/diary");
 
     window.removeEventListener("zenflow:sync-health-receipt", listener);
   });

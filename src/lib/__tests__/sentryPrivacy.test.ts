@@ -48,6 +48,7 @@ async function loadBeforeSend() {
 
 describe("Sentry privacy scrubbing", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
@@ -144,8 +145,8 @@ describe("Sentry privacy scrubbing", () => {
     expect(serialized).not.toContain("person@example.com");
     expect(serialized).not.toContain("203.0.113.10");
     expect(serialized).toContain("[REDACTED]");
-    expect(event.user).toEqual({ id: "safe-user-id" });
-    expect(event.request?.headers?.["x-safe"]).toBe("ok");
+    expect(event.user).toEqual({});
+    expect(event.request?.headers?.["x-safe"]).toBe("[REDACTED]");
     expect(event.extra?.safeCount).toBe(2);
   });
 
@@ -175,10 +176,10 @@ describe("Sentry privacy scrubbing", () => {
     const serialized = JSON.stringify(event);
     expect(serialized).not.toContain(tokenValue);
     expect(serialized).toContain("[REDACTED]");
-    expect(event.tags?.area).toBe("auth");
+    expect(event.tags?.area).toBe("[REDACTED]");
   });
 
-  it("redacts structured journal and wellbeing content while preserving operational metadata", async () => {
+  it("redacts structured journal and wellbeing strings while preserving scalar measurements", async () => {
     const beforeSend = await loadBeforeSend();
     const privateCanaries = {
       journal: "PRIVATE_JOURNAL_CANARY",
@@ -228,24 +229,92 @@ describe("Sentry privacy scrubbing", () => {
     }
     expect(serialized).toContain("[REDACTED]");
     expect(event.extra).toMatchObject({
-      operation: "journal-save",
+      operation: "[REDACTED]",
       retryCount: 2,
       journalEntry: "[REDACTED]",
       mood_note: "[REDACTED]",
     });
     expect(event.contexts?.coach).toMatchObject({
       prompt: "[REDACTED]",
-      errorCode: "coach-timeout",
+      errorCode: "[REDACTED]",
     });
     expect(event.request?.data).toMatchObject({
       audioTranscript: "[REDACTED]",
-      status: "failed",
-      contentType: "application/json",
+      status: "[REDACTED]",
+      contentType: "[REDACTED]",
       responseStatus: 503,
     });
     expect(event.breadcrumbs?.[0]?.data).toMatchObject({
       reflection_text: "[REDACTED]",
       recordCount: 1,
     });
+  });
+
+  it("removes private canaries from every free-form telemetry string boundary", async () => {
+    const beforeSend = await loadBeforeSend();
+    const canary = "PRIVATE_JOURNAL_CANARY_DO_NOT_SEND";
+    const event = {
+      message: canary,
+      transaction: `/diary/${canary}`,
+      fingerprint: [canary],
+      exception: {
+        values: [{
+          type: canary,
+          value: canary,
+          mechanism: { type: "generic", handled: true, data: { detail: canary } },
+          stacktrace: { frames: [{ vars: { note: canary }, context_line: canary }] },
+        }],
+      },
+      extra: { error: canary, count: 1 },
+      contexts: { runtime: { detail: canary } },
+      request: {
+        url: `https://app.test/diary?note=${canary}`,
+        query_string: `note=${canary}`,
+        headers: { "x-debug-detail": canary },
+        data: { error: canary },
+      },
+      breadcrumbs: [{ category: canary, message: canary, data: { error: canary } }],
+      logentry: { message: canary, params: [canary] },
+      spans: [{ span_id: "0123456789abcdef", trace_id: "0123456789abcdef0123456789abcdef", start_timestamp: 1, description: canary, data: { detail: canary } }],
+    } satisfies Event;
+
+    beforeSend(event, { originalException: new Error(canary) });
+
+    expect(JSON.stringify(event)).not.toContain(canary);
+    expect(event.extra?.count).toBe(1);
+  });
+
+  it("sanitizes private values before public helpers call the Sentry SDK", async () => {
+    const canary = "PRIVATE_JOURNAL_CANARY_DO_NOT_SEND";
+    const scope = {
+      setTag: vi.fn(),
+      setExtra: vi.fn(),
+      setExtras: vi.fn(),
+    };
+    sentryMocks.withScope.mockImplementationOnce((callback: (value: typeof scope) => void) => {
+      callback(scope);
+    });
+    const sentry = await import("../sentry");
+
+    sentry.captureError(new Error(canary), { detail: canary, count: 2 });
+    sentry.captureErrorWithCategory(new Error(canary), "sync", { error: canary });
+    sentry.addCategorizedBreadcrumb("sync", canary, { detail: canary, count: 3 });
+    sentry.captureMessage(canary);
+    sentry.addBreadcrumb({ message: canary, data: { error: canary, count: 4 } });
+    sentry.setUserContext(canary);
+
+    const calls = JSON.stringify({
+      captureException: sentryMocks.captureException.mock.calls,
+      setExtras: scope.setExtras.mock.calls,
+      addBreadcrumb: sentryMocks.addBreadcrumb.mock.calls,
+      captureMessage: sentryMocks.captureMessage.mock.calls,
+      setUser: sentryMocks.setUser.mock.calls,
+    });
+    expect(calls).not.toContain(canary);
+    expect(calls).toContain("[REDACTED]");
+    expect((sentryMocks.captureException.mock.calls[0]?.[0] as Error).message).toBe(
+      "Application error",
+    );
+    expect(sentryMocks.setUser).toHaveBeenLastCalledWith({ id: "anonymous" });
   });
 });

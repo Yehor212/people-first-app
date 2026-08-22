@@ -257,7 +257,7 @@ export const HabitsPage = memo(function HabitsPage() {
       ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
 
       if (!prevMet && nowMet) {
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+        analytics.habitCompleted(habits.filter((h) => !h.isArchived).length);
       }
     },
     [habits, setHabits, entryMetadata]
@@ -342,10 +342,8 @@ export const HabitsPage = memo(function HabitsPage() {
         entryValue: nextValue,
       }).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
       if (isCompletingNow && habit) {
-        // §15 retention metric — habit.name carries length-only PII gate at
-        // the Analytics layer (see analytics.ts). total_habits is the active
-        // (non-archived) count so the aggregator can filter ≥3-habit users.
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+        // FR-031: only the active aggregate count crosses the analytics boundary.
+        analytics.habitCompleted(habits.filter((h) => !h.isArchived).length);
       }
     },
     [habits, setHabits, entryMetadata]

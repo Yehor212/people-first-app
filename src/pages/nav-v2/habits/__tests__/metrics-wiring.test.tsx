@@ -240,8 +240,8 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     // Simulate a completion transition (habit a has no entry for this date).
     capturedHeroProps!.onToggleHabit("a", "2026-04-19");
     expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1);
-    // habitCompleted(habitName, totalHabits) — total_habits filters archived.
-    expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith("Habit a", 3);
+    // FR-031: private habit names never cross the analytics boundary.
+    expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith(3);
   });
 
   it("onToggleHabit un-complete does not emit habit_completed (avoids over-counting)", () => {
@@ -265,7 +265,7 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     // +1 unit crosses 1.5 → 2.5 (≥ 2)
     capturedHeroProps!.onAdjustHabit!("water", "2026-04-19", 1);
     expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1);
-    expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith("Habit water", 1);
+    expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith(1);
   });
 
   it("onAdjustHabit not crossing target does not emit habit_completed", () => {

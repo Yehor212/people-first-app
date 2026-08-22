@@ -218,6 +218,7 @@ export const selectAnyModalOpen = (state: UIState): boolean =>
   state.showChallengeModal ||
   state.showTimeHelper ||
   state.showTasksPanel ||
+  state.showAddEvent ||
   state.showQuestsPanel ||
   state.showFriendsPanel ||
   state.showWelcomeOverlay ||
