@@ -68,7 +68,3 @@
 -keepclassmembers class * extends com.getcapacitor.Plugin {
     @com.getcapacitor.PluginMethod public <methods>;
 }
-
-# Google Mobile Ads / AdMob release path
--keep class com.google.android.gms.ads.** { *; }
--keep class com.google.ads.** { *; }

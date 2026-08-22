@@ -37,7 +37,6 @@ import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
-import { canInitializeRewardedAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
@@ -161,14 +160,6 @@ function IndexV2Impl() {
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
-  const currentMoodForAds = useMemo(() => {
-    const latestMood = moods.reduce<(typeof moods)[number] | null>((latest, entry) => {
-      if (!latest) return entry;
-      return entry.timestamp > latest.timestamp ? entry : latest;
-    }, null);
-
-    return latestMood?.mood ?? null;
-  }, [moods]);
   const emptyScheduleEvents = useMemo(() => [], []);
   const { handleNameChange, handlePrivacyChange, handleRemindersChange, handleResetData } =
     useSettingsHandlers(emptyScheduleEvents);
@@ -254,13 +245,7 @@ function IndexV2Impl() {
       <OfflineBanner />
       <StorageErrorBanner />
       <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
-        <AdProvider
-          onEarnTreats={(amount) => earnTreats("ad", amount, "Ad reward")}
-          onEarnXp={() => undefined}
-          adConsent={canInitializeRewardedAds(privacy)}
-          isPremium={false}
-          currentMood={currentMoodForAds}
-        >
+        <AdProvider>
           <NavV2Orchestrator
             onAddMood={handleAddMood}
             onAddGratitude={handleAddGratitude}
