@@ -229,8 +229,14 @@ function validateCanonicalControlPlane(): void {
   }
 
   const gitignore = readFileSync(path.join(ROOT, ".gitignore"), "utf8");
-  if (gitignore.includes(".codex-audit.log")) pass("audit-boundary", ".codex-audit.log is ignored");
-  else fail("audit-boundary", ".codex-audit.log must stay ignored");
+  if (gitignore.includes(".codex-audit.log")) {
+    pass(
+      "legacy-audit-boundary",
+      "legacy ignored audit path is retained without reading or deleting local content; routine hook audit writes are disabled",
+    );
+  } else {
+    fail("legacy-audit-boundary", "legacy audit path must remain ignored until a human-approved retention change");
+  }
 
   unverified(
     "runtime-loading",

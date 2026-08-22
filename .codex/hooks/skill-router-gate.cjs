@@ -12,10 +12,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { analyzeToolEvent } = require('../../scripts/codex-governance/tool-targets.cjs');
 
-const ROOT = process.cwd();
-const HOOK_NAME = 'skill-router-gate';
+const ROOT_RESOLUTION_TIMEOUT_MS = 1500;
+const ROOT = resolveRepositoryRoot();
 const SKILL_ROUTING_TOKEN = path.join(ROOT, '.skill-routing-token');
 const PREFLIGHT_TOKEN = path.join(ROOT, '.preflight-token');
 const MAX_TOKEN_AGE_MS = 4 * 60 * 60 * 1000;
@@ -60,11 +61,15 @@ const TEST_OR_DOC_PATTERN = /(^|\/)(__tests__|test|tests|e2e)(\/|$)|\.(test|spec
 const CODE_EXT_PATTERN = /\.(ts|tsx|js|jsx|cjs|mjs|cts|mts)$/i;
 const CONFIG_PATTERN = /(^|\/)(tsconfig(\..+)?\.json|playwright|vite|vitest|tailwind|capacitor|eslint|postcss|knip|vercel)\b|\.toml$/i;
 
-function audit(event, detail) {
-  try {
-    const line = JSON.stringify({ ts: Date.now(), hook: HOOK_NAME, event, detail }) + '\n';
-    fs.appendFileSync(path.join(ROOT, '.codex-audit.log'), line);
-  } catch {}
+function resolveRepositoryRoot() {
+  const result = spawnSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    timeout: ROOT_RESOLUTION_TIMEOUT_MS,
+    windowsHide: true,
+  });
+  if (result.status === 0 && result.stdout.trim()) return path.resolve(result.stdout.trim());
+  return process.cwd();
 }
 
 function normalizeRel(filePath) {
@@ -209,7 +214,6 @@ function outputPromptContext() {
 }
 
 function block(reason) {
-  audit('block', reason);
   process.stderr.write(
     'SKILL ROUTING GATE BLOCKED!\n\n' +
     reason + '\n\n' +
@@ -239,7 +243,6 @@ try {
   }
 
   if (eventName !== 'PreToolUse') {
-    audit('allow', `unsupported-event:${eventName}`);
     process.exit(0);
   }
 
@@ -247,7 +250,6 @@ try {
   const relPaths = analysis.targets.map(normalizeRel);
   if (relPaths.length === 0) {
     if (!analysis.mutationIntent) {
-      audit('allow', 'read-only-command-without-target');
       process.exit(0);
     }
     block('Write-like hook input did not expose a bounded editable file path.');
@@ -255,7 +257,6 @@ try {
 
   const guarded = relPaths.filter(requiresSkillRouting);
   if (guarded.length === 0) {
-    audit('allow', `unguarded:${relPaths.join(',')}`);
     process.exit(0);
   }
 
@@ -265,7 +266,6 @@ try {
     block(`Guarded edit requires skill-routing evidence: ${guarded.join(', ')}.${details}`);
   }
 
-  audit('allow', `guarded:${guarded.join(',')}; source:${evidence.source}`);
   process.exit(0);
 } catch (error) {
   process.stderr.write('HOOK ERROR [skill-router-gate]: ' + (error.message || error) + '\n');

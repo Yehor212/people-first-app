@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -7,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const HOOK = resolve(".codex/hooks/production-data-integrity-gate.cjs");
 const temporaryRoots: string[] = [];
+const require = createRequire(import.meta.url);
 
 afterEach(() => {
   for (const root of temporaryRoots.splice(0)) {
@@ -14,7 +16,7 @@ afterEach(() => {
   }
 });
 
-type Stub = "clean" | "finding" | "error";
+type Stub = "clean" | "finding" | "error" | "path-error" | "unexpected-path";
 
 function write(root: string, relativePath: string, content: string): void {
   const target = join(root, relativePath);
@@ -44,15 +46,21 @@ function makeRoot(stub: Stub = "clean"): string {
         }
       : {
           schemaVersion: "1.0.0",
-          status: stub === "error" ? "ERROR" : "PASS",
+          status:
+            stub === "error" || stub === "path-error"
+              ? "ERROR"
+              : stub === "unexpected-path"
+                ? "/private/zenflow/node"
+                : "PASS",
           mode: "diff",
           findings: [],
           summary: { errors: 0, warnings: 0, baselined: 0, waived: 0 },
+          ...(stub === "path-error" ? { error: "spawnSync /private/zenflow/node ETIMEDOUT" } : {}),
         };
   write(
     root,
     "scripts/check-production-data-integrity.cjs",
-    `process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(${stub === "clean" ? 0 : stub === "finding" ? 1 : 2});\n`
+    `process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(${stub === "clean" || stub === "unexpected-path" ? 0 : stub === "finding" ? 1 : 2});\n`
   );
   write(
     root,
@@ -332,6 +340,55 @@ describe("production data integrity Codex hook", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.stringify(result.json)).toContain("block");
     expect(JSON.stringify(result.json)).toContain(stub === "finding" ? "PDI002" : "internal");
+  });
+
+  it("classifies timeout errors without relaying a raw child-process path", () => {
+    const core = require("../production-data-integrity/hook-checker-result.cjs") as {
+      CHECKER_TIMEOUT_MS: number;
+      classifyCheckerProcessResult: (result: { error: NodeJS.ErrnoException }, timeoutMs: number) => {
+        kind: string;
+        code: string;
+        reason: string;
+      };
+    };
+    const error = Object.assign(new Error("spawnSync /private/zenflow/node ETIMEDOUT"), {
+      code: "ETIMEDOUT",
+    });
+
+    const classified = core.classifyCheckerProcessResult({ error }, core.CHECKER_TIMEOUT_MS);
+
+    expect(core.CHECKER_TIMEOUT_MS).toBe(10000);
+    expect(classified).toEqual({
+      kind: "error",
+      code: "CHECKER_TIMEOUT",
+      reason: "checker timed out after 10000ms",
+    });
+    expect(JSON.stringify(classified)).not.toContain("/private/zenflow/node");
+  });
+
+  it("returns one path-safe fail-closed error category when checker output contains a local path", () => {
+    const result = invoke({ hook_event_name: "Stop", stop_hook_active: false }, "path-error");
+    const payload = JSON.stringify(result.json);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(payload).toContain("CHECKER_ERROR");
+    expect(payload).toContain("npm run check:production-data-integrity:diff");
+    expect(payload).not.toContain("/private/zenflow/node");
+
+    const source = readFileSync(HOOK, "utf8");
+    const stopSection = source
+      .split('if (eventName === "Stop")')[1]
+      .split('if (eventName === "SubagentStart")')[0];
+    expect(stopSection.match(/runChecker\("diff"\)/g)).toHaveLength(1);
+  });
+
+  it("does not relay an unexpected checker status that contains a local path", () => {
+    const result = invoke({ hook_event_name: "Stop", stop_hook_active: false }, "unexpected-path");
+    const payload = JSON.stringify(result.json);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(payload).toContain("CHECKER_ERROR");
+    expect(payload).not.toContain("/private/zenflow/node");
   });
 
   it("honors the Stop recursion guard without invoking a missing checker", () => {

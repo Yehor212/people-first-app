@@ -150,7 +150,11 @@ describe("Codex-only agent orchestra integration", () => {
       expect(text).not.toContain(".claude-audit.log");
     }
     expect(health).toContain("check:agent-orchestra");
-    expect(metrics).toContain(".codex-audit.log");
+    expect(metrics).not.toContain(".codex-audit.log");
+    expect(metrics).toContain("routine_audit_writes=DISABLED");
+    expect(metrics).toContain("runtime_loading=UNVERIFIED");
+    expect(metrics).toContain("effective_permissions=UNVERIFIED");
+    expect(health).toContain("legacy-audit-boundary");
   });
 
   it("retires competing live role and prompt sources after cutover", async () => {

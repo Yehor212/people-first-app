@@ -14,12 +14,18 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { analyzeToolEvent } = require("../../scripts/codex-governance/tool-targets.cjs");
+const {
+  CHECKER_TIMEOUT_MS,
+  classifyCheckerProcessResult,
+} = require("../../scripts/production-data-integrity/hook-checker-result.cjs");
+
+const ROOT_DISCOVERY_TIMEOUT_MS = 1500;
 
 function resolveRepositoryRoot() {
   const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
     cwd: process.cwd(),
     encoding: "utf8",
-    timeout: 5000,
+    timeout: ROOT_DISCOVERY_TIMEOUT_MS,
     windowsHide: true,
   });
   if (result.status === 0 && result.stdout.trim()) return path.resolve(result.stdout.trim());
@@ -28,7 +34,6 @@ function resolveRepositoryRoot() {
 
 const ROOT = resolveRepositoryRoot();
 const CHECKER = path.join(ROOT, "scripts", "check-production-data-integrity.cjs");
-const CHECK_TIMEOUT_MS = 15000;
 const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
 const REVIEWED_ADDITIVE_PACKAGE_SCRIPTS = new Map([
   ["check:agent-workspace", "node scripts/check-agent-workspace-protocol.cjs"],
@@ -279,27 +284,30 @@ function obviousTampering(data) {
 }
 
 function runChecker(mode) {
-  if (!fs.existsSync(CHECKER)) return { kind: "error", reason: "checker is missing" };
+  if (!fs.existsSync(CHECKER)) {
+    return { kind: "error", code: "CHECKER_ERROR", reason: "checker is missing" };
+  }
   const result = spawnSync(
     process.execPath,
     [CHECKER, mode === "staged" ? "--staged" : "--diff", "--json"],
     {
       cwd: ROOT,
       encoding: "utf8",
-      timeout: CHECK_TIMEOUT_MS,
+      timeout: CHECKER_TIMEOUT_MS,
       maxBuffer: MAX_OUTPUT_BYTES,
       windowsHide: true,
     }
   );
-  if (result.error) return { kind: "error", reason: result.error.message };
+  const processError = classifyCheckerProcessResult(result, CHECKER_TIMEOUT_MS);
+  if (processError) return processError;
   let report;
   try {
     report = JSON.parse(result.stdout);
   } catch {
-    return { kind: "error", reason: "checker returned malformed JSON" };
+    return { kind: "error", code: "CHECKER_ERROR", reason: "checker returned malformed JSON" };
   }
   if (result.status === 2 || report.status === "ERROR")
-    return { kind: "error", reason: report.error || "checker internal/config error" };
+    return { kind: "error", code: "CHECKER_ERROR", reason: "checker internal/config error" };
   if (result.status === 1 || report.status === "FAIL") {
     const active = Array.isArray(report.findings)
       ? report.findings
@@ -320,9 +328,14 @@ function runChecker(mode) {
   if (result.status !== 0 || report.status !== "PASS")
     return {
       kind: "error",
-      reason: `unexpected checker state: exit=${result.status} status=${report.status}`,
+      code: "CHECKER_ERROR",
+      reason: "checker returned an unexpected status",
     };
   return { kind: "clean", report };
+}
+
+function checkerFailureMessage(check, phase) {
+  return `Production data integrity checker ${check.code} at ${phase}: ${check.reason}. Run npm run check:production-data-integrity:diff.`;
 }
 
 function evidencePacketComplete(message) {
@@ -363,9 +376,7 @@ function handle(data) {
         `Production data integrity diff check failed: ${check.reason}. Run npm run check:production-data-integrity:diff and remediate the reported rules.`
       );
     if (check.kind === "error")
-      return block(
-        `Production data integrity checker internal error; completion is not clean: ${check.reason}.`
-      );
+      return block(checkerFailureMessage(check, "PostToolUse"));
     return emit({});
   }
   if (eventName === "Stop") {
@@ -374,7 +385,7 @@ function handle(data) {
     if (check.kind === "finding")
       return block(`Production data integrity Stop check failed: ${check.reason}.`);
     if (check.kind === "error")
-      return block(`Production data integrity checker internal error at Stop: ${check.reason}.`);
+      return block(checkerFailureMessage(check, "Stop"));
     return emit({ continue: true });
   }
   if (eventName === "SubagentStart") {
