@@ -191,8 +191,8 @@ describe("LanguageSelector", () => {
     expect(within(languageGroup).getAllByRole("radio")).toHaveLength(8);
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toHaveClass("min-w-0", "whitespace-normal", "leading-tight", "text-2xl");
-    expect(heading.className).toContain("overflow-wrap:normal");
-    expect(heading).not.toHaveClass("break-words");
+    expect(heading).toHaveClass("entry-gate-title-reflow");
+    expect(heading.className).toContain("overflow-wrap:anywhere");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("lang", "en");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("dir", "ltr");

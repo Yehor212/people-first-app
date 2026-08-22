@@ -1097,6 +1097,11 @@
     backdrop-filter: saturate(0.94) contrast(0.98);
   }
 
+  :root[data-platform="android"] .v2-readable-page--ambient::before {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   .v2-readable-page :where(h1, h2, h3, h4, p, span, label, legend, button, a, textarea, input, summary, [role="status"]) {
     text-shadow: var(--v2-readable-text-shadow);
   }

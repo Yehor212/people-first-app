@@ -30,6 +30,20 @@
   padding-inline: max(1rem, calc(var(--entry-safe-left) + 1rem))
     max(1rem, calc(var(--entry-safe-right) + 1rem));
   background: var(--entry-edge-bleed-background);
+  inline-size: 100%;
+  overflow-x: clip !important;
+}
+
+.entry-gate-content,
+.entry-gate-content > header,
+.entry-theme-switcher,
+.entry-language-grid {
+  min-inline-size: 0;
+}
+
+.entry-gate-title-reflow {
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
 }
 
 body.zenflow-v2-edge-to-edge .entry-gate-screen {
@@ -331,4 +345,77 @@ body.reduce-motion .entry-gate-horizon {
     font-size: calc(0.6875rem * var(--font-scale, 1)) !important;
     line-height: 1.35 !important;
   }
+}
+
+@media (max-width: 1024px) {
+  .entry-theme-switcher,
+  .entry-language-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .entry-gate-screen .entry-glass-panel {
+    padding: 0.75rem;
+  }
+
+  .entry-language-option {
+    padding-inline: 0.5rem;
+  }
+
+  .entry-theme-switcher-option {
+    justify-content: flex-start;
+    padding-inline: 0.75rem;
+    text-align: start;
+  }
+
+  .entry-theme-switcher-label {
+    text-align: start;
+  }
+
+  .entry-language-option-content {
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .entry-language-option-label {
+    flex: 1 0 100%;
+    order: 2;
+  }
+
+  .entry-language-option-label {
+    overflow-wrap: anywhere;
+  }
+}
+
+:root[data-platform="android"] .entry-theme-switcher,
+:root[data-platform="android"] .entry-language-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:root[data-platform="android"] .entry-gate-screen .entry-glass-panel {
+  padding: 0.75rem;
+}
+
+:root[data-platform="android"] .entry-language-option {
+  padding-inline: 0.5rem;
+}
+
+:root[data-platform="android"] .entry-theme-switcher-option {
+  justify-content: flex-start;
+  padding-inline: 0.75rem;
+  text-align: start;
+}
+
+:root[data-platform="android"] .entry-theme-switcher-label {
+  text-align: start;
+}
+
+:root[data-platform="android"] .entry-language-option-content {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+:root[data-platform="android"] .entry-language-option-label {
+  flex: 1 0 100%;
+  order: 2;
+  overflow-wrap: anywhere;
 }

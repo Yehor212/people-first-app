@@ -8,6 +8,7 @@ const ROOT = path.join(__dirname, "..");
 
 const DEFAULT_FILES = {
   packageJson: "package.json",
+  adRuntimePolicy: "src/lib/adRuntimePolicy.ts",
   adController: "src/lib/adController.ts",
   adContext: "src/contexts/AdContext.tsx",
   v2SettingsPrivacyPanel: "src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx",
@@ -45,6 +46,20 @@ function requireRegex(issues, files, key, regex, code, message) {
 
 function evaluateAdMobUmpReadiness(files) {
   const issues = [];
+
+  if (/ADS_RUNTIME_MODE\s*=\s*["']OFF["']/.test(files.adRuntimePolicy || "")) {
+    return {
+      ok: true,
+      issues,
+      summary: {
+        adRuntimeMode: "OFF",
+        nativeUmpConsentGate: "N/A_ADR_MON_001_UNDECIDED_OFF",
+        settingsPrivacyOptionsEntry: "N/A_ADR_MON_001_UNDECIDED_OFF",
+        androidNativeConfig: "N/A_ADR_MON_001_UNDECIDED_OFF",
+        iosNativeConfig: "N/A_ADR_MON_001_UNDECIDED_OFF",
+      },
+    };
+  }
 
   let packageJson = {};
   try {
@@ -246,6 +261,7 @@ function evaluateAdMobUmpReadiness(files) {
     ok: issues.length === 0,
     issues,
     summary: {
+      adRuntimeMode: "ON_OR_UNVERIFIED",
       nativeUmpConsentGate: issues.some((item) => item.code.startsWith("missing_consent") || item.code.includes("can_request")) ? "UNVERIFIED" : "PASS",
       settingsPrivacyOptionsEntry: issues.some((item) => item.code.includes("settings_privacy_options")) ? "UNVERIFIED" : "PASS",
       androidNativeConfig: issues.some((item) => item.code.startsWith("missing_android")) ? "UNVERIFIED" : "PASS",

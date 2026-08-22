@@ -38,23 +38,25 @@ describe("AdMob UMP/native privacy readiness guard", () => {
     );
   });
 
-  it("passes when native UMP consent, privacy options, and app-id wiring are present", () => {
+  it("reports native UMP surfaces as unavailable while ADR-MON-001 keeps ads OFF", () => {
     const checker = loadChecker();
     const report = checker.evaluateAdMobUmpReadiness(checker.readFileMap());
 
     expect(report.ok).toBe(true);
     expect(report.issues).toEqual([]);
     expect(report.summary).toMatchObject({
-      nativeUmpConsentGate: "PASS",
-      settingsPrivacyOptionsEntry: "PASS",
-      androidNativeConfig: "PASS",
-      iosNativeConfig: "PASS",
+      adRuntimeMode: "OFF",
+      nativeUmpConsentGate: "N/A_ADR_MON_001_UNDECIDED_OFF",
+      settingsPrivacyOptionsEntry: "N/A_ADR_MON_001_UNDECIDED_OFF",
+      androidNativeConfig: "N/A_ADR_MON_001_UNDECIDED_OFF",
+      iosNativeConfig: "N/A_ADR_MON_001_UNDECIDED_OFF",
     });
   });
 
   it("fails if UMP consent refresh is removed from the ad controller", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
+    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
     files.adController = files.adController.replaceAll("requestConsentInfo", "removedConsentInfoCall");
 
     const report = checker.evaluateAdMobUmpReadiness(files);
@@ -68,6 +70,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
   it("fails if local ad-consent revocation no longer disables in-flight native ads", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
+    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
     files.adController = files.adController
       .replace("export function disableAds", "function removedDisableAds")
       .replaceAll("adLifecycleEpoch", "removedLifecycleEpoch");
@@ -90,6 +93,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
   it("fails if Android release app-id placeholder wiring is missing", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
+    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
     files.androidManifest = files.androidManifest.replace("${adMobApplicationId}", "");
     files.androidBuildGradle = files.androidBuildGradle.replaceAll("ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS", "");
 
@@ -107,6 +111,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
   it("fails if iOS UMP package or release placeholder is missing", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
+    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
     files.iosInfoPlist = files.iosInfoPlist.replace("$(ZENFLOW_ADMOB_IOS_APP_ID)", "");
     files.iosSpmResolved = files.iosSpmResolved.replaceAll(
       "swift-package-manager-google-user-messaging-platform",
@@ -128,6 +133,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
   it("fails if iOS SKAdNetworkItems are missing", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
+    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
     files.iosInfoPlist = files.iosInfoPlist.replace(/<key>SKAdNetworkItems<\/key>[\s\S]*?<\/array>\s*/, "");
 
     const report = checker.evaluateAdMobUmpReadiness(files);
@@ -149,6 +155,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[admob-ump-readiness] PASS");
+    expect(result.stdout).toContain("[admob-ump-readiness] adRuntimeMode=OFF");
     expect(result.stdout).not.toMatch(/ca-app-pub-\d{16}[~/]\d+/);
     expect(result.stdout).not.toMatch(/\bpub-\d{16}\b/);
   });

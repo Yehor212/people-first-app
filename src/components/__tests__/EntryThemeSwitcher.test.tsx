@@ -37,7 +37,7 @@ describe("EntryThemeSwitcher", () => {
     render(<EntryThemeSwitcher />);
 
     const group = screen.getByRole("radiogroup", { name: "Appearance" });
-    expect(group).toHaveClass("w-full", "max-w-[32rem]", "mx-auto");
+    expect(group).toHaveClass("entry-theme-switcher", "w-full", "min-w-0", "max-w-[32rem]", "mx-auto");
     expect(group.className).toContain("auto-fit");
     expect(group.className).toContain("var(--font-scale");
 
@@ -50,7 +50,7 @@ describe("EntryThemeSwitcher", () => {
         "whitespace-normal",
         "break-words"
       );
-      expect(within(option).getByText(label)).toHaveClass("min-w-0", "break-words");
+      expect(within(option).getByText(label)).toHaveClass("entry-theme-switcher-label", "min-w-0", "break-words");
       expect(within(option).getByText(label)).not.toHaveClass("truncate");
     }
   });

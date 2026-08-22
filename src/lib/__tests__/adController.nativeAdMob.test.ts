@@ -92,6 +92,12 @@ vi.mock('@/lib/platform', () => ({
   platform: 'android',
 }));
 
+// T222 keeps production OFF. These tests preserve the legacy controller
+// contracts only for a future, separately authorized ADR branch.
+vi.mock('@/lib/adRuntimePolicy', () => ({
+  areAdsRuntimeEnabled: vi.fn(() => true),
+}));
+
 vi.mock('@/lib/logger', () => ({
   logger: {
     log: vi.fn(),

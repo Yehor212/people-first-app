@@ -86,20 +86,20 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
       <EntryGateBackdrop animated={animated} />
 
       <motion.section
-        className="entry-gate-content relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-3xl md:gap-5 lg:max-w-4xl"
+        className="entry-gate-content relative z-10 flex w-full min-w-0 max-w-lg flex-col gap-4 md:max-w-3xl md:gap-5 lg:max-w-4xl"
         initial={animated ? "hidden" : false}
         animate="visible"
         variants={shellVariants}
         transition={{ duration: 0.34, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        <header className="text-center">
+        <header className="min-w-0 text-center">
           <ZenFlowBrandMark
             className="mx-auto mb-3 h-[72px] w-[72px] rounded-[1.35rem]"
             testId="zenflow-language-logo"
           />
           <h1
             id="language-selector-title"
-            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal] min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
+            className="entry-gate-title entry-gate-title-reflow mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:anywhere] min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
           >
             {t.welcomeTitle}
           </h1>
@@ -112,7 +112,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           aria-label={t.selectLanguage}
         >
           <motion.div
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
+            className="entry-language-grid grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
             role="radiogroup"
             aria-label={t.selectLanguage}
             aria-busy={Boolean(pendingLanguage)}
@@ -134,7 +134,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                   onClick={(event) => handleSelect(lang, event)}
                   className={cn(
-                    "entry-action-tile btn-press h-auto min-h-14 min-w-0 whitespace-normal break-words rounded-2xl border px-3 py-2.5 text-start [hyphens:manual] [overflow-wrap:break-word] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    "entry-action-tile entry-language-option btn-press h-auto min-h-14 min-w-0 whitespace-normal break-words rounded-2xl border px-3 py-2.5 text-start [hyphens:manual] [overflow-wrap:break-word] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     selected
                       ? "border-primary/70 bg-primary/20 text-foreground shadow-lg"
                       : "border-border/45 bg-card/55 text-muted-foreground hover:border-primary/40 hover:bg-card/75 hover:text-foreground"
@@ -143,12 +143,12 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   transition={{ duration: 0.24, ease: [0.25, 0.1, 0.25, 1] }}
                   data-testid={`language-option-${lang}`}
                 >
-                  <span className="flex min-w-0 items-start gap-2.5">
+                  <span className="entry-language-option-content flex min-w-0 items-start gap-2.5">
                     <span className="shrink-0 text-xl leading-none" aria-hidden="true">
                       {languageFlags[lang]}
                     </span>
                     <span
-                      className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
+                      className="entry-language-option-label min-w-0 flex-1 break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
                       dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                     >
                       {languageNames[lang]}

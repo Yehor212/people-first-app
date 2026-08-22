@@ -101,7 +101,7 @@ describe('adController', () => {
       // State starts with sdkAvailable = false (default)
       const result = canShowRewardedAd();
       expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('sdk_unavailable');
+      expect(result.reason).toBe('ads_off');
     });
 
     it('should block ads when mood is "terrible" (blocked mood)', async () => {
@@ -114,8 +114,8 @@ describe('adController', () => {
       // on web. This tests the priority: sdk check comes first.
       const result = canShowRewardedAd('terrible');
       expect(result.allowed).toBe(false);
-      // sdk_unavailable is the first check
-      expect(result.reason).toBe('sdk_unavailable');
+      // The ADR-level OFF gate takes precedence over all legacy ad checks.
+      expect(result.reason).toBe('ads_off');
     });
   });
 
@@ -252,7 +252,7 @@ describe('adController', () => {
       const result = await showRewardedAd();
       expect(result.success).toBe(false);
       expect(result.rewarded).toBe(false);
-      expect(result.error).toBe('sdk_unavailable');
+      expect(result.error).toBe('ads_off');
     });
   });
 
