@@ -59,14 +59,6 @@ export function lazyWithRetry<T extends ComponentType<any>>(
     if (!lastReload || now - parseInt(lastReload) > 60000) {
       sessionStorage.setItem(reloadKey, now.toString());
 
-      // Clear all caches to ensure fresh HTML/chunks on reload
-      try {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      } catch {
-        // Ignore — caches API may not be available
-      }
-
       // Mark for version check on reload and perform hard reload
       // This adds cache-busting query param
       markForVersionCheck();

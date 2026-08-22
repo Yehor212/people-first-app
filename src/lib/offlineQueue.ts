@@ -11,7 +11,7 @@
  * - Retry logic with exponential backoff
  * - Action deduplication
  * - Conflict protection for durable event-log writes
- * - Background Sync API support for sync after browser close
+ * - Background Sync API wake hints for already-open same-origin clients
  */
 
 // Type declarations for Background Sync API
@@ -765,7 +765,8 @@ class OfflineQueue {
 
   /**
    * Request Background Sync via Service Worker
-   * This allows sync to happen even if user closes the browser
+   * The service worker can wake an already-open client. If every client is
+   * closed, durable actions remain queued until the app returns online.
    * P2-6 Fix: Improved error handling with event emission for UI awareness
    */
   private requestBackgroundSync(): void {

@@ -73,7 +73,7 @@ describe("runtime performance guards", () => {
     expect(source).not.toContain('"og-image.png"');
   });
 
-  it("keeps PWA navigations fresh online with an offline app-shell fallback", () => {
+  it("keeps PWA navigations fresh online with bounded app-shell and offline-document fallbacks", () => {
     const source = readSource("src/sw.ts");
     const navigationBlock = extractBlock(
       source,
@@ -82,13 +82,113 @@ describe("runtime performance guards", () => {
     );
 
     expect(source).toContain('const APP_SHELL_URL = "index.html";');
+    expect(source).toContain('const OFFLINE_DOCUMENT_URL = "offline.html";');
     expect(source).toContain("const NAVIGATION_NETWORK_TIMEOUT_MS = 4000;");
     expect(source).toContain("fetchNavigationWithTimeout(request)");
     expect(navigationBlock).toContain('request.destination === "document"');
     expect(navigationBlock).toContain("return await fetchNavigationWithTimeout(request);");
     expect(navigationBlock).toContain("matchPrecache(APP_SHELL_URL)");
+    expect(navigationBlock).toContain("matchPrecache(OFFLINE_DOCUMENT_URL)");
     expect(navigationBlock).toContain("logger.warn");
     expect(source).not.toContain('request.mode === "navigate", new NetworkOnly()');
+  });
+
+  it("does not expose dead origin-wide cache or lifecycle commands to app messages", () => {
+    const source = readSource("src/sw.ts");
+    const messageBlock = extractBlock(
+      source,
+      "// Listen for messages from the main app",
+      "event.waitUntil(warmRuntimeAudioCacheOnce());",
+    );
+
+    expect(source).toContain('const CLIENT_MESSAGE_TYPES = ["WARM_RUNTIME_AUDIO_CACHE"] as const;');
+    expect(messageBlock).not.toContain("CLEAR_CACHES");
+    expect(messageBlock).not.toContain("SKIP_WAITING");
+    expect(messageBlock).not.toContain("REGISTER_SYNC");
+    expect(messageBlock).not.toContain("caches.keys()");
+  });
+
+  it("names every literal runtime cache inside the ZenFlow namespace", () => {
+    const source = readSource("src/sw.ts");
+    const cacheNames = [...source.matchAll(/cacheName: "([^"]+)"/g)].map((match) => match[1]);
+
+    expect(cacheNames.length).toBeGreaterThan(0);
+    expect(cacheNames.every((cacheName) => cacheName.startsWith("zenflow-"))).toBe(true);
+  });
+
+  it("describes background sync as an open-client wake hint, not closed-browser processing", () => {
+    const serviceWorkerSource = readSource("src/sw.ts");
+    const queueSource = readSource("src/lib/offlineQueue.ts");
+
+    expect(serviceWorkerSource).not.toContain("Enables sync even after browser is closed");
+    expect(serviceWorkerSource).not.toContain("Uses Workbox BackgroundSyncQueue");
+    expect(queueSource).not.toContain("sync after browser close");
+    expect(queueSource).not.toContain("sync to happen even if user closes the browser");
+  });
+
+  it("captures the browser install prompt before lazy settings code can mount", () => {
+    const source = readSource("src/main.tsx");
+
+    expect(source).toContain(
+      'import { initializePwaInstallPromptCapture } from "./lib/pwaInstallPrompt";'
+    );
+    expect(source).toContain('import { IS_DESKTOP_RUNTIME } from "./lib/env";');
+    expect(source).toContain(
+      "if (!isNative && !IS_DESKTOP_RUNTIME) initializePwaInstallPromptCapture();"
+    );
+  });
+
+  it("turns automatic reload failures into visible retry recovery without blanking startup", () => {
+    const source = readSource("src/main.tsx");
+    const startupRecoveryBlock = extractBlock(
+      source,
+      "async function ensureFreshVersionBeforeRender(): Promise<boolean> {",
+      'logger.log("[Main] Version is up to date");',
+    );
+
+    expect(source).toContain("async function attemptAutomaticHardReload(");
+    expect(source).toContain("reportAutomaticUpdateReloadFailure({");
+    expect(source).not.toContain("void forceHardReload();");
+    expect(startupRecoveryBlock).toContain(
+      'const navigated = await attemptAutomaticHardReload("startup-version-check");',
+    );
+    expect(startupRecoveryBlock).toContain("return !navigated;");
+  });
+
+  it("keeps browser automatic-update ownership out of the Tauri desktop runtime", () => {
+    const source = readSource("src/main.tsx");
+    const resumeBlock = extractBlock(
+      source,
+      "async function handleAppResume(): Promise<void> {",
+      "// Clean up stale share cache files",
+    );
+    const startupRecoveryBlock = extractBlock(
+      source,
+      "async function ensureFreshVersionBeforeRender(): Promise<boolean> {",
+      'logger.log("[Main] Version is up to date");',
+    );
+    const scheduledCheckBlock = extractBlock(
+      source,
+      "function scheduleVersionCheckAfterStartup(): void {",
+      "scheduleIdle(",
+    );
+
+    expect(source).toContain('if (!IS_DESKTOP_RUNTIME && "serviceWorker" in navigator) {');
+    expect(resumeBlock).toContain(
+      "if (!isNative && !IS_DESKTOP_RUNTIME && navigator.onLine) {",
+    );
+    expect(startupRecoveryBlock).toContain("if (IS_DESKTOP_RUNTIME) return true;");
+    expect(scheduledCheckBlock).toContain("IS_DESKTOP_RUNTIME");
+  });
+
+  it("writes PWA lifecycle evidence only to a repository-local output path", () => {
+    const source = readSource("e2e/helpers/pwa-offline/playwright.config.ts");
+
+    expect(source).toContain("ZENFLOW_PWA_JSON_OUTPUT");
+    expect(source).toContain('jsonOutput.startsWith("output/")');
+    expect(source).toContain('jsonOutput.includes("..")');
+    expect(source).toContain('["json", { outputFile: resolve(repoRoot, jsonOutput) }]');
+    expect(source).toContain('["list"]');
   });
 
   it("lets quarantined other-account queue rows coexist with resume delta sync", () => {

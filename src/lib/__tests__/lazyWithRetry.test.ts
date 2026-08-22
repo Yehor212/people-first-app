@@ -174,7 +174,7 @@ describe('lazyWithRetry', () => {
     expect(mockForceHardReload).not.toHaveBeenCalled();
   });
 
-  it('clears caches before reload', async () => {
+  it('preserves origin caches before reload', async () => {
     const importFn = vi.fn().mockImplementation(async () => {
       throw new TypeError('Loading CSS chunk xyz failed');
     });
@@ -185,8 +185,8 @@ describe('lazyWithRetry', () => {
     await vi.advanceTimersByTimeAsync(5000);
     await promise;
 
-    expect(mockCachesKeys).toHaveBeenCalled();
-    expect(mockCachesDelete).toHaveBeenCalledWith('cache-v1');
+    expect(mockCachesKeys).not.toHaveBeenCalled();
+    expect(mockCachesDelete).not.toHaveBeenCalled();
   });
 
   it('throws error with original message if recent reload was detected', async () => {

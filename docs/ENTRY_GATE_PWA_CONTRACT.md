@@ -2,6 +2,13 @@
 
 Last verified: 2026-06-16
 
+Current local contract revision: 2026-08-04. The manifest/icon rules below are
+superseded by the bounded macOS/Windows PWA modernization packet in
+[`specs/002-pwa-desktop-modernization`](../specs/002-pwa-desktop-modernization/spec.md).
+Public deployment, real launcher installation, and real mobile safe-area proof
+remain `UNVERIFIED`; the older evidence sections in this document do not prove
+the revised artifact.
+
 This document freezes the PWA-facing behavior for the ZenFlow first-run
 language screen and the following sign-in screen. It is intentionally scoped to
 the installable web app surface and must not be used to claim native Android,
@@ -123,10 +130,13 @@ Manifest:
 - `start_url`: `/people-first-app/`
 - `scope`: `/people-first-app/`
 - `display`: `standalone`
+- `orientation`: omitted so each desktop or mobile browser window can follow its current viewport.
 - `theme_color`: `#4a9d7c`
 - `background_color`: `#071513`
-- Icon count: 16
-- Includes an `any` 192 by 192 icon and a `maskable` 512 by 512 icon.
+- Icon count: 17
+- Includes an `any` 192 by 192 icon plus opaque `maskable` 512 by 512 and 1024 by 1024 icons.
+- Mood and Habit shortcuts remain under `/people-first-app/`, use `nav=v2`, and do not carry the retired `navLayout` parameter.
+- Shortcut icons declare `type: image/png` consistently in generator, tracked, and built manifests.
 
 Service worker:
 
@@ -137,6 +147,11 @@ Service worker:
   shell/runtime assets selected in `vite.config.ts`.
 - Must not precache `version-check.js`; that asset is intentionally network
   fetched to avoid stale version checks.
+- New literal runtime cache names use the `zenflow-` namespace. Legacy generic
+  cache ownership on the shared origin is not proven, so this contract does not
+  authorize origin-wide or automatic legacy-cache deletion.
+- Background Sync wakes already-open ZenFlow clients; with no open client, the
+  durable queue waits for the normal online/visibility/resume paths.
 
 Best-practice basis:
 

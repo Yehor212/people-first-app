@@ -892,6 +892,11 @@ export const es: Translations = {
   installLater: "Más tarde",
   appInstalled: "App instalada",
   appInstalledDescription: "ZenFlow está instalado en tu dispositivo.",
+  installOnMac: "Instalar en Mac",
+  installOnMacStorageWarning:
+    "La información guardada en Safari permanece separada de la que se guarda en la app instalada en el Mac, y la app puede pedirte que vuelvas a iniciar sesión. Antes de instalarla, conserva los datos de Safari y guarda una copia de seguridad de ZenFlow, incluso si usas una cuenta. La copia en línea puede estar en pausa, no estar disponible o no estar actualizada. La copia de ZenFlow no incluye todos los ajustes guardados solo en este dispositivo. Al abrir la app instalada, vuelve a iniciar sesión si quieres restaurar desde la copia en línea. Para usar en su lugar el archivo de copia manual, impórtalo antes de conectar una cuenta. Después comprueba que esté disponible la información que necesitas antes de borrar nada de Safari.",
+  installOnMacSafariSteps:
+    "En macOS Sonoma 14 o posterior, en Safari elige Archivo > Añadir al Dock, o pulsa el botón Compartir de la barra de herramientas y elige Añadir al Dock. Si no aparece ninguna de las opciones, sigue usando ZenFlow en Safari.",
   // App Updates (v1.4.1)
   checkForUpdates: "Buscar actualizaciones",
   checkingForUpdates: "Buscando actualizaciones...",
@@ -2524,7 +2529,7 @@ export const es: Translations = {
     "Hay una nueva versión de la app disponible. Actualiza para obtener las últimas funciones y correcciones.",
   updateRequiredRefresh: "Actualizar app",
   updateRequiredRefreshFailed:
-    "La app siguió abierta porque no se pudo confirmar que tus últimos cambios se guardaron. Inténtalo de nuevo.",
+    "La app no pudo actualizarse de forma segura, así que siguió abierta. Espera un momento y vuelve a intentarlo.",
   imageGenerateFailed: "Error al generar imagen. Inténtalo de nuevo.",
   imageSavedDownloads: "¡Imagen guardada en descargas!",
   shareFailedDownload: "No se pudo compartir. Intenta descargar.",

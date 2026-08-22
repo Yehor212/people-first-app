@@ -3,9 +3,11 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { pruneDuplicateArtifactsUntilSettled } = require("./prune-duplicate-artifacts.cjs");
 const {
   INTERNAL_BUILD_MANIFEST_PATH,
+  PREPARED_PAGES_MANIFEST_PATH,
+  verifyArtifactFilesAgainstPreparedManifest,
+  verifyPreparedPagesArtifactManifest,
   verifyReleaseArtifactIntegrity,
 } = require("./check-release-artifact-integrity.cjs");
 
@@ -57,7 +59,6 @@ function assertDistinctRoots(source, target) {
 
 function stageReleaseArtifact(source, target, options = {}) {
   const allowedRoot = path.resolve(options.allowedRoot || process.cwd());
-  const pruneOptions = { ...options, repositoryRoot: allowedRoot };
   const resolvedSource = path.resolve(source);
   const resolvedTarget = path.resolve(target);
   if (!fs.existsSync(resolvedSource)) {
@@ -67,25 +68,34 @@ function stageReleaseArtifact(source, target, options = {}) {
   assertInsideRoot(allowedRoot, resolvedTarget, "target");
   assertDistinctRoots(resolvedSource, resolvedTarget);
 
-  pruneDuplicateArtifactsUntilSettled(resolvedSource, pruneOptions);
+  const preparedEvidence = verifyPreparedPagesArtifactManifest(resolvedSource);
   verifyReleaseArtifactIntegrity(resolvedSource, {
     allowedRoot,
     allowInternalBuildManifest: true,
+    allowPreparedPagesManifest: true,
   });
+  verifyPreparedPagesArtifactManifest(resolvedSource);
 
   fs.rmSync(resolvedTarget, { force: true, recursive: true });
   fs.mkdirSync(path.dirname(resolvedTarget), { recursive: true });
-  const internalBuildManifest = path.resolve(resolvedSource, INTERNAL_BUILD_MANIFEST_PATH);
+  const excludedInternalPaths = new Set([
+    path.resolve(resolvedSource, INTERNAL_BUILD_MANIFEST_PATH),
+    path.resolve(resolvedSource, PREPARED_PAGES_MANIFEST_PATH),
+  ]);
   fs.cpSync(resolvedSource, resolvedTarget, {
     recursive: true,
     dereference: false,
-    filter: (candidate) => path.resolve(candidate) !== internalBuildManifest,
+    filter: (candidate) => !excludedInternalPaths.has(path.resolve(candidate)),
   });
-  pruneDuplicateArtifactsUntilSettled(resolvedTarget, pruneOptions);
+  verifyPreparedPagesArtifactManifest(resolvedSource);
+  verifyArtifactFilesAgainstPreparedManifest(resolvedTarget, preparedEvidence.manifest);
   verifyReleaseArtifactIntegrity(resolvedTarget, { allowedRoot });
+  verifyArtifactFilesAgainstPreparedManifest(resolvedTarget, preparedEvidence.manifest);
 
   return {
     copied: fs.existsSync(resolvedTarget) ? 1 : 0,
+    checkedFiles: preparedEvidence.checkedFiles,
+    artifactFilesSha256: preparedEvidence.artifactFilesSha256,
     source: resolvedSource,
     target: resolvedTarget,
   };

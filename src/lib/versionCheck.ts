@@ -7,10 +7,9 @@
  * - Long browser tabs left open
  * - Service Worker serving stale index.html
  *
- * When a version mismatch is detected, performs a "hard reload" that:
- * 1. Clears all Service Worker caches
- * 2. Signals SW to skip waiting
- * 3. Reloads with cache-busting query param
+ * When a version mismatch is detected, prepares pending durable writes and
+ * reloads with a cache-busting query parameter. Cache Storage remains owned by
+ * the service worker, and this utility does not signal a waiting worker.
  */
 
 import { logger } from "./logger";
@@ -226,11 +225,10 @@ export async function checkAppVersion(): Promise<boolean> {
 /**
  * Reload after a user-requested update check.
  *
- * This is intentionally lighter than forceHardReload(): Settings should not
- * clear all origin caches or unregister service workers just because the user
- * asked whether a deployed Web/PWA build is newer. The cache-busted navigation
- * lets the online app shell fetch the current deploy while preserving existing
- * emergency recovery behavior for stale chunk failures.
+ * Settings uses the same durable-write preparation and cache-preserving,
+ * cache-busted navigation contract as stale-chunk recovery. It has a separate
+ * entry point so user-requested update state can remain explicit without
+ * unregistering the service worker or mutating Cache Storage.
  */
 export async function reloadAppForUpdate(): Promise<boolean> {
   const lastReload = sessionStorage.getItem(SSK.HARD_RELOAD_TS);

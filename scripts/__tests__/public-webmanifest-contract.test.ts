@@ -26,16 +26,27 @@ describe("public web manifest contract", () => {
     expect(publicManifest).toMatchObject({
       name: "ZenFlow - Daily Wellness",
       short_name: "ZenFlow",
+      description:
+        "Habit, mood and productivity tracker. Previously opened areas can work offline; some features need internet.",
       start_url: "/people-first-app/",
       scope: "/people-first-app/",
       display: "standalone",
       icons: expect.arrayContaining([
         expect.objectContaining({ src: `pwa-192.png?v=${iconRevision}` }),
         expect.objectContaining({ src: `pwa-maskable-512.png?v=${iconRevision}` }),
+        expect.objectContaining({
+          src: `pwa-maskable-1024.png?v=${iconRevision}`,
+          sizes: "1024x1024",
+          purpose: "maskable",
+        }),
       ]),
     });
+    expect(publicManifest).not.toHaveProperty("orientation");
+    expect(JSON.stringify(publicManifest)).not.toContain("Works offline");
+    expect(readFileSync("vite.config.ts", "utf8")).not.toContain("Works offline");
+    expect(readFileSync("scripts/generate-icons.cjs", "utf8")).not.toContain("Works offline");
   });
-  it("keeps installed PWA shortcuts on V2 routes after V1 removal", () => {
+  it("lets installed PWA shortcuts choose the responsive layout for their window", () => {
     const publicManifest = readJson(publicManifestPath) as {
       shortcuts?: Array<{ name?: string; url?: string }>;
     };
@@ -48,18 +59,26 @@ describe("public web manifest contract", () => {
     for (const manifest of [publicManifest, docsManifest]) {
       expect(manifest.shortcuts).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ name: "Log Mood", url: "/people-first-app/orb/?nav=v2&navLayout=phone" }),
-          expect.objectContaining({ name: "Track Habit", url: "/people-first-app/habits/?nav=v2&navLayout=phone" }),
+          expect.objectContaining({ name: "Log Mood", url: "/people-first-app/orb/?nav=v2" }),
+          expect.objectContaining({ name: "Track Habit", url: "/people-first-app/habits/?nav=v2" }),
         ]),
       );
       expect(JSON.stringify(manifest.shortcuts)).not.toContain("?tab=home");
+      expect(JSON.stringify(manifest.shortcuts)).not.toContain("navLayout");
     }
 
-    expect(viteConfig).toContain('url: `${base}orb/?nav=v2&navLayout=phone`');
-    expect(viteConfig).toContain('url: `${base}habits/?nav=v2&navLayout=phone`');
+    expect(viteConfig).toContain('url: `${base}orb/?nav=v2`');
+    expect(viteConfig).toContain('url: `${base}habits/?nav=v2`');
+    expect(
+      viteConfig.match(
+        /\{ src: pwaIconSrc\("pwa-192\.png"\), sizes: "192x192", type: "image\/png" \}/g,
+      ),
+    ).toHaveLength(2);
     expect(viteConfig).not.toContain("?tab=home");
-    expect(iconGenerator).toContain("${DOCS_PWA_BASE}orb/?nav=v2&navLayout=phone");
-    expect(iconGenerator).toContain("${DOCS_PWA_BASE}habits/?nav=v2&navLayout=phone");
+    expect(viteConfig).not.toContain("navLayout=phone");
+    expect(iconGenerator).toContain("${DOCS_PWA_BASE}orb/?nav=v2");
+    expect(iconGenerator).toContain("${DOCS_PWA_BASE}habits/?nav=v2");
     expect(iconGenerator).not.toContain("?tab=home");
+    expect(iconGenerator).not.toContain("navLayout=phone");
   });
 });

@@ -43,6 +43,27 @@ import { forceHardReload } from "@/lib/versionCheck";
 
 // Event name for chunk load failures
 export const CHUNK_LOAD_ERROR_EVENT = "zenflow:chunk-load-error";
+export const AUTOMATIC_UPDATE_RELOAD_FAILURE_EVENT =
+  "zenflow:automatic-update-reload-failure";
+
+export type AutomaticUpdateReloadFailureDetail = {
+  source: string;
+  reason: "durable-preparation-failed" | "reload-loop-guard";
+};
+
+let pendingAutomaticUpdateReloadFailure: AutomaticUpdateReloadFailureDetail | null = null;
+
+export function reportAutomaticUpdateReloadFailure(
+  detail: AutomaticUpdateReloadFailureDetail,
+): void {
+  pendingAutomaticUpdateReloadFailure = detail;
+  window.dispatchEvent(
+    new CustomEvent<AutomaticUpdateReloadFailureDetail>(
+      AUTOMATIC_UPDATE_RELOAD_FAILURE_EVENT,
+      { detail },
+    ),
+  );
+}
 
 export function UpdateRequiredDialog() {
   const { t } = useLanguage();
@@ -96,10 +117,34 @@ export function UpdateRequiredDialog() {
   }, []);
 
   useEffect(() => {
+    const handleAutomaticReloadFailure = (event: Event) => {
+      pendingAutomaticUpdateReloadFailure = null;
+      handleChunkError(event);
+    };
+
     window.addEventListener(CHUNK_LOAD_ERROR_EVENT, handleChunkError);
+    window.addEventListener(
+      AUTOMATIC_UPDATE_RELOAD_FAILURE_EVENT,
+      handleAutomaticReloadFailure,
+    );
+
+    const pendingFailure = pendingAutomaticUpdateReloadFailure;
+    if (pendingFailure) {
+      pendingAutomaticUpdateReloadFailure = null;
+      handleChunkError(
+        new CustomEvent<AutomaticUpdateReloadFailureDetail>(
+          AUTOMATIC_UPDATE_RELOAD_FAILURE_EVENT,
+          { detail: pendingFailure },
+        ),
+      );
+    }
 
     return () => {
       window.removeEventListener(CHUNK_LOAD_ERROR_EVENT, handleChunkError);
+      window.removeEventListener(
+        AUTOMATIC_UPDATE_RELOAD_FAILURE_EVENT,
+        handleAutomaticReloadFailure,
+      );
     };
   }, [handleChunkError]);
 
@@ -186,7 +231,7 @@ export function UpdateRequiredDialog() {
               className="min-w-0 whitespace-normal break-normal text-sm text-destructive [hyphens:manual] [overflow-wrap:normal]"
             >
               {t.updateRequiredRefreshFailed ||
-                "The app stayed open because your latest changes could not be confirmed as saved. Try again."}
+                "The app could not refresh safely, so it stayed open. Wait a moment, then try again."}
             </p>
           ) : null}
         </AlertDialogHeader>

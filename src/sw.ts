@@ -6,10 +6,11 @@ interface SyncEvent extends ExtendableEvent {
 }
 
 /**
- * Custom Service Worker with Background Sync support
+ * Custom service worker with bounded Background Sync support.
  *
- * Enables sync even after browser is closed
- * Uses Workbox BackgroundSyncQueue for reliable offline sync
+ * A browser sync event can ask already-open clients to drain their durable
+ * queue. With no open client, the queue remains in IndexedDB and is retried by
+ * the app's online, visibility, and resume lifecycle paths.
  */
 
 import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from "workbox-precaching";
@@ -23,9 +24,10 @@ import { logger } from "@/lib/logger";
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC", "WARM_RUNTIME_AUDIO_CACHE"] as const;
+const CLIENT_MESSAGE_TYPES = ["WARM_RUNTIME_AUDIO_CACHE"] as const;
 type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
 const APP_SHELL_URL = "index.html";
+const OFFLINE_DOCUMENT_URL = "offline.html";
 const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio";
 const APP_AUDIO_SW_CACHE_PATHS = [
   "sounds/feedback/feedback-complete.mp3",
@@ -54,11 +56,6 @@ const APP_AUDIO_SW_CACHE_PATHS = [
   "sounds/hyperfocus/hyperfocus-wind-soft.mp3",
   "sounds/soft-air-veil.mp3",
   "sounds/soft-rain-veil.mp3",
-  "sounds/feedback/feedback-complete.mp3",
-  "sounds/feedback/feedback-milestone.mp3",
-  "sounds/feedback/feedback-notification.mp3",
-  "sounds/feedback/feedback-streak.mp3",
-  "sounds/feedback/feedback-success.mp3",
 ] as const;
 const SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS = new Set<RequestDestination>([
   "font",
@@ -248,7 +245,7 @@ registerRoute(
     (url.hostname === "supabase.co" || url.hostname.endsWith(".supabase.co") || url.hostname === "api.zenflowapp.online") &&
     url.pathname.includes("/storage/v1/object/public/"),
   new CacheFirst({
-    cacheName: "supabase-storage",
+    cacheName: "zenflow-supabase-public-assets",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 100,
@@ -263,7 +260,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname === "cdn.jsdelivr.net" && url.pathname.includes("fluent-emoji"),
   new CacheFirst({
-    cacheName: "fluent-emoji-stickers",
+    cacheName: "zenflow-fluent-emoji-stickers",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 200,
@@ -278,7 +275,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname === "fonts.googleapis.com",
   new CacheFirst({
-    cacheName: "google-fonts-stylesheets",
+    cacheName: "zenflow-google-fonts-stylesheets",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 10,
@@ -293,7 +290,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname === "fonts.gstatic.com",
   new CacheFirst({
-    cacheName: "google-fonts-webfonts",
+    cacheName: "zenflow-google-fonts-webfonts",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 20,
@@ -326,19 +323,23 @@ registerRoute(
       const appShell = await matchPrecache(APP_SHELL_URL);
       if (appShell) return appShell;
 
-      logger.warn("[SW] Navigation fallback missing app shell", error);
+      const offlineDocument = await matchPrecache(OFFLINE_DOCUMENT_URL);
+      if (offlineDocument) return offlineDocument;
+
+      logger.warn("[SW] Navigation fallback missing app shell and offline document", error);
       return Response.error();
     }
   }
 );
 
-// Listen for sync events (triggered when coming back online)
+// Ask already-open clients to process their durable queue when the browser
+// supplies a sync event. No client means no cloud processing in this handler.
 self.addEventListener("sync", (evt) => {
   const event = evt as SyncEvent;
   logger.log("[SW] Sync event received:", event.tag);
 
   if (event.tag === "zenflow-sync") {
-    // Notify clients to process their offline queue
+    // Notify open clients to process their offline queue.
     event.waitUntil(
       self.clients.matchAll().then((clients) => {
         clients.forEach((client) => {
@@ -352,33 +353,6 @@ self.addEventListener("sync", (evt) => {
 // Listen for messages from the main app (origin/source/type validated).
 self.onmessage = (event) => {
   if (!isTrustedClientMessage(event)) return;
-
-  if (event.data.type === "SKIP_WAITING") {
-    logger.log("[SW] Skip waiting requested");
-    void self.skipWaiting();
-  }
-
-  if (event.data.type === "CLEAR_CACHES") {
-    // Clear all caches when app detects version mismatch
-    logger.log("[SW] Clear caches requested");
-    event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            logger.log("[SW] Deleting cache:", cacheName);
-            return caches.delete(cacheName);
-          })
-        );
-      })
-    );
-  }
-
-  if (event.data.type === "REGISTER_SYNC") {
-    // Register a sync event (will fire when online)
-    self.registration.sync?.register("zenflow-sync").catch((err) => {
-      logger.warn("[SW] Background sync registration failed:", err);
-    });
-  }
 
   if (event.data.type === "WARM_RUNTIME_AUDIO_CACHE") {
     logger.log("[SW] Runtime audio cache warm requested after app startup");

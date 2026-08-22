@@ -877,6 +877,11 @@ export const en: Translations = {
   installLater: "Later",
   appInstalled: "App installed",
   appInstalledDescription: "ZenFlow is installed on your device.",
+  installOnMac: "Install on Mac",
+  installOnMacStorageWarning:
+    "Information saved in Safari stays separate from information saved in the installed Mac app, and the Mac app may ask you to sign in again. Before installing, leave your Safari data in place and save a ZenFlow backup, even if you use an account. Online backup may be paused, unavailable, or not up to date. A ZenFlow backup does not include every setting kept only on this device. After opening the installed app, sign in again if you want to restore from online backup. To use the manual backup instead, import it before connecting an account. Then check that the information you need is available before removing anything from Safari.",
+  installOnMacSafariSteps:
+    "On macOS Sonoma 14 or later, in Safari choose File > Add to Dock, or choose the Share button in the toolbar and then Add to Dock. If neither option appears, keep using ZenFlow in Safari.",
   // App Updates (v1.4.1)
   checkForUpdates: "Check for updates",
   checkingForUpdates: "Checking for updates...",
@@ -2497,7 +2502,7 @@ export const en: Translations = {
     "A new version of the app is available. Please refresh to get the latest features and fixes.",
   updateRequiredRefresh: "Refresh App",
   updateRequiredRefreshFailed:
-    "The app stayed open because your latest changes could not be confirmed as saved. Try again.",
+    "The app could not refresh safely, so it stayed open. Wait a moment, then try again.",
   imageGenerateFailed: "Failed to generate image. Try again.",
   imageSavedDownloads: "Image saved to downloads!",
   shareFailedDownload: "Could not share. Try downloading instead.",

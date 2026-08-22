@@ -28,7 +28,7 @@ export function AuthGateInitErrorScreen({ message }: { message: string }) {
               logger.warn("[AuthGate] Reload blocked until durable state is saved:", error);
               setReloadError(
                 t.updateRequiredRefreshFailed ||
-                  "Your latest changes could not be confirmed as saved. Try again."
+                  "The app could not refresh safely, so it stayed open. Wait a moment, then try again."
               );
             } finally {
               setReloadPending(false);

@@ -631,6 +631,9 @@ export interface Translations {
   installLater: string;
   appInstalled: string;
   appInstalledDescription: string;
+  installOnMac: string;
+  installOnMacStorageWarning: string;
+  installOnMacSafariSteps: string;
   // App Updates (v1.4.1)
   checkForUpdates: string;
   checkingForUpdates: string;

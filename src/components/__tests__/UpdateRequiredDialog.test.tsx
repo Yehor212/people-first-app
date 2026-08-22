@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   CHUNK_LOAD_ERROR_EVENT,
+  reportAutomaticUpdateReloadFailure,
   UpdateRequiredDialog,
 } from "@/components/UpdateRequiredDialog";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -16,7 +17,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       updateRequiredDesc:
         "Доступна нова версія додатку. Оновіть для отримання нових функцій та виправлень.",
       updateRequiredRefresh: "Оновити додаток",
-      updateRequiredRefreshFailed: "Не вдалося безпечно підготувати оновлення. Спробуйте ще раз.",
+      updateRequiredRefreshFailed:
+        "Не вдалося безпечно оновити застосунок, тому він залишився відкритим. Зачекайте трохи й спробуйте ще раз.",
       cancel: "Скасувати",
     },
   }),
@@ -198,7 +200,7 @@ describe("UpdateRequiredDialog", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Оновити додаток" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Не вдалося безпечно підготувати оновлення. Спробуйте ще раз.",
+      "Не вдалося безпечно оновити застосунок, тому він залишився відкритим. Зачекайте трохи й спробуйте ще раз.",
     );
     expect(screen.getByRole("button", { name: "Оновити додаток" })).toBeEnabled();
     expect(screen.getByRole("alert")).toHaveClass(
@@ -207,6 +209,18 @@ describe("UpdateRequiredDialog", () => {
       "[overflow-wrap:normal]",
     );
     expect(screen.getByRole("alert").className).not.toContain("[overflow-wrap:anywhere]");
+  });
+
+  it("surfaces an automatic reload failure that happens before the dialog mounts", async () => {
+    reportAutomaticUpdateReloadFailure({
+      source: "startup-version-check",
+      reason: "durable-preparation-failed",
+    });
+
+    render(<UpdateRequiredDialog />);
+
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Оновити додаток" })).toBeEnabled();
   });
 
   it("keeps an in-flight reload visible when Escape is pressed", async () => {
@@ -266,7 +280,7 @@ describe("UpdateRequiredDialog", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Оновити додаток" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Не вдалося безпечно підготувати оновлення. Спробуйте ще раз.",
+      "Не вдалося безпечно оновити застосунок, тому він залишився відкритим. Зачекайте трохи й спробуйте ще раз.",
     );
     expect(screen.getByRole("button", { name: "Оновити додаток" })).toBeEnabled();
   });

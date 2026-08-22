@@ -121,7 +121,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       initializingApp: "Preparing your zen space...",
       tryAgain: "Try Again",
       updateRequiredRefreshFailed:
-        "Your latest changes could not be confirmed as saved. Try again.",
+        "The app could not refresh safely, so it stayed open. Wait a moment, then try again.",
       authImportedBackupAccountChoice:
         "ZenFlow will combine this backup with data already in {account}. The combined data will be kept on this device and saved to that account.",
       authAddImportedBackupToAccount: "Combine and save to {account}",
@@ -243,7 +243,7 @@ describe("AuthGate", () => {
 
     expect(
       await screen.findByRole("alert", {
-        name: "Your latest changes could not be confirmed as saved. Try again.",
+        name: "The app could not refresh safely, so it stayed open. Wait a moment, then try again.",
       })
     ).toBeInTheDocument();
     await waitFor(() => expect(retry).toBeEnabled());

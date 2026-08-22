@@ -865,6 +865,11 @@ export const ja: Translations = {
   installLater: "後で",
   appInstalled: "アプリがインストール済み",
   appInstalledDescription: "ZenFlowはデバイスにインストールされています。",
+  installOnMac: "Macにインストール",
+  installOnMacStorageWarning:
+    "Safariに保存した情報とインストールしたMacアプリに保存する情報は別々で、Macアプリで再度サインインを求められることがあります。インストール前に、Safariのデータをそのまま残し、アカウントを使っている場合でもZenFlowバックアップを保存してください。オンラインバックアップは一時停止中、利用不可、または最新でないことがあります。ZenFlowバックアップには、このデバイスだけに保存されるすべての設定が含まれるわけではありません。インストールしたアプリを開いた後、オンラインバックアップから復元する場合は再度サインインしてください。代わりに手動で保存したバックアップを使う場合は、アカウントに接続する前に読み込んでください。その後、必要な情報が揃っていることを確認してからSafariのデータを削除してください。",
+  installOnMacSafariSteps:
+    "macOS Sonoma 14以降では、Safariで「ファイル」>「Dockに追加」を選ぶか、ツールバーの「共有」ボタンを押して「Dockに追加」を選びます。どちらも表示されない場合は、SafariでZenFlowを引き続き使用してください。",
   // App Updates (v1.4.1)
   checkForUpdates: "アップデートを確認",
   checkingForUpdates: "アップデートを確認中...",
@@ -2464,7 +2469,7 @@ export const ja: Translations = {
     "新しいバージョンのアプリが利用可能です。最新の機能と修正を入手するには更新してください。",
   updateRequiredRefresh: "アプリを更新",
   updateRequiredRefreshFailed:
-    "最新の変更が保存されたことを確認できなかったため、アプリを開いたままにしました。もう一度お試しください。",
+    "安全に更新できなかったため、アプリを開いたままにしました。少し待ってから、もう一度お試しください。",
   imageGenerateFailed: "画像の生成に失敗しました。もう一度お試しください。",
   imageSavedDownloads: "画像がダウンロードに保存されました！",
   shareFailedDownload: "共有できませんでした。ダウンロードをお試しください。",

@@ -135,6 +135,20 @@ const platformMock = vi.hoisted(() => ({
   platform: "web",
 }));
 
+type PwaInstallMock = {
+  canInstall: boolean;
+  installKind: "installed" | "prompt" | "macos-safari-manual" | "unavailable";
+  isInstalled: boolean;
+  promptInstall: ReturnType<typeof vi.fn>;
+};
+
+const pwaInstallMock = vi.hoisted<PwaInstallMock>(() => ({
+  canInstall: false,
+  installKind: "unavailable",
+  isInstalled: false,
+  promptInstall: vi.fn(),
+}));
+
 const journalProtectionMock = vi.hoisted(() => ({
   hasProtection: false,
   hasPersistentJournalProtection: vi.fn(),
@@ -578,6 +592,11 @@ vi.mock("@/contexts/LanguageContext", () => ({
       settingsAboutSupportLegalDescription: "Privacy, terms, licenses, and support.",
       settingsWebUpdateDescription: "Check for a newer version.",
       settingsNativeUpdateDescription: "Check for a newer version.",
+      installOnMac: "Install on Mac",
+      installOnMacStorageWarning:
+        "Information saved in Safari stays separate from information saved in the installed Mac app, and the Mac app may ask you to sign in again. Before installing, leave your Safari data in place and save a ZenFlow backup, even if you use an account. Online backup may be paused, unavailable, or not up to date. A ZenFlow backup does not include every setting kept only on this device. After opening the installed app, sign in again if you want to restore from online backup. To use the manual backup instead, import it before connecting an account. Then check that the information you need is available before removing anything from Safari.",
+      installOnMacSafariSteps:
+        "On macOS Sonoma 14 or later, in Safari choose File > Add to Dock, or choose the Share button in the toolbar and then Add to Dock. If neither option appears, keep using ZenFlow in Safari.",
       openSourceLicenses: "Licenses",
       themeAccentTitle: "Accent",
       themeAccentDescription: "Color for buttons, selections, and highlights.",
@@ -1041,7 +1060,7 @@ vi.mock("@/components/settings/data-section/useDataImport", () => ({
 vi.mock("@/lib/accountService", () => accountServiceMock);
 
 vi.mock("@/hooks/usePwaInstall", () => ({
-  usePwaInstall: () => ({ canInstall: false, isInstalled: false, promptInstall: vi.fn() }),
+  usePwaInstall: () => pwaInstallMock,
 }));
 
 vi.mock("@/hooks/useFontScale", () => ({
@@ -1238,6 +1257,10 @@ describe("SettingsPage", () => {
     platformMock.isIos = false;
     platformMock.isDesktopViewport = false;
     platformMock.platform = "web";
+    pwaInstallMock.canInstall = false;
+    pwaInstallMock.installKind = "unavailable";
+    pwaInstallMock.isInstalled = false;
+    pwaInstallMock.promptInstall.mockReset();
     const persistedControls = createSettingsControls();
     reminderPersistenceMock.snapshot = {
       reminders: persistedControls.reminders,
@@ -2523,6 +2546,23 @@ describe("SettingsPage", () => {
 
     expect(screen.queryByTestId("settings-module-card-about")).toBeNull();
     expect(screen.getByTestId("settings-support-footer")).toHaveTextContent(/ZenFlow/i);
+  });
+
+  it("shows truthful Safari installation and storage guidance only for macOS Safari", () => {
+    pwaInstallMock.installKind = "macos-safari-manual";
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const guidance = screen.getByTestId("settings-v2-macos-pwa-install-guidance");
+    expect(guidance).toHaveTextContent("Install on Mac");
+    expect(guidance).toHaveTextContent("may ask you to sign in again");
+    expect(guidance).toHaveTextContent("leave your Safari data in place");
+    expect(guidance).toHaveTextContent("save a ZenFlow backup, even if you use an account");
+    expect(guidance).toHaveTextContent("import it before connecting an account");
+    expect(guidance).toHaveTextContent("may be paused, unavailable, or not up to date");
+    expect(guidance).toHaveTextContent("before removing anything from Safari");
+    expect(guidance).toHaveTextContent("macOS Sonoma 14 or later");
+    expect(guidance).toHaveTextContent("File > Add to Dock");
+    expect(guidance).toHaveTextContent("Share button");
   });
 
   it("saves profile name only after a scoped dirty change", async () => {

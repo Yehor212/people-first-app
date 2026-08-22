@@ -895,6 +895,11 @@ export const fr: Translations = {
   installLater: "Plus tard",
   appInstalled: "App installée",
   appInstalledDescription: "ZenFlow est installé sur votre appareil.",
+  installOnMac: "Installer sur Mac",
+  installOnMacStorageWarning:
+    "Les informations enregistrées dans Safari restent séparées de celles de l’app Mac installée, et l’app peut vous demander de vous reconnecter. Avant l’installation, laissez vos données Safari en place et enregistrez une sauvegarde ZenFlow, même si vous utilisez un compte. La sauvegarde en ligne peut être en pause, indisponible ou ne pas être à jour. Une sauvegarde ZenFlow n’inclut pas tous les réglages conservés uniquement sur cet appareil. Après avoir ouvert l’app installée, reconnectez-vous si vous souhaitez restaurer la sauvegarde en ligne. Pour utiliser plutôt le fichier de sauvegarde enregistré manuellement, importez-le avant de connecter un compte. Vérifiez ensuite que les informations utiles sont disponibles avant de supprimer quoi que ce soit de Safari.",
+  installOnMacSafariSteps:
+    "Sous macOS Sonoma 14 ou version ultérieure, dans Safari, choisissez Fichier > Ajouter au Dock, ou cliquez sur le bouton Partager dans la barre d’outils, puis choisissez Ajouter au Dock. Si aucune option n’apparaît, continuez à utiliser ZenFlow dans Safari.",
   // App Updates (v1.4.1)
   checkForUpdates: "Vérifier les mises à jour",
   checkingForUpdates: "Vérification des mises à jour...",
@@ -2536,7 +2541,7 @@ export const fr: Translations = {
     "Une nouvelle version de l'application est disponible. Actualisez pour obtenir les dernières fonctionnalités et corrections.",
   updateRequiredRefresh: "Actualiser l'app",
   updateRequiredRefreshFailed:
-    "L'app est restée ouverte, car l'enregistrement de vos dernières modifications n'a pas pu être confirmé. Réessayez.",
+    "L’app n’a pas pu s’actualiser en toute sécurité, elle est donc restée ouverte. Patientez un instant, puis réessayez.",
   imageGenerateFailed: "Échec de la génération d'image. Réessayez.",
   imageSavedDownloads: "Image enregistrée dans les téléchargements !",
   shareFailedDownload: "Impossible de partager. Essayez de télécharger.",

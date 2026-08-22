@@ -31,7 +31,10 @@ import {
   markVersionChecked,
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
-import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
+import {
+  reportAutomaticUpdateReloadFailure,
+  setupChunkErrorHandler,
+} from "./components/UpdateRequiredDialog";
 import { isChunkLoadMessage } from "./lib/chunkErrorDetection";
 import { isTrustedServiceWorkerMessage } from "./lib/serviceWorkerMessages";
 import { SK } from "./lib/storageKeys";
@@ -49,9 +52,15 @@ import { migrateLegacyFeedbackSettings } from "./lib/legacyFeedbackMigration";
 import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
+import { initializePwaInstallPromptCapture } from "./lib/pwaInstallPrompt";
+import { IS_DESKTOP_RUNTIME } from "./lib/env";
 
 // The bounded error buffer supports local recovery diagnostics without enabling
 // optional external crash reporting before the user has a corresponding choice.
+
+// Chromium can emit this single-use event before the lazy Settings footer loads.
+// Native shells intentionally keep the browser PWA lifecycle disabled.
+if (!isNative && !IS_DESKTOP_RUNTIME) initializePwaInstallPromptCapture();
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
@@ -202,8 +211,22 @@ async function prepareInitialLanguageBeforeRender(): Promise<void> {
   }
 }
 
+async function attemptAutomaticHardReload(source: string): Promise<boolean> {
+  try {
+    const navigated = await forceHardReload();
+    if (!navigated) {
+      reportAutomaticUpdateReloadFailure({ source, reason: "reload-loop-guard" });
+    }
+    return navigated;
+  } catch (error) {
+    logger.warn(`[Main] Automatic update reload failed (${source}):`, error);
+    reportAutomaticUpdateReloadFailure({ source, reason: "durable-preparation-failed" });
+    return false;
+  }
+}
+
 // Listen for SW activation — new SW means new deploy, check version immediately
-if ("serviceWorker" in navigator) {
+if (!IS_DESKTOP_RUNTIME && "serviceWorker" in navigator) {
   navigator.serviceWorker.onmessage = (event) => {
     if (!isTrustedServiceWorkerMessage(event, window.location.origin)) return;
     if (event.data.type === "SW_UPDATED") {
@@ -213,7 +236,7 @@ if ("serviceWorker" in navigator) {
           markVersionChecked();
           if (!isUpToDate) {
             logger.log("[Main] Version mismatch after SW update, reloading...");
-            void forceHardReload();
+            void attemptAutomaticHardReload("service-worker-update");
           }
         })
         .catch((err) => {
@@ -435,12 +458,12 @@ async function handleAppResume(): Promise<void> {
     // tries to lazy-load chunks with old hashes (404). Check BEFORE that happens.
     // No throttle — the fetch is ~100ms, and stale-tab errors are the #1 cause
     // of chunk-load failures. Skip on native (assets are bundled locally).
-    if (!isNative && navigator.onLine) {
+    if (!isNative && !IS_DESKTOP_RUNTIME && navigator.onLine) {
       const isUpToDate = await checkAppVersion();
       markVersionChecked();
       if (!isUpToDate) {
         logger.log("[Main] Stale version on resume, reloading...");
-        const navigated = await forceHardReload();
+        const navigated = await attemptAutomaticHardReload("app-resume-version-check");
         if (navigated) return;
       }
     }
@@ -608,6 +631,8 @@ if (isCapacitor) {
 let didBlockingVersionCheck = false;
 
 async function ensureFreshVersionBeforeRender(): Promise<boolean> {
+  if (IS_DESKTOP_RUNTIME) return true;
+
   const priorityCheck = isOAuthReturn() || shouldCheckVersion();
   if (!priorityCheck) return true;
 
@@ -619,8 +644,8 @@ async function ensureFreshVersionBeforeRender(): Promise<boolean> {
 
   if (!isUpToDate) {
     logger.log("[Main] Outdated version detected, performing hard reload...");
-    await forceHardReload();
-    return false;
+    const navigated = await attemptAutomaticHardReload("startup-version-check");
+    return !navigated;
   }
 
   logger.log("[Main] Version is up to date");
@@ -628,7 +653,13 @@ async function ensureFreshVersionBeforeRender(): Promise<boolean> {
 }
 
 function scheduleVersionCheckAfterStartup(): void {
-  if (didBlockingVersionCheck || isNative || !navigator.onLine || !shouldAutoCheckVersion()) {
+  if (
+    didBlockingVersionCheck ||
+    isNative ||
+    IS_DESKTOP_RUNTIME ||
+    !navigator.onLine ||
+    !shouldAutoCheckVersion()
+  ) {
     return;
   }
 
@@ -639,7 +670,7 @@ function scheduleVersionCheckAfterStartup(): void {
           markVersionChecked();
           if (!isUpToDate) {
             logger.log("[Main] Outdated version detected after startup, reloading...");
-            void forceHardReload();
+            void attemptAutomaticHardReload("post-startup-version-check");
           }
         })
         .catch((err) => logger.warn("[Main] Startup version check failed:", err));

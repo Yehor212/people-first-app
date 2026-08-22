@@ -891,6 +891,11 @@ export const de: Translations = {
   installLater: "Später",
   appInstalled: "App installiert",
   appInstalledDescription: "ZenFlow ist auf deinem Gerät installiert.",
+  installOnMac: "Auf dem Mac installieren",
+  installOnMacStorageWarning:
+    "In Safari gespeicherte Informationen bleiben von den Informationen in der installierten Mac-App getrennt, und die App kann eine erneute Anmeldung verlangen. Lass deine Safari-Daten vor der Installation bestehen und speichere eine ZenFlow-Sicherung, auch wenn du ein Konto nutzt. Die Online-Sicherung kann pausiert, nicht verfügbar oder nicht auf dem neuesten Stand sein. Eine ZenFlow-Sicherung enthält nicht jede Einstellung, die nur auf diesem Gerät gespeichert ist. Melde dich in der installierten App erneut an, wenn du die Online-Sicherung wiederherstellen möchtest. Wenn du stattdessen die manuell gespeicherte Sicherungsdatei verwenden möchtest, importiere sie, bevor du ein Konto verbindest. Prüfe anschließend, ob die benötigten Informationen vorhanden sind, bevor du etwas aus Safari entfernst.",
+  installOnMacSafariSteps:
+    "Wähle unter macOS Sonoma 14 oder neuer in Safari „Ablage“ > „Zum Dock hinzufügen“. Alternativ klicke in der Symbolleiste auf „Teilen“ und wähle „Zum Dock hinzufügen“. Wenn keine der Optionen angezeigt wird, nutze ZenFlow weiter in Safari.",
   // App Updates (v1.4.1)
   checkForUpdates: "Nach Updates suchen",
   checkingForUpdates: "Suche nach Updates...",
@@ -2532,7 +2537,7 @@ export const de: Translations = {
     "Eine neue Version der App ist verfügbar. Aktualisieren Sie für die neuesten Funktionen und Korrekturen.",
   updateRequiredRefresh: "App aktualisieren",
   updateRequiredRefreshFailed:
-    "Die App blieb geöffnet, weil das Speichern der letzten Änderungen nicht bestätigt werden konnte. Versuche es erneut.",
+    "Die App konnte nicht sicher aktualisiert werden und blieb daher geöffnet. Warte einen Moment und versuche es erneut.",
   imageGenerateFailed: "Bild konnte nicht erstellt werden. Versuchen Sie es erneut.",
   imageSavedDownloads: "Bild in Downloads gespeichert!",
   shareFailedDownload: "Teilen fehlgeschlagen. Versuchen Sie den Download.",

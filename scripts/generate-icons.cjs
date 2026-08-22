@@ -31,6 +31,7 @@ const PUBLIC_TO_DOCS_ASSETS = [
   "apple-touch-icon.png",
   "icon-512.png",
   "pwa-maskable-512.png",
+  "pwa-maskable-1024.png",
   ...PWA_SIZES.map((size) => `pwa-${size}.png`),
   ...PWA_WINDOWS_ICONS.map((icon) => icon.file),
 ];
@@ -454,12 +455,12 @@ function writeDocsWebManifest() {
   const manifest = {
     name: "ZenFlow - Daily Wellness",
     short_name: "ZenFlow",
-    description: "Habit, mood and productivity tracker. Works offline.",
+    description:
+      "Habit, mood and productivity tracker. Previously opened areas can work offline; some features need internet.",
     id: DOCS_PWA_BASE,
     start_url: DOCS_PWA_BASE,
     scope: DOCS_PWA_BASE,
     display: "standalone",
-    orientation: "portrait-primary",
     theme_color: "#4a9d7c",
     background_color: "#071513",
     lang: "en",
@@ -484,20 +485,26 @@ function writeDocsWebManifest() {
         type: "image/png",
         purpose: "maskable",
       },
+      {
+        src: iconSrc("pwa-maskable-1024.png"),
+        sizes: "1024x1024",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
     shortcuts: [
       {
         name: "Log Mood",
         short_name: "Mood",
         description: "Quickly log your mood",
-        url: `${DOCS_PWA_BASE}orb/?nav=v2&navLayout=phone`,
+        url: `${DOCS_PWA_BASE}orb/?nav=v2`,
         icons: [{ src: iconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Track Habit",
         short_name: "Habit",
         description: "Mark a habit as completed",
-        url: `${DOCS_PWA_BASE}habits/?nav=v2&navLayout=phone`,
+        url: `${DOCS_PWA_BASE}habits/?nav=v2`,
         icons: [{ src: iconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" }],
       },
     ],
@@ -526,7 +533,7 @@ function iconRevisionHtmlFiles() {
 }
 
 function syncStaticHtmlIconRevision() {
-  const iconPattern = /((?:manifest\.webmanifest|favicon(?:-\d+)?\.png|favicon\.ico|apple-touch-icon\.png|pwa(?:-\d+|-maskable-512|-windows-[a-z0-9-]+)\.png))(?:\?v=[a-z0-9-]+)?/gi;
+  const iconPattern = /((?:manifest\.webmanifest|favicon(?:-\d+)?\.png|favicon\.ico|apple-touch-icon\.png|pwa(?:-\d+|-maskable-\d+|-windows-[a-z0-9-]+)\.png))(?:\?v=[a-z0-9-]+)?/gi;
   for (const rel of iconRevisionHtmlFiles()) {
     const filePath = path.join(ROOT, rel);
     const original = fs.readFileSync(filePath, "utf8");
@@ -571,6 +578,9 @@ async function generatePublicAssets() {
     });
   }
   await pngFromSvg(fullBleedSvg({ width: 512, height: 512, leafScale: 0.52 }), path.join(publicDir, "pwa-maskable-512.png"), {
+    flatten: "#2E9B70",
+  });
+  await pngFromSvg(fullBleedSvg({ width: 1024, height: 1024, leafScale: 0.52 }), path.join(publicDir, "pwa-maskable-1024.png"), {
     flatten: "#2E9B70",
   });
   await pngFromSvg(fullBleedSvg({ width: 180, height: 180, leafScale: 0.54 }), path.join(publicDir, "apple-touch-icon.png"), {

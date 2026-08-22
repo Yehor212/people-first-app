@@ -26,7 +26,10 @@ import {
   runSharedDistBuildCli,
   sharedDistBuildLockPath,
 } from "../run-shared-dist-build.mjs";
-import { validateCompletedProductionWebBuild } from "../validate-production-web-build.ts";
+import {
+  validateCompletedProductionWebBuild,
+  validatePwaManifestParity,
+} from "../validate-production-web-build.ts";
 
 const REPO_ROOT = path.resolve(".");
 const MODULE_URL = pathToFileURL(path.join(REPO_ROOT, "scripts", "run-shared-dist-build.mjs")).href;
@@ -611,6 +614,49 @@ describe("package build wiring", () => {
 });
 
 describe("production-web validation helper", () => {
+  function writePwaManifestFixture(rootDir, relativePath, manifest) {
+    const filePath = path.join(rootDir, relativePath);
+    mkdirSync(path.dirname(filePath), { recursive: true });
+    writeFileSync(filePath, `${JSON.stringify(manifest)}\n`);
+  }
+
+  it("accepts structurally equal tracked and built PWA manifests regardless of key order", () => {
+    const rootDir = temporaryRoot();
+    const tracked = {
+      name: "ZenFlow",
+      start_url: "/people-first-app/",
+      shortcuts: [{ name: "Mood", url: "/people-first-app/orb/?nav=v2" }],
+    };
+    const built = {
+      shortcuts: [{ url: "/people-first-app/orb/?nav=v2", name: "Mood" }],
+      start_url: "/people-first-app/",
+      name: "ZenFlow",
+    };
+    writePwaManifestFixture(rootDir, "public/manifest.webmanifest", tracked);
+    writePwaManifestFixture(rootDir, "docs/manifest.webmanifest", tracked);
+    writePwaManifestFixture(rootDir, "dist/manifest.webmanifest", built);
+
+    expect(() => validatePwaManifestParity(rootDir)).not.toThrow();
+  });
+
+  it("rejects a built PWA manifest whose shortcut contract drifted", () => {
+    const rootDir = temporaryRoot();
+    const tracked = {
+      name: "ZenFlow",
+      start_url: "/people-first-app/",
+      shortcuts: [{ name: "Mood", url: "/people-first-app/orb/?nav=v2" }],
+    };
+    const drifted = {
+      ...tracked,
+      shortcuts: [{ name: "Mood", url: "/people-first-app/orb/?nav=v2&navLayout=phone" }],
+    };
+    writePwaManifestFixture(rootDir, "public/manifest.webmanifest", tracked);
+    writePwaManifestFixture(rootDir, "docs/manifest.webmanifest", tracked);
+    writePwaManifestFixture(rootDir, "dist/manifest.webmanifest", drifted);
+
+    expect(() => validatePwaManifestParity(rootDir)).toThrow(/PWA manifest parity.*dist/i);
+  });
+
   it("calls the real manifest validator and fails closed when evidence is missing", () => {
     const rootDir = temporaryRoot();
 

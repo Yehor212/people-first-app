@@ -21,7 +21,7 @@ const footerLegalLabelClass =
 export function SettingsSupportFooter() {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const { canInstall, isInstalled, promptInstall } = usePwaInstall();
+  const { canInstall, installKind, isInstalled, promptInstall } = usePwaInstall();
   const updateCapability = getAppUpdateCapability();
   const [showFeedback, setShowFeedback] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
@@ -153,6 +153,24 @@ export function SettingsSupportFooter() {
             </button>
           ) : null}
         </nav>
+
+        {installKind === "macos-safari-manual" ? (
+          <details
+            className="mx-auto mt-1 max-w-2xl rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.4)] bg-[hsl(var(--settings-v2-panel)/0.32)] px-2 pb-2"
+            data-testid="settings-v2-macos-pwa-install-guidance"
+          >
+            <summary className={`${footerButtonClass} mx-auto cursor-pointer list-none`}>
+              {tx.installOnMac || "Install on Mac"}
+            </summary>
+            <div
+              className="space-y-1 px-2 text-start text-xs leading-relaxed text-muted-foreground"
+              role="note"
+            >
+              <p>{tx.installOnMacStorageWarning}</p>
+              <p>{tx.installOnMacSafariSteps}</p>
+            </div>
+          </details>
+        ) : null}
 
         {updateStatus ? (
           <p
