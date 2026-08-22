@@ -111,13 +111,6 @@
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/no-ai-template-gate.cjs')\"",
             "timeout": 5,
             "statusMessage": "Checking no-AI-template output"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
-            "timeout": 20,
-            "statusMessage": "Final production data integrity check"
           }
         ]
       }

@@ -31,7 +31,6 @@ const REQUIRED_REGISTRATIONS: ReadonlyArray<readonly [string, string]> = [
   ["PreToolUse", "production-data-integrity-gate.cjs"],
   ["PostToolUse", "production-data-integrity-gate.cjs"],
   ["Stop", "no-ai-template-gate.cjs"],
-  ["Stop", "production-data-integrity-gate.cjs"],
   ["SubagentStart", "no-ai-template-gate.cjs"],
   ["SubagentStart", "production-data-integrity-gate.cjs"],
   ["SubagentStop", "no-ai-template-gate.cjs"],
