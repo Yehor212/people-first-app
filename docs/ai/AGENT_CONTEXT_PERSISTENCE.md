@@ -9,7 +9,7 @@ This is an operator protocol. It does not alter the shipped application.
 Use four distinct layers:
 
 1. Always-loaded repository instructions: `AGENTS.md`, with `ARCHITECTURE.md` and applicable policy files opened before changes.
-2. Task-scoped retrieval: `npm run rag:preflight -- "<task>"` selects only relevant files from `scripts/rag/corpus-manifest.json` and writes a compact pack under `.codex/auto-context/`.
+2. Task-scoped retrieval: `npm run rag:preflight -- "<task>"` selects only relevant files from `scripts/rag/corpus-manifest.json` and returns a compact pack without writing by default; `--write-scoped` writes a Markdown-addressed pair under `.codex/auto-context/`, with the exact Markdown SHA-256 bound into both filenames and the JSON metadata.
 3. Canonical role context: `config/persistent-agent-orchestra.json` is the RAG-indexed source and generates exactly ten project custom profiles plus `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md`; the generated reference is excerpted only after managed-artifact parity, and neither chat history nor memory may redefine the roster.
 4. Optional durable memory: a local MCP memory server may retain small, reusable observations, but every drift-prone fact must be rechecked locally.
 
@@ -32,15 +32,15 @@ Context7 or current official documentation remains appropriate for external libr
 
 Available profiles:
 
-| Profile | Scope |
-| --- | --- |
-| `startup` | project rules, architecture anchors, exact-ten governance |
-| `memory` | optional durable-memory and writeback rules |
-| `architecture` | Zustand, Dexie, Supabase, state, sync, and lifecycle boundaries |
-| `ui` | visual, motion, i18n/RTL, accessibility, and platform interaction |
-| `verification` | CI gates, test routing, and evidence status |
-| `governance` | protected changes, role routing, trust, and owner escalation |
-| `external_docs` | installed dependency awareness and official-doc routing |
+| Profile         | Scope                                                             |
+| --------------- | ----------------------------------------------------------------- |
+| `startup`       | project rules, architecture anchors, exact-ten governance         |
+| `memory`        | optional durable-memory and writeback rules                       |
+| `architecture`  | Zustand, Dexie, Supabase, state, sync, and lifecycle boundaries   |
+| `ui`            | visual, motion, i18n/RTL, accessibility, and platform interaction |
+| `verification`  | CI gates, test routing, and evidence status                       |
+| `governance`    | protected changes, role routing, trust, and owner escalation      |
+| `external_docs` | installed dependency awareness and official-doc routing           |
 
 Fresh CLI check:
 
@@ -50,7 +50,12 @@ npm run ai:context:check
 
 ## Automatic Context Injection
 
-`npm run rag:preflight -- "<task>"` writes:
+`npm run rag:preflight -- "<task>"` returns the focused pack without writing by
+default. `--write-scoped` writes a Markdown-addressed pair under
+`.codex/auto-context/`; the metadata file is exact-byte checked when identical
+writers converge but is not independently content-addressed. The explicitly
+coordinated legacy `--write-current` mode
+writes:
 
 ```text
 .codex/auto-context/rag-current.md
@@ -65,6 +70,20 @@ npm run ai:context:check
 ```
 
 These ignored files are routing aids. Their presence does not prove that a child profile received them, that a source remained current, or that a reported fact is true. Verify model-visible context or runtime injection separately before claiming it.
+
+The shared `current.*` auto-context and legacy `rag-current.*` paths remain
+single-owner operating modes. Scoped RAG output does not establish multiwriter or
+pair-atomic safety for those separate shared paths.
+
+The scoped writer is verified only for successful concurrent processes. A process
+termination between its two file publications can leave an ignored partial pair; later
+writes fail closed after a bounded wait and do not repair or remove that state.
+Crash recovery and pair-atomic scoped publication remain `UNVERIFIED` and require
+operator inspection.
+
+No scoped-artifact retention or cleanup policy exists. Do not add automatic deletion
+without a separately reviewed retention window, ownership model, recovery procedure,
+and explicit authorization; disk-growth bounds remain `UNVERIFIED`.
 
 The lexical corpus uses the canonical registry rather than the generated role
 reference. `get_zenflow_context` performs a fresh exact-ten parity check before any
@@ -136,14 +155,14 @@ Everything is ideal and all agents approved it.
 
 ## Memory Taxonomy
 
-| Entity type | Use |
-| --- | --- |
-| `project` | stable ZenFlow identity and architecture |
-| `operator_protocol` | startup, preflight, routing, and verification rules |
-| `quality_rule` | a tested guard against a repeated regression |
-| `environment_fact` | dated tool, shell, OS, runtime, or CI limitation |
-| `decision` | an ADR-like outcome and its rejection criteria |
-| `source_set` | canonical local files and authoritative URLs with review dates |
+| Entity type         | Use                                                            |
+| ------------------- | -------------------------------------------------------------- |
+| `project`           | stable ZenFlow identity and architecture                       |
+| `operator_protocol` | startup, preflight, routing, and verification rules            |
+| `quality_rule`      | a tested guard against a repeated regression                   |
+| `environment_fact`  | dated tool, shell, OS, runtime, or CI limitation               |
+| `decision`          | an ADR-like outcome and its rejection criteria                 |
+| `source_set`        | canonical local files and authoritative URLs with review dates |
 
 Use one observation per fact. Update an existing entity instead of creating near-duplicates.
 

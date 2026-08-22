@@ -1,12 +1,69 @@
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { link, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const HOOK = path.resolve(".codex/hooks/agent-workspace-guard.cjs");
+const WORKSPACE_EVALUATOR = path.resolve(
+  "scripts/__tests__/helpers/run-agent-workspace-evaluator.cjs"
+);
+const SOURCE_ROOT = path.resolve(".");
 const CANONICAL_REMOTE = "https://github.com/Yehor212/people-first-app.git";
 const roots: string[] = [];
+const BOUNDED_CHILD_PROCESS_READS = [
+  [
+    "trailing semicolon",
+    `node -e "require('node:child_process').execFileSync('git',['status','--short'])";`,
+  ],
+  [
+    "trailing whitespace",
+    `node -e "require('node:child_process').execFileSync('git',['status','--short'])" `,
+  ],
+  [
+    "empty options object",
+    `node -e "require('node:child_process').execFileSync('git',['status','--short'],{})"`,
+  ],
+  [
+    "additional literal console output",
+    `node -e "require('node:child_process').execFileSync('git',['status','--short']);console.log('ok')"`,
+  ],
+  [
+    "node-compatible module specifier",
+    `node -e "require('child_process').execFileSync('git',['status','--short'])"`,
+  ],
+  [
+    "destructured method binding",
+    `node -e "const {execFileSync}=require('node:child_process');execFileSync('git',['status','--short'])"`,
+  ],
+  [
+    "status branch detail",
+    `node -e "require('node:child_process').execFileSync('git',['status','--short','--branch'])"`,
+  ],
+  [
+    "opposite quote style",
+    `node -e 'require("node:child_process").execFileSync("git",["status","--short"])'`,
+  ],
+] as const;
+const SHELL_TOOL_ALIASES = [
+  "Bash",
+  "Shell",
+  "PowerShell",
+  "pwsh",
+  "exec_command",
+  "unified_exec",
+] as const;
+const OUTPUT_WRITE_COMMANDS = [
+  ["git diff output", "git diff --output=../review.patch"],
+  ["git show output", "git show --output=../review.patch HEAD"],
+  ["git log output", "git log --output=../review.log -1"],
+  ["sort output", "sort -o ../sorted.txt AGENTS.md"],
+  ["macOS md5 output", "md5 -o ../digest.txt AGENTS.md"],
+] as const;
+const OUTPUT_WRITE_ALIAS_CASES = SHELL_TOOL_ALIASES.flatMap((toolName) =>
+  OUTPUT_WRITE_COMMANDS.map(([label, command]) => [toolName, label, command] as const)
+);
 
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
@@ -379,12 +436,384 @@ describe("Codex and Kimi workspace command guard", () => {
     expect(runHook(root, { ...bash("npm run check:all"), cwd: root }).status).toBe(0);
   });
 
+  it.each(["execFileSync", "spawnSync"])(
+    "allows the direct bounded child_process git status probe via %s",
+    async (method) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/guard-test"]);
+      const command =
+        `node -e "require('node:child_process').${method}` + `('git',['status','--short'])"`;
+
+      const result = runHook(root, { ...bash(command), cwd: root });
+
+      expect(result.status, result.stderr).toBe(0);
+    }
+  );
+
+  it.each([
+    [
+      "literal Node file read",
+      `node -e "const fs=require('node:fs'); console.log(fs.readFileSync('AGENTS.md','utf8').length + 0)"`,
+    ],
+    [
+      "literal Node execFileSync status read",
+      `node -e "const {execFileSync}=require('node:child_process'); console.log(execFileSync('git',['status','--short'],{encoding:'utf8'}).length + 0)"`,
+    ],
+    [
+      "literal Node spawnSync status read",
+      `node -e "const {spawnSync}=require('node:child_process'); console.log(spawnSync('git',['status','--short'],{encoding:'utf8'}).stdout.length + 0)"`,
+    ],
+    [
+      "literal Python pathlib read",
+      `python3 -c "from pathlib import Path; print(len(Path('AGENTS.md').read_text()) + 0)"`,
+    ],
+    [
+      "literal Python subprocess status read",
+      `python3 -c "import subprocess; print(len(subprocess.run(['git','status','--short'], capture_output=True).stdout) + 0)"`,
+    ],
+    [
+      "operand-free tee in a read-only pipeline",
+      `git ls-tree -r HEAD | rg 'agent-0' | tee | shasum -a 256`,
+    ],
+    ["rm help pipeline", `rm --help | sed -n '1p'`],
+    ["git reset help pipeline", `git reset --help | sed -n '1p'`],
+    ["chmod help pipeline", `chmod --help | sed -n '1p'`],
+    [
+      "write primitive mentioned only as literal text",
+      `node -e "console.log('writeFileSync example 0')"`,
+    ],
+  ])("allows the anchored corpus read-only class: %s", async (_label, command) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/guard-test"]);
+
+    const result = runHook(root, { ...bash(command), cwd: root });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each(["exec_command", "unified_exec"])(
+    "accepts the exact literal child-process status probe from %s tool_input.cmd",
+    async (toolName) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/guard-test"]);
+      const cmd =
+        `node -e "require('node:child_process').execFileSync` + `('git',['status','--short'])"`;
+
+      const result = runHook(root, {
+        cwd: root,
+        tool_name: toolName,
+        tool_input: { cmd },
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+    }
+  );
+
+  it.each([
+    [
+      "safe command plus mutating cmd",
+      {
+        command:
+          `node -e "require('node:child_process').execFileSync` + `('git',['status','--short'])"`,
+        cmd: "rm src/dual-field-danger.ts",
+      },
+    ],
+    [
+      "mutating command plus safe cmd",
+      {
+        command: "rm src/dual-field-danger.ts",
+        cmd:
+          `node -e "require('node:child_process').execFileSync` + `('git',['status','--short'])"`,
+      },
+    ],
+  ])("blocks dual command fields with mixed intent: %s", async (_label, toolInput) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/guard-test"]);
+
+    const result = runHook(root, {
+      cwd: root,
+      tool_name: "exec_command",
+      tool_input: toolInput,
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+  });
+
+  it("reports every mixed-field denial with a bounded evaluator owner and reason code", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/guard-test"]);
+    const result = runUnifiedHook(root, {
+      cwd: root,
+      hook_event_name: "PreToolUse",
+      tool_name: "exec_command",
+      tool_input: {
+        command:
+          `node -e "require('node:child_process').execFileSync` + `('git',['status','--short'])"`,
+        cmd: "rm src/dual-field-danger.ts",
+      },
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain(
+      "Policy results: change_evidence:ambiguous_tool_input, " +
+        "skill_routing:missing_or_invalid_skill_routing_evidence, " +
+        "workspace:workspace_policy"
+    );
+    expect(result.stderr).toContain(
+      "Reason codes: ambiguous_tool_input, missing_or_invalid_skill_routing_evidence, workspace_policy"
+    );
+  });
+
+  it.each([
+    [
+      "path traversal in Node read",
+      `node -e "const fs=require('node:fs'); console.log(fs.readFileSync('../AGENTS.md','utf8').length + 0)"`,
+    ],
+    [
+      "path traversal in Python read",
+      `python3 -c "from pathlib import Path; print(len(Path('../AGENTS.md').read_text()) + 0)"`,
+    ],
+    [
+      "mutating Python subprocess",
+      `python3 -c "import subprocess; print(subprocess.run(['git','reset','--hard'], capture_output=True).stdout)"`,
+    ],
+    ["rm help with an extra operand", `rm --help src/danger.ts`],
+    ["git reset help with a mutating suffix", `git reset --help --hard`],
+  ])("blocks the anchored corpus read-only near-miss: %s", async (_label, command) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/guard-test"]);
+
+    const result = runHook(root, { ...bash(command), cwd: root });
+
+    expect(result.status, result.stderr).toBe(2);
+  });
+
+  it.each(BOUNDED_CHILD_PROCESS_READS)(
+    "allows the bounded read-only child_process variant: %s",
+    async (_label, command) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/guard-test"]);
+
+      const result = runHook(root, { ...bash(command), cwd: root });
+
+      expect(result.status, result.stderr).toBe(0);
+    }
+  );
+
+  it.each([
+    [
+      "dynamic argv",
+      `node -e "const argv=['status','--short'];require('node:child_process').execFileSync('git',argv)"`,
+    ],
+    [
+      "cwd option",
+      `node -e "require('node:child_process').execFileSync('git',['status','--short'],{cwd:'..'})"`,
+    ],
+    [
+      "env option",
+      `node -e "require('node:child_process').spawnSync('git',['status','--short'],{env:{}})"`,
+    ],
+    [
+      "shell option",
+      `node -e "require('node:child_process').spawnSync('git',['status','--short'],{shell:true})"`,
+    ],
+    [
+      "extra statement",
+      `node -e "require('node:child_process').execFileSync('git',['status','--short']);require('node:fs').writeFileSync('changed.txt','x')"`,
+    ],
+    [
+      "reset argv",
+      `node -e "require('node:child_process').execFileSync('git',['reset','--hard'])"`,
+    ],
+    [
+      "git diff output",
+      `node -e "require('node:child_process').execFileSync('git',['diff','--output','review.patch'])"`,
+    ],
+    [
+      "git show output",
+      `node -e "require('node:child_process').execFileSync('git',['show','--output','review.patch'])"`,
+    ],
+    [
+      "git log output",
+      `node -e "require('node:child_process').execFileSync('git',['log','--output','review.patch'])"`,
+    ],
+  ])("blocks unsafe child_process probes: %s", async (_label, command) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/guard-test"]);
+
+    const result = runHook(root, { ...bash(command), cwd: root });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toMatch(/opaque|child-process|unknown|destructive/i);
+  });
+
+  it.each(BOUNDED_CHILD_PROCESS_READS)(
+    "allows the bounded read-only variant through the full registered PreToolUse chain: %s",
+    async (_label, command) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/guard-test"]);
+      const results = runRegisteredPreToolChain(root, {
+        ...bash(command),
+        cwd: root,
+        hook_event_name: "PreToolUse",
+      });
+
+      expect(results.length).toBeGreaterThan(0);
+      for (const result of results) {
+        expect(result.status, `${result.hook}: ${result.stderr}`).toBe(0);
+      }
+    }
+  );
+
+  it.each(["Bash", "Shell", "PowerShell", "pwsh", "exec_command", "unified_exec"])(
+    "blocks a literal inline filesystem mutation through the full %s PreToolUse chain even with planning evidence",
+    async (toolName) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/guard-test"]);
+      await writePlanningEvidence(root);
+      const command =
+        `node -e "require('node:fs').writeFileSync(` +
+        `'src/inline-${toolName.toLowerCase()}.ts','unsafe')"`;
+      const commandField = ["exec_command", "unified_exec"].includes(toolName) ? "cmd" : "command";
+      const results = runRegisteredPreToolChain(root, {
+        cwd: root,
+        hook_event_name: "PreToolUse",
+        tool_name: toolName,
+        tool_input: { [commandField]: command },
+      });
+
+      expect(results.length).toBeGreaterThan(0);
+      expect(
+        results.some(
+          (result) => result.status === 2 && String(result.stderr).includes("workspace_policy")
+        ),
+        results.map((result) => `${result.hook}: ${result.stderr}`).join("\n")
+      ).toBe(true);
+    }
+  );
+
   it("allows proven read-only shell commands on integration main", async () => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
 
     expect(runHook(root, { ...bash("git status --short"), cwd: root }).status).toBe(0);
     expect(runHook(root, { ...bash("rg --files"), cwd: root }).status).toBe(0);
     expect(runHook(root, { ...bash("pwd && git diff --stat"), cwd: root }).status).toBe(0);
+  });
+
+  it.each([
+    ["git diff output", "git diff --output=src/review.patch"],
+    ["git show output", "git show --output=src/review.patch HEAD"],
+    ["git log output", "git log --output=src/review.log -1"],
+    ["sort output", "sort -o src/sorted.txt AGENTS.md"],
+    ["macOS md5 output", "md5 -o src/digest.txt AGENTS.md"],
+  ])("classifies the direct safe-looking write option as mutation: %s", async (_label, command) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/write-options"]);
+
+    const result = runUnifiedHook(root, {
+      ...bash(command),
+      cwd: root,
+      hook_event_name: "PreToolUse",
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain(
+      "Policy results: change_evidence:missing_or_invalid_change_evidence"
+    );
+  });
+
+  it.each(OUTPUT_WRITE_ALIAS_CASES)(
+    "attributes %s %s to both workspace and change-evidence controls",
+    async (toolName, _label, command) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/output-owner"]);
+      await writePlanningEvidence(root);
+      const commandField = ["exec_command", "unified_exec"].includes(toolName) ? "cmd" : "command";
+
+      const result = runUnifiedHook(root, {
+        cwd: root,
+        hook_event_name: "PreToolUse",
+        tool_name: toolName,
+        tool_input: { [commandField]: command },
+      });
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain(
+        "Policy results: change_evidence:missing_or_invalid_change_evidence, " +
+          "workspace:workspace_policy"
+      );
+    }
+  );
+
+  it.each([
+    ["git diff display option", "git diff --output-indicator-new=+"],
+    ["git show display", "git show --format=oneline --no-patch HEAD"],
+    ["git log display", "git log --oneline -1"],
+    ["sort stdout", "sort AGENTS.md"],
+    ["md5 stdout", "md5 AGENTS.md"],
+  ])("keeps the corresponding no-output command read-only: %s", async (_label, command) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/read-options"]);
+
+    const result = runUnifiedHook(root, {
+      ...bash(command),
+      cwd: root,
+      hook_event_name: "PreToolUse",
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("binds nested-cwd planning evidence and guarded targets to the canonical Git root", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/nested-root"]);
+    const nested = path.join(root, "packages", "nested");
+    await mkdir(nested, { recursive: true });
+    await writePlanningEvidence(root);
+    await writeFile(path.join(nested, ".preflight-token"), "{malformed nested decoy", "utf8");
+
+    const result = runUnifiedHook(nested, {
+      cwd: nested,
+      hook_event_name: "PreToolUse",
+      tool_name: "WriteFile",
+      tool_input: { path: path.join(root, "src", "nested-root.ts") },
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("allows a nested-cwd read-only command without consulting planning evidence", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/nested-read"]);
+    const nested = path.join(root, "packages", "nested");
+    await mkdir(nested, { recursive: true });
+    await writeFile(path.join(root, ".preflight-token"), "{malformed root evidence", "utf8");
+
+    const result = runUnifiedHook(nested, {
+      cwd: nested,
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status --short" },
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("fails closed when an untrusted event cwd names a repository but launch cwd has no Git root", async () => {
+    const repository = await gitWorkspace(CANONICAL_REMOTE);
+    git(repository, ["switch", "-c", "codex/untrusted-event-root"]);
+    const outside = await mkdtemp(path.join(tmpdir(), "zenflow-agent-guard-no-git-"));
+    roots.push(outside);
+
+    const result = runUnifiedHook(outside, {
+      cwd: repository,
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status --short" },
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("Policy results: repository_root:repository_root_unavailable");
   });
 
   it("does not apply ZenFlow policy to an unrelated repository", async () => {
@@ -771,6 +1200,28 @@ describe("Codex and Kimi workspace command guard", () => {
     expect(result.stderr).toContain("cross-worktree");
   });
 
+  it("blocks a structured write through an existing hardlinked target", async () => {
+    const current = await gitWorkspace(CANONICAL_REMOTE);
+    const other = await gitWorkspace(CANONICAL_REMOTE);
+    git(current, ["switch", "-c", "codex/current"]);
+    git(other, ["switch", "-c", "kimi/other"]);
+    await mkdir(path.join(current, "src"), { recursive: true });
+    await mkdir(path.join(other, "src"), { recursive: true });
+    const otherTarget = path.join(other, "src", "shared.ts");
+    const currentTarget = path.join(current, "src", "shared.ts");
+    await writeFile(otherTarget, "export const shared = true;\n", "utf8");
+    await link(otherTarget, currentTarget);
+
+    const result = runHook(current, {
+      cwd: current,
+      tool_name: "WriteFile",
+      tool_input: { path: "src/shared.ts" },
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toMatch(/hardlink|multiple filesystem links/i);
+  });
+
   it("fails closed on malformed matching-hook input", async () => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
     const result = spawnSync(process.execPath, [HOOK, "--expected-agent", "codex"], {
@@ -781,6 +1232,89 @@ describe("Codex and Kimi workspace command guard", () => {
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("Malformed hook input");
+  });
+
+  it("turns a catchable first-party dependency load failure into an owned exit-2 denial", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/bootstrap-failure"]);
+    const preload = path.join(root, "block-change-evidence-load.cjs");
+    await writeFile(
+      preload,
+      [
+        `"use strict";`,
+        `const Module = require("node:module");`,
+        `const originalLoad = Module._load;`,
+        `Module._load = function(request, parent, isMain) {`,
+        `  if (String(request).includes("codex-governance/change-gate-core.cjs")) {`,
+        `    throw new Error("isolated fixture dependency failure");`,
+        `  }`,
+        `  return Reflect.apply(originalLoad, this, [request, parent, isMain]);`,
+        `};`,
+        ``,
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = spawnSync(
+      process.execPath,
+      ["--require", preload, HOOK, "--expected-agent", "codex"],
+      {
+        cwd: root,
+        encoding: "utf8",
+        input: JSON.stringify({
+          cwd: root,
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "git status --short" },
+        }),
+      }
+    );
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("Policy results: hook_runtime:bootstrap_failure");
+    expect(result.stderr).toContain("Reason codes: bootstrap_failure");
+    expect(result.stderr).not.toContain("at Module._load");
+  });
+
+  it("is import-safe and still executes through a relative symlink spelling", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/direct-entry"]);
+    const importProbe = spawnSync(
+      process.execPath,
+      [
+        "-e",
+        `const hook = require(${JSON.stringify(HOOK)}); ` +
+          `if (typeof hook.main !== "function") process.exit(7);`,
+      ],
+      {
+        cwd: root,
+        encoding: "utf8",
+      }
+    );
+
+    expect(importProbe.status, importProbe.stderr).toBe(0);
+    expect(importProbe.stdout).toBe("");
+
+    const linkDirectory = path.join(root, "tool-links");
+    const linkPath = path.join(linkDirectory, "workspace-guard.cjs");
+    await mkdir(linkDirectory, { recursive: true });
+    await symlink(HOOK, linkPath);
+    const directProbe = spawnSync(
+      process.execPath,
+      [path.relative(root, linkPath), "--expected-agent", "codex"],
+      {
+        cwd: root,
+        encoding: "utf8",
+        input: JSON.stringify({
+          cwd: root,
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "git status --short" },
+        }),
+      }
+    );
+
+    expect(directProbe.status, directProbe.stderr).toBe(0);
   });
 
   it("fails closed when the hook registration omits its client actor binding", async () => {
@@ -830,6 +1364,38 @@ describe("Codex and Kimi workspace command guard", () => {
     console.info("Kimi hook bounded-target timing", timings);
   });
 
+  it("keeps the registered read-only guard below the 100-run latency budget", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/performance"]);
+    const durations: number[] = [];
+
+    for (let index = 0; index < 100; index += 1) {
+      const startedAt = performance.now();
+      const result = spawnSync(process.execPath, [HOOK, "--expected-agent", "codex"], {
+        cwd: root,
+        encoding: "utf8",
+        input: JSON.stringify({
+          cwd: root,
+          hook_event_name: "PreToolUse",
+          tool_name: "Bash",
+          tool_input: { command: "git status --short" },
+        }),
+      });
+      durations.push(performance.now() - startedAt);
+      expect(result.status, result.stderr).toBe(0);
+    }
+
+    const sorted = durations.toSorted((left, right) => left - right);
+    const summary = {
+      p50: sorted[Math.ceil(sorted.length * 0.5) - 1],
+      p95: sorted[Math.ceil(sorted.length * 0.95) - 1],
+      max: sorted.at(-1)!,
+    };
+    console.info("Registered read-only guard 100-run timing", summary);
+    expect(summary.p95).toBeLessThan(500);
+    expect(summary.max).toBeLessThan(1_000);
+  }, 20_000);
+
   it("fails closed on a write when the Git identity probe cannot run", async () => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
     const result = spawnSync(process.execPath, [HOOK, "--expected-agent", "codex"], {
@@ -865,11 +1431,98 @@ async function gitWorkspace(remote: string): Promise<string> {
   return root;
 }
 
+async function writePlanningEvidence(root: string): Promise<void> {
+  const timestamp = new Date().toISOString();
+  await writeFile(
+    path.join(root, ".preflight-token"),
+    `${JSON.stringify(
+      {
+        timestamp,
+        goal: "Exercise the full registered PreToolUse chain in an isolated test fixture",
+        depth: "L4",
+        verdict: "GO",
+        authorization: false,
+        evidence_only: true,
+        test_first: {
+          timestamp,
+          behavior: "Literal inline shell mutations remain blocked by the workspace policy",
+          risk: "Planning evidence could be misinterpreted as mutation authority",
+          evidence_type: "red_green_regression",
+          command: "npx vitest run scripts/__tests__/agent-workspace-command-guard.test.ts",
+          expected_red: "The registered chain currently allows the inline filesystem mutation",
+          verification_plan: "Rerun the same alias matrix after the minimal guard change",
+          verdict: "GO",
+        },
+        skill_routing: {
+          timestamp,
+          prompt_summary: "Verify planning evidence does not authorize shell mutations",
+          explicit_plugins: [],
+          selected_skills: ["superpowers:test-driven-development"],
+          skipped_obvious: [
+            {
+              name: "superpowers:brainstorming",
+              reason: "The regression contract is already defined",
+            },
+          ],
+          decision: "Use the existing full-chain harness and exact alias matrix",
+          verification_plan: "Require workspace_policy from the registered PreToolUse chain",
+          verdict: "GO",
+        },
+      },
+      null,
+      2
+    )}\n`,
+    { mode: 0o600 }
+  );
+}
+
 function runHook(cwd: string, payload: object, expectedAgent = "codex") {
+  return spawnSync(process.execPath, [WORKSPACE_EVALUATOR, "--expected-agent", expectedAgent], {
+    cwd,
+    encoding: "utf8",
+    input: JSON.stringify(payload),
+  });
+}
+
+function runUnifiedHook(cwd: string, payload: object, expectedAgent = "codex") {
   return spawnSync(process.execPath, [HOOK, "--expected-agent", expectedAgent], {
     cwd,
     encoding: "utf8",
     input: JSON.stringify(payload),
+  });
+}
+
+function runRegisteredPreToolChain(cwd: string, payload: Record<string, unknown>) {
+  const config = JSON.parse(readFileSync(path.join(SOURCE_ROOT, ".codex/hooks.json"), "utf8")) as {
+    hooks: {
+      PreToolUse: Array<{
+        matcher?: string;
+        hooks: Array<{ command: string }>;
+      }>;
+    };
+  };
+  const toolName = String(payload.tool_name || "");
+  return config.hooks.PreToolUse.flatMap((group) => {
+    const matchers = String(group.matcher || "")
+      .split("|")
+      .map((token) => token.trim())
+      .filter(Boolean);
+    if (matchers.length > 0 && !matchers.includes(toolName)) return [];
+    return group.hooks.map((registration) => {
+      const hookMatch = registration.command.match(/\.codex\/hooks\/([A-Za-z0-9._-]+\.cjs)/);
+      if (!hookMatch)
+        throw new Error(`Unsupported registered hook command: ${registration.command}`);
+      const hook = path.join(SOURCE_ROOT, ".codex", "hooks", hookMatch[1]);
+      const args = registration.command.includes("--expected-agent codex")
+        ? [hook, "--expected-agent", "codex"]
+        : [hook];
+      const result = spawnSync(process.execPath, args, {
+        cwd,
+        encoding: "utf8",
+        input: JSON.stringify(payload),
+      });
+      return { hook: hookMatch[1], ...result };
+    });
   });
 }
 

@@ -8,12 +8,12 @@ ZenFlow Context MCP answers: "Which ZenFlow repo context pack should I retrieve,
 
 ## Tools
 
-| Tool | Purpose |
-| --- | --- |
-| `resolve_zenflow_context` | Map a task to one or more context pack IDs. |
-| `get_zenflow_context` | Return a compact, cited context pack from live repo files and local memory. |
-| `record_zenflow_lesson` | Append a short reusable lesson after non-trivial work. |
-| `list_zenflow_contexts` | List available context profiles. |
+| Tool                      | Purpose                                                                     |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `resolve_zenflow_context` | Map a task to one or more context pack IDs.                                 |
+| `get_zenflow_context`     | Return a compact, cited context pack from live repo files and local memory. |
+| `record_zenflow_lesson`   | Append a short reusable lesson after non-trivial work.                      |
+| `list_zenflow_contexts`   | List available context profiles.                                            |
 
 ## Context Profiles
 
@@ -31,7 +31,7 @@ Repository path:
 
 1. `npm run ai:context:auto` calls `tools/zenflow-context/auto-context.mjs` for the current task.
 2. The script writes `.codex/auto-context/current.md` and `.codex/auto-context/current.json`.
-3. `npm run rag:preflight -- "<task>"` writes the focused RAG pack used by the project working agreement.
+3. `npm run rag:preflight -- "<task>"` returns the focused RAG pack without writing by default; `--write-scoped` creates a Markdown-addressed pair whose filenames and JSON bind the exact Markdown SHA-256, while the legacy `--write-current` path is reserved for the explicitly coordinated single-owner auto-context flow.
 4. The coordinator passes only the task-relevant cited context to specialists; generated packs remain routing context, never proof.
 
 The free lexical RAG corpus indexes the canonical exact-ten JSON registry. Context

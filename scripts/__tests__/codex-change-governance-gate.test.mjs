@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { link, mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { evaluateGuard } from "../codex-governance/change-gate-core.cjs";
 
 const NOW = new Date("2026-07-13T05:00:00.000Z");
-const HOOK = path.resolve(".codex/hooks/change-governance-gate.cjs");
+const HOOK = path.resolve("scripts/__tests__/helpers/run-change-evidence-evaluator.cjs");
 const roots = [];
 
 afterEach(async () => {
@@ -56,6 +56,92 @@ describe("Codex change governance gate", () => {
     });
 
     expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each([
+    [
+      "literal Node file read",
+      `node -e "const fs=require('node:fs'); console.log(fs.readFileSync('AGENTS.md','utf8').length + 0)"`,
+    ],
+    [
+      "exact direct execFileSync status",
+      `node -e "require('node:child_process').execFileSync('git',['status','--short'])"`,
+    ],
+    [
+      "exact direct spawnSync status",
+      `node -e "require('node:child_process').spawnSync('git',['status','--short'])"`,
+    ],
+    [
+      "literal Node execFileSync status read",
+      `node -e "const {execFileSync}=require('node:child_process'); console.log(execFileSync('git',['status','--short'],{encoding:'utf8'}).length + 0)"`,
+    ],
+    [
+      "literal Node spawnSync status read",
+      `node -e "const {spawnSync}=require('node:child_process'); console.log(spawnSync('git',['status','--short'],{encoding:'utf8'}).stdout.length + 0)"`,
+    ],
+    [
+      "literal Python pathlib read",
+      `python3 -c "from pathlib import Path; print(len(Path('AGENTS.md').read_text()) + 0)"`,
+    ],
+    [
+      "literal Python subprocess status read",
+      `python3 -c "import subprocess; print(len(subprocess.run(['git','status','--short'], capture_output=True).stdout) + 0)"`,
+    ],
+    [
+      "operand-free tee in a read-only pipeline",
+      `git ls-tree -r HEAD | rg 'agent-0' | tee | shasum -a 256`,
+    ],
+    ["rm help pipeline", `rm --help | sed -n '1p'`],
+    ["git reset help pipeline", `git reset --help | sed -n '1p'`],
+    ["chmod help pipeline", `chmod --help | sed -n '1p'`],
+    [
+      "write primitive mentioned only as literal text",
+      `node -e "console.log('writeFileSync example 0')"`,
+    ],
+  ])(
+    "allows the anchored corpus read-only class without a planning token: %s",
+    async (_label, command) => {
+      const rootDir = await workspace();
+      const result = runHook(rootDir, {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command },
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+    }
+  );
+
+  it.each([
+    [
+      "Node read path traversal",
+      `node -e "const fs=require('node:fs'); console.log(fs.readFileSync('../AGENTS.md','utf8').length + 0)"`,
+    ],
+    [
+      "Python subprocess mutation",
+      `python3 -c "import subprocess; print(subprocess.run(['git','reset','--hard'], capture_output=True).stdout)"`,
+    ],
+    [
+      "extra Node write statement",
+      `node -e "const fs=require('node:fs'); console.log(fs.readFileSync('AGENTS.md','utf8').length);fs.writeFileSync('src/danger.ts','x')"`,
+    ],
+    ["tee guarded output operand", `git ls-tree -r HEAD | tee src/danger.ts | shasum -a 256`],
+    ["rm help extra operand", `rm --help AGENTS.md`],
+    ["git reset help mutating suffix", `git reset --help --hard`],
+    ["chmod help extra operand", `chmod --help src/danger.ts`],
+    [
+      "literal marker plus real write",
+      `node -e "console.log('writeFileSync example');require('node:fs').writeFileSync('AGENTS.md','x')"`,
+    ],
+  ])("keeps the anchored corpus read-only near-miss fail-closed: %s", async (_label, command) => {
+    const rootDir = await workspace();
+    const result = runHook(rootDir, {
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command },
+    });
+
+    expect(result.status, result.stderr).toBe(2);
   });
 
   it("does not split a quoted search expression at its pipe", async () => {
@@ -181,6 +267,116 @@ describe("Codex change governance gate", () => {
 
     expect(result.allowed).toBe(false);
     expect(result.reasons.join("\n")).toContain("outside repository");
+  });
+
+  it("blocks a new structured target below a symlinked ancestor that resolves outside the repository", async () => {
+    const rootDir = await workspace();
+    const outside = await mkdtemp(path.join(tmpdir(), "zenflow-codex-gate-outside-"));
+    roots.push(outside);
+    await mkdir(path.join(rootDir, "src"), { recursive: true });
+    await symlink(outside, path.join(rootDir, "src", "external"));
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+
+    const result = await evaluateGuard({
+      rootDir,
+      targetPath: path.join(rootDir, "src", "external", "new.ts"),
+      now: NOW,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.reasons).toEqual(["target path is outside repository"]);
+  });
+
+  it("blocks an existing structured target symlink that resolves outside the repository", async () => {
+    const rootDir = await workspace();
+    const outside = await mkdtemp(path.join(tmpdir(), "zenflow-codex-gate-outside-"));
+    roots.push(outside);
+    await mkdir(path.join(rootDir, "src"), { recursive: true });
+    const outsideTarget = path.join(outside, "outside.ts");
+    await writeFile(outsideTarget, "export {};\n", "utf8");
+    await symlink(outsideTarget, path.join(rootDir, "src", "linked.ts"));
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+
+    const result = await evaluateGuard({
+      rootDir,
+      targetPath: path.join(rootDir, "src", "linked.ts"),
+      now: NOW,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.reasons).toEqual(["target path is outside repository"]);
+  });
+
+  it("blocks an existing structured target with multiple filesystem links", async () => {
+    const rootDir = await workspace();
+    const outside = await mkdtemp(path.join(tmpdir(), "zenflow-codex-gate-outside-"));
+    roots.push(outside);
+    await mkdir(path.join(rootDir, "src"), { recursive: true });
+    const outsideTarget = path.join(outside, "shared.ts");
+    const linkedTarget = path.join(rootDir, "src", "shared.ts");
+    await writeFile(outsideTarget, "export const shared = true;\n", "utf8");
+    await link(outsideTarget, linkedTarget);
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+
+    const result = await evaluateGuard({
+      rootDir,
+      targetPath: linkedTarget,
+      now: NOW,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.reasons).toEqual(["target path has multiple filesystem links"]);
+  });
+
+  it("follows the host filesystem case semantics for protected path prefixes", async () => {
+    const rootDir = await workspace();
+    await mkdir(path.join(rootDir, "docs", "ai"), { recursive: true });
+    let caseInsensitive = false;
+    try {
+      await realpath(path.join(rootDir, "DOCS", "AI"));
+      caseInsensitive = true;
+    } catch {
+      caseInsensitive = false;
+    }
+
+    const blockedWithoutEvidence = await evaluateGuard({
+      rootDir,
+      targetPath: path.join(rootDir, "DOCS", "AI", "case-policy.md"),
+      now: NOW,
+    });
+
+    if (caseInsensitive) {
+      expect(blockedWithoutEvidence.allowed).toBe(false);
+      expect(blockedWithoutEvidence.reasons.join("\n")).toContain("preflight token");
+    } else {
+      expect(blockedWithoutEvidence).toMatchObject({
+        allowed: true,
+        reasons: [],
+        evidence: ["target is outside guarded change surfaces"],
+      });
+    }
+
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+    const allowedWithEvidence = await evaluateGuard({
+      rootDir,
+      targetPath: path.join(rootDir, "DOCS", "AI", "case-policy.md"),
+      now: NOW,
+    });
+    expect(allowedWithEvidence.allowed).toBe(true);
+  });
+
+  it("allows an ordinary new guarded target with valid planning evidence", async () => {
+    const rootDir = await workspace();
+    await mkdir(path.join(rootDir, "src"), { recursive: true });
+    await writeFile(path.join(rootDir, ".preflight-token"), JSON.stringify(validToken()), "utf8");
+
+    const result = await evaluateGuard({
+      rootDir,
+      targetPath: path.join(rootDir, "src", "ordinary.ts"),
+      now: NOW,
+    });
+
+    expect(result).toMatchObject({ allowed: true, reasons: [] });
   });
 
   it("guards a repository-root Git mutation instead of misclassifying it as outside", async () => {

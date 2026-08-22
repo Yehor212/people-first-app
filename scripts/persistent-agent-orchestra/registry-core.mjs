@@ -80,28 +80,30 @@ const MANDATORY_TRIGGER_IDS = [
   "DEEP_AUDIT",
   "MATERIAL_AMBIGUITY",
 ];
-const TRIGGER_ROLE_IDS = Object.freeze(Object.fromEntries(
-  Object.entries(ASSURANCE_TRIGGER_RULES).map(function triggerOwners([triggerId, rule]) {
-    const roleIds = new Set(rule.role_ids || []);
-    if (rule.task_class === "M2_PROTECTED_HIGH_RISK") {
-      for (const roleId of ASSURANCE_CLASS_RULES.M2_PROTECTED_HIGH_RISK.mandatory_role_ids) {
-        roleIds.add(roleId);
+const TRIGGER_ROLE_IDS = Object.freeze(
+  Object.fromEntries(
+    Object.entries(ASSURANCE_TRIGGER_RULES).map(function triggerOwners([triggerId, rule]) {
+      const roleIds = new Set(rule.role_ids || []);
+      if (rule.task_class === "M2_PROTECTED_HIGH_RISK") {
+        for (const roleId of ASSURANCE_CLASS_RULES.M2_PROTECTED_HIGH_RISK.mandatory_role_ids) {
+          roleIds.add(roleId);
+        }
       }
-    }
-    if (rule.full_council === true) {
-      return [triggerId, "ALL_TEN_CANONICAL_ROLES"];
-    }
-    roleIds.delete("coordinator-teamlead");
-    roleIds.delete("qa-evidence-release-verification");
-    return [triggerId, Array.from(roleIds)];
-  }),
-));
+      if (rule.full_council === true) {
+        return [triggerId, "ALL_TEN_CANONICAL_ROLES"];
+      }
+      roleIds.delete("coordinator-teamlead");
+      roleIds.delete("qa-evidence-release-verification");
+      return [triggerId, Array.from(roleIds)];
+    })
+  )
+);
 const ROLE_TRIGGER_IDS = new Map([
   ["coordinator-teamlead", []],
-  ["psychology-human-factors-emotional-safety", [
-    "CONCRETE_EMOTIONAL_OR_CLINICAL_PRODUCT_CLAIM",
-    "AGENCY_PRESSURE_INTERRUPTION_RECOVERY",
-  ]],
+  [
+    "psychology-human-factors-emotional-safety",
+    ["CONCRETE_EMOTIONAL_OR_CLINICAL_PRODUCT_CLAIM", "AGENCY_PRESSURE_INTERRUPTION_RECOVERY"],
+  ],
   ["logic-causality-state-coherence", ["CAUSAL_STATE_OR_POLICY_COHERENCE"]],
   ["interaction-accessibility-readability-localization-culture", ["UI_ACCESSIBILITY_I18N"]],
   ["technical-architecture-data-cross-platform", ["ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION"]],
@@ -112,16 +114,96 @@ const ROLE_TRIGGER_IDS = new Map([
   ["independent-blind-spot-sentinel", MANDATORY_TRIGGER_IDS],
 ]);
 const ROLE_SEMANTIC_INVARIANT_IDS = new Map([
-  ["coordinator-teamlead", ["R01_SCOPE_AUTHORITY_BOUNDARY", "R01_MATCHED_DOMAIN_ROUTING", "R01_SMALLEST_SUFFICIENT_SET", "R01_EVIDENCE_CLOSURE"]],
-  ["psychology-human-factors-emotional-safety", ["R02_FEATURE_EXISTENCE_STATE_CHAIN", "R02_NONCLINICAL_NONROOTCAUSE", "R02_APPEAL_REJECTION_HYPOTHESES", "R02_HARM_MONITORING_KILL_CRITERIA"]],
-  ["logic-causality-state-coherence", ["R03_PREMISE_INVARIANT_TRACE", "R03_CAUSAL_ALTERNATIVES", "R03_COUNTEREXAMPLE_FALSIFICATION", "R03_STATE_LIFECYCLE_COHERENCE"]],
-  ["interaction-accessibility-readability-localization-culture", ["R04_WCAG_PLATFORM_TARGETS", "R04_RTL_BIDI_SENTENCE_INTEGRITY", "R04_AT_DEVICE_MATRIX", "R04_EVIDENCE_STATUS_SEPARATION"]],
-  ["technical-architecture-data-cross-platform", ["R05_ARCHITECTURE_OWNER_ALIGNMENT", "R05_DATA_MIGRATION_ROLLBACK", "R05_PLATFORM_LIFECYCLE_PARITY", "R05_HASH_BOUND_PURE_FUNCTION_SCOPE"]],
-  ["security-privacy-agent-trust", ["R06_EVIDENCE_AUTHORITY_SEPARATION", "R06_DATA_MINIMIZATION_FLOW", "R06_LEAST_PRIVILEGE_RUNTIME_PROBE", "R06_INJECTION_CONFUSED_DEPUTY"]],
-  ["performance-reliability-operations", ["R07_MEASURED_REPRESENTATIVE_BUDGETS", "R07_LIFECYCLE_FAILURE_RECOVERY", "R07_PRIVACY_SAFE_OBSERVABILITY", "R07_VISUAL_QUALITY_FLOOR"]],
-  ["qa-evidence-release-verification", ["R08_RED_BASELINE_GREEN_PROOF", "R08_EVIDENCE_CLASS_SEPARATION", "R08_GENERATED_ARTIFACT_INTEGRITY", "R08_FALSE_GREEN_NEGATIVE_CONTROLS"]],
-  ["product-discovery-visual-craft-experience-quality", ["R09_LOCAL_FAILURE_MODE", "R09_NON_GOAL_SUCCESS_KILL", "R09_VISUAL_RUNTIME_CRAFT_SEPARATION", "R09_HUMAN_ACCEPTANCE_BOUNDARY"]],
-  ["independent-blind-spot-sentinel", ["R10_PASS_A_ISOLATION", "R10_PASS_B_CLOSURE", "R10_NO_VOTE_NO_SELF_RESOLUTION", "R10_ADJACENT_RISK_OWNER_ROUTING"]],
+  [
+    "coordinator-teamlead",
+    [
+      "R01_SCOPE_AUTHORITY_BOUNDARY",
+      "R01_MATCHED_DOMAIN_ROUTING",
+      "R01_SMALLEST_SUFFICIENT_SET",
+      "R01_EVIDENCE_CLOSURE",
+    ],
+  ],
+  [
+    "psychology-human-factors-emotional-safety",
+    [
+      "R02_FEATURE_EXISTENCE_STATE_CHAIN",
+      "R02_NONCLINICAL_NONROOTCAUSE",
+      "R02_APPEAL_REJECTION_HYPOTHESES",
+      "R02_HARM_MONITORING_KILL_CRITERIA",
+    ],
+  ],
+  [
+    "logic-causality-state-coherence",
+    [
+      "R03_PREMISE_INVARIANT_TRACE",
+      "R03_CAUSAL_ALTERNATIVES",
+      "R03_COUNTEREXAMPLE_FALSIFICATION",
+      "R03_STATE_LIFECYCLE_COHERENCE",
+    ],
+  ],
+  [
+    "interaction-accessibility-readability-localization-culture",
+    [
+      "R04_WCAG_PLATFORM_TARGETS",
+      "R04_RTL_BIDI_SENTENCE_INTEGRITY",
+      "R04_AT_DEVICE_MATRIX",
+      "R04_EVIDENCE_STATUS_SEPARATION",
+    ],
+  ],
+  [
+    "technical-architecture-data-cross-platform",
+    [
+      "R05_ARCHITECTURE_OWNER_ALIGNMENT",
+      "R05_DATA_MIGRATION_ROLLBACK",
+      "R05_PLATFORM_LIFECYCLE_PARITY",
+      "R05_HASH_BOUND_PURE_FUNCTION_SCOPE",
+    ],
+  ],
+  [
+    "security-privacy-agent-trust",
+    [
+      "R06_EVIDENCE_AUTHORITY_SEPARATION",
+      "R06_DATA_MINIMIZATION_FLOW",
+      "R06_LEAST_PRIVILEGE_RUNTIME_PROBE",
+      "R06_INJECTION_CONFUSED_DEPUTY",
+    ],
+  ],
+  [
+    "performance-reliability-operations",
+    [
+      "R07_MEASURED_REPRESENTATIVE_BUDGETS",
+      "R07_LIFECYCLE_FAILURE_RECOVERY",
+      "R07_PRIVACY_SAFE_OBSERVABILITY",
+      "R07_VISUAL_QUALITY_FLOOR",
+    ],
+  ],
+  [
+    "qa-evidence-release-verification",
+    [
+      "R08_RED_BASELINE_GREEN_PROOF",
+      "R08_EVIDENCE_CLASS_SEPARATION",
+      "R08_GENERATED_ARTIFACT_INTEGRITY",
+      "R08_FALSE_GREEN_NEGATIVE_CONTROLS",
+    ],
+  ],
+  [
+    "product-discovery-visual-craft-experience-quality",
+    [
+      "R09_LOCAL_FAILURE_MODE",
+      "R09_NON_GOAL_SUCCESS_KILL",
+      "R09_VISUAL_RUNTIME_CRAFT_SEPARATION",
+      "R09_HUMAN_ACCEPTANCE_BOUNDARY",
+    ],
+  ],
+  [
+    "independent-blind-spot-sentinel",
+    [
+      "R10_PASS_A_ISOLATION",
+      "R10_PASS_B_CLOSURE",
+      "R10_NO_VOTE_NO_SELF_RESOLUTION",
+      "R10_ADJACENT_RISK_OWNER_ROUTING",
+    ],
+  ],
 ]);
 const REQUIRED_DENIED_CAPABILITY_IDS = [
   "EXTERNAL_WRITE",
@@ -147,18 +229,15 @@ const MANDATORY_ROLE_FLOORS = new Map([
   ["independent-blind-spot-sentinel", "L3"],
 ]);
 const ROLE10_DOMAIN_ROUTING = Object.freeze({
-  psychology_human_factors_emotional_safety:
-    "psychology-human-factors-emotional-safety",
+  psychology_human_factors_emotional_safety: "psychology-human-factors-emotional-safety",
   logic_causality_state_coherence: "logic-causality-state-coherence",
   interaction_accessibility_localization_culture:
     "interaction-accessibility-readability-localization-culture",
-  technical_architecture_data_cross_platform:
-    "technical-architecture-data-cross-platform",
+  technical_architecture_data_cross_platform: "technical-architecture-data-cross-platform",
   security_privacy_agent_trust: "security-privacy-agent-trust",
   performance_reliability_operations: "performance-reliability-operations",
   qa_evidence_release_verification: "qa-evidence-release-verification",
-  product_visual_experience_quality:
-    "product-discovery-visual-craft-experience-quality",
+  product_visual_experience_quality: "product-discovery-visual-craft-experience-quality",
   ambiguous_or_cross_owner: "coordinator-teamlead",
 });
 const REQUIRED_GLOBAL_SECTIONS = [
@@ -244,17 +323,35 @@ const CANONICAL_SOURCE_URLS = new Map([
   ["openai-codex-subagents", "https://developers.openai.com/codex/subagents"],
   ["openai-codex-config-reference", "https://developers.openai.com/codex/config-reference"],
   ["openai-prompt-engineering", "https://developers.openai.com/api/docs/guides/prompt-engineering"],
-  ["openai-evaluation-best-practices", "https://developers.openai.com/api/docs/guides/evaluation-best-practices"],
+  [
+    "openai-evaluation-best-practices",
+    "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
+  ],
   ["nist-ai-rmf", "https://www.nist.gov/itl/ai-risk-management-framework"],
-  ["who-responsible-ai-mental-health", "https://www.who.int/news/item/20-03-2026-towards-responsible-ai-for-mental-health-and-well-being--experts-chart-a-way-forward"],
+  [
+    "who-responsible-ai-mental-health",
+    "https://www.who.int/news/item/20-03-2026-towards-responsible-ai-for-mental-health-and-well-being--experts-chart-a-way-forward",
+  ],
   ["w3c-wcag-22", "https://www.w3.org/TR/WCAG22/"],
   ["w3c-cognitive-accessibility", "https://www.w3.org/WAI/cognitive/"],
   ["w3c-involving-users", "https://www.w3.org/WAI/planning/involving-users/"],
-  ["android-core-app-quality", "https://developer.android.com/docs/quality-guidelines/core-app-quality"],
-  ["apple-hig-accessibility", "https://developer.apple.com/design/human-interface-guidelines/accessibility"],
-  ["owasp-ai-agent-security", "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html"],
+  [
+    "android-core-app-quality",
+    "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+  ],
+  [
+    "apple-hig-accessibility",
+    "https://developer.apple.com/design/human-interface-guidelines/accessibility",
+  ],
+  [
+    "owasp-ai-agent-security",
+    "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+  ],
   ["google-pair-user-needs", "https://pair.withgoogle.com/chapter/user-needs/"],
-  ["google-heart-framework", "https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/"],
+  [
+    "google-heart-framework",
+    "https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/",
+  ],
   ["oecd-dark-commercial-patterns", "https://www.oecd.org/en/topics/dark-commercial-patterns.html"],
   ["acl-divergent-multi-agent-review", "https://aclanthology.org/2024.emnlp-main.992/"],
   ["acl-multi-agent-judge-bias-amplification", "https://aclanthology.org/2025.findings-emnlp.941/"],
@@ -372,16 +469,18 @@ export function validateRoleSelectionRecord(registry, record) {
   const observedTriggerIds = uniqueStringValues(
     record.observed_trigger_ids,
     "selection record observed_trigger_ids",
-    errors,
+    errors
   );
   for (const triggerId of observedTriggerIds) {
     if (!Object.hasOwn(TRIGGER_ROLE_IDS, triggerId)) {
       errors.push(`selection record contains unknown trigger_id: ${triggerId}`);
     }
   }
-  const triggerClasses = observedTriggerIds.map(function triggerClass(triggerId) {
-    return ASSURANCE_TRIGGER_RULES[triggerId]?.task_class;
-  }).filter(Boolean);
+  const triggerClasses = observedTriggerIds
+    .map(function triggerClass(triggerId) {
+      return ASSURANCE_TRIGGER_RULES[triggerId]?.task_class;
+    })
+    .filter(Boolean);
   const expectedClass = triggerClasses.includes("M2_PROTECTED_HIGH_RISK")
     ? "M2_PROTECTED_HIGH_RISK"
     : triggerClasses.includes("M1_MATERIAL")
@@ -395,7 +494,9 @@ export function validateRoleSelectionRecord(registry, record) {
     M2_PROTECTED_HIGH_RISK: ["L3", "L4"],
   };
   if (expectedClass && !allowedTiersByClass[expectedClass].includes(record.risk_tier)) {
-    errors.push(`selection record risk_tier ${record.risk_tier} is inconsistent with ${expectedClass}`);
+    errors.push(
+      `selection record risk_tier ${record.risk_tier} is inconsistent with ${expectedClass}`
+    );
   }
 
   const knownRoleIds = new Set(registry.roles.map((role) => role.id));
@@ -403,16 +504,17 @@ export function validateRoleSelectionRecord(registry, record) {
     record.selected_roles,
     "selected_roles",
     knownRoleIds,
-    errors,
+    errors
   );
   const skippedRoleIds = validateSelectionEntries(
     record.skipped_roles,
     "skipped_roles",
     knownRoleIds,
-    errors,
+    errors
   );
   for (const roleId of selectedRoleIds) {
-    if (skippedRoleIds.has(roleId)) errors.push(`selection record role appears in selected and skipped sets: ${roleId}`);
+    if (skippedRoleIds.has(roleId))
+      errors.push(`selection record role appears in selected and skipped sets: ${roleId}`);
   }
   for (const roleId of knownRoleIds) {
     if (!selectedRoleIds.has(roleId) && !skippedRoleIds.has(roleId)) {
@@ -421,14 +523,14 @@ export function validateRoleSelectionRecord(registry, record) {
   }
 
   const expectedSelectedRoleIds = new Set(
-    registry.activation_policy?.mandatory_role_ids_by_tier?.[record.risk_tier] ?? [],
+    registry.activation_policy?.mandatory_role_ids_by_tier?.[record.risk_tier] ?? []
   );
   let matchedM2Trigger = false;
   let fullCouncilRequired = record.routing_mode === "FIXED_FULL_TEN" && record.risk_tier !== "L0";
   for (const triggerId of observedTriggerIds) {
     const rule = ASSURANCE_TRIGGER_RULES[triggerId];
-    const requiredRoleIds = rule?.role_ids
-      ?? (TRIGGER_ROLE_IDS[triggerId] ? [TRIGGER_ROLE_IDS[triggerId]] : []);
+    const requiredRoleIds =
+      rule?.role_ids ?? (TRIGGER_ROLE_IDS[triggerId] ? [TRIGGER_ROLE_IDS[triggerId]] : []);
     for (const roleId of requiredRoleIds) {
       expectedSelectedRoleIds.add(roleId);
       if (!selectedRoleIds.has(roleId)) {
@@ -611,7 +713,7 @@ function validateRoles(roles, errors) {
       role.semantic_invariant_ids,
       expectedSemanticInvariantIds,
       `role ${role.slot} semantic_invariant_ids`,
-      errors,
+      errors
     );
 
     requireNonEmptyRecord(role.activation, `${label} activation`, errors);
@@ -628,16 +730,18 @@ function validateRoles(roles, errors) {
         errors.push(`role ${role.slot} activation.trigger_ids must be an array`);
       } else if (
         role.activation.trigger_ids.length !== expectedTriggerIds.length ||
-        role.activation.trigger_ids.some((item, triggerIndex) => item !== expectedTriggerIds[triggerIndex])
+        role.activation.trigger_ids.some(
+          (item, triggerIndex) => item !== expectedTriggerIds[triggerIndex]
+        )
       ) {
         errors.push(
-          `role ${role.slot} activation.trigger_ids must equal ${expectedTriggerIds.join(", ")} in that order`,
+          `role ${role.slot} activation.trigger_ids must equal ${expectedTriggerIds.join(", ")} in that order`
         );
       }
       const expectedMandatoryOnTrigger = expectedTriggerIds.length > 0;
       if (role.activation.mandatory_on_trigger !== expectedMandatoryOnTrigger) {
         errors.push(
-          `role ${role.slot} activation.mandatory_on_trigger must equal ${expectedMandatoryOnTrigger}`,
+          `role ${role.slot} activation.mandatory_on_trigger must equal ${expectedMandatoryOnTrigger}`
         );
       }
       const expectedMandatoryFloor = MANDATORY_ROLE_FLOORS.get(role.id);
@@ -647,7 +751,7 @@ function validateRoles(roles, errors) {
         }
         if (role.activation.risk_floor !== expectedMandatoryFloor) {
           errors.push(
-            `role ${role.slot} activation.risk_floor must equal ${expectedMandatoryFloor}`,
+            `role ${role.slot} activation.risk_floor must equal ${expectedMandatoryFloor}`
           );
         }
       } else if (role.activation.mandatory !== false) {
@@ -719,7 +823,7 @@ function validateRole2Phases(role2, errors) {
     role2.name,
     "User Psychology, Motivational Design, Human Factors & Emotional Safety",
     "role 2 name",
-    errors,
+    errors
   );
   const phases = role2.phase_contracts;
   if (!isRecord(phases)) {
@@ -731,7 +835,7 @@ function validateRole2Phases(role2, errors) {
     phaseNames,
     ["CREATE_BRIEF", "INDEPENDENT_FINAL_REVIEW"],
     "role 2 phase_contracts",
-    errors,
+    errors
   );
   for (const phaseName of phaseNames) {
     const phase = phases[phaseName];
@@ -740,7 +844,12 @@ function validateRole2Phases(role2, errors) {
       errors.push(`${label} must be a structured object`);
       continue;
     }
-    requireExactValue(phase.fresh_invocation_required, true, `${label}.fresh_invocation_required`, errors);
+    requireExactValue(
+      phase.fresh_invocation_required,
+      true,
+      `${label}.fresh_invocation_required`,
+      errors
+    );
     requireNonEmptyString(phase.timing, `${label}.timing`, errors);
     requireNonEmptyString(phase.question, `${label}.question`, errors);
     validateStringList(phase.required_inputs, `${label}.required_inputs`, errors);
@@ -780,9 +889,7 @@ function validateGlobalPolicyInvariants(registry, errors) {
     }
     if (!isRecord(activation.trigger_role_ids)) {
       errors.push("activation_policy trigger_role_ids must be an object");
-    } else if (
-      stableStringify(activation.trigger_role_ids) !== stableStringify(TRIGGER_ROLE_IDS)
-    ) {
+    } else if (stableStringify(activation.trigger_role_ids) !== stableStringify(TRIGGER_ROLE_IDS)) {
       errors.push("activation_policy trigger_role_ids must equal the canonical trigger-owner map");
     }
     if (!isRecord(activation.mandatory_role_ids_by_tier)) {
@@ -793,7 +900,7 @@ function validateGlobalPolicyInvariants(registry, errors) {
           activation.mandatory_role_ids_by_tier[tier],
           expectedRoleIds,
           `activation_policy mandatory_role_ids_by_tier.${tier}`,
-          errors,
+          errors
         );
       }
     }
@@ -801,7 +908,7 @@ function validateGlobalPolicyInvariants(registry, errors) {
       activation.mandatory_trigger_ids,
       MANDATORY_TRIGGER_IDS,
       "activation_policy mandatory_trigger_ids",
-      errors,
+      errors
     );
     requireNonEmptyString(activation.termination, "activation_policy termination", errors);
   }
@@ -862,13 +969,13 @@ function validateGlobalPolicyInvariants(registry, errors) {
       toolPolicy.denied_capability_ids,
       REQUIRED_DENIED_CAPABILITY_IDS,
       "tool_policy denied_capability_ids",
-      errors,
+      errors
     );
     requireExactValue(
       toolPolicy.role_denials_are_additive,
       true,
       "tool_policy role_denials_are_additive",
-      errors,
+      errors
     );
     requireNonEmptyString(toolPolicy.launch_probe, "tool_policy launch_probe", errors);
     requireNonEmptyString(
@@ -995,7 +1102,7 @@ function validateGlobalPolicyInvariants(registry, errors) {
     requireNonEmptyString(
       output.grounding_rule,
       "universal_output_contract grounding_rule",
-      errors,
+      errors
     );
   }
 
@@ -1008,62 +1115,57 @@ function validateEvaluationAdapter(adapter, errors) {
     adapter.version,
     "zenflow-agent-eval-adapter-v1",
     "evaluation_adapter version",
-    errors,
+    errors
   );
   requireExactValue(
     adapter.activation_marker,
     "ZENFLOW_AGENT_EVAL_ADAPTER_V1",
     "evaluation_adapter activation_marker",
-    errors,
+    errors
   );
   requireExactValue(adapter.format, "PLAIN_STRICT_JSON", "evaluation_adapter format", errors);
-  requireExactValue(
-    adapter.scope,
-    "EVAL_OUTPUT_FORMAT_ONLY",
-    "evaluation_adapter scope",
-    errors,
-  );
+  requireExactValue(adapter.scope, "EVAL_OUTPUT_FORMAT_ONLY", "evaluation_adapter scope", errors);
   requireExactValue(
     adapter.normal_contract_retained_outside_eval,
     true,
     "evaluation_adapter normal_contract_retained_outside_eval",
-    errors,
+    errors
   );
   requireExactValue(
     adapter.safety_scope_permission_rules_unchanged,
     true,
     "evaluation_adapter safety_scope_permission_rules_unchanged",
-    errors,
+    errors
   );
   requireExactStringArray(
     adapter.required_keys,
     EVALUATION_ADAPTER_REQUIRED_KEYS,
     "evaluation_adapter required_keys",
-    errors,
+    errors
   );
   requireExactValue(
     adapter.candidate_evidence_status,
     "UNVERIFIED",
     "evaluation_adapter candidate_evidence_status",
-    errors,
+    errors
   );
   requireExactStringArray(
     adapter.candidate_finding_statuses,
     ["OPEN", "UNVERIFIED"],
     "evaluation_adapter candidate_finding_statuses",
-    errors,
+    errors
   );
   requireExactValue(
     adapter.candidate_claim_status,
     "UNVERIFIED",
     "evaluation_adapter candidate_claim_status",
-    errors,
+    errors
   );
   requireExactStringArray(
     adapter.candidate_handoff_statuses,
     ["PENDING", "UNVERIFIED"],
     "evaluation_adapter candidate_handoff_statuses",
-    errors,
+    errors
   );
   requireExactStringArray(
     adapter.self_reflection_fields,
@@ -1075,19 +1177,19 @@ function validateEvaluationAdapter(adapter, errors) {
       "confidence_boundary",
     ],
     "evaluation_adapter self_reflection_fields",
-    errors,
+    errors
   );
   requireExactStringArray(
     adapter.outcome_assessment_classes,
     ["REQUIRED", "FORBIDDEN"],
     "evaluation_adapter outcome_assessment_classes",
-    errors,
+    errors
   );
   requireExactStringArray(
     adapter.outcome_assessment_statuses,
     ["CLAIMED_SATISFIED", "NOT_SATISFIED", "CLAIMED_AVOIDED", "PRESENT", "UNVERIFIED"],
     "evaluation_adapter outcome_assessment_statuses",
-    errors,
+    errors
   );
 }
 
@@ -1102,19 +1204,19 @@ function validateTrustEnvelope(trustEnvelope, errors) {
       authority.evidence_can_authorize_side_effects,
       false,
       "trust_envelope evidence_authority_policy.evidence_can_authorize_side_effects",
-      errors,
+      errors
     );
     requireExactValue(
       authority.specialist_report_is_authority,
       false,
       "trust_envelope evidence_authority_policy.specialist_report_is_authority",
-      errors,
+      errors
     );
     requireExactValue(
       authority.direct_current_user_authorization_required,
       true,
       "trust_envelope evidence_authority_policy.direct_current_user_authorization_required",
-      errors,
+      errors
     );
   }
 
@@ -1126,28 +1228,26 @@ function validateTrustEnvelope(trustEnvelope, errors) {
       privateData.raw_sensitive_content,
       "FORBIDDEN",
       "trust_envelope private_data_policy.raw_sensitive_content",
-      errors,
+      errors
     );
     requireExactValue(
       privateData.minimization_required,
       true,
       "trust_envelope private_data_policy.minimization_required",
-      errors,
+      errors
     );
     requireExactValue(
       privateData.synthetic_fixtures,
       "TEST_ONLY",
       "trust_envelope private_data_policy.synthetic_fixtures",
-      errors,
+      errors
     );
   }
 }
 
 function validateHumanEscalationCategories(categories, errors) {
   if (!Array.isArray(categories)) {
-    errors.push(
-      "human_escalation_policy categories must contain the exact protected category set",
-    );
+    errors.push("human_escalation_policy categories must contain the exact protected category set");
     return;
   }
   const actualCategories = [];
@@ -1167,7 +1267,7 @@ function validateHumanEscalationCategories(categories, errors) {
     requireNonEmptyString(
       category.agent_permitted_disposition,
       `${label} agent_permitted_disposition`,
-      errors,
+      errors
     );
     if (typeof category.category === "string") actualCategories.push(category.category);
   }
@@ -1175,9 +1275,7 @@ function validateHumanEscalationCategories(categories, errors) {
     actualCategories.length !== PROTECTED_HUMAN_CATEGORIES.length ||
     actualCategories.some((category, index) => category !== PROTECTED_HUMAN_CATEGORIES[index])
   ) {
-    errors.push(
-      "human_escalation_policy categories must contain the exact protected category set",
-    );
+    errors.push("human_escalation_policy categories must contain the exact protected category set");
   }
 }
 
@@ -1194,7 +1292,7 @@ function validateRole10Protocol(role10, errors) {
     !isRecord(protocol.domain_routing) ||
     Object.keys(protocol.domain_routing).length !== Object.keys(ROLE10_DOMAIN_ROUTING).length ||
     Object.entries(ROLE10_DOMAIN_ROUTING).some(
-      ([domain, owner]) => protocol.domain_routing?.[domain] !== owner,
+      ([domain, owner]) => protocol.domain_routing?.[domain] !== owner
     )
   ) {
     errors.push("role 10 domain_routing must contain the exact canonical owner map");
@@ -1205,17 +1303,12 @@ function validateRole10Protocol(role10, errors) {
     errors.push("role 10 pass_a must be a structured object");
   } else {
     requireExactValue(passA.name, "blind_discovery", "role 10 pass_a.name", errors);
-    requireExactValue(
-      passA.timing,
-      "BEFORE_COORDINATOR_SOLUTION",
-      "role 10 pass_a.timing",
-      errors,
-    );
+    requireExactValue(passA.timing, "BEFORE_COORDINATOR_SOLUTION", "role 10 pass_a.timing", errors);
     requireExactValue(
       passA.launch_mode,
       "FORK_TURNS_NONE_OR_RUNTIME_PROVEN_SANITIZED_EQUIVALENT",
       "role 10 pass_a.launch_mode",
-      errors,
+      errors
     );
     validateStringList(passA.required_inputs, "role 10 pass_a.required_inputs", errors);
     validateStringList(passA.forbidden_inputs, "role 10 pass_a.forbidden_inputs", errors);
@@ -1226,11 +1319,7 @@ function validateRole10Protocol(role10, errors) {
     ]) {
       requireExactValue(passA[key], true, `role 10 pass_a.${key}`, errors);
     }
-    requireNonEmptyString(
-      passA.failure_disposition,
-      "role 10 pass_a.failure_disposition",
-      errors,
-    );
+    requireNonEmptyString(passA.failure_disposition, "role 10 pass_a.failure_disposition", errors);
   }
 
   const passB = protocol.pass_b;
@@ -1242,20 +1331,20 @@ function validateRole10Protocol(role10, errors) {
       passB.timing,
       "AFTER_COORDINATOR_INTEGRATION_AND_ROLE_8_PROOF_REVIEW",
       "role 10 pass_b.timing",
-      errors,
+      errors
     );
     validateStringList(passB.required_inputs, "role 10 pass_b.required_inputs", errors);
     requireExactValue(
       passB.artifact_manifest_sha256_required,
       true,
       "role 10 pass_b.artifact_manifest_sha256_required",
-      errors,
+      errors
     );
     requireExactValue(
       passB.recompute_hashes_required,
       true,
       "role 10 pass_b.recompute_hashes_required",
-      errors,
+      errors
     );
     if (!isRecord(passB.decision_channel)) {
       errors.push("role 10 pass_b.decision_channel must be a structured object");
@@ -1264,13 +1353,13 @@ function validateRole10Protocol(role10, errors) {
         passB.decision_channel.format,
         "STRICT_STRUCTURED_RECEIPT_ONLY",
         "role 10 pass_b.decision_channel.format",
-        errors,
+        errors
       );
       requireExactStringArray(
         passB.decision_channel.aggregate_precedence,
         ASSURANCE_AGGREGATE_PRECEDENCE,
         "role 10 pass_b.decision_channel.aggregate_precedence",
-        errors,
+        errors
       );
     }
     if (!isRecord(passB.audit_channel)) {
@@ -1280,12 +1369,12 @@ function validateRole10Protocol(role10, errors) {
         passB.audit_channel.format,
         "HASH_BOUND_FINDING_AND_CLOSURE_LEDGER",
         "role 10 pass_b.audit_channel.format",
-        errors,
+        errors
       );
       validateStringList(
         passB.audit_channel.required_bindings,
         "role 10 pass_b.audit_channel.required_bindings",
-        errors,
+        errors
       );
     }
     requireExactStringArray(
@@ -1297,13 +1386,9 @@ function validateRole10Protocol(role10, errors) {
         "UNVERIFIED",
       ],
       "role 10 pass_b.allowed_closure_statuses",
-      errors,
+      errors
     );
-    requireNonEmptyString(
-      passB.failure_disposition,
-      "role 10 pass_b.failure_disposition",
-      errors,
-    );
+    requireNonEmptyString(passB.failure_disposition, "role 10 pass_b.failure_disposition", errors);
   }
 }
 
@@ -1315,31 +1400,31 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
     protocol.base_contract_sha256,
     "de23c3ff413e14535bef3f05a9be0a8b9f5448b2f16c3db524722070fccfcc42",
     "assurance_protocol base_contract_sha256",
-    errors,
+    errors
   );
   requireExactValue(
     protocol.receipt_schema_version,
     "zenflow-ten-lens-role-receipt-v2.2.1-e1",
     "assurance_protocol receipt_schema_version",
-    errors,
+    errors
   );
   requireExactValue(
     protocol.evidence_ledger_schema_version,
     "zenflow-ten-lens-evidence-ledger-v2.2.1-e1",
     "assurance_protocol evidence_ledger_schema_version",
-    errors,
+    errors
   );
   requireExactValue(
     protocol.local_authority_verification,
     "NO_LOCAL_AUTHORIZATION_WITHOUT_EXTERNAL_AUTHENTICATION",
     "assurance_protocol local_authority_verification",
-    errors,
+    errors
   );
   requireExactValue(
     protocol.local_positive_promotion,
     "COMPLETE_WITH_UNVERIFIED_UNTIL_CURRENT_EVIDENCE_IS_INDEPENDENTLY_RECHECKED",
     "assurance_protocol local_positive_promotion",
-    errors,
+    errors
   );
   if (!isRecord(protocol.accepted_risk_status_aliases)) {
     errors.push("assurance_protocol accepted_risk_status_aliases must be an object");
@@ -1348,68 +1433,86 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
       protocol.accepted_risk_status_aliases.COMPLETE_WITH_ACCEPTED_RISK,
       "AUTHORIZED_WITH_ACCEPTED_RISK",
       "assurance_protocol accepted-risk alias",
-      errors,
+      errors
     );
   }
   requireExactStringArray(
     protocol.aggregate_precedence,
     ASSURANCE_AGGREGATE_PRECEDENCE,
     "assurance_protocol aggregate_precedence",
-    errors,
+    errors
   );
   requireNonEmptyString(
     protocol.compact_receipt_contract,
     "assurance_protocol compact_receipt_contract",
-    errors,
+    errors
   );
 
   const riskRegistry = protocol.risk_classification_registry;
   if (!isRecord(riskRegistry)) {
     errors.push("assurance_protocol risk_classification_registry must be an object");
   } else {
-    const riskRegistryDigest = createHash("sha256").update(stableJson(riskRegistry), "utf8").digest("hex");
+    const riskRegistryDigest = createHash("sha256")
+      .update(stableJson(riskRegistry), "utf8")
+      .digest("hex");
     if (riskRegistryDigest !== ASSURANCE_RISK_REGISTRY_DIGEST) {
-      errors.push("assurance risk classification registry digest does not match the protocol implementation");
+      errors.push(
+        "assurance risk classification registry digest does not match the protocol implementation"
+      );
     }
     requireExactValue(
       riskRegistry.version,
       "zenflow-risk-registry-v2.2.1-e1",
       "assurance risk registry version",
-      errors,
+      errors
     );
     requireExactValue(
       riskRegistry.algorithm_version,
       "evidence-first-adaptive-v2",
       "assurance risk registry algorithm_version",
-      errors,
+      errors
     );
     requireExactValue(
       riskRegistry.default_task_class,
       "M1_MATERIAL",
       "assurance risk registry default_task_class",
-      errors,
+      errors
     );
     requireExactValue(
       riskRegistry.routing_modes?.default,
       "EVIDENCE_FIRST_ADAPTIVE",
       "assurance risk registry default routing mode",
-      errors,
+      errors
     );
     requireExactValue(
       riskRegistry.routing_modes?.rollback,
       "FIXED_FULL_TEN",
       "assurance risk registry rollback routing mode",
-      errors,
+      errors
     );
     requireNonEmptyString(
       riskRegistry.discovery_policy,
       "assurance risk registry discovery_policy",
-      errors,
+      errors
     );
-    for (const field of ["m0_allowlisted_transformations", "protected_paths", "protected_symbols", "protected_capabilities", "protected_data_effects", "protected_external_actions", "protected_schema_changes", "protected_permission_changes", "protected_release_surfaces"]) {
+    for (const field of [
+      "m0_allowlisted_transformations",
+      "protected_paths",
+      "protected_symbols",
+      "protected_capabilities",
+      "protected_data_effects",
+      "protected_external_actions",
+      "protected_schema_changes",
+      "protected_permission_changes",
+      "protected_release_surfaces",
+    ]) {
       validateStringList(riskRegistry[field], `assurance risk registry ${field}`, errors);
     }
-    requireNonEmptyRecord(riskRegistry.platform_activation_rules, "assurance risk registry platform_activation_rules", errors);
+    requireNonEmptyRecord(
+      riskRegistry.platform_activation_rules,
+      "assurance risk registry platform_activation_rules",
+      errors
+    );
     const classes = riskRegistry.classes;
     if (!isRecord(classes)) {
       errors.push("assurance risk registry classes must be an object");
@@ -1418,7 +1521,7 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
         Object.keys(classes),
         ["M0_MECHANICAL", "M1_MATERIAL", "M2_PROTECTED_HIGH_RISK"],
         "assurance risk registry classes",
-        errors,
+        errors
       );
       for (const className of Object.keys(classes)) {
         const item = classes[className];
@@ -1430,17 +1533,22 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
           errors.push(`assurance class ${className} all_ten_required must be boolean`);
         }
         let classRoles = [];
-        if (item.all_ten_required === true && Array.isArray(item.mandatory_role_ids) && item.mandatory_role_ids.length === 0) {
+        if (
+          item.all_ten_required === true &&
+          Array.isArray(item.mandatory_role_ids) &&
+          item.mandatory_role_ids.length === 0
+        ) {
           classRoles = [];
         } else {
           classRoles = validateStringList(
             item.mandatory_role_ids,
             `assurance class ${className} mandatory_role_ids`,
-            errors,
+            errors
           );
         }
         for (const roleId of classRoles) {
-          if (!roleIds.has(roleId)) errors.push(`assurance class ${className} references unknown role ${roleId}`);
+          if (!roleIds.has(roleId))
+            errors.push(`assurance class ${className} references unknown role ${roleId}`);
         }
       }
       if (stableJson(classes) !== stableJson(ASSURANCE_CLASS_RULES)) {
@@ -1457,33 +1565,42 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
           continue;
         }
         requireNonEmptyString(trigger.id, "assurance risk trigger id", errors);
-        if (observedTriggers.has(trigger.id)) errors.push(`duplicate assurance risk trigger ${trigger.id}`);
+        if (observedTriggers.has(trigger.id))
+          errors.push(`duplicate assurance risk trigger ${trigger.id}`);
         observedTriggers.add(trigger.id);
-        if (!["M0_MECHANICAL", "M1_MATERIAL", "M2_PROTECTED_HIGH_RISK"].includes(trigger.task_class)) {
+        if (
+          !["M0_MECHANICAL", "M1_MATERIAL", "M2_PROTECTED_HIGH_RISK"].includes(trigger.task_class)
+        ) {
           errors.push(`assurance risk trigger ${trigger.id} has invalid task_class`);
         }
         const triggerRoles = validateStringList(
           trigger.role_ids,
           `assurance risk trigger ${trigger.id} role_ids`,
-          errors,
+          errors
         );
         for (const roleId of triggerRoles) {
-          if (!roleIds.has(roleId)) errors.push(`assurance risk trigger ${trigger.id} references unknown role ${roleId}`);
+          if (!roleIds.has(roleId))
+            errors.push(`assurance risk trigger ${trigger.id} references unknown role ${roleId}`);
         }
         if (Object.hasOwn(trigger, "full_council") && trigger.full_council !== true) {
-          errors.push(`assurance risk trigger ${trigger.id} full_council must equal true when present`);
+          errors.push(
+            `assurance risk trigger ${trigger.id} full_council must equal true when present`
+          );
         }
       }
-      const implementedTriggers = Object.entries(ASSURANCE_TRIGGER_RULES).map(function triggerRule(entry) {
-        return { id: entry[0], ...entry[1] };
-      });
+      const implementedTriggers = Object.entries(ASSURANCE_TRIGGER_RULES).map(
+        function triggerRule(entry) {
+          return { id: entry[0], ...entry[1] };
+        }
+      );
       if (stableJson(riskRegistry.triggers) !== stableJson(implementedTriggers)) {
         errors.push("assurance risk triggers do not match the protocol implementation");
       }
     }
     for (const role of registry.roles) {
       for (const triggerId of role.activation.trigger_ids) {
-        if (!observedTriggers.has(triggerId)) errors.push(`assurance risk registry missing role trigger ${triggerId}`);
+        if (!observedTriggers.has(triggerId))
+          errors.push(`assurance risk registry missing role trigger ${triggerId}`);
       }
     }
   }
@@ -1496,35 +1613,41 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
       evaluation.canonical_storage,
       "PORTABLE_REPOSITORY_LOCAL_ARTIFACTS",
       "assurance evaluation canonical_storage",
-      errors,
+      errors
     );
     requireExactValue(
       evaluation.promotion_status,
       "CANDIDATE_CORE_IMPLEMENTED_RUNTIME_AND_SUPERIORITY_UNVERIFIED",
       "assurance evaluation promotion_status",
-      errors,
+      errors
     );
     requireExactValue(
       evaluation.minimum_total_token_reduction_percent,
       5,
       "assurance evaluation minimum_total_token_reduction_percent",
-      errors,
+      errors
     );
     requireExactValue(
       evaluation.runtime_adapter_status,
       "OPERATOR_ASSISTED_PREPARE_AND_AGGREGATE_ONLY",
       "assurance evaluation runtime_adapter_status",
-      errors,
+      errors
     );
     requireExactValue(
       evaluation.test_only_controls,
       "POSITIVE_AND_NEGATIVE_STRUCTURAL_ONLY",
       "assurance evaluation test_only_controls",
-      errors,
+      errors
     );
   }
-  requireNonEmptyRecord(protocol.role_ownership_boundaries, "assurance role_ownership_boundaries", errors);
-  if (stableJson(protocol.scope_ownership_registry) !== stableJson(ASSURANCE_SCOPE_OWNERSHIP_PREFIXES)) {
+  requireNonEmptyRecord(
+    protocol.role_ownership_boundaries,
+    "assurance role_ownership_boundaries",
+    errors
+  );
+  if (
+    stableJson(protocol.scope_ownership_registry) !== stableJson(ASSURANCE_SCOPE_OWNERSHIP_PREFIXES)
+  ) {
     errors.push("assurance scope_ownership_registry must match the canonical role prefix map");
   }
   requireNonEmptyRecord(protocol.privacy, "assurance privacy", errors);
@@ -1533,22 +1656,24 @@ function validateAssuranceProtocol(registry, roleIds, errors) {
     errors.push("activation_policy assurance_class_bridge must be an object");
   } else {
     requireExactValue(bridge.L0, "M0_MECHANICAL", "assurance bridge L0", errors);
-    for (const tier of ["L1", "L2"]) requireExactValue(bridge[tier], "M1_MATERIAL", `assurance bridge ${tier}`, errors);
-    for (const tier of ["L3", "L4"]) requireExactValue(bridge[tier], "M2_PROTECTED_HIGH_RISK", `assurance bridge ${tier}`, errors);
+    for (const tier of ["L1", "L2"])
+      requireExactValue(bridge[tier], "M1_MATERIAL", `assurance bridge ${tier}`, errors);
+    for (const tier of ["L3", "L4"])
+      requireExactValue(bridge[tier], "M2_PROTECTED_HIGH_RISK", `assurance bridge ${tier}`, errors);
   }
   requireIntegerRange(
     registry.prompt_budgets.m1_minimum_phase_invocations,
     1,
     1,
     "prompt_budgets m1_minimum_phase_invocations",
-    errors,
+    errors
   );
   requireIntegerRange(
     registry.prompt_budgets.m2_minimum_phase_invocations,
     3,
     3,
     "prompt_budgets m2_minimum_phase_invocations",
-    errors,
+    errors
   );
   if (registry.prompt_budgets.full_ten_hard_invocation_ceiling < 20) {
     errors.push("full-ten hard invocation ceiling cannot omit mandatory M2 phases");
@@ -1606,10 +1731,20 @@ function validateSources(sourceReview, roleIds, nowDate, errors) {
     if (!SOURCE_APPLICABILITY_STRENGTHS.has(source.applicability_strength)) {
       errors.push(`${label} applicability_strength is not canonical`);
     }
-    requireExactValue(source.observed_canonical_url, source.url, `${label} observed_canonical_url`, errors);
+    requireExactValue(
+      source.observed_canonical_url,
+      source.url,
+      `${label} observed_canonical_url`,
+      errors
+    );
     requireNonEmptyString(source.retrieved_at, `${label} retrieved_at`, errors);
-    if (!Number.isFinite(Date.parse(source.retrieved_at))) errors.push(`${label} retrieved_at must be ISO-8601`);
-    requireNonEmptyString(source.document_version_or_date, `${label} document_version_or_date`, errors);
+    if (!Number.isFinite(Date.parse(source.retrieved_at)))
+      errors.push(`${label} retrieved_at must be ISO-8601`);
+    requireNonEmptyString(
+      source.document_version_or_date,
+      `${label} document_version_or_date`,
+      errors
+    );
     uniqueStringValues(source.supersedes, `${label} supersedes`, errors);
     if (!/^[0-9a-f]{64}$/.test(source.content_slice_sha256 ?? "")) {
       errors.push(`${label} content_slice_sha256 must be SHA-256`);
@@ -1626,14 +1761,14 @@ function validateSources(sourceReview, roleIds, nowDate, errors) {
       source.content_slice_status,
       "LOCAL_REVIEW_SUMMARY_ONLY_SOURCE_CONTENT_UNVERIFIED",
       `${label} content_slice_status`,
-      errors,
+      errors
     );
     validateStringList(source.affected_platforms, `${label} affected_platforms`, errors);
     requireNonEmptyString(source.does_not_prove, `${label} does_not_prove`, errors);
     validateStringList(
       source.event_driven_review_triggers,
       `${label} event_driven_review_triggers`,
-      errors,
+      errors
     );
     requireNonEmptyString(source.volatility, `${label} volatility`, errors);
     requireNonEmptyString(source.applicability, `${label} applicability`, errors);
@@ -1647,19 +1782,19 @@ function validateSources(sourceReview, roleIds, nowDate, errors) {
         source.document_status,
         "CURRENT_WITH_DEPRECATION_WATCH",
         `${label} document_status`,
-        errors,
+        errors
       );
       requireExactValue(
         source.evidence_role,
         "IMPLEMENTATION_GUIDANCE",
         `${label} evidence_role`,
-        errors,
+        errors
       );
       requireExactValue(
         source.legacy_evals_platform,
         "DEPRECATED_TRANSITION",
         `${label} legacy_evals_platform`,
-        errors,
+        errors
       );
       requireExactValue(source.read_only_date, "2026-10-31", `${label} read_only_date`, errors);
       requireExactValue(source.shutdown_date, "2026-11-30", `${label} shutdown_date`, errors);
@@ -1679,7 +1814,7 @@ function validateRoleSourceReferences(roles, sourcesById, errors) {
   const rolesById = new Map(
     roles
       .filter((role) => isRecord(role) && typeof role.id === "string")
-      .map((role) => [role.id, role]),
+      .map((role) => [role.id, role])
   );
   for (const role of roles) {
     if (!isRecord(role) || !Array.isArray(role.source_ids)) continue;
@@ -1690,7 +1825,7 @@ function validateRoleSourceReferences(roles, sourcesById, errors) {
         errors.push(`role ${String(role.slot)} references unknown source_id: ${sourceId}`);
       } else if (!Array.isArray(source.roles) || !source.roles.includes(role.id)) {
         errors.push(
-          `role ${role.id} references source ${sourceId} but that source does not declare the role`,
+          `role ${role.id} references source ${sourceId} but that source does not declare the role`
         );
       }
     }
@@ -1701,7 +1836,7 @@ function validateRoleSourceReferences(roles, sourcesById, errors) {
       const role = rolesById.get(roleId);
       if (role && (!Array.isArray(role.source_ids) || !role.source_ids.includes(sourceId))) {
         errors.push(
-          `source ${sourceId} declares role ${roleId} but that role does not reference the source`,
+          `source ${sourceId} declares role ${roleId} but that role does not reference the source`
         );
       }
     }
@@ -1833,7 +1968,7 @@ async function loadCanonicalState(rootDir, now, result) {
 
 function renderManagedArtifacts(registry) {
   const artifacts = new Map();
-  artifacts.set(CONFIG_RELATIVE_PATH, renderConfig());
+  artifacts.set(CONFIG_RELATIVE_PATH, renderConfig(registry));
   for (const role of registry.roles) {
     artifacts.set(`${PROFILES_RELATIVE_DIR}/${role.filename}`, renderProfile(registry, role));
   }
@@ -1862,39 +1997,37 @@ function validateGeneratedArtifactBudgets(registry, errors) {
       compaction.baseline_total_bytes,
       PROFILE_COMPACTION_BASELINE_BYTES,
       "prompt_budgets profile_compaction baseline_total_bytes",
-      errors,
+      errors
     );
     requireExactValue(
       compaction.minimum_structural_reduction_percent,
       PROFILE_COMPACTION_MINIMUM_REDUCTION_PERCENT,
       "prompt_budgets profile_compaction minimum_structural_reduction_percent",
-      errors,
+      errors
     );
     const allowedTotal = Math.floor(
-      compaction.baseline_total_bytes * (1 - compaction.minimum_structural_reduction_percent / 100),
+      compaction.baseline_total_bytes * (1 - compaction.minimum_structural_reduction_percent / 100)
     );
     if (allowedTotal < totalProfileBytes) {
       errors.push(
-        `generated profile set misses structural compaction gate: ${totalProfileBytes} bytes; allowed ${allowedTotal}`,
+        `generated profile set misses structural compaction gate: ${totalProfileBytes} bytes; allowed ${allowedTotal}`
       );
     }
   }
   const referenceBytes = Buffer.byteLength(renderReference(registry), "utf8");
   if (referenceBytes > referenceBudget) {
-    errors.push(
-      `generated reference byte budget exceeded: ${referenceBytes} > ${referenceBudget}`
-    );
+    errors.push(`generated reference byte budget exceeded: ${referenceBytes} > ${referenceBudget}`);
   }
 }
 
-function renderConfig() {
+function renderConfig(registry) {
   return [
     "# Generated from config/persistent-agent-orchestra.json. Do not edit by hand.",
-    "# These bounds constrain project subagent topology; they do not prove runtime loading.",
+    "# This is the canonical Codex concurrency key; runtime loading and enforcement remain UNVERIFIED.",
+    "# Depth 1 and forbidden recursive fanout remain project routing policy, not a native assignment.",
     "",
     "[agents]",
-    "max_threads = 4",
-    "max_depth = 1",
+    `max_concurrent_threads_per_session = ${registry.execution_topology.max_concurrent_specialists}`,
     "",
   ].join("\n");
 }
@@ -1939,7 +2072,9 @@ function renderDeveloperInstructions(registry, role) {
     renderInstructionSection("OWNS", role.owns),
     renderInstructionSection("DOES NOT OWN", role.does_not_own),
     renderInstructionSection("ACTIVATION", role.activation),
-    role.phase_contracts ? renderInstructionSection("ROLE PHASE CONTRACTS", role.phase_contracts) : "",
+    role.phase_contracts
+      ? renderInstructionSection("ROLE PHASE CONTRACTS", role.phase_contracts)
+      : "",
     role.slot === 1 ? renderCompactActivationPolicy(registry.activation_policy) : "",
     renderInstructionSection("SEMANTIC INVARIANT IDS", role.semantic_invariant_ids),
     renderInstructionSection("SEMANTIC CONTRACT SHA-256", role.semantic_contract_sha256),
@@ -1973,8 +2108,15 @@ function renderCompactActivationPolicy(value) {
     "ROUTING / SELECTION CONTRACT",
     value.principle,
     `Matched domain roles mandatory=${value.matched_domain_roles_mandatory}; unmatched roles require skip reason=${value.unmatched_roles_require_skip_reason}; selection record required=${value.selection_record_required}; majority vote forbidden=${value.no_majority_vote}.`,
-    `Trigger owners: ${Object.entries(value.trigger_role_ids).map(([triggerId, roleIds]) => `${triggerId}->${Array.isArray(roleIds) ? roleIds.join(",") : roleIds}`).join("; ")}.`,
-    `Tier minimums: ${Object.entries(value.mandatory_role_ids_by_tier).map(([tier, roleIds]) => `${tier}=[${roleIds.join(",")}]`).join("; ")}.`,
+    `Trigger owners: ${Object.entries(value.trigger_role_ids)
+      .map(
+        ([triggerId, roleIds]) =>
+          `${triggerId}->${Array.isArray(roleIds) ? roleIds.join(",") : roleIds}`
+      )
+      .join("; ")}.`,
+    `Tier minimums: ${Object.entries(value.mandatory_role_ids_by_tier)
+      .map(([tier, roleIds]) => `${tier}=[${roleIds.join(",")}]`)
+      .join("; ")}.`,
     value.termination,
   ].join("\n");
 }
@@ -2063,9 +2205,11 @@ function renderCompactPromptBudgets(value) {
 function renderCompactSourceLedger(sources) {
   return [
     "SOURCE LEDGER IDS",
-    sources.map(function sourceId(source) {
-      return source.id;
-    }).join(", "),
+    sources
+      .map(function sourceId(source) {
+        return source.id;
+      })
+      .join(", "),
     "Resolve authority/status/evidence/applicability and canonical URL in the registry. Local source-content slices remain UNVERIFIED; no source proves local behavior, conformance, acceptance, or authority.",
   ].join("\n");
 }
@@ -2091,8 +2235,8 @@ function renderReference(registry) {
     "## Runtime Bounds",
     "",
     "- Project custom roles: exactly 10.",
-    "- `agents.max_threads = 4`: root plus at most three concurrent specialists.",
-    "- `agents.max_depth = 1`: root may create direct children; children may not recurse.",
+    `- \`agents.max_concurrent_threads_per_session = ${registry.execution_topology.max_concurrent_specialists}\`: the canonical Codex setting limits concurrently open spawned specialist threads when this project config is loaded; runtime enforcement remains \`UNVERIFIED\`.`,
+    `- \`specialist_depth = ${registry.execution_topology.specialist_depth}\` and \`recursive_fanout = ${registry.execution_topology.recursive_fanout}\` are project routing policy. No native depth assignment is generated, so runtime enforcement remains \`UNVERIFIED\`.`,
     "- All ten roles are considered with evidence, but physical invocation is adaptive. M1 uses matched owners plus QA; M2 adds Role 10 Pass A/B; explicit deep audit may select all ten; FIXED_FULL_TEN preserves the legacy 20-phase rollback.",
     "- Every observed domain trigger makes its mapped owner mandatory; every unselected role needs a recorded skip reason.",
     "- Per-role semantic invariant IDs and checksums detect accidental prompt flattening; they are structural drift controls, not semantic or human approval.",
@@ -2351,7 +2495,7 @@ async function writeManagedArtifactsTransaction(rootDir, artifacts) {
         }
       } catch (rollbackError) {
         rollbackErrors.push(
-          `rollback failed for ${change.relativePath}: ${errorMessage(rollbackError)}`,
+          `rollback failed for ${change.relativePath}: ${errorMessage(rollbackError)}`
         );
       }
     }
@@ -2501,7 +2645,7 @@ function validateSelectionEntries(value, label, knownRoleIds, errors) {
     const locators = uniqueStringValues(
       entry.evidence_locators,
       `${entryLabel} evidence_locators`,
-      errors,
+      errors
     );
     if (locators.length === 0) {
       errors.push(`${entryLabel} evidence_locators must not be empty`);
@@ -2512,10 +2656,7 @@ function validateSelectionEntries(value, label, knownRoleIds, errors) {
 
 function requireExactStringArray(value, expected, label, errors) {
   const valid = validateStringList(value, label, errors);
-  if (
-    valid.length !== expected.length ||
-    valid.some((item, index) => item !== expected[index])
-  ) {
+  if (valid.length !== expected.length || valid.some((item, index) => item !== expected[index])) {
     errors.push(`${label} must equal ${expected.join(", ")} in that order`);
   }
 }

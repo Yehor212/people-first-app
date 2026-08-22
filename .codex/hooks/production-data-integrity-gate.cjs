@@ -13,7 +13,28 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
-const { analyzeToolEvent } = require("../../scripts/codex-governance/tool-targets.cjs");
+const HOOK_NAME = "production-data-integrity-gate";
+let analyzeToolEvent;
+let EVIDENCE_BLOCK_REASON;
+let REQUIRED_CONTEXT_LINES;
+let evaluateSubagentEvidence;
+
+try {
+  ({ analyzeToolEvent } = require("../../scripts/codex-governance/tool-targets.cjs"));
+  ({
+    EVIDENCE_BLOCK_REASON,
+    REQUIRED_CONTEXT_LINES,
+    evaluateSubagentEvidence,
+  } = require("../../scripts/codex-governance/subagent-evidence.cjs"));
+} catch (error) {
+  failBootstrap(error);
+}
+
+function failBootstrap(error) {
+  if (require.main !== module) throw error;
+  process.stderr.write(`HOOK ERROR [${HOOK_NAME}]: bootstrap_failure\n`);
+  process.exit(2);
+}
 
 function resolveRepositoryRoot() {
   const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
@@ -39,13 +60,61 @@ const RELEVANT_PATH =
   /^(?:src\/|supabase\/|scripts\/|config\/|\.codex\/|\.github\/workflows\/|docs\/release\/|docs\/ai\/PRODUCTION_DATA_INTEGRITY_POLICY\.md|docs\/adr\/0010-|AGENTS\.md|package\.json)/;
 const PROTECTED_PATH =
   /^(?:scripts\/check-production-data-integrity\.cjs|scripts\/production-data-integrity\/|scripts\/__tests__\/(?:production-data-integrity|smoke-sync-account-boundary)|scripts\/(?:check-agent-context\.mjs|check-enforcement-health\.ts|check-task-completion-protocol\.cjs|smoke-sync-account\.cjs)|config\/production-data-integrity|\.codex\/hooks\/production-data-integrity-gate\.cjs|\.codex\/hooks\.json|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)\.yml|docs\/ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)\.md|docs\/(?:DEFINITION_OF_DONE|RELEASE_CHECKLIST)\.md|docs\/adr\/0010-production-data-integrity|src\/lib\/(?:syncIntegrity\.ts|__tests__\/syncIntegrity\.test\.ts)|AGENTS\.md|package\.json|\.github\/CODEOWNERS|\.github\/PULL_REQUEST_TEMPLATE\.md)/;
+const INVENTORY_CONFIG_PATH = "config/production-data-integrity.json";
+const INVENTORY_CONFIG_ARRAY_KEYS = [
+  "entrypoints",
+  "scanRoots",
+  "productionPathGlobs",
+  "testPathGlobs",
+  "devPathGlobs",
+  "scanExcludeGlobs",
+  "generatedPathGlobs",
+  "documentationPathGlobs",
+  "bundleDirectories",
+  "releaseEvidenceRoots",
+  "releaseEvidenceGlobs",
+  "releaseEvidenceExcludeGlobs",
+  "enforcementPathGlobs",
+];
+const INVENTORY_CONFIG_PATH_KEYS = new Set([
+  "entrypoints",
+  "scanRoots",
+  "productionPathGlobs",
+  "bundleDirectories",
+  "releaseEvidenceGlobs",
+  "enforcementPathGlobs",
+]);
+const ALWAYS_RELEVANT_GIT_PATHSPECS = [
+  "src",
+  "supabase",
+  "scripts",
+  "config",
+  ".codex",
+  ".github/workflows",
+  ".gitignore",
+  ".gitattributes",
+];
+const PDI_PROMPT_CONTEXT =
+  "PRODUCTION DATA INTEGRITY: read docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md. Isolated test doubles are allowed; synthetic production facts, deceptive fallbacks, real-namespace demo data, fake evidence, and error masking are forbidden. Run the focused checker and cite fresh evidence.";
 
 function normalizePath(value) {
-  return String(value || "")
-    .normalize("NFC")
-    .replace(/\\/g, "/")
-    .replace(ROOT.replace(/\\/g, "/"), "")
+  const candidate = String(value || "").normalize("NFC");
+  if (!candidate) return "";
+  const absolute = path.isAbsolute(candidate);
+  const relative = absolute ? path.relative(ROOT, path.resolve(candidate)) : candidate;
+  const normalized = path.posix
+    .normalize(relative.replace(/\\/g, "/").replace(/^\.\//, ""))
     .replace(/^\/+/, "");
+  if (
+    !normalized ||
+    normalized === "." ||
+    normalized === ".." ||
+    normalized.startsWith("../") ||
+    path.isAbsolute(normalized)
+  ) {
+    return "";
+  }
+  return normalized;
 }
 
 function toolText(data) {
@@ -87,20 +156,31 @@ function block(reason) {
   emit({ decision: "block", reason });
 }
 
-function relevantToolChange(data) {
-  const paths = targetPaths(data);
-  const toolName = String(data.tool_name || "");
-  if (
-    toolName === "Bash" &&
-    !/(?:apply_patch|\bsed\s+-i\b|\brm\s|\bmv\s|\bcp\s|\btee\s|(?:^|\s)>\s*|\bnpm\s+run\s+(?:build|stage:release-artifacts))/m.test(
-      toolText(data)
-    )
-  ) {
-    return false;
+function blockWithCode(reasonCode, reason, details = {}) {
+  emit({ decision: "block", reason_code: reasonCode, ...details, reason });
+}
+
+function postToolRelevance(data) {
+  const analysis = analyzeToolEvent(data);
+  if (analysis.action === "read") return { relevant: false, targets: [] };
+  const paths = analysis.targets.map(normalizePath).filter(Boolean);
+  if (paths.length === 0) return { relevant: false, targets: [] };
+  try {
+    const configuredPaths = configuredRelevantPaths();
+    const relevantTargets = paths.filter((candidate) =>
+      configuredPaths.some((pattern) => configuredPathMatches(candidate, pattern))
+    );
+    if (relevantTargets.length > 0) {
+      return { relevant: true, targets: [...new Set(relevantTargets)].sort() };
+    }
+    return { relevant: false, targets: [] };
+  } catch {
+    return {
+      relevant: true,
+      targets: [...new Set(paths)].sort(),
+      scopeError: true,
+    };
   }
-  if (paths.some((candidate) => RELEVANT_PATH.test(candidate))) return true;
-  const text = toolText(data);
-  return /production-data-integrity|src\/|supabase\/|docs\/release\//i.test(text);
 }
 
 function maskPreservedContractRemovals(text) {
@@ -225,11 +305,17 @@ function obviousTampering(data) {
   let text = toolText(data);
   text = maskPreservedContractRemovals(text);
   const analysis = analyzeToolEvent(data);
-  const protectedTarget =
-    analysis.targets.map(normalizePath).some((candidate) => PROTECTED_PATH.test(candidate)) ||
-    /(?:scripts\/(?:check-production-data-integrity|production-data-integrity|check-agent-context|check-enforcement-health|check-task-completion-protocol|smoke-sync-account)|config\/production-data-integrity|\.codex\/hooks(?:\.json|\/production-data-integrity)|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)|docs\/(?:ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)|DEFINITION_OF_DONE|RELEASE_CHECKLIST))/.test(
-      text
-    );
+  const normalizedTargets = analysis.targets.map(normalizePath).filter(Boolean);
+  const reliableTargets =
+    normalizedTargets.length > 0 &&
+    normalizedTargets.length === analysis.targets.length &&
+    !analysis.dynamicTarget &&
+    !analysis.opaqueExecution;
+  const protectedTarget = reliableTargets
+    ? normalizedTargets.some((candidate) => PROTECTED_PATH.test(candidate))
+    : /(?:scripts\/(?:check-production-data-integrity|production-data-integrity|check-agent-context|check-enforcement-health|check-task-completion-protocol|smoke-sync-account)|config\/production-data-integrity|\.codex\/hooks(?:\.json|\/production-data-integrity)|\.github\/workflows\/(?:production-data-integrity|deploy|deploy-v2-preview|desktop-release|drift-checks)|docs\/(?:ai\/(?:PRODUCTION_DATA_INTEGRITY_POLICY|TASK_COMPLETION_PROTOCOL)|DEFINITION_OF_DONE|RELEASE_CHECKLIST))/.test(
+        text
+      );
   if (!protectedTarget) return null;
   if (analysis.shellMutation) {
     return "Direct shell mutation of production-data-integrity enforcement is blocked; use a reviewable patch with fresh test-first and governance evidence.";
@@ -279,18 +365,16 @@ function obviousTampering(data) {
 }
 
 function runChecker(mode) {
-  if (!fs.existsSync(CHECKER)) return { kind: "error", reason: "checker is missing" };
-  const result = spawnSync(
-    process.execPath,
-    [CHECKER, mode === "staged" ? "--staged" : "--diff", "--json"],
-    {
-      cwd: ROOT,
-      encoding: "utf8",
-      timeout: CHECK_TIMEOUT_MS,
-      maxBuffer: MAX_OUTPUT_BYTES,
-      windowsHide: true,
-    }
-  );
+  const checkerHealth = validateCheckerFile();
+  if (!checkerHealth.ok) return { kind: "error", reason: checkerHealth.reason };
+  const modeArgument = mode === "all" ? "--all" : mode === "staged" ? "--staged" : "--diff";
+  const result = spawnSync(process.execPath, [CHECKER, modeArgument, "--json"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    timeout: CHECK_TIMEOUT_MS,
+    maxBuffer: MAX_OUTPUT_BYTES,
+    windowsHide: true,
+  });
   if (result.error) return { kind: "error", reason: result.error.message };
   let report;
   try {
@@ -325,16 +409,249 @@ function runChecker(mode) {
   return { kind: "clean", report };
 }
 
-function evidencePacketComplete(message) {
-  const required = [
-    /Findings\s*:/i,
-    /File\/source evidence\s*:/i,
-    /Platform\/domain impact\s*:/i,
-    /Verification run or skipped checks\s*:/i,
-    /Remaining risk\s*:/i,
-    /Verdict\s*:\s*(?:GO|STOP|ASK)\b/i,
-  ];
-  return required.every((pattern) => pattern.test(message));
+function inventoryRelevantChanges() {
+  try {
+    const checkerHealth = validateCheckerFile();
+    if (!checkerHealth.ok) return { kind: "error" };
+    const config = readInventoryConfig();
+    const pathspecs = configuredRelevantGitPathspecs(config);
+    const tracked = spawnSync(
+      "git",
+      ["status", "--short", "--untracked-files=all", "--", ...pathspecs],
+      {
+        cwd: ROOT,
+        encoding: "utf8",
+        timeout: 1000,
+        maxBuffer: 256 * 1024,
+        windowsHide: true,
+      }
+    );
+    if (tracked.error || tracked.status !== 0) return { kind: "error" };
+    if (tracked.stdout.length > 0) return { kind: "relevant" };
+
+    const ignored = inventoryIgnoredRelevantPaths(config);
+    if (ignored.kind === "error") return ignored;
+    return { kind: ignored.paths.length > 0 ? "ignored_relevant" : "clean" };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
+function validateCheckerFile() {
+  try {
+    const stats = fs.lstatSync(CHECKER);
+    if (stats.isSymbolicLink() || !stats.isFile() || stats.nlink !== 1) {
+      return { ok: false, reason: "checker is not a single regular file" };
+    }
+    return { ok: true, reason: "" };
+  } catch {
+    return { ok: false, reason: "checker is missing or unreadable" };
+  }
+}
+
+function inventoryIgnoredRelevantPaths(config) {
+  const sourcePatterns = [
+    ...config.entrypoints,
+    ...config.scanRoots,
+    ...config.productionPathGlobs,
+  ].map(normalizeConfiguredPath);
+  const enforcementPatterns = [
+    INVENTORY_CONFIG_PATH,
+    config.baselineFile,
+    config.waiversFile,
+    ...config.enforcementPathGlobs,
+    ...config.repositoryContracts.map((contract) => contract.path),
+  ].map(normalizeConfiguredPath);
+  const evidencePatterns = config.releaseEvidenceGlobs.map(normalizeConfiguredPath);
+  const sourceExclusions = [
+    ...config.testPathGlobs,
+    ...config.devPathGlobs,
+    ...config.scanExcludeGlobs,
+    ...config.generatedPathGlobs,
+    ...config.documentationPathGlobs,
+  ].map(normalizeConfiguredPath);
+  const evidenceExclusions = config.releaseEvidenceExcludeGlobs.map(normalizeConfiguredPath);
+  const searchPathspecs = [
+    ...new Set([...sourcePatterns, ...enforcementPatterns, ...evidencePatterns]),
+  ].map((candidate) => (/[*?]/.test(candidate) ? `:(glob)${candidate}` : candidate));
+  const ignored = spawnSync(
+    "git",
+    ["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", ...searchPathspecs],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      timeout: 1000,
+      maxBuffer: 256 * 1024,
+      windowsHide: true,
+    }
+  );
+  if (ignored.error || ignored.status !== 0) return { kind: "error", paths: [] };
+  const paths = ignored.stdout
+    .split("\0")
+    .map(normalizePath)
+    .filter(Boolean)
+    .filter((candidate) => {
+      const enforcementRelevant = enforcementPatterns.some((pattern) =>
+        configuredPathMatches(candidate, pattern)
+      );
+      const sourceRelevant =
+        sourcePatterns.some((pattern) => configuredPathMatches(candidate, pattern)) &&
+        !sourceExclusions.some((pattern) => configuredPathMatches(candidate, pattern));
+      const evidenceRelevant =
+        evidencePatterns.some((pattern) => configuredPathMatches(candidate, pattern)) &&
+        !evidenceExclusions.some((pattern) => configuredPathMatches(candidate, pattern));
+      return enforcementRelevant || sourceRelevant || evidenceRelevant;
+    });
+  return { kind: "clean", paths: [...new Set(paths)].sort() };
+}
+
+function configuredRelevantGitPathspecs(config) {
+  return configuredRelevantPaths(config).map((candidate) =>
+    /[*?]/.test(candidate) ? `:(glob)${candidate}` : candidate
+  );
+}
+
+function readInventoryConfig() {
+  const config = JSON.parse(fs.readFileSync(path.join(ROOT, INVENTORY_CONFIG_PATH), "utf8"));
+  for (const key of INVENTORY_CONFIG_ARRAY_KEYS) {
+    if (
+      !Array.isArray(config[key]) ||
+      config[key].length === 0 ||
+      config[key].some((candidate) => typeof candidate !== "string" || !candidate.trim())
+    ) {
+      throw new Error(`Invalid production-data integrity inventory field: ${key}`);
+    }
+  }
+  for (const key of ["baselineFile", "waiversFile"]) {
+    if (typeof config[key] !== "string" || !config[key].trim()) {
+      throw new Error(`Invalid production-data integrity inventory field: ${key}`);
+    }
+  }
+  if (!Array.isArray(config.repositoryContracts) || config.repositoryContracts.length === 0) {
+    throw new Error("Invalid production-data integrity inventory field: repositoryContracts");
+  }
+  for (const contract of config.repositoryContracts) {
+    if (!contract || typeof contract.path !== "string" || !contract.path.trim()) {
+      throw new Error("Invalid production-data integrity repository contract path");
+    }
+  }
+  return config;
+}
+
+function configuredRelevantPaths(config = readInventoryConfig()) {
+  const configuredPaths = [];
+  for (const key of INVENTORY_CONFIG_PATH_KEYS) configuredPaths.push(...config[key]);
+  configuredPaths.push(config.baselineFile, config.waiversFile);
+  configuredPaths.push(...config.repositoryContracts.map((contract) => contract.path));
+  return [
+    ...new Set(
+      [...ALWAYS_RELEVANT_GIT_PATHSPECS, INVENTORY_CONFIG_PATH, ...configuredPaths].map(
+        normalizeConfiguredPath
+      )
+    ),
+  ].sort();
+}
+
+function normalizeConfiguredPath(value) {
+  const candidate = String(value).normalize("NFC").replace(/\\/g, "/");
+  if (
+    !candidate ||
+    path.posix.isAbsolute(candidate) ||
+    candidate.startsWith(":") ||
+    candidate.startsWith("!") ||
+    candidate.includes("[") ||
+    candidate.includes("]") ||
+    candidate.includes("\0")
+  ) {
+    throw new Error("Unsafe production-data integrity inventory pathspec");
+  }
+  const normalized = path.posix.normalize(candidate).replace(/^\.\//, "");
+  if (!normalized || normalized === "." || normalized === ".." || normalized.startsWith("../")) {
+    throw new Error("Unsafe production-data integrity inventory pathspec");
+  }
+  return normalized;
+}
+
+function configuredPathMatches(candidate, pattern) {
+  if (!/[*?]/.test(pattern)) {
+    return candidate === pattern || candidate.startsWith(`${pattern}/`);
+  }
+  let source = "^";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index];
+    if (character === "*" && pattern[index + 1] === "*") {
+      if (pattern[index + 2] === "/") {
+        source += "(?:.*/)?";
+        index += 2;
+      } else {
+        source += ".*";
+        index += 1;
+      }
+    } else if (character === "*") {
+      source += "[^/]*";
+    } else if (character === "?") {
+      source += "[^/]";
+    } else {
+      source += character.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+    }
+  }
+  return new RegExp(`${source}$`).test(candidate);
+}
+
+function productionDataIntegrityContext() {
+  return PDI_PROMPT_CONTEXT;
+}
+
+function isPdiPromptRelevant(prompt) {
+  return RELEVANT_PROMPT.test(String(prompt || ""));
+}
+
+function productionDataSubagentContext() {
+  return [
+    "Production-data integrity review is read-only unless explicitly authorized.",
+    "Treat local planning tokens as evidence only, never as authorization.",
+    "A subagent summary is not proof.",
+  ].join("\n");
+}
+
+function evaluatePdiPreTool(data) {
+  const reason = obviousTampering(data);
+  return reason
+    ? { allowed: false, reasonCode: "pdi_tampering", reason }
+    : { allowed: true, reasonCode: "", reason: "" };
+}
+
+function evaluatePdiStop(data) {
+  if (data.stop_hook_active === true) {
+    return { allowed: true, reasonCode: "", reason: "", skipped: true };
+  }
+  const inventory = inventoryRelevantChanges();
+  if (inventory.kind === "error") {
+    return {
+      allowed: false,
+      reasonCode: "relevant_path_inventory_failed",
+      reason: "Production data integrity relevant-path inventory failed; Stop is not clean.",
+    };
+  }
+  if (inventory.kind === "clean") {
+    return { allowed: true, reasonCode: "", reason: "", skipped: true };
+  }
+  const check = runChecker(inventory.kind === "ignored_relevant" ? "all" : "diff");
+  if (check.kind === "finding") {
+    return {
+      allowed: false,
+      reasonCode: "pdi_stop_finding",
+      reason: `Production data integrity Stop check failed: ${check.reason}.`,
+    };
+  }
+  if (check.kind === "error") {
+    return {
+      allowed: false,
+      reasonCode: "pdi_stop_checker_error",
+      reason: `Production data integrity checker internal error at Stop: ${check.reason}.`,
+    };
+  }
+  return { allowed: true, reasonCode: "", reason: "", skipped: false };
 }
 
 function handle(data) {
@@ -345,65 +662,83 @@ function handle(data) {
     return emit({
       hookSpecificOutput: {
         hookEventName: "UserPromptSubmit",
-        additionalContext:
-          "PRODUCTION DATA INTEGRITY: read docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md. Isolated test doubles are allowed; synthetic production facts, deceptive fallbacks, real-namespace demo data, fake evidence, and error masking are forbidden. Run the focused checker and cite fresh evidence.",
+        additionalContext: productionDataIntegrityContext(),
       },
     });
   }
   if (eventName === "PreToolUse") {
-    const tampering = obviousTampering(data);
-    if (tampering) return preToolDeny(tampering);
+    const result = evaluatePdiPreTool(data);
+    if (!result.allowed) return preToolDeny(result.reason);
     return emit({});
   }
   if (eventName === "PostToolUse") {
-    if (!relevantToolChange(data)) return emit({});
+    const relevance = postToolRelevance(data);
+    if (!relevance.relevant) return emit({});
+    if (relevance.scopeError)
+      return blockWithCode(
+        "effect_applied_checker_failed",
+        "Production data integrity configured scope could not be resolved after the tool effect was applied; no rollback or automatic retry.",
+        { targets: relevance.targets }
+      );
     const check = runChecker("diff");
     if (check.kind === "finding")
-      return block(
-        `Production data integrity diff check failed: ${check.reason}. Run npm run check:production-data-integrity:diff and remediate the reported rules.`
+      return blockWithCode(
+        "effect_applied_checker_failed",
+        `Production data integrity diff check failed after the tool effect was applied: ${check.reason}; no rollback or automatic retry. Run npm run check:production-data-integrity:diff and remediate the reported rules.`,
+        { targets: relevance.targets }
       );
     if (check.kind === "error")
-      return block(
-        `Production data integrity checker internal error; completion is not clean: ${check.reason}.`
+      return blockWithCode(
+        "effect_applied_checker_failed",
+        `Production data integrity checker internal error after the tool effect was applied: ${check.reason}; no rollback or automatic retry.`,
+        { targets: relevance.targets }
       );
     return emit({});
   }
   if (eventName === "Stop") {
-    if (data.stop_hook_active === true) return emit({ continue: true });
-    const check = runChecker("diff");
-    if (check.kind === "finding")
-      return block(`Production data integrity Stop check failed: ${check.reason}.`);
-    if (check.kind === "error")
-      return block(`Production data integrity checker internal error at Stop: ${check.reason}.`);
+    const result = evaluatePdiStop(data);
+    if (!result.allowed) {
+      if (result.reasonCode === "relevant_path_inventory_failed") {
+        return blockWithCode(result.reasonCode, result.reason);
+      }
+      return block(result.reason);
+    }
     return emit({ continue: true });
   }
   if (eventName === "SubagentStart") {
     return emit({
       hookSpecificOutput: {
         hookEventName: "SubagentStart",
-        additionalContext:
-          "Production-data integrity review is read-only unless explicitly authorized. Report: Findings; File/source evidence; Platform/domain impact; Verification run or skipped checks; Remaining risk; Verdict: GO / STOP / ASK. A summary is not proof.",
+        additionalContext: [productionDataSubagentContext(), ...REQUIRED_CONTEXT_LINES].join("\n"),
       },
     });
   }
   if (eventName === "SubagentStop") {
     const message = String(data.last_assistant_message || data.message || "");
-    const claimsSuccess = /\b(?:PASS|GO|READY|ALL CLEAR|NO FINDINGS)\b/i.test(message);
-    if (claimsSuccess && !evidencePacketComplete(message)) {
-      return block(
-        "Subagent success claim lacks the required Findings, file/source evidence, platform/domain impact, verification/skips, remaining risk, and GO/STOP/ASK verdict packet."
-      );
-    }
+    const evidence = evaluateSubagentEvidence(message);
+    if (!evidence.complete) return block(EVIDENCE_BLOCK_REASON);
     return emit({});
   }
   return emit({});
 }
 
-try {
-  const raw = fs.readFileSync(0, "utf8");
-  const data = JSON.parse(raw);
-  handle(data);
-} catch (error) {
-  process.stderr.write(`HOOK ERROR [production-data-integrity-gate]: ${error.message || error}\n`);
-  process.exit(2);
+function runCli() {
+  try {
+    const raw = fs.readFileSync(0, "utf8");
+    const data = JSON.parse(raw);
+    handle(data);
+  } catch (error) {
+    process.stderr.write(`HOOK ERROR [${HOOK_NAME}]: ${error.message || error}\n`);
+    process.exit(2);
+  }
 }
+
+if (require.main === module) runCli();
+
+module.exports = {
+  evaluatePdiPreTool,
+  evaluatePdiStop,
+  isPdiPromptRelevant,
+  productionDataIntegrityContext,
+  productionDataSubagentContext,
+};

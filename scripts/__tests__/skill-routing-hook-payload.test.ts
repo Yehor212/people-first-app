@@ -1,5 +1,15 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -9,7 +19,7 @@ const HOOK = resolve(".codex/hooks/skill-router-gate.cjs");
 const PRODUCTION_DATA_HOOK = resolve(".codex/hooks/production-data-integrity-gate.cjs");
 
 describe("Codex skill-routing hook payload compatibility", () => {
-  it("allows read-only Bash-hook commands without a fabricated path", () => {
+  it("allows read-only Bash-hook commands without a fabricated path or audit side effect", () => {
     const cwd = mkdtempSync(join(tmpdir(), "zenflow-skill-router-readonly-"));
     const result = spawnSync(process.execPath, [HOOK], {
       cwd,
@@ -22,6 +32,87 @@ describe("Codex skill-routing hook payload compatibility", () => {
     });
 
     expect(result.status, result.stderr).toBe(0);
+    expect(existsSync(join(cwd, ".codex-audit.log"))).toBe(false);
+  });
+
+  it("logs a blocked edit with a bounded reason code and no target or command text", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "zenflow-skill-router-blocked-"));
+    const privateTarget = "src/private-target-sentinel.ts";
+    const result = spawnSync(process.execPath, [HOOK], {
+      cwd,
+      encoding: "utf8",
+      input: JSON.stringify({
+        hook_event_name: "PreToolUse",
+        tool_name: "apply_patch",
+        tool_input: {
+          command: [
+            "*** Begin Patch",
+            `*** Add File: ${privateTarget}`,
+            "+export {};",
+            "*** End Patch",
+          ].join("\n"),
+        },
+      }),
+    });
+
+    expect(result.status).toBe(2);
+    const auditEntry = JSON.parse(
+      readFileSync(join(cwd, ".codex-audit.log"), "utf8").trim()
+    ) as Record<string, unknown>;
+    expect(Object.keys(auditEntry).sort()).toEqual(["event", "hook", "reason_code", "ts"]);
+    expect(auditEntry).toEqual(
+      expect.objectContaining({
+        event: "block",
+        hook: "skill-router-gate",
+        reason_code: "missing_or_invalid_skill_routing_evidence",
+      })
+    );
+    expect(JSON.stringify(auditEntry)).not.toContain(privateTarget);
+    expect(JSON.stringify(auditEntry)).not.toContain("export");
+  });
+
+  it.each(["symlink", "hardlink"])(
+    "refuses an untrusted %s audit target without modifying the outside file",
+    (linkType) => {
+      const root = mkdtempSync(join(tmpdir(), "zenflow-skill-router-audit-link-"));
+      const cwd = join(root, "repo");
+      const outside = join(root, "outside.log");
+      mkdirSync(cwd);
+      writeFileSync(outside, "OUTSIDE_SENTINEL\n", { mode: 0o644 });
+      const auditPath = join(cwd, ".codex-audit.log");
+      if (linkType === "symlink") {
+        symlinkSync(outside, auditPath);
+      } else {
+        linkSync(outside, auditPath);
+      }
+
+      const result = spawnSync(process.execPath, [HOOK], {
+        cwd,
+        encoding: "utf8",
+        input: "{not-json",
+      });
+
+      expect(result.status).toBe(2);
+      expect(readFileSync(outside, "utf8")).toBe("OUTSIDE_SENTINEL\n");
+      expect(statSync(outside).mode & 0o777).toBe(0o644);
+    }
+  );
+
+  it("tightens a trusted preexisting audit log to owner-only mode", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "zenflow-skill-router-audit-mode-"));
+    const auditPath = join(cwd, ".codex-audit.log");
+    writeFileSync(auditPath, "", { mode: 0o644 });
+    chmodSync(auditPath, 0o644);
+
+    const result = spawnSync(process.execPath, [HOOK], {
+      cwd,
+      encoding: "utf8",
+      input: "{not-json",
+    });
+
+    expect(result.status).toBe(2);
+    expect(statSync(auditPath).mode & 0o777).toBe(0o600);
+    expect(readFileSync(auditPath, "utf8")).toContain('"reason_code":"invalid_hook_input"');
   });
 
   it("extracts apply_patch targets from the official tool_input.command field", () => {

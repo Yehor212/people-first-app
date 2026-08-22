@@ -9,6 +9,14 @@ const MAX_AGENTS_BYTES = 32 * 1024;
 const MAX_AGENTS_LINES = 220;
 const MAX_CLAUDE_BYTES = 8 * 1024;
 const MAX_CLAUDE_LINES = 80;
+const CODEX_LIFECYCLE_ENTRYPOINTS = Object.freeze({
+  UserPromptSubmit: "skill-router-gate.cjs",
+  PreToolUse: "agent-workspace-guard.cjs",
+  PostToolUse: "production-data-integrity-gate.cjs",
+  Stop: "no-ai-template-gate.cjs",
+  SubagentStart: "subagent-evidence-gate.cjs",
+  SubagentStop: "subagent-evidence-gate.cjs",
+});
 
 const SECRET_PATTERN =
   /(ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|sbp_[A-Za-z0-9_]{20,}|ctx7sk-[A-Za-z0-9_-]{10,}|\bsk-[A-Za-z0-9_-]{20,}|Authorization:\s*Bearer\s+(?!<|\$\{|process\.env|env:|REDACTED|\*{3})[^\s`'"]+)/i;
@@ -137,6 +145,65 @@ function assertNoSecrets(relativePath, text) {
   }
 }
 
+function hookFilename(command) {
+  const match = String(command || "")
+    .replace(/\\/g, "/")
+    .match(/\.codex\/hooks\/([A-Za-z0-9._-]+\.cjs)/);
+  return match?.[1] || "";
+}
+
+function assertCodexHookTopology(text) {
+  let config;
+  try {
+    config = JSON.parse(text);
+  } catch {
+    fail(".codex/hooks.json must be valid JSON");
+    return;
+  }
+
+  const registered = [];
+  for (const [event, groups] of Object.entries(config.hooks || {})) {
+    for (const group of groups || []) {
+      for (const hook of group.hooks || []) {
+        if (hook.type !== "command") {
+          fail(`.codex/hooks.json has unsupported ${event} hook type ${String(hook.type || "")}`);
+          continue;
+        }
+        registered.push({ event, hook, filename: hookFilename(hook.command) });
+      }
+    }
+  }
+
+  if (registered.length !== 6) {
+    fail(
+      `.codex/hooks.json must register exactly 6 lifecycle commands; found ${registered.length}`
+    );
+  }
+  for (const [event, expectedFilename] of Object.entries(CODEX_LIFECYCLE_ENTRYPOINTS)) {
+    const commands = registered.filter((entry) => entry.event === event);
+    if (commands.length !== 1) {
+      fail(`.codex/hooks.json must register exactly one ${event} command`);
+      continue;
+    }
+    if (commands[0].filename !== expectedFilename) {
+      fail(
+        `.codex/hooks.json ${event} must use ${expectedFilename}, found ${commands[0].filename || "no bounded entrypoint"}`
+      );
+    }
+    if (hookFilename(commands[0].hook.commandWindows) !== expectedFilename) {
+      fail(`.codex/hooks.json ${event} commandWindows must use ${expectedFilename}`);
+    }
+  }
+  for (const entry of registered) {
+    if (!(entry.event in CODEX_LIFECYCLE_ENTRYPOINTS)) {
+      fail(`.codex/hooks.json has an unexpected registered lifecycle command for ${entry.event}`);
+    }
+    if (entry.filename === "change-governance-gate.cjs") {
+      fail(".codex/hooks.json must not register the removed standalone change-governance hook");
+    }
+  }
+}
+
 function assertAgentOrchestra() {
   for (const relativePath of [
     "config/persistent-agent-orchestra.json",
@@ -229,33 +296,54 @@ function assertAgentChangeGovernance(agents) {
 
   const codexHooks = assertGovernanceFile(".codex/hooks.json");
   if (codexHooks) {
-    for (const marker of [
-      "UserPromptSubmit",
-      "Stop",
-      "SubagentStart",
-      "SubagentStop",
-      "no-ai-template-gate.cjs",
-    ]) {
-      if (!codexHooks.includes(marker)) {
-        fail(`.codex/hooks.json must register no-AI-template hook marker ${marker}`);
-      }
-    }
+    assertCodexHookTopology(codexHooks);
   }
 
   const noAiHook = assertGovernanceFile(".codex/hooks/no-ai-template-gate.cjs");
   if (noAiHook) {
     for (const marker of [
       "NO AI TEMPLATE GATE",
-      "SUBAGENT EVIDENCE CONTRACT",
       "Best-Practices-Only Proposal Gate",
       "best-practices laundering",
-      "subagent proof laundering",
       "source-backed applicability",
-      "SubagentStop",
+      "detectViolations",
+      "evaluatePdiStop",
+      "productionDataIntegrityContext",
       "process.exit(2)",
     ]) {
       if (!noAiHook.includes(marker)) {
         fail(`.codex/hooks/no-ai-template-gate.cjs must include ${marker}`);
+      }
+    }
+  }
+
+  const promptRouter = assertGovernanceFile(".codex/hooks/skill-router-gate.cjs");
+  if (promptRouter) {
+    for (const marker of [
+      "buildSkillRoutingContext",
+      "buildPromptContext",
+      "isNoTemplatePromptRelevant",
+      "isPdiPromptRelevant",
+      "if (!additionalContext)",
+      "process.exit(2)",
+    ]) {
+      if (!promptRouter.includes(marker)) {
+        fail(`.codex/hooks/skill-router-gate.cjs must compose ${marker}`);
+      }
+    }
+  }
+
+  const subagentEvidenceGate = assertGovernanceFile(".codex/hooks/subagent-evidence-gate.cjs");
+  if (subagentEvidenceGate) {
+    for (const marker of [
+      "evaluateSubagentEvidence",
+      "detectSubagentViolations",
+      "loadProjectRoleNames",
+      "PDI_TRUST_CONTEXT",
+      "process.exit(2)",
+    ]) {
+      if (!subagentEvidenceGate.includes(marker)) {
+        fail(`.codex/hooks/subagent-evidence-gate.cjs must compose ${marker}`);
       }
     }
   }
@@ -291,13 +379,21 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
-  if (codexHooks && !/change-governance-gate\.cjs/.test(codexHooks)) {
-    fail(".codex/hooks.json must register change-governance-gate.cjs for PreToolUse");
-  }
-  const changeGuard = assertGovernanceFile(".codex/hooks/change-governance-gate.cjs");
+  const changeGuard = assertGovernanceFile(".codex/hooks/agent-workspace-guard.cjs");
   const changeGuardCore = assertGovernanceFile("scripts/codex-governance/change-gate-core.cjs");
-  if (changeGuard && !/Malformed hook input/.test(changeGuard)) {
-    fail("Codex change governance hook must fail closed on malformed input");
+  if (changeGuard) {
+    for (const marker of [
+      "Malformed hook input",
+      "evaluateWorkspaceEvent",
+      "evaluateGuard",
+      "evaluateSkillRoutingEvent",
+      "evaluatePdiPreTool",
+      "process.exit(2)",
+    ]) {
+      if (!changeGuard.includes(marker)) {
+        fail(`Consolidated Codex PreToolUse gate must compose ${marker}`);
+      }
+    }
   }
   if (changeGuardCore) {
     for (const marker of [
@@ -738,14 +834,22 @@ function assertProductionDataIntegrityContract(agents) {
   const hooks = assertGovernanceFile(".codex/hooks.json");
   if (hooks) {
     for (const marker of [
+      "skill-router-gate.cjs",
+      "agent-workspace-guard.cjs",
       "production-data-integrity-gate.cjs",
+      "no-ai-template-gate.cjs",
+      "subagent-evidence-gate.cjs",
+      "UserPromptSubmit",
+      "PreToolUse",
       "PostToolUse",
       "Stop",
       "SubagentStart",
       "SubagentStop",
     ]) {
       if (!hooks.includes(marker))
-        fail(`.codex/hooks.json must register production-data hook marker ${marker}`);
+        fail(
+          `.codex/hooks.json must include consolidated production-data lifecycle marker ${marker}`
+        );
     }
   }
 
@@ -755,8 +859,10 @@ function assertProductionDataIntegrityContract(agents) {
       "PRODUCTION DATA INTEGRITY GATE",
       "resolveRepositoryRoot",
       "stop_hook_active",
+      "PostToolUse",
+      "effect_applied_checker_failed",
+      "no rollback or automatic retry",
       "process.exit(2)",
-      "SubagentStop",
     ]) {
       if (!hook.includes(marker)) fail(`production-data-integrity-gate.cjs must include ${marker}`);
     }

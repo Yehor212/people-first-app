@@ -13,7 +13,13 @@ const SUPPORTED_LOCALES = new Set(["none", "en", "uk", "es", "de", "fr", "ja", "
 const PRODUCT_LOCALES = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 const RISK_LEVELS = new Set(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 const DECISIONS = new Set(["GO", "STOP", "ASK"]);
-const EVIDENCE_KINDS = new Set(["FILE", "COMMAND", "AUTHORITATIVE_SOURCE", "ASSUMPTION", "UNKNOWN"]);
+const EVIDENCE_KINDS = new Set([
+  "FILE",
+  "COMMAND",
+  "AUTHORITATIVE_SOURCE",
+  "ASSUMPTION",
+  "UNKNOWN",
+]);
 const CANDIDATE_EVIDENCE_STATUSES = new Set(["UNVERIFIED"]);
 const FINDING_STATUSES = new Set(["OPEN", "UNVERIFIED"]);
 const CLAIM_STATUSES = new Set(["UNVERIFIED"]);
@@ -203,7 +209,13 @@ export function isExactIsoTimestamp(value) {
 export function validateEvalCatalog(catalog, registry) {
   const errors = [];
   const warnings = [];
-  const topLevelKeys = new Set(["schema_version", "catalog_id", "last_reviewed", "fixture_boundary", "scenarios"]);
+  const topLevelKeys = new Set([
+    "schema_version",
+    "catalog_id",
+    "last_reviewed",
+    "fixture_boundary",
+    "scenarios",
+  ]);
 
   if (!isPlainObject(catalog)) {
     return { errors: ["eval catalog must be an object"], warnings };
@@ -212,16 +224,19 @@ export function validateEvalCatalog(catalog, registry) {
   if (catalog.schema_version !== 1) errors.push("eval catalog schema_version must be 1");
   requireBoundedText(catalog.catalog_id, "eval catalog catalog_id", errors, 3, 120);
   requireBoundedText(catalog.fixture_boundary, "eval catalog fixture_boundary", errors, 20, 1000);
-  if (!isExactCalendarDate(catalog.last_reviewed)) errors.push("eval catalog last_reviewed must be an exact calendar date");
+  if (!isExactCalendarDate(catalog.last_reviewed))
+    errors.push("eval catalog last_reviewed must be an exact calendar date");
   if (!Array.isArray(catalog.scenarios) || catalog.scenarios.length !== 40) {
-    errors.push(`eval catalog must contain exactly 40 scenarios; found ${Array.isArray(catalog.scenarios) ? catalog.scenarios.length : 0}`);
+    errors.push(
+      `eval catalog must contain exactly 40 scenarios; found ${Array.isArray(catalog.scenarios) ? catalog.scenarios.length : 0}`
+    );
     return { errors, warnings };
   }
 
   const roles = Array.isArray(registry?.roles) ? registry.roles : [];
   const roleIds = new Set(roles.map((role) => role.id));
   const expectedScenarioIds = new Set(
-    roles.flatMap((role) => (Array.isArray(role.eval_ids) ? role.eval_ids : [])),
+    roles.flatMap((role) => (Array.isArray(role.eval_ids) ? role.eval_ids : []))
   );
   const scenarioIds = new Set();
   const coveredRoleIds = new Set();
@@ -241,7 +256,8 @@ export function validateEvalCatalog(catalog, registry) {
       if (scenarioIds.has(scenario.id)) errors.push(`duplicate scenario id: ${scenario.id}`);
       scenarioIds.add(scenario.id);
     }
-    if (!roleIds.has(scenario.role_id)) errors.push(`${label}.role_id is not a registry role: ${scenario.role_id}`);
+    if (!roleIds.has(scenario.role_id))
+      errors.push(`${label}.role_id is not a registry role: ${scenario.role_id}`);
     else {
       coveredRoleIds.add(scenario.role_id);
       scenariosPerRole.set(scenario.role_id, (scenariosPerRole.get(scenario.role_id) ?? 0) + 1);
@@ -251,7 +267,8 @@ export function validateEvalCatalog(catalog, registry) {
       }
     }
     requireBoundedText(scenario.category, `${label}.category`, errors, 3, 100);
-    if (!SUPPORTED_LOCALES.has(scenario.locale)) errors.push(`${label}.locale is unsupported: ${scenario.locale}`);
+    if (!SUPPORTED_LOCALES.has(scenario.locale))
+      errors.push(`${label}.locale is unsupported: ${scenario.locale}`);
     if (!RISK_LEVELS.has(scenario.risk)) errors.push(`${label}.risk is invalid: ${scenario.risk}`);
     requireBoundedText(scenario.prompt, `${label}.prompt`, errors, 20, 6000);
     requireUniqueStringArray(
@@ -259,21 +276,21 @@ export function validateEvalCatalog(catalog, registry) {
       `${label}.required_outcome_ids`,
       errors,
       1,
-      30,
+      30
     );
     requireUniqueStringArray(
       scenario.forbidden_outcomes,
       `${label}.forbidden_outcomes`,
       errors,
       1,
-      30,
+      30
     );
     requireUniqueStringArray(
       scenario.evidence_requirements,
       `${label}.evidence_requirements`,
       errors,
       1,
-      30,
+      30
     );
     if (
       Array.isArray(scenario.required_outcome_ids) &&
@@ -294,7 +311,7 @@ export function validateEvalCatalog(catalog, registry) {
       `${label}.expected_decisions`,
       errors,
       1,
-      3,
+      3
     );
     if (
       Array.isArray(scenario.expected_decisions) &&
@@ -305,7 +322,7 @@ export function validateEvalCatalog(catalog, registry) {
     if (scenario.positive_control === true) {
       positiveControlsPerRole.set(
         scenario.role_id,
-        (positiveControlsPerRole.get(scenario.role_id) ?? 0) + 1,
+        (positiveControlsPerRole.get(scenario.role_id) ?? 0) + 1
       );
       if (scenario.critical !== false || !new Set(["LOW", "MEDIUM"]).has(scenario.risk)) {
         errors.push(`${label} positive control must be noncritical`);
@@ -323,15 +340,17 @@ export function validateEvalCatalog(catalog, registry) {
       ) {
         errors.push(`${label} positive control must require a BOUNDED_GO_ outcome`);
       }
-      if (!new Set(["FORMAL_SPEC_ONLY", "CURRENT_LOCAL_RECHECK"]).has(scenario.positive_control_kind)) {
+      if (
+        !new Set(["FORMAL_SPEC_ONLY", "CURRENT_LOCAL_RECHECK"]).has(scenario.positive_control_kind)
+      ) {
         errors.push(
-          `${label}.positive_control_kind must be FORMAL_SPEC_ONLY or CURRENT_LOCAL_RECHECK`,
+          `${label}.positive_control_kind must be FORMAL_SPEC_ONLY or CURRENT_LOCAL_RECHECK`
         );
       } else if (scenario.positive_control_kind === "CURRENT_LOCAL_RECHECK") {
         validateCurrentLocalRecheckLocators(
           scenario.evidence_locators,
           `${label}.evidence_locators`,
-          errors,
+          errors
         );
         if (!Array.isArray(scenario.evidence_locators) || scenario.evidence_locators.length === 0) {
           errors.push(`${label} CURRENT_LOCAL_RECHECK positive control requires evidence_locators`);
@@ -339,9 +358,15 @@ export function validateEvalCatalog(catalog, registry) {
       } else if (scenario.evidence_locators !== undefined) {
         errors.push(`${label} FORMAL_SPEC_ONLY positive control cannot claim evidence_locators`);
       }
-    } else if (Array.isArray(scenario.expected_decisions) && scenario.expected_decisions.includes("GO")) {
+    } else if (
+      Array.isArray(scenario.expected_decisions) &&
+      scenario.expected_decisions.includes("GO")
+    ) {
       errors.push(`${label} non-positive scenario cannot expect GO`);
-    } else if (scenario.positive_control_kind !== undefined || scenario.evidence_locators !== undefined) {
+    } else if (
+      scenario.positive_control_kind !== undefined ||
+      scenario.evidence_locators !== undefined
+    ) {
       errors.push(`${label} non-positive scenario cannot declare a positive proof basis`);
     }
 
@@ -351,7 +376,7 @@ export function validateEvalCatalog(catalog, registry) {
         `${label}.coverage_locales`,
         errors,
         1,
-        PRODUCT_LOCALES.length,
+        PRODUCT_LOCALES.length
       );
       if (Array.isArray(scenario.coverage_locales)) {
         for (const locale of scenario.coverage_locales) {
@@ -370,11 +395,13 @@ export function validateEvalCatalog(catalog, registry) {
   for (const roleId of roleIds) {
     if (!coveredRoleIds.has(roleId)) errors.push(`eval catalog does not cover role: ${roleId}`);
     if (scenariosPerRole.get(roleId) !== 4) {
-      errors.push(`eval catalog must contain exactly 4 scenarios for role ${roleId}; found ${scenariosPerRole.get(roleId) ?? 0}`);
+      errors.push(
+        `eval catalog must contain exactly 4 scenarios for role ${roleId}; found ${scenariosPerRole.get(roleId) ?? 0}`
+      );
     }
     if (positiveControlsPerRole.get(roleId) !== 1) {
       errors.push(
-        `eval catalog must contain exactly one positive control for role ${roleId}; found ${positiveControlsPerRole.get(roleId) ?? 0}`,
+        `eval catalog must contain exactly one positive control for role ${roleId}; found ${positiveControlsPerRole.get(roleId) ?? 0}`
       );
     }
   }
@@ -382,9 +409,7 @@ export function validateEvalCatalog(catalog, registry) {
     role4Coverage.size !== PRODUCT_LOCALES.length ||
     PRODUCT_LOCALES.some((locale) => !role4Coverage.has(locale))
   ) {
-    errors.push(
-      `role 4 coverage_locales must cover exactly ${PRODUCT_LOCALES.join(", ")}`,
-    );
+    errors.push(`role 4 coverage_locales must cover exactly ${PRODUCT_LOCALES.join(", ")}`);
   }
   if (
     scenarioIds.size !== expectedScenarioIds.size ||
@@ -398,10 +423,7 @@ export function validateEvalCatalog(catalog, registry) {
 
 export function validateRunReceipt(
   receipt,
-  {
-    now = new Date(),
-    requireTrustedProject = false,
-  } = {},
+  { now = new Date(), requireTrustedProject = false } = {}
 ) {
   const errors = [];
   const warnings = [];
@@ -422,7 +444,8 @@ export function validateRunReceipt(
   if (!isPlainObject(receipt)) return { errors: ["run receipt must be an object"], warnings };
   rejectUnknownKeys(receipt, allowedKeys, "run receipt", errors);
   if (receipt.schema_version !== 1) errors.push("run receipt schema_version must be 1");
-  if (receipt.receipt_type !== "RUNNER_PREPARATION") errors.push("run receipt_type must be RUNNER_PREPARATION");
+  if (receipt.receipt_type !== "RUNNER_PREPARATION")
+    errors.push("run receipt_type must be RUNNER_PREPARATION");
   requireBoundedText(receipt.run_id, "run receipt run_id", errors, 12, 200);
   if (receipt.producer !== "scripts/run-persistent-agent-orchestra-evals.mjs") {
     errors.push("run receipt producer is not the canonical runner");
@@ -431,17 +454,20 @@ export function validateRunReceipt(
     errors.push("invalid created_at: exact UTC timestamp required");
   } else {
     const age = now.getTime() - new Date(receipt.created_at).getTime();
-    if (age < -60_000 || age > 24 * 60 * 60 * 1000) errors.push("run receipt created_at is stale or in the future");
+    if (age < -60_000 || age > 24 * 60 * 60 * 1000)
+      errors.push("run receipt created_at is stale or in the future");
   }
   if (!new Set(["TRUSTED_PROJECT", "UNTRUSTED_PROJECT", "UNKNOWN"]).has(receipt.project_trust)) {
     errors.push("run receipt project_trust must be an exact enum");
   }
   if (requireTrustedProject) {
     if (receipt.project_trust !== "TRUSTED_PROJECT") {
-      errors.push("TRUSTED_PROJECT required; substring matches and self-attestation are not accepted");
+      errors.push(
+        "TRUSTED_PROJECT required; substring matches and self-attestation are not accepted"
+      );
     }
     errors.push(
-      "external project-trust evidence required; the current validator has no authenticated runtime-attestation verifier",
+      "external project-trust evidence required; the current validator has no authenticated runtime-attestation verifier"
     );
   }
   validateUnverifiedEvidence(receipt.permission_evidence, "permission_evidence", errors);
@@ -456,7 +482,8 @@ export function validateRunReceipt(
 export function validateCandidateEnvelope(candidate) {
   const errors = [];
   const warnings = [];
-  if (!isPlainObject(candidate)) return { errors: ["candidate envelope must be an object"], warnings };
+  if (!isPlainObject(candidate))
+    return { errors: ["candidate envelope must be an object"], warnings };
 
   for (const finding of findForbiddenKeys(candidate)) {
     errors.push(`forbidden self-attestation at ${finding.path}: ${finding.key}`);
@@ -467,10 +494,14 @@ export function validateCandidateEnvelope(candidate) {
   requireBoundedText(candidate.scenario_id, "candidate scenario_id", errors, 6, 120);
   requireBoundedText(candidate.run_id, "candidate run_id", errors, 12, 200);
   requireBoundedText(candidate.attempt_id, "candidate attempt_id", errors, 12, 240);
-  if (typeof candidate.attempt_nonce !== "string" || !/^[0-9a-f]{32,128}$/.test(candidate.attempt_nonce)) {
+  if (
+    typeof candidate.attempt_nonce !== "string" ||
+    !/^[0-9a-f]{32,128}$/.test(candidate.attempt_nonce)
+  ) {
     errors.push("candidate attempt_nonce must be 32-128 lowercase hexadecimal characters");
   }
-  if (!DECISIONS.has(candidate.decision)) errors.push("candidate decision must be GO, STOP, or ASK");
+  if (!DECISIONS.has(candidate.decision))
+    errors.push("candidate decision must be GO, STOP, or ASK");
   requireBoundedText(candidate.scope, "candidate scope", errors, 12, 2000);
 
   validateCandidateEvidence(candidate.evidence, errors);
@@ -502,7 +533,9 @@ export function detectDuplicateCandidateOutputs(attempts) {
     const hash = sha256Text(raw);
     const prior = hashes.get(hash);
     if (prior && prior !== attempt.scenario_id) {
-      errors.push(`duplicate candidate output reused for scenarios ${prior} and ${attempt.scenario_id}`);
+      errors.push(
+        `duplicate candidate output reused for scenarios ${prior} and ${attempt.scenario_id}`
+      );
     } else {
       hashes.set(hash, attempt.scenario_id);
     }
@@ -516,7 +549,7 @@ export function detectDuplicateCandidateOutputs(attempts) {
       const substantivePrior = substantiveHashes.get(substantiveHash);
       if (substantivePrior && substantivePrior !== attempt.scenario_id) {
         errors.push(
-          `substantive candidate template reused for scenarios ${substantivePrior} and ${attempt.scenario_id}`,
+          `substantive candidate template reused for scenarios ${substantivePrior} and ${attempt.scenario_id}`
         );
       } else {
         substantiveHashes.set(substantiveHash, attempt.scenario_id);
@@ -541,7 +574,7 @@ function normalizeCandidateInvocationIdentity(candidate) {
     if (typeof value === "string") {
       return replacements.reduce(
         (current, [identity, placeholder]) => current.replaceAll(identity, placeholder),
-        value,
+        value
       );
     }
     if (Array.isArray(value)) return value.map(visit);
@@ -563,7 +596,7 @@ function validateCurrentLocalRecheckLocators(value, label, errors) {
     const itemLabel = `${label}[${index}]`;
     if (!isPlainObject(item) || Object.keys(item).sort().join(",") !== "kind,locator") {
       errors.push(
-        `${label.replace(/\.evidence_locators$/, "")} CURRENT_LOCAL_RECHECK evidence_locators must use structured allowlisted locators`,
+        `${label.replace(/\.evidence_locators$/, "")} CURRENT_LOCAL_RECHECK evidence_locators must use structured allowlisted locators`
       );
       continue;
     }
@@ -603,9 +636,7 @@ function canonicalJson(value) {
 export async function buildCurrentArtifactManifest(rootDir) {
   const workspaceResult = await checkWorkspace({ rootDir });
   if (workspaceResult.errors.length > 0) {
-    throw new Error(
-      `managed artifact parity failed: ${workspaceResult.errors.join("; ")}`,
-    );
+    throw new Error(`managed artifact parity failed: ${workspaceResult.errors.join("; ")}`);
   }
   const profileDir = path.join(rootDir, ".codex/agents");
   const artifactPaths = {
@@ -626,7 +657,7 @@ export async function buildCurrentArtifactManifest(rootDir) {
     strict_json: "scripts/persistent-agent-orchestra/strict-json.mjs",
     change_gate_core: "scripts/codex-governance/change-gate-core.cjs",
     tool_targets: "scripts/codex-governance/tool-targets.cjs",
-    change_governance_hook: ".codex/hooks/change-governance-gate.cjs",
+    change_governance_hook: ".codex/hooks/agent-workspace-guard.cjs",
     skill_router_hook: ".codex/hooks/skill-router-gate.cjs",
     production_data_integrity_hook: ".codex/hooks/production-data-integrity-gate.cjs",
     production_data_integrity_checker: "scripts/check-production-data-integrity.cjs",
@@ -648,14 +679,15 @@ export async function buildCurrentArtifactManifest(rootDir) {
       Object.entries(artifactPaths).map(async ([key, relativePath]) => [
         key,
         await readRegularFileInsideRoot({ rootDir, relativePath }),
-      ]),
+      ])
     ),
   ]);
   const profileNames = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith(".toml"))
     .map((entry) => entry.name)
     .sort();
-  if (profileNames.length !== 10) throw new Error(`Expected exactly 10 project profiles, found ${profileNames.length}`);
+  if (profileNames.length !== 10)
+    throw new Error(`Expected exactly 10 project profiles, found ${profileNames.length}`);
   const profileParts = [];
   for (const name of profileNames) {
     const text = await readRegularFileInsideRoot({
@@ -750,13 +782,10 @@ export async function writePrivateFileInsideRoot({ rootDir, relativePath, conten
 
   const temporaryPath = path.join(
     path.dirname(target),
-    `.${path.basename(target)}.${process.pid}.${randomBytes(12).toString("hex")}.tmp`,
+    `.${path.basename(target)}.${process.pid}.${randomBytes(12).toString("hex")}.tmp`
   );
   const flags =
-    fsConstants.O_WRONLY |
-    fsConstants.O_CREAT |
-    fsConstants.O_EXCL |
-    (fsConstants.O_NOFOLLOW ?? 0);
+    fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (fsConstants.O_NOFOLLOW ?? 0);
   const handle = await open(temporaryPath, flags, 0o600);
   try {
     await handle.writeFile(content, "utf8");
@@ -784,7 +813,7 @@ export async function createRunReceipt({
     await readRegularFileInsideRoot({
       rootDir,
       relativePath: "config/persistent-agent-orchestra.evals.json",
-    }),
+    })
   );
   return {
     schema_version: 1,
@@ -815,11 +844,7 @@ export async function createRunReceipt({
   };
 }
 
-export async function validateEvalReport({
-  rootDir,
-  report,
-  now = new Date(),
-}) {
+export async function validateEvalReport({ rootDir, report, now = new Date() }) {
   const errors = [];
   const warnings = [];
   const allowedKeys = new Set([
@@ -875,7 +900,7 @@ export async function validateEvalReport({
       !Array.isArray(report.run_receipt?.scenario_ids) ||
       report.run_receipt.scenario_ids.length !== expectedScenarioIds.length ||
       report.run_receipt.scenario_ids.some(
-        (scenarioId, index) => scenarioId !== expectedScenarioIds[index],
+        (scenarioId, index) => scenarioId !== expectedScenarioIds[index]
       )
     ) {
       errors.push("run receipt scenario_ids must exactly match the current ordered catalog");
@@ -905,11 +930,12 @@ export async function validateEvalReport({
           profileIdentities,
           runId: report.run_id,
         },
-        errors,
+        errors
       );
     }
     for (const scenarioId of scenarios.keys()) {
-      if (!seenScenarios.has(scenarioId)) errors.push(`missing eval attempt for scenario: ${scenarioId}`);
+      if (!seenScenarios.has(scenarioId))
+        errors.push(`missing eval attempt for scenario: ${scenarioId}`);
     }
     errors.push(...detectDuplicateCandidateOutputs(report.attempts).errors);
   }
@@ -937,13 +963,22 @@ export function validateNoSemanticBaseline(baseline) {
   if (!isPlainObject(baseline)) return { errors: ["eval baseline must be an object"], warnings };
   rejectUnknownKeys(baseline, allowedKeys, "eval baseline", errors);
   if (baseline.schema_version !== 1) errors.push("eval baseline schema_version must be 1");
-  if (baseline.status !== "NO_SEMANTIC_BASELINE") errors.push("initial baseline status must be NO_SEMANTIC_BASELINE");
-  if (!isExactCalendarDate(baseline.last_reviewed)) errors.push("baseline last_reviewed must be an exact date");
+  if (baseline.status !== "NO_SEMANTIC_BASELINE")
+    errors.push("initial baseline status must be NO_SEMANTIC_BASELINE");
+  if (!isExactCalendarDate(baseline.last_reviewed))
+    errors.push("baseline last_reviewed must be an exact date");
   for (const key of ["registry_sha256", "catalog_sha256", "profile_bundle_sha256"]) {
-    if (baseline[key] !== null) errors.push(`initial baseline ${key} must be null until a real run is recorded`);
+    if (baseline[key] !== null)
+      errors.push(`initial baseline ${key} must be null until a real run is recorded`);
   }
-  for (const key of ["semantic_status", "runtime_status", "human_review_status", "user_acceptance_status"]) {
-    if (baseline[key] !== "UNVERIFIED") errors.push(`initial baseline ${key} must remain UNVERIFIED`);
+  for (const key of [
+    "semantic_status",
+    "runtime_status",
+    "human_review_status",
+    "user_acceptance_status",
+  ]) {
+    if (baseline[key] !== "UNVERIFIED")
+      errors.push(`initial baseline ${key} must remain UNVERIFIED`);
   }
   requireBoundedText(baseline.reason, "baseline reason", errors, 20, 2000);
   requireStringArray(baseline.limitations, "baseline limitations", errors, 1, 50);
@@ -958,7 +993,7 @@ function validateAttempt(
   seenScenarios,
   seenNonces,
   { registry, profileIdentities, runId },
-  errors,
+  errors
 ) {
   const label = `attempt[${index}]`;
   const allowedKeys = new Set([
@@ -982,7 +1017,8 @@ function validateAttempt(
   }
   rejectUnknownKeys(attempt, allowedKeys, label, errors);
   requireBoundedText(attempt.attempt_id, `${label}.attempt_id`, errors, 8, 160);
-  if (seenAttempts.has(attempt.attempt_id)) errors.push(`duplicate attempt_id: ${attempt.attempt_id}`);
+  if (seenAttempts.has(attempt.attempt_id))
+    errors.push(`duplicate attempt_id: ${attempt.attempt_id}`);
   else seenAttempts.add(attempt.attempt_id);
   const scenario = scenarios.get(attempt.scenario_id);
   if (!scenario) errors.push(`${label}.scenario_id is unknown: ${attempt.scenario_id}`);
@@ -991,7 +1027,8 @@ function validateAttempt(
       errors.push(`duplicate scenario attempt: ${attempt.scenario_id}`);
     }
     seenScenarios.add(attempt.scenario_id);
-    if (attempt.role_id !== scenario.role_id) errors.push(`${label}.role_id does not match scenario`);
+    if (attempt.role_id !== scenario.role_id)
+      errors.push(`${label}.role_id does not match scenario`);
   }
   requireBoundedText(attempt.nonce, `${label}.nonce`, errors, 16, 200);
   if (typeof attempt.nonce === "string") {
@@ -1038,7 +1075,10 @@ function validateAttempt(
     }
   }
   requireBoundedText(attempt.raw_output, `${label}.raw_output`, errors, 2, 100_000);
-  if (typeof attempt.raw_output === "string" && attempt.raw_output_sha256 !== sha256Text(attempt.raw_output)) {
+  if (
+    typeof attempt.raw_output === "string" &&
+    attempt.raw_output_sha256 !== sha256Text(attempt.raw_output)
+  ) {
     errors.push(`${label}.raw_output_sha256 mismatch`);
   }
   let parsedCandidate = attempt.candidate;
@@ -1055,18 +1095,22 @@ function validateAttempt(
     }
     const result = validateCandidateEnvelope(parsedCandidate);
     errors.push(...result.errors.map((message) => `${label}: ${message}`));
-    if (parsedCandidate.scenario_id !== attempt.scenario_id) errors.push(`${label}: candidate scenario_id mismatch`);
-    if (parsedCandidate.role_id !== attempt.role_id) errors.push(`${label}: candidate role_id mismatch`);
+    if (parsedCandidate.scenario_id !== attempt.scenario_id)
+      errors.push(`${label}: candidate scenario_id mismatch`);
+    if (parsedCandidate.role_id !== attempt.role_id)
+      errors.push(`${label}: candidate role_id mismatch`);
     if (parsedCandidate.run_id !== runId) errors.push(`${label}: candidate run_id mismatch`);
-    if (parsedCandidate.attempt_id !== attempt.attempt_id) errors.push(`${label}: candidate attempt_id mismatch`);
-    if (parsedCandidate.attempt_nonce !== attempt.nonce) errors.push(`${label}: candidate attempt_nonce mismatch`);
+    if (parsedCandidate.attempt_id !== attempt.attempt_id)
+      errors.push(`${label}: candidate attempt_id mismatch`);
+    if (parsedCandidate.attempt_nonce !== attempt.nonce)
+      errors.push(`${label}: candidate attempt_nonce mismatch`);
     if (
       scenario &&
       Array.isArray(scenario.expected_decisions) &&
       !scenario.expected_decisions.includes(parsedCandidate.decision)
     ) {
       errors.push(
-        `${label}: candidate decision ${parsedCandidate.decision} is not allowed by scenario expected_decisions`,
+        `${label}: candidate decision ${parsedCandidate.decision} is not allowed by scenario expected_decisions`
       );
     }
     if (scenario) validateScenarioOutcomeCoverage(parsedCandidate, scenario, label, errors);
@@ -1080,16 +1124,13 @@ function validateScenarioOutcomeCoverage(candidate, scenario, label, errors) {
   ].sort();
   const actual = Array.isArray(candidate.outcome_assessments)
     ? candidate.outcome_assessments
-      .filter((item) => isPlainObject(item))
-      .map((item) => `${item.outcome_id}:${item.class}`)
-      .sort()
+        .filter((item) => isPlainObject(item))
+        .map((item) => `${item.outcome_id}:${item.class}`)
+        .sort()
     : [];
-  if (
-    expected.length !== actual.length ||
-    expected.some((item, index) => item !== actual[index])
-  ) {
+  if (expected.length !== actual.length || expected.some((item, index) => item !== actual[index])) {
     errors.push(
-      `${label}: candidate outcome_assessments must exactly cover scenario required and forbidden outcomes`,
+      `${label}: candidate outcome_assessments must exactly cover scenario required and forbidden outcomes`
     );
   }
 }
@@ -1131,7 +1172,8 @@ function validateCandidateFindings(items, decision, errors) {
     rejectUnknownKeys(item, keys, label, errors);
     if (!RISK_LEVELS.has(item.severity)) errors.push(`${label}.severity is invalid`);
     requireBoundedText(item.claim, `${label}.claim`, errors, 8, 3000);
-    if (!FINDING_STATUSES.has(item.status)) errors.push(`${label}: candidate finding status may only be OPEN or UNVERIFIED`);
+    if (!FINDING_STATUSES.has(item.status))
+      errors.push(`${label}: candidate finding status may only be OPEN or UNVERIFIED`);
     requireIntegerArray(item.evidence_refs, `${label}.evidence_refs`, errors);
     if (decision === "GO" && new Set(["HIGH", "CRITICAL"]).has(item.severity)) {
       errors.push(`${label}: GO is forbidden with an open or unverified high or critical finding`);
@@ -1154,7 +1196,8 @@ function validateCandidateClaims(items, errors) {
     rejectUnknownKeys(item, keys, label, errors);
     requireBoundedText(item.type, `${label}.type`, errors, 3, 100);
     requireBoundedText(item.scope, `${label}.scope`, errors, 3, 1000);
-    if (!CLAIM_STATUSES.has(item.status)) errors.push(`${label}: candidate claims must remain UNVERIFIED`);
+    if (!CLAIM_STATUSES.has(item.status))
+      errors.push(`${label}: candidate claims must remain UNVERIFIED`);
     requireIntegerArray(item.evidence_refs, `${label}.evidence_refs`, errors);
   }
 }
@@ -1178,9 +1221,12 @@ function validateCandidateOutcomeAssessments(items, decision, errors) {
       if (seen.has(item.outcome_id)) errors.push(`${label}.outcome_id is duplicated`);
       seen.add(item.outcome_id);
     }
-    if (!OUTCOME_CLASSES.has(item.class)) errors.push(`${label}.class must be REQUIRED or FORBIDDEN`);
-    const allowedStatuses = item.class === "FORBIDDEN" ? FORBIDDEN_OUTCOME_STATUSES : REQUIRED_OUTCOME_STATUSES;
-    if (!allowedStatuses.has(item.status)) errors.push(`${label}.status is invalid for ${item.class || "unknown"}`);
+    if (!OUTCOME_CLASSES.has(item.class))
+      errors.push(`${label}.class must be REQUIRED or FORBIDDEN`);
+    const allowedStatuses =
+      item.class === "FORBIDDEN" ? FORBIDDEN_OUTCOME_STATUSES : REQUIRED_OUTCOME_STATUSES;
+    if (!allowedStatuses.has(item.status))
+      errors.push(`${label}.status is invalid for ${item.class || "unknown"}`);
     requireBoundedText(item.rationale, `${label}.rationale`, errors, 20, 2000);
     requireIntegerArray(item.evidence_refs, `${label}.evidence_refs`, errors);
     if (decision === "GO" && item.class === "REQUIRED" && item.status !== "CLAIMED_SATISFIED") {
@@ -1214,10 +1260,20 @@ function validateCandidateSelfReflection(value, candidate, errors) {
       counterevidence,
       new Set(["claim", "evidence_refs"]),
       `${label}.strongest_counterevidence`,
-      errors,
+      errors
     );
-    requireBoundedText(counterevidence.claim, `${label}.strongest_counterevidence.claim`, errors, 20, 2000);
-    requireIntegerArray(counterevidence.evidence_refs, `${label}.strongest_counterevidence.evidence_refs`, errors);
+    requireBoundedText(
+      counterevidence.claim,
+      `${label}.strongest_counterevidence.claim`,
+      errors,
+      20,
+      2000
+    );
+    requireIntegerArray(
+      counterevidence.evidence_refs,
+      `${label}.strongest_counterevidence.evidence_refs`,
+      errors
+    );
   }
   requireBoundedText(value.possible_omission, `${label}.possible_omission`, errors, 20, 2000);
   requireBoundedText(
@@ -1225,7 +1281,7 @@ function validateCandidateSelfReflection(value, candidate, errors) {
     `${label}.decision_change_condition`,
     errors,
     20,
-    2000,
+    2000
   );
   requireStringArray(value.unchecked_evidence, `${label}.unchecked_evidence`, errors, 1, 20);
   requireBoundedText(value.confidence_boundary, `${label}.confidence_boundary`, errors, 20, 2000);
@@ -1235,11 +1291,17 @@ function validateCandidateSelfReflection(value, candidate, errors) {
     value.decision_change_condition,
     ...(Array.isArray(value.unchecked_evidence) ? value.unchecked_evidence : []),
     value.confidence_boundary,
-  ].filter((item) => typeof item === "string").join("\n");
+  ]
+    .filter((item) => typeof item === "string")
+    .join("\n");
   if (typeof candidate.scenario_id === "string" && !combined.includes(candidate.scenario_id)) {
     errors.push("candidate self_reflection must name the exact scenario_id");
   }
-  if (/\b(?:I followed the requested format|I checked everything|nothing was missed|something might be wrong)\b/i.test(combined)) {
+  if (
+    /\b(?:I followed the requested format|I checked everything|nothing was missed|something might be wrong)\b/i.test(
+      combined
+    )
+  ) {
     errors.push("candidate self_reflection contains a generic compliance template");
   }
 }
@@ -1259,7 +1321,8 @@ function validateCandidateHandoffs(items, errors) {
     rejectUnknownKeys(item, keys, label, errors);
     requireBoundedText(item.owner, `${label}.owner`, errors, 3, 160);
     requireBoundedText(item.reason, `${label}.reason`, errors, 8, 1000);
-    if (!HANDOFF_STATUSES.has(item.status)) errors.push(`${label}: candidate handoff status may only be PENDING or UNVERIFIED`);
+    if (!HANDOFF_STATUSES.has(item.status))
+      errors.push(`${label}: candidate handoff status may only be PENDING or UNVERIFIED`);
   }
 }
 
@@ -1273,7 +1336,7 @@ function validateEvidenceReferences(candidate, errors) {
       for (const reference of item.evidence_refs) {
         if (Number.isInteger(reference) && reference >= evidenceCount) {
           errors.push(
-            `candidate ${collectionName}[${index}].evidence_refs contains out-of-range index: ${reference}`,
+            `candidate ${collectionName}[${index}].evidence_refs contains out-of-range index: ${reference}`
           );
         }
       }
@@ -1284,7 +1347,7 @@ function validateEvidenceReferences(candidate, errors) {
     for (const reference of counterRefs) {
       if (Number.isInteger(reference) && reference >= evidenceCount) {
         errors.push(
-          `candidate self_reflection.strongest_counterevidence.evidence_refs contains out-of-range index: ${reference}`,
+          `candidate self_reflection.strongest_counterevidence.evidence_refs contains out-of-range index: ${reference}`
         );
       }
     }
@@ -1297,8 +1360,10 @@ function validateUnverifiedEvidence(value, label, errors) {
     return;
   }
   rejectUnknownKeys(value, new Set(["status", "source"]), `run receipt ${label}`, errors);
-  if (value.status !== "UNVERIFIED") errors.push(`run receipt ${label}.status must remain UNVERIFIED`);
-  if (value.source !== null && typeof value.source !== "string") errors.push(`run receipt ${label}.source must be null or a locator`);
+  if (value.status !== "UNVERIFIED")
+    errors.push(`run receipt ${label}.status must remain UNVERIFIED`);
+  if (value.source !== null && typeof value.source !== "string")
+    errors.push(`run receipt ${label}.source must be null or a locator`);
 }
 
 function validateRuntimeReceipt(runtime, errors) {
@@ -1344,7 +1409,7 @@ function validateGitObservation(value, errors) {
     value,
     new Set(["status", "head_sha", "worktree_state", "source"]),
     "run receipt git_observation",
-    errors,
+    errors
   );
   if (value.status !== "OBSERVED_UNVERIFIED") {
     errors.push("run receipt git_observation.status must remain OBSERVED_UNVERIFIED");
@@ -1367,7 +1432,8 @@ function validateArtifactHashes(value, errors) {
   }
   rejectUnknownKeys(value, new Set(ARTIFACT_HASH_KEYS), "run receipt artifact_hashes", errors);
   for (const key of ARTIFACT_HASH_KEYS) {
-    if (!/^[0-9a-f]{64}$/.test(value[key] ?? "")) errors.push(`run receipt artifact_hashes.${key} must be SHA-256`);
+    if (!/^[0-9a-f]{64}$/.test(value[key] ?? ""))
+      errors.push(`run receipt artifact_hashes.${key} must be SHA-256`);
   }
 }
 
@@ -1404,7 +1470,7 @@ function requireInvocationIdentity(value, label, minimum, maximum) {
     !/^[A-Za-z0-9._:-]+$/.test(value)
   ) {
     throw new Error(
-      `${label} must be ${minimum}-${maximum} characters using only letters, digits, dot, underscore, colon, or hyphen`,
+      `${label} must be ${minimum}-${maximum} characters using only letters, digits, dot, underscore, colon, or hyphen`
     );
   }
 }
@@ -1414,7 +1480,9 @@ function requireStringArray(value, label, errors, minimum, maximum) {
     errors.push(`${label} must contain ${minimum}-${maximum} strings`);
     return;
   }
-  if (value.some((item) => typeof item !== "string" || item.trim().length === 0 || item.length > 2000)) {
+  if (
+    value.some((item) => typeof item !== "string" || item.trim().length === 0 || item.length > 2000)
+  ) {
     errors.push(`${label} contains an invalid string`);
   }
 }
@@ -1437,7 +1505,12 @@ function requireIntegerArray(value, label, errors) {
 }
 
 function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype
+  );
 }
 
 function isExactCalendarDate(value) {

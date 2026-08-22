@@ -26,7 +26,9 @@ Before editing first-party production code:
 
 ## Hook Enforcement
 
-The repository checks this policy for guarded Codex edits with `.codex/hooks/change-governance-gate.cjs`, registered in `.codex/hooks.json` for `PreToolUse`. The hook is a local guardrail and CI/review backstop, not tamper-proof proof that every client or shell mutation passed through it.
+The repository checks this policy for guarded Codex edits through the sole registered `PreToolUse` entrypoint, `.codex/hooks/agent-workspace-guard.cjs`. That adapter composes the independent change-evidence evaluator from `scripts/codex-governance/change-gate-core.cjs` with workspace, skill-routing, and production-data-integrity evaluators, unions every denial/error, and fails closed on ambiguous tool input. Read-only commands do not require a planning token. A `.preflight-token` records planning evidence; it is not authorization and cannot override an ambiguous command, workspace identity, production-data policy, or OS/runtime approval.
+
+This hook topology is defense-in-depth and a CI/review backstop, not a complete security boundary or tamper-proof proof that every client or shell mutation passed through it. Hosted/specialized tools, `write_stdin`, and future tool aliases may bypass the registered matcher; `PostToolUse` cannot undo an effect. OS sandboxing and explicit runtime approval remain the primary boundary, and effective fresh-session loading remains `UNVERIFIED` until observed.
 
 The hook allows focused tests, plan files, discovery artifacts, and token files before implementation. For guarded production, enforcement, config, platform, or agent files, add a `test_first` object inside a fresh structured `.preflight-token`. Legacy standalone token names remain ignored local artifacts but are not sufficient for the Codex change gate.
 
@@ -68,14 +70,14 @@ Do this for:
 
 Use the test level that fails closest to the user-visible risk:
 
-| Risk | Preferred first test |
-| --- | --- |
-| Pure function or formatter | Vitest unit test |
-| Zustand hook/store interaction | Vitest integration/hook test |
-| Component state, ARIA, modal behavior | Testing Library component test |
-| Route transition, overlay blocking, mobile tap issue | Playwright E2E or Browser proof |
-| Layout, overlap, responsive behavior | Playwright screenshot plus DOM/a11y assertions |
-| Runtime responsiveness | Browser timing, long-task or trace evidence plus regression smoke |
+| Risk                                                 | Preferred first test                                              |
+| ---------------------------------------------------- | ----------------------------------------------------------------- |
+| Pure function or formatter                           | Vitest unit test                                                  |
+| Zustand hook/store interaction                       | Vitest integration/hook test                                      |
+| Component state, ARIA, modal behavior                | Testing Library component test                                    |
+| Route transition, overlay blocking, mobile tap issue | Playwright E2E or Browser proof                                   |
+| Layout, overlap, responsive behavior                 | Playwright screenshot plus DOM/a11y assertions                    |
+| Runtime responsiveness                               | Browser timing, long-task or trace evidence plus regression smoke |
 
 ## Evidence Sources
 

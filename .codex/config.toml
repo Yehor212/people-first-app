@@ -1,6 +1,6 @@
 # Generated from config/persistent-agent-orchestra.json. Do not edit by hand.
-# These bounds constrain project subagent topology; they do not prove runtime loading.
+# This is the canonical Codex concurrency key; runtime loading and enforcement remain UNVERIFIED.
+# Depth 1 and forbidden recursive fanout remain project routing policy, not a native assignment.
 
 [agents]
-max_threads = 4
-max_depth = 1
+max_concurrent_threads_per_session = 3

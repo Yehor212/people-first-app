@@ -1,13 +1,4 @@
-import {
-  chmod,
-  link,
-  mkdtemp,
-  mkdir,
-  readFile,
-  rm,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { chmod, link, mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -27,9 +18,37 @@ const REPO_ROOT = process.cwd();
 const FIXED_NOW = new Date("2026-07-20T23:00:00.000Z");
 const temporaryRoots = [];
 
+function activeTomlAssignments(source) {
+  const assignments = [];
+  let table = [];
+
+  for (const rawLine of source.split(/\r?\n/)) {
+    const line = rawLine.replace(/\s+#.*$/, "").trim();
+    if (!line) continue;
+    const tableMatch = line.match(/^\[([^\]]+)\]$/);
+    if (tableMatch) {
+      table = tableMatch[1].split(".").map(normalizeTomlKeySegment);
+      continue;
+    }
+    const assignmentMatch = line.match(/^([^=]+?)\s*=\s*(.+)$/);
+    if (!assignmentMatch) continue;
+    const assignmentKey = assignmentMatch[1].split(".").map(normalizeTomlKeySegment);
+    assignments.push({
+      key: [...table, ...assignmentKey].join("."),
+      value: assignmentMatch[2].trim(),
+    });
+  }
+
+  return assignments;
+}
+
+function normalizeTomlKeySegment(segment) {
+  return segment.trim().replace(/^(["'])(.*)\1$/, "$2");
+}
+
 afterEach(async () => {
   await Promise.all(
-    temporaryRoots.splice(0).map((rootDir) => rm(rootDir, { recursive: true, force: true })),
+    temporaryRoots.splice(0).map((rootDir) => rm(rootDir, { recursive: true, force: true }))
   );
 });
 
@@ -49,40 +68,42 @@ describe("persistent agent orchestra registry", () => {
 
   it("pins the primary evidence used for multi-agent evaluation and debate claims", async () => {
     const registry = await readCanonicalRegistry();
-    const sources = new Map(
-      registry.source_review.sources.map((source) => [source.id, source]),
-    );
+    const sources = new Map(registry.source_review.sources.map((source) => [source.id, source]));
     for (const source of sources.values()) {
-      expect(source).toEqual(expect.objectContaining({
-        authority_type: expect.any(String),
-        document_status: expect.any(String),
-        evidence_role: expect.any(String),
-        applicability_strength: expect.any(String),
-        observed_canonical_url: source.url,
-        retrieved_at: expect.any(String),
-        document_version_or_date: expect.any(String),
-        supersedes: expect.any(Array),
-        content_slice_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-        affected_platforms: expect.any(Array),
-        does_not_prove: expect.any(String),
-        event_driven_review_triggers: expect.any(Array),
-      }));
+      expect(source).toEqual(
+        expect.objectContaining({
+          authority_type: expect.any(String),
+          document_status: expect.any(String),
+          evidence_role: expect.any(String),
+          applicability_strength: expect.any(String),
+          observed_canonical_url: source.url,
+          retrieved_at: expect.any(String),
+          document_version_or_date: expect.any(String),
+          supersedes: expect.any(Array),
+          content_slice_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+          affected_platforms: expect.any(Array),
+          does_not_prove: expect.any(String),
+          event_driven_review_triggers: expect.any(Array),
+        })
+      );
     }
-    expect(sources.get("nist-ai-rmf")).toEqual(expect.objectContaining({
-      authority_type: "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
-      document_status: "CURRENT_WITH_REVISION_WATCH",
-      evidence_role: "IMPLEMENTATION_GUIDANCE",
-      applicability_strength: "RECOMMENDED",
-    }));
+    expect(sources.get("nist-ai-rmf")).toEqual(
+      expect.objectContaining({
+        authority_type: "INFORMATIVE_INSTITUTIONAL_GUIDANCE",
+        document_status: "CURRENT_WITH_REVISION_WATCH",
+        evidence_role: "IMPLEMENTATION_GUIDANCE",
+        applicability_strength: "RECOMMENDED",
+      })
+    );
 
     expect(sources.get("openai-evaluation-best-practices")?.url).toBe(
-      "https://developers.openai.com/api/docs/guides/evaluation-best-practices",
+      "https://developers.openai.com/api/docs/guides/evaluation-best-practices"
     );
     expect(sources.get("acl-multi-agent-judge-bias-amplification")?.url).toBe(
-      "https://aclanthology.org/2025.findings-emnlp.941/",
+      "https://aclanthology.org/2025.findings-emnlp.941/"
     );
     expect(sources.get("acl-mad-diversity-confidence")?.url).toBe(
-      "https://aclanthology.org/2026.findings-acl.1694/",
+      "https://aclanthology.org/2026.findings-acl.1694/"
     );
 
     const role1 = registry.roles.find((role) => role.slot === 1);
@@ -92,7 +113,7 @@ describe("persistent agent orchestra registry", () => {
       expect.arrayContaining([
         "acl-multi-agent-judge-bias-amplification",
         "acl-mad-diversity-confidence",
-      ]),
+      ])
     );
     expect(role8.source_ids).toContain("openai-evaluation-best-practices");
     expect(role8.source_ids).toContain("acl-multi-agent-judge-bias-amplification");
@@ -100,17 +121,17 @@ describe("persistent agent orchestra registry", () => {
       expect.arrayContaining([
         "acl-multi-agent-judge-bias-amplification",
         "acl-mad-diversity-confidence",
-      ]),
+      ])
     );
     expect(sources.get("acl-mad-diversity-confidence")?.applicability).toMatch(
-      /does not prove|does not establish/i,
+      /does not prove|does not establish/i
     );
   });
 
   it("requires source applicability and role source_ids to be exact reverse mappings", async () => {
     const registry = await readCanonicalRegistry();
     const source = registry.source_review.sources.find(
-      (item) => item.id === "openai-evaluation-best-practices",
+      (item) => item.id === "openai-evaluation-best-practices"
     );
     source.roles.push("technical-architecture-data-cross-platform");
 
@@ -120,21 +141,73 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "source openai-evaluation-best-practices declares role technical-architecture-data-cross-platform but that role does not reference the source",
+      "source openai-evaluation-best-practices declares role technical-architecture-data-cross-platform but that role does not reference the source"
     );
   });
 
   it.each([
     ["nine roles", (registry) => registry.roles.pop(), "exactly 10"],
-    ["eleven roles", (registry) => registry.roles.push({ ...registry.roles[8], slot: 11 }), "exactly 10"],
-    ["duplicate slot", (registry) => { registry.roles[1].slot = 1; }, "duplicate role slot"],
-    ["duplicate id", (registry) => { registry.roles[1].id = registry.roles[0].id; }, "duplicate role id"],
-    ["duplicate runtime name", (registry) => { registry.roles[1].runtime_name = registry.roles[0].runtime_name; }, "duplicate runtime_name"],
-    ["missing blind pass A", (registry) => { delete registry.roles[9].review_protocol.pass_a; }, "role 10 pass_a"],
-    ["missing blind pass B", (registry) => { delete registry.roles[9].review_protocol.pass_b; }, "role 10 pass_b"],
-    ["optional role 10", (registry) => { registry.roles[9].activation.mandatory = false; }, "role 10 activation.mandatory"],
-    ["unstructured blind pass A", (registry) => { registry.roles[9].review_protocol.pass_a = "present"; }, "role 10 pass_a"],
-    ["unstructured blind pass B", (registry) => { registry.roles[9].review_protocol.pass_b = { x: "y" }; }, "role 10 pass_b"],
+    [
+      "eleven roles",
+      (registry) => registry.roles.push({ ...registry.roles[8], slot: 11 }),
+      "exactly 10",
+    ],
+    [
+      "duplicate slot",
+      (registry) => {
+        registry.roles[1].slot = 1;
+      },
+      "duplicate role slot",
+    ],
+    [
+      "duplicate id",
+      (registry) => {
+        registry.roles[1].id = registry.roles[0].id;
+      },
+      "duplicate role id",
+    ],
+    [
+      "duplicate runtime name",
+      (registry) => {
+        registry.roles[1].runtime_name = registry.roles[0].runtime_name;
+      },
+      "duplicate runtime_name",
+    ],
+    [
+      "missing blind pass A",
+      (registry) => {
+        delete registry.roles[9].review_protocol.pass_a;
+      },
+      "role 10 pass_a",
+    ],
+    [
+      "missing blind pass B",
+      (registry) => {
+        delete registry.roles[9].review_protocol.pass_b;
+      },
+      "role 10 pass_b",
+    ],
+    [
+      "optional role 10",
+      (registry) => {
+        registry.roles[9].activation.mandatory = false;
+      },
+      "role 10 activation.mandatory",
+    ],
+    [
+      "unstructured blind pass A",
+      (registry) => {
+        registry.roles[9].review_protocol.pass_a = "present";
+      },
+      "role 10 pass_a",
+    ],
+    [
+      "unstructured blind pass B",
+      (registry) => {
+        registry.roles[9].review_protocol.pass_b = { x: "y" };
+      },
+      "role 10 pass_b",
+    ],
   ])("rejects %s", async (_label, mutate, expectedMessage) => {
     const registry = await readCanonicalRegistry();
     mutate(registry);
@@ -166,9 +239,7 @@ describe("persistent agent orchestra registry", () => {
       waivers: await readCanonicalWaivers(),
     });
 
-    expect(result.errors.join("\n")).toContain(
-      "activation_policy mandatory_role_ids_by_tier.L4",
-    );
+    expect(result.errors.join("\n")).toContain("activation_policy mandatory_role_ids_by_tier.L4");
   });
 
   it("keeps mandatory role metadata consistent with the structured tier map", async () => {
@@ -181,9 +252,7 @@ describe("persistent agent orchestra registry", () => {
       waivers: await readCanonicalWaivers(),
     });
 
-    expect(result.errors.join("\n")).toContain(
-      "role 8 activation.mandatory must equal true",
-    );
+    expect(result.errors.join("\n")).toContain("role 8 activation.mandatory must equal true");
   });
 
   it.each([
@@ -192,18 +261,23 @@ describe("persistent agent orchestra registry", () => {
     ["ARCHITECTURE_PERSISTENCE_SYNC_MIGRATION", "technical-architecture-data-cross-platform"],
     ["SECURITY_PRIVACY_AUTH_EXTERNAL_WRITE", "security-privacy-agent-trust"],
     ["BEST_PRACTICES_OR_COMPLETENESS", "independent-blind-spot-sentinel"],
-  ])("rejects a selection record that omits the matched owner for %s", async (triggerId, ownerId) => {
-    const registry = await readCanonicalRegistry();
-    const record = selectionRecord(registry, {
-      riskTier: "L2",
-      triggerIds: [triggerId],
-      selectedRoleIds: ["coordinator-teamlead", "qa-evidence-release-verification"],
-    });
+  ])(
+    "rejects a selection record that omits the matched owner for %s",
+    async (triggerId, ownerId) => {
+      const registry = await readCanonicalRegistry();
+      const record = selectionRecord(registry, {
+        riskTier: "L2",
+        triggerIds: [triggerId],
+        selectedRoleIds: ["coordinator-teamlead", "qa-evidence-release-verification"],
+      });
 
-    const result = validateRoleSelectionRecord(registry, record);
+      const result = validateRoleSelectionRecord(registry, record);
 
-    expect(result.errors.join("\n")).toContain(`matched trigger ${triggerId} requires role ${ownerId}`);
-  });
+      expect(result.errors.join("\n")).toContain(
+        `matched trigger ${triggerId} requires role ${ownerId}`
+      );
+    }
+  );
 
   it("accepts the smallest selection that includes every tier and matched-domain owner", async () => {
     const registry = await readCanonicalRegistry();
@@ -239,7 +313,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
-      "selection record requires role independent-blind-spot-sentinel",
+      "selection record requires role independent-blind-spot-sentinel"
     );
   });
 
@@ -258,7 +332,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
-      "risk_tier L2 is inconsistent with M2_PROTECTED_HIGH_RISK",
+      "risk_tier L2 is inconsistent with M2_PROTECTED_HIGH_RISK"
     );
   });
 
@@ -275,7 +349,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(validateRoleSelectionRecord(registry, record).errors).toContain(
-      "selection record requires role psychology-human-factors-emotional-safety",
+      "selection record requires role psychology-human-factors-emotional-safety"
     );
   });
 
@@ -288,7 +362,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
-      "selection record selected unrelated role",
+      "selection record selected unrelated role"
     );
   });
 
@@ -306,7 +380,7 @@ describe("persistent agent orchestra registry", () => {
     delete record.skipped_roles[0].evidence_locators;
 
     expect(validateRoleSelectionRecord(registry, record).errors.join("\n")).toContain(
-      "skipped_roles[0] evidence_locators",
+      "skipped_roles[0] evidence_locators"
     );
   });
 
@@ -323,7 +397,9 @@ describe("persistent agent orchestra registry", () => {
       waivers: await readCanonicalWaivers(),
     });
 
-    expect(result.errors.filter((message) => message.includes("semantic_contract_sha256 mismatch"))).toHaveLength(10);
+    expect(
+      result.errors.filter((message) => message.includes("semantic_contract_sha256 mismatch"))
+    ).toHaveLength(10);
   });
 
   it("requires the stable semantic invariant IDs even if a checksum is recomputed", async () => {
@@ -351,7 +427,9 @@ describe("persistent agent orchestra registry", () => {
       waivers: await readCanonicalWaivers(),
     });
 
-    expect(result.errors.join("\n")).toContain("role 6 activation.mandatory_on_trigger must equal true");
+    expect(result.errors.join("\n")).toContain(
+      "role 6 activation.mandatory_on_trigger must equal true"
+    );
   });
 
   it("keeps the no-AI-template grounding rule inside every generated profile contract", async () => {
@@ -376,7 +454,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "human_escalation_policy categories must contain the exact protected category set",
+      "human_escalation_policy categories must contain the exact protected category set"
     );
   });
 
@@ -391,10 +469,10 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "role 10 pass_a.context_manifest_sha256_required must equal true",
+      "role 10 pass_a.context_manifest_sha256_required must equal true"
     );
     expect(result.errors.join("\n")).toContain(
-      "role 10 pass_b.recompute_hashes_required must equal true",
+      "role 10 pass_b.recompute_hashes_required must equal true"
     );
   });
 
@@ -412,7 +490,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "trust_envelope private_data_policy.raw_sensitive_content must equal FORBIDDEN",
+      "trust_envelope private_data_policy.raw_sensitive_content must equal FORBIDDEN"
     );
   });
 
@@ -427,7 +505,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "role at index 5 tool_policy.inherits_global_denials must equal true",
+      "role at index 5 tool_policy.inherits_global_denials must equal true"
     );
   });
 
@@ -441,7 +519,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "evaluation_adapter required_keys must equal schema_version, role_id, scenario_id, run_id, attempt_id, attempt_nonce",
+      "evaluation_adapter required_keys must equal schema_version, role_id, scenario_id, run_id, attempt_id, attempt_nonce"
     );
   });
 
@@ -455,7 +533,7 @@ describe("persistent agent orchestra registry", () => {
     });
 
     expect(result.errors.join("\n")).toContain(
-      "role 10 domain_routing must contain the exact canonical owner map",
+      "role 10 domain_routing must contain the exact canonical owner map"
     );
   });
 
@@ -485,14 +563,14 @@ describe("persistent agent orchestra registry", () => {
     inflated.prompt_budgets.profile_compaction.baseline_total_bytes = 999_999_999;
     inflated.prompt_budgets.profile_compaction.minimum_structural_reduction_percent = 0;
     expect(validateRegistry(inflated, { now: FIXED_NOW, waivers }).errors.join("\n")).toMatch(
-      /baseline_total_bytes|minimum_structural_reduction_percent/i,
+      /baseline_total_bytes|minimum_structural_reduction_percent/i
     );
 
     const missing = await readCanonicalRegistry();
     delete missing.prompt_budgets.profile_compaction.baseline_total_bytes;
     delete missing.prompt_budgets.profile_compaction.minimum_structural_reduction_percent;
     expect(validateRegistry(missing, { now: FIXED_NOW, waivers }).errors.join("\n")).toMatch(
-      /baseline_total_bytes|minimum_structural_reduction_percent/i,
+      /baseline_total_bytes|minimum_structural_reduction_percent/i
     );
   });
 
@@ -553,13 +631,53 @@ describe("persistent agent orchestra registry", () => {
     expect(result.profilePaths).toHaveLength(10);
   });
 
+  it("renders only the canonical Codex concurrency setting and leaves depth as project policy", async () => {
+    const rootDir = await createGeneratedWorkspace();
+    const config = await readFile(path.join(rootDir, ".codex/config.toml"), "utf8");
+    const reference = await readFile(
+      path.join(rootDir, "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md"),
+      "utf8"
+    );
+    const assignments = activeTomlAssignments(config);
+    const canonicalAssignments = assignments.filter(
+      ({ key }) => key === "agents.max_concurrent_threads_per_session"
+    );
+    const legacyAssignments = assignments.filter(({ key }) =>
+      ["max_threads", "max_depth"].includes(key.split(".").at(-1))
+    );
+
+    expect(canonicalAssignments).toEqual([
+      { key: "agents.max_concurrent_threads_per_session", value: "3" },
+    ]);
+    expect(legacyAssignments).toEqual([]);
+    expect(reference).toContain("max_concurrent_threads_per_session = 3");
+    expect(reference).toContain("runtime enforcement remains `UNVERIFIED`");
+  });
+
+  it("keeps authored topology docs on the canonical key without claiming depth enforcement", async () => {
+    const design = await readFile(
+      path.join(process.cwd(), "docs/ai/PERSISTENT_AGENT_ORCHESTRA_DESIGN.md"),
+      "utf8"
+    );
+    const researchAudit = await readFile(
+      path.join(process.cwd(), "docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md"),
+      "utf8"
+    );
+
+    for (const authoredDoc of [design, researchAudit]) {
+      expect(authoredDoc).toContain("max_concurrent_threads_per_session");
+      expect(authoredDoc).not.toContain("`max_threads = 4`");
+      expect(authoredDoc).not.toContain("`max_depth = 1`");
+    }
+  });
+
   it("rejects duplicate canonical JSON keys instead of accepting the last value", async () => {
     const rootDir = await createWorkspace();
     const registryPath = path.join(rootDir, "config/persistent-agent-orchestra.json");
     const registry = (await readFile(registryPath, "utf8")).trimEnd();
     const duplicate = registry.replace(
       /\n}\s*$/,
-      ',\n  "hard_stop_policy": {"weakened_last_value": true}\n}\n',
+      ',\n  "hard_stop_policy": {"weakened_last_value": true}\n}\n'
     );
     await writeFile(registryPath, duplicate, "utf8");
 
@@ -583,10 +701,7 @@ describe("persistent agent orchestra registry", () => {
     expect(inputResult.errors.join("\n")).toMatch(/multiple hard links|hardlink/i);
 
     const generatedRoot = await createGeneratedWorkspace();
-    const profilePath = path.join(
-      generatedRoot,
-      ".codex/agents/01-coordinator-teamlead.toml",
-    );
+    const profilePath = path.join(generatedRoot, ".codex/agents/01-coordinator-teamlead.toml");
     const outsideProfile = path.join(outsideRoot, "profile.toml");
     await writeFile(outsideProfile, await readFile(profilePath, "utf8"), "utf8");
     await unlink(profilePath);
@@ -596,24 +711,27 @@ describe("persistent agent orchestra registry", () => {
     expect(generatedResult.errors.join("\n")).toMatch(/multiple hard links|hardlink/i);
   });
 
-  it.runIf(process.platform !== "win32")("rolls back every managed artifact when a later write fails", async () => {
-    const rootDir = await createWorkspace();
-    await mkdir(path.join(rootDir, ".codex/agents"), { recursive: true });
-    const configPath = path.join(rootDir, ".codex/config.toml");
-    const original = "# stale config\n";
-    await writeFile(configPath, original, "utf8");
-    await chmod(path.join(rootDir, ".codex/agents"), 0o555);
+  it.runIf(process.platform !== "win32")(
+    "rolls back every managed artifact when a later write fails",
+    async () => {
+      const rootDir = await createWorkspace();
+      await mkdir(path.join(rootDir, ".codex/agents"), { recursive: true });
+      const configPath = path.join(rootDir, ".codex/config.toml");
+      const original = "# stale config\n";
+      await writeFile(configPath, original, "utf8");
+      await chmod(path.join(rootDir, ".codex/agents"), 0o555);
 
-    try {
-      const result = await syncWorkspace({ rootDir, mode: "write", now: FIXED_NOW });
+      try {
+        const result = await syncWorkspace({ rootDir, mode: "write", now: FIXED_NOW });
 
-      expect(result.errors.join("\n")).toContain("unable to write managed artifact");
-      expect(await readFile(configPath, "utf8")).toBe(original);
-      expect(result.writtenPaths).toEqual([]);
-    } finally {
-      await chmod(path.join(rootDir, ".codex/agents"), 0o755);
+        expect(result.errors.join("\n")).toContain("unable to write managed artifact");
+        expect(await readFile(configPath, "utf8")).toBe(original);
+        expect(result.writtenPaths).toEqual([]);
+      } finally {
+        await chmod(path.join(rootDir, ".codex/agents"), 0o755);
+      }
     }
-  });
+  );
 
   it("fails closed when a required generated profile is missing", async () => {
     const rootDir = await createGeneratedWorkspace();
@@ -629,7 +747,7 @@ describe("persistent agent orchestra registry", () => {
     await writeFile(
       path.join(rootDir, ".codex/agents/11-generic-reviewer.toml"),
       'name = "zenflow-11-generic-reviewer"\n',
-      "utf8",
+      "utf8"
     );
 
     const result = await checkWorkspace({ rootDir, now: FIXED_NOW });
@@ -639,7 +757,10 @@ describe("persistent agent orchestra registry", () => {
 
   it("rejects byte drift in a generated profile", async () => {
     const rootDir = await createGeneratedWorkspace();
-    const profilePath = path.join(rootDir, ".codex/agents/02-psychology-human-factors-emotional-safety.toml");
+    const profilePath = path.join(
+      rootDir,
+      ".codex/agents/02-psychology-human-factors-emotional-safety.toml"
+    );
     const current = await readFile(profilePath, "utf8");
     await writeFile(profilePath, `${current}\n# hand edited\n`, "utf8");
 
@@ -680,7 +801,7 @@ function refreshSourceRecordHash(source) {
 
 async function readCanonicalRegistry() {
   return JSON.parse(
-    await readFile(path.join(REPO_ROOT, "config/persistent-agent-orchestra.json"), "utf8"),
+    await readFile(path.join(REPO_ROOT, "config/persistent-agent-orchestra.json"), "utf8")
   );
 }
 
@@ -688,8 +809,8 @@ async function readCanonicalWaivers() {
   return JSON.parse(
     await readFile(
       path.join(REPO_ROOT, "config/persistent-agent-orchestra.source-waivers.json"),
-      "utf8",
-    ),
+      "utf8"
+    )
   );
 }
 
@@ -701,15 +822,15 @@ async function createWorkspace() {
   await writeFile(
     path.join(rootDir, "config/persistent-agent-orchestra.json"),
     await readFile(path.join(REPO_ROOT, "config/persistent-agent-orchestra.json"), "utf8"),
-    "utf8",
+    "utf8"
   );
   await writeFile(
     path.join(rootDir, "config/persistent-agent-orchestra.source-waivers.json"),
     await readFile(
       path.join(REPO_ROOT, "config/persistent-agent-orchestra.source-waivers.json"),
-      "utf8",
+      "utf8"
     ),
-    "utf8",
+    "utf8"
   );
   return rootDir;
 }

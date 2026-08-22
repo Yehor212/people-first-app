@@ -28,13 +28,21 @@ const L4_EXACT = new Set(["AGENTS.md", "ARCHITECTURE.md", "CLAUDE.md", "package.
 function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
   const reasons = [];
   const evidence = [];
-  const absoluteRoot = path.resolve(rootDir);
-  const absoluteTarget = path.resolve(absoluteRoot, targetPath);
+  let identity;
+  try {
+    identity = resolveTargetIdentity(rootDir, targetPath);
+  } catch {
+    return { allowed: false, reasons: ["target path identity is unavailable"], evidence };
+  }
+  const { absoluteRoot, absoluteTarget } = identity;
   const relativeValue = normalizeRelative(path.relative(absoluteRoot, absoluteTarget));
   const relative = relativeValue === "" ? "." : relativeValue;
 
   if (relative === ".." || relative.startsWith("../") || path.isAbsolute(relative)) {
     return { allowed: false, reasons: ["target path is outside repository"], evidence };
+  }
+  if (identity.multipleLinks) {
+    return { allowed: false, reasons: ["target path has multiple filesystem links"], evidence };
   }
   if (
     UNGUARDED_EXACT.has(relative) ||
@@ -65,6 +73,51 @@ function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
     evidence.push("skill-routing evidence present");
   }
   return { allowed: reasons.length === 0, reasons, evidence };
+}
+
+function resolveTargetIdentity(rootDir, targetPath) {
+  const rootInput = path.resolve(String(rootDir || ""));
+  const absoluteRoot = fs.realpathSync.native(rootInput);
+  if (!fs.statSync(absoluteRoot).isDirectory()) {
+    throw new Error("repository root is not a directory");
+  }
+
+  const lexicalTarget = path.resolve(absoluteRoot, String(targetPath || ""));
+  const resolvedTarget = resolvePotentialPath(lexicalTarget);
+  return {
+    absoluteRoot,
+    absoluteTarget: resolvedTarget.path,
+    multipleLinks: resolvedTarget.multipleLinks,
+  };
+}
+
+function resolvePotentialPath(absolutePath) {
+  let cursor = path.resolve(absolutePath);
+  const missingSegments = [];
+  let stats;
+
+  while (true) {
+    try {
+      stats = fs.lstatSync(cursor);
+      break;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      const parent = path.dirname(cursor);
+      if (parent === cursor) throw error;
+      missingSegments.unshift(path.basename(cursor));
+      cursor = parent;
+    }
+  }
+
+  const canonicalExistingPath = fs.realpathSync.native(cursor);
+  const canonicalStats = fs.statSync(canonicalExistingPath);
+  if (missingSegments.length > 0 && !canonicalStats.isDirectory()) {
+    throw new Error("target ancestor is not a directory");
+  }
+  return {
+    path: path.join(canonicalExistingPath, ...missingSegments),
+    multipleLinks: missingSegments.length === 0 && stats.isFile() && stats.nlink > 1,
+  };
 }
 
 function validatePreflightToken(token, now, reasons, l4Required) {

@@ -4,7 +4,7 @@ This audit records the external evidence and repo conclusions for leading and ve
 
 ## Source Evidence
 
-- OpenAI Codex subagents and custom agents: project profiles live in `.codex/agents/*.toml`; built-in runtime roles coexist with project roles; bounded `max_threads` and `max_depth` constrain topology; a custom profile does not by itself prove effective inherited permissions. Source: https://developers.openai.com/codex/subagents
+- OpenAI Codex subagents and custom agents: project profiles live in `.codex/agents/*.toml`; built-in runtime roles coexist with project roles; `max_concurrent_threads_per_session` is the canonical concurrency key; depth-one and non-recursive fanout are project routing policies whose runtime enforcement remains `UNVERIFIED`; a custom profile does not by itself prove effective inherited permissions. Source: https://developers.openai.com/codex/subagents
 - OpenAI Codex approvals and security: dangerous full access is elevated risk, approval reviewers fail closed on prompt-build/review/parse failures, and sandbox/approval mode remains the boundary. Source: https://developers.openai.com/codex/agent-approvals-security
 - OpenAI agent guardrails: guardrails validate input, output, or tool behavior; human review should pause side effects such as edits, shell commands, or sensitive MCP actions. Source: https://developers.openai.com/api/docs/guides/agents/guardrails-approvals
 - OpenAI eval skills: small 10-20 prompt eval sets and deterministic JSONL/trace checks catch regressions better than vibes. Source: https://developers.openai.com/blog/eval-skills

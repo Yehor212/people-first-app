@@ -1,7 +1,7 @@
 "use strict";
 
 const { spawnSync } = require("node:child_process");
-const { existsSync, realpathSync, statSync } = require("node:fs");
+const { existsSync, lstatSync, realpathSync, statSync } = require("node:fs");
 const path = require("node:path");
 const {
   analyzeGitOperations,
@@ -14,6 +14,19 @@ const {
 } = require("./codex-governance/tool-targets.cjs");
 const { CANONICAL_REMOTE_ID, normalizeRemoteUrl } = require("./agent-workspace-core.cjs");
 
+const STRUCTURED_MUTATION_TOOLS = new Set([
+  "apply_patch",
+  "functions.apply_patch",
+  "edit",
+  "write",
+  "writefile",
+  "createfile",
+  "deletefile",
+  "multiedit",
+  "strreplacefile",
+  "notebookedit",
+]);
+
 function evaluateWorkspaceEvent({ event, expectedAgent, fallbackCwd = process.cwd() }) {
   const cwd =
     nonEmpty(event?.cwd) ||
@@ -22,13 +35,18 @@ function evaluateWorkspaceEvent({ event, expectedAgent, fallbackCwd = process.cw
     fallbackCwd;
   const analysis = analyzeToolEvent(event);
   const gitOperations = analyzeGitOperations(analysis.command);
-  const dangerous = gitOperations.filter((operation) => operation.dangerous);
+  const reviewedReadOnly = analysis.reviewedReadOnly === true;
+  const dangerous = reviewedReadOnly
+    ? []
+    : gitOperations.filter((operation) => operation.dangerous);
   const scope = repositoryScope(cwd, analysis.targets, gitOperations, analysis.workingDirectories);
   const zenflowIdentities = scope.identities.filter(
     (identity) => identity.remoteId === CANONICAL_REMOTE_ID
   );
   const packageRunMutates = packageManagerRunMayMutate(analysis.command);
-  const mutationIntent = analysis.mutationIntent || analysis.unknownExecution || packageRunMutates;
+  const mutationIntent =
+    !reviewedReadOnly &&
+    (analysis.mutationIntent || analysis.unknownExecution || packageRunMutates);
   const operatorOnlyReason = operatorOnlyWorkspaceCommandReason(analysis.command);
   if (operatorOnlyReason) {
     return {
@@ -49,12 +67,15 @@ function evaluateWorkspaceEvent({ event, expectedAgent, fallbackCwd = process.cw
   }
 
   const reasons = dangerous.map((operation) => `destructive Git blocked: ${operation.reason}`);
-  if (analysis.opaqueExecution) {
+  if (mutationIntent) {
+    reasons.push(...structuredHardlinkReasons(event, cwd, analysis.targets));
+  }
+  if (analysis.opaqueExecution && !reviewedReadOnly) {
     reasons.push(
       "destructive opaque child-process execution blocked; invoke reviewed commands directly"
     );
   }
-  if (analysis.unknownExecution) {
+  if (analysis.unknownExecution && !reviewedReadOnly) {
     reasons.push(
       "unknown shell execution blocked; use a literal reviewed command or declared package script"
     );
@@ -73,6 +94,20 @@ function evaluateWorkspaceEvent({ event, expectedAgent, fallbackCwd = process.cw
     reasons.push(
       "destructive filesystem command blocked; use a structured reviewed file operation"
     );
+  }
+  if (
+    analysis.shellMutation &&
+    analysis.recognizedCommands.some((command) => /\binline$/i.test(String(command)))
+  ) {
+    reasons.push(
+      "inline interpreter filesystem mutation blocked; use a structured reviewed file operation"
+    );
+  }
+  if (
+    analysis.shellMutation &&
+    analysis.recognizedCommands.some((command) => /\boutput$/i.test(String(command)))
+  ) {
+    reasons.push("shell output option mutation blocked; use a structured reviewed file operation");
   }
   if (analysis.dynamicTarget) {
     reasons.push("destructive dynamic shell target blocked; use a literal reviewed path");
@@ -114,6 +149,30 @@ function evaluateWorkspaceEvent({ event, expectedAgent, fallbackCwd = process.cw
   };
 }
 
+function structuredHardlinkReasons(event, cwd, targets) {
+  const toolName = String(event?.tool_name || event?.toolName || "").toLowerCase();
+  if (!STRUCTURED_MUTATION_TOOLS.has(toolName)) return [];
+  for (const target of targets) {
+    if (!nonEmpty(target)) continue;
+    const absoluteTarget = path.isAbsolute(target) ? target : path.resolve(cwd, target);
+    try {
+      const stats = lstatSync(absoluteTarget);
+      if (stats.isFile() && stats.nlink > 1) {
+        return [
+          "structured mutation target has multiple filesystem links; replace the hardlink with a lane-owned regular file",
+        ];
+      }
+    } catch (error) {
+      if (error?.code !== "ENOENT") {
+        return [
+          "structured mutation target identity is unavailable; retry only after the filesystem probe succeeds",
+        ];
+      }
+    }
+  }
+  return [];
+}
+
 function repositoryScope(cwd, targets, gitOperations, shellWorkingDirectories) {
   const identities = [];
   const identityCache = new Map();
@@ -131,7 +190,8 @@ function repositoryScope(cwd, targets, gitOperations, shellWorkingDirectories) {
     if (!probe.directory) continue;
     let identity = identityCache.get(probe.directory);
     if (identity === undefined) {
-      identity = reusableIdentity(probe.directory, identities) || repositoryIdentity(probe.directory);
+      identity =
+        reusableIdentity(probe.directory, identities) || repositoryIdentity(probe.directory);
       identityCache.set(probe.directory, identity);
     }
     if (identity?.probeError) {
@@ -213,6 +273,37 @@ function repositoryProbeDirectory(candidate) {
   } catch {
     return { directory: "", error: true };
   }
+}
+
+function resolveCanonicalGitRoot(cwd) {
+  if (!nonEmpty(cwd)) {
+    throw new Error("launch cwd is missing");
+  }
+  let canonicalCwd;
+  try {
+    canonicalCwd = realpathSync.native(path.resolve(cwd));
+    if (!statSync(canonicalCwd).isDirectory()) {
+      throw new Error("launch cwd is not a directory");
+    }
+  } catch {
+    throw new Error("launch cwd is unavailable");
+  }
+
+  const rootResult = git(["-C", canonicalCwd, "rev-parse", "--show-toplevel"]);
+  if (rootResult.error || rootResult.status !== 0 || !rootResult.stdout.trim()) {
+    throw new Error("Git repository root is unavailable");
+  }
+
+  let canonicalRoot;
+  try {
+    canonicalRoot = realpathSync.native(path.resolve(canonicalCwd, rootResult.stdout.trim()));
+    if (!statSync(canonicalRoot).isDirectory() || !pathInside(canonicalCwd, canonicalRoot)) {
+      throw new Error("Git repository root does not contain launch cwd");
+    }
+  } catch {
+    throw new Error("Git repository root is invalid");
+  }
+  return canonicalRoot;
 }
 
 function packageManagerRunMayMutate(command) {
@@ -311,4 +402,5 @@ function nonEmpty(value) {
 
 module.exports = {
   evaluateWorkspaceEvent,
+  resolveCanonicalGitRoot,
 };

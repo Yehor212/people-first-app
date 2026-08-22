@@ -120,20 +120,20 @@ Bundle verification is fail-closed before content classification. Finder/FilePro
 
 ## Rule catalog
 
-| Rule | Meaning | Blocking condition |
-| --- | --- | --- |
-| PDI001 | TEST_ARTIFACT_REACHABLE_FROM_PRODUCTION | Production graph reaches test/fixture/dev-only code |
-| PDI002 | SYNTHETIC_USER_HISTORY_IN_PRODUCTION | Reachable code constructs a strongly structured plausible record/history |
-| PDI003 | DECEPTIVE_ERROR_FALLBACK | Failure path returns synthetic facts instead of an honest error/empty state |
-| PDI004 | SYNTHETIC_DATA_TO_PERSISTENCE_OR_SYNC | Synthetic source reaches Dexie, store persistence, queue, backup, or Supabase |
-| PDI005 | STUBBED_PRODUCTION_SUCCESS | Service constructs success/verification facts without authority |
-| PDI006 | UNSAFE_PRODUCTION_DEMO_MODE | Demo defaults on or persists outside the complete demo contract |
-| PDI007 | SYNTHETIC_DATA_TO_ANALYTICS_EXPORT_OR_SHARE | Synthetic facts enter metrics or leave through export/share/backup |
-| PDI008 | PRODUCTION_MIGRATION_SEEDS_USER_DATA | Production SQL inserts/copies rows into user-data tables |
-| PDI009 | PRODUCTION_BUNDLE_CONTAINS_TEST_FIXTURE | Built artifact contains the stable fixture sentinel |
-| PDI010 | ENFORCEMENT_TAMPERING | Required contract is removed, masked, broadened, or stale |
-| PDI011 | FAKE_RELEASE_OR_VERIFICATION_EVIDENCE | Each PASS/ready claim lacks fresh command-bound proof associated with that claim |
-| PDI012 | UNCLASSIFIED_SYNTHETIC_SOURCE | Medium-confidence unreachable/unresolved source needs review |
+| Rule   | Meaning                                     | Blocking condition                                                               |
+| ------ | ------------------------------------------- | -------------------------------------------------------------------------------- |
+| PDI001 | TEST_ARTIFACT_REACHABLE_FROM_PRODUCTION     | Production graph reaches test/fixture/dev-only code                              |
+| PDI002 | SYNTHETIC_USER_HISTORY_IN_PRODUCTION        | Reachable code constructs a strongly structured plausible record/history         |
+| PDI003 | DECEPTIVE_ERROR_FALLBACK                    | Failure path returns synthetic facts instead of an honest error/empty state      |
+| PDI004 | SYNTHETIC_DATA_TO_PERSISTENCE_OR_SYNC       | Synthetic source reaches Dexie, store persistence, queue, backup, or Supabase    |
+| PDI005 | STUBBED_PRODUCTION_SUCCESS                  | Service constructs success/verification facts without authority                  |
+| PDI006 | UNSAFE_PRODUCTION_DEMO_MODE                 | Demo defaults on or persists outside the complete demo contract                  |
+| PDI007 | SYNTHETIC_DATA_TO_ANALYTICS_EXPORT_OR_SHARE | Synthetic facts enter metrics or leave through export/share/backup               |
+| PDI008 | PRODUCTION_MIGRATION_SEEDS_USER_DATA        | Production SQL inserts/copies rows into user-data tables                         |
+| PDI009 | PRODUCTION_BUNDLE_CONTAINS_TEST_FIXTURE     | Built artifact contains the stable fixture sentinel                              |
+| PDI010 | ENFORCEMENT_TAMPERING                       | Required contract is removed, masked, broadened, or stale                        |
+| PDI011 | FAKE_RELEASE_OR_VERIFICATION_EVIDENCE       | Each PASS/ready claim lacks fresh command-bound proof associated with that claim |
+| PDI012 | UNCLASSIFIED_SYNTHETIC_SOURCE               | Medium-confidence unreachable/unresolved source needs review                     |
 
 ## Baseline policy
 
@@ -164,15 +164,15 @@ The canonical waiver ledger is empty at policy activation.
 
 ## Hook behavior
 
-`.codex/hooks/production-data-integrity-gate.cjs` is intentionally separate from `no-ai-template-gate.cjs`.
+The production-data evaluator in `.codex/hooks/production-data-integrity-gate.cjs` remains independently testable, but active lifecycle process ownership is consolidated:
 
-- `UserPromptSubmit` injects a short contract only for relevant work.
-- `PreToolUse` denies obvious protected-surface weakening, broad baseline/waiver changes, workflow skips, and error masking.
-- `PostToolUse` runs the fast diff checker after relevant edits.
-- `Stop` runs a final diff check, blocks findings/internal errors, and honors `stop_hook_active` to avoid a continuation loop.
-- `SubagentStart` injects the evidence packet; `SubagentStop` rejects success claims without findings, source evidence, platform impact, verification/skips, remaining risk, and GO/STOP/ASK.
+- The sole registered `UserPromptSubmit` entrypoint, `.codex/hooks/skill-router-gate.cjs`, conditionally composes the short production-data contract with skill-routing and no-template context only when the prompt is relevant. An unrelated trivial prompt emits an empty JSON object without a governance packet.
+- The sole registered `PreToolUse` entrypoint, `.codex/hooks/agent-workspace-guard.cjs`, evaluates workspace identity, change evidence, skill routing, and `evaluatePdiPreTool` independently, unions every denial/error, and fails closed. Read-only commands require no planning token; `.preflight-token` is evidence, not authorization.
+- The sole registered `PostToolUse` entrypoint remains `.codex/hooks/production-data-integrity-gate.cjs` and runs the fast diff checker only after relevant edits. A failure reports `effect_applied_checker_failed`, exact repository-relative targets, and that the hook performs no rollback or automatic retry because the tool effect has already happened.
+- The sole registered `Stop` entrypoint, `.codex/hooks/no-ai-template-gate.cjs`, runs both the no-template evaluator and `evaluatePdiStop`; neither evaluator can short-circuit the other. PDI Stop first validates `config/production-data-integrity.json`, derives pathspecs from its entrypoint, scan, bundle, release-evidence, enforcement, and repository-contract scope plus fixed governance controls, and runs stateless, read-only inventories. `git status --short --untracked-files=all` covers relevant tracked and ordinary untracked changes. A scoped `git ls-files --others --ignored --exclude-standard` query covers config-derived ignored production, enforcement, and release-evidence paths; a match such as canonical `output/*.json` or included release evidence runs the checker with `--all`. A clean or irrelevant inventory skips the full checker; relevant ordinary paths run `--diff`; config/inventory/checker errors fail closed. Generic ignored content that is only inside excluded bundle/output/artifact scope remains outside this Stop inventory and requires the explicit full/build/bundle or release-evidence gate. A known relevant `PostToolUse` target still gets immediate checker feedback. `stop_hook_active` prevents a continuation loop.
+- The sole registered `SubagentStart`/`SubagentStop` entrypoint, `.codex/hooks/subagent-evidence-gate.cjs`, is scoped to the exact ten custom ZenFlow roles and combines PDI trust/provenance context with the shared semantic evidence/no-template validator. Built-in agents are not forced through the project-role packet. A heading-only, marker-only, filler, fake-PASS, or source-free report remains blocked.
 
-The hook resolves the repository with `git rev-parse --show-toplevel`, even when the session cwd is a subdirectory. It reads one JSON object from stdin, emits JSON-only stdout on success, sends diagnostics to stderr, uses a 15-second checker timeout, stores no user data/secrets, and fails closed on malformed input. OpenAI documents `PreToolUse` interception as incomplete, so the hook is early feedback—not the sole boundary. A changed hook hash may require Codex trust/review again; that trust state is `UNVERIFIED` until observed.
+Each registered adapter reads one JSON object from stdin, emits JSON-only stdout on success, sends diagnostics to stderr, stores no user data/secrets, and fails closed on malformed input. PDI checker calls keep their 15-second timeout and resolve the repository with `git rev-parse --show-toplevel`, including from a subdirectory. Consolidation does not turn hooks into an authorization or security boundary: multiple matching hook commands are concurrent when configured, `PreToolUse` interception is incomplete, hosted/specialized tools and `write_stdin` may not be covered, and `PostToolUse` cannot undo an effect. OS sandboxing and runtime approval remain primary; fresh-session loading, supplied subagent identity, and effective permissions remain `UNVERIFIED` until observed. A changed hook hash may require Codex trust/review again.
 
 ## CI behavior
 

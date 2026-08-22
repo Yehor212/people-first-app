@@ -11,7 +11,27 @@ npm run rag:preflight -- "architecture source of truth for agents"
 npm run rag:search:free -- "architecture source of truth for agents"
 ```
 
-`rag:preflight` is the agent-wide entry point. It selects the relevant curated groups, writes `.codex/auto-context/rag-current.md` plus metadata, and returns a compact context pack for Codex, Telegram reports, and subagents. `rag:search:free` is the lower-level manual search command.
+`rag:preflight` is the agent-wide entry point. It selects the relevant curated groups, returns a compact context pack for Codex, Telegram reports, and subagents, and does not write by default. Use `--write-scoped` to create a Markdown-addressed pair named with the full task hash and exact Markdown-byte SHA-256; the JSON binds those hashes and POSIX paths but is not independently content-addressed. The legacy `--write-current` flag is reserved for an explicitly coordinated single-owner flow. `rag:search:free` is the lower-level manual search command.
+
+The positional form accepts exactly one quoted task argument. Use `--task "<task>"`
+instead when explicit option syntax is clearer; value-taking options such as
+`--max-chars 3200` may appear before or after it. Duplicate or empty value-taking
+options, extra positional arguments, and unknown options fail closed instead of
+silently changing the task hash.
+
+`npm run ai:context:auto` is the one in-repository call site that explicitly requests
+`--write-current`. The shared `current.*` auto-context remains a separate single-owner mode;
+its concurrent multiwriter and pair-atomic behavior is not fixed by scoped RAG output and
+remains `UNVERIFIED`. The explicit flag is an operating mode, not an authorization token.
+
+Scoped output is collision-free only for the tested successful-writer cases. If a process
+terminates after publishing one member of the pair, a later writer waits briefly and then
+fails closed; it does not delete or repair the ignored partial pair. Crash recovery and
+pair-atomic publication therefore remain `UNVERIFIED` and require operator inspection.
+
+Scoped artifacts have no automatic retention cleanup. A future cleanup mechanism needs
+separate policy, ownership, recovery, and authorization; this task does not delete
+existing artifacts, and long-term disk-growth bounds remain `UNVERIFIED`.
 
 The commands index a curated project corpus from `scripts/rag/corpus-manifest.json` and return short excerpts with source citations. They do not call OpenAI, Gemini, Supabase vector search, or any embedding API.
 
@@ -25,13 +45,13 @@ stale role text.
 
 The curated corpus is grouped so agents can retrieve the right project memory without blindly scanning the whole repository:
 
-| Group | Purpose |
-| --- | --- |
-| `agent_rules` | Agent instructions, architecture, test-first policy, skill routing, governance, and no-paid RAG policy. |
-| `telegram_control` | Reports/control bot, Cloudflare Worker, GitHub workflow, and no-paid remote fallback. |
-| `sync_auth` | Auth, Supabase, account linking, offline queue, and sync contracts. |
-| `ui_v2` | V2 fullscreen runtime, Telegram-grade UI contracts, canonical orb, and nav-v2 surfaces. |
-| `coach_journal` | Coach Lite, journal AI, lexical journal search, and paid-provider fallback behavior. |
+| Group              | Purpose                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `agent_rules`      | Agent instructions, architecture, test-first policy, skill routing, governance, and no-paid RAG policy. |
+| `telegram_control` | Reports/control bot, Cloudflare Worker, GitHub workflow, and no-paid remote fallback.                   |
+| `sync_auth`        | Auth, Supabase, account linking, offline queue, and sync contracts.                                     |
+| `ui_v2`            | V2 fullscreen runtime, Telegram-grade UI contracts, canonical orb, and nav-v2 surfaces.                 |
+| `coach_journal`    | Coach Lite, journal AI, lexical journal search, and paid-provider fallback behavior.                    |
 
 The manifest excludes secrets, generated files, assets, dependency folders, and build output. Examples: `.env*`, `*.pem`, `node_modules/**`, `dist/**`, `build/**`, `coverage/**`, `artifacts/**`, `**/assets/**`, `**/generated/**`, source maps, images, and Lottie/rlottie assets.
 
@@ -61,6 +81,7 @@ Useful commands:
 ```bash
 npm run rag:search:free -- "telegram control openai no paid"
 npm run rag:preflight -- "telegram control openai no paid"
+npm run rag:preflight -- --task "telegram control openai no paid" --write-scoped
 npm run rag:smoke:free
 npm run rag:audit:free
 ```

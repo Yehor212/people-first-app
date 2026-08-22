@@ -16,27 +16,52 @@ type Result = { name: string; status: Status; detail: string };
 type HookEntry = { type?: string; command?: string; commandWindows?: string; timeout?: number };
 type HookGroup = { matcher?: string; hooks?: HookEntry[] };
 type HookConfig = { hooks?: Record<string, HookGroup[]> };
+type RoleRegistry = { roles?: Array<{ runtime_name?: string }> };
 
 const ROOT = path.resolve(process.env.ZENFLOW_REPO_ROOT ?? process.cwd());
 const HOOKS_JSON = path.join(ROOT, ".codex", "hooks.json");
 const HOOKS_DIR = path.join(ROOT, ".codex", "hooks");
 const results: Result[] = [];
 
-const REQUIRED_REGISTRATIONS: ReadonlyArray<readonly [string, string]> = [
-  ["UserPromptSubmit", "skill-router-gate.cjs"],
-  ["UserPromptSubmit", "no-ai-template-gate.cjs"],
-  ["UserPromptSubmit", "production-data-integrity-gate.cjs"],
-  ["PreToolUse", "change-governance-gate.cjs"],
-  ["PreToolUse", "skill-router-gate.cjs"],
-  ["PreToolUse", "production-data-integrity-gate.cjs"],
-  ["PostToolUse", "production-data-integrity-gate.cjs"],
-  ["Stop", "no-ai-template-gate.cjs"],
-  ["Stop", "production-data-integrity-gate.cjs"],
-  ["SubagentStart", "no-ai-template-gate.cjs"],
-  ["SubagentStart", "production-data-integrity-gate.cjs"],
-  ["SubagentStop", "no-ai-template-gate.cjs"],
-  ["SubagentStop", "production-data-integrity-gate.cjs"],
-];
+const LIFECYCLE_ENTRYPOINTS = {
+  UserPromptSubmit: "skill-router-gate.cjs",
+  PreToolUse: "agent-workspace-guard.cjs",
+  PostToolUse: "production-data-integrity-gate.cjs",
+  Stop: "no-ai-template-gate.cjs",
+  SubagentStart: "subagent-evidence-gate.cjs",
+  SubagentStop: "subagent-evidence-gate.cjs",
+} as const;
+const REQUIRED_COMPOSITION_MARKERS: Readonly<Record<string, readonly string[]>> = {
+  "skill-router-gate.cjs": [
+    "buildSkillRoutingContext",
+    "buildPromptContext",
+    "isNoTemplatePromptRelevant",
+    "isPdiPromptRelevant",
+    "if (!additionalContext)",
+  ],
+  "agent-workspace-guard.cjs": [
+    "evaluateWorkspaceEvent",
+    "evaluateGuard",
+    "evaluateSkillRoutingEvent",
+    "evaluatePdiPreTool",
+  ],
+  "production-data-integrity-gate.cjs": [
+    "PostToolUse",
+    "effect_applied_checker_failed",
+    "no rollback or automatic retry",
+  ],
+  "no-ai-template-gate.cjs": [
+    "detectViolations",
+    "evaluatePdiStop",
+    "productionDataIntegrityContext",
+  ],
+  "subagent-evidence-gate.cjs": [
+    "evaluateSubagentEvidence",
+    "detectSubagentViolations",
+    "loadProjectRoleNames",
+    "PDI_TRUST_CONTEXT",
+  ],
+};
 
 function add(name: string, status: Status, detail: string): void {
   results.push({ name, status, detail });
@@ -77,6 +102,25 @@ function hasStdinContract(content: string): boolean {
   );
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function expectedProjectRoleMatcher(): string | null {
+  const registry = readJson<RoleRegistry>(
+    path.join(ROOT, "config", "persistent-agent-orchestra.json")
+  );
+  const names = registry?.roles?.map((role) => role.runtime_name?.trim() ?? "") ?? [];
+  if (names.length !== 10 || names.some((name) => !name) || new Set(names).size !== 10) {
+    fail(
+      "subagent-role-registry",
+      "persistent-agent-orchestra.json must contain exactly ten unique non-empty runtime_name values"
+    );
+    return null;
+  }
+  return `^(?:${names.map(escapeRegex).join("|")})$`;
+}
+
 function validateHooks(): void {
   const config = readJson<HookConfig>(HOOKS_JSON);
   if (!config?.hooks) return;
@@ -89,12 +133,21 @@ function validateHooks(): void {
     return;
   }
 
-  const registeredByEvent = new Map<string, Set<string>>();
+  const registeredByEvent = new Map<string, string[]>();
   const registeredFiles = new Set<string>();
+  let registeredCommandCount = 0;
   for (const [event, groups] of Object.entries(config.hooks)) {
-    const eventFiles = new Set<string>();
+    const eventFiles: string[] = [];
     for (const group of groups) {
       for (const hook of group.hooks ?? []) {
+        if (hook.type !== "command") {
+          fail(
+            `hook-type:${event}`,
+            `unsupported registered hook type: ${String(hook.type ?? "")}`
+          );
+          continue;
+        }
+        registeredCommandCount += 1;
         const command = String(hook.command ?? "");
         if (!command) {
           fail(`hook-command:${event}`, "registered hook command is empty");
@@ -108,22 +161,81 @@ function validateHooks(): void {
           fail(`hook-command:${event}`, `command is not confined to .codex/hooks: ${command}`);
           continue;
         }
-        eventFiles.add(filename);
+        const windowsFilename = hookFileFromCommand(String(hook.commandWindows ?? ""));
+        if (windowsFilename !== filename) {
+          fail(
+            `hook-command-windows:${event}`,
+            "commandWindows must resolve to the same .codex/hooks entrypoint as command"
+          );
+        }
+        eventFiles.push(filename);
         registeredFiles.add(filename);
       }
     }
     registeredByEvent.set(event, eventFiles);
   }
 
-  for (const [event, filename] of REQUIRED_REGISTRATIONS) {
-    if (registeredByEvent.get(event)?.has(filename)) {
-      pass(`registration:${event}:${filename}`, "registered in .codex/hooks.json");
+  if (registeredCommandCount === 6) {
+    pass("hook-command-count", "exactly six lifecycle handler commands are registered");
+  } else {
+    fail(
+      "hook-command-count",
+      `expected exactly 6 registered commands, found ${registeredCommandCount}`
+    );
+  }
+
+  for (const [event, filename] of Object.entries(LIFECYCLE_ENTRYPOINTS)) {
+    const eventFiles = registeredByEvent.get(event) ?? [];
+    if (eventFiles.length !== 1) {
+      fail(`registration:${event}`, `expected exactly one command, found ${eventFiles.length}`);
+      continue;
+    }
+    if (eventFiles[0] === filename) {
+      pass(`registration:${event}:${filename}`, "sole lifecycle entrypoint is registered");
     } else {
-      fail(`registration:${event}:${filename}`, "required registration is missing");
+      fail(`registration:${event}:${filename}`, `expected ${filename}, found ${eventFiles[0]}`);
+    }
+  }
+  for (const event of registeredByEvent.keys()) {
+    if (!(event in LIFECYCLE_ENTRYPOINTS)) {
+      fail(`registration:${event}`, "unexpected lifecycle event has a registered command");
     }
   }
 
-  const diskFiles = readdirSync(HOOKS_DIR).filter((name) => name.endsWith(".cjs")).sort();
+  const preGroups = config.hooks.PreToolUse ?? [];
+  const preCommands = preGroups.flatMap((group) => group.hooks ?? []);
+  const preCommand = preCommands[0];
+  if (
+    preCommands.length === 1 &&
+    /(?:^|\s)--expected-agent\s+codex(?:\s|$)/.test(String(preCommand.command ?? "")) &&
+    /(?:^|\s)--expected-agent\s+codex(?:["\s]|$)/.test(String(preCommand.commandWindows ?? ""))
+  ) {
+    pass("pretool-actor-binding", "consolidated PreToolUse command is bound to the codex actor");
+  } else {
+    fail("pretool-actor-binding", "PreToolUse must bind both commands to --expected-agent codex");
+  }
+
+  const expectedMatcher = expectedProjectRoleMatcher();
+  if (expectedMatcher) {
+    for (const event of ["SubagentStart", "SubagentStop"] as const) {
+      const groups = config.hooks[event] ?? [];
+      if (groups.length === 1 && groups[0].matcher === expectedMatcher) {
+        pass(
+          `subagent-matcher:${event}`,
+          "matcher is anchored to the exact ten project role names"
+        );
+      } else {
+        fail(
+          `subagent-matcher:${event}`,
+          "matcher must equal the anchored exact-ten runtime_name set"
+        );
+      }
+    }
+  }
+
+  const diskFiles = readdirSync(HOOKS_DIR)
+    .filter((name) => name.endsWith(".cjs"))
+    .sort();
   for (const filename of registeredFiles) {
     const filePath = path.join(HOOKS_DIR, filename);
     if (!existsSync(filePath)) {
@@ -137,8 +249,19 @@ function validateHooks(): void {
     const content = readFileSync(filePath, "utf8");
     if (hasStdinContract(content)) pass(`hook-stdin:${filename}`, "parses hook input from stdin");
     else fail(`hook-stdin:${filename}`, "missing explicit stdin input contract");
-    if (content.includes("process.exit(2)")) pass(`hook-fail-closed:${filename}`, "has blocking error path");
+    if (content.includes("process.exit(2)"))
+      pass(`hook-fail-closed:${filename}`, "has blocking error path");
     else fail(`hook-fail-closed:${filename}`, "missing process.exit(2) fail-closed path");
+    for (const marker of REQUIRED_COMPOSITION_MARKERS[filename] ?? []) {
+      if (content.includes(marker)) {
+        pass(`hook-composition:${filename}:${marker}`, "required union evaluator is composed");
+      } else {
+        fail(
+          `hook-composition:${filename}:${marker}`,
+          "required union evaluator marker is missing"
+        );
+      }
+    }
     try {
       execFileSync(process.execPath, ["--check", filePath], {
         cwd: ROOT,
@@ -152,11 +275,17 @@ function validateHooks(): void {
     }
   }
 
+  const unexpectedDiskFiles: string[] = [];
   for (const filename of diskFiles) {
-    if (!registeredFiles.has(filename)) fail(`hook-orphan:${filename}`, "unregistered Codex hook file");
+    if (registeredFiles.has(filename)) continue;
+    unexpectedDiskFiles.push(filename);
+    fail(`hook-orphan:${filename}`, "unregistered Codex hook file");
   }
-  if (diskFiles.length === registeredFiles.size) {
-    pass("hook-inventory", `${diskFiles.length} active Codex hook files, no orphans`);
+  if (unexpectedDiskFiles.length === 0) {
+    pass(
+      "hook-inventory",
+      `${registeredFiles.size} active entrypoint files implement 6 lifecycle commands; no unexpected adapters`
+    );
   }
 }
 
@@ -171,7 +300,10 @@ function runNodeGate(name: string, script: string, args: string[], timeout: numb
     pass(name, stdout.split("\n").at(-1) || "exit 0");
   } catch (error) {
     const candidate = error as { stdout?: string; stderr?: string; message?: string };
-    const detail = [candidate.stdout, candidate.stderr, candidate.message].filter(Boolean).join("\n").trim();
+    const detail = [candidate.stdout, candidate.stderr, candidate.message]
+      .filter(Boolean)
+      .join("\n")
+      .trim();
     fail(name, detail || "gate failed");
   }
 }
@@ -181,7 +313,7 @@ function checkProductionDataIntegrity(): void {
     "production-data-integrity",
     "scripts/check-production-data-integrity.cjs",
     ["--diff"],
-    60_000,
+    60_000
   );
 
   const hookName = "production-data-integrity-gate.cjs";
@@ -194,12 +326,17 @@ function checkProductionDataIntegrity(): void {
 }
 
 function validateCanonicalControlPlane(): void {
-  runNodeGate("check:agent-orchestra", "scripts/sync-persistent-agent-orchestra.mjs", ["--check"], 20_000);
+  runNodeGate(
+    "check:agent-orchestra",
+    "scripts/sync-persistent-agent-orchestra.mjs",
+    ["--check"],
+    20_000
+  );
   runNodeGate(
     "check:agent-orchestra:eval",
     "scripts/validate-persistent-agent-orchestra-eval-report.mjs",
     ["--catalog"],
-    20_000,
+    20_000
   );
   runNodeGate("check:no-ai-templates", "scripts/check-no-ai-templates.cjs", [], 30_000);
   checkProductionDataIntegrity();
@@ -224,7 +361,8 @@ function validateCanonicalControlPlane(): void {
     ".github/workflows/claude-agent.yml",
     ".github/workflows/claude-review.yml",
   ]) {
-    if (existsSync(path.join(ROOT, relativePath))) fail(`legacy:${relativePath}`, "competing live source remains");
+    if (existsSync(path.join(ROOT, relativePath)))
+      fail(`legacy:${relativePath}`, "competing live source remains");
     else pass(`legacy:${relativePath}`, "absent");
   }
 
@@ -234,11 +372,11 @@ function validateCanonicalControlPlane(): void {
 
   unverified(
     "runtime-loading",
-    "Static files and registrations cannot prove that the current Codex runtime loaded hooks or custom profiles.",
+    "Static files and registrations cannot prove that the current Codex runtime loaded hooks or custom profiles."
   );
   unverified(
     "effective-permissions",
-    "sandbox_mode and READ_ONLY_INTENT are declarations; effective inherited permissions need a current runtime probe.",
+    "sandbox_mode and READ_ONLY_INTENT are declarations; effective inherited permissions need a current runtime probe."
   );
 }
 
@@ -256,7 +394,9 @@ for (const result of results.filter((item) => item.status !== "PASS")) {
 const passCount = results.filter((item) => item.status === "PASS").length;
 const failCount = results.filter((item) => item.status === "FAIL").length;
 const unverifiedCount = results.filter((item) => item.status === "UNVERIFIED").length;
-console.log(`  TOTAL ${results.length}: ${passCount} PASS, ${failCount} FAIL, ${unverifiedCount} UNVERIFIED`);
+console.log(
+  `  TOTAL ${results.length}: ${passCount} PASS, ${failCount} FAIL, ${unverifiedCount} UNVERIFIED`
+);
 
 if (failCount > 0) {
   console.log("  RESULT: FAIL");

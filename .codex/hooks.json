@@ -8,21 +8,7 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/skill-router-gate.cjs')\"",
             "timeout": 5,
-            "statusMessage": "Routing skills"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/no-ai-template-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Checking no-AI-template policy"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Routing production data integrity"
+            "statusMessage": "Routing governance context"
           }
         ]
       }
@@ -36,35 +22,14 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/agent-workspace-guard.cjs\" --expected-agent codex",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/agent-workspace-guard.cjs') --expected-agent codex\"",
             "timeout": 5,
-            "statusMessage": "Checking isolated agent workspace"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/change-governance-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/change-governance-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Checking change governance"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/skill-router-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/skill-router-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Checking skill routing"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Guarding production data integrity"
+            "statusMessage": "Checking agent action policy"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash|apply_patch|functions.apply_patch|Edit|Write|MultiEdit",
+        "matcher": "Bash|Shell|PowerShell|pwsh|exec_command|unified_exec|apply_patch|functions.apply_patch|Edit|Write|WriteFile|CreateFile|DeleteFile|MultiEdit|StrReplaceFile|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -83,57 +48,36 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/no-ai-template-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Checking no-AI-template output"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
             "timeout": 20,
-            "statusMessage": "Final production data integrity check"
+            "statusMessage": "Checking completion policy"
           }
         ]
       }
     ],
     "SubagentStart": [
       {
-        "matcher": "*",
+        "matcher": "^(?:zenflow-01-coordinator-teamlead|zenflow-02-psychology-human-factors-emotional-safety|zenflow-03-logic-causality-state-coherence|zenflow-04-interaction-accessibility-readability-localization-culture|zenflow-05-technical-architecture-data-cross-platform|zenflow-06-security-privacy-agent-trust|zenflow-07-performance-reliability-operations|zenflow-08-qa-evidence-release-verification|zenflow-09-product-discovery-visual-craft-experience-quality|zenflow-10-independent-blind-spot-sentinel)$",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/no-ai-template-gate.cjs')\"",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/subagent-evidence-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/subagent-evidence-gate.cjs')\"",
             "timeout": 5,
-            "statusMessage": "Injecting no-AI-template subagent contract"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Injecting production data evidence contract"
+            "statusMessage": "Injecting custom-role evidence contract"
           }
         ]
       }
     ],
     "SubagentStop": [
       {
-        "matcher": "*",
+        "matcher": "^(?:zenflow-01-coordinator-teamlead|zenflow-02-psychology-human-factors-emotional-safety|zenflow-03-logic-causality-state-coherence|zenflow-04-interaction-accessibility-readability-localization-culture|zenflow-05-technical-architecture-data-cross-platform|zenflow-06-security-privacy-agent-trust|zenflow-07-performance-reliability-operations|zenflow-08-qa-evidence-release-verification|zenflow-09-product-discovery-visual-craft-experience-quality|zenflow-10-independent-blind-spot-sentinel)$",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/no-ai-template-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/no-ai-template-gate.cjs')\"",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/subagent-evidence-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/subagent-evidence-gate.cjs')\"",
             "timeout": 5,
-            "statusMessage": "Checking no-AI-template subagent output"
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
-            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
-            "timeout": 5,
-            "statusMessage": "Checking production data evidence packet"
+            "statusMessage": "Checking custom-role evidence packet"
           }
         ]
       }

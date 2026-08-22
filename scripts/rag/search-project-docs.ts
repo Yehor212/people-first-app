@@ -1,4 +1,6 @@
 import process from "node:process";
+
+import { isDirectCliInvocation } from "./directCli";
 import {
   createFreeProjectRagIndex,
   formatFreeRagResultsForAgent,
@@ -78,32 +80,60 @@ function printUsage(): void {
   console.error('Usage: npm run rag:search:free -- "your agent query" [--limit=5] [--json]');
 }
 
-function parseLimit(args: string[]): number | undefined {
-  const flag = args.find((arg) => arg.startsWith("--limit="));
-  if (!flag) return undefined;
-  const value = Number(flag.replace("--limit=", ""));
-  return Number.isFinite(value) && value > 0 ? value : undefined;
+interface SearchCliArguments {
+  asJson: boolean;
+  limit?: number;
+  query: string;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const args = process.argv.slice(2);
-  const asJson = args.includes("--json");
-  const limit = parseLimit(args);
-  const query = args
-    .filter((arg) => !arg.startsWith("--"))
-    .join(" ")
-    .trim();
+function parseCliArguments(args: readonly string[]): SearchCliArguments {
+  let asJson = false;
+  let limit: number | undefined;
+  let sawJson = false;
+  let sawLimit = false;
+  const queryParts: string[] = [];
 
-  if (!query) {
-    printUsage();
-    process.exitCode = 1;
-  } else {
-    const result = searchProjectDocs(query, { limit });
-    if (asJson) {
-      console.log(JSON.stringify(result, null, 2));
-    } else {
-      console.log(result.formatted);
-      console.log(`\nIndexed files: ${result.indexedFiles.join(", ")}`);
+  for (const arg of args) {
+    if (arg === "--json") {
+      if (sawJson) throw new Error("Duplicate --json option");
+      sawJson = true;
+      asJson = true;
+      continue;
     }
+    if (arg.startsWith("--limit=")) {
+      if (sawLimit) throw new Error("Duplicate --limit option");
+      sawLimit = true;
+      const rawLimit = arg.slice("--limit=".length);
+      if (!/^[1-9]\d*$/.test(rawLimit)) throw new Error("Invalid --limit value");
+      const parsedLimit = Number(rawLimit);
+      if (!Number.isSafeInteger(parsedLimit)) throw new Error("Invalid --limit value");
+      limit = parsedLimit;
+      continue;
+    }
+    if (arg.startsWith("--")) throw new Error(`Unknown option: ${arg}`);
+    queryParts.push(arg);
+  }
+
+  return { asJson, limit, query: queryParts.join(" ").trim() };
+}
+
+if (isDirectCliInvocation(import.meta.url, process.argv[1])) {
+  try {
+    const { asJson, limit, query } = parseCliArguments(process.argv.slice(2));
+    if (!query) {
+      printUsage();
+      process.exitCode = 1;
+    } else {
+      const result = searchProjectDocs(query, { limit });
+      if (asJson) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(result.formatted);
+        console.log(`\nIndexed files: ${result.indexedFiles.join(", ")}`);
+      }
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
   }
 }

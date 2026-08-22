@@ -94,12 +94,13 @@ Test selection:
 
 ## Mechanical Gate
 
-Codex registers `.codex/hooks/skill-router-gate.cjs` in `.codex/hooks.json`.
+Codex uses one registered command per lifecycle event rather than registering the same evaluator repeatedly:
 
-- `UserPromptSubmit` injects a routing checklist into the working context.
-- `PreToolUse` guards protected edits for `apply_patch|Edit|Write|MultiEdit`.
-- Guarded edits require either `.skill-routing-token` or
-  `.preflight-token.skill_routing`.
+- The sole `UserPromptSubmit` entrypoint is `.codex/hooks/skill-router-gate.cjs`. It conditionally injects the routing checklist and only the relevant no-template or production-data-integrity prompt contexts. An unrelated trivial prompt emits an empty JSON object without an injected governance packet.
+- The sole `PreToolUse` entrypoint is `.codex/hooks/agent-workspace-guard.cjs`. It invokes the skill-routing evaluator together with independent workspace, change-evidence, and production-data-integrity evaluators, unions every denial/error, and fails closed on ambiguous tool input.
+- Guarded edits require either `.skill-routing-token` or `.preflight-token.skill_routing`. Read-only commands do not require a token. These ignored token files record routing/planning evidence; they are not authorization and cannot override workspace identity, ambiguity, a production-data denial, or OS/runtime approval.
+
+The registered matcher covers the named shell and file-mutation tool aliases, but hooks remain defense-in-depth rather than a complete security boundary. Hosted/specialized tools, `write_stdin`, and future aliases may not be intercepted; fresh-session loading and effective permissions remain `UNVERIFIED` until directly observed.
 
 Evidence shape:
 

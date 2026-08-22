@@ -77,6 +77,22 @@ const REVIEWED_PACKAGE_SCRIPTS = new Set([
   "typecheck",
   "verify:tailwind",
 ]);
+const EXACT_REVIEWED_READ_ONLY_COMMANDS = new Set([
+  `node -e "require('node:child_process').execFileSync('git',['status','--short'])"`,
+  `node -e "require('node:child_process').spawnSync('git',['status','--short'])"`,
+]);
+const REVIEWED_READ_ONLY_COMMAND_PATTERNS = [
+  /^node -e "const fs=require\('node:fs'\); console\.log\(fs\.readFileSync\('AGENTS\.md','utf8'\)\.length \+ \d+\)"$/,
+  /^node -e "const \{execFileSync\}=require\('node:child_process'\); console\.log\(execFileSync\('git',\['status','--short'\],\{encoding:'utf8'\}\)\.length \+ \d+\)"$/,
+  /^node -e "const \{spawnSync\}=require\('node:child_process'\); console\.log\(spawnSync\('git',\['status','--short'\],\{encoding:'utf8'\}\)\.stdout\.length \+ \d+\)"$/,
+  /^python3 -c "from pathlib import Path; print\(len\(Path\('AGENTS\.md'\)\.read_text\(\)\) \+ \d+\)"$/,
+  /^python3 -c "import subprocess; print\(len\(subprocess\.run\(\['git','status','--short'\], capture_output=True\)\.stdout\) \+ \d+\)"$/,
+  /^git ls-tree -r HEAD \| rg 'agent-\d+' \| tee \| shasum -a 256$/,
+  /^rm --help \| sed -n '\d+p'$/,
+  /^git reset --help \| sed -n '\d+p'$/,
+  /^chmod --help \| sed -n '\d+p'$/,
+  /^node -e "console\.log\('writeFileSync example \d+'\)"$/,
+];
 
 function analyzeToolEvent(event) {
   const input =
@@ -91,9 +107,18 @@ function analyzeToolEvent(event) {
   const patchTexts = [input.patch, input.input, event?.patch].filter(isNonEmptyString);
   if (writeLikeTool && isNonEmptyString(input.command)) patchTexts.push(input.command);
   const patchTargets = patchTexts.flatMap(extractPatchPaths);
-  const command = [input.command, input.cmd].filter(isNonEmptyString).join("\n");
+  const commandFields = [input.command, input.cmd].filter(isNonEmptyString);
+  const ambiguousCommandFields = commandFields.length > 1;
+  const command = commandFields.join("\n");
+  const reviewedReadOnly =
+    shellTool &&
+    !ambiguousCommandFields &&
+    commandFields.length === 1 &&
+    isReviewedReadOnlyCommand(commandFields[0]);
   const shell = shellTool
-    ? analyzeShellCommand(command)
+    ? reviewedReadOnly
+      ? readOnlyShellAnalysis()
+      : analyzeShellCommand(command)
     : {
         mutationIntent: false,
         destructiveFilesystem: false,
@@ -104,8 +129,20 @@ function analyzeToolEvent(event) {
         unknownExecution: false,
         workingDirectories: [],
       };
+  if (ambiguousCommandFields) {
+    shell.opaqueExecution = true;
+    shell.unknownExecution = true;
+  }
+  const action =
+    ambiguousCommandFields || shell.opaqueExecution || shell.unknownExecution
+      ? "unknown"
+      : writeLikeTool || shell.mutationIntent
+        ? "mutation"
+        : "read";
 
   return {
+    action,
+    ambiguousCommandFields,
     command,
     mutationIntent: writeLikeTool || shell.mutationIntent,
     destructiveFilesystem: shell.destructiveFilesystem,
@@ -119,6 +156,76 @@ function analyzeToolEvent(event) {
     workingDirectories: shell.workingDirectories,
     writeLikeTool,
     recognizedCommands: shell.recognizedCommands,
+    reviewedReadOnly,
+  };
+}
+
+function isReviewedReadOnlyCommand(command) {
+  const text = String(command || "");
+  return (
+    EXACT_REVIEWED_READ_ONLY_COMMANDS.has(text) ||
+    isBoundedChildProcessStatusRead(text) ||
+    REVIEWED_READ_ONLY_COMMAND_PATTERNS.some((pattern) => pattern.test(text))
+  );
+}
+
+function isBoundedChildProcessStatusRead(command) {
+  let shellCommand = String(command || "").trim();
+  if (shellCommand.endsWith(";")) shellCommand = shellCommand.slice(0, -1).trimEnd();
+  const nodeEval = /^node[ \t]+-e[ \t]+([\s\S]+)$/.exec(shellCommand);
+  if (!nodeEval) return false;
+  const quotedSource = nodeEval[1];
+  const outerQuote = quotedSource[0];
+  if (
+    !["'", '"'].includes(outerQuote) ||
+    quotedSource.length < 2 ||
+    quotedSource[quotedSource.length - 1] !== outerQuote
+  ) {
+    return false;
+  }
+  const source = quotedSource.slice(1, -1).trim();
+  if (!source || source.includes(outerQuote) || /[\\`\r\n]/.test(source)) return false;
+  const stringQuote = outerQuote === '"' ? "'" : '"';
+  const quoted = (value) =>
+    `${escapeRegex(stringQuote)}${escapeRegex(value)}${escapeRegex(stringQuote)}`;
+  const moduleLiteral = `${escapeRegex(stringQuote)}(?:node:)?child_process${escapeRegex(
+    stringQuote
+  )}`;
+  const argumentsPattern =
+    `\\(\\s*${quoted("git")}\\s*,\\s*\\[\\s*${quoted("status")}\\s*,\\s*` +
+    `${quoted("--short")}(?:\\s*,\\s*${quoted("--branch")})?\\s*\\]` +
+    `(?:\\s*,\\s*(?:\\{\\s*\\}|\\{\\s*encoding\\s*:\\s*${quoted("utf8")}\\s*\\}))?\\s*\\)`;
+  const literalConsole =
+    `console\\s*\\.\\s*log\\(\\s*${escapeRegex(stringQuote)}` +
+    `[A-Za-z0-9 _.-]{0,80}${escapeRegex(stringQuote)}\\s*\\)`;
+
+  for (const method of ["execFileSync", "spawnSync"]) {
+    const direct = `require\\(\\s*${moduleLiteral}\\s*\\)\\s*\\.\\s*${method}${argumentsPattern}`;
+    const destructured =
+      `const\\s*\\{\\s*${method}\\s*\\}\\s*=\\s*require\\(\\s*${moduleLiteral}` +
+      `\\s*\\)\\s*;\\s*${method}${argumentsPattern}`;
+    const safeSuffix = `(?:\\s*;\\s*${literalConsole})?\\s*;?`;
+    if (new RegExp(`^(?:${direct}|${destructured})${safeSuffix}$`).test(source)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+}
+
+function readOnlyShellAnalysis() {
+  return {
+    mutationIntent: false,
+    destructiveFilesystem: false,
+    dynamicTarget: false,
+    opaqueExecution: false,
+    recognizedCommands: [],
+    targets: [],
+    unknownExecution: false,
+    workingDirectories: [],
   };
 }
 
@@ -131,7 +238,10 @@ function extractPatchPaths(text) {
     targets.push(match[1].trim());
   }
   for (const match of String(text || "").matchAll(/^(?:---|\+\+\+) (.+)$/gm)) {
-    const candidate = match[1].split("\t", 1)[0].trim().replace(/^[ab]\//, "");
+    const candidate = match[1]
+      .split("\t", 1)[0]
+      .trim()
+      .replace(/^[ab]\//, "");
     if (candidate !== "/dev/null") targets.push(candidate);
   }
   return unique(targets);
@@ -303,6 +413,14 @@ function analyzeStatement(tokens) {
       ...mutationResult(command, output ? [output.slice(3)] : []),
       destructiveFilesystem: true,
     };
+  }
+  if (command === "sort") {
+    const output = outputOptionValue(args, { shortName: "-o", longName: "--output" });
+    if (output !== null) return mutationResult("sort output", output ? [output] : ["."]);
+  }
+  if (command === "md5") {
+    const output = outputOptionValue(args, { shortName: "-o" });
+    if (output !== null) return mutationResult("md5 output", output ? [output] : ["."]);
   }
   if (
     [
@@ -562,6 +680,12 @@ function analyzeGit(args) {
   if (operationIndex < 0) return null;
   const operation = normalizedArgs[operationIndex];
   const rest = normalizedArgs.slice(operationIndex + 1);
+  if (["diff", "log", "show"].includes(operation)) {
+    const output = outputOptionValue(rest, { longName: "--output" });
+    if (output !== null) {
+      return mutationResult(`git ${operation} output`, output ? [output] : ["."]);
+    }
+  }
   if (operation === "clean" && rest.some(isDryRunArgument)) {
     return null;
   }
@@ -1137,6 +1261,22 @@ function optionValue(args, shortName, longName) {
   return "";
 }
 
+function outputOptionValue(args, { shortName = "", longName = "" }) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = String(args[index]);
+    if ((shortName && arg === shortName) || (longName && arg === longName)) {
+      return String(args[index + 1] || "");
+    }
+    if (longName && arg.startsWith(`${longName}=`)) {
+      return arg.slice(longName.length + 1);
+    }
+    if (shortName && arg.startsWith(shortName) && arg.length > shortName.length) {
+      return arg.slice(shortName.length);
+    }
+  }
+  return null;
+}
+
 function optionValueInsensitive(args, names) {
   const wanted = new Set(names.map((name) => name.toLowerCase()));
   for (let index = 0; index < args.length; index += 1) {
@@ -1287,11 +1427,7 @@ function hasShellEnvironmentAssignment(command) {
   for (const statement of splitStatements(command)) {
     const tokens = tokenizeWords(stripShellGrouping(statement));
     const commandIndex = commandIndexAfterPrefixes(tokens);
-    if (
-      tokens
-        .slice(0, commandIndex)
-        .some((token) => /^[A-Za-z_][A-Za-z0-9_]*=.*/.test(token))
-    ) {
+    if (tokens.slice(0, commandIndex).some((token) => /^[A-Za-z_][A-Za-z0-9_]*=.*/.test(token))) {
       return true;
     }
     const commandName = baseCommand(tokens[commandIndex]);
@@ -1399,5 +1535,6 @@ module.exports = {
   hasExecutableShellExpansion,
   hasPrivilegedShellWrapper,
   hasShellEnvironmentAssignment,
+  isReviewedReadOnlyCommand,
   normalizeShellCommandTokens,
 };

@@ -71,10 +71,14 @@ No single agent instruction can honestly prove that future agents will never att
 2. This policy is the review rubric for product copy, UI, docs, prompts, generated assets, release materials, plans, and agent governance.
 3. Subagent prompts must include this policy and must return findings with file/command/source evidence, platform/domain impact, verification run or skipped checks, unresolved risk, and GO / STOP / ASK.
 4. The PR template makes reviewers explicitly check for no AI-template output.
-5. `.codex/hooks/no-ai-template-gate.cjs` injects the no-template contract on `UserPromptSubmit` and `SubagentStart`, then uses `Stop` and `SubagentStop` to force a rewrite when obvious AI-template markers, best-practices laundering, or subagent proof laundering appear.
-6. `npm run check:no-ai-templates` is the local and CI-style drift guard for the policy, hook, tests, and wiring.
-7. `npm run check:agent-context` keeps this policy discoverable through the broader agent health check.
-8. GitHub branch protection and required status checks should be enabled on the canonical repository before claiming merge-time enforcement as PASS.
+5. The sole registered `UserPromptSubmit` entrypoint, `.codex/hooks/skill-router-gate.cjs`, conditionally composes skill-routing context with only the relevant no-template and production-data-integrity contexts. An unrelated trivial prompt emits an empty JSON object with no injected governance packet. This avoids launching three duplicate hook processes or adding irrelevant prompt context.
+6. The sole registered `Stop` entrypoint, `.codex/hooks/no-ai-template-gate.cjs`, evaluates obvious AI-template markers and best-practices laundering, then also runs the independent production-data-integrity Stop evaluator before allowing completion.
+7. The sole registered `SubagentStart`/`SubagentStop` entrypoint, `.codex/hooks/subagent-evidence-gate.cjs`, is scoped in `.codex/hooks.json` to the exact ten custom ZenFlow roles and repeats that identity check against `config/persistent-agent-orchestra.json`. It injects the shared no-template/evidence/provenance contract and applies the shared semantic evidence validator; headings alone are insufficient. Built-in agents are not forced through this project-role packet. Whether a fresh runtime supplies and matches the intended identity is `UNVERIFIED` until observed.
+8. `npm run check:no-ai-templates` is the local and CI-style drift guard for the policy, consolidated hook topology, tests, and wiring.
+9. `npm run check:agent-context` keeps this policy discoverable through the broader agent health check.
+10. GitHub branch protection and required status checks should be enabled on the canonical repository before claiming merge-time enforcement as PASS.
+
+The six-command topology preserves independently testable evaluators while consolidating lifecycle process ownership. Hooks remain defense-in-depth: they do not prove truth, authority, effective permissions, fresh-session loading, or complete coverage of hosted/specialized tools and `write_stdin`. OS sandboxing, runtime approvals, CI, and independent review remain primary boundaries.
 
 ## Required Agent Behavior
 

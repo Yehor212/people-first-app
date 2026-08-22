@@ -17,8 +17,8 @@ Every profile declares `sandbox_mode = "read-only"` as the native mapping of `RE
 ## Runtime Bounds
 
 - Project custom roles: exactly 10.
-- `agents.max_threads = 4`: root plus at most three concurrent specialists.
-- `agents.max_depth = 1`: root may create direct children; children may not recurse.
+- `agents.max_concurrent_threads_per_session = 3`: the canonical Codex setting limits concurrently open spawned specialist threads when this project config is loaded; runtime enforcement remains `UNVERIFIED`.
+- `specialist_depth = 1` and `recursive_fanout = FORBIDDEN` are project routing policy. No native depth assignment is generated, so runtime enforcement remains `UNVERIFIED`.
 - All ten roles are considered with evidence, but physical invocation is adaptive. M1 uses matched owners plus QA; M2 adds Role 10 Pass A/B; explicit deep audit may select all ten; FIXED_FULL_TEN preserves the legacy 20-phase rollback.
 - Every observed domain trigger makes its mapped owner mandatory; every unselected role needs a recorded skip reason.
 - Per-role semantic invariant IDs and checksums detect accidental prompt flattening; they are structural drift controls, not semantic or human approval.

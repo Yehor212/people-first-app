@@ -20,7 +20,7 @@ scripts/production-data-integrity/ @Yehor212
 config/production-data-integrity*.json @Yehor212
 config/persistent-agent-orchestra*.json @Yehor212
 .codex/hooks/production-data-integrity-gate.cjs @Yehor212
-.codex/hooks/change-governance-gate.cjs @Yehor212
+.codex/hooks/agent-workspace-guard.cjs @Yehor212
 .github/workflows/production-data-integrity.yml @Yehor212
 docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md @Yehor212
 docs/adr/0010-production-data-integrity-enforcement.md @Yehor212

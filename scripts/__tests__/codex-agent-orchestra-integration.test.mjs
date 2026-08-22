@@ -11,21 +11,28 @@ describe("Codex-only agent orchestra integration", () => {
   it("wires canonical exact-ten commands and removes Ruflow command aliases", async () => {
     const packageJson = JSON.parse(await read("package.json"));
 
-    expect(packageJson.scripts["ai:agent-orchestra:sync"]).toContain("sync-persistent-agent-orchestra.mjs --write");
-    expect(packageJson.scripts["check:agent-orchestra"]).toContain("sync-persistent-agent-orchestra.mjs --check");
-    expect(packageJson.scripts["check:agent-orchestra:eval"]).toContain("validate-persistent-agent-orchestra-eval-report.mjs --catalog");
+    expect(packageJson.scripts["ai:agent-orchestra:sync"]).toContain(
+      "sync-persistent-agent-orchestra.mjs --write"
+    );
+    expect(packageJson.scripts["check:agent-orchestra"]).toContain(
+      "sync-persistent-agent-orchestra.mjs --check"
+    );
+    expect(packageJson.scripts["check:agent-orchestra:eval"]).toContain(
+      "validate-persistent-agent-orchestra-eval-report.mjs --catalog"
+    );
     expect(packageJson.scripts["ai:ruflow-plus:sync"]).toBeUndefined();
     expect(packageJson.scripts["ai:ruflow-plus:check"]).toBeUndefined();
   });
 
   it("makes context and drift checks depend on exact-ten rather than a legacy fallback", async () => {
-    const [agentContext, driftWorkflow, contextServer, autoContext, ragManifest] = await Promise.all([
-      read("scripts/check-agent-context.mjs"),
-      read(".github/workflows/drift-checks.yml"),
-      read("tools/zenflow-context/server.mjs"),
-      read("tools/zenflow-context/auto-context.mjs"),
-      read("scripts/rag/corpus-manifest.json"),
-    ]);
+    const [agentContext, driftWorkflow, contextServer, autoContext, ragManifest] =
+      await Promise.all([
+        read("scripts/check-agent-context.mjs"),
+        read(".github/workflows/drift-checks.yml"),
+        read("tools/zenflow-context/server.mjs"),
+        read("tools/zenflow-context/auto-context.mjs"),
+        read("scripts/rag/corpus-manifest.json"),
+      ]);
 
     for (const text of [agentContext, driftWorkflow, contextServer]) {
       expect(text).toContain("check:agent-orchestra");
@@ -47,16 +54,24 @@ describe("Codex-only agent orchestra integration", () => {
         mkdir(path.join(tempRoot, ".codex"), { recursive: true }),
       ]);
       await Promise.all([
-        cp(path.join(ROOT, "config/persistent-agent-orchestra.json"), path.join(tempRoot, "config/persistent-agent-orchestra.json")),
-        cp(path.join(ROOT, "config/persistent-agent-orchestra.source-waivers.json"), path.join(tempRoot, "config/persistent-agent-orchestra.source-waivers.json")),
+        cp(
+          path.join(ROOT, "config/persistent-agent-orchestra.json"),
+          path.join(tempRoot, "config/persistent-agent-orchestra.json")
+        ),
+        cp(
+          path.join(ROOT, "config/persistent-agent-orchestra.source-waivers.json"),
+          path.join(tempRoot, "config/persistent-agent-orchestra.source-waivers.json")
+        ),
         cp(path.join(ROOT, ".codex/config.toml"), path.join(tempRoot, ".codex/config.toml")),
-        cp(path.join(ROOT, ".codex/agents"), path.join(tempRoot, ".codex/agents"), { recursive: true }),
+        cp(path.join(ROOT, ".codex/agents"), path.join(tempRoot, ".codex/agents"), {
+          recursive: true,
+        }),
       ]);
       const generated = await read("docs/ai/PERSISTENT_AGENT_ORCHESTRA.md");
       await writeFile(
         path.join(tempRoot, "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md"),
         `${generated}\n<!-- stale mutation -->\n`,
-        "utf8",
+        "utf8"
       );
       const serverUrl = pathToFileURL(path.join(ROOT, "tools/zenflow-context/server.mjs")).href;
       const probe = spawnSync(
@@ -70,7 +85,7 @@ describe("Codex-only agent orchestra integration", () => {
           cwd: ROOT,
           encoding: "utf8",
           env: { ...process.env, ZENFLOW_CONTEXT_ROOT: tempRoot },
-        },
+        }
       );
 
       expect(probe.status, probe.stdout).toBe(2);
@@ -99,17 +114,17 @@ describe("Codex-only agent orchestra integration", () => {
       read("docs/ai/PERSISTENT_AGENT_ORCHESTRA_DESIGN.md"),
     ]);
     const registry = JSON.parse(registryRaw);
-    const canonicalUrls = new Set(
-      registry.source_review.sources.map((source) => source.url),
+    const canonicalUrls = new Set(registry.source_review.sources.map((source) => source.url));
+    const protocolUrls = [...protocol.matchAll(/https:\/\/[^\s|)]+/g)].map((match) =>
+      match[0].replace(/[.,;:]$/, "")
     );
-    const protocolUrls = [
-      ...protocol.matchAll(/https:\/\/[^\s|)]+/g),
-    ].map((match) => match[0].replace(/[.,;:]$/, ""));
 
     expect(generated).toContain(
-      "The local checker never suppresses a stale normative or operational source",
+      "The local checker never suppresses a stale normative or operational source"
     );
-    expect(generated).not.toContain("unless a strictly valid temporary external-human waiver exists");
+    expect(generated).not.toContain(
+      "unless a strictly valid temporary external-human waiver exists"
+    );
     expect(design).toContain("Superseded Operational Decisions (2026-07-13)");
     expect(design).toContain("all ten spawned project profiles declare `READ_ONLY_INTENT`");
     expect(design).not.toContain("spawned role 1 profile declares workspace-write");
@@ -128,11 +143,18 @@ describe("Codex-only agent orchestra integration", () => {
     for (const url of protocolUrls) expect(canonicalUrls.has(url), url).toBe(true);
   });
 
-  it("registers a Codex-native change governance gate", async () => {
+  it("registers the consolidated Codex-native PreTool governance gate", async () => {
     const hooks = JSON.parse(await read(".codex/hooks.json"));
-    const preToolCommands = hooks.hooks.PreToolUse.flatMap((group) => group.hooks).map((hook) => hook.command);
+    const preToolCommands = hooks.hooks.PreToolUse.flatMap((group) => group.hooks).map(
+      (hook) => hook.command
+    );
 
-    expect(preToolCommands.some((command) => command.includes("change-governance-gate.cjs"))).toBe(true);
+    expect(preToolCommands).toHaveLength(1);
+    expect(preToolCommands[0]).toContain("agent-workspace-guard.cjs");
+    const preToolSource = await read(".codex/hooks/agent-workspace-guard.cjs");
+    expect(preToolSource).toContain("evaluateGuard");
+    expect(preToolSource).toContain("evaluateSkillRoutingEvent");
+    expect(preToolSource).toContain("evaluatePdiPreTool");
   });
 
   it("makes active enforcement and ratchet checks Codex-native", async () => {
