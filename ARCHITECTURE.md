@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-07-22 (account-boundary closure + freshness metrics refreshed — Law 6 Reality Anchor).
+> Last updated: 2026-08-12 (T170 local automation persistence + sync invariants refreshed — Law 6 Reality Anchor).
 
 ---
 
@@ -16,9 +16,9 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Hooks (src/hooks, non-test) | **76** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **278** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **282** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **39** | `ls src/components/ -d` |
-| Features modules | 1 | `ls src/features/ -d` |
+| Features modules | 2 | `ls src/features/ -d` |
 | V2 coexistence files | 52 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 7 | regex walk |
 | `as any` total | 167 (167 in tests, ~0 prod) | regex walk |
@@ -178,7 +178,8 @@ src/
       JoinChallengeView.tsx     # Join by code/invite
     # ... 50+ feature components
 
-  features/                     # Feature modules (only journal migrated)
+  features/                     # Journal domain plus connected-record automation runtime
+    automation/                 # Owner-fenced Dexie repository, durable outbox, ordered replay, and lifecycle reconciliation
     journal/                    # Self-contained: JournalModule, Calendar, Editor, Sticker, FormatToolbar, ZenFocusMode, PrivacyShield
 
   contexts/                     # React contexts
@@ -211,6 +212,7 @@ src/
     habits/
     focus/
     journal/                    # (already migrated)
+    automation/                 # current cross-domain connected-record runtime
     breathing/
     garden/
     challenges/
@@ -231,7 +233,7 @@ src/
 
 ## Feature Module Pattern
 
-**Current state:** Only `journal/` is migrated to feature module pattern. Other features still live in `components/` and `hooks/`.
+**Current state:** `journal/` is the only user-facing domain migrated to the feature-module pattern. `automation/` owns the cross-domain connected-record repository and runtime; mood, habits, and focus UI still live in `components/` and `hooks/`.
 
 Target structure for each feature module:
 
@@ -992,7 +994,7 @@ On PR to main:
 | TD-25 | P2                                | index.css monolith                                                 | **7,602 lines** remain in a single CSS file. Further split work needs feature ownership and regression proof.                                                                                                                                                                   | src/index.css                                             |
 | TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                       |
 | TD-27 | P2                                | Inline style={{}} proliferation                                    | **358 instances** across TSX files by the 2026-07-26 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                                   |
-| TD-28 | P3                                | Feature module migration stalled                                   | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                                                                   | src/components/, src/hooks/                               |
+| TD-28 | P3                                | Feature module migration stalled                                   | `features/journal/` remains the only migrated user-facing domain; `features/automation/` is cross-domain runtime infrastructure. Planned user-facing domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                 | src/features/automation/, src/components/, src/hooks/     |
 | TD-29 | ~~P3~~ → **PARTIALLY RESOLVED**   | Multi-tab sync coordination                                        | Account-bound DATA/JOURNAL writes now serialize through named Web Locks with a same-origin Dexie transaction fallback and passive account-generation invalidation. Full live multi-device sync convergence remains separately unverified.                                       | src/lib/originExclusiveLock.ts, src/hooks/useIndexedDB.ts |
 | TD-30 | P3                                | Missing aria-labels on SVG emojis                                  | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons.                                                                                                                                                     | src/components/animated-emotion-emoji/                    |
 | TD-31 | ~~P2~~ → DONE                     | Silent `.catch(() => {})` reappeared                               | **Fixed 2026-03-16**: Standardized `// graceful:` annotations across 14 catch blocks in 11 files. All silent catches now explain WHY silence is acceptable per Law 5.                                                                                                           | Various                                                   |

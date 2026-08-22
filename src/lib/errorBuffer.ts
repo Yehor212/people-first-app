@@ -7,6 +7,13 @@
  * product's durable diagnostics-consent contract.
  */
 
+import {
+  sanitizeDiagnosticMetadata,
+  toDiagnosticError,
+} from "@/lib/diagnosticPrivacy";
+import { logger } from "@/lib/logger";
+import { registerAccountBoundaryRuntimeReset } from "@/storage/accountBoundaryRuntime";
+
 export type CaptureSink = (error: Error, context?: Record<string, unknown>) => void;
 
 export const BUFFER_CAP = 50;
@@ -25,12 +32,16 @@ const buffer: BufferedError[] = [];
  * loops). Overflow is silently dropped — bootstrap errors are the priority.
  */
 export function captureOrBuffer(error: Error, context: Record<string, unknown> = {}): void {
+  const safeError = toDiagnosticError(error, "ZF_RUNTIME_ERROR");
+  const safeContext = sanitizeDiagnosticMetadata(context);
   if (sink) {
-    sink(error, context);
+    sink(safeError, safeContext);
     return;
   }
   if (buffer.length < BUFFER_CAP) {
-    buffer.push({ error, context });
+    buffer.push({ error: safeError, context: safeContext });
+  } else {
+    logger.warn("[ErrorBuffer]");
   }
 }
 
@@ -47,16 +58,23 @@ export function setCaptureSink(nextSink: CaptureSink): void {
     try {
       nextSink(error, { ...context, buffered: true });
     } catch {
-      // Swallow per-error sink failures — a broken sink must not take out
-      // the whole flush loop.
+      // A broken sink must not abort the flush, but the fixed-code failure is visible.
+      logger.warn("[ErrorBufferSink]");
     }
   }
 }
 
+/** Clear the current-runtime buffer at a privacy/account boundary. */
+export function clearBufferedDiagnostics(): void {
+  buffer.length = 0;
+}
+
+registerAccountBoundaryRuntimeReset(clearBufferedDiagnostics);
+
 /** Reset for testing. Not exported from main module boundary. */
 export function __resetForTests(): void {
   sink = null;
-  buffer.length = 0;
+  clearBufferedDiagnostics();
 }
 
 /** Read-only snapshot for testing/observability. */

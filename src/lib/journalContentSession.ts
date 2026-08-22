@@ -1,6 +1,8 @@
 import { generateSecureRandom } from "./validation";
 
 export const JOURNAL_REPLACE_AUTHORIZATION_TTL_MS = 5 * 60 * 1000;
+export const JOURNAL_CONTENT_SESSION_CHANGED_EVENT =
+  "zenflow:journal-content-session-changed";
 
 export type JournalReplaceAuthorizationInvalidationReason =
   | "manual-lock"
@@ -23,11 +25,18 @@ const JOURNAL_CONTENT_SESSION_CHANNEL = "zenflow-journal-content-session";
 const JOURNAL_PROTECTION_REMOVED_MESSAGE = "JOURNAL_PROTECTION_REMOVED";
 let journalContentSessionChannel: BroadcastChannel | null = null;
 
+function notifyJournalContentSessionChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(JOURNAL_CONTENT_SESSION_CHANGED_EVENT));
+  }
+}
+
 function clearJournalContentSessionState(): void {
   journalContentVaultKey = null;
   journalContentVaultRevision = null;
   activeJournalReplaceAuthorization = null;
   journalContentSessionGeneration += 1;
+  notifyJournalContentSessionChanged();
 }
 
 function initializeJournalContentSessionChannel(): void {
@@ -69,6 +78,7 @@ export function setJournalContentVaultKey(
     vaultKey && Number.isFinite(vaultRevision) ? vaultRevision : null;
   journalContentSessionGeneration += 1;
   activeJournalReplaceAuthorization = null;
+  notifyJournalContentSessionChanged();
 }
 
 export function getJournalContentVaultKey(): string | null {

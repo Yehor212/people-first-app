@@ -18,6 +18,7 @@ import { V2MindfulMomentLayer } from "./V2MindfulMomentLayer";
 import { V2ProgressionModalLayer } from "./V2ProgressionModalLayer";
 import { getNavV2RouteLabel, NavV2RouteFallback, NavV2RoutePending } from "./NavV2RouteStatus";
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
+import type { FocusCommitBoundary } from "@/types/focusTimerTypes";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 
@@ -128,9 +129,12 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
  * the drawer as primary navigation.
  */
 interface NavV2OrchestratorProps {
-  onAddMood?: (entry: MoodEntry) => void;
+  onAddMood?: (entry: MoodEntry) => void | Promise<void>;
   onAddGratitude?: (entry: GratitudeEntry) => void;
-  onCompleteFocusSession?: (session: FocusSession) => void;
+  onCompleteFocusSession?: (
+    session: FocusSession,
+    boundary?: FocusCommitBoundary
+  ) => void | Promise<void>;
   onMindfulMomentComplete?: () => void;
   settingsControls?: V2SettingsControls;
 }

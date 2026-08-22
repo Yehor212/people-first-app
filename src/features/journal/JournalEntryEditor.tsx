@@ -750,13 +750,11 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
         return;
       }
 
-      setPanicUnlockError(
-        result.error || ts.authUnexpectedError || "Unlock failed. Please try again."
-      );
+      setPanicUnlockError(ts.journalBiometricFailed || ts.authUnexpectedError || "Unlock failed. Please try again.");
     } catch {
       setPanicUnlockError(ts.authUnexpectedError || "Unlock failed. Please try again.");
     }
-  }, [setPanicLocked, ts.authUnexpectedError, ts.journalUnlockBiometric]);
+  }, [setPanicLocked, ts.authUnexpectedError, ts.journalBiometricFailed, ts.journalUnlockBiometric]);
 
   const handlePanicExit = useCallback(async () => {
     if (!onPanicExit || panicExitBusy) return;

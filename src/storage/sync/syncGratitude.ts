@@ -21,11 +21,15 @@ import { validateSyncOwner } from "./syncOwner";
 
 export const syncGratitude = async (
   entry: GratitudeEntry,
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   const userId = await validateSyncOwner(expectedOwnerUserId, "Gratitude sync");
   // Explicit validation to prevent RLS violations with undefined user_id
-  if (!supabase) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Gratitude remote sync is unavailable");
+    return;
+  }
   if (!userId) {
     logger.warn("[Sync] Cannot sync gratitude: User not authenticated");
     return;
@@ -33,28 +37,31 @@ export const syncGratitude = async (
 
   const deletedGratitudeIds = await getDeletedGratitudeIds();
   if (deletedGratitudeIds.has(entry.id)) {
-    logger.warn("[Sync] Skipping tombstoned gratitude upsert:", entry.id);
+    logger.warn("[Sync] Skipping tombstoned gratitude upsert");
     return;
   }
 
   // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
   if (!isValidUUID(entry.id)) {
-    logger.log("[Sync] Skipping granular gratitude sync (non-UUID ID):", entry.id);
+    logger.log("[Sync] Skipping granular gratitude sync for a legacy identifier");
     return;
   }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Gratitude delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue("CREATE_GRATITUDE", entry.id, entry, {
       expectedOwnerUserId: userId,
     });
-    logger.log("[Sync] Gratitude queued for offline sync:", entry.id);
+    logger.log("[Sync] Gratitude queued for offline sync");
     return;
   }
 
   if (await isEntityTombstonedOnServer("gratitude", entry.id, userId)) {
     await trackDeletedGratitudeId(entry.id);
-    logger.warn("[Sync] Skipping server-tombstoned gratitude upsert:", entry.id);
+    logger.warn("[Sync] Skipping server-tombstoned gratitude upsert");
     return;
   }
 
@@ -75,23 +82,31 @@ export const syncGratitude = async (
     );
 
     if (error) throw error;
-    logger.log("[Sync] Gratitude synced:", entry.id);
+    logger.log("[Sync] Gratitude synced");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast(
+    const event = await writeEventAndBroadcast(
       "gratitude",
       entry.id,
       "upsert",
       entry as unknown as Record<string, unknown>,
       deviceId,
-      { expectedOwnerUserId: userId }
+      {
+        expectedOwnerUserId: userId,
+        ...(eventIdempotencyKey
+          ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+          : {}),
+      }
     );
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Gratitude ordered event was not committed");
+    }
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn("[Sync] Gratitude sync aborted:", entry.id);
-      return;
+      logger.warn("[Sync] Gratitude sync aborted");
+      throw error;
     }
-    logger.error("[Sync] Failed to sync gratitude:", error);
+    logger.error("[Sync] Failed to sync gratitude");
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -99,21 +114,29 @@ export const syncGratitude = async (
 
 export const deleteGratitudeFromCloud = async (
   entryId: string,
-  expectedOwnerUserId?: string
+  expectedOwnerUserId?: string,
+  eventIdempotencyKey?: string
 ): Promise<void> => {
   await trackDeletedGratitudeId(entryId);
 
   const userId = await validateSyncOwner(expectedOwnerUserId, "Gratitude delete");
-  if (!supabase || !userId) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Gratitude remote delete is unavailable");
+    return;
+  }
+  if (!userId) return;
 
   // Skip granular sync for non-UUID IDs (nanoid)
   if (!isValidUUID(entryId)) {
-    logger.log("[Sync] Skipping granular gratitude delete (non-UUID ID):", entryId);
+    logger.log("[Sync] Skipping granular gratitude delete for a legacy identifier");
     return;
   }
 
   // If offline, queue for later
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Gratitude delete delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue(
       "DELETE_GRATITUDE",
       entryId,
@@ -122,7 +145,7 @@ export const deleteGratitudeFromCloud = async (
         expectedOwnerUserId: userId,
       }
     );
-    logger.log("[Sync] Gratitude delete queued for offline:", entryId);
+    logger.log("[Sync] Gratitude delete queued for offline");
     return;
   }
 
@@ -135,18 +158,24 @@ export const deleteGratitudeFromCloud = async (
       .eq("user_id", userId);
 
     if (error) throw error;
-    logger.log("[Sync] Gratitude deleted + tracked:", entryId);
+    logger.log("[Sync] Gratitude deleted + tracked");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("gratitude", entryId, "delete", null, deviceId, {
+    const event = await writeEventAndBroadcast("gratitude", entryId, "delete", null, deviceId, {
       expectedOwnerUserId: userId,
+      ...(eventIdempotencyKey
+        ? { idempotencyKey: eventIdempotencyKey, queueOnFailure: false, requireRemoteCommit: true }
+        : {}),
     });
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Gratitude delete ordered event was not committed");
+    }
   } catch (error) {
     // Handle AbortError separately
     if (isAbortError(error)) {
-      logger.warn("[Sync] Gratitude delete aborted:", entryId);
-      return;
+      logger.warn("[Sync] Gratitude delete aborted");
+      throw error;
     }
-    logger.error("[Sync] Failed to delete gratitude:", error);
+    logger.error("[Sync] Failed to delete gratitude");
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
   }
@@ -188,8 +217,8 @@ export const pullGratitudeFromCloud = async (): Promise<boolean> => {
     });
     await triggerDataRefresh();
     return true;
-  } catch (err) {
-    logger.error("[Pull] Gratitude failed:", err);
+  } catch {
+    logger.error("[Pull] Gratitude failed");
     return false;
   }
 };

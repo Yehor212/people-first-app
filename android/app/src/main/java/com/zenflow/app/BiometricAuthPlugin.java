@@ -40,6 +40,10 @@ public class BiometricAuthPlugin extends Plugin {
     private static final String PREFS_NAME = "zenflow_diary_biometric";
     private static final String PREF_CIPHER_TEXT = "credential_cipher_text";
     private static final String PREF_IV = "credential_iv";
+    private static final String ERROR_UNAVAILABLE = "biometric_unavailable";
+    private static final String ERROR_FAILED = "biometric_failed";
+    private static final String ERROR_NOT_ENROLLED = "biometric_not_enrolled";
+    private static final String ERROR_CANCELED = "biometric_canceled";
 
     @PluginMethod
     public void isAvailable(PluginCall call) {
@@ -60,7 +64,7 @@ public class BiometricAuthPlugin extends Plugin {
 
         String secret = call.getString("secret", null);
         if (secret == null || secret.isEmpty()) {
-            resolveFailure(call, "Journal vault key is required to enable biometric diary unlock.");
+            resolveFailure(call, ERROR_FAILED);
             return;
         }
 
@@ -94,7 +98,7 @@ public class BiometricAuthPlugin extends Plugin {
         String cipherText = prefs.getString(PREF_CIPHER_TEXT, null);
         String iv = prefs.getString(PREF_IV, null);
         if (cipherText == null || iv == null) {
-            resolveFailure(call, "Biometric diary unlock is not enrolled. Unlock with your password and enable biometrics again.");
+            resolveFailure(call, ERROR_NOT_ENROLLED);
             return;
         }
 
@@ -106,7 +110,7 @@ public class BiometricAuthPlugin extends Plugin {
                 authenticateWithCipher(call, getReason(call, "Unlock your diary"), cipher, null);
             } catch (KeyPermanentlyInvalidatedException error) {
                 deleteCredentialQuietly();
-                resolveFailure(call, "Biometric credentials changed. Unlock with your password and enable biometrics again.");
+                resolveFailure(call, ERROR_NOT_ENROLLED);
             } catch (Exception error) {
                 resolveFailure(call, keychainErrorMessage(error));
             }
@@ -116,7 +120,7 @@ public class BiometricAuthPlugin extends Plugin {
     private void authenticateWithCipher(PluginCall call, String reason, Cipher cipher, String secretToStore) {
         Activity activity = getActivity();
         if (!(activity instanceof FragmentActivity)) {
-            resolveFailure(call, "Biometric authentication requires an active Android activity.");
+            resolveFailure(call, ERROR_UNAVAILABLE);
             return;
         }
 
@@ -129,7 +133,7 @@ public class BiometricAuthPlugin extends Plugin {
                     @Override
                     public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                         if (resolved.compareAndSet(false, true)) {
-                            resolveFailure(call, errString.toString());
+                            resolveFailure(call, promptErrorCode(errorCode));
                         }
                     }
 
@@ -140,7 +144,7 @@ public class BiometricAuthPlugin extends Plugin {
                             BiometricPrompt.CryptoObject cryptoObject = result.getCryptoObject();
                             Cipher authenticatedCipher = cryptoObject != null ? cryptoObject.getCipher() : null;
                             if (authenticatedCipher == null) {
-                                resolveFailure(call, "Biometric authentication did not return an authenticated cipher.");
+                                resolveFailure(call, ERROR_FAILED);
                                 return;
                             }
 
@@ -156,7 +160,7 @@ public class BiometricAuthPlugin extends Plugin {
                             byte[] decrypted = authenticatedCipher.doFinal(encrypted);
                             String decryptedSecret = new String(decrypted, StandardCharsets.UTF_8);
                             if (decryptedSecret.isEmpty()) {
-                                resolveFailure(call, "Biometric authentication failed.");
+                                resolveFailure(call, ERROR_FAILED);
                             } else {
                                 call.resolve(successResult(decryptedSecret));
                             }
@@ -289,24 +293,33 @@ public class BiometricAuthPlugin extends Plugin {
     private String availabilityMessage(int status) {
         switch (status) {
             case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
-                return "Biometric authentication is not available on this device.";
+                return ERROR_UNAVAILABLE;
             case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
-                return "Biometric authentication is temporarily unavailable.";
+                return ERROR_UNAVAILABLE;
             case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
-                return "No biometric credentials are enrolled on this device.";
+                return ERROR_NOT_ENROLLED;
             case BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED:
-                return "A security update is required before biometric authentication can be used.";
+                return ERROR_UNAVAILABLE;
             case BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED:
-                return "Strong biometric authentication is not supported on this device.";
+                return ERROR_UNAVAILABLE;
             case BiometricManager.BIOMETRIC_STATUS_UNKNOWN:
-                return "Biometric authentication status is unknown.";
+                return ERROR_UNAVAILABLE;
             default:
-                return "Biometric authentication is not available.";
+                return ERROR_UNAVAILABLE;
         }
     }
 
+    private String promptErrorCode(int errorCode) {
+        return errorCode == BiometricPrompt.ERROR_USER_CANCELED
+                || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
+                ? ERROR_CANCELED
+                : ERROR_FAILED;
+    }
+
     private String keychainErrorMessage(Exception error) {
-        String message = error.getMessage();
-        return message == null || message.trim().isEmpty() ? "Biometric authentication failed." : message;
+        if (error instanceof KeyPermanentlyInvalidatedException) {
+            return ERROR_NOT_ENROLLED;
+        }
+        return ERROR_FAILED;
     }
 }

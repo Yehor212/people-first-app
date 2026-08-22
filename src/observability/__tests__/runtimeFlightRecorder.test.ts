@@ -1,14 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  installRuntimeFlightRecorder,
   installRuntimePerformanceGuard,
   shouldEnableRuntimeFlightRecorder,
   shouldEnableRuntimePerformanceGuard,
 } from "../runtimeFlightRecorder";
 import { SK, SSK } from "@/lib/storageKeys";
+import { resetAccountBoundaryRuntimeState } from "@/storage/accountBoundaryRuntime";
 
 type ObserverCb = (list: { getEntries: () => PerformanceEntry[] }) => void;
 
-let instances: Array<{ cb: ObserverCb; observe: ReturnType<typeof vi.fn> }> = [];
+let instances: Array<{
+  cb: ObserverCb;
+  observe: ReturnType<typeof vi.fn>;
+  disconnect: ReturnType<typeof vi.fn>;
+}> = [];
 
 function performanceEntry({
   startTime,
@@ -44,13 +50,59 @@ function installPerformanceObserverMock(supported: string[]): void {
 
 describe("runtime flight recorder enablement", () => {
   afterEach(() => {
+    resetAccountBoundaryRuntimeState();
     instances = [];
     delete window.__zenflowRuntimePerf;
     delete window.__zenflowRuntimePerfGuard;
     delete document.documentElement.dataset.runtimePerf;
     sessionStorage.removeItem(SSK.RUNTIME_PERF_GUARD);
     localStorage.removeItem(SK.RUNTIME_PERF_DEVICE_GUARD);
+    window.history.replaceState({}, "", "/");
     vi.unstubAllGlobals();
+  });
+
+  it("removes query/deep-link canaries from the retained runtime guard snapshot", () => {
+    const canary = "ZF_T172_PERF_AUTH_4Q8M2V7K5R9N";
+    window.history.replaceState({}, "", `/orb/?code=${canary}&state=${canary}#${canary}`);
+    installPerformanceObserverMock(["long-animation-frame"]);
+
+    expect(installRuntimePerformanceGuard()).toBe(true);
+    const startedAt = window.__zenflowRuntimePerfGuard?.snapshot().startedAt ?? 0;
+    instances[0].cb({
+      getEntries: () => [
+        performanceEntry({ startTime: startedAt + 10, duration: 720, blockingDuration: 280 }),
+      ],
+    });
+
+    const serialized = JSON.stringify({
+      guard: window.__zenflowRuntimePerfGuard?.snapshot(),
+      retained: sessionStorage.getItem(SSK.RUNTIME_PERF_GUARD),
+    });
+    expect(serialized).not.toContain(canary);
+    expect(window.__zenflowRuntimePerfGuard?.snapshot().route).toBe("orb");
+  });
+
+  it("sanitizes explicit routes and LoAF script attribution in the flight recorder", () => {
+    const canary = "ZF_T172_FLIGHT_DEEPLINK_9R3K7M2V5Q8N";
+    window.history.replaceState({}, "", `/?perf=1&data=${canary}`);
+    installPerformanceObserverMock(["long-animation-frame"]);
+
+    expect(installRuntimeFlightRecorder()).toBe(true);
+    window.__zenflowRuntimePerf?.markRoute(`/diary/${canary}?token=${canary}`);
+    instances[0].cb({
+      getEntries: () => [{
+        ...performanceEntry({ startTime: 10, duration: 800, blockingDuration: 300 }),
+        scripts: [{
+          sourceURL: `https://example.test/chunk.js?token=${canary}`,
+          sourceFunctionName: canary,
+          invoker: canary,
+          duration: 200,
+        }],
+      }],
+    });
+
+    const serialized = JSON.stringify(window.__zenflowRuntimePerf?.snapshot());
+    expect(serialized).not.toContain(canary);
   });
 
   it("enables from explicit perf query flag", () => {
@@ -200,5 +252,22 @@ describe("runtime flight recorder enablement", () => {
 
     expect(document.documentElement.dataset.runtimePerf).toBe("startup");
     expect(window.__zenflowRuntimePerfGuard?.snapshot().activated).toBe(false);
+  });
+
+  it("disconnects guard observers so post-reset entries cannot repopulate retained mode", () => {
+    installPerformanceObserverMock(["long-animation-frame", "longtask"]);
+    expect(installRuntimePerformanceGuard()).toBe(true);
+    const startedAt = window.__zenflowRuntimePerfGuard?.snapshot().startedAt ?? 0;
+    const staleCallbacks = instances.map((instance) => instance.cb);
+
+    resetAccountBoundaryRuntimeState();
+    for (const callback of staleCallbacks) {
+      callback({ getEntries: () => [performanceEntry({ startTime: startedAt + 10, duration: 900, blockingDuration: 300 })] });
+    }
+
+    expect(window.__zenflowRuntimePerfGuard).toBeUndefined();
+    expect(sessionStorage.getItem(SSK.RUNTIME_PERF_GUARD)).toBeNull();
+    expect(localStorage.getItem(SK.RUNTIME_PERF_DEVICE_GUARD)).toBeNull();
+    expect(instances.every((instance) => instance.disconnect.mock.calls.length === 1)).toBe(true);
   });
 });

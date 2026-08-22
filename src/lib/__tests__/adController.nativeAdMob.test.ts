@@ -315,6 +315,29 @@ describe('adController native AdMob contracts', () => {
     expect(harness.adMob.showRewardVideoAd).toHaveBeenCalledTimes(1);
   });
 
+  it('does not place a private mood canary in AdMob request payloads', async () => {
+    const moodCanary = 'ZF_T172_DIARY_7H2K9Q4M6P8R';
+    const { initializeAds, showRewardedAd } = await import('../adController');
+
+    await expect(initializeAds()).resolves.toBe(true);
+    harness.adMob.prepareRewardVideoAd.mockClear();
+    harness.adMob.showRewardVideoAd.mockImplementationOnce(async () => {
+      harness.emit('onRewardedVideoAdReward', { type: 'treats', amount: 1 });
+    });
+
+    await expect(
+      showRewardedAd({ currentMood: moodCanary, zone: 'optional_rewards' }),
+    ).resolves.toMatchObject({ success: true, rewarded: true });
+
+    const outbound = JSON.stringify([
+      harness.adMob.initialize.mock.calls,
+      harness.adMob.requestConsentInfo.mock.calls,
+      harness.adMob.prepareRewardVideoAd.mock.calls,
+      harness.adMob.showRewardVideoAd.mock.calls,
+    ]);
+    expect(outbound).not.toContain(moodCanary);
+  });
+
   it('blocks onboarding rewarded calls before any ad request or show call', async () => {
     const { initializeAds, showRewardedAd } = await import('../adController');
 

@@ -17,6 +17,7 @@ const {
   mockHandleAuthCallback,
   mockCloseOAuthBrowser,
   mockIsFeatureVisible,
+  mockIsNative,
   mockLocalOwner,
   mockClaimStatus,
 } = vi.hoisted(() => {
@@ -54,13 +55,16 @@ const {
     mockHandleAuthCallback: vi.fn(async () => undefined),
     mockCloseOAuthBrowser: vi.fn(async () => undefined),
     mockIsFeatureVisible: vi.fn(() => true),
+    mockIsNative: { value: true },
     mockLocalOwner,
     mockClaimStatus,
   };
 });
 
 vi.mock("@/lib/platform", () => ({
-  isNative: true,
+  get isNative() {
+    return mockIsNative.value;
+  },
 }));
 
 vi.mock("@capacitor/app", () => ({
@@ -114,7 +118,11 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
+import {
+  getAuthDedupeKey,
+  parseChallengeInviteUrl,
+  useDeepLinkHandler,
+} from "@/hooks/useDeepLinkHandler";
 import {
   encodeInviteData,
   generateShareLink,
@@ -140,16 +148,11 @@ const CHALLENGE_FIXTURE: Challenge = {
 
 const EXPECTED_CHALLENGE_INVITE: ChallengeInvite = {
   code: CHALLENGE_FIXTURE.code,
-  habitName: CHALLENGE_FIXTURE.habitName,
-  habitIcon: CHALLENGE_FIXTURE.habitIcon,
-  duration: CHALLENGE_FIXTURE.duration,
-  creatorName: CHALLENGE_FIXTURE.creatorName,
-  startDate: CHALLENGE_FIXTURE.startDate,
 };
 
 function createTrustedWebChallengeUrl(): string {
-  const url = new URL("https://zenflow.app/challenge");
-  url.searchParams.set("data", encodeInviteData(CHALLENGE_FIXTURE));
+  const url = new URL("https://yehor212.github.io/people-first-app/");
+  url.hash = new URLSearchParams({ challenge: encodeInviteData(CHALLENGE_FIXTURE) }).toString();
   return url.toString();
 }
 
@@ -194,6 +197,20 @@ async function flushDeepLinkWork() {
 }
 
 describe("useDeepLinkHandler", () => {
+  it("fingerprints every retained auth callback field without retaining private material", () => {
+    const code = "ZF_T172_AUTH_CODE_6d17c4a9";
+    const state = "ZF_T172_AUTH_STATE_2c71b9e4";
+    const error = "ZF_T172_AUTH_ERROR_9a48d2f1";
+    const token = "ZF_T172_AUTH_TOKEN_4f28e6b3";
+    const key = getAuthDedupeKey(
+      `com.zenflow.app://login-callback?code=${code}&state=${state}&error=${error}#access_token=${token}`,
+    );
+
+    expect(key).toMatch(/^com\.zenflow\.app:\/\/login-callback\|auth=\d+:[a-f0-9]+$/);
+    for (const canary of [code, state, error, token]) expect(key).not.toContain(canary);
+    expect(getAuthDedupeKey("not a URL")).toBe("invalid-auth-url");
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
@@ -204,6 +221,7 @@ describe("useDeepLinkHandler", () => {
     mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
     mockHandleAuthCallback.mockResolvedValue(undefined);
     mockIsFeatureVisible.mockReturnValue(true);
+    mockIsNative.value = true;
     mockLocalOwner.value = "telegram-user-1";
     mockClaimStatus.value = "none";
     consumeStagedJournalMagicLinkConfirmation();
@@ -211,6 +229,7 @@ describe("useDeepLinkHandler", () => {
   });
 
   afterEach(() => {
+    window.history.replaceState({}, "", "/");
     vi.useRealTimers();
   });
 
@@ -542,7 +561,30 @@ describe("useDeepLinkHandler", () => {
   });
 
   describe("challenge deep links", () => {
-    it("handles the canonical zenflow://challenge?data= custom scheme", async () => {
+    it("uses the canonical fragment-only web fallback and rejects lookalike origins", () => {
+      const generated = generateShareLink(CHALLENGE_FIXTURE);
+      expect(generated).toMatch(/^https:\/\/yehor212\.github\.io\/people-first-app\/#challenge=/);
+      expect(parseChallengeInviteUrl(generated)).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(parseChallengeInviteUrl(generated.replace("https://yehor212.github.io", "https://evil.example"))).toBeNull();
+      expect(generated).not.toContain("?");
+    });
+
+    it("consumes the canonical challenge fragment on web and removes it from history", async () => {
+      mockIsNative.value = false;
+      const encoded = encodeInviteData(CHALLENGE_FIXTURE);
+      window.history.replaceState({}, "", `/people-first-app/#challenge=${encoded}`);
+
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(window.location.hash).toBe("");
+      expect(appUrlOpenListeners).toHaveLength(0);
+    });
+
+    it("handles the generated HTTPS challenge capability", async () => {
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
         await flushDeepLinkWork();
@@ -557,7 +599,25 @@ describe("useDeepLinkHandler", () => {
       expect(mockHandleAuthCallback).not.toHaveBeenCalled();
     });
 
-    it("handles a trusted https://zenflow.app/challenge?data= URL", async () => {
+    it("keeps legacy custom-scheme challenge links inbound-only", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+      const generated = generateShareLink(CHALLENGE_FIXTURE);
+      const legacy = generated
+        .replace("https://yehor212.github.io/people-first-app/#challenge=", "zenflow://challenge?data=");
+
+      await act(async () => {
+        appUrlOpenListeners[0]({ url: legacy });
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toEqual(EXPECTED_CHALLENGE_INVITE);
+      expect(generateShareLink(CHALLENGE_FIXTURE)).not.toMatch(/^zenflow:/);
+    });
+
+    it("handles the canonical public web fallback URL", async () => {
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
         await flushDeepLinkWork();
@@ -572,7 +632,36 @@ describe("useDeepLinkHandler", () => {
       expect(mockHandleAuthCallback).not.toHaveBeenCalled();
     });
 
-    it("decodes the invite payload into the current UI store shape", async () => {
+    it("rejects lookalike HTTPS paths, insecure schemes, ports, and userinfo", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+      });
+      const payload = encodeInviteData(CHALLENGE_FIXTURE);
+      const untrusted = [
+        `http://zenflow.app/challenge#data=${payload}`,
+        `ftp://zenflow.app/challenge#data=${payload}`,
+        `https://zenflow.app:444/challenge#data=${payload}`,
+        `https://user@zenflow.app/challenge#data=${payload}`,
+        `https://zenflow.app/challenge-evil#data=${payload}`,
+        `https://zenflow.app/challenge/private#data=${payload}`,
+        `https://zenflow.app/challenge?data=${payload}`,
+        `https://evil.example/people-first-app/#challenge=${payload}`,
+        `https://yehor212.github.io/people-first-app/private#challenge=${payload}`,
+      ];
+
+      for (const url of untrusted) {
+        await act(async () => {
+          appUrlOpenListeners[0]({ url });
+          await flushDeepLinkWork();
+        });
+      }
+
+      expect(useUIStore.getState().challengeInvite).toBeUndefined();
+      expect(useUIStore.getState().showChallengeModal).toBe(false);
+    });
+
+    it("decodes only the opaque lookup code into the UI store", async () => {
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
         await flushDeepLinkWork();
@@ -583,14 +672,9 @@ describe("useDeepLinkHandler", () => {
         await flushDeepLinkWork();
       });
 
-      expect(useUIStore.getState().challengeInvite).toMatchObject({
-        code: "ZEN-TEST24",
-        habitName: "Evening walk",
-        habitIcon: "🚶",
-        duration: 21,
-        creatorName: "Test Friend",
-        startDate: "2026-07-28",
-      });
+      expect(useUIStore.getState().challengeInvite).toEqual({ code: "ZEN-TEST24" });
+      expect(JSON.stringify(useUIStore.getState().challengeInvite)).not.toContain("Evening walk");
+      expect(JSON.stringify(useUIStore.getState().challengeInvite)).not.toContain("Test Friend");
     });
 
     it("opens the challenge modal when the challenges feature is enabled", async () => {

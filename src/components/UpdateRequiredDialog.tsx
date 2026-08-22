@@ -35,14 +35,19 @@ const lazyBreadcrumb = (bc: {
 };
 import { logger } from "@/lib/logger";
 import {
-  chunkFromFilename,
-  chunkFromMessage,
+  getErrorMessage,
   isChunkLoadMessage,
 } from "@/lib/chunkErrorDetection";
 import { forceHardReload } from "@/lib/versionCheck";
 
 // Event name for chunk load failures
 export const CHUNK_LOAD_ERROR_EVENT = "zenflow:chunk-load-error";
+
+const SAFE_CHUNK_KINDS = new Set(["javascript", "preload", "stylesheet", "unknown"]);
+
+function sanitizeChunkKind(value: unknown): string {
+  return typeof value === "string" && SAFE_CHUNK_KINDS.has(value) ? value : "unknown";
+}
 
 export function UpdateRequiredDialog() {
   const { t } = useLanguage();
@@ -66,8 +71,14 @@ export function UpdateRequiredDialog() {
   useBackHandler(isOpen, requestClose);
 
   const handleChunkError = useCallback((e: Event) => {
-    const detail = (e as CustomEvent).detail;
-    logger.warn("[UpdateRequired] Chunk load error detected:", detail);
+    let chunk = "unknown";
+    try {
+      chunk = sanitizeChunkKind((e as CustomEvent).detail?.chunk);
+    } catch {
+      chunk = "unknown";
+    }
+    const detail = { code: "ZF_CHUNK_LOAD_ERROR", chunk };
+    logger.warn("[UpdateRequired] Chunk load error detected", detail);
 
     if (isRefreshingRef.current) {
       logger.warn("[UpdateRequired] Additional chunk error ignored during reload preparation");
@@ -91,7 +102,7 @@ export function UpdateRequiredDialog() {
     isRefreshingRef.current = false;
     setIsRefreshing(false);
     setRefreshFailed(false);
-    setFailedChunk(detail?.chunk || "unknown");
+    setFailedChunk(chunk);
     setIsOpen(true);
   }, []);
 
@@ -221,17 +232,16 @@ export function UpdateRequiredDialog() {
 export function setupChunkErrorHandler(): void {
   // Handle errors from dynamic imports
   window.addEventListener("error", (event) => {
-    const message = event.message || "";
-    const filename = event.filename || "";
+    const message = getErrorMessage(event.message);
 
     if (!isChunkLoadMessage(message)) return;
     // Prevent the error from being logged to console as unhandled.
     event.preventDefault();
 
-    const chunk = chunkFromFilename(filename);
+    const chunk = "javascript";
     window.dispatchEvent(
       new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
-        detail: { message, filename, chunk, timestamp: Date.now() },
+        detail: { message: "ZF_CHUNK_LOAD_ERROR", chunk, timestamp: Date.now() },
       })
     );
     logger.warn("[ChunkError] Handled chunk load failure:", chunk);
@@ -241,17 +251,15 @@ export function setupChunkErrorHandler(): void {
   // Handle unhandled promise rejections (dynamic import failures)
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason;
-    const message = reason?.message || String(reason);
+    const message = getErrorMessage(reason);
 
     if (!isChunkLoadMessage(message)) return;
     event.preventDefault();
 
-    const chunk = chunkFromMessage(message);
-    const urlMatch = message.match(/https?:\/\/[^\s]+/);
-    const url = urlMatch ? urlMatch[0] : "";
+    const chunk = "javascript";
     window.dispatchEvent(
       new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
-        detail: { message, url, chunk, timestamp: Date.now() },
+        detail: { message: "ZF_CHUNK_LOAD_ERROR", chunk, timestamp: Date.now() },
       })
     );
     logger.warn("[ChunkError] Handled chunk load rejection:", chunk);

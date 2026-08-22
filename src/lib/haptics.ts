@@ -21,7 +21,7 @@ export async function hapticTap(): Promise<void> {
   try {
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch (error) {
-    logger.log("Haptic tap failed:", error);
+    logger.log("[Haptics] Haptic tap failed:", error);
   }
 }
 
@@ -33,7 +33,7 @@ export async function hapticMedium(): Promise<void> {
   try {
     await Haptics.impact({ style: ImpactStyle.Medium });
   } catch (error) {
-    logger.log("Haptic medium failed:", error);
+    logger.log("[Haptics] Haptic medium failed:", error);
   }
 }
 
@@ -45,7 +45,7 @@ export async function hapticHeavy(): Promise<void> {
   try {
     await Haptics.impact({ style: ImpactStyle.Heavy });
   } catch (error) {
-    logger.log("Haptic heavy failed:", error);
+    logger.log("[Haptics] Haptic heavy failed:", error);
   }
 }
 
@@ -57,7 +57,7 @@ export async function hapticSuccess(): Promise<void> {
   try {
     await Haptics.notification({ type: NotificationType.Success });
   } catch (error) {
-    logger.log("Haptic success failed:", error);
+    logger.log("[Haptics] Haptic success failed:", error);
   }
 }
 
@@ -69,7 +69,7 @@ export async function hapticWarning(): Promise<void> {
   try {
     await Haptics.notification({ type: NotificationType.Warning });
   } catch (error) {
-    logger.log("Haptic warning failed:", error);
+    logger.log("[Haptics] Haptic warning failed:", error);
   }
 }
 
@@ -81,7 +81,7 @@ export async function hapticError(): Promise<void> {
   try {
     await Haptics.notification({ type: NotificationType.Error });
   } catch (error) {
-    logger.log("Haptic error failed:", error);
+    logger.log("[Haptics] Haptic error failed:", error);
   }
 }
 
@@ -100,7 +100,7 @@ export async function hapticSelectionStart(): Promise<void> {
   try {
     await Haptics.selectionStart();
   } catch (error) {
-    logger.log("Haptic selection start failed:", error);
+    logger.log("[Haptics] Haptic selection start failed:", error);
   }
 }
 
@@ -112,7 +112,7 @@ export async function hapticSelectionEnd(): Promise<void> {
   try {
     await Haptics.selectionEnd();
   } catch (error) {
-    logger.log("Haptic selection end failed:", error);
+    logger.log("[Haptics] Haptic selection end failed:", error);
   }
 }
 

@@ -102,6 +102,10 @@ export default defineConfig(({ mode }) => {
   const journalSaveCeremonyBuildEnabled =
     (process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY ??
       fileEnvironment.VITE_ENABLE_JOURNAL_SAVE_CEREMONY) === "true";
+  const t173LifecycleProofEnabled =
+    mode === "t173-lifecycle-proof" ||
+    (process.env.VITE_T173_LIFECYCLE_PROOF ??
+      fileEnvironment.VITE_T173_LIFECYCLE_PROOF) === "true";
 
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
@@ -422,6 +426,14 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        ...(t173LifecycleProofEnabled
+          ? {
+              "/src/main.tsx": path.resolve(
+                __dirname,
+                "./src/test/t173LifecycleProofEntry.tsx",
+              ),
+            }
+          : {}),
       },
     },
 

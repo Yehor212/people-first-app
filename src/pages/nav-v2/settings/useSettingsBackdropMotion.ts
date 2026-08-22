@@ -59,7 +59,7 @@ export function useSettingsBackdropMotion(enabled = true): boolean {
           try {
             await handle.remove();
           } catch {
-            logger.warn("Settings backdrop app-state listener cleanup did not complete.");
+            logger.warn("[V2Settings] Settings backdrop app-state listener cleanup did not complete.");
           }
           return;
         }
@@ -82,10 +82,10 @@ export function useSettingsBackdropMotion(enabled = true): boolean {
           listenerHandle = null;
           if (handleToRemove) {
             void handleToRemove.remove().catch(() => {
-              logger.warn("Settings backdrop app-state listener cleanup did not complete.");
+              logger.warn("[V2Settings] Settings backdrop app-state listener cleanup did not complete.");
             });
           }
-          logger.warn("Settings backdrop motion stayed off because app state was unavailable.");
+          logger.warn("[V2Settings] Settings backdrop motion stayed off because app state was unavailable.");
         }
       }
     })();
@@ -94,7 +94,7 @@ export function useSettingsBackdropMotion(enabled = true): boolean {
       cancelled = true;
       if (listenerHandle) {
         void listenerHandle.remove().catch(() => {
-          logger.warn("Settings backdrop app-state listener cleanup did not complete.");
+          logger.warn("[V2Settings] Settings backdrop app-state listener cleanup did not complete.");
         });
       }
     };

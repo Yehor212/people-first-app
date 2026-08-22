@@ -22,45 +22,58 @@ export const SENTRY_IGNORE_ERRORS = [
 const lockStolenPattern = /lock.*stolen|stolen.*lock/i;
 
 function messageFromOriginalException(error: unknown): string | null {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object" && "message" in error) {
-    const message = (error as { message?: unknown }).message;
-    return typeof message === "string" ? message : null;
+  try {
+    if (error instanceof Error) return error.message;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object" && "message" in error) {
+      const message = (error as { message?: unknown }).message;
+      return typeof message === "string" ? message : null;
+    }
+  } catch {
+    return null;
   }
   return null;
 }
 
 function eventMessages(event: Event, hint?: EventHint): string[] {
-  const messages = [
-    messageFromOriginalException(hint?.originalException),
-    event.message ?? null,
-    ...(event.exception?.values ?? []).map((value) => value.value ?? null),
-  ];
-
-  return messages.filter((message): message is string => Boolean(message));
+  try {
+    const messages = [
+      messageFromOriginalException(hint?.originalException),
+      event.message ?? null,
+      ...(event.exception?.values ?? []).map((value) => value.value ?? null),
+    ];
+    return messages.filter((message): message is string => Boolean(message));
+  } catch {
+    return [];
+  }
 }
 
 export function isExpectedAbortError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const name = error instanceof Error ? error.name : (error as { name?: unknown }).name;
-  const message =
-    error instanceof Error ? error.message : (error as { message?: unknown }).message;
-  const code = (error as { code?: unknown }).code;
-
-  return (
-    name === "AbortError" ||
-    code === 20 ||
-    (typeof message === "string" &&
-      (message.includes("aborted") || message.includes("AbortError")))
-  );
+  try {
+    if (!error || typeof error !== "object") return false;
+    const name = error instanceof Error ? error.name : (error as { name?: unknown }).name;
+    const message =
+      error instanceof Error ? error.message : (error as { message?: unknown }).message;
+    const code = (error as { code?: unknown }).code;
+    return (
+      name === "AbortError" ||
+      code === 20 ||
+      (typeof message === "string" &&
+        (message.includes("aborted") || message.includes("AbortError")))
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function shouldDropSentryEvent(event: Event, hint?: EventHint): boolean {
-  const originalException = hint?.originalException;
-  if (isExpectedAbortError(originalException)) return true;
-
-  return eventMessages(event, hint).some(
-    (message) => isChunkLoadMessage(message) || lockStolenPattern.test(message)
-  );
+  try {
+    const originalException = hint?.originalException;
+    if (isExpectedAbortError(originalException)) return true;
+    return eventMessages(event, hint).some(
+      (message) => isChunkLoadMessage(message) || lockStolenPattern.test(message)
+    );
+  } catch {
+    return false;
+  }
 }

@@ -39,8 +39,10 @@ import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { triggerSync } from "@/storage/cloudSync";
 import { trackDeletedHabitId } from "@/storage/deletionTracker";
-import { deleteHabitFromCloud, syncHabit, syncHabitCompletion } from "@/storage/realtimeSync";
+import { deleteHabitFromCloud, syncHabit } from "@/storage/realtimeSync";
 import { ENTRY } from "@/types";
+import { commitHabitEntry } from "@/lib/habitEntryCommit";
+import { reportDurablePersistenceFailure } from "@/lib/durablePersistenceFailure";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
@@ -115,6 +117,7 @@ export const HabitsPage = memo(function HabitsPage() {
   const { habits, todaysHabits, dailyProgress, isEmpty: hasNoActiveHabits } = useHabitsPageState();
   const animateBackdrop = useShouldAnimate();
   const setHabits = useUserDataStore((s) => s.setHabits);
+  const publishDurableHabits = useUserDataStore((s) => s._publishDurableHabits);
   const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
   const setReminders = useUserDataStore((s) => s.setReminders);
   const [createOpen, setCreateOpen] = useState(false);
@@ -125,6 +128,7 @@ export const HabitsPage = memo(function HabitsPage() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   /** Template passed to HabitCreateSheet for setup-before-save flow. */
   const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | null>(null);
+  const processingEntryRef = useRef<Set<string>>(new Set());
 
   /** Focus-return: track the element that triggered the most recent sheet
    *  open so the sheet's close handler can restore focus there (spec §11
@@ -163,7 +167,7 @@ export const HabitsPage = memo(function HabitsPage() {
       setHabits((prev) => [...prev, habit]);
       analytics.habitCreated(habit.templateId ? "template" : "custom", habits.length + 1);
       triggerSync();
-      void syncHabit(habit).catch((err) => logger.warn("[V2 Habits] Add sync failed:", err));
+      void syncHabit(habit).catch(() => logger.warn("[V2 Habits] Add sync failed"));
     },
     [setHabits, habits]
   );
@@ -173,8 +177,8 @@ export const HabitsPage = memo(function HabitsPage() {
       const updatedHabit = { ...habit, updatedAt: new Date().toISOString() };
       setHabits((prev) => prev.map((h) => (h.id === updatedHabit.id ? updatedHabit : h)));
       triggerSync();
-      void syncHabit(updatedHabit).catch((err) =>
-        logger.warn("[V2 Habits] Update sync failed:", err)
+      void syncHabit(updatedHabit).catch(() =>
+        logger.warn("[V2 Habits] Update sync failed")
       );
     },
     [setHabits]
@@ -195,10 +199,10 @@ export const HabitsPage = memo(function HabitsPage() {
       }
 
       void trackDeletedHabitId(habitId);
-      void deleteHabitFromCloud(habitId).catch((err) => {
+      void deleteHabitFromCloud(habitId).catch(() => {
         // graceful: local delete already succeeded; deletion tracker + backup
         // sync keep the delete authoritative until granular cloud delete retries.
-        logger.error("[V2 Habits] Cloud delete failed:", err);
+        logger.error("[V2 Habits] Cloud delete failed");
       });
       triggerSync();
     },
@@ -213,6 +217,16 @@ export const HabitsPage = memo(function HabitsPage() {
     []
   );
 
+  const reportEntryPersistenceFailure = useCallback(
+    (error: unknown) => {
+      reportDurablePersistenceFailure(error, {
+        domain: "V2 Habits",
+        localizedMessage: t.storageErrorDesc,
+      });
+    },
+    [t.storageErrorDesc]
+  );
+
   const recordNumericalValue = useCallback(
     (
       habit: Habit,
@@ -220,47 +234,41 @@ export const HabitsPage = memo(function HabitsPage() {
       realValue: number | null,
       source: HabitEntrySource = "quickTap"
     ) => {
+      const processingKey = `${habit.id}-${date}`;
+      if (processingEntryRef.current.has(processingKey)) return;
+      processingEntryRef.current.add(processingKey);
       const previousStored = habit.entries?.[date]?.value;
       const nextStored = realValue === null ? undefined : toStoredValue(Math.max(0, realValue));
       const prevMet = doesNumericalStoredValueMeetTarget(habit, previousStored);
       const nowMet = doesNumericalStoredValueMeetTarget(habit, nextStored);
+      const isCompletionTransition = !prevMet && nowMet;
+      const metadata = entryMetadata(date, source);
+      const nextHabit: Habit = {
+        ...habit,
+        entries:
+          nextStored === undefined
+            ? setEntryValue(habit.entries || {}, date, ENTRY.UNKNOWN)
+            : setEntryValue(habit.entries || {}, date, nextStored, undefined, metadata),
+        updatedAt: metadata.loggedAt,
+      };
 
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habit.id) return h;
-          const entries =
-            nextStored === undefined
-              ? setEntryValue(h.entries || {}, date, ENTRY.UNKNOWN)
-              : setEntryValue(
-                  h.entries || {},
-                  date,
-                  nextStored,
-                  undefined,
-                  entryMetadata(date, source)
-                );
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
-
-      triggerSync();
-      void syncHabitCompletion(
-        habit.id,
-        date,
-        nowMet,
-        realValue == null ? undefined : Math.max(1, Math.round(realValue)),
-        nextStored,
-        {
-          habitType: habit.habitType ?? "numerical",
-          targetType: habit.targetType,
-          entryValue: nextStored ?? ENTRY.UNKNOWN,
-        }
-      ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
-
-      if (!prevMet && nowMet) {
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
-      }
+      void commitHabitEntry(nextHabit, isCompletionTransition ? date : null, {
+        entryDate: date,
+        setHabits: publishDurableHabits,
+        onCompleted: (committedHabit) => {
+          analytics.habitCompleted(
+            committedHabit.name,
+            habits.filter((candidate) => !candidate.isArchived).length
+          );
+        },
+        onCommitted: () => {
+          triggerSync();
+        },
+      })
+        .catch(reportEntryPersistenceFailure)
+        .finally(() => processingEntryRef.current.delete(processingKey));
     },
-    [habits, setHabits, entryMetadata]
+    [habits, publishDurableHabits, entryMetadata, reportEntryPersistenceFailure]
   );
 
   /**
@@ -309,6 +317,8 @@ export const HabitsPage = memo(function HabitsPage() {
   );
   const handleToggleHabit = useCallback(
     (habitId: string, date: string) => {
+      const processingKey = `${habitId}-${date}`;
+      if (processingEntryRef.current.has(processingKey)) return;
       // Compute the completion transition BEFORE the setter runs so the
       // emission is pure (no state-mutation flag inside the updater). This
       // also keeps the section 15 contract parity with useHabitHandlers —
@@ -317,38 +327,35 @@ export const HabitsPage = memo(function HabitsPage() {
       const isCompletingNow = habit != null && habit.entries?.[date] == null;
       const nextValue =
         habit != null && habit.entries?.[date] == null ? ENTRY.YES_MANUAL : ENTRY.UNKNOWN;
+      if (!habit) return;
+      processingEntryRef.current.add(processingKey);
       void hapticTap();
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          const entries = { ...(h.entries ?? {}) };
-          const existing = entries[date];
-          if (existing) {
-            const { [date]: _drop, ...rest } = entries;
-            void _drop;
-            return { ...h, entries: rest };
-          }
-          entries[date] = {
-            value: ENTRY.YES_MANUAL,
-            ...entryMetadata(date, "quickTap"),
-          };
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
-      triggerSync();
-      void syncHabitCompletion(habitId, date, nextValue === ENTRY.YES_MANUAL, 1, undefined, {
-        habitType: habit?.habitType ?? "boolean",
-        targetType: habit?.targetType,
-        entryValue: nextValue,
-      }).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
-      if (isCompletingNow && habit) {
-        // §15 retention metric — habit.name carries length-only PII gate at
-        // the Analytics layer (see analytics.ts). total_habits is the active
-        // (non-archived) count so the aggregator can filter ≥3-habit users.
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
-      }
+      const metadata = entryMetadata(date, "quickTap");
+      const nextHabit: Habit = {
+        ...habit,
+        entries:
+          nextValue === ENTRY.UNKNOWN
+            ? setEntryValue(habit.entries ?? {}, date, ENTRY.UNKNOWN)
+            : setEntryValue(habit.entries ?? {}, date, ENTRY.YES_MANUAL, undefined, metadata),
+        updatedAt: metadata.loggedAt,
+      };
+      void commitHabitEntry(nextHabit, isCompletingNow ? date : null, {
+        entryDate: date,
+        setHabits: publishDurableHabits,
+        onCompleted: (committedHabit) => {
+          analytics.habitCompleted(
+            committedHabit.name,
+            habits.filter((candidate) => !candidate.isArchived).length
+          );
+        },
+        onCommitted: () => {
+          triggerSync();
+        },
+      })
+        .catch(reportEntryPersistenceFailure)
+        .finally(() => processingEntryRef.current.delete(processingKey));
     },
-    [habits, setHabits, entryMetadata]
+    [habits, publishDurableHabits, entryMetadata, reportEntryPersistenceFailure]
   );
   const openCreate = useCallback(() => {
     captureReturnFocus();
@@ -420,8 +427,8 @@ export const HabitsPage = memo(function HabitsPage() {
       );
       triggerSync();
       if (habit) {
-        void syncHabit({ ...habit, isArchived: true, updatedAt }).catch((err) =>
-          logger.warn("[V2 Habits] Archive sync failed:", err)
+        void syncHabit({ ...habit, isArchived: true, updatedAt }).catch(() =>
+          logger.warn("[V2 Habits] Archive sync failed")
         );
       }
     },
@@ -437,8 +444,8 @@ export const HabitsPage = memo(function HabitsPage() {
       );
       triggerSync();
       if (habit) {
-        void syncHabit({ ...habit, isArchived: false, updatedAt }).catch((err) =>
-          logger.warn("[V2 Habits] Unarchive sync failed:", err)
+        void syncHabit({ ...habit, isArchived: false, updatedAt }).catch(() =>
+          logger.warn("[V2 Habits] Unarchive sync failed")
         );
       }
     },
@@ -448,44 +455,38 @@ export const HabitsPage = memo(function HabitsPage() {
   const handleSkipHabit = useCallback(
     (habitId: string, date: string) => {
       const habit = habits.find((h) => h.id === habitId);
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          const entries = { ...(h.entries ?? {}) };
-          entries[date] = {
-            value: ENTRY.SKIP,
-            ...entryMetadata(date, "skip"),
-          };
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
-      triggerSync();
-      void syncHabitCompletion(habitId, date, false, undefined, undefined, {
-        habitType: habit?.habitType ?? "boolean",
-        targetType: habit?.targetType,
-        entryValue: ENTRY.SKIP,
-      }).catch((err) => logger.warn("[V2 Habits] Skip sync failed:", err));
+      if (!habit) return;
+      const metadata = entryMetadata(date, "skip");
+      const nextHabit = {
+        ...habit,
+        entries: setEntryValue(habit.entries ?? {}, date, ENTRY.SKIP, undefined, metadata),
+        updatedAt: metadata.loggedAt,
+      };
+      void commitHabitEntry(nextHabit, null, {
+        entryDate: date,
+        setHabits: publishDurableHabits,
+        onCommitted: triggerSync,
+      }).catch(reportEntryPersistenceFailure);
     },
-    [habits, setHabits, entryMetadata]
+    [habits, publishDurableHabits, entryMetadata, reportEntryPersistenceFailure]
   );
 
   const handleUnskipHabit = useCallback(
     (habitId: string, date: string) => {
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          const entries = { ...(h.entries ?? {}) };
-          const { [date]: _skip, ...rest } = entries;
-          void _skip;
-          return { ...h, entries: rest };
-        })
-      );
-      triggerSync();
-      void syncHabitCompletion(habitId, date, false).catch((err) =>
-        logger.warn("[V2 Habits] Unskip sync failed:", err)
-      );
+      const habit = habits.find((candidate) => candidate.id === habitId);
+      if (!habit) return;
+      const nextHabit = {
+        ...habit,
+        entries: setEntryValue(habit.entries ?? {}, date, ENTRY.UNKNOWN),
+        updatedAt: new Date().toISOString(),
+      };
+      void commitHabitEntry(nextHabit, null, {
+        entryDate: date,
+        setHabits: publishDurableHabits,
+        onCommitted: triggerSync,
+      }).catch(reportEntryPersistenceFailure);
     },
-    [setHabits]
+    [habits, publishDurableHabits, reportEntryPersistenceFailure]
   );
 
   /** Set of starter template ids the user has already adopted — used both by

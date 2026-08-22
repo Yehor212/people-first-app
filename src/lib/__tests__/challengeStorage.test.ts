@@ -133,7 +133,7 @@ describe('saveChallenges', () => {
   it('logs error when safeLocalStorageSet returns false', () => {
     vi.mocked(safeLocalStorageSet).mockReturnValueOnce(false);
     saveChallenges([]);
-    expect(logger.error).toHaveBeenCalledWith('Failed to save challenges');
+    expect(logger.error).toHaveBeenCalledWith('[Challenge] Failed to save challenges');
   });
 });
 

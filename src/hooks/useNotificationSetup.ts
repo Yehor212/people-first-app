@@ -88,7 +88,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       reason: 'retryable' | 'permission-required' | 'previous-restored' | 'schedule-uncertain',
       error: unknown,
     ): void => {
-      logger.error('Failed to reconcile local reminders:', error);
+      logger.error('[ReminderSync] Failed to reconcile local reminders:', error);
       if (typeof window === 'undefined') return;
       const opensSettings = reason === 'permission-required' || reason === 'schedule-uncertain';
       const message =
@@ -211,7 +211,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     let active = true;
 
     const publishJournalIncident = (error: unknown): void => {
-      logger.error('Failed to reconcile the journal reminder:', error);
+      logger.error('[ReminderSync] Failed to reconcile the journal reminder:', error);
       if (typeof window === 'undefined') return;
       window.dispatchEvent(
         new CustomEvent(REMINDER_RECONCILE_FAILED_EVENT, {
@@ -280,7 +280,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       previousPushConsentRef.current = true;
       if (hasValidSession === true && !isAccountBoundaryInProgress) {
         initializePushNotifications().catch((error) => {
-          logger.error('Failed to initialize push notifications:', error);
+          logger.error('[Notifications] Failed to initialize push notifications:', error);
         });
       }
       return;
@@ -330,7 +330,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
         }
       } catch (error) {
         if (useUserDataStore.getState().privacy.pushNotifications === true) return;
-        logger.error('Failed to remove push notification token:', error);
+        logger.error('[Notifications] Failed to remove push notification token:', error);
         const copy = pushRevocationCopyRef.current;
         const detail = {
           status: 'failed',
@@ -408,7 +408,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
     };
 
     setupMoodActions().catch((error) => {
-      logger.error('Failed to setup mood notification actions:', error);
+      logger.error('[Notifications] Failed to setup mood notification actions:', error);
     });
 
     return () => {

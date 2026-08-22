@@ -118,4 +118,19 @@ describe("check-sentry-status", () => {
     expect(summary.stdout).toContain("[sentry-status] FAIL");
     expect(summary.stdout).toContain("api=FAIL");
   });
+
+  it("fails closed when a child runner throws a private diagnostic", () => {
+    const { runSentryStatus } = loadStatusModule();
+    const canary = "ZF_T172_SENTRY_CHILD_1c574f";
+
+    const summary = runSentryStatus({
+      runner() {
+        throw new Error(canary);
+      },
+    });
+
+    expect(JSON.stringify(summary)).not.toContain(canary);
+    expect(summary.exitCode).toBe(1);
+    expect(summary.stderr).toContain("ZF_EVIDENCE_FAILURE");
+  });
 });

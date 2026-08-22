@@ -1,12 +1,19 @@
 import React from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
+import { APP_VERSION, DATA_SCHEMA_VERSION } from "@/lib/appVersion";
 import { crashReporting } from "@/lib/crashReporting";
 import { captureOrBuffer } from "@/lib/errorBuffer";
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
+import {
+  diagnosticErrorName,
+  diagnosticStackFingerprint,
+  sanitizeDiagnosticErrorName,
+  sanitizeDiagnosticMetadata,
+  sanitizeDiagnosticStackFingerprint,
+} from "@/lib/diagnosticPrivacy";
 import { isChunkLoadError } from "@/lib/chunkErrorDetection";
 import { forceHardReload, reloadAppSafely } from "@/lib/versionCheck";
 import type { Language } from "@/i18n/types";
@@ -108,30 +115,102 @@ function getRootErrorLanguage(): Language {
     : "en";
 }
 
-const logError = (payload: Record<string, unknown>) => {
+const ERROR_LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface RetainedBoundaryError {
+  code: "ZF_ERROR_BOUNDARY" | "ZF_MODAL_ERROR_BOUNDARY";
+  errorName: string;
+  stackFingerprint: string;
+  context: Record<string, unknown>;
+  appVersion: string;
+  dataSchemaVersion: string;
+  time: string;
+}
+
+function normalizeBoundaryError(
+  value: unknown,
+  cutoff: number,
+): RetainedBoundaryError | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const entry = value as Partial<RetainedBoundaryError>;
+  const timestamp = typeof entry.time === "string" ? Date.parse(entry.time) : NaN;
+  if (
+    (entry.code !== "ZF_ERROR_BOUNDARY" && entry.code !== "ZF_MODAL_ERROR_BOUNDARY") ||
+    !Number.isFinite(timestamp) ||
+    timestamp < cutoff ||
+    timestamp > Date.now()
+  ) {
+    return null;
+  }
+
+  const context = entry.context && typeof entry.context === "object" && !Array.isArray(entry.context)
+    ? sanitizeDiagnosticMetadata(entry.context)
+    : {};
+  return {
+    code: entry.code,
+    errorName: sanitizeDiagnosticErrorName(entry.errorName),
+    stackFingerprint: sanitizeDiagnosticStackFingerprint(entry.stackFingerprint),
+    context,
+    appVersion: APP_VERSION,
+    dataSchemaVersion: String(DATA_SCHEMA_VERSION),
+    time: new Date(timestamp).toISOString(),
+  };
+}
+
+function readCurrentBoundaryErrors(): RetainedBoundaryError[] {
+  const cutoff = Date.now() - ERROR_LOG_RETENTION_MS;
+  const stored = safeLocalStorageGet<unknown>(SK.ERROR_LOG, []);
+  if (!Array.isArray(stored)) return [];
+  return stored
+    .map((entry) => normalizeBoundaryError(entry, cutoff))
+    .filter((entry): entry is RetainedBoundaryError => entry !== null)
+    .slice(-10);
+}
+
+/** Remove legacy, malformed, and expired records during application startup. */
+export function pruneRetainedBoundaryDiagnostics(): boolean {
   try {
-    const metadata = getAppMetadata();
-    const enhancedPayload = {
-      ...payload,
+    const success = safeLocalStorageSet(SK.ERROR_LOG, readCurrentBoundaryErrors());
+    if (!success) logger.error("[ErrorBoundaryRetention]");
+    return success;
+  } catch {
+    logger.error("[ErrorBoundaryRetention]");
+    return false;
+  }
+}
+
+export const retainBoundaryDiagnostic = (
+  error: Error,
+  code: RetainedBoundaryError["code"],
+  context: Record<string, unknown>,
+) => {
+  try {
+    const enhancedPayload: RetainedBoundaryError = {
+      code,
+      errorName: diagnosticErrorName(error),
+      stackFingerprint: diagnosticStackFingerprint(error),
+      context: sanitizeDiagnosticMetadata(context),
       appVersion: APP_VERSION,
-      dataSchemaVersion: metadata?.dataSchemaVersion || "unknown",
+      dataSchemaVersion: String(DATA_SCHEMA_VERSION),
       time: new Date().toISOString(),
     };
 
-    const existing = safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []);
+    const existing = readCurrentBoundaryErrors();
     const next = [...existing, enhancedPayload].slice(-10); // Keep last 10 errors
-    safeLocalStorageSet(SK.ERROR_LOG, next);
+    if (!safeLocalStorageSet(SK.ERROR_LOG, next)) {
+      logger.error("[ErrorBoundaryRetention]");
+    }
   } catch {
-    // Ignore storage errors.
+    logger.error("[ErrorBoundaryRetention]");
   }
 };
 
-async function requestSafeReload(context: string): Promise<boolean> {
+async function requestSafeReload(_context: string): Promise<boolean> {
   try {
     await reloadAppSafely();
     return true;
   } catch (error) {
-    logger.warn(`[${context}] Reload blocked until durable state is saved:`, error);
+    logger.warn("[ErrorBoundary] Reload blocked until durable state is saved:", error);
     return false;
   }
 }
@@ -204,12 +283,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     this.setState({ error });
 
     // Log to localStorage
-    logError({
-      message: error.message,
-      stack: error.stack,
-      componentStack: info.componentStack,
-      time: new Date().toISOString(),
-    });
+    retainBoundaryDiagnostic(error, "ZF_ERROR_BOUNDARY", { context: "ErrorBoundary" });
 
     // Report to Crashlytics (native) or console (web)
     crashReporting.recordError(error, {
@@ -434,13 +508,7 @@ class ModalErrorBoundaryClass extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     // Log to localStorage
-    logError({
-      message: error.message,
-      stack: error.stack,
-      componentStack: info.componentStack,
-      context: "modal",
-      time: new Date().toISOString(),
-    });
+    retainBoundaryDiagnostic(error, "ZF_MODAL_ERROR_BOUNDARY", { context: "modal" });
 
     // Report to Crashlytics
     crashReporting.recordError(error, {

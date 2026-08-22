@@ -53,7 +53,7 @@ public class StatusBarStylePlugin extends Plugin {
 
                 call.resolve();
             } catch (Exception e) {
-                call.reject("Failed to set status bar style: " + e.getMessage());
+                call.reject("ZF_STATUS_BAR_STYLE_FAILED");
             }
         });
     }

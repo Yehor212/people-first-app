@@ -11,7 +11,7 @@ import { StorageErrorBanner } from "@/components/StorageErrorBanner";
 import { MoodEntry } from "@/types";
 import type { TreatSource } from "@/types";
 import type { XpAction } from "@/lib/gamification";
-import { generateId, getToday } from "@/lib/utils";
+import { generateUuid, getToday } from "@/lib/utils";
 import { triggerSync } from "@/storage/cloudSync";
 import { syncMood } from "@/storage/realtimeSync";
 import { logger } from "@/lib/logger";
@@ -89,7 +89,7 @@ export const OverlayLayer = memo(function OverlayLayer({ awardXp, earnTreats }: 
           onQuickMoodLog={(mood) => {
             // Quick mood logging from welcome back modal
             const newMood: MoodEntry = {
-              id: generateId(),
+              id: generateUuid(),
               mood,
               date: getToday(),
               timestamp: Date.now(),

@@ -39,7 +39,7 @@ function Harness({ canPlay = true }: { canPlay?: boolean }) {
     canPlay,
     volume: 0.36,
     mediaSessionTitle: "Gentle water",
-    loggerScope: "[test] ambience",
+    loggerScope: "[OrbPage] Ambience",
   });
 
   return (

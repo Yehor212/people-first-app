@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { FocusSession } from "@/types";
+import type { FocusSession } from "@/types";
+import type { FocusCommitBoundary } from "@/types/focusTimerTypes";
 import { cn } from "@/lib/utils";
 import { zenTap } from "@/lib/animationUtils";
 import { Coffee } from "lucide-react";
@@ -15,7 +16,10 @@ import { TimerControls } from "./TimerControls";
 
 interface FocusTimerProps {
   sessions: FocusSession[];
-  onCompleteSession: (session: FocusSession) => void;
+  onCompleteSession: (
+    session: FocusSession,
+    boundary?: FocusCommitBoundary
+  ) => void | Promise<void>;
   onMinuteUpdate?: (minutes: number) => void;
   isPrimaryCTA?: boolean;
   onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal
@@ -240,7 +244,7 @@ export const FocusTimer = memo(function FocusTimer({
             reflectionValue={reflectionValue}
             onSelectValue={setReflectionValue}
             onSave={handleSaveReflection}
-            onDismiss={() => handleSaveReflection(null)}
+            onDismiss={() => void handleSaveReflection(null)}
             onExpandToJournal={onExpandToJournal}
           />
         )}

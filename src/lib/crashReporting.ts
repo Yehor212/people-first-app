@@ -1,14 +1,34 @@
 /**
- * Crash Reporting Wrapper
- * Provides a unified interface for crash reporting.
- * On Android, this connects to Firebase Crashlytics.
- * On Web, errors are logged to console and localStorage.
+ * Crash reporting boundary shared by web and native shells.
+ * Raw Error messages, causes, stacks, identity values, and arbitrary context
+ * never cross the console/native/local-retention boundary.
  */
 
 import { isNative } from "@/lib/platform";
+import {
+  diagnosticErrorName,
+  diagnosticStackFingerprint,
+  sanitizeDiagnosticErrorName,
+  sanitizeDiagnosticMetadata,
+  sanitizeDiagnosticStackFingerprint,
+  toDiagnosticError,
+} from "./diagnosticPrivacy";
 import { logger } from "./logger";
 import { safeLocalStorageGet, safeLocalStorageSet } from "./safeJson";
 import { SK } from "@/lib/storageKeys";
+
+const CRASH_REPORT_CODE = "ZF_CRASH_RECORDED";
+const CRASH_LOG_CODE = "ZF_CRASH_LOG";
+const CRASH_REPORT_LIMIT = 20;
+export const CRASH_REPORT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface RetainedCrashReport {
+  code: typeof CRASH_REPORT_CODE;
+  errorName: string;
+  stackFingerprint: string;
+  context?: Record<string, unknown>;
+  time: string;
+}
 
 interface CrashReportingInterface {
   log: (message: string) => void;
@@ -16,128 +36,161 @@ interface CrashReportingInterface {
   setUserId: (userId: string | null) => void;
   setEnabled: (enabled: boolean) => void;
   setCustomKey: (key: string, value: string | number | boolean) => void;
+  clearRetainedReports: () => boolean;
 }
 
-// isNative imported from @/lib/platform
+function normalizeRetainedReport(
+  value: unknown,
+  cutoff: number,
+): RetainedCrashReport | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const report = value as Partial<RetainedCrashReport>;
+  const timestamp = typeof report.time === "string" ? Date.parse(report.time) : NaN;
+  if (
+    report.code !== CRASH_REPORT_CODE ||
+    !Number.isFinite(timestamp) ||
+    timestamp < cutoff ||
+    timestamp > Date.now()
+  ) {
+    return null;
+  }
 
-// For native platforms, Firebase Crashlytics is automatically initialized
-// and captures crashes. These methods provide additional logging.
+  const context = report.context && typeof report.context === "object" && !Array.isArray(report.context)
+    ? sanitizeDiagnosticMetadata(report.context)
+    : undefined;
+  return {
+    code: CRASH_REPORT_CODE,
+    errorName: sanitizeDiagnosticErrorName(report.errorName),
+    stackFingerprint: sanitizeDiagnosticStackFingerprint(report.stackFingerprint),
+    ...(context ? { context } : {}),
+    time: new Date(timestamp).toISOString(),
+  };
+}
+
+function clearWebCrashReports(): boolean {
+  return safeLocalStorageSet(SK.CRASH_LOG, []);
+}
+
+function readCurrentCrashReports(): RetainedCrashReport[] {
+  const cutoff = Date.now() - CRASH_REPORT_RETENTION_MS;
+  const stored = safeLocalStorageGet<unknown>(SK.CRASH_LOG, []);
+  if (!Array.isArray(stored)) return [];
+  return stored
+    .map((candidate) => normalizeRetainedReport(candidate, cutoff))
+    .filter((candidate): candidate is RetainedCrashReport => candidate !== null)
+    .slice(-CRASH_REPORT_LIMIT);
+}
+
+/** Remove legacy, malformed, and expired reports during application startup. */
+export function pruneRetainedCrashReports(): boolean {
+  try {
+    const success = safeLocalStorageSet(SK.CRASH_LOG, readCurrentCrashReports());
+    if (!success) logger.error("[CrashRetention]");
+    return success;
+  } catch {
+    logger.error("[CrashRetention]");
+    return false;
+  }
+}
 
 const webFallback: CrashReportingInterface = {
-  log: (message: string) => {
-    logger.log("[Crash] Log:", message);
+  log: (_message: string) => {
+    logger.log("[Crash]");
   },
 
   recordError: (error: Error, context?: Record<string, string>) => {
-    logger.error("[Crash] Error recorded:", error.message);
-    if (context) {
-      logger.error("[Crash] Context:", context);
-    }
+    const safeContext = context ? sanitizeDiagnosticMetadata(context) : undefined;
+    const entry: RetainedCrashReport = {
+      code: CRASH_REPORT_CODE,
+      errorName: diagnosticErrorName(error),
+      stackFingerprint: diagnosticStackFingerprint(error),
+      ...(safeContext ? { context: safeContext } : {}),
+      time: new Date().toISOString(),
+    };
 
-    // Store in localStorage for debug reports
+    logger.error("[Crash]", {
+      code: entry.code,
+      errorName: entry.errorName,
+      stackFingerprint: entry.stackFingerprint,
+      ...(safeContext ? { diagnostic: safeContext } : {}),
+    });
+
     try {
-      const existing = safeLocalStorageGet<
-        {
-          message: string;
-          stack?: string;
-          context?: Record<string, string>;
-          time: string;
-        }[]
-      >(SK.CRASH_LOG, []);
-      const entry = {
-        message: error.message,
-        stack: error.stack,
-        context,
-        time: new Date().toISOString(),
-      };
-      const next = [...existing, entry].slice(-20);
-      safeLocalStorageSet(SK.CRASH_LOG, next);
+      const existing = readCurrentCrashReports();
+      const next = [...existing, entry].slice(-CRASH_REPORT_LIMIT);
+      if (!safeLocalStorageSet(SK.CRASH_LOG, next)) {
+        logger.error("[CrashRetention]");
+      }
     } catch {
-      // graceful: crash log persistence failure must never throw (would mask the original crash)
+      logger.error("[CrashRetention]");
     }
   },
 
   setUserId: (userId: string | null) => {
-    logger.log("[Crash] User ID set:", userId || "null");
+    logger.log("[CrashIdentity]", { state: userId ? "set" : "cleared" });
   },
 
   setEnabled: (enabled: boolean) => {
-    logger.log("[Crash] Reporting enabled:", enabled);
+    logger.log("[CrashReporting]", { enabled });
   },
 
-  setCustomKey: (key: string, value: string | number | boolean) => {
-    logger.log("[Crash] Custom key:", key, "=", value);
+  setCustomKey: (_key: string, _value: string | number | boolean) => {
+    logger.log("[CrashCustomKey]");
   },
+
+  clearRetainedReports: clearWebCrashReports,
 };
 
-// For native platforms, we use the native Crashlytics through the WebView bridge
-// Firebase Crashlytics captures crashes automatically, but we can add context
-const nativeCrashlytics: CrashReportingInterface = {
-  log: (message: string) => {
-    // On native, console.log messages can be captured by Crashlytics
-    console.log("[ZenFlow]", message);
+const nativeConsoleFallback: CrashReportingInterface = {
+  log: (_message: string) => {
+    console.log("[ZenFlow]", CRASH_LOG_CODE);
   },
 
   recordError: (error: Error, context?: Record<string, string>) => {
-    // Non-fatal errors are recorded as console errors
-    // Firebase Crashlytics on Android captures these
-    console.error("[ZenFlow Error]", error.message, error.stack);
+    console.error("[Crash]", CRASH_REPORT_CODE, {
+      error_name: diagnosticErrorName(error),
+      stack_fingerprint: diagnosticStackFingerprint(error),
+    });
     if (context) {
-      // Sanitize context to avoid logging sensitive data
-      const sanitizedContext = { ...context };
-      const sensitiveKeys = [
-        "password",
-        "token",
-        "secret",
-        "key",
-        "auth",
-        "credential",
-        "email",
-        "phone",
-        "session",
-        "cookie",
-      ];
-      for (const key of Object.keys(sanitizedContext)) {
-        if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {
-          sanitizedContext[key] = "[REDACTED]";
-        }
-      }
-      console.error("[ZenFlow Error Context]", JSON.stringify(sanitizedContext));
+      console.error(
+        "[Crash]",
+        JSON.stringify(sanitizeDiagnosticMetadata(context)),
+      );
     }
   },
 
   setUserId: (_userId: string | null) => {
-    // User ID is set via Firebase Crashlytics SDK internally.
-    // Do not log any part of userId to console (PII leak in production).
+    // Native identity association is SDK-owned; raw identifiers are never logged here.
   },
 
-  setEnabled: (enabled: boolean) => {
-    console.log("[ZenFlow Crashlytics]", enabled ? "enabled" : "disabled");
+  setEnabled: (_enabled: boolean) => {
+    console.log("[ZenFlow Crash]", "ZF_CRASH_REPORTING_UNSUPPORTED");
   },
 
-  setCustomKey: (key: string, value: string | number | boolean) => {
-    console.log(`[ZenFlow ${key}]`, value);
+  setCustomKey: (_key: string, _value: string | number | boolean) => {
+    console.log("[ZenFlow Crash]", "ZF_CRASH_CUSTOM_KEY");
   },
+
+  // No native SDK bridge exists for clearing provider/OS queues. Returning
+  // false is an honest unsupported receipt; JS/account storage is cleared by
+  // the account-boundary path independently.
+  clearRetainedReports: () => false,
 };
 
-export const crashReporting: CrashReportingInterface = isNative ? nativeCrashlytics : webFallback;
+export const crashReporting: CrashReportingInterface = isNative
+  ? nativeConsoleFallback
+  : webFallback;
 
-// Helper to record errors from anywhere in the app
 export const recordError = (error: unknown, context?: Record<string, string>) => {
-  if (error instanceof Error) {
-    crashReporting.recordError(error, context);
-  } else {
-    crashReporting.recordError(
-      new Error(typeof error === "string" ? error : JSON.stringify(error)),
-      context
-    );
-  }
+  crashReporting.recordError(
+    error instanceof Error ? error : toDiagnosticError(error, CRASH_REPORT_CODE),
+    context,
+  );
 };
 
-// Helper to wrap async functions with error recording
 export const withCrashReporting = <T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
-  context?: Record<string, string>
+  context?: Record<string, string>,
 ): T => {
   return (async (...args: Parameters<T>) => {
     try {

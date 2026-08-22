@@ -63,7 +63,11 @@ interface ScriptStat {
 }
 
 interface LoAFInspection {
-  slowFrames: LoAFEntry[];
+  slowFrames: Array<{
+    startTime: number;
+    duration: number;
+    blockingDuration: number;
+  }>;
   topOffenders: Map<string, ScriptStat>;
   longTasks: number;
   supported: { loaf: boolean; longtask: boolean };
@@ -84,12 +88,16 @@ function recordScripts(
   store: LoAFInspection,
   entry: LoAFEntry,
 ): void {
-  store.slowFrames.push(entry);
+  store.slowFrames.push({
+    startTime: Number.isFinite(entry.startTime) ? entry.startTime : 0,
+    duration: Number.isFinite(entry.duration) ? entry.duration : 0,
+    blockingDuration: Number.isFinite(entry.blockingDuration) ? entry.blockingDuration ?? 0 : 0,
+  });
   const cutoff = performance.now() - WINDOW_MS;
   store.slowFrames = store.slowFrames.filter((f) => f.startTime >= cutoff);
 
   for (const s of entry.scripts ?? []) {
-    const key = s.sourceURL || s.invoker || "anonymous";
+    const key = "script";
     const prev = store.topOffenders.get(key) ?? {
       count: 0,
       totalDuration: 0,
@@ -99,7 +107,7 @@ function recordScripts(
     prev.count += 1;
     prev.totalDuration += s.duration;
     prev.worstDuration = Math.max(prev.worstDuration, s.duration);
-    prev.lastFunction = s.sourceFunctionName || prev.lastFunction;
+    prev.lastFunction = "observed";
     store.topOffenders.set(key, prev);
   }
 }
@@ -162,7 +170,8 @@ export function initLongTaskObserverDev(): void {
       }).observe({ type: "longtask", buffered: true });
     }
   } catch {
-    // Swallow — never block boot path on observability.
+    // eslint-disable-next-line no-console
+    console.warn("ZF_LOAF_OBSERVER_FAILED");
     return;
   }
 

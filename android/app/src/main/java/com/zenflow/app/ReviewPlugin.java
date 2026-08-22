@@ -40,8 +40,7 @@ public class ReviewPlugin extends Plugin {
                     call.resolve();
                 });
             } else {
-                call.reject("Failed to request review flow: " +
-                    (task.getException() != null ? task.getException().getMessage() : "Unknown error"));
+                call.reject("ZF_REVIEW_REQUEST_FAILED");
             }
         });
     }

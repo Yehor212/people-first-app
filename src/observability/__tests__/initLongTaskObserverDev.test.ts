@@ -112,10 +112,48 @@ describe("initLongTaskObserverDev", () => {
       ],
     });
 
-    const top = window.__zenflowLoAF?.topOffenders.get("https://app/chunk-a.js");
+    const top = window.__zenflowLoAF?.topOffenders.get("script");
     expect(top?.count).toBe(2);
     expect(top?.totalDuration).toBe(160);
     expect(top?.worstDuration).toBe(120);
+  });
+
+  it("does not retain or print LoAF source, function, invoker, or query canaries", async () => {
+    const canary = "ZF_T172_LOAF_QUERY_7N2V9K4M6R3Q";
+    vi.stubEnv("DEV", true);
+    installPerformanceObserverMock(["long-animation-frame"]);
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleGroup = vi.spyOn(console, "groupCollapsed").mockImplementation(() => {});
+    const consoleGroupEnd = vi.spyOn(console, "groupEnd").mockImplementation(() => {});
+    const { initLongTaskObserverDev } = await import("../initLongTaskObserverDev");
+
+    initLongTaskObserverDev();
+    instances[0].cb({
+      getEntries: () => [{
+        startTime: 100,
+        duration: 900,
+        blockingDuration: 400,
+        name: canary,
+        scripts: [{
+          sourceURL: `https://example.test/diary?code=${canary}`,
+          sourceFunctionName: canary,
+          invoker: canary,
+          duration: 250,
+        }],
+      }],
+    });
+    vi.advanceTimersByTime(30_000);
+
+    const serialized = JSON.stringify({
+      slowFrames: window.__zenflowLoAF?.slowFrames,
+      offenders: [...(window.__zenflowLoAF?.topOffenders.entries() ?? [])],
+      logs: consoleLog.mock.calls,
+      groups: consoleGroup.mock.calls,
+    });
+    expect(serialized).not.toContain(canary);
+    consoleLog.mockRestore();
+    consoleGroup.mockRestore();
+    consoleGroupEnd.mockRestore();
   });
 
   it("counts longtask entries when fallback path is active", async () => {

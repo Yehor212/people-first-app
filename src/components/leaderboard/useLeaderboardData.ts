@@ -82,7 +82,7 @@ export function useLeaderboardData({ activeTab, isOpen, timeoutLabel, loadErrorL
       if (!isMountedRef.current) return;
 
       const isTimeout = err instanceof Error && err.message === 'Request timeout';
-      logger.error('Failed to load leaderboard:', isTimeout ? 'Timeout' : err);
+      logger.error('[Leaderboard] Failed to load leaderboard:', isTimeout ? 'Timeout' : err);
 
       if (retry < MAX_RETRIES) {
         const delay = RETRY_DELAYS[retry] || 5000;

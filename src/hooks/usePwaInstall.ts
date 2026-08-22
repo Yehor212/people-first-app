@@ -51,7 +51,7 @@ export function usePwaInstall() {
         return true;
       }
     } catch (error) {
-      logger.error('Error prompting install:', error);
+      logger.error('[PWA] Error prompting install:', error);
     }
 
     return false;

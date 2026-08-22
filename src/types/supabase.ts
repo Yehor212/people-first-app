@@ -578,6 +578,24 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_challenge_join_attempts: {
+        Row: {
+          attempt_count: number
+          user_id: string
+          window_started_at: string
+        }
+        Insert: {
+          attempt_count: number
+          user_id: string
+          window_started_at: string
+        }
+        Update: {
+          attempt_count?: number
+          user_id?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       friend_challenge_members: {
         Row: {
           challenge_id: string
@@ -2012,6 +2030,7 @@ export type Database = {
         Args: { p_request: Json }
         Returns: Json
       }
+      commit_manual_sync_event: { Args: { p_request: Json }; Returns: Json }
       complete_account_deletion_operation: {
         Args: {
           p_lease_epoch: number
@@ -2060,9 +2079,23 @@ export type Database = {
         Args: { p_expected_generation: number }
         Returns: boolean
       }
+      is_friend_challenge_participant: {
+        Args: { p_challenge_id: string }
+        Returns: boolean
+      }
       is_journal_entry_payload_current: {
         Args: { p_entry: Json }
         Returns: boolean
+      }
+      join_friend_challenge_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          duration: number
+          habit_icon: string
+          habit_name: string
+          start_date: string
+        }[]
       }
       match_journal_entries: {
         Args: {

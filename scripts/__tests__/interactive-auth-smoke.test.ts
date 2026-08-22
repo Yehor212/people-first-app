@@ -205,7 +205,7 @@ describe("interactive auth completion smoke helpers", () => {
     );
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Set --provider to one of google, facebook, telegram, apple");
+    expect(result.stderr).toContain("ZF_EVIDENCE_FAILURE");
     expect(result.stderr).not.toContain("at parseInteractiveAuthConfig");
   });
 
@@ -264,10 +264,11 @@ describe("interactive auth completion smoke helpers", () => {
       finalUrl:
         "https://www.facebook.com/login.php?next=https%3A%2F%2Fwww.facebook.com%2Fdialog%2Foauth%3Fscope%3Demail%252Bpublic_profile%26state%3Dsecret-state&cancel_url=https%3A%2F%2Fapi.zenflowapp.online%2Fauth%2Fv1%2Fcallback%3Ferror_description%3DPermissions%2520error%26state%3Dsecret-state",
       supabaseSessionKeys: [],
-    }) as { finalUrl?: string };
+    }) as { route?: string };
 
-    expect(report.finalUrl).not.toContain("secret-state");
-    expect(report.finalUrl).not.toContain("error_description");
+    expect(report.route).toBe("unknown");
+    expect(JSON.stringify(report)).not.toContain("secret-state");
+    expect(JSON.stringify(report)).not.toContain("error_description");
   });
 
   it("reports auth gate completion without provider-specific Google wording", () => {
@@ -303,7 +304,7 @@ describe("interactive auth completion smoke helpers", () => {
       })
     ).toEqual({
       provider: "telegram",
-      finalUrl: "https://yehor212.github.io/people-first-app/orb/?nav=v2",
+      route: "orb",
       supabaseSessionKeyCount: 1,
     });
   });
