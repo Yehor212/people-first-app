@@ -82,15 +82,21 @@ export function SettingsModuleCard({
         <SettingsCardIcon icon={Icon} selected={expanded} />
         <span
           className="col-start-2 col-end-3 row-start-1 min-w-0"
+          data-slot="settings-module-copy"
           style={settingsModuleTextWrapStyle}
         >
-          <span id={labelId} className="block text-pretty text-sm font-semibold text-foreground">
+          <span
+            id={labelId}
+            className="block text-pretty text-sm font-semibold text-foreground"
+            data-slot="settings-module-label"
+          >
             {item.label}
           </span>
           {item.value ? (
             <span
               id={valueId}
               className="mt-1 block text-pretty text-sm font-semibold leading-tight text-foreground"
+              data-slot="settings-module-value"
             >
               {item.value}
             </span>
@@ -99,6 +105,7 @@ export function SettingsModuleCard({
         <span
           id={descriptionId}
           className="col-start-2 col-end-3 row-start-2 block min-w-0 text-pretty text-xs leading-relaxed text-muted-foreground"
+          data-slot="settings-module-description"
           style={settingsModuleTextWrapStyle}
         >
           {item.description}
@@ -109,6 +116,7 @@ export function SettingsModuleCard({
             expanded && "text-foreground"
           )}
           aria-hidden="true"
+          data-slot="settings-module-chevron"
         />
       </button>
     </article>

@@ -50,14 +50,10 @@ const config: CapacitorConfig = {
        */
     },
     SystemBars: {
-      insetsHandling: "disable",
+      insetsHandling: "css",
       style: "DEFAULT",
       hidden: false,
       animation: "NONE",
-    },
-    SafeArea: {
-      initialViewportFitCover: true,
-      detectViewportFitCoverChanges: true,
     },
   },
 };

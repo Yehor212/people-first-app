@@ -107,4 +107,21 @@ describe("MoodFirstRunHint", () => {
     expect(match).not.toBeNull();
     expect(Number(match?.[1])).toBeLessThan(59);
   });
+
+  it("avoids a backdrop-filter compositor surface in Android WebView", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/MoodFirstRunHint.css"),
+      "utf8",
+    );
+
+    expect(css).toMatch(
+      /:root\[data-platform="android"\]\s+\.mood-first-run-card\s*\{[^}]*-webkit-backdrop-filter:\s*none[^}]*backdrop-filter:\s*none/s,
+    );
+    expect(css).toMatch(
+      /:root\[data-platform="android"\]\s+\.mood-first-run-card\s*\{[^}]*animation:\s*none/s,
+    );
+    expect(css).toMatch(
+      /:root\[data-platform="android"\]\s+\.mood-first-run-backdrop\s*\{[^}]*background:\s*hsl\(var\(--background\)\)[^}]*pointer-events:\s*auto[^}]*animation:\s*none/s,
+    );
+  });
 });

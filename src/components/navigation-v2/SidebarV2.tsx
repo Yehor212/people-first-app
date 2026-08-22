@@ -125,7 +125,7 @@ export const SidebarV2 = memo(function SidebarV2({
       role="navigation"
       className={cn(
         forceVisible ? "flex" : "hidden md:flex",
-        "fixed inset-y-0 start-0 z-40 flex-col",
+        "zf-sidebar-adaptive-surface fixed inset-y-0 start-0 z-40 flex-col overflow-y-hidden overflow-x-hidden overscroll-y-contain",
         "border-e border-border/60 bg-card/80 backdrop-blur-lg",
         "[-webkit-backdrop-filter:blur(12px)]",
         "motion-safe:transition-[width] motion-safe:duration-300 ease-out",
@@ -146,7 +146,7 @@ export const SidebarV2 = memo(function SidebarV2({
       {/* Brand mark — minimal orb glyph */}
       <div
         className={cn(
-          "flex items-center gap-2 px-4 py-5 border-b border-border/40",
+          "flex shrink-0 items-center gap-2 px-4 py-5 border-b border-border/40",
           collapsed && "justify-center px-2"
         )}
       >
@@ -169,10 +169,18 @@ export const SidebarV2 = memo(function SidebarV2({
       </div>
 
       {/* Main items */}
-      <div className="flex flex-col gap-1 p-3">{items.map((it) => renderItem(it))}</div>
+      <div
+        className="min-h-0 flex flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain p-3"
+        data-testid="sidebar-v2-destinations"
+      >
+        {items.map((it) => renderItem(it))}
+      </div>
 
       {/* Footer: theme toggle + settings + collapse toggle */}
-      <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
+      <div
+        className="mt-auto flex shrink-0 flex-col gap-1 p-3 border-t border-border/40"
+        data-testid="sidebar-v2-footer"
+      >
         <ThemeToggleV2 collapsed={collapsed} />
         {renderItem(settingsItem, true)}
         {!collapseLocked && (

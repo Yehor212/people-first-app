@@ -141,6 +141,7 @@ export function UpdateRequiredDialog() {
     <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
       <AlertDialogContent
         ref={contentRef}
+        data-testid="update-required-dialog"
         className="w-[calc(100%-0.5rem)] max-w-md p-1 min-[360px]:w-[calc(100%-1rem)] min-[360px]:p-2 min-[420px]:p-4 sm:p-6"
         onEscapeKeyDown={(event) => {
           if (isRefreshingRef.current) event.preventDefault();

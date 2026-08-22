@@ -49,6 +49,7 @@
     "i18n:deep": "npx tsx scripts/check-i18n-deep.ts",
     "prebuild:android": "npm run check:journal-save-ceremony-assets",
     "build:android": "node scripts/run-shared-dist-build.mjs --target android --mode production",
+    "build:android:t184-qa": "cross-env CAPACITOR_BUILD=true VITE_T184_QA_BUILD=true vite build --mode production",
     "prebuild:ios": "npm run check:journal-save-ceremony-assets",
     "build:ios": "node scripts/run-shared-dist-build.mjs --target ios --mode production",
     "desktop:dev": "node scripts/run-with-msvc.cjs \"tauri dev\"",
@@ -216,7 +217,6 @@
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
-    "@capacitor-community/safe-area": "^8.0.1",
     "@capacitor/android": "^8.0.0",
     "@capacitor/app": "^8.0.0",
     "@capacitor/browser": "^8.0.3",
@@ -331,7 +331,15 @@
     "@rollup/plugin-terser": "^1.0.0",
     "esbuild": "^0.28.1",
     "tmp": "^0.2.7",
-    "brace-expansion": "^5.0.8"
+    "minimatch@3.1.5": {
+      "brace-expansion@^1.1.7": "^1.1.18"
+    },
+    "minimatch@5.1.9": {
+      "brace-expansion@^2.0.1": "^2.1.4"
+    },
+    "minimatch@10.2.5": {
+      "brace-expansion@^5.0.5": "^5.0.8"
+    }
   },
   "lint-staged": {
     "*.{ts,tsx}": [

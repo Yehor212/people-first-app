@@ -122,6 +122,25 @@
   box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px hsl(var(--primary));
 }
 
+/* Android WebView cannot reliably retain the large live backdrop tile while
+   the canonical WebGL orb is painting underneath it. Keep the same card,
+   spacing, tokens, and controls, but occlude that live layer and make the
+   surface static so a compositor eviction cannot hide the explanation or its
+   critical action. The Android component exposes modal semantics for this
+   blocking surface and restores focus when it closes. */
+:root[data-platform="android"] .mood-first-run-backdrop {
+  background: hsl(var(--background));
+  pointer-events: auto;
+  animation: none;
+}
+
+:root[data-platform="android"] .mood-first-run-card {
+  background: color-mix(in oklab, hsl(var(--card)) 98%, hsl(var(--background)));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: none;
+}
+
 @keyframes mood-first-run-fade {
   from {
     opacity: 0;
