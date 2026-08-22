@@ -65,6 +65,7 @@ const REVIEWED_PACKAGE_SCRIPTS = new Set([
   "ci:preflight",
   "constitution:check",
   "doc-counts",
+  "doctor:agent",
   "i18n:check",
   "i18n:deep",
   "i18n:v2-copy",

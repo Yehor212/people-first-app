@@ -224,7 +224,7 @@ function packageManagerRunMayMutate(command) {
   if (!match) return false;
   const script = match[1].toLowerCase();
   if (
-    /^(?:check:|test(?::|$)|typecheck$|lint$|doc-counts$|constitution:check$|agent:workspace$)/.test(
+    /^(?:check:|doctor:agent$|test(?::|$)|typecheck$|lint$|doc-counts$|constitution:check$|agent:workspace$)/.test(
       script
     )
   ) {

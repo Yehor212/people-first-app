@@ -456,6 +456,7 @@ describe("Codex and Kimi workspace command guard", () => {
     expect(runHook(root, { ...bash('echo "(literal)"'), cwd: root }).status).toBe(0);
     expect(runHook(root, { ...bash("npm run typecheck"), cwd: root }).status).toBe(0);
     expect(runHook(root, { ...bash("npm run test:agent-workspace"), cwd: root }).status).toBe(0);
+    expect(runHook(root, { ...bash("npm run doctor:agent"), cwd: root }).status).toBe(0);
     expect(runHook(root, { ...bash("npm run check:all"), cwd: root }).status).toBe(0);
   });
 
