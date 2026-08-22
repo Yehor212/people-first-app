@@ -38,6 +38,7 @@ import { getChallenges, saveChallenges } from "@/lib/challengeStorage";
 import { getToday } from "@/lib/utils";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { triggerSync } from "@/storage/cloudSync";
+import { commitHabitEntry, commitHabitToggle } from "@/storage/habitCompletionCommit";
 import { trackDeletedHabitId } from "@/storage/deletionTracker";
 import { deleteHabitFromCloud, syncHabit, syncHabitCompletion } from "@/storage/realtimeSync";
 import { ENTRY } from "@/types";
@@ -69,6 +70,7 @@ const HABIT_FIELD_SEEDS = [
 ] as const;
 
 const HABIT_FIELD_SPECTRUM = ["energy", "body", "focus", "gratitude", "rest"] as const;
+const RAPID_COMPLETION_RETRY_WINDOW_MS = 750;
 
 function HabitFieldBackdrop({ isEmpty, animate }: { isEmpty: boolean; animate: boolean }) {
   return (
@@ -130,6 +132,8 @@ export const HabitsPage = memo(function HabitsPage() {
    *  open so the sheet's close handler can restore focus there (spec §11
    *  a11y criterion: "Focus returns to invoking element on sheet close"). */
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const processingHabitTogglesRef = useRef(new Set<string>());
+  const recentCompletionsRef = useRef(new Map<string, number>());
   const captureReturnFocus = useCallback(() => {
     const active = document.activeElement;
     if (active instanceof HTMLElement) returnFocusRef.current = active;
@@ -223,44 +227,47 @@ export const HabitsPage = memo(function HabitsPage() {
       const previousStored = habit.entries?.[date]?.value;
       const nextStored = realValue === null ? undefined : toStoredValue(Math.max(0, realValue));
       const prevMet = doesNumericalStoredValueMeetTarget(habit, previousStored);
-      const nowMet = doesNumericalStoredValueMeetTarget(habit, nextStored);
+      const processingKey = `${habit.id}-${date}`;
+      if (processingHabitTogglesRef.current.has(processingKey)) return;
+      processingHabitTogglesRef.current.add(processingKey);
 
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habit.id) return h;
-          const entries =
-            nextStored === undefined
-              ? setEntryValue(h.entries || {}, date, ENTRY.UNKNOWN)
-              : setEntryValue(
-                  h.entries || {},
-                  date,
-                  nextStored,
-                  undefined,
-                  entryMetadata(date, source)
-                );
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
+      void (async () => {
+        try {
+          const committedHabit = await commitHabitEntry(
+            habit.id,
+            date,
+            nextStored ?? ENTRY.UNKNOWN,
+            source,
+          );
+          const committedValue = committedHabit.entries?.[date]?.value ?? ENTRY.UNKNOWN;
+          const nowMet = doesNumericalStoredValueMeetTarget(committedHabit, committedValue);
 
-      triggerSync();
-      void syncHabitCompletion(
-        habit.id,
-        date,
-        nowMet,
-        realValue == null ? undefined : Math.max(1, Math.round(realValue)),
-        nextStored,
-        {
-          habitType: habit.habitType ?? "numerical",
-          targetType: habit.targetType,
-          entryValue: nextStored ?? ENTRY.UNKNOWN,
+          setHabits((prev) => prev.map((item) => (item.id === habit.id ? committedHabit : item)));
+          triggerSync();
+          void syncHabitCompletion(
+            habit.id,
+            date,
+            nowMet,
+            realValue == null ? undefined : Math.max(1, Math.round(realValue)),
+            committedValue,
+            {
+              habitType: committedHabit.habitType ?? "numerical",
+              targetType: committedHabit.targetType,
+              entryValue: committedValue,
+            }
+          ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
+
+          if (!prevMet && nowMet) {
+            analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+          }
+        } catch (error) {
+          logger.error("[V2 Habits] Durable numerical completion commit failed:", error);
+        } finally {
+          processingHabitTogglesRef.current.delete(processingKey);
         }
-      ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
-
-      if (!prevMet && nowMet) {
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
-      }
+      })();
     },
-    [habits, setHabits, entryMetadata]
+    [habits, setHabits]
   );
 
   /**
@@ -277,7 +284,6 @@ export const HabitsPage = memo(function HabitsPage() {
     (habitId: string, date: string, delta: number) => {
       const habit = habits.find((h) => h.id === habitId);
       if (!habit) return;
-      void hapticTap();
       const currentStored = habit.entries?.[date]?.value;
       const currentEntryValue = currentStored ?? 0;
       const currentReal = currentEntryValue > 0 ? currentEntryValue / 1000 : 0;
@@ -308,47 +314,43 @@ export const HabitsPage = memo(function HabitsPage() {
     [habits, handleAdjustHabit, recordNumericalValue]
   );
   const handleToggleHabit = useCallback(
-    (habitId: string, date: string) => {
-      // Compute the completion transition BEFORE the setter runs so the
-      // emission is pure (no state-mutation flag inside the updater). This
-      // also keeps the section 15 contract parity with useHabitHandlers —
-      // without this, V2 toggles would silently bypass `habit_completed`.
+    async (habitId: string, date: string) => {
+      const processingKey = `${habitId}-${date}`;
+      if (processingHabitTogglesRef.current.has(processingKey)) return;
+      const completedAt = recentCompletionsRef.current.get(processingKey);
+      if (completedAt !== undefined) {
+        if (Date.now() - completedAt < RAPID_COMPLETION_RETRY_WINDOW_MS) return;
+        recentCompletionsRef.current.delete(processingKey);
+      }
+      processingHabitTogglesRef.current.add(processingKey);
+
       const habit = habits.find((h) => h.id === habitId);
-      const isCompletingNow = habit != null && habit.entries?.[date] == null;
-      const nextValue =
-        habit != null && habit.entries?.[date] == null ? ENTRY.YES_MANUAL : ENTRY.UNKNOWN;
-      void hapticTap();
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          const entries = { ...(h.entries ?? {}) };
-          const existing = entries[date];
-          if (existing) {
-            const { [date]: _drop, ...rest } = entries;
-            void _drop;
-            return { ...h, entries: rest };
-          }
-          entries[date] = {
-            value: ENTRY.YES_MANUAL,
-            ...entryMetadata(date, "quickTap"),
-          };
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
-      triggerSync();
-      void syncHabitCompletion(habitId, date, nextValue === ENTRY.YES_MANUAL, 1, undefined, {
-        habitType: habit?.habitType ?? "boolean",
-        targetType: habit?.targetType,
-        entryValue: nextValue,
-      }).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
-      if (isCompletingNow && habit) {
-        // §15 retention metric — habit.name carries length-only PII gate at
-        // the Analytics layer (see analytics.ts). total_habits is the active
-        // (non-archived) count so the aggregator can filter ≥3-habit users.
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+      try {
+        const { habit: committedHabit, nextValue } = await commitHabitToggle(habitId, date, "quickTap");
+        const isCompletingNow = nextValue === ENTRY.YES_MANUAL;
+        if (isCompletingNow) recentCompletionsRef.current.set(processingKey, Date.now());
+
+        setHabits((prev) => prev.map((item) => (item.id === habitId ? committedHabit : item)));
+        void hapticTap();
+        triggerSync();
+        void syncHabitCompletion(habitId, date, isCompletingNow, 1, undefined, {
+          habitType: committedHabit.habitType ?? "boolean",
+          targetType: committedHabit.targetType,
+          entryValue: nextValue,
+        }).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
+        if (isCompletingNow && habit) {
+          // §15 retention metric — habit.name carries length-only PII gate at
+          // the Analytics layer (see analytics.ts). total_habits is the active
+          // (non-archived) count so the aggregator can filter ≥3-habit users.
+          analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
+        }
+      } catch (error) {
+        logger.error("[V2 Habits] Durable completion commit failed:", error);
+      } finally {
+        processingHabitTogglesRef.current.delete(processingKey);
       }
     },
-    [habits, setHabits, entryMetadata]
+    [habits, setHabits]
   );
   const openCreate = useCallback(() => {
     captureReturnFocus();

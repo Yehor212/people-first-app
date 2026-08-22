@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AdProvider, useAds } from '@/contexts/AdContext';
@@ -63,18 +63,16 @@ function Probe() {
   return <div data-testid="privacy-required">{String(ads.privacyOptionsRequired)}</div>;
 }
 
-describe('AdContext UMP privacy options', () => {
-  it('keeps the UMP privacy-options entry available when local ad consent is off', async () => {
+describe('AdContext Ads-OFF boundary', () => {
+  it('does not invoke a privacy or native-ad path when local ad consent is off', () => {
     render(
       <AdProvider adConsent={false} isPremium={false}>
         <Probe />
       </AdProvider>,
     );
 
-    await waitFor(() => {
-      expect(adController.disableAds).toHaveBeenCalledWith({ clearPrivacyOptions: false });
-      expect(adController.refreshAdPrivacyOptionsStatus).toHaveBeenCalledTimes(1);
-    });
-    expect(screen.getByTestId('privacy-required')).toHaveTextContent('true');
+    expect(screen.getByTestId('privacy-required')).toHaveTextContent('false');
+    expect(adController.disableAds).not.toHaveBeenCalled();
+    expect(adController.refreshAdPrivacyOptionsStatus).not.toHaveBeenCalled();
   });
 });

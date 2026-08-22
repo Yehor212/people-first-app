@@ -7,35 +7,24 @@
  * Mood-aware gating prevents ads when user is feeling bad.
  */
 
-import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_IOS, ADMOB_BANNER_ID_IOS, IS_DEV } from '@/lib/env';
+import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_IOS, ADMOB_BANNER_ID_IOS } from '@/lib/env';
 
 // ============================================
 // AD UNIT IDS
 // ============================================
 
-export const GOOGLE_ADMOB_TEST_IDS = {
-  android: {
-    rewarded: 'ca-app-pub-3940256099942544/5224354917',
-    banner: 'ca-app-pub-3940256099942544/6300978111',
-  },
-  ios: {
-    rewarded: 'ca-app-pub-3940256099942544/1712485313',
-    banner: 'ca-app-pub-3940256099942544/2934735716',
-  },
-} as const;
-
-function adUnitId(envValue: string, testValue: string): string {
-  return envValue || (IS_DEV ? testValue : '');
+function adUnitId(envValue: string): string {
+  return envValue.trim();
 }
 
 export const AD_UNIT_IDS = {
   android: {
-    rewarded: adUnitId(ADMOB_REWARDED_ID_ANDROID, GOOGLE_ADMOB_TEST_IDS.android.rewarded),
-    banner: adUnitId(ADMOB_BANNER_ID_ANDROID, GOOGLE_ADMOB_TEST_IDS.android.banner),
+    rewarded: adUnitId(ADMOB_REWARDED_ID_ANDROID),
+    banner: adUnitId(ADMOB_BANNER_ID_ANDROID),
   },
   ios: {
-    rewarded: adUnitId(ADMOB_REWARDED_ID_IOS, GOOGLE_ADMOB_TEST_IDS.ios.rewarded),
-    banner: adUnitId(ADMOB_BANNER_ID_IOS, GOOGLE_ADMOB_TEST_IDS.ios.banner),
+    rewarded: adUnitId(ADMOB_REWARDED_ID_IOS),
+    banner: adUnitId(ADMOB_BANNER_ID_IOS),
   },
 } as const;
 
@@ -50,9 +39,8 @@ export function hasRewardedAdUnitId(targetPlatform: AdPlatform): boolean {
 }
 
 export function isGoogleTestAdUnit(adId: string): boolean {
-  return Object.values(GOOGLE_ADMOB_TEST_IDS).some((ids) =>
-    Object.values(ids).some((testId) => testId === adId),
-  );
+  void adId;
+  return false;
 }
 
 // ============================================

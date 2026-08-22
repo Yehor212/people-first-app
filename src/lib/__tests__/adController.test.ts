@@ -101,7 +101,7 @@ describe('adController', () => {
       // State starts with sdkAvailable = false (default)
       const result = canShowRewardedAd();
       expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('sdk_unavailable');
+      expect(result.reason).toBe('ads_off');
     });
 
     it('should block ads when mood is "terrible" (blocked mood)', async () => {
@@ -114,8 +114,8 @@ describe('adController', () => {
       // on web. This tests the priority: sdk check comes first.
       const result = canShowRewardedAd('terrible');
       expect(result.allowed).toBe(false);
-      // sdk_unavailable is the first check
-      expect(result.reason).toBe('sdk_unavailable');
+      // The ADR-level OFF gate takes precedence over all legacy ad checks.
+      expect(result.reason).toBe('ads_off');
     });
   });
 
@@ -206,30 +206,29 @@ describe('adController', () => {
   // getRemainingRewardedAds
   // ============================================
   describe('getRemainingRewardedAds', () => {
-    it('should return max per day when no ads have been shown', async () => {
+    it('should return zero when ads are OFF and no ads have been shown', async () => {
       const { getRemainingRewardedAds } = await import('../adController');
-      // No storage entries = 0 shown today
       const result = getRemainingRewardedAds();
-      expect(result).toBe(5); // maxRewardedPerDay from mock
+      expect(result).toBe(0);
     });
 
-    it('should return correct remaining after some ads shown today', async () => {
+    it('should return zero when legacy ad-count storage exists', async () => {
       const today = new Date().toDateString();
       mockStorage['zenflow-ad-count-date'] = today;
       mockStorage['zenflow-ad-rewarded-count'] = '3';
 
       const { getRemainingRewardedAds } = await import('../adController');
       const result = getRemainingRewardedAds();
-      expect(result).toBe(2); // 5 - 3
+      expect(result).toBe(0);
     });
 
-    it('should return max when stored date is from a different day', async () => {
+    it('should return zero when legacy storage is from a different day', async () => {
       mockStorage['zenflow-ad-count-date'] = 'Mon Jan 01 2024';
       mockStorage['zenflow-ad-rewarded-count'] = '5';
 
       const { getRemainingRewardedAds } = await import('../adController');
       const result = getRemainingRewardedAds();
-      expect(result).toBe(5); // Different day = reset
+      expect(result).toBe(0);
     });
 
     it('should never return negative values', async () => {
@@ -239,7 +238,7 @@ describe('adController', () => {
 
       const { getRemainingRewardedAds } = await import('../adController');
       const result = getRemainingRewardedAds();
-      expect(result).toBe(0); // Math.max(0, 5 - 99) = 0
+      expect(result).toBe(0);
     });
   });
 
@@ -252,7 +251,7 @@ describe('adController', () => {
       const result = await showRewardedAd();
       expect(result.success).toBe(false);
       expect(result.rewarded).toBe(false);
-      expect(result.error).toBe('sdk_unavailable');
+      expect(result.error).toBe('ads_off');
     });
   });
 
