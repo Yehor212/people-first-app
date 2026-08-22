@@ -3051,8 +3051,12 @@ export const en: Translations = {
   journalPrivateMode: "Conceal diary list",
   journalPrivateModeHint:
     "Hides titles, previews, and list actions on this device until you turn it off. This is screen privacy, not password protection.",
+  journalPrivateModeLoadError:
+    "ZenFlow could not load this privacy setting, so the diary list is concealed now. Check the setting before viewing your entries.",
   journalPrivateModeSaveError:
-    "ZenFlow could not save this privacy setting. Your diary stays concealed on this screen; keep the app open and try again.",
+    "ZenFlow could not save this privacy setting. The diary list is concealed now, but this choice may reset when you leave the diary. Check it again when you return.",
+  journalPrivateModeTemporaryRevealError:
+    "ZenFlow could not save this change. Entries are visible now, but this choice may reset when you leave the diary. Check it again when you return.",
   journalTemplateButton: "Template",
   journalStatsEntries: "Diary",
   journalAudioSaved: "Audio saved",

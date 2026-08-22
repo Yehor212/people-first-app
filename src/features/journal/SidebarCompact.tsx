@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type Ref } from "react";
 import { BarChart3, PanelLeftClose, PanelLeftOpen, PenLine, Settings, Star } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ interface SidebarCompactProps {
   onShowList: () => void;
   onToggleSidebar: () => void;
   collapsed: boolean;
+  entryButtonRef?: Ref<HTMLButtonElement>;
   useSharedDiaryWallpaper?: boolean;
 }
 
@@ -25,6 +26,7 @@ export const SidebarCompact = memo(function SidebarCompact({
   onShowList,
   onToggleSidebar,
   collapsed,
+  entryButtonRef,
   useSharedDiaryWallpaper = false,
 }: SidebarCompactProps) {
   const { t, isRTL } = useLanguage();
@@ -56,6 +58,7 @@ export const SidebarCompact = memo(function SidebarCompact({
     >
       <div className="flex flex-col items-center gap-1 border-b border-border/20 px-2 pb-2 pt-3">
         <button
+          ref={entryButtonRef}
           type="button"
           onClick={onShowList}
           className={actionClass(activeSection === "entry")}

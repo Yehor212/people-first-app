@@ -3023,8 +3023,12 @@ export const ja: Translations = {
   journalPrivateMode: "日記一覧を隠す",
   journalPrivateModeHint:
     "オフにするまで、この端末の日記一覧にあるタイトル、プレビュー、操作を隠します。これは画面上の目隠しであり、パスワード保護ではありません。",
+  journalPrivateModeLoadError:
+    "このプライバシー設定を読み込めなかったため、日記一覧は現在隠されています。記録を表示する前に設定を確認してください。",
   journalPrivateModeSaveError:
-    "このプライバシー設定を保存できませんでした。この画面では日記を隠したままにします。アプリを閉じずに、もう一度お試しください。",
+    "このプライバシー設定を保存できませんでした。日記一覧は現在隠されていますが、日記を離れるとこの設定が元に戻ることがあります。戻ったときにもう一度確認してください。",
+  journalPrivateModeTemporaryRevealError:
+    "この変更を保存できませんでした。記録は現在表示されていますが、日記を離れるとこの設定が元に戻ることがあります。戻ったときにもう一度確認してください。",
   journalTemplateButton: "テンプレート",
   journalStatsEntries: "日記",
   journalAudioSaved: "オーディオを保存しました",

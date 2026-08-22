@@ -155,9 +155,8 @@ describe("JournalModule V2 header", () => {
   it("closes an open viewer or editor when private mode is enabled", () => {
     const privateModeHandler =
       /const handlePrivateModeChange = useCallback\([\s\S]*?\}, \[handleGoBack, journal\.view\]\);/.exec(source)?.[0] ?? "";
-    expect(privateModeHandler).toContain("const concealCurrentScreen = checked || !persisted;");
     expect(privateModeHandler).toContain(
-      'if (concealCurrentScreen && (journal.view === "viewing" || journal.view === "editing"))',
+      'if (checked && (journal.view === "viewing" || journal.view === "editing"))',
     );
     expect(privateModeHandler).toContain("handleGoBack();");
   });

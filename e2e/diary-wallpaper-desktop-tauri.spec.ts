@@ -253,6 +253,124 @@ test.describe("Desktop/Tauri V2 Diary wallpaper", () => {
     expect(facts?.wallpaperTone).toBe("night");
   });
 
+  test("desktop settings preserves a dirty draft before concealment or navigation", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await openDesktopDiary(page, {
+      name: "desktop-safe-draft-exit",
+      colorScheme: "light",
+      expectedTone: "day",
+      language: "en",
+      theme: "paper",
+      viewport: { width: 1280, height: 820 },
+      wallClockIso: "2026-06-17T12:00:00.000Z",
+    });
+
+    await page
+      .locator('[data-testid="journal-detail-pane"] [data-testid="diary-empty-canvas"] button')
+      .first()
+      .click();
+
+    const editor = page.locator("[contenteditable='true']");
+    await expect(editor).toBeVisible({ timeout: 20_000 });
+    await editor.fill("Desktop draft must survive opening diary settings.");
+
+    const settingsButton = page.getByTestId("journal-sidebar-nav-settings");
+    await settingsButton.click();
+
+    const settingsConfirm = page.getByRole("alertdialog", { name: /diary settings/i });
+    await expect(settingsConfirm).toBeVisible();
+    await settingsConfirm.getByRole("button", { name: /^keep writing$/i }).click();
+    await expect(editor).toContainText("Desktop draft must survive opening diary settings.");
+
+    await settingsButton.click();
+    await expect(settingsConfirm).toBeVisible();
+    await settingsConfirm
+      .getByRole("button", { name: /^save draft and open settings$/i })
+      .click();
+
+    const settingsPanel = page.getByTestId("journal-settings-panel");
+    await expect(settingsPanel).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("journal-entry-editor")).toHaveCount(0);
+    await settingsPanel.getByRole("button", { name: /^close$/i }).click();
+
+    await expect(page.getByTestId("journal-entry-editor")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/^unsaved draft found$/i)).toBeVisible();
+    await page.getByRole("button", { name: /^restore$/i }).click();
+    await expect(page.locator("[contenteditable='true']")).toContainText(
+      "Desktop draft must survive opening diary settings.",
+    );
+  });
+
+  test("keeps the desktop editor open when a dirty draft cannot be persisted before settings", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await openDesktopDiary(page, {
+      name: "desktop-rejected-settings-handoff",
+      colorScheme: "light",
+      expectedTone: "day",
+      language: "en",
+      theme: "paper",
+      viewport: { width: 1280, height: 820 },
+      wallClockIso: "2026-06-17T12:00:00.000Z",
+    });
+
+    await page
+      .locator('[data-testid="journal-detail-pane"] [data-testid="diary-empty-canvas"] button')
+      .first()
+      .click();
+
+    const editor = page.locator("[contenteditable='true']");
+    await expect(editor).toBeVisible({ timeout: 20_000 });
+    await editor.fill("This desktop text must remain when draft writers are suspended.");
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("zenflow:account-boundary-writers-suspended"));
+    });
+
+    await page.getByTestId("journal-sidebar-nav-settings").click();
+    const settingsConfirm = page.getByRole("alertdialog", { name: /diary settings/i });
+    await expect(settingsConfirm).toBeVisible();
+    await settingsConfirm
+      .getByRole("button", { name: /^save draft and open settings$/i })
+      .click();
+
+    await expect(settingsConfirm).toBeVisible();
+    await expect(settingsConfirm.getByRole("alert")).toContainText(/couldn't save draft/i);
+    await expect(page.getByTestId("journal-settings-panel")).toHaveCount(0);
+    await expect(editor).toContainText(
+      "This desktop text must remain when draft writers are suspended.",
+    );
+  });
+
+  test("returns desktop focus to diary navigation after an explicit discard", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await openDesktopDiary(page, {
+      name: "desktop-exit-focus",
+      colorScheme: "light",
+      expectedTone: "day",
+      language: "en",
+      theme: "paper",
+      viewport: { width: 1280, height: 820 },
+      wallClockIso: "2026-06-17T12:00:00.000Z",
+    });
+
+    await page
+      .locator('[data-testid="journal-detail-pane"] [data-testid="diary-empty-canvas"] button')
+      .first()
+      .click();
+    const editor = page.locator("[contenteditable='true']");
+    await expect(editor).toBeVisible({ timeout: 20_000 });
+    await editor.fill("Discarding this desktop edit should restore a logical focus target.");
+
+    await page.getByRole("button", { name: /^back$/i }).click();
+    const unsavedDialog = page.getByRole("alertdialog", { name: /unsaved changes/i });
+    await expect(unsavedDialog).toBeVisible();
+    await unsavedDialog.getByRole("button", { name: /^discard changes$/i }).click();
+
+    await expect(page.getByTestId("journal-entry-editor")).toHaveCount(0);
+    await expect(page.getByTestId("journal-sidebar-nav-entry")).toBeFocused();
+  });
+
   for (const scenario of scenarios) {
     test(scenario.name + ": renders the shared premium wallpaper in the visible desktop pane", async ({
       page,

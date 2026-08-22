@@ -2994,8 +2994,12 @@ const hebrewOverrides: Partial<Translations> = {
   journalPrivateMode: "הסתרת רשימת היומן",
   journalPrivateModeHint:
     "מסתיר כותרות, תצוגות מקדימות ופעולות ברשימה במכשיר הזה עד לכיבוי המצב. זו פרטיות למסך, לא הגנה בסיסמה.",
+  journalPrivateModeLoadError:
+    "\u2066ZenFlow\u2069 לא הצליח לטעון את הגדרת הפרטיות הזו, לכן רשימת היומן מוסתרת כעת. כדאי לבדוק את ההגדרה לפני הצגת הרשומות.",
   journalPrivateModeSaveError:
-    "ZenFlow לא הצליח לשמור את הגדרת הפרטיות הזו. היומן יישאר מוסתר במסך הזה; השאירו את האפליקציה פתוחה ונסו שוב.",
+    "\u2066ZenFlow\u2069 לא הצליח לשמור את הגדרת הפרטיות הזו. רשימת היומן מוסתרת כעת, אך הבחירה עשויה להתאפס כשיוצאים מהיומן. כדאי לבדוק אותה שוב כשחוזרים.",
+  journalPrivateModeTemporaryRevealError:
+    "\u2066ZenFlow\u2069 לא הצליח לשמור את השינוי. הרשומות גלויות כעת, אך הבחירה עשויה להתאפס כשיוצאים מהיומן. כדאי לבדוק אותה שוב כשחוזרים.",
   journalTemplateButton: "תבנית",
   journalStatsEntries: "היומן",
   journalAudioSaved: "השמע נשמר",

@@ -2911,7 +2911,9 @@ export interface Translations {
   journalSavedStreak: string;
   journalPrivateMode: string;
   journalPrivateModeHint: string;
+  journalPrivateModeLoadError: string;
   journalPrivateModeSaveError: string;
+  journalPrivateModeTemporaryRevealError: string;
   journalTemplateButton: string;
   journalStatsEntries: string;
   journalAudioSaved: string;

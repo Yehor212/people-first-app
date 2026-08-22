@@ -313,5 +313,11 @@ describe("journal final review contracts", () => {
     expect(entryEditorSource).toContain("contentEditable={draftReady && !saveInteractionLocked}");
     expect(entryEditorSource).toContain("disabled={saveInteractionLocked}");
     expect(entryEditorSource).toContain("aria-disabled={saveInteractionLocked}");
+    const saveCloseButtonBlock =
+      /<button\s+onClick=\{handleSaveAndClose\}[\s\S]*?<\/button>/.exec(entryEditorSource)?.[0] ?? "";
+    expect(saveCloseButtonBlock).toContain(
+      "disabled={saveInteractionLocked || !hasContent || !draftReady}",
+    );
+    expect(saveCloseButtonBlock).toContain("journal-save-close-unavailable-hint");
   });
 });

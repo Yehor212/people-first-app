@@ -1,8 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { fileURLToPath } from "node:url";
 
 import { v2RoutePath } from "./helpers/zenflowV2State";
 
 const IOS_DIARY_ORIGIN = "https://127.0.0.1:4188";
+const JOURNAL_PHOTO_FIXTURE = fileURLToPath(new URL("../public/og-image.png", import.meta.url));
 
 test.use({
   browserName: "webkit",
@@ -117,18 +119,28 @@ async function expectIosTouchTarget(page: Page, locator: Locator) {
     )
     .toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX - TOUCH_EPSILON_PX);
 
-  const box = await locator.boundingBox();
-  const viewport = page.viewportSize();
-  expect(box).not.toBeNull();
-  expect(viewport).not.toBeNull();
-  if (!box || !viewport) return;
+  await expect
+    .poll(
+      async () => {
+        const box = await locator.boundingBox();
+        const viewport = page.viewportSize();
+        if (!box || !viewport) return false;
 
-  expect(box.width + TOUCH_EPSILON_PX).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
-  expect(box.height + TOUCH_EPSILON_PX).toBeGreaterThanOrEqual(IOS_TOUCH_TARGET_PX);
-  expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-  expect(box.y).toBeGreaterThanOrEqual(0);
-  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+        return (
+          box.width + TOUCH_EPSILON_PX >= IOS_TOUCH_TARGET_PX &&
+          box.height + TOUCH_EPSILON_PX >= IOS_TOUCH_TARGET_PX &&
+          box.x >= 0 &&
+          box.x + box.width <= viewport.width + 1 &&
+          box.y >= 0 &&
+          box.y + box.height <= viewport.height + 1
+        );
+      },
+      {
+        message: "iOS touch target settles fully inside the viewport",
+        timeout: 4_000,
+      },
+    )
+    .toBe(true);
 }
 
 async function ensureIosMobileToolsExpanded(page: Page) {
@@ -383,6 +395,129 @@ test.describe("iOS V2 Diary", () => {
     await expect(editor).toBeHidden({ timeout: 10_000 });
   });
 
+  test("reveals shielded text again and lets the user leave an unsaved iOS entry", async ({ page }) => {
+    await openDayDiaryRoute(page);
+    await openNewJournalEntry(page);
+
+    const editor = page.locator("[contenteditable='true']");
+    await editor.fill("Private text must become readable again.");
+
+    const privacyShield = page.getByRole("button", { name: /^screen shield$/i });
+    await expectIosTouchTarget(page, privacyShield);
+    await privacyShield.click();
+    await expect(privacyShield).toHaveAttribute("aria-pressed", "true");
+    await expect(editor).toHaveClass(/privacy-blurred/);
+
+    await privacyShield.click();
+    await expect(privacyShield).toHaveAttribute("aria-pressed", "false");
+    await expect(editor).not.toHaveClass(/privacy-blurred/);
+    await expect(editor).toContainText("Private text must become readable again.");
+
+    await privacyShield.evaluate((button) => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await expect(privacyShield).toHaveAttribute("aria-pressed", "false");
+    await expect(editor).not.toHaveClass(/privacy-blurred/);
+
+    await privacyShield.evaluate((button) => {
+      for (let index = 0; index < 3; index += 1) {
+        button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      }
+    });
+    await expect(privacyShield).toHaveAttribute("aria-pressed", "true");
+    await expect(editor).toHaveClass(/privacy-blurred/);
+
+    await privacyShield.click();
+    await expect(privacyShield).toHaveAttribute("aria-pressed", "false");
+    await expect(editor).not.toHaveClass(/privacy-blurred/);
+
+    const backButton = page.getByRole("button", { name: /^back$/i });
+    await expectIosTouchTarget(page, backButton);
+    await backButton.click();
+
+    const unsavedDialog = page.getByRole("alertdialog", { name: /unsaved changes/i });
+    await expect(unsavedDialog).toBeVisible();
+    await unsavedDialog.getByRole("button", { name: /^keep writing$/i }).click();
+    await expect(unsavedDialog).toHaveCount(0);
+    await expect(editor).toContainText("Private text must become readable again.");
+
+    await backButton.click();
+    await expect(unsavedDialog).toBeVisible();
+    await unsavedDialog.getByRole("button", { name: /^discard changes$/i }).click();
+    await expect(editor).toHaveCount(0);
+    await expect(page.getByTestId("journal-mobile-entry")).toBeFocused();
+
+    const appMenuButton = page.getByTestId("journal-mobile-app-nav-menu");
+    await expectIosTouchTarget(page, appMenuButton);
+    await appMenuButton.click();
+    await expect(page.getByTestId("drawer-v2-destination-habits")).toBeVisible();
+  });
+
+  test("saves an unsaved iOS entry from the exit dialog before leaving", async ({ page }) => {
+    await openDayDiaryRoute(page);
+    await openNewJournalEntry(page);
+
+    const editor = page.locator("[contenteditable='true']");
+    await editor.fill("Exit dialog save must keep this iOS diary text.");
+
+    const backButton = page.getByRole("button", { name: /^back$/i });
+    await backButton.click();
+
+    const unsavedDialog = page.getByRole("alertdialog", { name: /unsaved changes/i });
+    await expect(unsavedDialog).toBeVisible();
+    await unsavedDialog.getByRole("button", { name: /^save & close$/i }).click();
+
+    await expect(editor).toHaveCount(0);
+    await expect(page.getByText("Exit dialog save must keep this iOS diary text.")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId("journal-mobile-entry")).toBeFocused();
+  });
+
+  test("reveals a concealed diary and keeps a safe iOS exit path when persistence fails", async ({ page }) => {
+    await page.addInitScript(() => {
+      const privateModeKey = "journal_private_mode";
+      localStorage.setItem(privateModeKey, "true");
+      const originalSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function setItem(key: string, value: string) {
+        if (key === privateModeKey) {
+          throw new DOMException("Storage unavailable in this test", "QuotaExceededError");
+        }
+        return originalSetItem.call(this, key, value);
+      };
+    });
+
+    await openDayDiaryRoute(page);
+    await page.getByTestId("journal-mobile-settings").click();
+
+    const settingsPanel = page.getByTestId("journal-mobile-settings-panel");
+    const privateModeSwitch = settingsPanel.getByRole("switch", {
+      name: /^conceal diary list$/i,
+    });
+    await expect(privateModeSwitch).toBeChecked();
+    await privateModeSwitch.click();
+
+    await expect(privateModeSwitch).not.toBeChecked();
+    await expect(settingsPanel.getByRole("alert")).toContainText(
+      /entries are visible now.*choice may reset.*check it again/i,
+    );
+    expect(await page.evaluate(() => localStorage.getItem("journal_private_mode"))).toBe("true");
+
+    await page.getByTestId("journal-mobile-settings-close").click();
+    const storageWarning = page.getByTestId("offline-banner");
+    await expect(storageWarning).toBeVisible();
+    const dismissWarning = storageWarning.getByRole("button", { name: /^dismiss$/i });
+    await expectIosTouchTarget(page, dismissWarning);
+    await dismissWarning.click();
+    await expect(storageWarning).toHaveCount(0);
+
+    const appMenuButton = page.getByTestId("journal-mobile-app-nav-menu");
+    await expectIosTouchTarget(page, appMenuButton);
+    await appMenuButton.click();
+    await expect(page.getByTestId("drawer-v2-destination-habits")).toBeVisible();
+  });
+
   test("opens iOS media and settings surfaces without overlap", async ({ page }) => {
     await openDayDiaryRoute(page);
 
@@ -394,13 +529,15 @@ test.describe("iOS V2 Diary", () => {
     await ensureIosMobileToolsExpanded(page);
     const photoButton = page.getByRole("button", { name: /^photo$/i }).first();
     await expectIosTouchTarget(page, photoButton);
+    const chooserPromise = page.waitForEvent("filechooser", { timeout: 5_000 });
     await photoButton.click();
-    const photoDialog = page.getByRole("dialog", { name: /photo picker/i });
-    await expect(photoDialog).toBeVisible();
-    await expectIosTouchTarget(page, photoDialog.getByRole("button", { name: /from gallery/i }));
-    await expectIosTouchTarget(page, photoDialog.getByRole("button", { name: /^close$/i }));
-    await page.keyboard.press("Escape");
-    await expect(photoDialog).toHaveCount(0);
+    const chooser = await chooserPromise;
+    await chooser.setFiles(JOURNAL_PHOTO_FIXTURE);
+    await expect(page.getByRole("dialog", { name: /photo picker/i })).toHaveCount(0);
+    const placePhotoButton = page.getByRole("button", { name: /^place on page$/i });
+    await expectIosTouchTarget(page, placePhotoButton);
+    await placePhotoButton.click();
+    await expect(page.locator("[data-floating-photo-id]").first()).toBeVisible({ timeout: 20_000 });
 
     await page.getByRole("button", {
       name: /^(save|зберегти|guardar|speichern|保存|حفظ|שמור)$/i,

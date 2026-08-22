@@ -168,7 +168,19 @@ test.describe("PWA offline V2 Diary", () => {
       const editor = page.locator("[contenteditable='true']");
       await expect(editor).toBeVisible({ timeout: 20_000 });
       await editor.fill(offlineEntryText);
-      await page.getByRole("button", { name: /^Save$/i }).click();
+
+      const privacyShield = page.getByRole("button", { name: /^screen shield$/i });
+      await privacyShield.click();
+      await expect(privacyShield).toHaveAttribute("aria-pressed", "true");
+      await expect(editor).toHaveClass(/privacy-blurred/);
+      await privacyShield.click();
+      await expect(privacyShield).toHaveAttribute("aria-pressed", "false");
+      await expect(editor).not.toHaveClass(/privacy-blurred/);
+
+      await page.getByRole("button", { name: /^back$/i }).click();
+      const unsavedDialog = page.getByRole("alertdialog", { name: /unsaved changes/i });
+      await expect(unsavedDialog).toBeVisible();
+      await unsavedDialog.getByRole("button", { name: /^save & close$/i }).click();
       await expect(page.getByText(offlineEntryText)).toBeVisible({ timeout: 20_000 });
       await page.reload({ waitUntil: "domcontentloaded" });
       await expect(page.getByText(offlineEntryText)).toBeVisible({ timeout: 30_000 });

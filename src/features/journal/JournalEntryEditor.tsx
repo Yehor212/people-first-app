@@ -1065,7 +1065,15 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
   const handleSaveDraftAndOpenSettings = useCallback(async () => {
     try {
-      await persistDraftNow();
+      const persisted = await persistDraftNow();
+      if (!persisted) {
+        setSettingsDraftError(
+          ts.journalDraftSaveFailed ||
+            ts.settingsSaveFailed ||
+            "Could not save this draft. Please try again."
+        );
+        return;
+      }
       setSettingsDraftError(null);
       setShowSettingsConfirm(false);
       onRequestSettings?.();
@@ -1248,7 +1256,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             {/* Privacy Shield toggle */}
             <motion.button
               whileTap={zenTap.icon}
-              onClick={() => setPrivacyShieldActive(!privacyShieldActive)}
+              onClick={() => setPrivacyShieldActive((active) => !active)}
               className={cn(
                 "p-2 rounded-lg motion-safe:transition-all min-w-[48px] min-h-[48px] flex items-center justify-center",
                 privacyShieldActive
@@ -3437,6 +3445,19 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             >
               {ts.journalDiscardMessage || "You have unsaved changes."}
             </p>
+            {!draftReady ? (
+              <p
+                id="journal-save-close-unavailable-hint"
+                role="alert"
+                className="mb-3 text-sm text-destructive"
+              >
+                {draftLoadInUse
+                  ? ts.journalDraftInUse ||
+                    "This entry is open in another window. Close it there, then try again."
+                  : ts.journalLoadFailedHint ||
+                    "This load attempt did not change your entries. Try loading again."}
+              </p>
+            ) : null}
             {discardError ? (
               <p role="alert" className="mb-3 text-sm text-destructive">
                 {discardError}
@@ -3445,8 +3466,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleSaveAndClose}
-                disabled={saveInteractionLocked || !hasContent}
-                aria-describedby={!hasContent ? "journal-save-close-disabled-hint" : undefined}
+                disabled={saveInteractionLocked || !hasContent || !draftReady}
+                aria-describedby={
+                  !draftReady
+                    ? "journal-save-close-unavailable-hint"
+                    : !hasContent
+                      ? "journal-save-close-disabled-hint"
+                      : undefined
+                }
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-medium min-h-[48px]",
                   "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground",

@@ -1399,9 +1399,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, [handleSave]);
 
   const handleSaveAndClose = useCallback(async () => {
+    if (draftLoadState !== "ready") return;
     setShowUnsavedDialog(false);
     await handleSave();
-  }, [handleSave]);
+  }, [draftLoadState, handleSave]);
 
   const persistDraftNow = useCallback(async (audioIdsForDraft = audioIdsRef.current) => {
     if (draftLoadState !== "ready") return false;
@@ -1560,7 +1561,16 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, [draftKey, draftMediaOwnerId]);
 
   const handleDiscard = useCallback(async (): Promise<boolean> => {
-    if (discardSubmittingRef.current || saveInFlightRef.current || draftLoadState !== "ready") return false;
+    if (discardSubmittingRef.current || saveInFlightRef.current) return false;
+    if (draftLoadState !== "ready") {
+      // The user may still leave an editor whose writer lease was lost, but this
+      // instance must not clear a recovery draft it could not read or no longer owns.
+      draftPersistenceSuppressedRef.current = true;
+      setDiscardError(null);
+      setShowUnsavedDialog(false);
+      onBack();
+      return true;
+    }
     discardSubmittingRef.current = true;
     setDiscardSubmitting(true);
     setDiscardError(null);

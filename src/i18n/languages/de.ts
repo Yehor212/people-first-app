@@ -3100,8 +3100,12 @@ export const de: Translations = {
   journalPrivateMode: "Tagebuchliste verdecken",
   journalPrivateModeHint:
     "Blendet Titel, Vorschauen und Listenaktionen auf diesem Gerät aus, bis du den Modus abschaltest. Das ist Sichtschutz, kein Passwortschutz.",
+  journalPrivateModeLoadError:
+    "ZenFlow konnte diese Datenschutzeinstellung nicht laden. Die Tagebuchliste ist deshalb jetzt verdeckt. Prüfe die Einstellung, bevor du deine Einträge ansiehst.",
   journalPrivateModeSaveError:
-    "ZenFlow konnte diese Datenschutzeinstellung nicht speichern. Dein Tagebuch bleibt auf diesem Bildschirm verdeckt; lass die App geöffnet und versuche es erneut.",
+    "ZenFlow konnte diese Datenschutzeinstellung nicht speichern. Die Tagebuchliste ist jetzt verdeckt, aber diese Auswahl kann beim Verlassen des Tagebuchs zurückgesetzt werden. Prüfe sie erneut, wenn du zurückkehrst.",
+  journalPrivateModeTemporaryRevealError:
+    "ZenFlow konnte diese Änderung nicht speichern. Die Einträge sind jetzt sichtbar, aber diese Auswahl kann beim Verlassen des Tagebuchs zurückgesetzt werden. Prüfe sie erneut, wenn du zurückkehrst.",
   journalTemplateButton: "Vorlage",
   journalStatsEntries: "Tagebuch",
   journalAudioSaved: "Audio gespeichert",

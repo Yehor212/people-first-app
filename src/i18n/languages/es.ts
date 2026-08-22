@@ -3085,8 +3085,12 @@ export const es: Translations = {
   journalPrivateMode: "Ocultar la lista del diario",
   journalPrivateModeHint:
     "Oculta títulos, vistas previas y acciones de la lista en este dispositivo hasta que lo desactives. Es privacidad de pantalla, no protección con contraseña.",
+  journalPrivateModeLoadError:
+    "ZenFlow no pudo cargar este ajuste de privacidad, así que la lista del diario está oculta ahora. Comprueba el ajuste antes de ver tus entradas.",
   journalPrivateModeSaveError:
-    "ZenFlow no pudo guardar este ajuste de privacidad. Tu diario seguirá oculto en esta pantalla; mantén la aplicación abierta e inténtalo de nuevo.",
+    "ZenFlow no pudo guardar este ajuste de privacidad. La lista del diario está oculta ahora, pero esta opción puede restablecerse al salir del diario. Vuelve a comprobarla cuando regreses.",
+  journalPrivateModeTemporaryRevealError:
+    "ZenFlow no pudo guardar este cambio. Las entradas están visibles ahora, pero esta opción puede restablecerse al salir del diario. Vuelve a comprobarla cuando regreses.",
   journalTemplateButton: "Plantilla",
   journalStatsEntries: "Diario",
   journalAudioSaved: "Audio guardado",

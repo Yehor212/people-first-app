@@ -342,4 +342,46 @@ test.describe("Android V2 Diary", () => {
     await expect(page.getByText("Android diary e2e entry should save cleanly.")).toBeVisible({ timeout: 30_000 });
     await expect(editor).toBeHidden({ timeout: 10_000 });
   });
+
+  test("keeps the screen shield reversible and the Android exit decision explicit", async ({
+    page,
+  }) => {
+    await openAndroidJournalEntry(page);
+
+    const editor = page.locator("[contenteditable='true']");
+    await editor.fill("Android private text stays available until exit is confirmed.");
+
+    const privacyShield = page.getByRole("button", { name: /^screen shield$/i });
+    await expectAndroidTouchTarget(page, privacyShield);
+    await privacyShield.evaluate((button) => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await expect(privacyShield).toHaveAttribute("aria-pressed", "false");
+    await expect(editor).not.toHaveClass(/privacy-blurred/);
+    await expect(editor).toContainText(
+      "Android private text stays available until exit is confirmed.",
+    );
+
+    const backButton = page.getByRole("button", { name: /^back$/i });
+    await expectAndroidTouchTarget(page, backButton);
+    await backButton.click();
+
+    const unsavedDialog = page.getByRole("alertdialog", { name: /unsaved changes/i });
+    await expect(unsavedDialog).toBeVisible();
+    await unsavedDialog.getByRole("button", { name: /^keep writing$/i }).click();
+    await expect(editor).toContainText(
+      "Android private text stays available until exit is confirmed.",
+    );
+
+    await backButton.click();
+    await unsavedDialog.getByRole("button", { name: /^discard changes$/i }).click();
+    await expect(editor).toHaveCount(0);
+    await expect(page.getByTestId("journal-mobile-entry")).toBeFocused();
+
+    const appMenuButton = page.getByTestId("journal-mobile-app-nav-menu");
+    await expectAndroidTouchTarget(page, appMenuButton);
+    await appMenuButton.click();
+    await expect(page.getByTestId("drawer-v2-destination-habits")).toBeVisible();
+  });
 });

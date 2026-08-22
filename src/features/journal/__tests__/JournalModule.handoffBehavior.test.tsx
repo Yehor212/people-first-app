@@ -890,6 +890,17 @@ describe("JournalModule orb handoff behavior", () => {
 
     await screen.findByTestId("journal-page-shell");
     expect(screen.queryByText("A steady moment worth keeping.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("journal-sidebar-nav-settings"));
+    const settingsPanel = await screen.findByTestId("journal-settings-panel");
+    const readWarning = within(settingsPanel).getByText(
+      /could not load this privacy setting.*diary list is concealed/i,
+    );
+    const privateModeSwitch = within(settingsPanel).getByRole("switch", {
+      name: /conceal diary list/i,
+    });
+    expect(privateModeSwitch).toBeChecked();
+    expect(privateModeSwitch).toHaveAttribute("aria-describedby", readWarning.id);
   });
 
   it("keeps the current diary concealed and reports when private mode cannot be saved", async () => {
@@ -919,14 +930,71 @@ describe("JournalModule orb handoff behavior", () => {
     fireEvent.click(privateModeSwitch);
 
     expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument();
-    expect(
-      within(settingsPanel).getByText(
-        /could not save this privacy setting.*diary stays concealed/i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(settingsPanel).getByRole("switch", { name: /conceal diary list/i }),
-    ).toBeChecked();
+    const saveWarning = within(settingsPanel).getByText(
+      /could not save this privacy setting.*diary list is concealed/i,
+    );
+    const concealedSwitch = within(settingsPanel).getByRole("switch", {
+      name: /conceal diary list/i,
+    });
+    expect(saveWarning).toBeInTheDocument();
+    expect(concealedSwitch).toBeChecked();
+    expect(concealedSwitch).toHaveAttribute("aria-describedby", saveWarning.id);
+  });
+
+  it("honors an explicit current-visit reveal when disabling private mode cannot be saved", async () => {
+    mediaQueryMocks.matches = true;
+    safeJsonStore.values.set(SK.JOURNAL_PRIVATE_MODE, "true");
+
+    const currentVisit = render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    await screen.findByTestId("journal-page-shell");
+    expect(screen.queryByText("A steady moment worth keeping.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("journal-sidebar-nav-settings"));
+    safeJsonStore.writeBlocked = true;
+
+    const settingsPanel = await screen.findByTestId("journal-settings-panel");
+    const privateModeSwitch = await within(settingsPanel).findByRole("switch", {
+      name: /conceal diary list/i,
+    });
+    expect(privateModeSwitch).toBeChecked();
+    fireEvent.click(privateModeSwitch);
+
+    const revealedSwitch = within(settingsPanel).getByRole("switch", {
+      name: /conceal diary list/i,
+    });
+    expect(revealedSwitch).not.toBeChecked();
+    const temporaryRevealWarning = within(settingsPanel).getByText(
+      /entries are visible now.*may reset.*check it again/i,
+    );
+    expect(temporaryRevealWarning).toBeInTheDocument();
+    expect(revealedSwitch).toHaveAttribute("aria-describedby", temporaryRevealWarning.id);
+
+    fireEvent.click(within(settingsPanel).getByRole("button", { name: /close/i }));
+    expect(await screen.findByText("A steady moment worth keeping.")).toBeInTheDocument();
+    expect(safeJsonStore.values.get(SK.JOURNAL_PRIVATE_MODE)).toBe("true");
+
+    currentVisit.unmount();
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    await screen.findByTestId("journal-page-shell");
+    expect(screen.queryByText("A steady moment worth keeping.")).not.toBeInTheDocument();
   });
 
   it("does not open statistics until the editor approves leaving a dirty entry", async () => {

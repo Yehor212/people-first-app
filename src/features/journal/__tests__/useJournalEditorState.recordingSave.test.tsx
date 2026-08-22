@@ -1875,8 +1875,10 @@ describe("useJournalEditorState recording save", () => {
   });
 
   it("locks the editor after its draft lease is taken over while backgrounded", async () => {
+    const onBack = vi.fn();
+    const onSave = vi.fn(() => Promise.resolve());
     const { result } = renderHook(
-      () => useJournalEditorState(makeProps()),
+      () => useJournalEditorState(makeProps({ onBack, onSave })),
       { wrapper: ({ children }: { children: ReactNode }) => <>{children}</> },
     );
     await finishDraftPreflight(result);
@@ -1888,6 +1890,23 @@ describe("useJournalEditorState recording save", () => {
 
     await waitFor(() => expect(result.current.draftLoadError).toBe(true));
     expect(result.current.draftReady).toBe(false);
+
+    act(() => result.current.setShowUnsavedDialog(true));
+    await act(async () => {
+      await result.current.handleSaveAndClose();
+    });
+    expect(result.current.showUnsavedDialog).toBe(true);
+    expect(onSave).not.toHaveBeenCalled();
+
+    let discarded = false;
+    await act(async () => {
+      discarded = await result.current.handleDiscard();
+    });
+
+    expect(discarded).toBe(true);
+    expect(storageMocks.discardJournalDraft).not.toHaveBeenCalled();
+    expect(result.current.showUnsavedDialog).toBe(false);
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it("keeps a stale editor intact and can explicitly retry after the parent refreshes the version", async () => {

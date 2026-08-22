@@ -3102,8 +3102,12 @@ export const fr: Translations = {
   journalPrivateMode: "Masquer la liste du journal",
   journalPrivateModeHint:
     "Masque les titres, les aperçus et les actions de la liste sur cet appareil jusqu’à désactivation. Il s’agit d’une protection visuelle, pas d’un mot de passe.",
+  journalPrivateModeLoadError:
+    "ZenFlow n’a pas pu charger ce réglage de confidentialité. La liste du journal est donc masquée pour le moment. Vérifiez le réglage avant de consulter vos entrées.",
   journalPrivateModeSaveError:
-    "ZenFlow n’a pas pu enregistrer ce réglage de confidentialité. Votre journal reste masqué sur cet écran ; gardez l’application ouverte et réessayez.",
+    "ZenFlow n’a pas pu enregistrer ce réglage de confidentialité. La liste du journal est masquée pour le moment, mais ce choix peut être réinitialisé lorsque vous quittez le journal. Vérifiez-le à votre retour.",
+  journalPrivateModeTemporaryRevealError:
+    "ZenFlow n’a pas pu enregistrer cette modification. Les entrées sont visibles pour le moment, mais ce choix peut être réinitialisé lorsque vous quittez le journal. Vérifiez-le à votre retour.",
   journalTemplateButton: "Modèle",
   journalStatsEntries: "Journal",
   journalAudioSaved: "Audio enregistré",

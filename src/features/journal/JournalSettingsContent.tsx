@@ -213,6 +213,7 @@ export function JournalSettingsContent({
   const changeErrorId = useId();
   const biometricErrorId = useId();
   const autoLockErrorId = useId();
+  const privateModeErrorId = useId();
   const autoLockLabels = {
     0: ts.journalLockTimeoutImmediately,
     60_000: ts.journalLockTimeoutOneMinute,
@@ -725,10 +726,15 @@ export function JournalSettingsContent({
             onCheckedChange={onPrivateModeChange}
             disabled={importing}
             aria-label={ts.journalPrivateMode || "Conceal diary list"}
+            aria-describedby={privateModeError ? privateModeErrorId : undefined}
           />
         </div>
         {privateModeError ? (
-          <p role="alert" className="mt-3 text-sm leading-6 text-destructive">
+          <p
+            id={privateModeErrorId}
+            role="alert"
+            className="mt-3 text-sm leading-6 text-destructive"
+          >
             {privateModeError}
           </p>
         ) : null}

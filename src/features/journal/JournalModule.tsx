@@ -810,17 +810,17 @@ const JournalMenuIcon = V2_SHELL_ICONS.menu;
 
 interface JournalPrivateModeState {
   enabled: boolean;
-  persistenceError: boolean;
+  persistenceError: "load" | "save" | null;
 }
 
 function readJournalPrivateModeState(): JournalPrivateModeState {
   const stored = storageReadRaw(SK.JOURNAL_PRIVATE_MODE);
-  if (!stored.ok) return { enabled: true, persistenceError: true };
+  if (!stored.ok) return { enabled: true, persistenceError: "load" };
   if (stored.value === null || stored.value === "false") {
-    return { enabled: false, persistenceError: false };
+    return { enabled: false, persistenceError: null };
   }
-  if (stored.value === "true") return { enabled: true, persistenceError: false };
-  return { enabled: true, persistenceError: true };
+  if (stored.value === "true") return { enabled: true, persistenceError: null };
+  return { enabled: true, persistenceError: "load" };
 }
 
 export const JournalModule = memo(function JournalModule({
@@ -871,6 +871,17 @@ export const JournalModule = memo(function JournalModule({
   });
   const [privateModeState, setPrivateModeState] = useState(readJournalPrivateModeState);
   const privateMode = privateModeState.enabled;
+  const privateModeError =
+    privateModeState.persistenceError === "load"
+      ? ts.journalPrivateModeLoadError ||
+        "ZenFlow could not load this privacy setting, so the diary list is concealed now. Check the setting before viewing your entries."
+      : privateModeState.persistenceError === "save"
+        ? privateMode
+          ? ts.journalPrivateModeSaveError ||
+            "ZenFlow could not save this privacy setting. The diary list is concealed now, but this choice may reset when you leave the diary. Check it again when you return."
+          : ts.journalPrivateModeTemporaryRevealError ||
+            "ZenFlow could not save this change. Entries are visible now, but this choice may reset when you leave the diary. Check it again when you return."
+        : null;
   const saveCeremonyMotionAllowed = useShouldAnimate();
   const saveCeremonyMotionAllowedRef = useRef(saveCeremonyMotionAllowed);
   saveCeremonyMotionAllowedRef.current = saveCeremonyMotionAllowed;
@@ -1097,12 +1108,30 @@ type ResetStep =
   const onboarding = useJournalOnboarding();
   const security = useJournalSecurity();
   const sidebarContentRef = useRef<HTMLDivElement>(null);
+  const desktopDiaryEntryNavRef = useRef<HTMLButtonElement>(null);
+  const mobileDiaryEntryNavRef = useRef<HTMLButtonElement>(null);
+  const restoreDiaryEntryNavFocusRef = useRef(false);
   const mobileDiarySidebarTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileDiarySidebarCloseRef = useRef<HTMLButtonElement>(null);
   const mobileDiarySidebarRef = useRef<HTMLElement | null>(null);
   const mobileSettingsPanelRef = useRef<HTMLDivElement | null>(null);
   const mobileSettingsCloseRef = useRef<HTMLButtonElement>(null);
   const isSidebarCollapsed = isCollapsed;
+  const focusDiaryEntryNavigation = useCallback(() => {
+    const focusTarget = () => {
+      const target = isDiaryDesktopLayout
+        ? desktopDiaryEntryNavRef.current
+        : mobileDiaryEntryNavRef.current;
+      if (target?.isConnected) target.focus({ preventScroll: true });
+    };
+
+    focusTarget();
+    requestAnimationFrame(() => {
+      focusTarget();
+      requestAnimationFrame(focusTarget);
+    });
+  }, [isDiaryDesktopLayout]);
+
   const closeMobileDiarySidebar = useCallback((restoreFocus = true) => {
     setShowMobileDiarySidebar(false);
     if (restoreFocus) {
@@ -1344,6 +1373,17 @@ type ResetStep =
   const journal = useJournal();
   const [mobileEditorSurfacePresent, setMobileEditorSurfacePresent] =
     useState(false);
+  useEffect(() => {
+    if (
+      journal.view !== "list" ||
+      mobileEditorSurfacePresent ||
+      !restoreDiaryEntryNavFocusRef.current
+    ) {
+      return;
+    }
+    restoreDiaryEntryNavFocusRef.current = false;
+    focusDiaryEntryNavigation();
+  }, [focusDiaryEntryNavigation, journal.view, mobileEditorSurfacePresent]);
   useEffect(() => {
     if (isDiaryDesktopLayout) {
       setMobileEditorSurfacePresent(false);
@@ -1868,10 +1908,12 @@ type ResetStep =
       // Wait for reverse animation, then finalize
       transitionTimerRef.current = setTimeout(() => {
         entryTransition.finishReverse();
+        restoreDiaryEntryNavFocusRef.current = true;
         journal.goBack();
       }, 300);
     } else {
       entryTransition.cancelTransition();
+      restoreDiaryEntryNavFocusRef.current = true;
       journal.goBack();
     }
   }, [journal, entryTransition]);
@@ -1892,19 +1934,18 @@ type ResetStep =
 
   const handlePrivateModeChange = useCallback((checked: boolean) => {
     const persisted = storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
-    const concealCurrentScreen = checked || !persisted;
     setPrivateModeState({
-      enabled: concealCurrentScreen,
-      persistenceError: !persisted,
+      enabled: checked,
+      persistenceError: persisted ? null : "save",
     });
-    if (concealCurrentScreen && (journal.view === "viewing" || journal.view === "editing")) {
+    if (checked && (journal.view === "viewing" || journal.view === "editing")) {
       handleGoBack();
     }
   }, [handleGoBack, journal.view]);
 
   const handlePanicExitFromEditor = useCallback(() => {
     const persisted = storageSetRaw(SK.JOURNAL_PRIVATE_MODE, "true");
-    setPrivateModeState({ enabled: true, persistenceError: !persisted });
+    setPrivateModeState({ enabled: true, persistenceError: persisted ? null : "save" });
     security.lock();
     handleGoBack();
   }, [handleGoBack, security]);
@@ -3401,6 +3442,7 @@ type ResetStep =
                             : diaryTabSection
                   }
                   collapsed={isSidebarCollapsed}
+                  entryButtonRef={desktopDiaryEntryNavRef}
                   onOpenStats={handleOpenStats}
                   onOpenFavorites={handleOpenFavorites}
                   onOpenSettings={handleShellSettingsRequest}
@@ -3641,12 +3683,7 @@ type ResetStep =
                             section={settingsSection}
                             onSectionChange={setSettingsSection}
                             privateMode={privateMode}
-                            privateModeError={
-                              privateModeState.persistenceError
-                                ? ts.journalPrivateModeSaveError ||
-                                  "ZenFlow could not save this privacy setting. Your diary stays concealed on this screen; keep the app open and try again."
-                                : null
-                            }
+                            privateModeError={privateModeError}
                             onPrivateModeChange={handlePrivateModeChange}
                             onOpenExport={() => {
                               if (settingsBusy) return;
@@ -4008,6 +4045,7 @@ type ResetStep =
                           data-testid="journal-mobile-section-toolbar"
                         >
                           <button
+                            ref={mobileDiaryEntryNavRef}
                             type="button"
                             onClick={handleShowDiaryPanel}
                             className={mobileHeaderTabClass}
@@ -4508,12 +4546,7 @@ type ResetStep =
                                   section={settingsSection}
                                   onSectionChange={setSettingsSection}
                                   privateMode={privateMode}
-                                  privateModeError={
-                                    privateModeState.persistenceError
-                                      ? ts.journalPrivateModeSaveError ||
-                                        "ZenFlow could not save this privacy setting. Your diary stays concealed on this screen; keep the app open and try again."
-                                      : null
-                                  }
+                                  privateModeError={privateModeError}
                                   onPrivateModeChange={handlePrivateModeChange}
                                   onOpenExport={() => {
                                     if (!closeSettings(false)) return;
