@@ -32,6 +32,7 @@
     "check:production-data-integrity:diff": "node scripts/check-production-data-integrity.cjs --diff",
     "check:production-data-integrity:staged": "node scripts/check-production-data-integrity.cjs --staged",
     "check:production-data-integrity:bundle": "node scripts/check-production-data-integrity.cjs --all --bundle dist",
+    "check:android21-ui-inventory": "node tools/release/android21-ui-inventory.mjs --check",
     "prebuild:dev": "npm run check:journal-save-ceremony-assets",
     "build:dev": "node scripts/run-shared-dist-build.mjs --target web --mode development",
     "lint": "eslint .",
