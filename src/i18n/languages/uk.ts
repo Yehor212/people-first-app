@@ -657,9 +657,6 @@ export const uk: Translations = {
   privacyTitle: "Конфіденційність",
   privacyDescription:
     "Без прихованого відстеження. Синхронізація пристроїв починається лише після входу й увімкнення онлайн-резервної копії.",
-  privacyAds: "Відео з винагородою",
-  privacyAdsHint:
-    "Вони завантажуються лише після ввімкнення. За потреби Google може попросити вас обрати налаштування конфіденційності.",
   privacyOptionalServicesOn: "Додаткові сервіси ввімкнено",
   privacyOptionalServicesOff: "Додаткові сервіси вимкнено",
   privacyPushNotifications: "Нагадування з акаунта",
@@ -1679,16 +1676,6 @@ export const uk: Translations = {
   claimed: "Отримано",
   streakBonus: "Бонус за серію",
   dailyRewardsTip: "Заходь кожен день за кращими нагородами!",
-  adWatchToEarn: "Необов’язкова реклама: перегляньте для невеликого бонусу",
-  adWatch: "Переглянути необов’язкову рекламу",
-  adRemaining: "Діє денний необов’язковий ліміт",
-  adRewardLabel: "Додає {treats} ласощів",
-  adRemainingToday: "Діє щоденний необов'язковий ліміт",
-  adPrivacyOptions: "Вибір конфіденційності реклами Google",
-  adPrivacyOptionsHint: "Змініть або відкличте згоду на рекламу Google, якщо це потрібно.",
-  adPrivacyOptionsOpen: "Переглянути вибір реклами",
-  adPrivacyOptionsError:
-    "Не вдалося відкрити налаштування конфіденційності реклами Google. Спробуйте ще раз.",
   innerWorld: "Внутрішній світ",
   tapToInteract: "Натисніть для взаємодії",
   spinWheel: "Крути колесо!",

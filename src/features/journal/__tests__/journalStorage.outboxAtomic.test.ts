@@ -33,6 +33,7 @@ vi.mock("@/storage/sync/syncOwner", () => ({
 }));
 
 import { offlineQueue } from "@/lib/offlineQueue";
+import { logger } from "@/lib/logger";
 import { triggerSync } from "@/storage/cloudSync";
 import { SK } from "@/lib/storageKeys";
 import { db } from "@/storage/db";
@@ -48,6 +49,12 @@ import {
 import { commitJournalSaveAndCaptureTheme } from "../save-ceremony/journalSaveCeremonyContract";
 import * as journalSecurityMigration from "../journalSecurityMigration";
 import { getJournalDraftMediaOwnerId } from "../types";
+import {
+  getAdState,
+  initializeAds,
+  showAdPrivacyOptions,
+  showRewardedAd,
+} from "@/lib/adController";
 
 async function seedJournalSecurityMigration(input: {
   entryIds?: string[];
@@ -120,6 +127,60 @@ describe("journal core writes use a durable outbox", () => {
         priority: "critical",
       }),
     ]);
+  });
+
+  it("keeps one journal create and outbox action across late Ads-OFF calls and a database restart", async () => {
+    let entryCreates = 0;
+    let outboxCreates = 0;
+    const onEntryCreating = () => {
+      entryCreates += 1;
+    };
+    const onOutboxCreating = () => {
+      outboxCreates += 1;
+    };
+    db.journalEntries.hook("creating", onEntryCreating);
+    db.offlineQueue.hook("creating", onOutboxCreating);
+
+    try {
+      const entry = await saveEntry({
+        date: "2026-08-21",
+        title: "T180_SYNTHETIC_TITLE",
+        content: "T180_SYNTHETIC_CONTENT",
+        stickers: [],
+        photoIds: [],
+        audioIds: [],
+        tags: [],
+      });
+
+      await expect(initializeAds()).resolves.toBe(false);
+      await expect(showAdPrivacyOptions()).resolves.toMatchObject({ error: "ads_off" });
+      await expect(showRewardedAd({ zone: "optional_rewards" })).resolves.toMatchObject({
+        success: false,
+        rewarded: false,
+        error: "ads_off",
+      });
+      await expect(showRewardedAd({ zone: "optional_rewards" })).resolves.toMatchObject({
+        success: false,
+        rewarded: false,
+        error: "ads_off",
+      });
+
+      db.close();
+      await db.open();
+
+      expect(await db.journalEntries.where("id").equals(entry.id).count()).toBe(1);
+      expect(await db.offlineQueue.where("entityId").equals(entry.id).count()).toBe(1);
+      expect(entryCreates).toBe(1);
+      expect(outboxCreates).toBe(1);
+      expect(getAdState()).toMatchObject({
+        canRequestAds: false,
+        rewardedReady: false,
+        sessionAdCount: 0,
+      });
+    } finally {
+      db.journalEntries.hook("creating").unsubscribe(onEntryCreating);
+      db.offlineQueue.hook("creating").unsubscribe(onOutboxCreating);
+    }
   });
 
   it("persists the latest update action before updateEntry resolves", async () => {
@@ -434,6 +495,29 @@ describe("journal core writes use a durable outbox", () => {
 
     expect(await db.journalEntries.get(entry.id)).toBeDefined();
     expect(await db.offlineQueue.where("entityId").equals(entry.id).count()).toBe(1);
+  });
+
+  it("does not copy a private post-commit failure payload into diagnostics", async () => {
+    const canary = "T176_PRIVATE_CANARY_0d8f";
+    vi.spyOn(offlineQueue, "wakeFromDurableStorage").mockRejectedValueOnce(new Error(canary));
+
+    await saveEntry({
+      date: "2026-07-16",
+      title: "opaque-title",
+      content: "opaque-content",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+    });
+
+    await vi.waitFor(() => expect(logger.warn).toHaveBeenCalled());
+    const diagnostic = vi
+      .mocked(logger.warn)
+      .mock.calls.flat()
+      .map((value) => (value instanceof Error ? value.message : String(value)))
+      .join(" ");
+    expect(diagnostic).not.toContain(canary);
   });
 
   it("resolves a committed create before a durable queue wake finishes", async () => {

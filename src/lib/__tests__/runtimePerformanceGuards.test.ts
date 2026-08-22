@@ -183,19 +183,39 @@ describe("runtime performance guards", () => {
     expect(normalizer).not.toContain('origin="*"');
   });
 
-  it("sanitizes iOS app bundle extended attributes after resources copy before code signing", () => {
+  it("keeps the iOS xattr sanitizer as the final explicit phase after resources and before code signing", () => {
     const project = readSource("ios/App/App.xcodeproj/project.pbxproj");
     const targetBlock = extractBlock(
       project,
-      "buildPhases = (\n\t\t\t\t7D20A1B62F92000100AA0001 /* Verify Release AdMob App ID */,",
+      "504EC3031FED79650016851F /* App */ = {",
+      "\n\t\t};"
+    );
+    const buildPhases = extractBlock(
+      targetBlock,
+      "buildPhases = (",
       "\n\t\t\t);"
     );
+    const sanitizerBlock = extractBlock(
+      project,
+      "A11B10F82F9B000100000001 /* Sanitize App Bundle Extended Attributes */ = {",
+      "\n\t\t};"
+    );
+    const explicitPhases = buildPhases
+      .split("\n")
+      .filter((line) => line.includes("/*") && line.includes("*/"));
 
     expect(project).toContain("Sanitize App Bundle Extended Attributes");
-    expect(project).toContain('APP_BUNDLE=\\"$TARGET_BUILD_DIR/$WRAPPER_NAME\\"');
-    expect(project).toContain('xattr -cr \\"$APP_BUNDLE\\"');
-    expect(targetBlock.indexOf("504EC3021FED79650016851F /* Resources */")).toBeLessThan(
-      targetBlock.indexOf("Sanitize App Bundle Extended Attributes")
+    expect(sanitizerBlock).toContain('APP_BUNDLE=\\"$TARGET_BUILD_DIR/$WRAPPER_NAME\\"');
+    expect(sanitizerBlock).toContain('xattr -cr \\"$APP_BUNDLE\\"');
+    expect(sanitizerBlock).toContain("alwaysOutOfDate = 1;");
+    expect(sanitizerBlock).toContain("runOnlyForDeploymentPostprocessing = 0;");
+    expect(buildPhases.indexOf("504EC3021FED79650016851F /* Resources */")).toBeLessThan(
+      buildPhases.indexOf(
+        "A11B10F82F9B000100000001 /* Sanitize App Bundle Extended Attributes */"
+      )
+    );
+    expect(explicitPhases[explicitPhases.length - 1]).toContain(
+      "Sanitize App Bundle Extended Attributes"
     );
   });
 

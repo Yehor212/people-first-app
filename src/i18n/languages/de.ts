@@ -661,9 +661,6 @@ export const de: Translations = {
   privacyTitle: "Datenschutz",
   privacyDescription:
     "Kein verstecktes Tracking. Die Gerätesynchronisierung startet erst, wenn du dich anmeldest und die Online-Sicherung aktivierst.",
-  privacyAds: "Belohnungsvideos",
-  privacyAdsHint:
-    "Sie werden nur geladen, wenn du sie aktivierst. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.",
   privacyOptionalServicesOn: "Optionale Dienste aktiv",
   privacyOptionalServicesOff: "Optionale Dienste aus",
   privacyPushNotifications: "Konto-Erinnerungen",
@@ -1692,17 +1689,6 @@ export const de: Translations = {
   claimed: "Abgeholt",
   streakBonus: "Serien-Bonus",
   dailyRewardsTip: "Komm jeden Tag für bessere Belohnungen!",
-  adWatchToEarn: "Optionale Anzeige: für einen kleinen Bonus ansehen",
-  adWatch: "Optionale Anzeige ansehen",
-  adRemaining: "Tägliches optionales Limit gilt",
-  adRewardLabel: "Fügt {treats} Leckerlis hinzu",
-  adRemainingToday: "Taegliches optionales Limit gilt",
-  adPrivacyOptions: "Google-Werbedatenschutzoptionen",
-  adPrivacyOptionsHint:
-    "Ändere oder widerrufe die Google-Werbeeinwilligung, wenn dies erforderlich ist.",
-  adPrivacyOptionsOpen: "Werbeoptionen prüfen",
-  adPrivacyOptionsError:
-    "Die Google-Datenschutzoptionen für Werbung konnten nicht geöffnet werden. Versuche es erneut.",
   innerWorld: "Innere Welt",
   tapToInteract: "Tippen zum Interagieren",
   spinWheel: "Dreh das Rad!",

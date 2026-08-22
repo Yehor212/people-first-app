@@ -93,7 +93,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
 			buildPhases = (
-				7D20A1B62F92000100AA0001 /* Verify Release AdMob App ID */,
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
@@ -183,25 +182,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "APP_BUNDLE=\"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\nif [ -d \"$APP_BUNDLE\" ]; then\n  xattr -cr \"$APP_BUNDLE\"\nfi\n";
-		};
-		7D20A1B62F92000100AA0001 /* Verify Release AdMob App ID */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Verify Release AdMob App ID";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" = \"Release\" ]; then\n  case \"$ZENFLOW_ADMOB_IOS_APP_ID\" in\n    \"\"|\"ca-app-pub-3940256099942544~1458002511\"|\"ca-app-pub-3940256099942544~3347511713\")\n      echo \"error: ZENFLOW_ADMOB_IOS_APP_ID must be injected for Release builds and must not use a Google sample app id.\"\n      exit 1\n      ;;\n  esac\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
