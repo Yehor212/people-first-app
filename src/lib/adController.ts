@@ -9,6 +9,7 @@
 import { isNative, platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { IS_DEV } from '@/lib/env';
+import { areAdsRuntimeEnabled } from '@/lib/adRuntimePolicy';
 import {
   AD_FREQUENCY,
   AD_MOOD_RULES,
@@ -118,11 +119,17 @@ export function disableAds(options: DisableAdsOptions = {}): void {
   resetAdAvailability(options);
 }
 
+function disableUndecidedAdsRuntime(): void {
+  disableAds({ clearPrivacyOptions: true });
+  state.initialized = true;
+}
+
 function getNativeAdPlatform(): AdPlatform | null {
   return platform === 'android' || platform === 'ios' ? platform : null;
 }
 
 export function isRewardedAdsSupported(): boolean {
+  if (!areAdsRuntimeEnabled()) return false;
   const targetPlatform = getNativeAdPlatform();
   return Boolean(isNative && targetPlatform && hasRewardedAdUnitId(targetPlatform));
 }
@@ -214,6 +221,11 @@ async function loadAdMobModule(): Promise<any | null> {
 }
 
 export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsStatus> {
+  if (!areAdsRuntimeEnabled()) {
+    disableUndecidedAdsRuntime();
+    return { canRequestAds: false, privacyOptionsRequired: false, error: 'ads_off' };
+  }
+
   if (!isNative) {
     state.canRequestAds = false;
     state.privacyOptionsRequired = false;
@@ -253,6 +265,11 @@ export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsS
  * Gracefully handles missing SDK (PWA mode).
  */
 export async function initializeAds(): Promise<boolean> {
+  if (!areAdsRuntimeEnabled()) {
+    disableUndecidedAdsRuntime();
+    return false;
+  }
+
   if (state.initialized) return state.sdkAvailable;
   const lifecycleEpoch = adLifecycleEpoch;
 
@@ -320,6 +337,16 @@ export async function initializeAds(): Promise<boolean> {
  * Open the Google UMP privacy options form when the SDK requires a revocation entry point.
  */
 export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
+  if (!areAdsRuntimeEnabled()) {
+    disableUndecidedAdsRuntime();
+    return {
+      opened: false,
+      canRequestAds: false,
+      privacyOptionsRequired: false,
+      error: 'ads_off',
+    };
+  }
+
   if (!isNative || !AdMobPlugin || !AdMobModule || typeof AdMobPlugin.showPrivacyOptionsForm !== 'function') {
     return {
       opened: false,
@@ -476,6 +503,10 @@ export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): 
   allowed: boolean;
   reason?: string;
 } {
+  if (!areAdsRuntimeEnabled()) {
+    return { allowed: false, reason: 'ads_off' };
+  }
+
   if (isSacredAdZone(zone)) {
     return { allowed: false, reason: 'sacred_zone' };
   }
