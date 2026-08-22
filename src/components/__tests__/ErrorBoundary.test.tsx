@@ -41,7 +41,13 @@ vi.mock("@/lib/versionCheck", () => ({
 }));
 
 import { captureOrBuffer } from "@/lib/errorBuffer";
-import { ErrorBoundary, LazyErrorBoundary } from "../ErrorBoundary";
+import { SK } from "@/lib/storageKeys";
+import {
+  ErrorBoundary,
+  LazyErrorBoundary,
+  pruneRetainedBoundaryDiagnostics,
+  retainBoundaryDiagnostic,
+} from "../ErrorBoundary";
 
 function Thrower(): ReactElement {
   throw new Error("boom");
@@ -61,6 +67,7 @@ describe("ErrorBoundary", () => {
     mockForceHardReload.mockClear();
     mockReloadAppSafely.mockReset();
     mockReloadAppSafely.mockResolvedValue(undefined);
+    window.localStorage.clear();
   });
 
   afterEach(() => {
@@ -102,6 +109,136 @@ describe("ErrorBoundary", () => {
     );
 
     await waitFor(() => expect(mockForceHardReload).toHaveBeenCalledTimes(1));
+  });
+
+  it("retains only fixed diagnostics for a private boundary error", () => {
+    const error = new Error("ZF_T172_DIARY_7H2K9Q4M6P8R") as Error & { cause?: unknown };
+    error.cause = new Error("ZF_T172_AUTH_9B6W3J8S2F5K");
+    retainBoundaryDiagnostic(error, "ZF_ERROR_BOUNDARY", { context: "ErrorBoundary" });
+
+    const retained = window.localStorage.getItem(SK.ERROR_LOG) ?? "";
+    expect(retained).not.toContain("ZF_T172_DIARY_7H2K9Q4M6P8R");
+    expect(retained).not.toContain("ZF_T172_AUTH_9B6W3J8S2F5K");
+    expect(retained).toContain("ZF_ERROR_BOUNDARY");
+  });
+
+  it("drops legacy and expired records and caps retained boundary diagnostics at ten", async () => {
+    const current = Array.from({ length: 12 }, (_, index) => ({
+      code: "ZF_ERROR_BOUNDARY",
+      errorName: "Error",
+      stackFingerprint: "stack-present",
+      context: {},
+      appVersion: "2.0.0",
+      dataSchemaVersion: "11",
+      time: new Date(Date.now() - index * 1_000).toISOString(),
+    }));
+    window.localStorage.setItem(SK.ERROR_LOG, JSON.stringify([
+      { message: "legacy private error", time: new Date().toISOString() },
+      {
+        ...current[0],
+        stackFingerprint: "stack-expired",
+        time: new Date(Date.now() - 8 * 24 * 60 * 60 * 1_000).toISOString(),
+      },
+      ...current,
+    ]));
+
+    render(
+      <ErrorBoundary>
+        <Thrower />
+      </ErrorBoundary>,
+    );
+
+    expect(await screen.findByTestId("error-boundary-card")).toBeInTheDocument();
+    const retained = JSON.parse(window.localStorage.getItem(SK.ERROR_LOG) ?? "[]") as Array<{
+      code: string;
+      stackFingerprint: string;
+    }>;
+    expect(retained).toHaveLength(10);
+    expect(JSON.stringify(retained)).not.toContain("legacy private error");
+    expect(JSON.stringify(retained)).not.toContain("stack-expired");
+    expect(retained.at(-1)?.code).toBe("ZF_ERROR_BOUNDARY");
+  });
+
+  it("prunes legacy boundary records without waiting for another render error", () => {
+    window.localStorage.setItem(SK.ERROR_LOG, JSON.stringify([
+      { message: "legacy private boundary error", time: new Date().toISOString() },
+      {
+        code: "ZF_ERROR_BOUNDARY",
+        errorName: "Error",
+        stackFingerprint: "stack-present",
+        context: {},
+        appVersion: "2.0.0",
+        dataSchemaVersion: "11",
+        time: new Date().toISOString(),
+      },
+    ]));
+
+    expect(pruneRetainedBoundaryDiagnostics()).toBe(true);
+
+    expect(JSON.parse(window.localStorage.getItem(SK.ERROR_LOG) ?? "[]")).toEqual([
+      expect.objectContaining({ stackFingerprint: "stack-present" }),
+    ]);
+    expect(window.localStorage.getItem(SK.ERROR_LOG)).not.toContain("legacy private boundary error");
+  });
+
+  it("re-sanitizes poisoned fields in a current-schema boundary record", () => {
+    const retainedCanary = "ZF_T172_RETAINED_BOUNDARY_5N8C3V7X2L4D";
+    window.localStorage.setItem(SK.ERROR_LOG, JSON.stringify([{
+      code: "ZF_ERROR_BOUNDARY",
+      errorName: retainedCanary,
+      stackFingerprint: `stack-${retainedCanary}`,
+      context: {
+        note: retainedCanary,
+        metadata: { userId: retainedCanary },
+      },
+      appVersion: retainedCanary,
+      dataSchemaVersion: retainedCanary,
+      time: new Date().toISOString(),
+    }]));
+
+    expect(pruneRetainedBoundaryDiagnostics()).toBe(true);
+
+    const retained = JSON.parse(window.localStorage.getItem(SK.ERROR_LOG) ?? "[]");
+    expect(JSON.stringify(retained)).not.toContain(retainedCanary);
+    expect(retained).toEqual([
+      expect.objectContaining({
+        code: "ZF_ERROR_BOUNDARY",
+        errorName: "UnknownError",
+        stackFingerprint: "stack-none",
+        context: {
+          note: "[REDACTED]",
+          metadata: { userId: "[REDACTED]" },
+        },
+      }),
+    ]);
+  });
+
+  it("clears a valid JSON non-array boundary payload instead of retaining it", () => {
+    const retainedCanary = "ZF_T172_BOUNDARY_OBJECT_3P7M9K2R5V8Q";
+    window.localStorage.setItem(SK.ERROR_LOG, JSON.stringify({
+      code: "ZF_ERROR_BOUNDARY",
+      note: retainedCanary,
+    }));
+
+    expect(pruneRetainedBoundaryDiagnostics()).toBe(true);
+    expect(window.localStorage.getItem(SK.ERROR_LOG)).toBe("[]");
+    expect(window.localStorage.getItem(SK.ERROR_LOG)).not.toContain(retainedCanary);
+  });
+
+  it("drops a poisoned boundary record with a far-future timestamp", () => {
+    const retainedCanary = "ZF_T172_FUTURE_BOUNDARY_2N8V5K9M3R7Q";
+    window.localStorage.setItem(SK.ERROR_LOG, JSON.stringify([{
+      code: "ZF_ERROR_BOUNDARY",
+      errorName: "Error",
+      stackFingerprint: "stack-future",
+      context: { note: retainedCanary },
+      appVersion: "2.0.0",
+      dataSchemaVersion: "11",
+      time: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000).toISOString(),
+    }]));
+
+    expect(pruneRetainedBoundaryDiagnostics()).toBe(true);
+    expect(window.localStorage.getItem(SK.ERROR_LOG)).toBe("[]");
   });
 
   it("shows a retryable error when durable recovery reload is blocked", async () => {

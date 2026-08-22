@@ -177,7 +177,7 @@ export function useFocusTimer({
       preset,
     };
     if (!safeLocalStorageSet(SK.TIMER_STATE, state)) {
-      logger.error("Failed to save timer state");
+      logger.error("[FocusTimer] Failed to save timer state");
     }
   }, [focusMinutes, breakMinutes, isRunning, isBreak, label, preset]);
 

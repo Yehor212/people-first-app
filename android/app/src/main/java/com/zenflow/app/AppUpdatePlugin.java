@@ -42,7 +42,7 @@ public class AppUpdatePlugin extends Plugin {
             result.put("stalenessDays", info.clientVersionStalenessDays() != null ? info.clientVersionStalenessDays() : 0);
             call.resolve(result);
         }).addOnFailureListener(e -> {
-            call.reject("Failed to check for updates: " + e.getMessage());
+            call.reject("ZF_APP_UPDATE_CHECK_FAILED");
         });
     }
 
@@ -67,13 +67,13 @@ public class AppUpdatePlugin extends Plugin {
                     );
                     call.resolve();
                 } catch (IntentSender.SendIntentException e) {
-                    call.reject("Failed to start update flow: " + e.getMessage());
+                    call.reject("ZF_APP_UPDATE_START_FAILED");
                 }
             } else {
                 call.reject("Immediate update not available");
             }
         }).addOnFailureListener(e -> {
-            call.reject("Failed to get update info: " + e.getMessage());
+            call.reject("ZF_APP_UPDATE_INFO_FAILED");
         });
     }
 
@@ -98,13 +98,13 @@ public class AppUpdatePlugin extends Plugin {
                     );
                     call.resolve();
                 } catch (IntentSender.SendIntentException e) {
-                    call.reject("Failed to start update flow: " + e.getMessage());
+                    call.reject("ZF_APP_UPDATE_START_FAILED");
                 }
             } else {
                 call.reject("Flexible update not available");
             }
         }).addOnFailureListener(e -> {
-            call.reject("Failed to get update info: " + e.getMessage());
+            call.reject("ZF_APP_UPDATE_INFO_FAILED");
         });
     }
 

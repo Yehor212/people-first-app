@@ -130,7 +130,7 @@ async function uploadRawStorageBlob(
 
   try {
     if (blob.size > options.maxSize) {
-      logger.warn("[Storage] " + options.label + " upload rejected: file too large", blob.size);
+      logger.warn("[Storage] Upload rejected: file too large", blob.size);
       throw new Error(options.label + " too large.");
     }
 
@@ -141,13 +141,13 @@ async function uploadRawStorageBlob(
     });
 
     if (uploadError) {
-      logger.warn("[Storage] " + options.label + " upload failed:", uploadError.message);
+      logger.warn("[Storage] Upload failed:", uploadError.message);
       return null;
     }
 
     return { path, signedUrl: "" };
   } catch (err) {
-    logger.warn("[Storage] " + options.label + " upload error:", err);
+    logger.warn("[Storage] Upload error:", err);
     return null;
   }
 }

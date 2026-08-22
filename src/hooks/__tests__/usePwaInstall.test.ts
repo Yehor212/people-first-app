@@ -240,7 +240,7 @@ describe('usePwaInstall', () => {
 
       expect(installResult).toBe(false);
       expect(logger.error).toHaveBeenCalledWith(
-        'Error prompting install:',
+        '[PWA] Error prompting install:',
         expect.any(Error)
       );
     });

@@ -137,7 +137,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
         }
         if (!markImportedBackupLocalOnlyAccess()) {
           if (createdClaim && !clearPendingLocalBackupAccountClaim()) {
-            logger.warn("Backup import account-claim fence could not be cleared after access failure");
+            logger.warn("[Import] Backup import account-claim fence could not be cleared after access failure");
           }
           throw new Error("Backup import local recovery access could not be persisted");
         }
@@ -169,7 +169,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
           return report;
         } catch (error) {
           if (!importCommitted && createdClaim && !clearPendingLocalBackupAccountClaim()) {
-            logger.warn("Backup import account-claim fence could not be cleared after rollback");
+            logger.warn("[Import] Backup import account-claim fence could not be cleared after rollback");
           }
           throw error;
         }
@@ -272,7 +272,7 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
         );
         return;
       }
-      logger.error("Import failed:", error);
+      logger.error("[Import] Import failed:", error);
       setDataStatus(t.importError);
     } finally {
       if (operationGeneration === importGenerationRef.current) {

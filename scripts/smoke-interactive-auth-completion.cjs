@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceCount,
+  sanitizeEvidenceProvider,
+  sanitizeEvidenceReason,
+  sanitizeEvidenceRoute,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
+
 const DEFAULT_INTERACTIVE_AUTH_URL = "https://yehor212.github.io/people-first-app/";
 const SUPPORTED_PROVIDERS = new Set(["google", "facebook", "telegram", "apple"]);
 const OAUTH_REPORT_PARAM_NAMES = [
@@ -229,25 +237,20 @@ function sanitizeInteractiveAuthState(state) {
   const hasAuthGateCheckedState =
     Object.prototype.hasOwnProperty.call(state, "authGateChecked") ||
     Object.prototype.hasOwnProperty.call(state, "googleAuthChecked");
-  const supabaseSessionKeyCount = Array.isArray(state.supabaseSessionKeys)
+  const supabaseSessionKeyCount = sanitizeEvidenceCount(Array.isArray(state.supabaseSessionKeys)
     ? state.supabaseSessionKeys.length
-    : Number(state.supabaseSessionKeyCount || 0);
+    : state.supabaseSessionKeyCount);
   const result = {
-    provider: state.provider,
-    reason: state.reason,
-    providerError: state.providerError,
-    finalUrl: sanitizeUrlForReport(state.finalUrl),
-    finalHost: state.finalHost,
-    finalPath: state.finalPath,
-    appHost: state.appHost,
-    currentHost: state.currentHost,
-    authScreenVisible: state.authScreenVisible,
-    appShellVisible: state.appShellVisible,
+    provider: sanitizeEvidenceProvider(state.provider),
+    ...(state.reason ? { reason: sanitizeEvidenceReason(state.reason) } : {}),
+    ...(state.finalUrl ? { route: sanitizeEvidenceRoute(state.finalUrl) } : {}),
+    ...(typeof state.authScreenVisible === "boolean" ? { authScreenVisible: state.authScreenVisible } : {}),
+    ...(typeof state.appShellVisible === "boolean" ? { appShellVisible: state.appShellVisible } : {}),
     ...(hasAuthGateCheckedState ? { authGateChecked: isAuthGateCheckedState(state) } : {}),
-    hasSupabaseSession: state.hasSupabaseSession,
-    hasOAuthParams: state.hasOAuthParams,
+    ...(typeof state.hasSupabaseSession === "boolean" ? { hasSupabaseSession: state.hasSupabaseSession } : {}),
+    ...(typeof state.hasOAuthParams === "boolean" ? { hasOAuthParams: state.hasOAuthParams } : {}),
     supabaseSessionKeyCount,
-    completed: state.completed,
+    ...(typeof state.completed === "boolean" ? { completed: state.completed } : {}),
   };
 
   return Object.fromEntries(Object.entries(result).filter(([, value]) => value !== undefined));
@@ -279,11 +282,8 @@ async function launchBrowser(chromium, { browserChannel, headless }) {
 
   try {
     return await chromium.launch({ ...options, channel: browserChannel });
-  } catch (error) {
-    console.warn(
-      "[interactive-auth-smoke] Browser channel unavailable, falling back to bundled Chromium:",
-      browserChannel
-    );
+  } catch {
+    console.warn("[interactive-auth-smoke] browser-channel-unavailable; using bundled Chromium");
     return chromium.launch(options);
   }
 }
@@ -433,7 +433,7 @@ async function runInteractiveAuthCompletion(config = parseInteractiveAuthConfig(
       return {
         ok: false,
         reason: "provider_not_visible",
-        providersBefore,
+        availableProviderCount: providersBefore.filter((provider) => SUPPORTED_PROVIDERS.has(provider)).length,
         provider: config.provider,
       };
     }
@@ -481,8 +481,7 @@ async function main() {
 
 if (require.main === module) {
   main().catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(message);
+    console.error(`[interactive-auth-smoke] ${evidenceFailureCode(error)}`);
     process.exit(1);
   });
 }

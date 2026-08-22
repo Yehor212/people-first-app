@@ -19,7 +19,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
         clearTimeout(timeoutRef.current);
         // Flush pending write on unmount
         if (!safeLocalStorageSet(key, pendingValueRef.current)) {
-          logger.error(`Error flushing localStorage key "${key}"`);
+          logger.error(`[Storage] Error flushing localStorage key "${key}"`);
         }
       }
     };
@@ -35,7 +35,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
 
     timeoutRef.current = setTimeout(() => {
       if (!safeLocalStorageSet(key, storedValue)) {
-        logger.error(`Error setting localStorage key "${key}"`);
+        logger.error(`[Storage] Error setting localStorage key "${key}"`);
         // Emit storage error event for user notification
         window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
           detail: {

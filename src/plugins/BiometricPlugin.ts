@@ -14,7 +14,7 @@ export interface BiometricAvailableResult {
 
 export interface BiometricAuthResult {
   success: boolean;
-  error?: string;
+  error?: 'biometric_unavailable' | 'biometric_failed' | 'biometric_not_enrolled' | 'biometric_canceled';
   secret?: string;
 }
 
@@ -31,10 +31,10 @@ class BiometricWeb implements BiometricPluginInterface {
     return { available: false };
   }
   async authenticate(): Promise<BiometricAuthResult> {
-    return { success: false, error: 'Biometric not available on web' };
+    return { success: false, error: 'biometric_unavailable' };
   }
   async enroll(): Promise<BiometricAuthResult> {
-    return { success: false, error: 'Biometric not available on web' };
+    return { success: false, error: 'biometric_unavailable' };
   }
   async unenroll(): Promise<BiometricAuthResult> {
     return { success: true };

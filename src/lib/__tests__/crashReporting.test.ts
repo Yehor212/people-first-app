@@ -1,180 +1,298 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ─── In-memory localStorage mock ────────────────────────────────
 let mockLocalStorage: Record<string, unknown> = {};
 
-vi.mock('@/lib/platform', () => ({ isNative: false }));
-
-vi.mock('../logger', () => ({
+vi.mock("@/lib/platform", () => ({ isNative: false }));
+vi.mock("../logger", () => ({
   logger: { log: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
-
-vi.mock('../safeJson', () => ({
-  safeLocalStorageGet: vi.fn(<T>(key: string, defaultValue: T): T => {
-    return key in mockLocalStorage ? (mockLocalStorage[key] as T) : defaultValue;
-  }),
+vi.mock("../safeJson", () => ({
+  safeLocalStorageGet: vi.fn(<T>(key: string, defaultValue: T): T =>
+    key in mockLocalStorage ? (mockLocalStorage[key] as T) : defaultValue,
+  ),
   safeLocalStorageSet: vi.fn((key: string, value: unknown): boolean => {
     mockLocalStorage[key] = value;
     return true;
   }),
 }));
 
-import { crashReporting, recordError, withCrashReporting } from '@/lib/crashReporting';
-import { logger } from '../logger';
-import { safeLocalStorageSet } from '../safeJson';
-import { SK } from '@/lib/storageKeys';
+import {
+  CRASH_REPORT_RETENTION_MS,
+  crashReporting,
+  pruneRetainedCrashReports,
+  recordError,
+  withCrashReporting,
+} from "@/lib/crashReporting";
+import { logger } from "../logger";
+import { safeLocalStorageSet } from "../safeJson";
+import { SK } from "@/lib/storageKeys";
+
+function retainedReport(index = 0, ageMs = 0) {
+  return {
+    code: "ZF_CRASH_RECORDED",
+    errorName: "Error",
+    stackFingerprint: "stack-present",
+    context: { source: "react", count: index },
+    time: new Date(Date.now() - ageMs).toISOString(),
+  };
+}
 
 beforeEach(() => {
   mockLocalStorage = {};
   vi.clearAllMocks();
 });
 
-// ─── crashReporting.log ─────────────────────────────────────────
-
-describe('crashReporting.log', () => {
-  it('calls logger.log with the message', () => {
-    crashReporting.log('test message');
-    expect(logger.log).toHaveBeenCalledWith('[Crash] Log:', 'test message');
-  });
-});
-
-// ─── crashReporting.recordError ─────────────────────────────────
-
-describe('crashReporting.recordError', () => {
-  it('calls logger.error with the error message', () => {
-    const error = new Error('something failed');
-    crashReporting.recordError(error);
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'something failed');
+describe("crashReporting web boundary", () => {
+  it("logs a fixed code instead of caller-provided text", () => {
+    crashReporting.log("private message");
+    expect(logger.log).toHaveBeenCalledWith("[Crash]");
   });
 
-  it('logs context when provided', () => {
-    const error = new Error('context error');
-    const context = { component: 'SettingsPage' };
-    crashReporting.recordError(error, context);
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Context:', context);
-  });
-
-  it('stores error entry in localStorage', () => {
-    const error = new Error('stored error');
-    crashReporting.recordError(error);
-    expect(safeLocalStorageSet).toHaveBeenCalledWith(
-      SK.CRASH_LOG,
-      expect.arrayContaining([
-        expect.objectContaining({ message: 'stored error' }),
-      ]),
+  it("emits fixed-code diagnostic metadata for an Error", () => {
+    crashReporting.recordError(new Error("private message"));
+    expect(logger.error).toHaveBeenCalledWith(
+      "[Crash]",
+      expect.objectContaining({
+        code: "ZF_CRASH_RECORDED",
+        errorName: "Error",
+        stackFingerprint: expect.stringMatching(/^stack-/),
+      }),
     );
   });
 
-  it('appends to existing entries in localStorage', () => {
+  it("preserves only allowlisted operational context", () => {
+    crashReporting.recordError(new Error("private"), {
+      component: "SettingsPage",
+      source: "react",
+      note: "private note",
+    });
+    expect(logger.error).toHaveBeenCalledWith(
+      "[Crash]",
+      expect.objectContaining({
+        diagnostic: {
+          component: "SettingsPage",
+          source: "react",
+          note: "[REDACTED]",
+        },
+      }),
+    );
+  });
+
+  it("stores only the fixed report schema", () => {
+    crashReporting.recordError(new Error("stored private error"));
+    expect(safeLocalStorageSet).toHaveBeenCalledWith(
+      SK.CRASH_LOG,
+      [expect.objectContaining({
+        code: "ZF_CRASH_RECORDED",
+        errorName: "Error",
+        stackFingerprint: expect.stringMatching(/^stack-/),
+        time: expect.any(String),
+      })],
+    );
+    expect(JSON.stringify(mockLocalStorage[SK.CRASH_LOG])).not.toContain("stored private error");
+  });
+
+  it("appends a new report after current schema-valid entries", () => {
+    mockLocalStorage[SK.CRASH_LOG] = [retainedReport(1)];
+    crashReporting.recordError(new Error("new private error"));
+    expect(mockLocalStorage[SK.CRASH_LOG]).toHaveLength(2);
+  });
+
+  it("drops legacy and expired retained entries", () => {
     mockLocalStorage[SK.CRASH_LOG] = [
-      { message: 'old error', time: '2026-02-16T00:00:00.000Z' },
+      { message: "legacy raw error", time: new Date().toISOString() },
+      retainedReport(1, CRASH_REPORT_RETENTION_MS + 1_000),
+      retainedReport(2),
     ];
-    crashReporting.recordError(new Error('new error'));
-
-    const stored = mockLocalStorage[SK.CRASH_LOG] as Array<{ message: string }>;
-    expect(stored).toHaveLength(2);
-    expect(stored[0].message).toBe('old error');
-    expect(stored[1].message).toBe('new error');
+    crashReporting.recordError(new Error("new private error"));
+    const retained = mockLocalStorage[SK.CRASH_LOG] as unknown[];
+    expect(retained).toHaveLength(2);
+    expect(JSON.stringify(retained)).not.toContain("legacy raw error");
   });
 
-  it('caps entries at 20 (keeps last 20)', () => {
-    const existing = Array.from({ length: 20 }, (_, i) => ({
-      message: `error-${i}`,
-      time: '2026-02-16T00:00:00.000Z',
-    }));
-    mockLocalStorage[SK.CRASH_LOG] = existing;
+  it("prunes legacy and expired reports without waiting for another crash", () => {
+    mockLocalStorage[SK.CRASH_LOG] = [
+      { message: "legacy private error", time: new Date().toISOString() },
+      retainedReport(1, CRASH_REPORT_RETENTION_MS + 1_000),
+      retainedReport(2),
+    ];
 
-    crashReporting.recordError(new Error('error-20'));
+    expect(pruneRetainedCrashReports()).toBe(true);
 
-    const stored = mockLocalStorage[SK.CRASH_LOG] as Array<{ message: string }>;
-    expect(stored).toHaveLength(20);
-    // First entry should be error-1 (error-0 was dropped), last should be error-20
-    expect(stored[0].message).toBe('error-1');
-    expect(stored[19].message).toBe('error-20');
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([
+      expect.objectContaining({
+        code: "ZF_CRASH_RECORDED",
+        errorName: "Error",
+        stackFingerprint: "stack-present",
+        context: { source: "react", count: 2 },
+      }),
+    ]);
   });
 
-  it('does not log context when not provided', () => {
-    crashReporting.recordError(new Error('no context'));
-    // logger.error should be called once (error message only), not with context
-    expect(logger.error).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'no context');
+  it("re-sanitizes poisoned fields in a current-schema retained report", () => {
+    const retainedCanary = "ZF_T172_RETAINED_CRASH_8Q4M7K2R9P6D";
+    mockLocalStorage[SK.CRASH_LOG] = [{
+      code: "ZF_CRASH_RECORDED",
+      errorName: retainedCanary,
+      stackFingerprint: `stack-${retainedCanary}`,
+      context: {
+        note: retainedCanary,
+        metadata: { userId: retainedCanary },
+      },
+      time: new Date().toISOString(),
+    }];
+
+    expect(pruneRetainedCrashReports()).toBe(true);
+
+    const serialized = JSON.stringify(mockLocalStorage[SK.CRASH_LOG]);
+    expect(serialized).not.toContain(retainedCanary);
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([
+      expect.objectContaining({
+        code: "ZF_CRASH_RECORDED",
+        errorName: "UnknownError",
+        stackFingerprint: "stack-none",
+        context: {
+          note: "[REDACTED]",
+          metadata: { userId: "[REDACTED]" },
+        },
+      }),
+    ]);
   });
-});
 
-// ─── crashReporting.setUserId ───────────────────────────────────
+  it("clears a valid JSON non-array retained payload instead of leaving it poisoned", () => {
+    const retainedCanary = "ZF_T172_RETAINED_OBJECT_4K8N2V7Q5M9R";
+    mockLocalStorage[SK.CRASH_LOG] = {
+      code: "ZF_CRASH_RECORDED",
+      note: retainedCanary,
+    };
 
-describe('crashReporting.setUserId', () => {
-  it('logs the user ID', () => {
-    crashReporting.setUserId('user-123');
-    expect(logger.log).toHaveBeenCalledWith('[Crash] User ID set:', 'user-123');
+    expect(pruneRetainedCrashReports()).toBe(true);
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([]);
+    expect(JSON.stringify(mockLocalStorage[SK.CRASH_LOG])).not.toContain(retainedCanary);
   });
 
-  it('logs null when user ID is null', () => {
+  it("drops a poisoned report with a far-future timestamp", () => {
+    const retainedCanary = "ZF_T172_FUTURE_CRASH_5R9M2K7V4Q8N";
+    mockLocalStorage[SK.CRASH_LOG] = [{
+      ...retainedReport(),
+      context: { note: retainedCanary },
+      time: new Date(Date.now() + CRASH_REPORT_RETENTION_MS).toISOString(),
+    }];
+
+    expect(pruneRetainedCrashReports()).toBe(true);
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([]);
+  });
+
+  it("caps retained reports at 20", () => {
+    mockLocalStorage[SK.CRASH_LOG] = Array.from({ length: 20 }, (_, index) =>
+      retainedReport(index),
+    );
+    crashReporting.recordError(new Error("new private error"));
+    const retained = mockLocalStorage[SK.CRASH_LOG] as ReturnType<typeof retainedReport>[];
+    expect(retained).toHaveLength(20);
+    expect(retained[0].stackFingerprint).toBe("stack-present");
+    expect(retained[19].code).toBe("ZF_CRASH_RECORDED");
+  });
+
+  it("retains no context field when none is supplied", () => {
+    crashReporting.recordError(new Error("private"));
+    const retained = mockLocalStorage[SK.CRASH_LOG] as Array<Record<string, unknown>>;
+    expect(retained[0]).not.toHaveProperty("context");
+  });
+
+  it("retains only fixed diagnostics and allowlisted metadata for private errors", () => {
+    const canaries = [
+      "ZF_T172_DIARY_7H2K9Q4M6P8R",
+      "ZF_T172_HABIT_4N8C2V7X5L3D",
+      "ZF_T172_AUTH_9B6W3J8S2F5K",
+      "ZF_T172_IDENTITY_5M7R2Q9T4C8P",
+    ];
+    const privateError = new Error(canaries[0]) as Error & { cause?: unknown };
+    privateError.cause = new Error(canaries[2]);
+    crashReporting.recordError(privateError, {
+      source: "react",
+      note: canaries[1],
+      userId: canaries[3],
+    });
+
+    const serialized = JSON.stringify({
+      logs: vi.mocked(logger.error).mock.calls,
+      retained: mockLocalStorage[SK.CRASH_LOG],
+    });
+    for (const canary of canaries) expect(serialized).not.toContain(canary);
+    expect(serialized).toContain("source");
+    expect(serialized).toContain("react");
+  });
+
+  it("provides an explicit retained-report clear path", () => {
+    mockLocalStorage[SK.CRASH_LOG] = [retainedReport()];
+    expect(crashReporting.clearRetainedReports()).toBe(true);
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([]);
+  });
+
+  it("does not log a raw user ID when identity is set", () => {
+    crashReporting.setUserId("user-123");
+    const serialized = JSON.stringify(vi.mocked(logger.log).mock.calls);
+    expect(serialized).not.toContain("user-123");
+    expect(logger.log).toHaveBeenCalledWith("[CrashIdentity]", { state: "set" });
+  });
+
+  it("records only the cleared identity state for null", () => {
     crashReporting.setUserId(null);
-    expect(logger.log).toHaveBeenCalledWith('[Crash] User ID set:', 'null');
+    expect(logger.log).toHaveBeenCalledWith("[CrashIdentity]", { state: "cleared" });
   });
-});
 
-// ─── crashReporting.setEnabled ──────────────────────────────────
-
-describe('crashReporting.setEnabled', () => {
-  it('logs the enabled state', () => {
+  it("records the reporting enabled flag", () => {
     crashReporting.setEnabled(true);
-    expect(logger.log).toHaveBeenCalledWith('[Crash] Reporting enabled:', true);
+    expect(logger.log).toHaveBeenCalledWith("[CrashReporting]", { enabled: true });
+  });
+
+  it("does not log arbitrary custom key names or values", () => {
+    crashReporting.setCustomKey("private_key", "private value");
+    const serialized = JSON.stringify(vi.mocked(logger.log).mock.calls);
+    expect(serialized).not.toContain("private_key");
+    expect(serialized).not.toContain("private value");
+    expect(logger.log).toHaveBeenCalledWith("[CrashCustomKey]");
   });
 });
 
-// ─── crashReporting.setCustomKey ────────────────────────────────
+describe("recordError helper", () => {
+  it("converts Error input to a fixed diagnostic", () => {
+    recordError(new Error("direct private error"), { source: "test" });
+    const serialized = JSON.stringify(vi.mocked(logger.error).mock.calls);
+    expect(serialized).not.toContain("direct private error");
+    expect(serialized).toContain("ZF_CRASH_RECORDED");
+  });
 
-describe('crashReporting.setCustomKey', () => {
-  it('logs the custom key and value', () => {
-    crashReporting.setCustomKey('app_version', '1.5.0');
-    expect(logger.log).toHaveBeenCalledWith('[Crash] Custom key:', 'app_version', '=', '1.5.0');
+  it("converts string input to a fixed diagnostic", () => {
+    recordError("string private failure");
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain("string private failure");
+  });
+
+  it("converts object input without serializing its values", () => {
+    recordError({ note: "object private failure" });
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain("object private failure");
   });
 });
 
-// ─── recordError (standalone helper) ────────────────────────────
-
-describe('recordError (standalone helper)', () => {
-  it('passes Error objects directly to crashReporting.recordError', () => {
-    const error = new Error('direct error');
-    recordError(error, { source: 'test' });
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'direct error');
-  });
-
-  it('wraps string errors in Error objects', () => {
-    recordError('string failure');
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'string failure');
-  });
-
-  it('wraps non-string non-Error values via JSON.stringify', () => {
-    recordError({ code: 404 });
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', '{"code":404}');
-  });
-});
-
-// ─── withCrashReporting ─────────────────────────────────────────
-
-describe('withCrashReporting', () => {
-  it('passes through successful return value', async () => {
-    const fn = async () => 42;
-    const wrapped = withCrashReporting(fn);
+describe("withCrashReporting", () => {
+  it("passes through a successful return value", async () => {
+    const wrapped = withCrashReporting(async () => 42);
     await expect(wrapped()).resolves.toBe(42);
   });
 
-  it('records error and rethrows on failure', async () => {
-    const fn = async () => {
-      throw new Error('async boom');
-    };
-    const wrapped = withCrashReporting(fn, { action: 'test' });
-
-    await expect(wrapped()).rejects.toThrow('async boom');
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'async boom');
+  it("records a fixed diagnostic and rethrows the original failure", async () => {
+    const wrapped = withCrashReporting(async () => {
+      throw new Error("async private failure");
+    }, { action: "test" });
+    await expect(wrapped()).rejects.toThrow("async private failure");
+    const serialized = JSON.stringify(vi.mocked(logger.error).mock.calls);
+    expect(serialized).not.toContain("async private failure");
+    expect(serialized).toContain("ZF_CRASH_RECORDED");
   });
 
-  it('passes arguments through to the wrapped function', async () => {
-    const fn = async (a: unknown, b: unknown) => (a as string) + '-' + (b as string);
-    const wrapped = withCrashReporting(fn);
-    await expect(wrapped('x', 'y')).resolves.toBe('x-y');
+  it("passes arguments through to the wrapped function", async () => {
+    const wrapped = withCrashReporting(async (a: unknown, b: unknown) => `${a}-${b}`);
+    await expect(wrapped("x", "y")).resolves.toBe("x-y");
   });
 });

@@ -13,7 +13,10 @@ interface UseUserStartedAmbienceAudioOptions {
   canPlay: boolean;
   volume: number;
   mediaSessionTitle: string;
-  loggerScope: string;
+  loggerScope:
+    | "[AuthScreen] Breath ambience"
+    | "[JournalSettings] Diary ambience"
+    | "[OrbPage] Ambience";
 }
 
 export function useUserStartedAmbienceAudio({
@@ -21,7 +24,7 @@ export function useUserStartedAmbienceAudio({
   canPlay,
   volume,
   mediaSessionTitle,
-  loggerScope,
+  loggerScope: _loggerScope,
 }: UseUserStartedAmbienceAudioOptions) {
   const [playbackState, setPlaybackState] = useState<UserStartedAmbiencePlaybackState>("idle");
   const playAttemptRef = useRef(0);
@@ -67,10 +70,10 @@ export function useUserStartedAmbienceAudio({
       shouldPauseRef.current = false;
       mediaElementErroredRef.current = false;
       clearAppAudioMediaSession();
-      if (error) logger.warn(loggerScope, "Playback failed:", error);
+      if (error) logger.warn("[Audio] Playback failed:", error);
       setMountedPlaybackState("error");
     },
-    [clearPendingPlaybackTimeout, getAudio, loggerScope, setMountedPlaybackState]
+    [clearPendingPlaybackTimeout, getAudio, setMountedPlaybackState]
   );
 
   const toggle = useCallback(() => {
@@ -121,7 +124,7 @@ export function useUserStartedAmbienceAudio({
         shouldPauseRef.current = false;
         mediaElementErroredRef.current = false;
         clearAppAudioMediaSession();
-        logger.warn(loggerScope, "Playback failed:", error);
+        logger.warn("[Audio] Playback failed:", error);
         setPlaybackState("error");
       });
   }, [
@@ -129,7 +132,6 @@ export function useUserStartedAmbienceAudio({
     clearPendingPlaybackTimeout,
     fail,
     getAudio,
-    loggerScope,
     mediaSessionTitle,
     playbackState,
     setMountedPlaybackState,
@@ -200,7 +202,7 @@ export function useUserStartedAmbienceAudio({
         pauseListener = listener;
       })
       .catch((error) => {
-        logger.warn(loggerScope, "Failed to register ambience pause listener:", error);
+        logger.warn("[Audio] Failed to register ambience pause listener:", error);
       });
 
     return () => {
@@ -209,7 +211,7 @@ export function useUserStartedAmbienceAudio({
       window.removeEventListener("pagehide", stopOnPageHide);
       if (pauseListener) void pauseListener.remove();
     };
-  }, [loggerScope, stop]);
+  }, [stop]);
 
   useEffect(() => {
     mountedRef.current = true;

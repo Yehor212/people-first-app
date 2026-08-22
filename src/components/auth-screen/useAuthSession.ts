@@ -7,6 +7,7 @@ import { App } from "@capacitor/app";
 import { logger } from "@/lib/logger";
 import { getAuthUserDisplayName } from "@/lib/authUser";
 import type { AuthProvider, PhoneStep } from "./types";
+import { AUTH_DIAGNOSTIC_CODES } from "./authDiagnosticEvidence";
 
 interface UseAuthSessionOptions {
   onComplete: (userData: { name: string; email: string }) => void;
@@ -79,7 +80,7 @@ export function useAuthSession({
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
           logger.error("[Auth] Session check error:", sessionError);
-          setDebugInfo(`Session error: ${sessionError.message}`);
+          setDebugInfo(AUTH_DIAGNOSTIC_CODES.SESSION_FAILURE);
           return;
         }
         if (data.session?.user) {
@@ -90,7 +91,7 @@ export function useAuthSession({
         }
       } catch (err) {
         logger.error("[Auth] Unexpected error checking session:", err);
-        setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+        setDebugInfo(AUTH_DIAGNOSTIC_CODES.SESSION_FAILURE);
       }
     };
     void checkSession();

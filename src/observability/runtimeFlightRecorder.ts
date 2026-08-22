@@ -1,5 +1,7 @@
 import { storageGetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { sanitizeDiagnosticRoute } from "@/lib/diagnosticPrivacy";
+import { registerAccountBoundaryRuntimeReset } from "@/storage/accountBoundaryRuntime";
 import {
   applyRuntimePerformanceMode,
   applyRuntimePerformanceStartup,
@@ -8,6 +10,7 @@ import {
   readStoredRuntimePerformanceMode,
   type RuntimePerformanceModeSnapshot,
 } from "./runtimePerformanceMode";
+import { subscribeDiagnosticRouteChange } from "./diagnosticRouteObserver";
 
 const MAX_ENTRIES = 80;
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -54,6 +57,11 @@ interface RuntimeFlightRecorder {
   };
   markRoute: (route?: string) => void;
 }
+
+let activeFlightRecorderDispose: (() => void) | null = null;
+let activeFlightRecorderObservers: PerformanceObserver[] = [];
+let activeRuntimeGuardObservers: PerformanceObserver[] = [];
+let activeRuntimeGuardTimeout: number | null = null;
 
 interface RuntimePerformanceGuard {
   enabled: true;
@@ -139,32 +147,47 @@ export function shouldEnableRuntimePerformanceGuard(search: string): boolean {
 }
 
 function currentRoute(): string {
-  return `${window.location.pathname}${window.location.search}`;
+  return sanitizeDiagnosticRoute(window.location.href);
 }
+
+function sanitizeFlightEntry(entry: LoAFEntry): RuntimePerfEntry["scripts"] {
+  return (entry.scripts || []).slice(0, 5).map((script) => ({
+    duration: Number.isFinite(script.duration) ? script.duration : 0,
+    invoker: "observed",
+    invokerType: "observed",
+    sourceFunctionName: "observed",
+    sourceURL: "[REDACTED]",
+    forcedStyleAndLayoutDuration: Number.isFinite(script.forcedStyleAndLayoutDuration)
+      ? script.forcedStyleAndLayoutDuration
+      : undefined,
+  }));
+}
+
+function clearRuntimeFlightRecorderState(): void {
+  if (typeof window === "undefined") return;
+  window.__zenflowRuntimePerf?.entries.splice(0);
+  for (const observer of activeFlightRecorderObservers) observer.disconnect();
+  activeFlightRecorderObservers = [];
+  activeFlightRecorderDispose?.();
+  activeFlightRecorderDispose = null;
+  for (const observer of activeRuntimeGuardObservers) observer.disconnect();
+  activeRuntimeGuardObservers = [];
+  if (activeRuntimeGuardTimeout !== null) {
+    window.clearTimeout(activeRuntimeGuardTimeout);
+    activeRuntimeGuardTimeout = null;
+  }
+  delete window.__zenflowRuntimePerf;
+  delete window.__zenflowRuntimePerfGuard;
+  clearRuntimePerformanceMode({ clearDevice: true });
+}
+
+registerAccountBoundaryRuntimeReset(clearRuntimeFlightRecorderState);
 
 function pushEntry(store: RuntimeFlightRecorder, entry: RuntimePerfEntry): void {
   store.entries.push(entry);
   if (store.entries.length > MAX_ENTRIES) {
     store.entries.splice(0, store.entries.length - MAX_ENTRIES);
   }
-}
-
-function patchHistory(store: RuntimeFlightRecorder): void {
-  const patchMethod = <T extends "pushState" | "replaceState">(method: T) => {
-    const original = window.history[method];
-    window.history[method] = function patchedHistoryMethod(
-      this: History,
-      ...args: Parameters<History[T]>
-    ) {
-      const result = original.apply(this, args);
-      queueMicrotask(() => store.markRoute());
-      return result;
-    } as History[T];
-  };
-
-  patchMethod("pushState");
-  patchMethod("replaceState");
-  window.addEventListener("popstate", () => store.markRoute(), { passive: true });
 }
 
 export function installRuntimeFlightRecorder(): boolean {
@@ -212,10 +235,11 @@ export function installRuntimeFlightRecorder(): boolean {
       };
     },
     markRoute: (route = currentRoute()) => {
-      store.route = route;
+      const safeRoute = sanitizeDiagnosticRoute(route);
+      store.route = safeRoute;
       pushEntry(store, {
         kind: "route",
-        route,
+        route: safeRoute,
         startTime: performance.now(),
         duration: 0,
       });
@@ -223,14 +247,15 @@ export function installRuntimeFlightRecorder(): boolean {
   };
 
   window.__zenflowRuntimePerf = store;
-  patchHistory(store);
+  activeFlightRecorderDispose = subscribeDiagnosticRouteChange(() => store.markRoute());
   store.markRoute();
 
   const supportedEntryTypes = PerformanceObserver.supportedEntryTypes || [];
 
   try {
     if (supportedEntryTypes.includes("longtask")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerf !== store) return;
         for (const entry of list.getEntries()) {
           pushEntry(store, {
             kind: "longtask",
@@ -239,7 +264,9 @@ export function installRuntimeFlightRecorder(): boolean {
             duration: entry.duration,
           });
         }
-      }).observe({ type: "longtask", buffered: true });
+      });
+      activeFlightRecorderObservers.push(observer);
+      observer.observe({ type: "longtask", buffered: true });
     }
   } catch {
     // Observability must never block app startup.
@@ -247,7 +274,8 @@ export function installRuntimeFlightRecorder(): boolean {
 
   try {
     if (supportedEntryTypes.includes("long-animation-frame")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerf !== store) return;
         for (const entry of list.getEntries() as LoAFEntry[]) {
           pushEntry(store, {
             kind: "long-animation-frame",
@@ -257,10 +285,12 @@ export function installRuntimeFlightRecorder(): boolean {
             blockingDuration: entry.blockingDuration,
             renderStart: entry.renderStart,
             styleAndLayoutStart: entry.styleAndLayoutStart,
-            scripts: (entry.scripts || []).slice(0, 5),
+            scripts: sanitizeFlightEntry(entry),
           });
         }
-      }).observe({ type: "long-animation-frame", buffered: true });
+      });
+      activeFlightRecorderObservers.push(observer);
+      observer.observe({ type: "long-animation-frame", buffered: true });
     }
   } catch {
     // Observability must never block app startup.
@@ -335,10 +365,11 @@ export function installRuntimePerformanceGuard(): boolean {
     applyRuntimePerformanceMode(stored);
   } else if (readStoredRuntimePerformanceDeviceGuard()) {
     applyRuntimePerformanceStartup();
-    window.setTimeout(() => {
+    activeRuntimeGuardTimeout = window.setTimeout(() => {
       if (!state.activated && document.documentElement.dataset.runtimePerf === "startup") {
         clearRuntimePerformanceMode();
       }
+      activeRuntimeGuardTimeout = null;
     }, STARTUP_WARMUP_MS);
   }
 
@@ -350,7 +381,8 @@ export function installRuntimePerformanceGuard(): boolean {
 
   try {
     if (supportedEntryTypes.includes("long-animation-frame")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerfGuard !== state) return;
         for (const entry of list.getEntries()) {
           const duration = entry.duration || 0;
           const blockingDuration = (entry as LoAFEntry).blockingDuration || 0;
@@ -378,7 +410,9 @@ export function installRuntimePerformanceGuard(): boolean {
             );
           }
         }
-      }).observe({ type: "long-animation-frame", buffered: true });
+      });
+      activeRuntimeGuardObservers.push(observer);
+      observer.observe({ type: "long-animation-frame", buffered: true });
     }
   } catch {
     // Runtime perf guard must never block app startup.
@@ -386,7 +420,8 @@ export function installRuntimePerformanceGuard(): boolean {
 
   try {
     if (supportedEntryTypes.includes("longtask")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerfGuard !== state) return;
         for (const entry of list.getEntries()) {
           const duration = entry.duration || 0;
           if ((entry.startTime || 0) < state.startedAt) {
@@ -399,7 +434,9 @@ export function installRuntimePerformanceGuard(): boolean {
             activateRuntimePerformanceGuard(state, "longtask", duration);
           }
         }
-      }).observe({ type: "longtask", buffered: true });
+      });
+      activeRuntimeGuardObservers.push(observer);
+      observer.observe({ type: "longtask", buffered: true });
     }
   } catch {
     // Runtime perf guard must never block app startup.

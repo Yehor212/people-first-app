@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { SyncHealthCard } from "../SyncHealthCard";
-import { SYNC_HEALTH_RECEIPT_EVENT } from "@/observability/syncHealthRecorder";
+import {
+  SYNC_HEALTH_RECEIPT_EVENT,
+  SYNC_HEALTH_RESET_EVENT,
+} from "@/observability/syncHealthRecorder";
 
 const mocks = vi.hoisted(() => ({
   cloudEnabled: true,
@@ -270,6 +273,19 @@ describe("SyncHealthCard", () => {
 
     expect(screen.getByTestId("sync-health-receipt")).toHaveTextContent("Journal synced");
     expect(screen.getByTestId("sync-recent-activity")).toHaveTextContent("Journal synced");
+  });
+
+  it("clears retained receipt state when the account-boundary reset fires", () => {
+    render(<SyncHealthCard />);
+    fireEvent(window, new CustomEvent(SYNC_HEALTH_RECEIPT_EVENT, {
+      detail: { kind: "processed", source: "queue", actionType: "SYNC_JOURNAL_ENTRY" },
+    }));
+    expect(screen.getByTestId("sync-health-receipt")).toBeInTheDocument();
+
+    fireEvent(window, new Event(SYNC_HEALTH_RESET_EVENT));
+
+    expect(screen.getByTestId("sync-health-receipt")).toHaveTextContent("Ready");
+    expect(screen.queryByTestId("sync-recent-activity")).not.toBeInTheDocument();
   });
 
   it("shows blocked saved-action receipts without exposing queued payloads", () => {

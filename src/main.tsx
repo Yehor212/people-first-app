@@ -1,6 +1,7 @@
 // MUST be first import — runs before any other module (incl. React) loads.
 // Decodes GH Pages 404.html SPA redirect URL back to canonical path.
 import "./lib/spaRedirect";
+import "./lib/diagnosticConsoleBootstrap";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -32,12 +33,14 @@ import {
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
-import { isChunkLoadMessage } from "./lib/chunkErrorDetection";
+import { pruneRetainedBoundaryDiagnostics } from "./components/ErrorBoundary";
+import { getErrorMessage, isChunkLoadMessage } from "./lib/chunkErrorDetection";
 import { isTrustedServiceWorkerMessage } from "./lib/serviceWorkerMessages";
 import { SK } from "./lib/storageKeys";
 import { safeLocalStorageGet, safeLocalStorageSet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer } from "./lib/errorBuffer";
+import { pruneRetainedCrashReports } from "./lib/crashReporting";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
 import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
 import {
@@ -50,8 +53,10 @@ import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
 
-// The bounded error buffer supports local recovery diagnostics without enabling
-// optional external crash reporting before the user has a corresponding choice.
+// Drop legacy raw records and enforce the current retention window before any
+// new runtime failure can be recorded.
+pruneRetainedBoundaryDiagnostics();
+pruneRetainedCrashReports();
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
@@ -263,9 +268,12 @@ void resetLocalDevPwaCaches();
 // These catch errors that escape React's error boundary
 window.addEventListener("unhandledrejection", (event) => {
   if (event.defaultPrevented) return;
+  // The bounded buffer and fixed-code logger are the canonical diagnostics.
+  // Prevent the browser/WebView from additionally printing the raw reason.
+  event.preventDefault();
 
   const reason = event.reason;
-  const message = reason instanceof Error ? reason.message : String(reason);
+  const message = getErrorMessage(reason);
 
   if (isChunkLoadMessage(message)) {
     event.preventDefault();
@@ -273,7 +281,7 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 
   // Suppress generic browser/Capacitor permission rejections (e.g. notification denied)
-  if (reason === "Rejected" || (reason instanceof Error && reason.message === "Rejected")) {
+  if (reason === "Rejected" || message === "Rejected") {
     event.preventDefault();
     logger.warn("[Global] Suppressed generic rejection:", reason);
     return;
@@ -281,15 +289,22 @@ window.addEventListener("unhandledrejection", (event) => {
 
   logger.error("[Global] Unhandled promise rejection:", reason);
   // Keep a bounded in-memory record for the current runtime only.
-  if (reason instanceof Error) {
-    captureOrBuffer(reason, { type: "unhandledrejection" });
+  try {
+    if (reason instanceof Error) {
+      captureOrBuffer(reason, { type: "unhandledrejection" });
+    }
+  } catch {
+    logger.error("[Global] Unhandled rejection classification failed");
   }
 });
 
 window.addEventListener("error", (event) => {
   if (event.defaultPrevented) return;
+  // React 18 and browsers otherwise forward the original Error to console,
+  // bypassing the diagnostic privacy boundary below.
+  event.preventDefault();
 
-  const message = event.error instanceof Error ? event.error.message : event.message;
+  const message = getErrorMessage(event.error) ?? getErrorMessage(event.message);
   if (isChunkLoadMessage(message)) {
     event.preventDefault();
     return;
@@ -297,8 +312,12 @@ window.addEventListener("error", (event) => {
 
   logger.error("[Global] Uncaught error:", event.error || event.message);
   // Send to Sentry (buffered if Sentry not yet loaded)
-  if (event.error instanceof Error) {
-    captureOrBuffer(event.error, { type: "uncaught" });
+  try {
+    if (event.error instanceof Error) {
+      captureOrBuffer(event.error, { type: "uncaught" });
+    }
+  } catch {
+    logger.error("[Global] Uncaught error classification failed");
   }
 });
 
@@ -308,13 +327,12 @@ window.addEventListener("error", (event) => {
 // with the Error. Dispatch the same CHUNK_LOAD_ERROR_EVENT the dialog listens for.
 // Source: vite.dev/guide/build.html#load-error-handling, vitejs/vite#11804.
 window.addEventListener("vite:preloadError", (event) => {
-  const message = event.payload?.message || "vite:preloadError";
-  logger.warn("[Vite] Preload error:", message);
   // Prevent Vite's default auto-reload — dialog gives user control (see research §4).
   event.preventDefault();
+  logger.warn("[Vite] Preload error");
   window.dispatchEvent(
     new CustomEvent("zenflow:chunk-load-error", {
-      detail: { message, chunk: "preload", timestamp: Date.now() },
+      detail: { message: "ZF_VITE_PRELOAD_ERROR", chunk: "preload", timestamp: Date.now() },
     })
   );
 });

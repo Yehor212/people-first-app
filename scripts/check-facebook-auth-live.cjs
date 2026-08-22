@@ -3,6 +3,10 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const {
+  sanitizeEvidenceReason,
+  sanitizeEvidenceStatus,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const ENV_FILE_NAMES = [".env.local", ".env", ".env.production", ".env.example"];
 const SAFE_ENV_FILE_KEYS = new Set([
@@ -22,6 +26,29 @@ function line(status, message) {
 
 function buildResult(status, message, exitCode, extra = {}) {
   return { status, message, exitCode, ...extra };
+}
+
+function sanitizeFacebookResult(result, required = false) {
+  const status = sanitizeEvidenceStatus(result?.status);
+  const reason = sanitizeEvidenceReason(result?.reason);
+  const message = status === "PASS"
+    ? reason === "facebook_redirect_reachable"
+      ? "Facebook OAuth redirects to Meta; browser page inspection was unavailable."
+      : "Facebook OAuth reaches Meta without an immediate invalid-scope error."
+    : status === "FAIL"
+      ? reason === "facebook_invalid_scope_email"
+      ? "Facebook rejected the configured email scope."
+      : "Facebook OAuth verification failed."
+      : "Facebook OAuth verification was incomplete.";
+
+  return {
+    status,
+    message,
+    exitCode: status === "FAIL" ? (required ? 1 : 0) : status === "UNVERIFIED" ? (required ? 2 : 0) : 0,
+    ok: status === "PASS",
+    ...(reason !== "unknown" ? { reason } : {}),
+    ...(hostnameMatchesFacebook(result?.finalHost) ? { finalHost: "facebook.com" } : {}),
+  };
 }
 
 function isPlaceholderValue(key, value) {
@@ -410,7 +437,17 @@ async function checkFacebookAuthLive({
       timeoutMs: Number(env.ZENFLOW_FACEBOOK_AUTH_LIVE_TIMEOUT_MS || 45_000),
     });
   } catch (error) {
-    const fallbackResult = await probeFacebookOAuthRedirect({ authorizeUrl, fetchImpl });
+    let fallbackResult;
+    try {
+      fallbackResult = await probeFacebookOAuthRedirect({ authorizeUrl, fetchImpl });
+    } catch {
+      return buildResult(
+        "UNVERIFIED",
+        "Facebook OAuth verification was incomplete.",
+        required ? 2 : 0,
+        { ok: false, reason: "fetch_unavailable" },
+      );
+    }
     if (fallbackResult.status === "PASS") return fallbackResult;
 
     const reason = error instanceof Error && error.name === "TimeoutError" ? "timed out" : "failed";
@@ -425,9 +462,7 @@ async function checkFacebookAuthLive({
     );
   }
 
-  if (result.status === "PASS") return result;
-  if (result.status === "FAIL") return { ...result, exitCode: required ? 1 : 0 };
-  return { ...result, exitCode: required ? 2 : 0 };
+  return sanitizeFacebookResult(result, required);
 }
 
 function printResult(result) {
@@ -438,8 +473,12 @@ function printResult(result) {
 }
 
 async function main() {
-  const result = await checkFacebookAuthLive();
-  printResult(result);
+  try {
+    const result = await checkFacebookAuthLive();
+    printResult(result);
+  } catch {
+    printResult(buildResult("UNVERIFIED", "Facebook OAuth verification was incomplete.", 2));
+  }
 }
 
 if (require.main === module) {
@@ -457,4 +496,5 @@ module.exports = {
   parseSafeEnvFiles,
   probeFacebookOAuthPage,
   probeFacebookOAuthRedirect,
+  sanitizeFacebookResult,
 };

@@ -282,9 +282,6 @@ export function AuthScreen({
                     </button>
                   </div>
                 )}
-                {IS_DEV && session.debugInfo && (
-                  <p className="text-xs text-muted-foreground mt-2">{session.debugInfo}</p>
-                )}
                 {IS_DEV && (
                   <button
                     type="button"

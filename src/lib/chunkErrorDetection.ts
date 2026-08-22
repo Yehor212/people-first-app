@@ -34,12 +34,16 @@ const CHUNK_ERROR_PHRASES = [
   "Unable to preload CSS",
 ] as const;
 
-function getErrorMessage(error: unknown): string | null {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object" && "message" in error) {
-    const message = (error as { message?: unknown }).message;
-    return typeof message === "string" ? message : null;
+export function getErrorMessage(error: unknown): string | null {
+  try {
+    if (error instanceof Error) return typeof error.message === "string" ? error.message : null;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object" && "message" in error) {
+      const message = (error as { message?: unknown }).message;
+      return typeof message === "string" ? message : null;
+    }
+  } catch {
+    return null;
   }
   return null;
 }

@@ -1,4 +1,10 @@
-import { PrivacySettings } from "@/types";
+import type {
+  InsightSeverity,
+  InsightType,
+  MoodType,
+  PrivacySettings,
+} from "@/types";
+import type { AchievementId } from "@/lib/gamification";
 import { logger } from "./logger";
 import { IS_DEV } from "@/lib/env";
 import { SK, SSK } from "@/lib/storageKeys";
@@ -12,6 +18,137 @@ declare global {
 
 /** Channel through which a habit was added — PII-free enum for §15 activation funnel. */
 export type HabitCreateSource = "custom" | "template" | "quick-pick";
+
+const ANALYTICS_EVENTS = new Set([
+  "page_view",
+  "sign_in",
+  "sign_out",
+  "habit_created",
+  "habit_completed",
+  "habit_detail_opened",
+  "insight_strip_rendered",
+  "mood_tracked",
+  "focus_session",
+  "achievement_unlocked",
+  "data_exported",
+  "data_imported",
+]);
+
+const PAGE_NAMES = new Set(["home", "diary", "habits", "focus", "settings", "stats"]);
+const HABIT_CREATE_SOURCES = new Set<HabitCreateSource>(["custom", "template", "quick-pick"]);
+const MOODS = new Set<MoodType>(["great", "good", "okay", "bad", "terrible"]);
+const INSIGHT_TYPES = new Set<InsightType>([
+  "mood-habit-correlation",
+  "focus-pattern",
+  "habit-timing",
+  "mood-tag",
+  "energy-pattern",
+]);
+const INSIGHT_SEVERITIES = new Set<InsightSeverity>([
+  "info",
+  "tip",
+  "warning",
+  "celebration",
+]);
+const ACHIEVEMENT_IDS = new Set<AchievementId>([
+  "first_mood",
+  "first_habit",
+  "first_focus",
+  "first_gratitude",
+  "streak_3",
+  "streak_7",
+  "streak_30",
+  "streak_100",
+  "habit_master",
+  "focus_warrior",
+  "grateful_heart",
+  "mood_tracker",
+  "perfect_week",
+  "zen_master",
+  "productivity_beast",
+  "consistency_king",
+  "wellness_warrior",
+]);
+
+function boundedInteger(value: unknown, maximum = 1_000_000): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= maximum
+    ? value
+    : null;
+}
+
+function analyticsPayload(
+  event: string,
+  properties?: Record<string, unknown>,
+): Record<string, unknown> | undefined | null {
+  if (!ANALYTICS_EVENTS.has(event)) return null;
+  const input = properties ?? {};
+
+  switch (event) {
+    case "sign_in":
+    case "sign_out":
+    case "data_exported":
+      return undefined;
+    case "page_view":
+      return typeof input.page === "string" && PAGE_NAMES.has(input.page)
+        ? { page: input.page }
+        : null;
+    case "habit_created": {
+      const total = boundedInteger(input.total_habits, 10_000);
+      if (
+        typeof input.source !== "string" ||
+        !HABIT_CREATE_SOURCES.has(input.source as HabitCreateSource) ||
+        total === null ||
+        typeof input.ever_first !== "boolean" ||
+        typeof input.session_first !== "boolean"
+      ) return null;
+      return {
+        source: input.source,
+        total_habits: total,
+        ever_first: input.ever_first,
+        session_first: input.session_first,
+      };
+    }
+    case "habit_completed": {
+      const total = input.total_habits === undefined
+        ? undefined
+        : boundedInteger(input.total_habits, 10_000);
+      if (total === null) return null;
+      return total === undefined ? undefined : { total_habits: total };
+    }
+    case "habit_detail_opened": {
+      const total = boundedInteger(input.total_habits, 10_000);
+      return total === null ? null : { total_habits: total };
+    }
+    case "insight_strip_rendered":
+      return (
+        typeof input.insight_type === "string" &&
+        INSIGHT_TYPES.has(input.insight_type as InsightType) &&
+        typeof input.insight_severity === "string" &&
+        INSIGHT_SEVERITIES.has(input.insight_severity as InsightSeverity)
+      )
+        ? { insight_type: input.insight_type, insight_severity: input.insight_severity }
+        : null;
+    case "mood_tracked":
+      return typeof input.mood === "string" && MOODS.has(input.mood as MoodType)
+        ? { mood: input.mood }
+        : null;
+    case "focus_session": {
+      const duration = boundedInteger(input.duration_minutes, 24 * 60);
+      return duration === null ? null : { duration_minutes: duration };
+    }
+    case "achievement_unlocked":
+      return typeof input.achievement === "string" &&
+        ACHIEVEMENT_IDS.has(input.achievement as AchievementId)
+        ? { achievement: input.achievement }
+        : null;
+    case "data_imported": {
+      const count = boundedInteger(input.entry_count);
+      return count === null ? null : { entry_count: count };
+    }
+    default:
+      return null;
+  }
+}
 
 /**
  * Read-and-claim a one-shot flag. Returns `true` the first time the key is
@@ -79,16 +216,22 @@ class Analytics {
   track(event: string, properties?: Record<string, unknown>) {
     if (!this.enabled) return;
 
+    const safeProperties = analyticsPayload(event, properties);
+    if (safeProperties === null) {
+      logger.warn("[AnalyticsBoundary]");
+      return;
+    }
+
     // Only log to console in development
     if (IS_DEV) {
-      logger.log("[Analytics]", event, properties);
+      logger.log("[Analytics]", { event });
     }
 
     // In production, send to your analytics service
     // Example: Google Analytics, Mixpanel, etc.
     try {
       if (typeof window !== "undefined" && window.gtag) {
-        window.gtag("event", event, properties);
+        window.gtag("event", event, safeProperties);
       }
     } catch (error) {
       logger.error("[Analytics] Error:", error);
@@ -127,9 +270,9 @@ class Analytics {
     });
   }
 
-  habitCompleted(habitName: string, totalHabits?: number) {
-    // SECURITY: Only send the length — habit names are user-typed and may contain PII
-    const payload: Record<string, unknown> = { habit_length: habitName.length };
+  habitCompleted(_habitName: string, totalHabits?: number) {
+    // Habit content and content-derived metadata never enter analytics.
+    const payload: Record<string, unknown> = {};
     if (typeof totalHabits === "number") {
       // §15 retention cohort — aggregators filter ≥3 to compute 7-day completion rate
       payload.total_habits = totalHabits;
@@ -147,14 +290,14 @@ class Analytics {
    * `insightType` / `insightSeverity` are finite enums from the V1 insights engine;
    * no user-typed text is ever emitted.
    */
-  insightStripRendered(insightType: string, insightSeverity: string) {
+  insightStripRendered(insightType: InsightType, insightSeverity: InsightSeverity) {
     this.track("insight_strip_rendered", {
       insight_type: insightType,
       insight_severity: insightSeverity,
     });
   }
 
-  moodTracked(mood: string) {
+  moodTracked(mood: MoodType) {
     this.track("mood_tracked", { mood });
   }
 
@@ -162,7 +305,7 @@ class Analytics {
     this.track("focus_session", { duration_minutes: minutes });
   }
 
-  achievementUnlocked(achievementId: string) {
+  achievementUnlocked(achievementId: AchievementId) {
     this.track("achievement_unlocked", { achievement: achievementId });
   }
 

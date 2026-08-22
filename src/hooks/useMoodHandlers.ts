@@ -87,7 +87,7 @@ export function useMoodHandlers({ updateChallengeProgress, rewardsEnabled = true
 
       triggerSync();
       void syncMood(entry).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
-      logger.log("Quick mood logged from notification:", mood);
+      logger.log("[Mood] Quick mood logged from notification:", mood);
     },
     [rewardUser, rewardsEnabled, setMoods]
   );

@@ -152,11 +152,11 @@ async function suspendAndRevokeOwnedPushInstall(
       return false;
     }
     if (data !== 1) {
-      logger.error(
-        isValidRevocationCount(data)
-          ? "[Push] Push rollback did not remove the claimed installation"
-          : "[Push] Push revocation returned an invalid result",
-      );
+      if (isValidRevocationCount(data)) {
+        logger.error("[Push] Push rollback did not remove the claimed installation");
+      } else {
+        logger.error("[Push] Push revocation returned an invalid result");
+      }
       return false;
     }
     return true;
@@ -505,11 +505,11 @@ async function removePushTokenNow(
     }
   } else {
     revocationOwnerUserId = expectedOwnerUserId ?? (await getCurrentUserId());
-    logger.warn(
-      tokenRead.ok && installRead.ok
-        ? "[Push] Local identifiers are absent; remote revocation cannot be proven"
-        : "[Push] Local identifiers are unavailable; remote revocation cannot be proven"
-    );
+    if (tokenRead.ok && installRead.ok) {
+      logger.warn("[Push] Local identifiers are absent; remote revocation cannot be proven");
+    } else {
+      logger.warn("[Push] Local identifiers are unavailable; remote revocation cannot be proven");
+    }
   }
 
   let native: PushRevocationResult["native"] = "not-applicable";
@@ -666,7 +666,8 @@ export async function setupPushListeners(
       await PushNotifications.addListener("pushNotificationReceived", (notification) => {
         if (activePushListenerEpoch !== nextListenerEpoch) return;
         const kind = readPushNotificationKind(notification);
-        logger.log(kind ? `[Push] Foreground ${kind} notification` : "[Push] Foreground notification");
+        if (kind) logger.log("[Push] Foreground typed notification");
+        else logger.log("[Push] Foreground notification");
       }),
     );
     nextHandles.push(
