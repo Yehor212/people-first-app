@@ -36,6 +36,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(ScreenSecurityPlugin.class);
         registerPlugin(StatusBarStylePlugin.class);
         registerPlugin(PushRealmPlugin.class);
+        registerPlugin(LocalePlugin.class);
 
         super.onCreate(savedInstanceState);
         enableNativeEdgeToEdge();
