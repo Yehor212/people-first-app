@@ -22,7 +22,7 @@ ZenFlow Context MCP answers: "Which ZenFlow repo context pack should I retrieve,
 - `architecture`: app structure, state, storage, sync, Supabase boundaries, and `docs/ai/SYNC_CONTRACT.md`.
 - `ui`: visual, motion, accessibility, i18n/RTL, mobile parity.
 - `verification`: CI, quality gates, evidence rules.
-- `governance`: exact-ten roles, protected changes, source freshness, and owner escalation.
+- `governance`: SOLO execution, protected changes, source freshness, and owner escalation.
 - `external_docs`: route framework/library questions to Context7 plus repo package versions.
 
 ## How Agents Should Use It
@@ -32,12 +32,11 @@ Repository path:
 1. `npm run ai:context:auto` calls `tools/zenflow-context/auto-context.mjs` for the current task.
 2. The script writes `.codex/auto-context/current.md` and `.codex/auto-context/current.json`.
 3. `npm run rag:preflight -- "<task>"` writes the focused RAG pack used by the project working agreement.
-4. The coordinator passes only the task-relevant cited context to specialists; generated packs remain routing context, never proof.
+4. The active agent reads only the task-relevant cited context; generated packs remain routing context, never proof.
 
-The free lexical RAG corpus indexes the canonical exact-ten JSON registry. Context
-profiles may excerpt the generated operational reference only after a fresh
-registry/profile/reference parity check; drift stops the request instead of returning
-stale role instructions.
+The free lexical RAG corpus indexes active governance policies and the canonical
+deferred-findings ledger. Retired custom role profiles and generated role
+references are not indexed or served.
 
 Manual/MCP path:
 
@@ -53,6 +52,7 @@ Memory is routing context, not proof. Fresh command output still wins over store
 
 ```bash
 npm run check:agent-context
+npm run check:solo-agent-governance
 npm run ai:context:check
 npm run ai:context:auto-check
 ```

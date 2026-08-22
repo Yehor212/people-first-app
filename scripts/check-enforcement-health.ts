@@ -31,11 +31,6 @@ const REQUIRED_REGISTRATIONS: ReadonlyArray<readonly [string, string]> = [
   ["PreToolUse", "production-data-integrity-gate.cjs"],
   ["PostToolUse", "production-data-integrity-gate.cjs"],
   ["Stop", "no-ai-template-gate.cjs"],
-  ["Stop", "production-data-integrity-gate.cjs"],
-  ["SubagentStart", "no-ai-template-gate.cjs"],
-  ["SubagentStart", "production-data-integrity-gate.cjs"],
-  ["SubagentStop", "no-ai-template-gate.cjs"],
-  ["SubagentStop", "production-data-integrity-gate.cjs"],
 ];
 
 function add(name: string, status: Status, detail: string): void {
@@ -122,6 +117,13 @@ function validateHooks(): void {
       fail(`registration:${event}:${filename}`, "required registration is missing");
     }
   }
+  for (const eventName of ["SubagentStart", "SubagentStop"]) {
+    if (registeredByEvent.has(eventName)) {
+      fail(`registration:${eventName}`, "subagent lifecycle hooks are retired");
+    } else {
+      pass(`registration:${eventName}`, "intentionally absent under SOLO governance");
+    }
+  }
 
   const diskFiles = readdirSync(HOOKS_DIR).filter((name) => name.endsWith(".cjs")).sort();
   for (const filename of registeredFiles) {
@@ -194,13 +196,7 @@ function checkProductionDataIntegrity(): void {
 }
 
 function validateCanonicalControlPlane(): void {
-  runNodeGate("check:agent-orchestra", "scripts/sync-persistent-agent-orchestra.mjs", ["--check"], 20_000);
-  runNodeGate(
-    "check:agent-orchestra:eval",
-    "scripts/validate-persistent-agent-orchestra-eval-report.mjs",
-    ["--catalog"],
-    20_000,
-  );
+  runNodeGate("check:solo-agent-governance", "scripts/check-solo-agent-governance.mjs", [], 20_000);
   runNodeGate("check:no-ai-templates", "scripts/check-no-ai-templates.cjs", [], 30_000);
   checkProductionDataIntegrity();
 
@@ -234,11 +230,11 @@ function validateCanonicalControlPlane(): void {
 
   unverified(
     "runtime-loading",
-    "Static files and registrations cannot prove that the current Codex runtime loaded hooks or custom profiles.",
+    "Static files and registrations cannot prove that the current Codex runtime loaded the updated SOLO hook configuration.",
   );
   unverified(
     "effective-permissions",
-    "sandbox_mode and READ_ONLY_INTENT are declarations; effective inherited permissions need a current runtime probe.",
+    "Effective inherited permissions and model obedience need a current runtime probe.",
   );
 }
 

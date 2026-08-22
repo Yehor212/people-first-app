@@ -1,6 +1,6 @@
 # Settings Day Cosmic Background Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Any custom-role, council, subagent-driven, or automatic next-task instruction below is retired and must not be executed.
 
 **Goal:** Make Settings in the `paper` theme visibly continue the canonical daytime Mood atmosphere without copying the visual system, introducing background motion, or changing Mood/Orb, Ink, OLED, data, or copy.
 
@@ -174,9 +174,9 @@ Use a production-equivalent preview and Playwright CLI for 320×568, 390×844, a
 
 Apply the Visual Integrity Critic rubric to the current Mood reference and final Settings phone/desktop artifacts. Technical success does not imply artistic success.
 
-- [ ] **Step 4: Run the exact-ten final review**
+- [ ] **Step 4: Run the final SOLO evidence review**
 
-Create a hash-bound packet containing the raw request, final diff hash, commands, screenshots, metrics, and explicit `UNVERIFIED` rows. Send it to all ten canonical roles in bounded read-only review passes; Role 10 receives the packet without coordinator interpretation. Resolve every actionable STOP inside scope and repeat the affected checks.
+Create a hash-bound packet containing the raw request, final diff hash, commands, screenshots, metrics, and explicit `UNVERIFIED` rows. The active agent rechecks every source and resolves each reproducible in-scope blocker before repeating affected checks.
 
 ## Rollback
 
@@ -184,6 +184,6 @@ Remove the new `presentation` branch and Settings wrapper/CSS/tests. Because the
 
 ## Self-Review
 
-- Spec coverage: Paper visual continuity, static motion, theme isolation, performance, accessibility, RTL, safe areas, rollback, and ten-role evidence are mapped above.
+- Spec coverage: Paper visual continuity, static motion, theme isolation, performance, accessibility, RTL, safe areas, rollback, and final evidence are mapped above.
 - Type consistency: one optional `presentation` union is consumed by `SettingsPage`; no parallel palette type is introduced.
 - Placeholder scan: the plan contains executable paths, assertions, commands, thresholds, and explicit unavailable-proof handling.

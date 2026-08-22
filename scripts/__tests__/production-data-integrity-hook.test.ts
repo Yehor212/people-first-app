@@ -87,7 +87,7 @@ function invoke(
 }
 
 describe("production data integrity Codex hook", () => {
-  it("is registered for every supported lifecycle event with bounded cross-platform commands", () => {
+  it("is registered for prompt and tool events but no lifecycle completion events", () => {
     const config = JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as {
       hooks: Record<
         string,
@@ -101,9 +101,6 @@ describe("production data integrity Codex hook", () => {
       "UserPromptSubmit",
       "PreToolUse",
       "PostToolUse",
-      "Stop",
-      "SubagentStart",
-      "SubagentStop",
     ]) {
       const handlers = (config.hooks[event] ?? [])
         .flatMap((entry) => entry.hooks)
@@ -114,6 +111,12 @@ describe("production data integrity Codex hook", () => {
       expect(handlers[0].timeout).toBeGreaterThan(0);
       expect(handlers[0].timeout).toBeLessThanOrEqual(20);
     }
+    const stopHandlers = (config.hooks.Stop ?? [])
+      .flatMap((entry) => entry.hooks)
+      .filter((handler) => handler.command.includes("production-data-integrity-gate.cjs"));
+    expect(stopHandlers).toHaveLength(0);
+    expect(config.hooks).not.toHaveProperty("SubagentStart");
+    expect(config.hooks).not.toHaveProperty("SubagentStop");
     expect(config.hooks.PreToolUse[0].matcher).toContain("Bash");
     expect(config.hooks.PreToolUse[0].matcher).toContain("apply_patch");
   });
@@ -313,25 +316,42 @@ describe("production data integrity Codex hook", () => {
     expect(result.json).toEqual({});
   });
 
-  it("runs a fast diff check after a relevant write and blocks findings", () => {
-    const result = invoke(
-      {
-        hook_event_name: "PostToolUse",
-        tool_name: "apply_patch",
-        tool_input: { command: "*** Begin Patch\n*** Update File: src/main.ts\n*** End Patch" },
-      },
-      "finding"
-    );
-    expect(result.status, result.stderr).toBe(0);
-    expect(JSON.stringify(result.json)).toContain("PDI002");
-    expect(JSON.stringify(result.json)).toContain("block");
-  });
+  it.each(["finding", "error"] as const)(
+    "runs a fast diff check after a relevant write and blocks %s",
+    (stub) => {
+      const result = invoke(
+        {
+          hook_event_name: "PostToolUse",
+          tool_name: "apply_patch",
+          tool_input: { command: "*** Begin Patch\n*** Update File: src/main.ts\n*** End Patch" },
+        },
+        stub
+      );
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.stringify(result.json)).toContain(stub === "finding" ? "PDI002" : "internal");
+      expect(JSON.stringify(result.json)).toContain("block");
+    }
+  );
 
-  it.each(["finding", "error"] as const)("blocks Stop when the checker returns %s", (stub) => {
-    const result = invoke({ hook_event_name: "Stop", stop_hook_active: false }, stub);
+  it.each(["clean", "finding", "error"] as const)(
+    "does not run the checker at Stop when its stub is %s",
+    (stub) => {
+      const result = invoke({ hook_event_name: "Stop", stop_hook_active: false }, stub);
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.json).toEqual({ continue: true });
+    }
+  );
+
+  it("does not require a checker for Stop when the recursion guard is inactive", () => {
+    const root = mkdtempSync(join(tmpdir(), "zenflow-pdi-stop-no-checker-"));
+    temporaryRoots.push(root);
+    const result = spawnSync(process.execPath, [HOOK], {
+      cwd: root,
+      encoding: "utf8",
+      input: JSON.stringify({ hook_event_name: "Stop", stop_hook_active: false }),
+    });
     expect(result.status, result.stderr).toBe(0);
-    expect(JSON.stringify(result.json)).toContain("block");
-    expect(JSON.stringify(result.json)).toContain(stub === "finding" ? "PDI002" : "internal");
+    expect(JSON.parse(result.stdout)).toEqual({ continue: true });
   });
 
   it("honors the Stop recursion guard without invoking a missing checker", () => {
@@ -358,32 +378,17 @@ describe("production data integrity Codex hook", () => {
     expect(JSON.parse(result.stdout)).toEqual({ continue: true });
   });
 
-  it("injects the evidence contract for subagents and rejects evidence-free PASS", () => {
+  it("keeps stale subagent lifecycle events inert", () => {
     const start = invoke({ hook_event_name: "SubagentStart", agent_type: "reviewer" });
     expect(start.status, start.stderr).toBe(0);
-    expect(JSON.stringify(start.json)).toContain("Findings");
-    expect(JSON.stringify(start.json)).toContain("Remaining risk");
+    expect(start.json).toEqual({});
 
-    const badStop = invoke({
+    const stop = invoke({
       hook_event_name: "SubagentStop",
       last_assistant_message: "PASS. All clear.",
     });
-    expect(badStop.status, badStop.stderr).toBe(0);
-    expect(JSON.stringify(badStop.json)).toContain("block");
-
-    const goodStop = invoke({
-      hook_event_name: "SubagentStop",
-      last_assistant_message: [
-        "Findings: none observed.",
-        "File/source evidence: src/main.ts inspected.",
-        "Platform/domain impact: Web and sync.",
-        "Verification run or skipped checks: npm test ran.",
-        "Remaining risk: dynamic imports remain unverified.",
-        "Verdict: GO",
-      ].join("\n"),
-    });
-    expect(goodStop.status, goodStop.stderr).toBe(0);
-    expect(goodStop.json).toEqual({});
+    expect(stop.status, stop.stderr).toBe(0);
+    expect(stop.json).toEqual({});
   });
 
   it("fails closed on malformed stdin without emitting invalid JSON", () => {

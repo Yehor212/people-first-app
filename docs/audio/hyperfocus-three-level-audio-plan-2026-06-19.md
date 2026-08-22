@@ -2,7 +2,7 @@
 
 > 2026-06-29 update: this document started as the 2026-06-19 Gemini/Lyria generation plan. The current V2 nature pack uses bundled real-source Mixkit/bundled natural SFX files that pass strict local QC; the visible set is now `forest`, `rain`, `ocean`, `fireplace`, `river`, and `wind`. `cafe`, `underwater`, and `thunderstorm` ids remain only as migration aliases.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution governance (2026-08-14):** implement this plan SOLO, task by task, with repository-grounded evidence. Do not create agents or advance to another task without a direct current-user request. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the six current Hyperfocus ambience options with a controlled three-level audio system per sound family, using only Google Gemini-family generation when generation is allowed.
 

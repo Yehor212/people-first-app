@@ -6,6 +6,8 @@ grouped-list remediation is source- and test-verified; complete native,
 packaged-runtime, public-deployment, and human acceptance remain `UNVERIFIED`.
 Scope: V2 Settings information architecture, Appearance, Sound, Reminders, Privacy/Data, About, shared Settings primitives, local preference persistence, Settings motion, and all eight supported locales.
 
+> **Governance update (2026-08-14):** Product requirements in this historical design remain review context, but every custom-role, council, subagent-driven, or automatic next-task instruction is retired. Current work executes SOLO under `AGENTS.md`.
+
 ## 1. Goal
 
 Make Settings useful, predictable, and calm for ordinary ZenFlow users:
@@ -430,22 +432,12 @@ Tests must first prove the current failure for:
 - reduced-motion and keyboard flows;
 - Snyk Code or the documented fallback for changed first-party code.
 
-### 15.3 Ten-role approval gate
+### 15.3 SOLO closure gate
 
-Final closure requires the exact tracked roster:
-
-1. Coordinator / Teamlead
-2. Psychology, Human Factors & Emotional Safety
-3. Logic, Causality & State Coherence
-4. Interaction, Accessibility, Readability, Localization & Culture
-5. Technical Architecture, Data & Cross-Platform
-6. Security, Privacy & Agent Trust
-7. Performance, Reliability & Operations
-8. QA, Evidence & Release Verification
-9. Product Discovery, Visual Craft & Experience Quality
-10. Independent Blind-Spot Sentinel
-
-Roles 2–9 are read-only independent reviews. Role 10 requires an isolated Pass A and a closure Pass B. A specialist `STOP` is fixed and rerun; approvals are not averaged. An unavailable or usage-limited agent remains `UNVERIFIED` and prevents the requested full-team `GO`.
+The active agent maps every explicit and implied requirement to current file,
+command, runtime, visual, platform, and human evidence. A reproducible in-scope
+failure is fixed and re-run; unavailable native, public, human, or artistic
+proof remains `UNVERIFIED`. No custom role or council approval is required.
 
 ## 16. Rollout And Rollback
 
@@ -477,7 +469,7 @@ The redesign passes only when all of these are true:
 - reduced motion removes non-essential motion without breaking focus or state;
 - all eight locales pass parity and layout checks, including RTL;
 - destructive, import, account, and permission safeguards remain green;
-- all ten roles complete the requested approval gate.
+- the active agent completes the evidence map without promoting missing proof to `PASS`.
 
 ## 18. Kill Criteria
 
@@ -504,12 +496,12 @@ Stop or roll back if:
 
 ## 20. Current Unverified Ledger
 
-- Blind-Spot Pass A: two isolated agent attempts ended at the external Codex usage limit and are not counted as approval.
+- Historical external-agent attempts ended at the usage limit and are not current proof.
 - Human preference testing beyond the reporting user.
 - Native-speaker review for all eight locales.
 - VoiceOver, TalkBack, physical Android/iOS, and packaged Tauri behavior.
 - Public GitHub Pages deployment and cache state.
-- Final ten-role approval.
+- Final SOLO evidence map against the current source snapshot.
 
 ## 21. Bounded Implementation Record — 2026-07-28
 

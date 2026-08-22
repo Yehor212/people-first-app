@@ -14,8 +14,10 @@ export const DEFAULT_AGENT_RAG_FILES = [
   "ARCHITECTURE.md",
   "docs/ai/TEST_FIRST_AGENT_POLICY.md",
   "docs/ai/SKILL_ROUTING_AGENT_POLICY.md",
-  "config/persistent-agent-orchestra.json",
-  "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md",
+  "docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md",
+  "docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md",
+  "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md",
+  "docs/ai/DEFERRED_FINDINGS_LEDGER.md",
   "docs/ai/AGENT_CHANGE_GOVERNANCE.md",
   "docs/ai/FREE_RAG_AND_COACH_LITE.md",
 ];

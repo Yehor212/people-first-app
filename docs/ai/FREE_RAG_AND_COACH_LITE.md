@@ -11,17 +11,14 @@ npm run rag:preflight -- "architecture source of truth for agents"
 npm run rag:search:free -- "architecture source of truth for agents"
 ```
 
-`rag:preflight` is the agent-wide entry point. It selects the relevant curated groups, writes `.codex/auto-context/rag-current.md` plus metadata, and returns a compact context pack for Codex, Telegram reports, and subagents. `rag:search:free` is the lower-level manual search command.
+`rag:preflight` is the agent-wide entry point. It selects the relevant curated groups, writes `.codex/auto-context/rag-current.md` plus metadata, and returns a compact context pack for Codex and Telegram reports. `rag:search:free` is the lower-level manual search command.
 
 The commands index a curated project corpus from `scripts/rag/corpus-manifest.json` and return short excerpts with source citations. They do not call OpenAI, Gemini, Supabase vector search, or any embedding API.
 
-For exact-ten governance, the corpus indexes
-`config/persistent-agent-orchestra.json`, the only canonical role source. It
-intentionally excludes generated `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md` to avoid a
-second or stale roster in lexical retrieval. The context server may excerpt that
-generated reference only after `checkWorkspace` proves current registry/profile/
-reference byte parity; parity failure stops context generation rather than serving
-stale role text.
+For agent governance, the corpus indexes active SOLO, test-first, no-template,
+best-practices, production-integrity, change-governance, and deferred-findings
+contracts. Retired custom role profiles and generated role documents are absent
+from both the repository runtime surface and the curated corpus.
 
 The curated corpus is grouped so agents can retrieve the right project memory without blindly scanning the whole repository:
 
@@ -37,7 +34,7 @@ The manifest excludes secrets, generated files, assets, dependency folders, and 
 
 When an agent adds or discovers durable project knowledge that future agents must retrieve, it must either update `scripts/rag/corpus-manifest.json` or record why the file is intentionally excluded. Never add secrets, raw user journal content, ignored env files, generated output, dependency folders, build output, assets, screenshots, or token-bearing logs to the corpus.
 
-External agents and report workflows that cannot run repo commands must use the latest `.codex/auto-context/rag-current.md` pack or the Telegram no-paid RAG artifact. If neither is available, their status must stay `UNVERIFIED` instead of claiming RAG-backed context.
+External clients and report workflows that cannot run repo commands must use the latest `.codex/auto-context/rag-current.md` pack or the Telegram no-paid RAG artifact. If neither is available, their status must stay `UNVERIFIED` instead of claiming RAG-backed context.
 
 Chunking is source-aware:
 

@@ -1,12 +1,12 @@
 # Reflow Final Evidence Closure Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:test-driven-development` for the CSS budget correction and `superpowers:verification-before-completion` for every PASS claim. The coordinator must execute each checkbox in order and independently verify subagent output.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Test-first and verification rules remain active; any custom-role, council, subagent-driven, or automatic next-task instruction below is retired and must not be executed.
 
-**Goal:** Close the remaining ZenFlow text-reflow work without increasing the CSS budget, then bind fresh technical, Chrome, visual, localization, and exact-ten review evidence to one unchanged source snapshot.
+**Goal:** Close the remaining ZenFlow text-reflow work without increasing the CSS budget, then bind fresh technical, Chrome, visual, and localization evidence to one unchanged source snapshot.
 
-**Architecture:** Keep the approved mood and Settings visuals intact and remove only redundant Tailwind rules introduced by the narrow-width repair. Reuse utilities already present in the generated bundle, rebuild once, verify the same user-visible geometry in Chrome, and regenerate the evidence packet before restarting role approvals. The journal E2E suite is an adjacent release proof, not a current three-bug implementation task: its latest serial run exited 0, but its source digest is older than the current reflow snapshot.
+**Architecture:** Keep the approved mood and Settings visuals intact and remove only redundant Tailwind rules introduced by the narrow-width repair. Reuse utilities already present in the generated bundle, rebuild once, verify the same user-visible geometry in Chrome, and regenerate the evidence packet before final SOLO review. The journal E2E suite is an adjacent release proof, not a current three-bug implementation task: its latest serial run exited 0, but its source digest is older than the current reflow snapshot.
 
-**Tech Stack:** React 18, TypeScript, Vite, Tailwind, Vitest, size-limit, custom eight-locale i18n, Chrome browser evidence, canonical ten-role registry.
+**Tech Stack:** React 18, TypeScript, Vite, Tailwind, Vitest, size-limit, custom eight-locale i18n, Chrome browser evidence.
 
 ## Global Constraints
 
@@ -14,8 +14,7 @@
 - Do not raise the 105 kB CSS Brotli budget and do not reduce visual quality, copy meaning, 44 px targets, RTL safety, focus reachability, or reduced-motion behavior to make the metric pass.
 - Do not introduce production mocks, placeholder data, fake screenshots, generic AI-template copy, new dependencies, new product settings, or an unrelated refactor.
 - Use Chrome for runtime proof because that is the user's selected browser. Do not run standalone Playwright without explicit permission.
-- Treat all subagent reports as review hypotheses until checked against current files, command output, screenshots, and hashes.
-- A structural exact-ten PASS is not ten independent approvals. Role 10 remains `STOP` if its required isolation cannot be demonstrated.
+- Treat every prior report as a review hypothesis until checked against current files, command output, screenshots, and hashes.
 
 ## Current Evidence Baseline
 
@@ -128,19 +127,15 @@ Acceptance: every claimed browser state is tied to the final source/build; old v
 - [ ] **Step 1: Record RED history, final CSS size, focused/full test counts, CI exit code, source digest, dist hashes, and browser asset comparison.**
 - [ ] **Step 2: Replace stale journal language with the factual v16 serial result and mark current-source journal E2E `UNVERIFIED` unless freshly proved.**
 - [ ] **Step 3: Add the platform matrix: Web/PWA bounded proof; Android, iOS, Desktop/Tauri, Store/Release, public deploy, native assistive technology, and representative-user preference remain `UNVERIFIED` unless freshly checked.**
-- [ ] **Step 4: Run production-data, translation, no-AI-template, best-practices, and agent-orchestra guards relevant to the final packet if the full CI log does not already contain fresh successful results.**
+- [ ] **Step 4: Run production-data, translation, no-AI-template, best-practices, SOLO-governance, and agent-context guards relevant to the final packet if the full CI log does not already contain fresh successful results.**
 
-## Task 5: Sequential Exact-Ten and Independent Visual Review
+## Task 5: SOLO Closure And Independent Visual Review
 
-**Canonical order:** coordinator; psychology; logic; accessibility/localization; architecture/data; security/privacy; performance/operations; QA/release; product/visual craft; blind-spot sentinel.
+- [ ] **Step 1: Freeze one hash-bound packet with the current diff, commands, screenshots, platform impact, and unresolved risk.**
+- [ ] **Step 2: Run the visual-integrity critic against current screenshots/video and report Technical, Visual Runtime, Artistic/Craft, Motion, Model, and Plan separately.**
+- [ ] **Step 3: The active agent independently verifies every citation and resolves each reproducible in-scope blocker with a new test-first cycle.**
 
-- [ ] **Step 1: Give roles 1–3 the frozen packet and require hash-bound final reports.**
-- [ ] **Step 2: Cycle roles 4–9 through available slots in read-only review waves. Each report must cite files/commands/artifacts, list platform impact and unresolved risk, and return `GO`, `STOP`, or `ASK`.**
-- [ ] **Step 3: Run the independent visual-integrity critic against current screenshots/video and report Technical, Visual Runtime, Artistic/Craft, Motion, Model, and Plan separately.**
-- [ ] **Step 4: Give Role 10 the final packet only after all fixes and record Pass B. Do not convert the existing Pass A isolation failure into PASS unless runtime/tool isolation is actually demonstrated.**
-- [ ] **Step 5: Independently verify every agent citation and resolve any reproducible blocker with a new test-first cycle before requesting another review.**
-
-Acceptance: all attainable roles return evidence-backed GO. If Role 10 isolation remains impossible, final status is an explicit exact-ten `STOP/UNVERIFIED`, not a fabricated 10/10 approval.
+Acceptance: every in-scope acceptance condition has fresh evidence; unavailable runtime, human, native, public, or artistic proof remains explicit `UNVERIFIED`.
 
 ## Task 6: Completion Decision
 

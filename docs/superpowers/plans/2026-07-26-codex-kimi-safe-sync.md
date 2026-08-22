@@ -2,6 +2,8 @@
 
 > **Execution order:** complete-plan-expander → superpowers:writing-plans → superpowers:test-driven-development → security review → superpowers:verification-before-completion.
 
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Custom-role, council, subagent lifecycle, and automatic next-task instructions are retired.
+
 **Goal:** Make concurrent Codex and Kimi K3 work on ZenFlow predictable and recoverable: each agent edits an isolated Git worktree and feature branch, `main` remains a clean human-facing checkout, synchronization never discards local work, and every handoff is committed, pushed, reviewable, and evidence-backed.
 
 **Architecture:** Git and GitHub remain the only shared source of truth. A stable integration clone lives outside every existing repository and ignored/output tree. A tracked, dependency-free workspace CLI creates locked sibling worktrees from a freshly fetched `origin/main`, diagnoses repository state, fetches by default without changing history, applies only an explicitly requested and provably safe fast-forward, and validates handoff readiness. A shared pre-tool guard blocks agent writes on `main` and destructive Git shortcuts. Codex registers the guard in the repository; a redaction-safe installer appends the same hook to Kimi's user configuration without exposing existing credentials. VS Code is configured to show only an explicit single-root workspace for the selected checkout.
@@ -168,18 +170,17 @@
 
 - [ ] Rerun the exact focused RED commands GREEN with exact file/test counts.
 - [ ] Run TypeScript and Vitest separately as required by the commit pipeline.
-- [ ] Run `git diff --check`, agent-context, no-AI-template, best-practices, agent-orchestra, and production-data-integrity diff checks.
+- [ ] Run `git diff --check`, agent-context, no-AI-template, best-practices, SOLO-agent-governance, and production-data-integrity diff checks.
 - [ ] Run the scoped security suite and Snyk fallback when available; unavailable scanners remain `UNVERIFIED`.
 - [ ] Exercise `doctor`, guard payloads, and `handoff` against this real feature worktree.
 - [ ] Exercise create/sync/divergence/refusal only in disposable repositories.
 - [ ] Confirm both dirty recovery roots retain their original counts and HEADs.
 - [ ] Confirm the temporary clean VS Code clone remains clean, then create and validate the stable external integration clone.
 
-## Task 7: Independent Closure, Commit, PR, CI, And Merge
+## Task 7: SOLO Closure, Commit, PR, CI, And Merge
 
-- [ ] Route Role 8 QA over the exact requirement/evidence matrix.
-- [ ] Hash the frozen diff and evidence packet; route Role 10 Pass B over that exact hash.
-- [ ] Reproduce every reviewer claim locally before using it.
+- [ ] The active agent maps the exact requirements to fresh evidence.
+- [ ] Hash the frozen diff and evidence packet, then re-check every claim locally before using it.
 - [ ] Read `memory/feedback_commit_pipeline_knowledge.md`, create fresh `.verification-done` evidence with test counts, and satisfy commit metadata rules.
 - [ ] Commit with a single-quoted message containing `batch` because the change spans more than seven files.
 - [ ] Push only `codex/codex-kimi-safe-sync`, create a pull request, and wait for all required GitHub checks.

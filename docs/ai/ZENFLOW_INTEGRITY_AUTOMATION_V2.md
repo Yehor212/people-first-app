@@ -167,7 +167,7 @@ Before substantive work, print a visible PRE-FLIGHT ARTIFACT with:
 4. a strict audit plan.
 
 Execution order:
-1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, package scripts, CI/preflight docs, .codex/hooks/, config/persistent-agent-orchestra.json, generated docs/ai/PERSISTENT_AGENT_ORCHESTRA.md, key configs, i18n files, and critical entry points.
+1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, applicable policies, package scripts, CI/preflight docs, .codex/hooks/, docs/ai/DEFERRED_FINDINGS_LEDGER.md, key configs, i18n files, and critical entry points.
 2. Build an invariant register before judging anything.
 3. Run the strongest fresh non-destructive repo-native checks available.
 4. Inspect code and config for static risks that those checks do not prove.
@@ -302,7 +302,7 @@ Before substantive work, print a visible PRE-FLIGHT ARTIFACT with:
 4. a strict audit plan.
 
 Execution order:
-1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, package scripts, CI/preflight docs, .codex/hooks/, config/persistent-agent-orchestra.json, generated docs/ai/PERSISTENT_AGENT_ORCHESTRA.md, critical store files, storage/backend integration points, and platform configs.
+1. Read repo truth first: AGENTS.md, ARCHITECTURE.md, applicable policies, package scripts, CI/preflight docs, .codex/hooks/, docs/ai/DEFERRED_FINDINGS_LEDGER.md, critical store files, storage/backend integration points, and platform configs.
 2. Build an invariant register before the first verdict.
 3. Run the strongest fresh non-destructive checks available.
 4. Inspect code, docs, and config for structural drift and governance gaps.

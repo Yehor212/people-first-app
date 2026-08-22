@@ -17,13 +17,17 @@ const UNGUARDED_EXACT = new Set([
 const L4_PREFIXES = [
   ".codex/",
   ".github/",
-  "config/persistent-agent-orchestra",
   "docs/ai/",
   "scripts/codex-governance/",
-  "scripts/persistent-agent-orchestra/",
 ];
 
-const L4_EXACT = new Set(["AGENTS.md", "ARCHITECTURE.md", "CLAUDE.md", "package.json"]);
+const L4_EXACT = new Set([
+  "AGENTS.md",
+  "ARCHITECTURE.md",
+  "CLAUDE.md",
+  "package.json",
+  "scripts/check-solo-agent-governance.mjs",
+]);
 
 function evaluateGuard({ rootDir, targetPath, now = new Date() }) {
   const reasons = [];

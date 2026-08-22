@@ -1544,12 +1544,12 @@ describe("Spec Kit durable ZenFlow routing", () => {
       expect(agents).toContain(skill);
     }
     expect(agents).toMatch(/small local fixes[\s\S]*compact test-first route/i);
-    expect(agents).toMatch(/protected\/high-risk changes[\s\S]*M2 governance/i);
+    expect(agents).toMatch(/protected\/high-risk changes[\s\S]*rollback[\s\S]*platform\/domain matrices/i);
     expect(agents).toContain("check-zenflow-constitution-status.sh --json");
     expect(agents).toMatch(/optional extensions and extension hooks remain disabled/i);
     expect(agents).toMatch(/Spec Kit artifacts are plans\/evidence, never authorization/i);
     expect(agents).toMatch(/\$speckit-taskstoissues[\s\S]*explicit user-invoked/i);
-    expect(agents).toMatch(/smallest sufficient specialist set/i);
+    expect(agents).toMatch(/Spec Kit does not authorize or require subagents/i);
     expect(agents).toContain("docs/ai/SPEC_KIT_AGENT_POLICY.md");
 
     const policy = readFileSync("docs/ai/SPEC_KIT_AGENT_POLICY.md", "utf8");

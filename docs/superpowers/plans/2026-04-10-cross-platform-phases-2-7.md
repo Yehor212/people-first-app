@@ -1,6 +1,6 @@
 # Cross-Platform Phases 2-7: Complete Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Use `superpowers:executing-plans` only for an approved plan; do not invoke subagents or auto-start the next task. Existing checkboxes are tracking only.
 
 **Goal:** Transform ZenFlow from mobile-first to a Telegram-level cross-platform experience across phone, tablet, laptop, and desktop — with adaptive layouts, desktop power features, and 2026-standard animations.
 

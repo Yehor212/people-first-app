@@ -5,8 +5,6 @@ import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { checkWorkspace } from "../../scripts/persistent-agent-orchestra/registry-core.mjs";
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot =
   process.env.ZENFLOW_CONTEXT_ROOT || path.resolve(__dirname, "..", "..");
@@ -28,7 +26,6 @@ const contextProfiles = {
       "agents",
       "агент",
       "агенты",
-      "orchestra",
       "audit",
       "аудит",
       "verification",
@@ -36,14 +33,14 @@ const contextProfiles = {
       "верификация",
     ],
     sections: [
-      { file: "AGENTS.md", headings: ["Architecture", "Agent Entry Points", "Conventions", "CI And Verification", "Persistent Codex Agent Orchestra", "Agent Change Governance"] },
+      { file: "AGENTS.md", headings: ["Architecture", "Agent Entry Points", "Solo Agent Execution", "Deferred Findings Ledger", "Conventions", "CI And Verification", "Agent Change Governance"] },
       { file: "ARCHITECTURE.md", headings: ["Codebase Metrics", "Tech Stack", "State Management", "Data Flow"] },
       { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Radical Change Triggers", "Required Agent Change Notice", "Evidence Gates"] },
       { file: "docs/ai/SYNC_CONTRACT.md", headings: ["North Star", "Non-Negotiable Invariants", "Required Verification For Sync Changes"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Session Start Protocol", "Context7-Style Retrieval", "Writeback Protocol", "Verification"] },
-      { file: "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md", headings: ["Evidence And Permission Boundary", "Exact-Ten Roster"] },
+      { file: "docs/ai/DEFERRED_FINDINGS_LEDGER.md", headings: ["Admission Rules", "Intake Queue"] },
     ],
-    scripts: ["doc-counts", "check:agent-orchestra", "ai:context:check", "check:all"],
+    scripts: ["doc-counts", "check:solo-agent-governance", "ai:context:check", "check:all"],
   },
   memory: {
     label: "Agent Memory",
@@ -51,11 +48,11 @@ const contextProfiles = {
     keywords: ["memory", "память", "context", "контекст", "mcp", "context7", "writeback", "lesson", "урок", "session", "сессия", "agent", "агент"],
     sections: [
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Research-Backed Decision", "Context7-Style Retrieval", "Local MCP Memory Setup", "Writeback Protocol", "Memory Taxonomy"] },
-      { file: "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md", headings: ["Evidence And Permission Boundary", "Runtime Bounds"] },
-      { file: "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md", headings: ["Evidence Statuses", "Verification Procedure"] },
+      { file: "docs/ai/DEFERRED_FINDINGS_LEDGER.md", headings: ["Admission Rules", "Intake Queue"] },
+      { file: "docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md", headings: ["Enforcement Layers", "Review Checklist"] },
       { file: "tools/zenflow-context/README.md", headings: ["Tools", "How Agents Should Use It"] },
     ],
-    scripts: ["ai:context", "ai:context:check", "check:agent-orchestra"],
+    scripts: ["ai:context", "ai:context:check", "check:solo-agent-governance"],
   },
   architecture: {
     label: "Architecture And State",
@@ -65,21 +62,21 @@ const contextProfiles = {
       { file: "AGENTS.md", headings: ["Architecture", "Safety"] },
       { file: "ARCHITECTURE.md", headings: ["Codebase Metrics", "Folder Structure", "State Management", "Data Flow", "Storage Rules"] },
       { file: "docs/ai/SYNC_CONTRACT.md", headings: ["North Star", "Non-Negotiable Invariants", "Files To Inspect Before Sync Work", "Required Verification For Sync Changes", "Current Known Gaps"] },
-      { file: "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md", headings: ["Evidence And Permission Boundary", "Exact-Ten Roster"] },
+      { file: "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md", headings: ["Source/sink model", "Review checklist"] },
     ],
-    scripts: ["doc-counts", "check:types-fresh", "check:supabase-migration-prefixes", "check:agent-orchestra"],
+    scripts: ["doc-counts", "check:types-fresh", "check:supabase-migration-prefixes", "check:solo-agent-governance"],
   },
   governance: {
     label: "Agent Change Governance",
     purpose: "Recover radical-change notices, protected surfaces, tool safety, and PR/CI backstops.",
-    keywords: ["governance", "agent", "agents", "orchestra", "radical", "protected", "notice", "AGENT_CHANGE_NOTICE", "hook", "workflow", "ci", "subagent", "plugin", "connector", "mcp", "security", "privacy"],
+    keywords: ["governance", "agent", "agents", "solo", "radical", "protected", "notice", "AGENT_CHANGE_NOTICE", "hook", "workflow", "ci", "plugin", "connector", "mcp", "security", "privacy"],
     sections: [
-      { file: "AGENTS.md", headings: ["Agent Change Governance", "Persistent Codex Agent Orchestra", "Safety", "CI And Verification"] },
-      { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Radical Change Triggers", "Required Agent Change Notice", "Protected Surfaces", "Evidence Gates", "Human Escalation", "PR And CI Backstops", "Subagent Audit Rules"] },
+      { file: "AGENTS.md", headings: ["Agent Change Governance", "Solo Agent Execution", "Deferred Findings Ledger", "Safety", "CI And Verification"] },
+      { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Radical Change Triggers", "Required Agent Change Notice", "Protected Surfaces", "Evidence Gates", "Human Escalation", "PR And CI Backstops", "Solo Execution Boundary"] },
       { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Default Depth For ZenFlow", "Non-Negotiables", "Agent-Wide Inheritance"] },
-      { file: "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md", headings: ["Evidence And Permission Boundary", "Runtime Bounds"] },
+      { file: "docs/ai/DEFERRED_FINDINGS_LEDGER.md", headings: ["Admission Rules", "Intake Queue"] },
     ],
-    scripts: ["check:agent-context", "check:agent-orchestra", "enforcement:check", "ci:preflight"],
+    scripts: ["check:agent-context", "check:solo-agent-governance", "enforcement:check", "ci:preflight"],
   },
   ui: {
     label: "UI, Motion, Accessibility",
@@ -97,10 +94,10 @@ const contextProfiles = {
     purpose: "Recover quality gates, blocked-path handling, and evidence discipline.",
     keywords: ["verify", "verification", "проверка", "верификация", "ci", "test", "тест", "lint", "typecheck", "gate", "evidence", "доказательство", "regression", "регрессия", "audit", "аудит", "hooks", "хуки"],
     sections: [
-      { file: "AGENTS.md", headings: ["CI And Verification", "Commit Pipeline", "Persistent Codex Agent Orchestra"] },
+      { file: "AGENTS.md", headings: ["CI And Verification", "Commit Pipeline", "Solo Agent Execution"] },
       { file: "docs/ai/AGENT_CHANGE_GOVERNANCE.md", headings: ["Evidence Gates", "PR And CI Backstops"] },
       { file: "docs/ai/PREFLIGHT_OPERATOR_TEMPLATE.md", headings: ["Non-Negotiables", "Default Depth For ZenFlow", "Ready-To-Use Template"] },
-      { file: "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md", headings: ["Evidence Statuses", "Verification Procedure"] },
+      { file: "docs/ai/TEST_FIRST_AGENT_POLICY.md", headings: ["Pre-Code Gate", "Completion Checklist"] },
       { file: "docs/ai/AGENT_CONTEXT_PERSISTENCE.md", headings: ["Verification"] },
     ],
     scripts: ["typecheck", "lint", "check:all", "ci:preflight", "ci:remote", "ci:remote:wait", "check:agent-context"],
@@ -320,7 +317,7 @@ async function readMemoryHits(task, maxItems = 8) {
       const score =
         terms.reduce((total, term) => total + (lower.includes(term) ? 2 : 0), 0) +
         (lower.includes("zenflow") ? 1 : 0) +
-        (lower.includes("orchestra") ? 1 : 0) +
+        (lower.includes("solo") ? 1 : 0) +
         (lower.includes("verification") ? 1 : 0);
       if (score === 0 && hits.length >= maxItems) {
         continue;
@@ -477,12 +474,6 @@ async function getZenflowContext({ contextId = "startup", task = "", maxChars = 
   }
   if (!contextProfiles[selectedId]) {
     selectedId = "startup";
-  }
-  if (["startup", "memory", "architecture", "governance", "verification"].includes(selectedId)) {
-    const orchestra = await checkWorkspace({ rootDir: repoRoot });
-    if (orchestra.errors.length > 0) {
-      throw new Error(`managed artifact parity failed: ${orchestra.errors.join("; ")}`);
-    }
   }
   const profile = contextProfiles[selectedId];
   const budget = clampMaxChars(maxChars);

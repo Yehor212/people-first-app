@@ -1,10 +1,9 @@
 # ZenFlow UI System Deep Audit And Remediation Closure Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use
-> `superpowers:subagent-driven-development` or `superpowers:executing-plans`
-> to implement this plan task-by-task. Use
-> `superpowers:test-driven-development` for every behavior or guard change and
-> `superpowers:verification-before-completion` before any completion claim.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized
+> task and do so SOLO. Test-first and verification rules remain active; every
+> custom-role, council, subagent-driven, or automatic next-task instruction is
+> retired.
 
 **Goal:** Complete the UI-system-specific audit and remediation contract from
 the user-supplied 2026-07-28 brief without repeating the bounded Settings work,
@@ -241,14 +240,13 @@ interface UiAuditSubjectManifest {
       `npm run rag:preflight -- "Закрыть zenflow_ui_system_deep_audit_and_remediation_prompt_ru.md полным evidence-backed аудитом и безопасной кроссплатформенной remediation"`.
 - [ ] Emit `AGENT_CHANGE_NOTICE` before token, script, CI, native, or shared
       primitive changes.
-- [ ] Because the execution subject is an explicit `DEEP_AUDIT`, create a
-      ten-role disposition ledger with all ten canonical roles `SELECTED`,
-      invoke exactly those roles in registry order with no more than three
-      specialists active concurrently, and bind every receipt to `headSha`.
-- [ ] Give Role 10 Pass A only the raw user brief, its hash, and neutral trusted
-      policy/context before sharing this plan or any proposed findings. Record
-      effective read-only/isolation evidence; if enforcement cannot be proven,
-      keep the pass `UNVERIFIED`.
+- [ ] Because the execution subject is an explicit `DEEP_AUDIT`, the active
+      agent builds one requirement-to-evidence ledger, binds every receipt to
+      `headSha`, and keeps unavailable runtime/human/platform proof
+      `UNVERIFIED`.
+- [ ] Re-read the raw user brief before closure and verify missing
+      stakeholders/platforms, proof laundering risks, and rollback against the
+      frozen packet.
 
 **Acceptance criteria:**
 

@@ -35,7 +35,7 @@ interface CrystalCalendarProps {
 
 // Sparkle effect for perfect days
 function PerfectSparkle({ delay }: { delay: number }) {
-  // Stable per-mount position (10-agent review, Role 10).
+  // Stable per-mount position.
   const [position] = useState(() => ({
     left: 20 + Math.random() * 60,
     top: 20 + Math.random() * 60,

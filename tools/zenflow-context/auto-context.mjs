@@ -77,10 +77,6 @@ async function deriveTopic(input, explicitTopic, eventName) {
     return savedGoal;
   }
 
-  if (eventName === "SubagentStart") {
-    return "subagent startup inherited ZenFlow context";
-  }
-
   return "startup verification";
 }
 

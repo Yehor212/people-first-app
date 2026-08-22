@@ -35,8 +35,7 @@ interface TrophyHallProps {
 
 // Dust particle floating in spotlight
 function DustParticle({ delay, x }: { delay: number; x: number }) {
-  // Stable per-mount drift so parent re-renders do not restart the loop
-  // (10-agent review, Role 10).
+  // Stable per-mount drift so parent re-renders do not restart the loop.
   const [seed] = useState(() => ({
     drift: Math.random() * 40 - 20,
     duration: 4 + Math.random() * 2,

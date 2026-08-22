@@ -14,9 +14,9 @@ This policy applies to every Spec Kit artifact and route. It does not claim that
 
 - Nontrivial features and system changes use `$speckit-specify` -> `$speckit-clarify` -> `$speckit-plan` -> `$speckit-checklist` -> `$speckit-tasks` -> `$speckit-analyze` -> explicitly authorized `$speckit-implement` -> `$speckit-converge`.
 - Small local fixes use the compact test-first path from `AGENTS.md`; they do not create feature artifacts merely to satisfy process.
-- Protected or high-risk work uses the full route plus M2 governance, explicit rollback, the complete platform/domain matrix, and fresh evidence or `UNVERIFIED` rows.
+- Protected or high-risk work uses the full route plus explicit rollback, the complete platform/domain matrix, and fresh evidence or `UNVERIFIED` rows. M2 class metadata does not authorize physical subagent invocation.
 - `$speckit-constitution` is a separate governance action. `$speckit-taskstoissues` is a separate external write and requires explicit user instruction plus a verified repository/target.
-- Spec Kit chooses no specialist count. The persistent orchestra still uses the smallest evidence-backed set; all ten roles are not automatic.
+- Spec Kit chooses no specialist count and does not authorize delegation. Default execution remains SOLO. The repository installs no persistent orchestra; a direct current-user request may separately authorize the smallest useful built-in delegation set.
 
 ## Constitution Status Gate
 

@@ -1,6 +1,6 @@
 # Cross-Platform COMPLETE Implementation Plan (Phases 2-7)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Use `superpowers:executing-plans` only for an approved plan; do not invoke subagents or auto-start the next task. Existing checkboxes are tracking only.
 
 **Goal:** 100% implementation of the cross-platform design spec — Telegram-level adaptive experience across phone, tablet, laptop, desktop. Zero gaps.
 

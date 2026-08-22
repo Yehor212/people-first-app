@@ -150,7 +150,7 @@ const PINNED_CONFIG_DIGESTS = {
   releaseEvidenceExcludeGlobs: "d14c30be57025b3307f2e4e9cf30d75ea5ab0fc21ae8bbeaad0e317718a1afae",
   releaseEvidenceStatusFields: "0dc036c712b3ea6c80c0c0a19901a710e88176cb3dc891eccb64302c5eba1d71",
   bundleSentinels: "e578c824b2a33566cdb3c313bbfdce68a479ed05b4a63be64aef0675368571a2",
-  repositoryContracts: "ff93801ba5770b6e45acfb1bfe8f26c73b7189c8e4f3073ec6fed444e4b1469b",
+  repositoryContracts: "7b6adefcd99d0b1ca07354a94299be507b55ea195aecf3a6ff4bf48432e401b6",
   aliases: "78a7011e1b860f83cc7ab98c5985af4da42caf41e4f19e35cfe8e81b270e531a",
   limits: "e348f4ebb9dea0d6614c7647254e8be72fd8e1eb68d3679efa1fe66d2df0da29",
 };

@@ -29,11 +29,10 @@
 5. Rerun the same focused suite GREEN.
 6. Run typecheck, lint, i18n quality/deep checks, no-AI-template and relevant visual/governance checks.
 7. Run fresh browser evidence at 320/390/768 px, app text scale 100%/150%, WCAG text-spacing override and `ar`/`he`; inspect screenshots and measured overflow.
-8. Review the hash-bound final packet with all ten canonical roles and an independent visual-integrity critic.
+8. Review the hash-bound final packet SOLO and run the visual-integrity critic; independently verify every cited artifact.
 
 ## Acceptance and rejection
 
 - Accept only when confirmed critical labels, actions, filenames and warnings retain their full meaning without horizontal document overflow at the tested Web matrix.
 - Reject if a fix merely hides overflow, shrinks text, changes the accessible name away from the visible label, breaks 44 px targets, produces bidi reordering, or causes an unreachable modal action.
 - Web evidence must not be generalized to Android, iOS, Desktop/Tauri, native assistive technology or representative-user preference. Those remain `UNVERIFIED` without fresh corresponding evidence.
-

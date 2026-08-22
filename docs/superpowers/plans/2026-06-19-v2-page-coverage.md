@@ -1,6 +1,6 @@
 # V2 Page Coverage Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Use `superpowers:executing-plans` only for an approved plan; do not invoke subagents or auto-start the next task. Existing checkboxes are tracking only.
 
 **Goal:** Cover every V2 page route with contract-level tests so future changes cannot test only entry/orb while forgetting habits, diary, or settings.
 

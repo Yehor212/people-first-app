@@ -137,22 +137,17 @@ function assertNoSecrets(relativePath, text) {
   }
 }
 
-function assertAgentOrchestra() {
+function assertSoloAgentGovernance() {
   for (const relativePath of [
-    "config/persistent-agent-orchestra.json",
-    "config/persistent-agent-orchestra.evals.json",
-    "config/persistent-agent-orchestra.eval-baseline.json",
-    "config/persistent-agent-orchestra.source-waivers.json",
-    "scripts/sync-persistent-agent-orchestra.mjs",
-    ".codex/config.toml",
-    "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md",
-    "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md",
+    "scripts/check-solo-agent-governance.mjs",
+    "scripts/__tests__/custom-agent-orchestra-retirement.test.ts",
+    "scripts/__tests__/solo-delegation-findings-governance.test.ts",
+    "docs/ai/DEFERRED_FINDINGS_LEDGER.md",
   ]) {
     assertGovernanceFile(relativePath);
   }
-
   try {
-    execFileSync(process.execPath, ["scripts/sync-persistent-agent-orchestra.mjs", "--check"], {
+    execFileSync(process.execPath, ["scripts/check-solo-agent-governance.mjs"], {
       cwd: repoRoot,
       encoding: "utf8",
       timeout: 15_000,
@@ -160,7 +155,7 @@ function assertAgentOrchestra() {
     });
   } catch (error) {
     const output = [error?.stdout, error?.stderr].filter(Boolean).join("\n").trim();
-    fail(`check:agent-orchestra failed closed${output ? `: ${output}` : ""}`);
+    fail(`check:solo-agent-governance failed closed${output ? `: ${output}` : ""}`);
   }
 }
 
@@ -200,7 +195,7 @@ function assertAgentChangeGovernance(agents) {
       "Evidence Gates",
       "Human Escalation",
       "PR And CI Backstops",
-      "Subagent Audit Rules",
+      "Solo Execution Boundary",
     ]) {
       if (!hasHeading(governance, required)) {
         fail(`docs/ai/AGENT_CHANGE_GOVERNANCE.md is missing required heading "${required}"`);
@@ -211,34 +206,19 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
-  const subagentAudit = assertGovernanceFile("docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md");
-  if (subagentAudit) {
-    for (const required of [
-      "Source Evidence",
-      "Teamlead Operating Conclusions",
-      "Repo Findings Fixed In This Pass",
-      "Verification Contract",
-    ]) {
-      if (!hasHeading(subagentAudit, required)) {
-        fail(
-          `docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md is missing required heading "${required}"`
-        );
-      }
-    }
-  }
-
   const codexHooks = assertGovernanceFile(".codex/hooks.json");
   if (codexHooks) {
     for (const marker of [
       "UserPromptSubmit",
       "Stop",
-      "SubagentStart",
-      "SubagentStop",
       "no-ai-template-gate.cjs",
     ]) {
       if (!codexHooks.includes(marker)) {
         fail(`.codex/hooks.json must register no-AI-template hook marker ${marker}`);
       }
+    }
+    if (/"Subagent(?:Start|Stop)"\s*:/.test(codexHooks)) {
+      fail(".codex/hooks.json must not register subagent lifecycle hooks");
     }
   }
 
@@ -246,16 +226,31 @@ function assertAgentChangeGovernance(agents) {
   if (noAiHook) {
     for (const marker of [
       "NO AI TEMPLATE GATE",
-      "SUBAGENT EVIDENCE CONTRACT",
       "Best-Practices-Only Proposal Gate",
       "best-practices laundering",
-      "subagent proof laundering",
       "source-backed applicability",
-      "SubagentStop",
       "process.exit(2)",
     ]) {
       if (!noAiHook.includes(marker)) {
         fail(`.codex/hooks/no-ai-template-gate.cjs must include ${marker}`);
+      }
+    }
+    if (/eventName === ['\"]Subagent(?:Start|Stop)['\"]/.test(noAiHook)) {
+      fail(".codex/hooks/no-ai-template-gate.cjs must not handle subagent lifecycle events");
+    }
+  }
+
+  const deferredFindings = assertGovernanceFile("docs/ai/DEFERRED_FINDINGS_LEDGER.md");
+  if (deferredFindings) {
+    for (const marker of [
+      "## Intake Queue",
+      "Evidence locator",
+      "Verification path",
+      "No secrets, credentials, raw private content, or user data",
+      "does not authorize implementation",
+    ]) {
+      if (!deferredFindings.includes(marker)) {
+        fail(`docs/ai/DEFERRED_FINDINGS_LEDGER.md must include ${marker}`);
       }
     }
   }
@@ -277,17 +272,14 @@ function assertAgentChangeGovernance(agents) {
 
   const driftWorkflow = assertGovernanceFile(".github/workflows/drift-checks.yml");
   if (driftWorkflow) {
-    if (!/npm run check:agent-orchestra/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run check:agent-orchestra");
+    if (!/npm run check:solo-agent-governance/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run check:solo-agent-governance");
     }
-    if (!/npm run check:agent-orchestra:eval/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run check:agent-orchestra:eval");
+    if (!/npm run test:agent-governance/.test(driftWorkflow)) {
+      fail("drift-checks.yml must run npm run test:agent-governance");
     }
     if (!/npm run enforcement:check/.test(driftWorkflow)) {
       fail("drift-checks.yml must run npm run enforcement:check");
-    }
-    if (!/npm run check:subagent-governance/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run check:subagent-governance");
     }
   }
 
@@ -317,20 +309,21 @@ function assertAgentChangeGovernance(agents) {
   if (pkg && !/"security:scan"\s*:/.test(pkg)) {
     fail('package.json must define "security:scan" for Snyk/audit fallback');
   }
-  if (pkg && !/"check:subagent-governance"\s*:/.test(pkg)) {
-    fail('package.json must define "check:subagent-governance"');
+  if (pkg && !/"check:solo-agent-governance"\s*:/.test(pkg)) {
+    fail('package.json must define "check:solo-agent-governance"');
   }
 
-  const subagentCheck = assertGovernanceFile("scripts/check-subagent-teamlead-governance.mjs");
-  if (subagentCheck) {
+  const soloCheck = assertGovernanceFile("scripts/check-solo-agent-governance.mjs");
+  if (soloCheck) {
     for (const marker of [
-      "canonical exact-ten structure",
-      "READ_ONLY_INTENT",
-      "counter_hypotheses",
-      "runCanonicalCheck",
+      "custom role profiles still exist",
+      "subagent lifecycle handler",
+      "DEFERRED_FINDINGS_LEDGER.md",
+      "test:agent-governance",
+      "check:solo-agent-governance",
     ]) {
-      if (!subagentCheck.includes(marker)) {
-        fail(`scripts/check-subagent-teamlead-governance.mjs must enforce ${marker}`);
+      if (!soloCheck.includes(marker)) {
+        fail(`scripts/check-solo-agent-governance.mjs must enforce ${marker}`);
       }
     }
   }
@@ -484,9 +477,8 @@ function assertNoAiTemplatesGateContract(agents) {
       "Best-Practices-Only Proposal Gate",
       "Do not present recommendations as best practices",
       ".codex/hooks/no-ai-template-gate.cjs",
-      "SubagentStart",
-      "SubagentStop",
-      "subagent proof laundering",
+      "No subagent lifecycle hook is registered",
+      "docs/ai/DEFERRED_FINDINGS_LEDGER.md",
     ]) {
       if (!agents.includes(marker)) {
         fail(`AGENTS.md must include no-AI-template marker "${marker}"`);
@@ -587,10 +579,7 @@ function assertNoAiTemplatesGateContract(agents) {
       "no-ai-template-gate.cjs",
       "UserPromptSubmit",
       "Stop",
-      "SubagentStart",
-      "SubagentStop",
-      "SUBAGENT EVIDENCE CONTRACT",
-      "subagent proof laundering",
+      "registers no subagent lifecycle hooks",
       "best-practices laundering",
     ]) {
       if (!hookTests.includes(marker)) {
@@ -741,8 +730,6 @@ function assertProductionDataIntegrityContract(agents) {
       "production-data-integrity-gate.cjs",
       "PostToolUse",
       "Stop",
-      "SubagentStart",
-      "SubagentStop",
     ]) {
       if (!hooks.includes(marker))
         fail(`.codex/hooks.json must register production-data hook marker ${marker}`);
@@ -756,7 +743,6 @@ function assertProductionDataIntegrityContract(agents) {
       "resolveRepositoryRoot",
       "stop_hook_active",
       "process.exit(2)",
-      "SubagentStop",
     ]) {
       if (!hook.includes(marker)) fail(`production-data-integrity-gate.cjs must include ${marker}`);
     }
@@ -878,7 +864,7 @@ async function main() {
       "Architecture",
       "Agent Entry Points",
       "Codex And Kimi Workspace Isolation",
-      "Persistent Codex Agent Orchestra",
+      "Solo Agent Execution",
       "Agent Change Governance",
       "Snyk And Security Fallback",
     ]) {
@@ -903,7 +889,7 @@ async function main() {
   assertLocalMcpBoundary();
   assertAgentChangeGovernance(agents);
   assertAgentWorkspaceProtocol();
-  assertAgentOrchestra();
+  assertSoloAgentGovernance();
 
   for (const example of ["tools/zenflow-context/mcp-server.example.json"]) {
     if (existsSync(path.join(repoRoot, example))) {

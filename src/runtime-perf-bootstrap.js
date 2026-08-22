@@ -26,7 +26,7 @@ const shouldApply = (rawGuard) => {
 };
 
 // In-app reduce-motion preference, applied pre-React so the first paint
-// has no animation flash (10-agent review, Role 10). The React
+// has no animation flash. The React
 // AnimationGate re-applies the same decision via body.reduce-motion.
 const reduceMotionEnabled = (rawPref) => {
   if (!rawPref) return false;

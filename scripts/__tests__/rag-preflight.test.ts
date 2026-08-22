@@ -32,7 +32,7 @@ describe("Free RAG agent preflight", () => {
     ]);
 
     expect(
-      selectRagGroupsForTask("implement ten-lens assurance v2.2.1 governance orchestration")
+      selectRagGroupsForTask("audit solo agent governance and hook retirement")
     ).not.toContain("ui_v2");
 
     expect(selectRagGroupsForTask("audit v2 interaction flow")).toContain("ui_v2");

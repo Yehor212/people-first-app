@@ -1,6 +1,6 @@
 # No AI Templates Agent Policy
 
-Purpose: forbid generic AI-template work across ZenFlow agent workflows. This is an operator protocol, not application runtime code. It applies to Codex project roles, built-in workers, local subagents, connector-backed agents, and any future agent that follows this repository guidance.
+Purpose: forbid generic AI-template work across ZenFlow agent workflows. This is an operator protocol, not application runtime code. It applies to the active Codex agent, explicitly authorized built-in workers, connector-backed agents, and any future agent that follows this repository guidance. ZenFlow installs no project custom role profiles.
 
 ## Source Evidence
 
@@ -10,7 +10,7 @@ This policy follows a layered-governance pattern rather than relying on a single
 - OWASP Top 10 for LLM Applications: https://owasp.org/www-project-top-10-for-large-language-model-applications/ - treat LLM prompts, outputs, tool use, and supply-chain material as untrusted until verified.
 - OWASP LLM Prompt Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html - use structured instruction/data separation, output validation, least privilege, monitoring, and recurring testing for LLM-assisted workflows.
 - OpenAI Codex AGENTS.md guidance: https://developers.openai.com/codex/guides/agents-md - keep durable, repository-specific instructions where agents can discover them.
-- OpenAI Codex hooks and subagents: https://developers.openai.com/codex/hooks and https://developers.openai.com/codex/subagents - use `SubagentStart` for subagent context injection, `SubagentStop` for subagent output review, narrow specialist scope, and bounded fan-out.
+- OpenAI Codex hooks and subagents: https://developers.openai.com/codex/hooks and https://developers.openai.com/codex/subagents - hooks should stay narrow, and subagents add token cost and coordination overhead. ZenFlow therefore registers no subagent lifecycle hooks and defaults to SOLO.
 - OWASP AI Agent Security Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html - validate agent outputs, use structured output expectations, isolate context/memory, and treat multi-agent outputs as untrusted until verified.
 - GitHub protected branches and required checks: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches - use review and status-check backstops for protected work.
 - GitHub pull request templates: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-issue-and-pull-request-templates - make review criteria visible at merge time.
@@ -69,11 +69,11 @@ No single agent instruction can honestly prove that future agents will never att
 
 1. AGENTS.md is the routing layer and names this policy for all agents.
 2. This policy is the review rubric for product copy, UI, docs, prompts, generated assets, release materials, plans, and agent governance.
-3. Subagent prompts must include this policy and must return findings with file/command/source evidence, platform/domain impact, verification run or skipped checks, unresolved risk, and GO / STOP / ASK.
+3. The repository contains no custom role profiles and registers no subagent lifecycle hooks; built-in delegation remains a separate user-explicit action outside this repository.
 4. The PR template makes reviewers explicitly check for no AI-template output.
-5. `.codex/hooks/no-ai-template-gate.cjs` injects the no-template contract on `UserPromptSubmit` and `SubagentStart`, then uses `Stop` and `SubagentStop` to force a rewrite when obvious AI-template markers, best-practices laundering, or subagent proof laundering appear.
+5. `.codex/hooks/no-ai-template-gate.cjs` injects the no-template contract on `UserPromptSubmit` and uses the active agent's `Stop` event to force a rewrite when obvious template markers or best-practices laundering appear.
 6. `npm run check:no-ai-templates` is the local and CI-style drift guard for the policy, hook, tests, and wiring.
-7. `npm run check:agent-context` keeps this policy discoverable through the broader agent health check.
+7. `npm run check:agent-context` and `npm run check:solo-agent-governance` keep this policy and the SOLO boundary discoverable.
 8. GitHub branch protection and required status checks should be enabled on the canonical repository before claiming merge-time enforcement as PASS.
 
 ## Required Agent Behavior
@@ -87,7 +87,7 @@ Agents must:
 5. Replace placeholders with real, reviewable content or mark the item UNVERIFIED with a concrete blocker.
 6. Keep generated or assisted artifacts traceable: source, license/provenance, prompt/spec, checks run, and rollback path when applicable.
 7. Ask or stop when a real product decision is missing; do not fill policy, brand, legal, privacy, medical, financial, or release decisions with model guesses.
-8. Include this policy in subagent rubrics whenever delegating product, docs, copy, UI, release, agent-governance, or artifact review work; require findings with file/command/source evidence, platform/domain impact, verification run or skipped checks, remaining risk, and Verdict: GO / STOP / ASK.
+8. If the user explicitly authorizes built-in delegation in a future task, include this policy in its rubric and independently verify every returned claim before using it as proof.
 9. Apply the ZenFlow Idea Quality Gate before presenting brainstorming, product strategy, roadmap, UI concept, or visual direction output as an idea.
 10. Apply the Best-Practices-Only Proposal Gate before presenting recommendations, implementation options, roadmap proposals, architecture advice, UX ideas, security/privacy guidance, verification plans, or agent-governance changes as best practices.
 
@@ -108,7 +108,8 @@ Before finalizing agent work, check:
 - Completeness: placeholders, TODO/TBD deliverables, fake examples, and generic filler are absent.
 - Cross-platform: Web/PWA, Android, iOS, Desktop, Store/Release, Accessibility, Performance, Security/Privacy, Testing, and Operations are marked PASS, N/A, or UNVERIFIED as required by the task.
 - Verification: fresh commands, tests, screenshots, browser evidence, package checks, source links, or explicit UNVERIFIED rows support the final claim.
-- Delegation: subagent outputs are treated as untrusted evidence, must satisfy the subagent evidence contract, and are checked by the coordinator before being used as proof.
+- Delegation: no project custom profiles or lifecycle hooks exist; any future user-authorized built-in delegation remains untrusted evidence that the active agent verifies before use.
+- Deferred findings: additional out-of-scope observations are deduplicated into `docs/ai/DEFERRED_FINDINGS_LEDGER.md`; recording them does not authorize implementation or external issue creation.
 
 ## Static Guard
 

@@ -1,6 +1,6 @@
 # Account-Boundary Release Closure Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Any custom-role, council, subagent-driven, or automatic next-task instruction below is retired and must not be executed.
 
 **Goal:** Close every locally actionable evidence gap around account-bound imports, offline writes, sign-in transitions, push ownership, generated Supabase types, and release verification without inventing user or owner evidence.
 
@@ -28,7 +28,7 @@
 - RAG traversal prunes the generated `output/` tree before directory descent. Three fresh runs completed in `1.96s`, `1.30s`, and `1.33s`; the root `tmp/` tree remains untouched because deletion was not authorized.
 - AdMob evidence tests now evaluate historical evidence at a deterministic historical time. This does not refresh or upgrade the actual external readiness ledger.
 - The final frozen Vitest run is fresh after the offline-queue repair: `691/691` files passed, `8286` tests passed, `14` todo, exit `0`, and no unhandled teardown error was reported.
-- `check:all`, production build, sync contract, production-data-integrity diff/bundle, no-AI-template, best-practices, agent-context, agent-orchestra structure, RAG context, documentation counts, constitution, and migration-prefix checks completed successfully.
+- `check:all`, production build, sync contract, production-data-integrity diff/bundle, no-AI-template, best-practices, agent-context, historical agent-governance structure, RAG context, documentation counts, constitution, and migration-prefix checks completed successfully at the stated snapshot. Current governance uses the separate SOLO contract.
 - A production-equivalent Chromium settings run passed `13/13` scenarios covering 320px, 150% text, RTL `ar/he`, focus restoration, history, immediate appearance persistence, 44px controls, and horizontal overflow. Clean first-run sessions correctly render onboarding rather than bypassing it.
 - The settings reset popover is intentionally a disclosure, not an ARIA menu. The conflicting E2E assertion was aligned with the existing unit contract and W3C disclosure/menu-button requirements; production semantics were not weakened.
 - Offline-queue fallback reconciliation no longer treats a legacy browser-storage snapshot as authority over newer IndexedDB truth. Version 3 stores owner-bound exact-operation tombstones, reconciles inside the queue lock and Dexie transaction, preserves newer durable operations, unions pending tombstones while cleanup is unavailable, and fails closed on unreadable or schema-incomplete fallback state. A Pass B counterexample proved that an incomplete tombstone was previously filtered out; the new regression failed `1/61` before the fix and passed `61/61` afterward. The focused account-boundary/handler/package regression run passed `102/102` tests.
@@ -51,9 +51,8 @@
 
 1. Re-run final static, build, production-data, and policy gates against the frozen packet.
 2. Hash every task-critical file and attach the exact fresh command ledger.
-3. Run independent Role 8 QA and isolated Role 10 Pass B against that hash-bound packet.
-4. Re-check reviewer claims locally; never use their summaries as standalone proof.
-5. Publish a final `PASS / FAIL / UNVERIFIED` matrix and request the one remaining push-architecture decision without staging, committing, pushing, or deploying.
+3. The active agent re-checks every source and claim against that hash-bound packet.
+4. Publish a final `PASS / FAIL / UNVERIFIED` matrix and request the one remaining push-architecture decision without staging, committing, pushing, or deploying.
 
 ---
 
@@ -62,8 +61,8 @@
 **Files:**
 - Inspect: `AGENTS.md`
 - Inspect: `ARCHITECTURE.md`
-- Inspect: `docs/ai/TEN_LENS_EVIDENCE_ASSURANCE_V2_2_1.md`
-- Inspect: `config/persistent-agent-orchestra.json`
+- Inspect: `docs/ai/AGENT_CHANGE_GOVERNANCE.md`
+- Inspect: `docs/ai/DEFERRED_FINDINGS_LEDGER.md`
 - Create: `.preflight-token` only if the existing token does not cover this exact task and current timestamp
 
 **Interfaces:**
@@ -72,8 +71,8 @@
 
 - [ ] Run `npm run rag:preflight -- "Продолжить незавершённое доказательное закрытие account-boundary, imported backup, offline queue, push, Supabase types, полный тестовый gate без mock demo sample production data"` and require exit 0.
 - [ ] Run `git status --short`, `git diff --check`, and task-scoped `git diff --stat`; preserve every unrelated change.
-- [ ] Record all ten role dispositions with file/risk evidence. Select only Logic/State, Architecture/Data, Security, Reliability, QA, and Role 10 while the remaining scope has no UI, copy, emotional, or discovery change.
-- [ ] Hash the final task packet before independent Pass B; do not use a subagent summary as proof.
+- [ ] Record the SOLO task boundary, platform/domain impact, and file/risk evidence.
+- [ ] Hash the final task packet before closure; do not use a prior report as proof.
 
 ### Task 2: Diagnose The Three Full-Suite Failures
 
@@ -154,7 +153,7 @@
 - [ ] Run broader account/auth/storage blast-radius tests selected from the actual import/dependency closure.
 - [ ] Run full Vitest with `--exclude 'output/**'`; report exact files and test counts.
 - [ ] Run `npm run check:all` and `npm run build` separately.
-- [ ] Run `npm run check:sync-contract`, `npm run check:production-data-integrity:diff`, `npm run check:production-data-integrity:bundle`, `npm run check:no-ai-templates`, `npm run check:best-practices`, `npm run check:agent-context`, `npm run check:agent-orchestra`, `npm run doc-counts`, and `npm run constitution:check`.
+- [ ] Run `npm run check:sync-contract`, `npm run check:production-data-integrity:diff`, `npm run check:production-data-integrity:bundle`, `npm run check:no-ai-templates`, `npm run check:best-practices`, `npm run check:agent-context`, `npm run check:solo-agent-governance`, `npm run doc-counts`, and `npm run constitution:check`.
 - [ ] Run `git diff --check` after all edits.
 
 ### Task 7: Verify Runtime Without Synthetic User History
@@ -180,11 +179,11 @@
 
 **Interfaces:**
 - Consumes: hash-bound final diff, fresh command outputs, and runtime artifacts
-- Produces: independent QA verdict, Role 10 Pass B, and final evidence ledger
+- Produces: final SOLO verification verdict and evidence ledger
 
-- [ ] Ask Role 8 QA to map each explicit and implied requirement to direct local evidence or `UNVERIFIED`.
-- [ ] Ask Role 10 Pass B to verify packet integrity, missing stakeholders/platforms, and proof laundering risks.
-- [ ] Independently re-check every subagent claim against files or command output.
+- [ ] Map each explicit and implied requirement to direct local evidence or `UNVERIFIED`.
+- [ ] Verify packet integrity, missing stakeholders/platforms, and proof-laundering risks.
+- [ ] Re-check every prior claim against files or command output.
 - [ ] Report `PASS`, `FAIL`, and `UNVERIFIED` separately for Web/PWA, Android, iOS, Desktop, accessibility/i18n, security/privacy, performance/reliability, production-data integrity, testing, and release readiness.
 - [ ] List all task-critical untracked files. Do not stage, commit, push, or deploy without a separate user instruction.
 
@@ -204,7 +203,7 @@
 - [ ] No confirmed high-severity security finding remains open in the task scope.
 - [ ] Production-data-integrity checks show no production-reachable synthetic data introduced by this work.
 - [ ] Final full-suite and build outputs are fresh and include exact counts.
-- [ ] Independent QA and Role 10 evidence is verified by the coordinator.
+- [ ] The active agent verifies the final evidence packet against current sources and commands.
 - [ ] Remaining external, authenticated, native, public-deploy, or human-acceptance proof is explicitly `UNVERIFIED`.
 
 ## UNVERIFIED Until Freshly Proven

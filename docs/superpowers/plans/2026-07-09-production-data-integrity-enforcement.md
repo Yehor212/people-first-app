@@ -2,6 +2,7 @@
 
 > **Execution owner:** Codex in this checkout on `codex/production-data-integrity`.
 > **Process:** execute in the current session with test-first evidence and fresh verification before any completion claim.
+> **Governance update (2026-08-14):** Subagent lifecycle and PDI Stop scanning described below are retired. Current PDI hook coverage is UserPromptSubmit, PreToolUse, and PostToolUse; stale lifecycle events are inert.
 
 **Goal:** Prevent test doubles, plausible synthetic user history, deceptive fallbacks, and fake verification evidence from reaching ZenFlow production runtime, persistence, sync, analytics, exports, release artifacts, or required-check evidence while preserving isolated test and developer fixtures.
 
@@ -92,7 +93,7 @@ Add temporary-repository fixtures for allowed test mocks/timers/factories, isola
 
 **Create:** `scripts/__tests__/production-data-integrity-hook.test.ts`
 
-Exercise UserPromptSubmit, PreToolUse, PostToolUse, Stop, SubagentStart, and SubagentStop through JSON stdin. Cover neutral prompts, malformed input, tampering, findings, internal error, recursion guard, JSON-only stdout, and evidence-incomplete PASS/GO. Record RED before the hook exists.
+Exercise UserPromptSubmit, PreToolUse, PostToolUse, and stale Stop input through JSON stdin. Cover neutral prompts, malformed input, tampering, findings, internal error, recursion guard, JSON-only stdout, and the no-scan Stop fallback. Assert that no subagent lifecycle hook is registered or handled. Record RED before the hook exists.
 
 ### 3. Checker core and canonical ledgers
 
@@ -126,7 +127,7 @@ First extend settings tests to prove version activation cannot persist demo stat
 **Create:** `.codex/hooks/production-data-integrity-gate.cjs`
 **Modify:** `.codex/hooks.json`
 
-Use official payload fields and JSON-only stdout where required. Inject only for relevant tasks; guard enforcement patches; run fast diff checks after relevant writes; run final diff/staged scan on Stop; block findings/internal errors; honor `stop_hook_active`; enforce the subagent evidence packet; configure bounded timeouts and no state. Run hook tests GREEN.
+Use official payload fields and JSON-only stdout where required. Inject only for relevant tasks; guard enforcement patches; run fast diff checks after relevant writes; leave Stop unregistered with an inert no-scan stale-client fallback; block findings/internal errors in explicit and relevant PostToolUse checks; honor `stop_hook_active`; configure bounded timeouts and no state. Run hook tests GREEN.
 
 ### 6. Package, CI, review, and enforcement wiring
 

@@ -192,6 +192,7 @@ function validateNoAiTemplatesPolicy(options = {}) {
   const hookTestFile = readText(rootDir, "scripts/__tests__/no-ai-template-hook.test.ts", failures);
   const codexHooks = readText(rootDir, ".codex/hooks.json", failures);
   const noAiHook = readText(rootDir, ".codex/hooks/no-ai-template-gate.cjs", failures);
+  const deferredFindings = readText(rootDir, "docs/ai/DEFERRED_FINDINGS_LEDGER.md", failures);
 
   requireIncludes("AGENTS.md", agents, [
     "No AI Templates Agent Gate",
@@ -202,14 +203,13 @@ function validateNoAiTemplatesPolicy(options = {}) {
     "Do not answer brainstorming requests with standalone feature-name lists",
     "Best-Practices-Only Proposal Gate",
     "Do not present recommendations as best practices",
-    "SubagentStart",
-    "SubagentStop",
-    "subagent proof laundering",
+    "No subagent lifecycle hook is registered",
+    "docs/ai/DEFERRED_FINDINGS_LEDGER.md",
   ], failures);
 
   requireIncludes("docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md", policy, [
     "Purpose: forbid generic AI-template work across ZenFlow agent workflows.",
-    "Codex project roles, built-in workers, local subagents, connector-backed agents",
+    "ZenFlow installs no project custom role profiles",
     "Source Evidence",
     "Enforcement Layers",
     "An AI template is any output that looks generated first and ZenFlow-specific second.",
@@ -248,28 +248,37 @@ function validateNoAiTemplatesPolicy(options = {}) {
   requirePattern(
     "docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md",
     policy,
-    "subagent rubric requirement",
-    /subagent/i,
+    "explicit built-in delegation boundary",
+    /built-in delegation/i,
     failures,
   );
 
   requireIncludes(".codex/hooks.json", codexHooks, [
     "UserPromptSubmit",
     "Stop",
-    "SubagentStart",
-    "SubagentStop",
     "no-ai-template-gate.cjs",
   ], failures);
+  if (/"Subagent(?:Start|Stop)"\s*:/.test(codexHooks)) {
+    failures.push(".codex/hooks.json must not register subagent lifecycle hooks");
+  }
 
   requireIncludes(".codex/hooks/no-ai-template-gate.cjs", noAiHook, [
     "NO AI TEMPLATE GATE",
-    "SUBAGENT EVIDENCE CONTRACT",
     "Best-Practices-Only Proposal Gate",
     "best-practices laundering",
-    "subagent proof laundering",
     "source-backed applicability",
-    "SubagentStop",
     "process.exit(2)",
+  ], failures);
+  if (/eventName === ['\"]Subagent(?:Start|Stop)['\"]/.test(noAiHook)) {
+    failures.push(".codex/hooks/no-ai-template-gate.cjs must not handle subagent lifecycle events");
+  }
+
+  requireIncludes("docs/ai/DEFERRED_FINDINGS_LEDGER.md", deferredFindings, [
+    "## Intake Queue",
+    "Evidence locator",
+    "Verification path",
+    "No secrets, credentials, raw private content, or user data",
+    "does not authorize implementation",
   ], failures);
 
   requireIncludes(".github/PULL_REQUEST_TEMPLATE.md", prTemplate, [
@@ -302,10 +311,7 @@ function validateNoAiTemplatesPolicy(options = {}) {
     "no-ai-template-gate.cjs",
     "UserPromptSubmit",
     "Stop",
-    "SubagentStart",
-    "SubagentStop",
-    "SUBAGENT EVIDENCE CONTRACT",
-    "subagent proof laundering",
+    "registers no subagent lifecycle hooks",
     "best-practices laundering",
   ], failures);
 
@@ -358,7 +364,7 @@ function main() {
     return;
   }
 
-  console.log("[no-ai-templates] PASS - policy, Codex main/subagent hook, AGENTS.md, PR review, drift CI, agent-context, package wiring, and obvious template markers verified.");
+  console.log("[no-ai-templates] PASS - policy, prompt/stop hook wiring, SOLO boundary, absent subagent lifecycle hooks, deferred-findings ledger, PR review, drift CI, agent-context, and obvious template markers verified.");
 }
 
 if (require.main === module) {

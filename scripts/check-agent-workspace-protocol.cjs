@@ -53,7 +53,7 @@ if (
 if (!packageJson.scripts?.["ci:preflight"]?.includes("npm run check:agent-workspace")) {
   failures.push("ci:preflight must run check:agent-workspace");
 }
-for (const scriptName of ["test:agent-orchestra", "test:release-contracts"]) {
+for (const scriptName of ["test:agent-governance", "test:release-contracts"]) {
   if (!packageJson.scripts?.[scriptName]?.includes("npm run test:agent-workspace")) {
     failures.push(`${scriptName} must run test:agent-workspace`);
   }

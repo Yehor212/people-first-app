@@ -61,9 +61,9 @@
 2. Run `check:all`, sync/auth/data-integrity/accessibility/i18n/orb gates, Chrome performance smoke, security suite, and dependency audit.
 3. Execute desktop and mobile browser scenarios against a production build; capture screenshots, console, network, gesture, persistence, offline, RTL, and reduced-motion evidence.
 4. Run Android and iOS build/unit/lint/simulator gates and Tauri checks available on this host; label missing physical-device checks `UNVERIFIED`.
-5. Have the nine non-coordinator orchestra roles independently inspect disjoint risks and return evidence-backed `GO`, `STOP`, or `ASK` findings.
+5. The active agent inspects each disjoint risk domain against exact source/runtime evidence and records `PASS`, `FAIL`, or `UNVERIFIED`; no additional agent is created automatically.
 6. For every reproduced defect, add the smallest red regression test before production edits, implement the scoped fix, rerun the red test green, then rerun blast-radius and visual checks.
-7. Repeat independent review after fixes. Completion requires zero unresolved `P0/P1`, no unexplained `P2` in changed scope, clean worktree or explicit change ledger, and a final `PASS/FAIL/UNVERIFIED` packet.
+7. Repeat the evidence review after fixes. Completion requires zero unresolved `P0/P1`, no unexplained `P2` in changed scope, clean worktree or explicit change ledger, and a final `PASS/FAIL/UNVERIFIED` packet.
 
 ## Acceptance And Kill Criteria
 

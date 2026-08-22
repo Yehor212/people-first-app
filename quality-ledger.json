@@ -418,7 +418,7 @@
       "value": 4,
       "direction": "up",
       "recorded": "2026-07-13",
-      "description": "Active tracked Codex hook files with an explicit process.exit(2) path. Metric definition was reset from dormant Claude hook quantity during the exact-ten Codex cutover; runtime loading remains independently UNVERIFIED."
+      "description": "Active tracked Codex hook files with an explicit process.exit(2) path. Custom role profiles and subagent lifecycle hooks were retired on 2026-08-14; runtime loading remains independently UNVERIFIED."
     },
     "enforcement.totalHooks": {
       "value": 4,

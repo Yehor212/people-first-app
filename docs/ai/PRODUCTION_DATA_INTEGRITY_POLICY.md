@@ -169,8 +169,8 @@ The canonical waiver ledger is empty at policy activation.
 - `UserPromptSubmit` injects a short contract only for relevant work.
 - `PreToolUse` denies obvious protected-surface weakening, broad baseline/waiver changes, workflow skips, and error masking.
 - `PostToolUse` runs the fast diff checker after relevant edits.
-- `Stop` runs a final diff check, blocks findings/internal errors, and honors `stop_hook_active` to avoid a continuation loop.
-- `SubagentStart` injects the evidence packet; `SubagentStop` rejects success claims without findings, source evidence, platform impact, verification/skips, remaining risk, and GO/STOP/ASK.
+- The PDI hook is not registered for `Stop`: a full repository scan on every response can exceed the lifecycle timeout even when no relevant write occurred. Stale clients that invoke the old event receive a no-scan continuation. Final task and release claims still require the explicit diff/staged/full/bundle commands applicable to their scope; findings and internal errors remain fail-closed there and after relevant `PostToolUse` writes.
+- No subagent lifecycle event is registered or handled. Final evidence remains the active agent's responsibility.
 
 The hook resolves the repository with `git rev-parse --show-toplevel`, even when the session cwd is a subdirectory. It reads one JSON object from stdin, emits JSON-only stdout on success, sends diagnostics to stderr, uses a 15-second checker timeout, stores no user data/secrets, and fails closed on malformed input. OpenAI documents `PreToolUse` interception as incomplete, so the hook is early feedback—not the sole boundary. A changed hook hash may require Codex trust/review again; that trust state is `UNVERIFIED` until observed.
 

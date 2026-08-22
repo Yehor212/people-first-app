@@ -4,7 +4,7 @@
  *
  * Early-feedback hook for relevant Codex prompts and edits. The deterministic
  * checker and CI remain the repository-local enforcement boundary; this hook
- * never treats its own output or a subagent summary as proof.
+ * never treats its own output as proof.
  *
  * Hook input: one JSON object on stdin. Successful stdout is JSON only.
  */
@@ -325,18 +325,6 @@ function runChecker(mode) {
   return { kind: "clean", report };
 }
 
-function evidencePacketComplete(message) {
-  const required = [
-    /Findings\s*:/i,
-    /File\/source evidence\s*:/i,
-    /Platform\/domain impact\s*:/i,
-    /Verification run or skipped checks\s*:/i,
-    /Remaining risk\s*:/i,
-    /Verdict\s*:\s*(?:GO|STOP|ASK)\b/i,
-  ];
-  return required.every((pattern) => pattern.test(message));
-}
-
 function handle(data) {
   const eventName = data.hook_event_name || data.event;
   if (eventName === "UserPromptSubmit") {
@@ -370,31 +358,9 @@ function handle(data) {
   }
   if (eventName === "Stop") {
     if (data.stop_hook_active === true) return emit({ continue: true });
-    const check = runChecker("diff");
-    if (check.kind === "finding")
-      return block(`Production data integrity Stop check failed: ${check.reason}.`);
-    if (check.kind === "error")
-      return block(`Production data integrity checker internal error at Stop: ${check.reason}.`);
+    // The hook is intentionally not registered for Stop. Keep a no-scan fallback
+    // for stale clients that loaded an earlier hooks.json before this change.
     return emit({ continue: true });
-  }
-  if (eventName === "SubagentStart") {
-    return emit({
-      hookSpecificOutput: {
-        hookEventName: "SubagentStart",
-        additionalContext:
-          "Production-data integrity review is read-only unless explicitly authorized. Report: Findings; File/source evidence; Platform/domain impact; Verification run or skipped checks; Remaining risk; Verdict: GO / STOP / ASK. A summary is not proof.",
-      },
-    });
-  }
-  if (eventName === "SubagentStop") {
-    const message = String(data.last_assistant_message || data.message || "");
-    const claimsSuccess = /\b(?:PASS|GO|READY|ALL CLEAR|NO FINDINGS)\b/i.test(message);
-    if (claimsSuccess && !evidencePacketComplete(message)) {
-      return block(
-        "Subagent success claim lacks the required Findings, file/source evidence, platform/domain impact, verification/skips, remaining risk, and GO/STOP/ASK verdict packet."
-      );
-    }
-    return emit({});
   }
   return emit({});
 }

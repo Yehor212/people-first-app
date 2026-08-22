@@ -1,8 +1,8 @@
 # Hyperfocus Rain Wind Audio Approval Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Use `superpowers:executing-plans` only for an approved plan; do not invoke subagents or auto-start the next task. Existing checkboxes are tracking only.
 
-**Goal:** Replace the blocked Hyperfocus V2 audio set with the approved target families `forest`, `rain`, `ocean`, `fireplace`, `river`, and `wind`, then obtain independent subagent approval.
+**Goal:** Replace the blocked Hyperfocus V2 audio set with the approved target families `forest`, `rain`, `ocean`, `fireplace`, `river`, and `wind`, then complete evidence-backed SOLO review.
 
 **Architecture:** Keep the existing Hyperfocus audio catalog and QC script ownership. Replace only the blocked family slots and regenerate derived manifest/provenance/docs/package evidence from local files.
 
@@ -56,9 +56,9 @@
 - [ ] Run package sync/build commands needed to refresh Web/PWA, Android, iOS, and Desktop package assets.
 - [ ] Run the package report and fix any missing target.
 
-### Task 5: Approval Loop
+### Task 5: SOLO Approval Loop
 
 - [ ] Run focused Hyperfocus tests, i18n, typecheck, lint, audit/Snyk where applicable.
-- [ ] Spawn a read-only subagent with the same strict best-practices rubric.
-- [ ] If subagent returns `BLOCK`, fix blockers and rerun the loop.
+- [ ] Run the visual-integrity critic and independently verify its artifact evidence.
+- [ ] Fix every reproducible in-scope blocker and rerun the affected checks.
 - [ ] Final status may only be `APPROVE` or explicitly documented `UNVERIFIED` for unavailable real human/device/public deploy proof.

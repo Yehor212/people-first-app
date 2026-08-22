@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 /**
- * Codex UserPromptSubmit + Stop + SubagentStart + SubagentStop hook for
- * no-AI-template enforcement.
+ * Codex UserPromptSubmit + Stop hook for no-AI-template enforcement.
  *
  * UserPromptSubmit injects the ZenFlow no-template proposal contract.
- * SubagentStart injects the same contract plus the subagent evidence contract.
- * Stop and SubagentStop force a continuation when output contains obvious
- * template markers, best-practices claims without evidence, or subagent proof
- * laundering.
+ * Stop forces a continuation when output contains obvious template markers or
+ * best-practices claims without evidence.
  */
 'use strict';
 
@@ -27,14 +24,6 @@ const TEMPLATE_MARKERS = [
 ];
 
 const BEST_PRACTICE_CLAIM = /\b(?:best[- ]practices?|industry standard|recommended|obvious improvement|we should|recommendation:)\b/i;
-const SUBAGENT_PROOF_CLAIM = /\b(?:all clear|no issues found|looks good|approved|ready to merge|PASS|GO)\b/i;
-const SUBAGENT_EVIDENCE_REQUIREMENTS = [
-  { label: 'findings with evidence', pattern: /\bFindings?:/i },
-  { label: 'platform/domain impact', pattern: /\bPlatform\/domain impact:/i },
-  { label: 'verification run or skipped checks', pattern: /\bVerification (?:run|skipped|path):/i },
-  { label: 'remaining risk', pattern: /\bRemaining risk:/i },
-  { label: 'GO / STOP / ASK verdict', pattern: /\bVerdict:\s*(?:GO|STOP|ASK)\b/i },
-];
 const BEST_PRACTICE_EVIDENCE = [
   /source-backed applicability/i,
   /local evidence/i,
@@ -59,19 +48,7 @@ function noTemplateContext() {
     '- ZenFlow Idea Quality Gate: every idea needs user failure mode, local ZenFlow evidence, affected surface/platform, constraints, acceptance or kill criteria, and non-goal.',
     '- Best-Practices-Only Proposal Gate: every recommendation presented as best practice needs source-backed applicability, local evidence, affected surface/platform, tradeoffs and rejection criteria, and a verification path.',
     '- Missing proof is UNVERIFIED or STOP; do not polish uncertainty into confident advice.',
-  ].join('\n');
-}
-
-function subagentEvidenceContext() {
-  return [
-    noTemplateContext(),
-    '',
-    'SUBAGENT EVIDENCE CONTRACT:',
-    '- Stay scoped to the delegated evidence question; do not broaden the task or invent product decisions.',
-    '- Return findings with file/command/source evidence, platform/domain impact, verification run or skipped checks, remaining risk, and Verdict: GO / STOP / ASK.',
-    '- Do not return all clear, PASS, GO, or best-practice recommendations unless the evidence fields above are present.',
-    '- For ideas or recommendations, apply the ZenFlow Idea Quality Gate and Best-Practices-Only Proposal Gate inside the subagent result.',
-    '- The coordinator must verify your result against local files, command output, screenshots, or authoritative sources before treating it as proof.',
+    '- Route every additional out-of-scope finding only to docs/ai/DEFERRED_FINDINGS_LEDGER.md with evidence, impact, verification path, risk, and disposition; logging never authorizes implementation.',
   ].join('\n');
 }
 
@@ -104,36 +81,12 @@ function detectViolations(message) {
   return [...new Set(violations)];
 }
 
-function missingSubagentEvidence(message) {
-  const text = String(message || '');
-  return SUBAGENT_EVIDENCE_REQUIREMENTS
-    .filter((requirement) => !requirement.pattern.test(text))
-    .map((requirement) => requirement.label);
-}
-
-function detectSubagentViolations(message) {
-  const violations = detectViolations(message);
-  const missing = missingSubagentEvidence(message);
-
-  if (missing.length > 0) {
-    const text = String(message || '');
-    if (SUBAGENT_PROOF_CLAIM.test(text)) {
-      violations.push('subagent proof laundering: all-clear, PASS, or GO claim lacks required evidence fields (' + missing.join(', ') + ')');
-    } else {
-      violations.push('subagent evidence contract incomplete: missing ' + missing.join(', '));
-    }
-  }
-
-  return [...new Set(violations)];
-}
-
-function block(violations, scope = 'final answer') {
+function block(violations) {
   process.stderr.write([
     'NO AI TEMPLATE GATE BLOCKED',
     'Detected: ' + violations.join('; '),
-    'Continue by rewriting the ' + scope + ' so it is ZenFlow-specific and evidence-backed.',
+    'Continue by rewriting the final answer so it is ZenFlow-specific and evidence-backed.',
     'Required for ideas/recommendations: user failure mode or source-backed applicability, local evidence, affected surface/platform, tradeoffs and rejection criteria, verification path, and explicit UNVERIFIED rows for missing proof.',
-    'Required for subagents: findings with file/command/source evidence, platform/domain impact, verification run or skipped checks, remaining risk, and Verdict: GO / STOP / ASK.',
   ].join('\n') + '\n');
   process.exit(2);
 }
@@ -153,21 +106,6 @@ function handleStop(data) {
   console.log(JSON.stringify({ continue: true }));
 }
 
-function handleSubagentStop(data) {
-  if (data.stop_hook_active) {
-    console.log(JSON.stringify({ continue: true }));
-    return;
-  }
-
-  const violations = detectSubagentViolations(data.last_assistant_message || '');
-  if (violations.length > 0) {
-    block(violations, 'subagent result');
-    return;
-  }
-
-  console.log(JSON.stringify({ continue: true }));
-}
-
 try {
   const data = readInput();
   const eventName = data.hook_event_name || data.event || 'UserPromptSubmit';
@@ -177,18 +115,8 @@ try {
     process.exit(0);
   }
 
-  if (eventName === 'SubagentStart') {
-    outputContext('SubagentStart', subagentEvidenceContext());
-    process.exit(0);
-  }
-
   if (eventName === 'Stop') {
     handleStop(data);
-    process.exit(0);
-  }
-
-  if (eventName === 'SubagentStop') {
-    handleSubagentStop(data);
     process.exit(0);
   }
 
@@ -198,4 +126,4 @@ try {
   process.exit(2);
 }
 
-module.exports = { detectViolations, detectSubagentViolations, noTemplateContext, subagentEvidenceContext };
+module.exports = { detectViolations, noTemplateContext };

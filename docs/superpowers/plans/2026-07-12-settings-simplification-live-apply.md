@@ -1,6 +1,6 @@
 # Settings Simplification And Live Apply Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Subagent-driven execution is preferred when agent quota is available; the coordinator must independently verify every report.
+> **Governance update (2026-08-14):** Execute only an explicitly authorized task and do so SOLO. Any custom-role, council, subagent-driven, or automatic next-task instruction below is retired and must not be executed.
 
 **Goal:** Replace the cluttered V2 Settings experience with the approved Variant A: five useful destinations, immediate application of safe preferences, explicit reminder consent, contextual ambience controls, complete exit motion, natural eight-locale copy, and evidence-backed behavior across supported platforms.
 
@@ -96,7 +96,7 @@ Write only V2 Settings, theme/motion/local preference helpers, reminder category
 
 ### Verdict
 
-`GO`. The user approved Variant A and explicitly authorized implementation on `main`. Missing native/browser/ten-role evidence blocks final closure, not safe local TDD progress.
+`GO`. The user approved Variant A and explicitly authorized implementation on `main`. Missing native/browser evidence blocks final closure, not safe local TDD progress.
 
 ---
 
@@ -304,7 +304,7 @@ Write only V2 Settings, theme/motion/local preference helpers, reminder category
 - [ ] Preserve placeholders and logical RTL behavior.
 - [ ] Run contrast matrix, `npm run i18n:check`, `npm run i18n:deep`, `npm run check:translation-quality`, and `npm run check:no-ai-templates` GREEN.
 
-### Task 8: Full proof, review, and ten-role closure
+### Task 8: Full proof and SOLO closure
 
 **Files:**
 - Modify if required by test changes: `e2e/nav-v2-settings.spec.ts`
@@ -318,9 +318,8 @@ Write only V2 Settings, theme/motion/local preference helpers, reminder category
 - [ ] With explicit browser-tool permission, run Settings E2E and capture phone/desktop screenshots for Paper/Ink/OLED, long Ukrainian/German, Arabic/Hebrew RTL, keyboard, reduced motion, and storage/permission error states.
 - [ ] Run Android build and iOS sync/build gates where the local toolchain supports them; physical/simulator evidence remains UNVERIFIED if unavailable.
 - [ ] Run the local visual-integrity critic against current screenshots and source artifacts.
-- [ ] Dispatch exact roles 2–9 as independent read-only reviews and verify every cited finding locally.
-- [ ] Run role 10 isolated Pass A against plan/diff/evidence and Pass B after every STOP is closed.
-- [ ] Role 1 coordinator issues final `GO` only when all ten roles return evidence-backed `GO`; usage-limit errors, interruptions, or summaries without proof do not count.
+- [ ] The active agent re-checks every cited finding against current files, commands, screenshots, and hashes.
+- [ ] Issue task-level `GO` only when every in-scope acceptance condition has fresh evidence and no task-attributable blocker remains; external proof stays `UNVERIFIED`.
 - [ ] Write the final Best Practices Packet and Done Packet with PASS/PARTIAL/UNVERIFIED/FAIL rows.
 
 ## Self-review
@@ -337,4 +336,4 @@ Write only V2 Settings, theme/motion/local preference helpers, reminder category
 - Physical Android/iOS and packaged Tauri runtime availability.
 - Human native-speaker acceptance for all eight locales.
 - Public GitHub Pages state because no deployment is authorized.
-- Ten-role closure because current subagent runs can still be blocked by the external usage limit.
+- Native, public, human, and artistic proof that has not been freshly collected.

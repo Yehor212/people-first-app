@@ -238,7 +238,7 @@ describe("mood-terrible calm contract", () => {
 });
 
 /**
- * Boot-time reduced-motion contract (10-agent review, Role 10): the
+ * Boot-time reduced-motion contract: the
  * in-app preference must be applied before React hydrates, otherwise
  * users see an animation flash on every cold boot.
  */

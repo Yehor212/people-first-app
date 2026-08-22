@@ -1,6 +1,6 @@
 # ADR-0003: Historical 28-law enforcement via external-agent hooks
 
-- **Status:** Superseded on 2026-07-13 by the tracked Codex control plane in `.codex/hooks.json`, `AGENTS.md`, and `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md`
+- **Status:** Superseded again on 2026-08-14 by the tracked SOLO control plane in `.codex/hooks.json`, `AGENTS.md`, and `docs/ai/AGENT_CHANGE_GOVERNANCE.md`; the former custom-role system is retired
 - **Date:** 2026-04-18 (retroactively recorded)
 - **Deciders:** Team Lead
 - **Tags:** process, quality-gates, tooling, meta

@@ -1,6 +1,6 @@
 # Planning Feature Layer Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution governance (2026-08-14):** implement this plan SOLO, task by task, with repository-grounded evidence. Do not create agents or advance to another task without a direct current-user request. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** превратить V2 `Planning` не в еще одну перегруженную вкладку, а в логичный темный центр дня: сейчас/следующее, расписание, подготовка, фокус, завершение и рефлексия живут в одном управляемом пользовательском потоке.
 

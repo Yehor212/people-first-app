@@ -15,7 +15,7 @@ function runHook(input: unknown) {
 }
 
 describe("Codex no-AI-template hook", () => {
-  it("ships and registers the runtime hook for prompt, stop, and subagent checks", () => {
+  it("ships prompt and stop checks but registers no subagent lifecycle hooks", () => {
     expect(existsSync(HOOK)).toBe(true);
 
     const hooksConfig = JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as {
@@ -24,13 +24,11 @@ describe("Codex no-AI-template hook", () => {
 
     const userPromptHooks = hooksConfig.hooks?.UserPromptSubmit || [];
     const stopHooks = hooksConfig.hooks?.Stop || [];
-    const subagentStartHooks = hooksConfig.hooks?.SubagentStart || [];
-    const subagentStopHooks = hooksConfig.hooks?.SubagentStop || [];
 
     expect(JSON.stringify(userPromptHooks)).toContain("no-ai-template-gate.cjs");
     expect(JSON.stringify(stopHooks)).toContain("no-ai-template-gate.cjs");
-    expect(JSON.stringify(subagentStartHooks)).toContain("no-ai-template-gate.cjs");
-    expect(JSON.stringify(subagentStopHooks)).toContain("no-ai-template-gate.cjs");
+    expect(hooksConfig.hooks).not.toHaveProperty("SubagentStart");
+    expect(hooksConfig.hooks).not.toHaveProperty("SubagentStop");
   });
 
   it("injects the no-template best-practices contract for idea requests", () => {
@@ -46,17 +44,21 @@ describe("Codex no-AI-template hook", () => {
     expect(output).toContain("source-backed applicability");
   });
 
-  it("injects the subagent evidence contract when a subagent starts", () => {
-    const result = runHook({
+  it("keeps stale subagent lifecycle events inert", () => {
+    const start = runHook({
       hook_event_name: "SubagentStart",
       agent_type: "reviewer",
     });
+    const stop = runHook({
+      hook_event_name: "SubagentStop",
+      agent_type: "reviewer",
+      last_assistant_message: "All clear. No issues found. PASS.",
+    });
 
-    expect(result.status).toBe(0);
-    const output = result.stdout + result.stderr;
-    expect(output).toContain("SUBAGENT EVIDENCE CONTRACT");
-    expect(output).toContain("GO / STOP / ASK");
-    expect(output).toContain("coordinator must verify");
+    expect(start.status).toBe(0);
+    expect(start.stdout).toContain('"continue":true');
+    expect(stop.status).toBe(0);
+    expect(stop.stdout).toContain('"continue":true');
   });
 
   it("forces revision when final output contains obvious AI-template placeholders", () => {
@@ -80,17 +82,6 @@ describe("Codex no-AI-template hook", () => {
     expect(result.stderr).toContain("best-practices laundering");
   });
 
-  it("forces subagent revision when all-clear proof lacks evidence", () => {
-    const result = runHook({
-      hook_event_name: "SubagentStop",
-      agent_type: "reviewer",
-      last_assistant_message: "All clear. No issues found. PASS.",
-    });
-
-    expect(result.status).toBe(2);
-    expect(result.stderr).toContain("subagent proof laundering");
-  });
-
   it("allows source-backed best-practices recommendations with evidence and verification", () => {
     const result = runHook({
       hook_event_name: "Stop",
@@ -100,22 +91,6 @@ describe("Codex no-AI-template hook", () => {
         "Local evidence: docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md defines the gate.",
         "Tradeoffs and rejection criteria: do not block legitimate template files.",
         "Verification path: npm run check:no-ai-templates and explicit UNVERIFIED rows.",
-      ].join("\n"),
-    });
-
-    expect(result.status).toBe(0);
-  });
-
-  it("allows evidence-backed subagent findings with explicit verification", () => {
-    const result = runHook({
-      hook_event_name: "SubagentStop",
-      agent_type: "reviewer",
-      last_assistant_message: [
-        "Findings: none after checking docs/ai/NO_AI_TEMPLATES_AGENT_POLICY.md.",
-        "Platform/domain impact: agent-governance.",
-        "Verification run: npm run check:no-ai-templates PASS.",
-        "Remaining risk: GitHub branch protection UNVERIFIED.",
-        "Verdict: GO.",
       ].join("\n"),
     });
 

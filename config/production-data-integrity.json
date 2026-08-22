@@ -385,7 +385,6 @@
       "requiredStrings": [
         "production-data-integrity-gate.cjs",
         "PostToolUse",
-        "SubagentStop",
         "Stop"
       ],
       "forbiddenStrings": []
@@ -396,10 +395,12 @@
         "PRODUCTION DATA INTEGRITY GATE",
         "resolveRepositoryRoot",
         "stop_hook_active",
-        "SubagentStop",
         "process.exit(2)"
       ],
-      "forbiddenStrings": []
+      "forbiddenStrings": [
+        "eventName === \"SubagentStart\"",
+        "eventName === \"SubagentStop\""
+      ]
     },
     {
       "path": "scripts/__tests__/production-data-integrity.test.ts",
@@ -408,7 +409,7 @@
     },
     {
       "path": "scripts/__tests__/production-data-integrity-hook.test.ts",
-      "requiredStrings": ["stop_hook_active", "malformed stdin", "SubagentStop"],
+      "requiredStrings": ["stop_hook_active", "malformed stdin", "keeps stale subagent lifecycle events inert"],
       "forbiddenStrings": []
     },
     {
