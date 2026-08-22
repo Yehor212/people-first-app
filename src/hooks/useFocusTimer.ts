@@ -397,6 +397,12 @@ export function useFocusTimer({
     setReflectionValue(null);
   };
 
+  const handleCancelReflection = useCallback(() => {
+    setPendingSession(null);
+    setShowReflection(false);
+    setReflectionValue(null);
+  }, []);
+
   const handleHyperfocusComplete = () => {
     setShowHyperfocus(false);
     const session = createFocusSession(focusMinutes, label, "completed");
@@ -404,9 +410,8 @@ export function useFocusTimer({
     setShowReflection(true);
   };
 
-  useBackHandler(showReflection, () => handleSaveReflection(null));
+  useBackHandler(showReflection, handleCancelReflection);
   useScrollLock(showReflection);
-  useBackHandler(showHyperfocus, () => setShowHyperfocus(false));
 
   // Register focus controls for global mini-player bridge
   useEffect(() => {
@@ -458,6 +463,7 @@ export function useFocusTimer({
     throttledReset,
     handlePresetSelect,
     handleSaveReflection,
+    handleCancelReflection,
     handleHyperfocusComplete,
     handleFocusInputBlur,
     handleBreakInputBlur,

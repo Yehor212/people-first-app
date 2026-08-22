@@ -70,6 +70,7 @@ describe('FocusReflectionModal ad safety', () => {
         onSelectValue={vi.fn()}
         onSave={vi.fn()}
         onDismiss={vi.fn()}
+        onCancel={vi.fn()}
       />,
     );
 

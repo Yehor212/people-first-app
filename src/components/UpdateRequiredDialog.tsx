@@ -157,10 +157,14 @@ export function UpdateRequiredDialog() {
           previousFocusRef.current = null;
           if (!previousFocus?.isConnected) return;
 
-          previousFocus.focus({ preventScroll: true });
-          if (document.activeElement === previousFocus) {
-            event.preventDefault();
-          }
+          // Wait until the modal's outside-content guards are removed before
+          // restoring the invoking control in Android WebView.
+          event.preventDefault();
+          window.requestAnimationFrame(() => {
+            if (previousFocus.isConnected) {
+              previousFocus.focus({ preventScroll: true });
+            }
+          });
         }}
       >
         <AlertDialogHeader>

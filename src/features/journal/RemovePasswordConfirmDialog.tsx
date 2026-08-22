@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { createFocusTrap } from "@/lib/a11y";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 import {
   JournalRemovePasswordLockedError,
   JournalRemovePasswordPartialError,
@@ -42,7 +42,12 @@ export function RemovePasswordConfirmDialog({
     onClose();
   };
 
-  useBackHandler(true, handleClose);
+  useModalKeyboard({
+    isOpen: true,
+    onClose: handleClose,
+    trapFocus: false,
+    restoreFocus: false,
+  });
 
   const handleConfirm = async () => {
     if (isSubmitting) return;

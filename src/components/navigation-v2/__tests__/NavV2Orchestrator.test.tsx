@@ -100,6 +100,7 @@ vi.mock("@/hooks/useKeyboardShortcuts", () => ({
 }));
 
 vi.mock("@/lib/androidBackHandler", () => ({
+  publishAndroidBackNavigationState: vi.fn().mockResolvedValue(undefined),
   registerModalCloseCallback: () => () => undefined,
 }));
 

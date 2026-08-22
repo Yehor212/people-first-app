@@ -54,6 +54,7 @@ export const FocusTimer = memo(function FocusTimer({
     throttledReset,
     handlePresetSelect,
     handleSaveReflection,
+    handleCancelReflection,
     handleHyperfocusComplete,
     handleFocusInputBlur,
     handleBreakInputBlur,
@@ -241,6 +242,7 @@ export const FocusTimer = memo(function FocusTimer({
             onSelectValue={setReflectionValue}
             onSave={handleSaveReflection}
             onDismiss={() => handleSaveReflection(null)}
+            onCancel={handleCancelReflection}
             onExpandToJournal={onExpandToJournal}
           />
         )}

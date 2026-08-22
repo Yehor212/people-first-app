@@ -43,6 +43,17 @@ const editorExitMocks = vi.hoisted(() => ({
   requested: vi.fn(),
 }));
 
+const backHandlerMocks = vi.hoisted(() => {
+  const activeCallbacks = new Set<() => boolean>();
+  return {
+    activeCallbacks,
+    registerModalCloseCallback: vi.fn((callback: () => boolean) => {
+      activeCallbacks.add(callback);
+      return vi.fn(() => activeCallbacks.delete(callback));
+    }),
+  };
+});
+
 const gamificationMocks = vi.hoisted(() => ({
   rewardUser: vi.fn(),
 }));
@@ -184,7 +195,7 @@ vi.mock("@/hooks/useEntryTransition", () => ({
 }));
 
 vi.mock("@/lib/androidBackHandler", () => ({
-  registerModalCloseCallback: vi.fn(() => vi.fn()),
+  registerModalCloseCallback: backHandlerMocks.registerModalCloseCallback,
 }));
 
 vi.mock("@/lib/authRedirect", () => ({
@@ -578,6 +589,7 @@ describe("JournalModule orb handoff behavior", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    backHandlerMocks.activeCallbacks.clear();
     Object.values(storageMocks).forEach((mock) => mock.mockReset());
     Object.values(journalHubMocks).forEach((mock) => mock.mockReset());
     gamificationMocks.rewardUser.mockReset();
@@ -927,6 +939,32 @@ describe("JournalModule orb handoff behavior", () => {
     expect(
       within(settingsPanel).getByRole("switch", { name: /conceal diary list/i }),
     ).toBeChecked();
+  });
+
+  it("keeps one parent Back owner while the lazy editor delegates its exit guard", async () => {
+    mediaQueryMocks.matches = true;
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    expect(await screen.findByTestId("journal-entry-editor")).toBeInTheDocument();
+    await waitFor(() => expect(backHandlerMocks.activeCallbacks.size).toBe(1));
+
+    const editorOwner = Array.from(backHandlerMocks.activeCallbacks)[0];
+    act(() => {
+      expect(editorOwner()).toBe(true);
+    });
+
+    expect(editorExitMocks.requested).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("journal-entry-editor")).toBeInTheDocument();
   });
 
   it("does not open statistics until the editor approves leaving a dirty entry", async () => {

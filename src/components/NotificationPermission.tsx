@@ -6,15 +6,15 @@ import { isNative } from "@/lib/platform";
 import { logger } from "@/lib/logger";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useModalClose } from "@/hooks/useModalState";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { SK } from "@/lib/storageKeys";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 
 interface NotificationPermissionProps {
   onComplete: () => void;
+  onCancel: () => void;
 }
 
-export function NotificationPermission({ onComplete }: NotificationPermissionProps) {
+export function NotificationPermission({ onComplete, onCancel }: NotificationPermissionProps) {
   const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
   useScrollLock(showPrompt);
@@ -25,8 +25,12 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
     onComplete();
   }, [onComplete]);
 
-  const { modalProps } = useModalClose(showPrompt, handleDeny);
-  useBackHandler(showPrompt, handleDeny);
+  const handleBackCancel = useCallback(() => {
+    setShowPrompt(false);
+    onCancel();
+  }, [onCancel]);
+
+  const { modalProps } = useModalClose(showPrompt, handleBackCancel);
 
   useEffect(() => {
     void checkPermission();

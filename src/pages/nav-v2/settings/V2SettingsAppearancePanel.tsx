@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Move, Palette, Undo2, X } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,6 +7,7 @@ import { trySetReduceMotion } from "@/lib/motionPreference";
 import { useFontScale } from "@/hooks/useFontScale";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useActiveAriaModal } from "@/hooks/useActiveAriaModal";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { useThemeStore, type ThemePreference, type ThemeWriteResult } from "@/stores/themeStore";
 import { DEFAULT_THEME_CUSTOMIZATION } from "@/stores/themeCustomization";
 
@@ -39,6 +40,15 @@ export function AppearancePanel() {
   const appearanceMoreButtonRef = useRef<HTMLButtonElement | null>(null);
   const appearanceResetButtonRef = useRef<HTMLButtonElement | null>(null);
 
+  const closeAppearanceMenu = useCallback(() => {
+    setAppearanceMenuOpen(false);
+    window.requestAnimationFrame(() => {
+      appearanceMoreButtonRef.current?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  useBackHandler(appearanceMenuOpen, closeAppearanceMenu);
+
   const saveError =
     tx.settingsPreferenceSaveError ||
     "Could not save this change. Your previous setting is still active.";
@@ -55,16 +65,10 @@ export function AppearancePanel() {
     if (!appearanceMenuOpen) return;
     appearanceResetButtonRef.current?.focus({ preventScroll: true });
 
-    const closeMenuAndRestoreFocus = () => {
-      setAppearanceMenuOpen(false);
-      window.requestAnimationFrame(() => {
-        appearanceMoreButtonRef.current?.focus({ preventScroll: true });
-      });
-    };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      closeMenuAndRestoreFocus();
+      closeAppearanceMenu();
     };
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
@@ -88,7 +92,7 @@ export function AppearancePanel() {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("focusin", handleFocusIn);
     };
-  }, [appearanceMenuOpen]);
+  }, [appearanceMenuOpen, closeAppearanceMenu]);
 
   const reportWrite = (result: ThemeWriteResult, canUndo: boolean): boolean => {
     if (!result.ok) {

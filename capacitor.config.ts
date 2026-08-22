@@ -18,6 +18,10 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   plugins: {
+    App: {
+      // AndroidBackPlugin is the single API 36 predictive Back owner.
+      disableBackButtonHandler: true,
+    },
     SplashScreen: {
       launchAutoHide: false,
       launchFadeOutDuration: 300,

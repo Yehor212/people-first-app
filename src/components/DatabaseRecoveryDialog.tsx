@@ -29,6 +29,7 @@ export function DatabaseRecoveryDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const isRetryingRef = useRef(false);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useBackHandler(isOpen && !isRetrying, () => setIsOpen(false));
 
@@ -36,6 +37,10 @@ export function DatabaseRecoveryDialog() {
     const handleRecoveryNeeded = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       logger.log('[DatabaseRecovery] Recovery needed:', detail);
+      if (!previousFocusRef.current?.isConnected) {
+        previousFocusRef.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      }
       setIsOpen(true);
     };
 
@@ -80,7 +85,23 @@ export function DatabaseRecoveryDialog() {
 
   return (
     <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent
+        className="max-w-md"
+        onCloseAutoFocus={(event) => {
+          const previousFocus = previousFocusRef.current;
+          previousFocusRef.current = null;
+          if (!previousFocus?.isConnected) return;
+
+          // The modal's outside-content guards are still active during this
+          // callback, so an immediate focus() can be rejected by WebView.
+          event.preventDefault();
+          window.requestAnimationFrame(() => {
+            if (previousFocus.isConnected) {
+              previousFocus.focus({ preventScroll: true });
+            }
+          });
+        }}
+      >
         <AlertDialogHeader>
           <div className="mb-2 grid min-w-0 grid-cols-1 items-center gap-3 min-[420px]:grid-cols-[auto_minmax(0,1fr)]">
             <div className="justify-self-center rounded-full bg-amber-500/10 p-2 min-[420px]:justify-self-auto">

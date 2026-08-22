@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { announceError, announceSuccess, createFocusTrap } from "@/lib/a11y";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 import type { JournalExportOutcome } from "./journalExport";
 interface ExportPickerDialogProps {
   ts: Record<string, string>;
@@ -39,7 +39,12 @@ export function ExportPickerDialog({
     onClose();
   };
 
-  useBackHandler(true, handleClose);
+  useModalKeyboard({
+    isOpen: true,
+    onClose: handleClose,
+    trapFocus: false,
+    restoreFocus: false,
+  });
 
   return (
     <>

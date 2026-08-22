@@ -6,7 +6,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { NAV_V2_PAGES, useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
-import { registerModalCloseCallback } from "@/lib/androidBackHandler";
+import {
+  publishAndroidBackNavigationState,
+  registerModalCloseCallback,
+} from "@/lib/androidBackHandler";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
@@ -211,11 +214,25 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     [isWebNavigation, setActivePage, tier]
   );
 
-  // Register Android back handler — drawer close > palette close > let native back
+  const ownsAndroidBack =
+    drawerOpen || commandPaletteOpen || activePage !== "orb" || unknownPath !== null;
+
   useEffect(() => {
-    const unregister = registerModalCloseCallback(() => handleBackButton());
+    void publishAndroidBackNavigationState({
+      isRoot: activePage === "orb" && unknownPath === null,
+    });
+  }, [activePage, unknownPath]);
+
+  // Register only while the shell owns an in-app destination. Overlay owners
+  // remain above this navigation owner in the global Back stack.
+  useEffect(() => {
+    if (!ownsAndroidBack) return undefined;
+    const unregister = registerModalCloseCallback(
+      (event) => handleBackButton(event),
+      { layer: "navigation" },
+    );
     return unregister;
-  }, [handleBackButton]);
+  }, [handleBackButton, ownsAndroidBack]);
 
   useEffect(() => {
     if (isWebNavigation && drawerOpen) {

@@ -1728,58 +1728,19 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
 
   // Android back button (priority order)
   useEffect(() => {
-    if (showUnsavedDialog)
-      return registerModalCloseCallback(() => {
-        if (discardSubmittingRef.current) return true;
-        setShowUnsavedDialog(false);
-        onExitRequestCancelled?.();
-        return true;
-      });
-    if (showSettingsConfirm)
-      return registerModalCloseCallback(() => {
-        setShowSettingsConfirm(false);
-        return true;
-      });
-    if (showDeleteConfirm)
-      return registerModalCloseCallback(() => {
-        if (deleteSubmittingRef.current) return true;
-        setShowDeleteConfirm(false);
-        return true;
-      });
-    if (showRecordingOverlay)
-      return registerModalCloseCallback(() => {
-        if (recordingDiscardPending) {
-          setRecordingDiscardPending(false);
-          return true;
-        }
-        if (audioSaveRetryAvailable) {
-          setRecordingDiscardPending(true);
-          return true;
-        }
-        void recorder.stop();
-        setShowRecordingOverlay(false);
-        return true;
-      });
-    if (showVoicePrivacyConfirm)
-      return registerModalCloseCallback(() => {
-        setShowVoicePrivacyConfirm(false);
-        return true;
-      });
-    if (showTemplatePicker)
-      return registerModalCloseCallback(() => {
-        setShowTemplatePicker(false);
-        return true;
-      });
-    if (showStickers)
-      return registerModalCloseCallback(() => {
-        setShowStickers(false);
-        return true;
-      });
-    if (showPhotos)
-      return registerModalCloseCallback(() => {
-        setShowPhotos(false);
-        return true;
-      });
+    const mountedLayerOwnsBack =
+      showUnsavedDialog ||
+      showSettingsConfirm ||
+      showDeleteConfirm ||
+      showRecordingOverlay ||
+      showVoicePrivacyConfirm ||
+      showTemplatePicker ||
+      showStickers ||
+      showPhotos ||
+      Boolean(audioRemovalPendingId) ||
+      panicLocked;
+    if (mountedLayerOwnsBack) return;
+
     if (showMood)
       return registerModalCloseCallback(() => {
         setShowMood(false);
@@ -1790,19 +1751,12 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         setShowTags(false);
         return true;
       });
-    // Fallback: no sub-modal open -> back button triggers editor back (dirty check)
-    return registerModalCloseCallback(() => {
-      handleBack();
-      return true;
-    });
+    // JournalModule owns the editor exit, including the lazy-loading gap.
+    // This hook registers only inline states that render inside the editor.
   }, [
     showUnsavedDialog,
-    discardSubmitting,
     showDeleteConfirm,
-    deleteSubmitting,
     showRecordingOverlay,
-    recordingDiscardPending,
-    audioSaveRetryAvailable,
     showVoicePrivacyConfirm,
     showTemplatePicker,
     showStickers,
@@ -1810,9 +1764,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showMood,
     showTags,
     showSettingsConfirm,
-    recorder,
-    handleBack,
-    onExitRequestCancelled,
+    audioRemovalPendingId,
+    panicLocked,
   ]);
 
   const handleRestoreDraft = useCallback(() => {

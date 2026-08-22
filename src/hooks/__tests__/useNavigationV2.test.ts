@@ -307,7 +307,7 @@ describe("useNavigationV2", () => {
       expect(handled).toBe(false);
     });
 
-    it("drawer takes precedence over command palette", () => {
+    it("closes the visually top command palette before the drawer beneath it", () => {
       const { result } = renderHook(() => useNavigationV2());
       act(() => {
         result.current.openDrawer();
@@ -316,8 +316,22 @@ describe("useNavigationV2", () => {
       act(() => {
         result.current.handleBackButton();
       });
-      expect(result.current.drawerOpen).toBe(false);
-      expect(result.current.commandPaletteOpen).toBe(true);
+      expect(result.current.commandPaletteOpen).toBe(false);
+      expect(result.current.drawerOpen).toBe(true);
+    });
+
+    it("returns a cold-start non-root destination to Orb when WebView has no history", () => {
+      setPath("/settings?nav=v2&navLayout=phone");
+      const { result } = renderHook(() => useNavigationV2());
+      let handled = false;
+
+      act(() => {
+        handled = result.current.handleBackButton({ canGoBack: false });
+      });
+
+      expect(handled).toBe(true);
+      expect(result.current.activePage).toBe<NavV2Page>("orb");
+      expect(window.location.pathname).toBe("/orb");
     });
   });
 

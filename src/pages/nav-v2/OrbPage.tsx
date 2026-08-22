@@ -232,17 +232,18 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     }
   }, [navigateToPage]);
 
-  useEffect(() => registerModalCloseCallback(() => {
-    if (visualStatus === "failed") {
-      handleErrorBack();
-      return true;
-    }
-    if (step !== "orb-select") {
+  useEffect(() => {
+    if (visualStatus !== "failed" && step === "orb-select") return undefined;
+
+    return registerModalCloseCallback(() => {
+      if (visualStatus === "failed") {
+        handleErrorBack();
+        return true;
+      }
       handleBackToSelect();
       return true;
-    }
-    return false;
-  }), [handleBackToSelect, handleErrorBack, step, visualStatus]);
+    });
+  }, [handleBackToSelect, handleErrorBack, step, visualStatus]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

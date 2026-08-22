@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const recoveryMocks = vi.hoisted(() => ({
   checkDatabaseHealth: vi.fn<() => Promise<boolean>>(),
   triggerDataRefresh: vi.fn<() => Promise<void>>(),
+  useBackHandler: vi.fn<(isOpen: boolean, onBack: () => void) => void>(),
 }));
 
 vi.mock("@/contexts/LanguageContext", () => ({
@@ -20,7 +21,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
   }),
 }));
 
-vi.mock("@/hooks/useBackHandler", () => ({ useBackHandler: vi.fn() }));
+vi.mock("@/hooks/useBackHandler", () => ({
+  useBackHandler: recoveryMocks.useBackHandler,
+}));
 vi.mock("@/storage/db", () => ({ checkDatabaseHealth: recoveryMocks.checkDatabaseHealth }));
 vi.mock("@/hooks/useIndexedDB", () => ({ triggerDataRefresh: recoveryMocks.triggerDataRefresh }));
 vi.mock("@/lib/logger", () => ({
@@ -99,5 +102,52 @@ describe("DatabaseRecoveryDialog reflow and lifecycle", () => {
     await waitFor(() => expect(recoveryMocks.checkDatabaseHealth).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     expect(recoveryMocks.triggerDataRefresh).not.toHaveBeenCalled();
+  });
+
+  it("restores focus to the invoking control after Android Back closes the recovery dialog", async () => {
+    const invokingControl = document.createElement("button");
+    invokingControl.textContent = "Open menu";
+    document.body.appendChild(invokingControl);
+    invokingControl.focus();
+
+    try {
+      render(<DatabaseRecoveryDialog />);
+      act(() => {
+        window.dispatchEvent(new CustomEvent("zenflow:database-recovery-needed"));
+      });
+
+      expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+      const pendingFrames: FrameRequestCallback[] = [];
+      const animationFrameSpy = vi
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((callback) => {
+          pendingFrames.push(callback);
+          return pendingFrames.length;
+        });
+      const activeRegistration = [...recoveryMocks.useBackHandler.mock.calls]
+        .reverse()
+        .find(([isOpen]) => isOpen === true);
+      expect(activeRegistration).toBeDefined();
+
+      try {
+        act(() => {
+          activeRegistration?.[1]();
+        });
+
+        await waitFor(() => {
+          expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+        });
+        expect(pendingFrames).toHaveLength(1);
+
+        act(() => {
+          pendingFrames.splice(0).forEach((callback) => callback(performance.now()));
+        });
+        expect(invokingControl).toHaveFocus();
+      } finally {
+        animationFrameSpy.mockRestore();
+      }
+    } finally {
+      invokingControl.remove();
+    }
   });
 });
