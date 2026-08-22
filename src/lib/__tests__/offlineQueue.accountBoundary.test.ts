@@ -260,6 +260,108 @@ describe("offline queue account boundary", () => {
     }
   });
 
+  it("keeps private entity identity out of queue logs and blocked-event diagnostics", async () => {
+    const privateEntityId = "PRIVATE_SENTINEL_QUEUE_ENTITY";
+    const privateFailure = "PRIVATE_SENTINEL_HANDLER_FAILURE";
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    const { offlineQueue } = await loadFreshQueue();
+
+    await offlineQueue.enqueue(
+      "UPDATE_SETTINGS",
+      privateEntityId,
+      { key: "privacy", value: false },
+      { expectedOwnerUserId: "account-a", maxRetries: 1 },
+    );
+    await offlineQueue.enqueue(
+      "UPDATE_SETTINGS",
+      privateEntityId,
+      { key: "privacy", value: true },
+      { expectedOwnerUserId: "account-a", maxRetries: 1 },
+    );
+    offlineQueue.registerHandler("UPDATE_SETTINGS", async () => {
+      throw new Error(privateFailure);
+    });
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(offlineQueue.getState().actions).toEqual([
+      expect.objectContaining({ entityId: privateEntityId, lastError: "QUEUE_HANDLER_FAILED" }),
+    ]);
+    const diagnostics = JSON.stringify({
+      logs: [
+        ...loggerMocks.log.mock.calls,
+        ...loggerMocks.warn.mock.calls,
+        ...loggerMocks.error.mock.calls,
+      ],
+      events: dispatchSpy.mock.calls.map(([event]) => ({
+        type: event.type,
+        detail: (event as CustomEvent<unknown>).detail,
+      })),
+    });
+    expect(diagnostics).not.toContain(privateEntityId);
+    expect(diagnostics).not.toContain(privateFailure);
+  });
+
+  it("keeps a rejected full-queue entity identity out of the UI event", async () => {
+    const privateEntityId = "PRIVATE_SENTINEL_FULL_QUEUE_ENTITY";
+    testState.persistedItems.push(
+      ...Array.from({ length: 1_000 }, (_, index) => ({
+        ...makePersistedAction("account-a"),
+        id: `full-queue-${index}`,
+        operationId: `full-operation-${index}`,
+        entityId: `existing-${index}`,
+        timestamp: index,
+      })),
+    );
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    const { offlineQueue } = await loadFreshQueue();
+
+    await expect(
+      offlineQueue.enqueue(
+        "UPDATE_SETTINGS",
+        privateEntityId,
+        { key: "privacy", value: false },
+        { expectedOwnerUserId: "account-a" },
+      ),
+    ).rejects.toThrow("Offline queue full");
+
+    const queueFullEvent = dispatchSpy.mock.calls
+      .map(([event]) => event)
+      .find((event) => event.type === "zenflow:offline-queue-full") as
+      | CustomEvent<Record<string, unknown>>
+      | undefined;
+    expect(queueFullEvent).toBeDefined();
+    expect(JSON.stringify(queueFullEvent?.detail)).not.toContain(privateEntityId);
+    expect(queueFullEvent?.detail).not.toHaveProperty("entityId");
+  });
+
+  it("jitters the first online lifecycle retry instead of reconnecting every client together", async () => {
+    vi.useFakeTimers();
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      const { offlineQueue } = await loadFreshQueue();
+      const processQueue = vi
+        .spyOn(offlineQueue, "processQueue")
+        .mockRejectedValueOnce(new Error("storage unavailable"))
+        .mockResolvedValueOnce(undefined);
+
+      setOnline(true);
+      window.dispatchEvent(new Event("online"));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(processQueue).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(499);
+      expect(processQueue).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(processQueue).toHaveBeenCalledTimes(2);
+    } finally {
+      randomSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("stops automatic lifecycle retries after the finite retry budget", async () => {
     vi.useFakeTimers();
     try {
@@ -340,6 +442,53 @@ describe("offline queue account boundary", () => {
       expect.objectContaining({ entityId: "handler-not-ready", retries: 0 }),
     ]);
     expect(testState.persistedItems).toHaveLength(1);
+  });
+
+  it("gives a persisted normal action a bounded turn after cold-start hydration", async () => {
+    const persistedCritical = Array.from({ length: 9 }, (_, index): PersistedQueueItem => ({
+      id: `critical-${index}`,
+      operationId: `critical-operation-${index}`,
+      type: "UPDATE_SETTINGS",
+      entityId: `critical-setting-${index}`,
+      ownerUserId: "account-a",
+      payload: { key: `critical-setting-${index}`, value: true },
+      timestamp: 100 + index,
+      retries: 0,
+      maxRetries: 5,
+      priority: "critical",
+    }));
+    testState.persistedItems.push(
+      ...persistedCritical.reverse(),
+      {
+        id: "normal-waiting",
+        operationId: "normal-operation",
+        type: "UPDATE_SETTINGS",
+        entityId: "normal-waiting",
+        ownerUserId: "account-a",
+        payload: { key: "normal-waiting", value: true },
+        timestamp: 1,
+        retries: 0,
+        maxRetries: 5,
+        priority: "normal",
+      },
+    );
+
+    const { offlineQueue } = await loadFreshQueue();
+    const deliveredEntityIds: string[] = [];
+    offlineQueue.registerHandler("UPDATE_SETTINGS", async (queuedAction) => {
+      deliveredEntityIds.push(queuedAction.entityId);
+      return COMMITTED;
+    });
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(deliveredEntityIds.slice(0, 8)).toEqual(
+      Array.from({ length: 8 }, (_, index) => `critical-setting-${index}`),
+    );
+    expect(deliveredEntityIds[8]).toBe("normal-waiting");
+    expect(deliveredEntityIds[9]).toBe("critical-setting-8");
+    expect(testState.persistedItems).toEqual([]);
   });
 
   it("processes a verified retry when navigator.onLine is stale false", async () => {
@@ -1297,9 +1446,74 @@ describe("offline queue account boundary", () => {
         expect.objectContaining({
           entityId: "timed-out-setting",
           retries: 1,
-          lastError: expect.stringMatching(/timed out/i),
+          lastError: "QUEUE_HANDLER_TIMEOUT",
         }),
       ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ignores a late completion and reuses the same operation identity for manual retry", async () => {
+    vi.useFakeTimers();
+    try {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+      const { offlineQueue } = await loadFreshQueue();
+      let releaseFirstAttempt!: () => void;
+      let markFirstAttemptStarted!: () => void;
+      const firstAttemptStarted = new Promise<void>((resolve) => {
+        markFirstAttemptStarted = resolve;
+      });
+      const firstAttemptGate = new Promise<typeof COMMITTED>((resolve) => {
+        releaseFirstAttempt = () => resolve(COMMITTED);
+      });
+      const deliveredOperationIds: string[] = [];
+
+      offlineQueue.registerHandler("UPDATE_SETTINGS", async (_action, context) => {
+        deliveredOperationIds.push(context.operationId);
+        if (deliveredOperationIds.length === 1) {
+          markFirstAttemptStarted();
+          return firstAttemptGate;
+        }
+        return COMMITTED;
+      });
+      await offlineQueue.enqueue(
+        "UPDATE_SETTINGS",
+        "late-completion-setting",
+        { key: "privacy", value: false },
+        { expectedOwnerUserId: "account-a", maxRetries: 1 },
+      );
+      const operationId = offlineQueue.getState().actions[0]?.operationId;
+
+      setOnline(true);
+      const processing = offlineQueue.processQueue();
+      await firstAttemptStarted;
+      await vi.advanceTimersByTimeAsync(30_000);
+      await processing;
+
+      const blockedEvent = dispatchSpy.mock.calls
+        .map(([event]) => event)
+        .find((event) => event.type === "zenflow:offline-queue-blocked") as
+        | CustomEvent<{ retry: () => Promise<void> }>
+        | undefined;
+      expect(blockedEvent).toBeDefined();
+      expect(offlineQueue.getState().actions).toEqual([
+        expect.objectContaining({
+          operationId,
+          retries: 1,
+          lastError: "QUEUE_HANDLER_TIMEOUT",
+        }),
+      ]);
+
+      releaseFirstAttempt();
+      await Promise.resolve();
+      expect(offlineQueue.getState().actions).toHaveLength(1);
+
+      await blockedEvent?.detail.retry();
+      await vi.waitFor(() => {
+        expect(deliveredOperationIds).toEqual([operationId, operationId]);
+        expect(offlineQueue.getState().actions).toEqual([]);
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -1815,6 +2029,100 @@ describe("offline queue account boundary", () => {
     expect(offlineQueue.getState().actions).toHaveLength(1);
   });
 
+  it("does not deliver a newer critical focus payload after its predecessor fails", async () => {
+    testState.persistedItems.push(
+      {
+        id: "focus-reflection-4",
+        operationId: "44444444-4444-4444-8444-444444444444",
+        type: "CREATE_FOCUS_SESSION",
+        entityId: "focus-session-ordered",
+        payload: { id: "focus-session-ordered", reflection: 4 },
+        timestamp: 1,
+        retries: 0,
+        maxRetries: 1,
+        priority: "critical",
+        ownerUserId: "account-a",
+      },
+      {
+        id: "focus-reflection-5",
+        operationId: "55555555-5555-4555-8555-555555555555",
+        type: "CREATE_FOCUS_SESSION",
+        entityId: "focus-session-ordered",
+        payload: { id: "focus-session-ordered", reflection: 5 },
+        timestamp: 2,
+        retries: 0,
+        maxRetries: 1,
+        priority: "critical",
+        ownerUserId: "account-a",
+      }
+    );
+    const { offlineQueue } = await loadFreshQueue();
+    const deliveredReflections: number[] = [];
+    offlineQueue.registerHandler("CREATE_FOCUS_SESSION", async (action) => {
+      const reflection = (action.payload as { reflection: number }).reflection;
+      deliveredReflections.push(reflection);
+      if (reflection === 4) throw new Error("transient focus delivery failure");
+      return COMMITTED;
+    });
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(deliveredReflections).toEqual([4]);
+    expect(offlineQueue.getState().actions).toEqual([
+      expect.objectContaining({ id: "focus-reflection-4", retries: 1 }),
+      expect.objectContaining({ id: "focus-reflection-5", retries: 0 }),
+    ]);
+  });
+
+  it("does not let critical undo overtake a failed manual target delivery", async () => {
+    testState.persistedItems.push(
+      {
+        id: "manual-schedule-write",
+        operationId: "66666666-6666-4666-8666-666666666666",
+        type: "UPDATE_SETTINGS",
+        entityId: "zenflow-schedule-events",
+        payload: { key: "zenflow-schedule-events", value: [{ id: "manual" }] },
+        timestamp: 1,
+        retries: 0,
+        maxRetries: 1,
+        priority: "critical",
+        ownerUserId: "account-a",
+      },
+      {
+        id: "automation-undo-after-manual",
+        operationId: "77777777-7777-4777-8777-777777777777",
+        type: "UNDO_AUTOMATION_TRANSACTION",
+        entityId: "88888888-8888-4888-8888-888888888888",
+        payload: { transactionId: "88888888-8888-4888-8888-888888888888" },
+        timestamp: 2,
+        retries: 0,
+        maxRetries: 1,
+        priority: "critical",
+        ownerUserId: "account-a",
+      }
+    );
+    const { offlineQueue } = await loadFreshQueue();
+    const delivered: string[] = [];
+    offlineQueue.registerHandler("UPDATE_SETTINGS", async () => {
+      delivered.push("manual");
+      throw new Error("manual delivery unavailable");
+    });
+    offlineQueue.registerHandler("UNDO_AUTOMATION_TRANSACTION", async () => {
+      delivered.push("undo");
+      return COMMITTED;
+    });
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(delivered).toEqual(["manual"]);
+    expect(offlineQueue.getState().actions).toEqual([
+      expect.objectContaining({ id: "manual-schedule-write", retries: 1 }),
+      expect.objectContaining({ id: "automation-undo-after-manual", retries: 0 }),
+    ]);
+  });
+
   it("retains an exhausted normal action and exposes a manual retry", async () => {
     const dispatchSpy = vi.spyOn(window, "dispatchEvent");
     const { offlineQueue } = await loadFreshQueue();
@@ -1836,7 +2144,7 @@ describe("offline queue account boundary", () => {
       expect.objectContaining({
         entityId: "normal-blocked-setting",
         retries: 1,
-        lastError: "temporary sync failure",
+        lastError: "QUEUE_HANDLER_FAILED",
       }),
     ]);
     expect(
@@ -1928,7 +2236,7 @@ describe("offline queue account boundary", () => {
       expect.objectContaining({
         type: "DELETE_JOURNAL_PHOTO_STORAGE",
         retries: 1,
-        lastError: "temporary storage cleanup failure",
+        lastError: "QUEUE_HANDLER_FAILED",
       }),
     ]);
     const blockedEvent = dispatchSpy.mock.calls
@@ -1969,14 +2277,14 @@ describe("offline queue account boundary", () => {
     const blockedEvent = dispatchSpy.mock.calls
       .map(([event]) => event)
       .find((event) => event.type === "zenflow:offline-queue-critical-blocked") as
-      | CustomEvent<{ actionType: string; entityId: string; retry: () => void }>
+      | CustomEvent<{ actionType: string; retry: () => void }>
       | undefined;
     expect(blockedEvent).toBeDefined();
     expect(blockedEvent?.detail).toMatchObject({
       actionType: "DELETE_JOURNAL_PHOTO_STORAGE",
-      entityId: "journal-photo-delete:photo-1",
       retry: expect.any(Function),
     });
+    expect(blockedEvent?.detail).not.toHaveProperty("entityId");
 
     setOnline(true);
     blockedEvent?.detail.retry();
@@ -2206,13 +2514,13 @@ describe("offline queue account boundary", () => {
     await offlineQueue.replayBlockedCriticalActionsForActiveOwner();
 
     let blockedEvent:
-      | CustomEvent<{ actionType: string; entityId: string; retry: () => void }>
+      | CustomEvent<{ actionType: string; retry: () => void }>
       | undefined;
     await vi.waitFor(() => {
       blockedEvent = dispatchSpy.mock.calls
         .map(([event]) => event)
         .find((event) => event.type === "zenflow:offline-queue-critical-blocked") as
-        | CustomEvent<{ actionType: string; entityId: string; retry: () => void }>
+        | CustomEvent<{ actionType: string; retry: () => void }>
         | undefined;
       expect(blockedEvent).toBeDefined();
     });

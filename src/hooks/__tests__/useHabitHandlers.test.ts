@@ -48,6 +48,7 @@ vi.mock("@/stores", () => ({
     sel({
       habits: mockHabits,
       setHabits: mockSetHabits,
+      _publishDurableHabits: mockSetHabits,
       setScheduleEvents: mockSetScheduleEvents,
       setReminders: mockSetReminders,
     })
@@ -131,6 +132,21 @@ vi.mock("@/lib/safeJson", async (importOriginal) => {
   };
 });
 
+vi.mock("@/features/automation/automationSourcePersistence", () => ({
+  persistHabitSourceRecord: vi.fn(async () => ({
+    accountBoundaryGeneration: "test-boundary",
+    intentId: null,
+  })),
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/storage/accountBoundaryRuntime")>();
+  return {
+    ...actual,
+    assertOriginAccountBoundaryGeneration: vi.fn(),
+  };
+});
+
 // --- import under test after mocks ---
 
 import { useHabitHandlers } from "../useHabitHandlers";
@@ -180,6 +196,14 @@ describe("useHabitHandlers", () => {
     return calls[calls.length - 1][0] as (prev: Habit[]) => Habit[];
   }
 
+  async function runEntryAction(action: () => void): Promise<void> {
+    await act(async () => {
+      action();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
   it("handleAddHabit adds habit to array", () => {
     const { result } = renderAndClearEffects();
 
@@ -226,10 +250,10 @@ describe("useHabitHandlers", () => {
     expect(updated.find((h) => h.id === "h1")).toBeUndefined();
   });
 
-  it("handleToggleHabit toggles daily completion on", () => {
+  it("handleToggleHabit toggles daily completion on", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleToggleHabit("h1", "2026-02-19");
     });
 
@@ -240,7 +264,7 @@ describe("useHabitHandlers", () => {
     expect(playSound).toHaveBeenCalledWith("complete");
   });
 
-  it("handleToggleHabit toggles daily completion off when already completed", () => {
+  it("handleToggleHabit toggles daily completion off when already completed", async () => {
     const habitsWithCompleted = mockHabits.map((h) =>
       h.id === "h1" ? { ...h, entries: datesToEntries(["2026-02-19"]) } : h
     );
@@ -253,13 +277,14 @@ describe("useHabitHandlers", () => {
       sel({
         habits: habitsWithCompleted,
         setHabits: mockSetHabits,
+        _publishDurableHabits: mockSetHabits,
         setScheduleEvents: mockSetScheduleEvents,
         setReminders: mockSetReminders,
       })) as typeof useUserDataStore);
 
     const { result } = renderAndClearEffects();
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleToggleHabit("h1", "2026-02-19");
     });
 
@@ -281,15 +306,16 @@ describe("useHabitHandlers", () => {
       sel({
         habits: mockHabits,
         setHabits: mockSetHabits,
+        _publishDurableHabits: mockSetHabits,
         setScheduleEvents: mockSetScheduleEvents,
         setReminders: mockSetReminders,
       })) as typeof useUserDataStore);
   });
 
-  it("handleToggleHabit increments numerical type completions", () => {
+  it("handleToggleHabit increments numerical type completions", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleToggleHabit("h2", "2026-02-19");
     });
 
@@ -300,10 +326,10 @@ describe("useHabitHandlers", () => {
     expect(mockAwardXp).toHaveBeenCalledWith("habit");
   });
 
-  it("handleAdjustHabit adjusts numerical habit value", () => {
+  it("handleAdjustHabit adjusts numerical habit value", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleAdjustHabit("h3", "2026-02-19", 1);
     });
 
@@ -312,14 +338,14 @@ describe("useHabitHandlers", () => {
     expect(habit?.entries["2026-02-19"]).toBeDefined();
   });
 
-  it("handleAdjustHabit adjusts numerical completions with delta", () => {
+  it("handleAdjustHabit adjusts numerical completions with delta", async () => {
     const habitsWithNumericalProgress = mockHabits.map((h) =>
       h.id === "h2" ? { ...h, entries: { "2026-02-19": { value: 2000 } } } : h
     );
 
     const { result } = renderAndClearEffects();
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleAdjustHabit("h2", "2026-02-19", -1);
     });
 
@@ -328,15 +354,13 @@ describe("useHabitHandlers", () => {
     expect(habit?.entries["2026-02-19"]).toBeDefined();
   });
 
-  it("double-click guard prevents rapid duplicate toggles", () => {
+  it("double-click guard prevents rapid duplicate toggles", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleToggleHabit("h1", "2026-02-19");
-    });
-
-    // Second call with same habitId+date should be blocked by processingHabitsRef
-    act(() => {
+      // Second call with same habitId+date is blocked while the first durable
+      // commit remains the sole owner of this entry transition.
       result.current.handleToggleHabit("h1", "2026-02-19");
     });
 
@@ -348,7 +372,7 @@ describe("useHabitHandlers", () => {
       vi.advanceTimersByTime(600);
     });
 
-    act(() => {
+    await runEntryAction(() => {
       result.current.handleToggleHabit("h1", "2026-02-19");
     });
 

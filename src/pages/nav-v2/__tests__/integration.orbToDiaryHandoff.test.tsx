@@ -54,7 +54,13 @@ describe("Integration - Orb -> Diary handoff via pendingMoodContext", () => {
     useDiaryDraftStore.getState().clearPendingMoodContext();
   });
 
-  it("writes enriched pendingMoodContext only on final transfer", () => {
+  it("writes enriched pendingMoodContext only after the primary mood commit resolves", async () => {
+    let resolveCommit!: () => void;
+    onAddMoodMock.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveCommit = resolve;
+      }),
+    );
     const { result } = renderHook(() =>
       useOrbMoodFlow({
         navigateToPage: setActivePageMock,
@@ -72,7 +78,17 @@ describe("Integration - Orb -> Diary handoff via pendingMoodContext", () => {
 
     act(() => result.current.handleEmotionToggle("hopeful"));
     act(() => result.current.handleNoteChange("A steady moment worth keeping."));
-    act(() => result.current.handleOpenDiary());
+    let transfer!: Promise<void>;
+    act(() => {
+      transfer = result.current.handleOpenDiary();
+    });
+
+    expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
+    expect(setActivePageMock).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveCommit();
+      await transfer;
+    });
 
     const ctx = useDiaryDraftStore.getState().pendingMoodContext;
     expect(ctx).toMatchObject({
@@ -87,6 +103,25 @@ describe("Integration - Orb -> Diary handoff via pendingMoodContext", () => {
     expect(setActivePageMock).toHaveBeenCalledWith("diary");
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
     expect(setMoodsSpy).not.toHaveBeenCalled();
+  });
+
+  it("retains the mood draft and route when the durable primary commit rejects", async () => {
+    onAddMoodMock.mockRejectedValueOnce(new Error("injected persistence failure"));
+    const { result } = renderHook(() =>
+      useOrbMoodFlow({ navigateToPage: setActivePageMock, onAddMood: onAddMoodMock }),
+    );
+    act(() => result.current.handleSliderCommit(0.5));
+    act(() => result.current.handleNextStep());
+    act(() => result.current.handleNoteChange("Keep this draft"));
+
+    await expect(result.current.handleOpenDiary()).resolves.toBeUndefined();
+
+    expect(setActivePageMock).not.toHaveBeenCalled();
+    expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
+    expect(useMoodEntryDraftStore.getState()).toMatchObject({
+      valence: 0.5,
+      note: "Keep this draft",
+    });
   });
 
   it("Diary keeps the orb handoff as a pending user-confirmed suggestion", () => {

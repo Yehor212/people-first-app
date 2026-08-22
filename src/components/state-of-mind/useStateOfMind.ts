@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
-import { getToday, generateId } from '@/lib/utils';
+import { getToday, generateUuid } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { valenceToMoodType } from './colorUtils';
 import type { MoodEntry, MoodLogType } from '@/types';
@@ -94,7 +94,7 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
     const sanitizedNote = note.trim().replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
     const entry: MoodEntry = {
-      id: generateId(),
+      id: generateUuid(),
       mood: valenceToMoodType(valence), // Backward compat: auto-map valence → MoodType
       date: getToday(),
       timestamp: Date.now(),

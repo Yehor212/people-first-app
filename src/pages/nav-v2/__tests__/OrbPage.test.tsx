@@ -961,7 +961,7 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute("data-value", "0.5");
   });
 
-  it("opens Diary with a valid handoff even when no exact feeling is chosen", () => {
+  it("opens Diary with a valid handoff even when no exact feeling is chosen", async () => {
     const navigateToPage = vi.fn();
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
@@ -1011,7 +1011,7 @@ describe("OrbPage progressive flow", () => {
     expect(saveAndOpen.querySelector("svg")).not.toHaveClass("max-[359px]:hidden");
     fireEvent.click(saveAndOpen);
 
-    expect(navigateToPage).toHaveBeenCalledWith("diary");
+    await waitFor(() => expect(navigateToPage).toHaveBeenCalledWith("diary"));
     expect(setActivePageMock).not.toHaveBeenCalled();
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
     expect(setMoodsSpy).not.toHaveBeenCalled();
@@ -1025,7 +1025,7 @@ describe("OrbPage progressive flow", () => {
     });
   });
 
-  it("saves the mood without creating a Diary handoff or navigating", () => {
+  it("saves the mood without creating a Diary handoff or navigating", async () => {
     const navigateToPage = vi.fn();
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
@@ -1052,7 +1052,9 @@ describe("OrbPage progressive flow", () => {
     expect(onAddMoodMock.mock.calls[0]?.[0]).not.toHaveProperty("note");
     expect(useDiaryDraftStore.getState().pendingMoodContext).toBeNull();
     expect(navigateToPage).not.toHaveBeenCalled();
-    expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("orb-page-select")).toBeInTheDocument(),
+    );
     expect(useMoodEntryDraftStore.getState()).toMatchObject({
       valence: null,
       emotion: null,
@@ -1083,7 +1085,7 @@ describe("OrbPage progressive flow", () => {
     );
   });
 
-  it("includes exact feeling and note in the pending Diary context when provided", () => {
+  it("includes exact feeling and note in the pending Diary context when provided", async () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("mood-orb-option-good"));
@@ -1096,23 +1098,25 @@ describe("OrbPage progressive flow", () => {
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
-    expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
-      valence: 0.5,
-      mood: "good",
-      scope: "now",
-      emotion: "hopeful",
-      note: "I want to remember this calm shift.",
-    });
+    await waitFor(() =>
+      expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
+        valence: 0.5,
+        mood: "good",
+        scope: "now",
+        emotion: "hopeful",
+        note: "I want to remember this calm shift.",
+      }),
+    );
   });
 
-  it("prefers the orchestrator navigation callback for the final Diary transfer", () => {
+  it("prefers the orchestrator navigation callback for the final Diary transfer", async () => {
     const navigateToPage = vi.fn();
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
-    expect(navigateToPage).toHaveBeenCalledWith("diary");
+    await waitFor(() => expect(navigateToPage).toHaveBeenCalledWith("diary"));
     expect(setActivePageMock).not.toHaveBeenCalled();
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
   });

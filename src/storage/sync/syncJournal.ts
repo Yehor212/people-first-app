@@ -17,6 +17,7 @@ import { isEntityTombstonedOnServer } from "./serverTombstones";
 import { isCloudSyncEnabled } from "@/lib/cloudSyncSettings";
 import { validateSyncOwner } from "./syncOwner";
 import { db } from "@/storage/db";
+import { commitManualSyncEvent } from "./manualSyncAcceptance";
 
 type JournalPhotoSyncPayload = Pick<
   JournalPhoto,
@@ -143,12 +144,19 @@ export const syncJournalEntry = async (
   entry: JournalEntry,
   expectedOwnerUserId: string,
   signal?: AbortSignal,
+  eventIdempotencyKey?: string,
 ): Promise<void> => {
   throwIfJournalSyncAborted(signal);
-  if (!isCloudSyncEnabled()) return;
+  if (!isCloudSyncEnabled()) {
+    if (eventIdempotencyKey) throw new Error("Journal cloud sync is unavailable");
+    return;
+  }
 
   const userId = await validateJournalSyncOwner(expectedOwnerUserId);
-  if (!supabase) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Journal remote sync is unavailable");
+    return;
+  }
   if (!userId) {
     logger.warn("[Sync] Cannot sync journal entry: User not authenticated");
     return;
@@ -156,21 +164,24 @@ export const syncJournalEntry = async (
 
   const deletedEntryIds = await getDeletedJournalEntryIds();
   if (deletedEntryIds.has(entry.id)) {
-    logger.warn("[Sync] Skipping tombstoned journal entry upsert:", entry.id);
+    logger.warn("[Sync] Skipping tombstoned journal entry upsert");
     return;
   }
 
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Journal delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry, {
       expectedOwnerUserId: userId,
     });
-    logger.log("[Sync] Journal entry queued for offline sync:", entry.id);
+    logger.log("[Sync] Journal entry queued for offline sync");
     return;
   }
 
   if (await isEntityTombstonedOnServer("journal", entry.id, userId)) {
     await trackDeletedJournalEntryId(entry.id);
-    logger.warn("[Sync] Skipping server-tombstoned journal entry upsert:", entry.id);
+    logger.warn("[Sync] Skipping server-tombstoned journal entry upsert");
     return;
   }
   throwIfJournalSyncAborted(signal);
@@ -194,6 +205,23 @@ export const syncJournalEntry = async (
       created_at: entry.createdAt,
       updated_at: entry.updatedAt,
     };
+    if (eventIdempotencyKey) {
+      const { user_id: _owner, ...projection } = payload;
+      const deviceId = await getPersistentDeviceId();
+      await commitManualSyncEvent({
+        ownerUserId: userId,
+        operationId: eventIdempotencyKey,
+        entityType: "journal",
+        entityId: entry.id,
+        op: "upsert",
+        projection,
+        deviceId,
+        ...(signal ? { signal } : {}),
+      });
+      throwIfJournalSyncAborted(signal);
+      logger.log("[Sync] Journal entry synced");
+      return;
+    }
     const upsertRequest = supabase
       .from("journal_entries")
       .upsert(payload, { onConflict: "id" })
@@ -217,35 +245,48 @@ export const syncJournalEntry = async (
       accepted = exactReplay === true;
     }
     if (!accepted) {
-      logger.warn("[Sync] Stale journal entry rejected:", entry.id);
+      logger.warn("[Sync] Stale journal entry rejected");
       return;
     }
     throwIfJournalSyncAborted(signal);
-    logger.log("[Sync] Journal entry synced:", entry.id);
+    logger.log("[Sync] Journal entry synced");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast(
+    const event = await writeEventAndBroadcast(
       "journal",
       entry.id,
       "upsert",
       entry as unknown as Record<string, unknown>,
       deviceId,
-      { expectedOwnerUserId: userId }
+      {
+        expectedOwnerUserId: userId,
+        ...(eventIdempotencyKey
+          ? {
+              idempotencyKey: eventIdempotencyKey,
+              queueOnFailure: false,
+              requireRemoteCommit: true,
+            }
+          : {}),
+      }
     );
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Journal ordered event was not committed");
+    }
     throwIfJournalSyncAborted(signal);
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Journal entry sync aborted:", entry.id);
+      logger.warn("[Sync] Journal entry sync aborted");
       throw error;
     }
     const isNetworkError = detectNetworkError(error);
     if (isNetworkError) {
+      if (eventIdempotencyKey) throw error;
       await offlineQueue.enqueue("SYNC_JOURNAL_ENTRY", entry.id, entry, {
         expectedOwnerUserId: userId,
       });
-      logger.log("[Sync] Journal entry queued after network error:", entry.id);
+      logger.log("[Sync] Journal entry queued after network error");
     } else {
       // Keep failed journal writes visible to queue handlers; IndexedDB still has the data.
-      logger.warn("[Sync] Journal entry sync failed (non-network):", error);
+      logger.warn("[Sync] Journal entry sync failed (non-network)");
       throw error;
     }
   }
@@ -255,16 +296,27 @@ export const deleteJournalEntryFromCloud = async (
   entryId: string,
   expectedOwnerUserId: string,
   signal?: AbortSignal,
+  eventIdempotencyKey?: string,
 ): Promise<void> => {
   throwIfJournalSyncAborted(signal);
-  if (!isCloudSyncEnabled()) return;
+  if (!isCloudSyncEnabled()) {
+    if (eventIdempotencyKey) throw new Error("Journal cloud delete is unavailable");
+    return;
+  }
 
   await trackDeletedJournalEntryId(entryId);
 
   const userId = await validateJournalSyncOwner(expectedOwnerUserId);
-  if (!supabase || !userId) return;
+  if (!supabase) {
+    if (eventIdempotencyKey) throw new Error("Journal remote delete is unavailable");
+    return;
+  }
+  if (!userId) return;
 
   if (!navigator.onLine) {
+    if (eventIdempotencyKey) {
+      throw new DOMException("Journal delete delivery paused while offline", "AbortError");
+    }
     await offlineQueue.enqueue(
       "DELETE_JOURNAL_ENTRY",
       entryId,
@@ -275,7 +327,7 @@ export const deleteJournalEntryFromCloud = async (
         expectedOwnerUserId: userId,
       }
     );
-    logger.log("[Sync] Journal entry delete queued for offline:", entryId);
+    logger.log("[Sync] Journal entry delete queued for offline");
     return;
   }
 
@@ -315,18 +367,29 @@ export const deleteJournalEntryFromCloud = async (
     if (embeddingsRes.error) throw embeddingsRes.error;
 
     throwIfJournalSyncAborted(signal);
-    logger.log("[Sync] Journal entry deleted from cloud:", entryId);
+    logger.log("[Sync] Journal entry deleted from cloud");
     const deviceId = await getPersistentDeviceId();
-    await writeEventAndBroadcast("journal", entryId, "delete", null, deviceId, {
+    const event = await writeEventAndBroadcast("journal", entryId, "delete", null, deviceId, {
       expectedOwnerUserId: userId,
+      ...(eventIdempotencyKey
+        ? {
+            idempotencyKey: eventIdempotencyKey,
+            queueOnFailure: false,
+            requireRemoteCommit: true,
+          }
+        : {}),
     });
+    if (eventIdempotencyKey && !event) {
+      throw new Error("Journal delete ordered event was not committed");
+    }
     throwIfJournalSyncAborted(signal);
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Journal entry delete aborted:", entryId);
+      logger.warn("[Sync] Journal entry delete aborted");
       throw error;
     }
     if (detectNetworkError(error)) {
+      if (eventIdempotencyKey) throw error;
       await offlineQueue.enqueue(
         "DELETE_JOURNAL_ENTRY",
         entryId,
@@ -337,10 +400,10 @@ export const deleteJournalEntryFromCloud = async (
           expectedOwnerUserId: userId,
         }
       );
-      logger.log("[Sync] Journal entry delete queued after network error:", entryId);
+      logger.log("[Sync] Journal entry delete queued after network error");
       return;
     }
-    logger.warn("[Sync] Failed to delete journal entry from cloud:", error);
+    logger.warn("[Sync] Failed to delete journal entry from cloud");
     throw error;
   }
 };
@@ -360,18 +423,18 @@ export const syncJournalPhoto = async (
 
   const deletedEntryIds = await getDeletedJournalEntryIds();
   if (deletedEntryIds.has(photo.entryId)) {
-    logger.warn("[Sync] Skipping tombstoned journal photo upsert:", photo.id);
+    logger.warn("[Sync] Skipping tombstoned journal photo upsert");
     return;
   }
 
   if (!navigator.onLine) {
     await queueJournalPhotoUploadRetry(photo, userId);
-    logger.log("[Sync] Journal photo queued for media upload/metadata retry:", photo.id);
+    logger.log("[Sync] Journal photo queued for media upload/metadata retry");
     return;
   }
 
   if (await isEntityTombstonedOnServer("journal", photo.entryId, userId)) {
-    logger.warn("[Sync] Skipping server-tombstoned journal photo upsert:", photo.id);
+    logger.warn("[Sync] Skipping server-tombstoned journal photo upsert");
     return;
   }
 
@@ -391,18 +454,18 @@ export const syncJournalPhoto = async (
     );
 
     if (error) throw error;
-    logger.log("[Sync] Journal photo metadata synced:", photo.id);
+    logger.log("[Sync] Journal photo metadata synced");
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Journal photo sync aborted:", photo.id);
+      logger.warn("[Sync] Journal photo sync aborted");
       throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalPhotoUploadRetry(photo, userId);
-      logger.log("[Sync] Journal photo queued after network error:", photo.id);
+      logger.log("[Sync] Journal photo queued after network error");
       return;
     }
-    logger.warn("[Sync] Journal photo sync failed:", error);
+    logger.warn("[Sync] Journal photo sync failed");
     throw error;
   }
 };
@@ -421,18 +484,18 @@ export const syncJournalAudio = async (
 
   const deletedEntryIds = await getDeletedJournalEntryIds();
   if (deletedEntryIds.has(audio.entryId)) {
-    logger.warn("[Sync] Skipping tombstoned journal audio upsert:", audio.id);
+    logger.warn("[Sync] Skipping tombstoned journal audio upsert");
     return;
   }
 
   if (!navigator.onLine) {
     await queueJournalAudioUploadRetry(audio, userId);
-    logger.log("[Sync] Journal audio queued for media upload/metadata retry:", audio.id);
+    logger.log("[Sync] Journal audio queued for media upload/metadata retry");
     return;
   }
 
   if (await isEntityTombstonedOnServer("journal", audio.entryId, userId)) {
-    logger.warn("[Sync] Skipping server-tombstoned journal audio upsert:", audio.id);
+    logger.warn("[Sync] Skipping server-tombstoned journal audio upsert");
     return;
   }
 
@@ -452,19 +515,19 @@ export const syncJournalAudio = async (
     );
 
     if (error) throw error;
-    logger.log("[Sync] Journal audio metadata synced:", audio.id);
+    logger.log("[Sync] Journal audio metadata synced");
     await publishJournalAudioParentRefresh(audio, userId);
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Journal audio sync aborted:", audio.id);
+      logger.warn("[Sync] Journal audio sync aborted");
       throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalAudioUploadRetry(audio, userId);
-      logger.log("[Sync] Journal audio queued after network error:", audio.id);
+      logger.log("[Sync] Journal audio queued after network error");
       return;
     }
-    logger.warn("[Sync] Journal audio sync failed:", error);
+    logger.warn("[Sync] Journal audio sync failed");
     throw error;
   }
 };
@@ -480,7 +543,7 @@ export const deleteJournalPhotoFromCloud = async (
 
   if (!navigator.onLine) {
     await queueJournalPhotoDeleteRetry(photoId, userId);
-    logger.log("[Sync] Journal photo delete queued for offline:", photoId);
+    logger.log("[Sync] Journal photo delete queued for offline");
     return;
   }
 
@@ -493,15 +556,15 @@ export const deleteJournalPhotoFromCloud = async (
     if (error) throw error;
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Journal photo delete aborted:", photoId);
+      logger.warn("[Sync] Journal photo delete aborted");
       throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalPhotoDeleteRetry(photoId, userId);
-      logger.log("[Sync] Journal photo delete queued after network error:", photoId);
+      logger.log("[Sync] Journal photo delete queued after network error");
       return;
     }
-    logger.warn("[Sync] Journal photo delete from cloud failed:", error);
+    logger.warn("[Sync] Journal photo delete from cloud failed");
     throw error;
   }
 };
@@ -517,7 +580,7 @@ export const deleteJournalAudioFromCloud = async (
 
   if (!navigator.onLine) {
     await queueJournalAudioDeleteRetry(audioId, userId);
-    logger.log("[Sync] Journal audio delete queued for offline:", audioId);
+    logger.log("[Sync] Journal audio delete queued for offline");
     return;
   }
 
@@ -530,15 +593,15 @@ export const deleteJournalAudioFromCloud = async (
     if (error) throw error;
   } catch (error) {
     if (isAbortError(error)) {
-      logger.warn("[Sync] Journal audio delete aborted:", audioId);
+      logger.warn("[Sync] Journal audio delete aborted");
       throw error;
     }
     if (detectNetworkError(error)) {
       await queueJournalAudioDeleteRetry(audioId, userId);
-      logger.log("[Sync] Journal audio delete queued after network error:", audioId);
+      logger.log("[Sync] Journal audio delete queued after network error");
       return;
     }
-    logger.warn("[Sync] Journal audio delete from cloud failed:", error);
+    logger.warn("[Sync] Journal audio delete from cloud failed");
     throw error;
   }
 };

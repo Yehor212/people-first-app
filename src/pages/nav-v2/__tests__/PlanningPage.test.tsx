@@ -7,8 +7,7 @@ import { ENTRY, type FocusSession, type Habit, type MoodEntry, type ScheduleEven
 import { useUserDataStore } from "@/stores/userDataStore";
 import { useUIStore } from "@/stores/uiStore";
 import { formatDate, getToday } from "@/lib/utils";
-import { syncSetting } from "@/storage/sync/syncSettings";
-import { triggerSync } from "@/storage/cloudSync";
+import { persistManualScheduleEvents } from "@/features/automation";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -147,12 +146,15 @@ vi.mock("@/components/FocusTimer", () => ({
   ),
 }));
 
-vi.mock("@/storage/sync/syncSettings", () => ({
-  syncSetting: vi.fn(async () => undefined),
-}));
-
-vi.mock("@/storage/cloudSync", () => ({
-  triggerSync: vi.fn(),
+vi.mock("@/features/automation/automationTargetPersistence", () => ({
+  persistManualScheduleEvents: vi.fn(
+    async (update: (events: ScheduleEvent[]) => ScheduleEvent[], fallback: ScheduleEvent[]) => ({
+      events: update(fallback),
+      updatedAt: Date.now(),
+      accountBoundaryGeneration: "boundary-a",
+      syncOutboxPersisted: true,
+    })
+  ),
 }));
 
 const manualEvent = (): ScheduleEvent => ({
@@ -525,17 +527,13 @@ describe("PlanningPage", () => {
     expect(screen.queryByTestId("planning-bridge-action-log_mood")).not.toBeInTheDocument();
     expect(screen.queryByTestId("planning-bridge-action-complete_habits")).not.toBeInTheDocument();
   });
-  it("adds and deletes manual events through the schedule store and settings sync", async () => {
+  it("publishes manual events only after the atomic schedule commit", async () => {
     useUserDataStore.setState({ scheduleEvents: [manualEvent()] });
 
     render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "add manual event" }));
-    await waitFor(() => expect(syncSetting).toHaveBeenCalledWith(
-      "zenflow-schedule-events",
-      expect.arrayContaining([expect.objectContaining({ title: "Plan review" })]),
-    ));
-    expect(triggerSync).toHaveBeenCalled();
+    await waitFor(() => expect(persistManualScheduleEvents).toHaveBeenCalled());
     expect(useUserDataStore.getState().scheduleEvents).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: "delete manual event" }));
@@ -551,7 +549,7 @@ describe("PlanningPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete habit event" }));
 
     expect(useUserDataStore.getState().scheduleEvents).toEqual([manualEvent(), habitEvent()]);
-    expect(syncSetting).not.toHaveBeenCalled();
+    expect(persistManualScheduleEvents).not.toHaveBeenCalled();
   });
 
   it("passes completed focus sessions and minute updates through the V1 focus path", () => {
@@ -564,6 +562,7 @@ describe("PlanningPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "complete focus" }));
     expect(onCompleteFocusSession).toHaveBeenCalledWith(
       expect.objectContaining({ id: "focus-1", duration: 25, status: "completed" }),
+      undefined,
     );
   });
 

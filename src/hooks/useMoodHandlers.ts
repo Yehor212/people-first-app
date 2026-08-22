@@ -1,13 +1,19 @@
 import { useCallback } from "react";
 import { useGamificationStore, useUserDataStore } from "@/stores";
-import { getToday, generateId } from "@/lib/utils";
+import { getToday, generateUuid } from "@/lib/utils";
 import { triggerSync } from "@/storage/cloudSync";
-import { syncMood } from "@/storage/realtimeSync";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
 import { analytics } from "@/lib/analytics";
 import { playSound } from "@/lib/audioManager";
-import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import { reportDurablePersistenceFailure } from "@/lib/durablePersistenceFailure";
+import { persistMoodSourceRecord } from "@/features/automation";
+import {
+  assertAccountSessionTransitionGeneration,
+  assertOriginAccountBoundaryGeneration,
+  captureAccountSessionTransitionGeneration,
+} from "@/storage/accountBoundaryRuntime";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { MoodEntry } from "@/types";
 
 interface UseMoodHandlersParams {
@@ -20,19 +26,47 @@ interface CommitMoodEntryDeps {
   rewardUser: ReturnType<typeof useGamificationStore.getState>["rewardUser"];
   updateChallengeProgress: () => void;
   rewardsEnabled?: boolean;
+  persistMoodEntry?: typeof persistMoodSourceRecord;
+  assertAccountBoundaryGeneration?: typeof assertOriginAccountBoundaryGeneration;
+  rewardReason?: string;
+  skipRewardPopup?: boolean;
 }
 
-export function commitMoodEntry(
+export async function commitMoodEntry(
   entry: MoodEntry,
-  { setMoods, rewardUser, updateChallengeProgress, rewardsEnabled = true }: CommitMoodEntryDeps,
-) {
+  {
+    setMoods,
+    rewardUser,
+    updateChallengeProgress,
+    rewardsEnabled = true,
+    persistMoodEntry = persistMoodSourceRecord,
+    assertAccountBoundaryGeneration = assertOriginAccountBoundaryGeneration,
+    rewardReason = "Logged mood",
+    skipRewardPopup = false,
+  }: CommitMoodEntryDeps
+): Promise<void> {
+  const sessionGeneration = captureAccountSessionTransitionGeneration();
   const stamped = { ...entry, updatedAt: entry.updatedAt || Date.now() };
-  setMoods((prev) => [...prev, stamped]);
+  const persisted = await persistMoodEntry(stamped);
+  assertAccountBoundaryGeneration(persisted.accountBoundaryGeneration);
+  assertAccountSessionTransitionGeneration(sessionGeneration);
+  let publicationObserved = false;
+  let duplicatePublication = false;
+  setMoods((prev) => {
+    publicationObserved = true;
+    if (prev.some((candidate) => candidate.id === stamped.id)) {
+      duplicatePublication = true;
+      return prev;
+    }
+    return [...prev, stamped];
+  });
+  if (publicationObserved && duplicatePublication) return;
   if (rewardsEnabled) {
     rewardUser("mood", {
       treats: 5,
-      treatReason: "Logged mood",
+      treatReason: rewardReason,
       haptic: haptics.moodSaved,
+      ...(skipRewardPopup ? { skipPopup: true } : {}),
       seedExtra: entry.mood,
     });
   } else {
@@ -41,77 +75,94 @@ export function commitMoodEntry(
   analytics.moodTracked(entry.mood);
   updateChallengeProgress();
   triggerSync();
-  void syncMood(stamped).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
 }
 
 /**
  * Mood entry handlers: add mood, quick mood (notification), update mood.
  */
-export function useMoodHandlers({ updateChallengeProgress, rewardsEnabled = true }: UseMoodHandlersParams) {
-  const setMoods = useUserDataStore((s) => s.setMoods);
+export function useMoodHandlers({
+  updateChallengeProgress,
+  rewardsEnabled = true,
+}: UseMoodHandlersParams) {
+  const { t } = useLanguage();
+  const setMoods = useUserDataStore((s) => s._publishDurableMoods);
   const rewardUser = useGamificationStore((s) => s.rewardUser);
 
-  const handleAddMood = useThrottledCallback((entry: MoodEntry) => {
-    commitMoodEntry(entry, {
-      setMoods,
-      rewardUser,
-      updateChallengeProgress,
-      rewardsEnabled,
-    });
-  }, 800);
+  const reportPersistenceFailure = useCallback(
+    (error: unknown) => {
+      reportDurablePersistenceFailure(error, {
+        domain: "Mood",
+        localizedMessage: t.storageErrorDesc,
+      });
+    },
+    [t.storageErrorDesc]
+  );
+
+  const handleAddMood = useCallback(
+    async (entry: MoodEntry): Promise<void> => {
+      try {
+        await commitMoodEntry(entry, {
+          setMoods,
+          rewardUser,
+          updateChallengeProgress,
+          rewardsEnabled,
+        });
+      } catch (error) {
+        reportPersistenceFailure(error);
+        throw error;
+      }
+    },
+    [reportPersistenceFailure, rewardUser, rewardsEnabled, setMoods, updateChallengeProgress]
+  );
 
   const handleQuickMood = useCallback(
     (mood: MoodEntry["mood"]) => {
       const today = getToday();
       const entry: MoodEntry = {
-        id: generateId(),
+        id: generateUuid(),
         mood,
         date: today,
         timestamp: Date.now(),
         updatedAt: Date.now(),
       };
 
-      setMoods((prev) => [...prev, entry]);
-      if (rewardsEnabled) {
-        rewardUser("mood", {
-          treats: 5,
-          treatReason: "Quick mood",
-          haptic: haptics.moodSaved,
-          skipPopup: true,
-          seedExtra: mood,
-        });
-      } else {
-        playSound("success");
-      }
-      analytics.moodTracked(mood);
-
-      triggerSync();
-      void syncMood(entry).catch((err) => logger.warn("[Mood] Granular sync failed:", err));
-      logger.log("Quick mood logged from notification:", mood);
+      void commitMoodEntry(entry, {
+        setMoods,
+        rewardUser,
+        updateChallengeProgress: () => undefined,
+        rewardsEnabled,
+        rewardReason: "Quick mood",
+        skipRewardPopup: true,
+      })
+        .then(() => logger.log("Quick mood logged from notification"))
+        .catch(reportPersistenceFailure);
     },
-    [rewardUser, rewardsEnabled, setMoods]
+    [reportPersistenceFailure, rewardUser, rewardsEnabled, setMoods]
   );
 
   const handleUpdateMood = useCallback(
     (entryId: string, newMood: MoodEntry["mood"], note?: string) => {
-      let updatedEntry: MoodEntry | undefined;
-      setMoods((prev) =>
-        prev.map((entry) => {
-          if (entry.id !== entryId) return entry;
-          updatedEntry = {
-            ...entry,
-            mood: newMood,
-            note: note ?? entry.note,
-            updatedAt: Date.now(),
-          };
-          return updatedEntry;
+      const current = useUserDataStore.getState().moods.find((entry) => entry.id === entryId);
+      if (!current) return;
+      const updatedEntry: MoodEntry = {
+        ...current,
+        mood: newMood,
+        note: note ?? current.note,
+        updatedAt: Date.now(),
+      };
+      const sessionGeneration = captureAccountSessionTransitionGeneration();
+      void persistMoodSourceRecord(updatedEntry)
+        .then((persisted) => {
+          assertOriginAccountBoundaryGeneration(persisted.accountBoundaryGeneration);
+          assertAccountSessionTransitionGeneration(sessionGeneration);
+          setMoods((previous) =>
+            previous.map((entry) => (entry.id === entryId ? updatedEntry : entry))
+          );
+          triggerSync();
         })
-      );
-      triggerSync();
-      if (updatedEntry)
-        void syncMood(updatedEntry).catch((err) => logger.warn("[Mood] Update sync failed:", err));
+        .catch(reportPersistenceFailure);
     },
-    [setMoods]
+    [reportPersistenceFailure, setMoods]
   );
 
   return { handleAddMood, handleQuickMood, handleUpdateMood };
