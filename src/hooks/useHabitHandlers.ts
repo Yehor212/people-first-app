@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { triggerXpPopup } from "@/components/XpPopup";
 import { triggerSync } from "@/storage/cloudSync";
 import { syncHabit, syncHabitCompletion, deleteHabitFromCloud } from "@/storage/realtimeSync";
+import { commitHabitEntry, commitHabitToggle } from "@/storage/habitCompletionCommit";
 import { trackDeletedHabitId } from "@/storage/deletionTracker";
 import { logger } from "@/lib/logger";
 import { haptics, hapticTap } from "@/lib/haptics";
@@ -40,6 +41,8 @@ interface UseHabitHandlersParams {
   checkForFeatureUnlocks: () => void;
 }
 
+const RAPID_COMPLETION_RETRY_WINDOW_MS = 750;
+
 /**
  * Habit CRUD + entry-based toggle handlers.
  * Toggle cycle: UNKNOWN ↔ YES_MANUAL (binary; SKIP/NO via detail sheet)
@@ -62,6 +65,7 @@ export function useHabitHandlers({
 
   const processingHabitsRef = useRef<Set<string>>(new Set());
   const processingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const recentCompletionsRef = useRef<Map<string, number>>(new Map());
 
   // Track early bird / night owl for special badges
   const trackTimeOfDayCompletion = useCallback(() => {
@@ -154,75 +158,59 @@ export function useHabitHandlers({
    * Cycle: UNKNOWN ↔ YES_MANUAL (binary; SKIP/NO via detail sheet)
    */
   const handleToggleHabit = useCallback(
-    (habitId: string, date: string) => {
+    async (habitId: string, date: string) => {
       // Guard against rapid double-clicks (per-habit-date key)
       const processingKey = `${habitId}-${date}`;
       if (processingHabitsRef.current.has(processingKey)) return;
+      const completedAt = recentCompletionsRef.current.get(processingKey);
+      if (completedAt !== undefined) {
+        if (Date.now() - completedAt < RAPID_COMPLETION_RETRY_WINDOW_MS) return;
+        recentCompletionsRef.current.delete(processingKey);
+      }
       processingHabitsRef.current.add(processingKey);
 
-      const prevTimeout = processingTimeoutsRef.current.get(processingKey);
-      if (prevTimeout) clearTimeout(prevTimeout);
-      processingTimeoutsRef.current.set(
-        processingKey,
-        setTimeout(() => {
-          processingHabitsRef.current.delete(processingKey);
-          processingTimeoutsRef.current.delete(processingKey);
-        }, 500)
-      );
+      try {
+        const { habit, nextValue } = await commitHabitToggle(habitId, date, "quickTap");
 
-      // Read current value BEFORE state update to determine side effects
-      const habit = habits.find((h) => h.id === habitId);
-      const currentValue = habit?.entries?.[date]?.value ?? ENTRY.UNKNOWN;
-      const nextValue = getNextToggleValue(currentValue);
+        // The persisted record is now the source for the in-memory projection.
+        setHabits((prev) => prev.map((item) => (item.id === habitId ? habit : item)));
 
-      // Pure state updater — no side effects inside
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          return {
-            ...h,
-            entries: setEntryValue(
-              h.entries || {},
-              date,
-              nextValue,
-              undefined,
-              entryMetadata(date, "quickTap")
-            ),
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+        // Side effects and publication occur only after the durable commit.
+        if (nextValue === ENTRY.YES_MANUAL) {
+          recentCompletionsRef.current.set(processingKey, Date.now());
+          fireCompletionEffects(habit, date);
 
-      // Side effects OUTSIDE updater (safe from React 18 double-invoke)
-      if (nextValue === ENTRY.YES_MANUAL && habit) {
-        fireCompletionEffects(habit, date);
-
-        // Quest progress — only on actual completion, not un-completion
-        const completedQuests = updateAllQuestsProgress({ type: "habit_completed", value: 1 });
-        completedQuests.forEach((quest) => {
-          const xpReward = quest.reward.xp;
-          earnTreats("habit", xpReward, `${ts.questPrefix || "Quest"}: ${quest.title}`);
-          triggerXpPopup(xpReward, "bonus");
-        });
-      } else {
-        void haptics.habitToggled();
-      }
-
-      triggerSync();
-      void syncHabitCompletion(
-        habitId,
-        date,
-        nextValue > 0,
-        nextValue > 2 ? Math.round(nextValue / 1000) : 1,
-        undefined,
-        {
-          habitType: habit?.habitType ?? "boolean",
-          targetType: habit?.targetType,
-          entryValue: nextValue,
+          // Quest progress — only on actual completion, not un-completion
+          const completedQuests = updateAllQuestsProgress({ type: "habit_completed", value: 1 });
+          completedQuests.forEach((quest) => {
+            const xpReward = quest.reward.xp;
+            earnTreats("habit", xpReward, `${ts.questPrefix || "Quest"}: ${quest.title}`);
+            triggerXpPopup(xpReward, "bonus");
+          });
+        } else {
+          void haptics.habitToggled();
         }
-      ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
-      updateChallengeProgress();
-      checkForFeatureUnlocks();
+
+        triggerSync();
+        void syncHabitCompletion(
+          habitId,
+          date,
+          nextValue > 0,
+          nextValue > 2 ? Math.round(nextValue / 1000) : 1,
+          undefined,
+          {
+            habitType: habit.habitType ?? "boolean",
+            targetType: habit.targetType,
+            entryValue: nextValue,
+          }
+        ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
+        updateChallengeProgress();
+        checkForFeatureUnlocks();
+      } catch (error) {
+        logger.error("[Habits] Durable completion commit failed:", error);
+      } finally {
+        processingHabitsRef.current.delete(processingKey);
+      }
     },
     [
       habits,
@@ -241,53 +229,41 @@ export function useHabitHandlers({
    * realValue is the user-facing number (e.g. 2.5 liters).
    */
   const handleSetNumericalValue = useCallback(
-    (habitId: string, date: string, realValue: number) => {
+    async (habitId: string, date: string, realValue: number) => {
       // Read current state BEFORE update for completion detection
       const habit = habits.find((h) => h.id === habitId);
+      if (!habit) return;
       const prevValue = habit?.entries?.[date]?.value;
 
       const storedValue = toStoredValue(realValue);
 
-      // Pure state updater — no side effects
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          return {
-            ...h,
-            entries: setEntryValue(
-              h.entries || {},
-              date,
-              storedValue,
-              undefined,
-              entryMetadata(date, "exactInput")
-            ),
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      try {
+        const committedHabit = await commitHabitEntry(habitId, date, storedValue, "exactInput");
+        setHabits((prev) => prev.map((item) => (item.id === habitId ? committedHabit : item)));
 
-      // Fire completion effects OUTSIDE updater if newly meeting target
-      if (habit) {
+        // Fire completion effects only after the durable commit.
         const prevMet = doesNumericalStoredValueMeetTarget(habit, prevValue);
-        const nowMet = doesNumericalStoredValueMeetTarget(habit, storedValue);
+        const nowMet = doesNumericalStoredValueMeetTarget(committedHabit, storedValue);
         if (nowMet && !prevMet) {
-          fireCompletionEffects(habit, date);
+          fireCompletionEffects(committedHabit, date);
         }
-      }
 
-      triggerSync();
-      void syncHabitCompletion(
-        habitId,
-        date,
-        habit ? doesNumericalStoredValueMeetTarget(habit, storedValue) : realValue > 0,
-        Math.max(1, Math.round(realValue)),
-        storedValue,
-        {
-          habitType: habit?.habitType ?? "numerical",
-          targetType: habit?.targetType,
-          entryValue: storedValue,
-        }
-      ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
+        triggerSync();
+        void syncHabitCompletion(
+          habitId,
+          date,
+          nowMet,
+          Math.max(1, Math.round(realValue)),
+          storedValue,
+          {
+            habitType: committedHabit.habitType ?? "numerical",
+            targetType: committedHabit.targetType,
+            entryValue: storedValue,
+          }
+        ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
+      } catch (error) {
+        logger.error("[Habits] Durable numerical completion commit failed:", error);
+      }
     },
     [habits, setHabits, fireCompletionEffects, entryMetadata]
   );
@@ -297,77 +273,50 @@ export function useHabitHandlers({
    * Uses updater pattern to avoid stale closure on rapid taps.
    */
   const handleAdjustHabit = useCallback(
-    (habitId: string, date: string, delta: number) => {
+    async (habitId: string, date: string, delta: number) => {
       // Guard against rapid double-taps (per-habit-date key)
       const processingKey = `${habitId}-${date}`;
       if (processingHabitsRef.current.has(processingKey)) return;
       processingHabitsRef.current.add(processingKey);
 
-      void hapticTap();
-
-      const prevTimeout = processingTimeoutsRef.current.get(processingKey);
-      if (prevTimeout) clearTimeout(prevTimeout);
-      processingTimeoutsRef.current.set(
-        processingKey,
-        setTimeout(() => {
-          processingHabitsRef.current.delete(processingKey);
-          processingTimeoutsRef.current.delete(processingKey);
-        }, 300)
-      );
-
       // Capture current state BEFORE update for completion detection
       const habit = habits.find((h) => h.id === habitId);
+      if (!habit) return;
       const currentStored = habit?.entries?.[date]?.value;
       const currentReal = currentStored && currentStored > 0 ? currentStored / 1000 : 0;
       const newReal = Math.max(0, currentReal + delta);
 
-      setHabits((prev) => {
-        const h = prev.find((x) => x.id === habitId);
-        if (!h) return prev;
-
-        const storedValue = toStoredValue(newReal);
-
-        return prev.map((x) =>
-          x.id !== habitId
-            ? x
-            : {
-                ...x,
-                entries: setEntryValue(
-                  x.entries || {},
-                  date,
-                  storedValue,
-                  undefined,
-                  entryMetadata(date, "quickTap")
-                ),
-                updatedAt: new Date().toISOString(),
-              }
-        );
-      });
-
-      // Fire completion effects OUTSIDE updater if newly meeting target
-      if (habit) {
+      const storedValue = toStoredValue(newReal);
+      try {
+        const committedHabit = await commitHabitEntry(habitId, date, storedValue, "quickTap");
+        setHabits((prev) => prev.map((item) => (item.id === habitId ? committedHabit : item)));
         const prevMet = doesNumericalStoredValueMeetTarget(habit, currentStored);
-        const nowMet = doesNumericalStoredValueMeetTarget(habit, toStoredValue(newReal));
+        const nowMet = doesNumericalStoredValueMeetTarget(committedHabit, storedValue);
         if (nowMet && !prevMet) {
-          fireCompletionEffects(habit, date);
+          fireCompletionEffects(committedHabit, date);
         }
-      }
 
-      triggerSync();
-      void syncHabitCompletion(
-        habitId,
-        date,
-        habit ? doesNumericalStoredValueMeetTarget(habit, toStoredValue(newReal)) : newReal > 0,
-        Math.max(1, Math.round(newReal)),
-        toStoredValue(newReal),
-        {
-          habitType: habit?.habitType ?? "numerical",
-          targetType: habit?.targetType,
-          entryValue: toStoredValue(newReal),
-        }
-      ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
+        void hapticTap();
+        triggerSync();
+        void syncHabitCompletion(
+          habitId,
+          date,
+          nowMet,
+          Math.max(1, Math.round(newReal)),
+          storedValue,
+          {
+            habitType: committedHabit.habitType ?? "numerical",
+            targetType: committedHabit.targetType,
+            entryValue: storedValue,
+          }
+        ).catch((err) => logger.warn("[Habits] Completion sync failed:", err));
+      } catch (error) {
+        logger.error("[Habits] Durable numerical completion commit failed:", error);
+      } finally {
+        processingHabitsRef.current.delete(processingKey);
+      }
     },
-    [habits, setHabits, fireCompletionEffects, entryMetadata]
+    [habits, setHabits, fireCompletionEffects]
   );
 
   const handleAddHabit = (habit: Habit) => {

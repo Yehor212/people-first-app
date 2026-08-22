@@ -2681,7 +2681,7 @@ describe("SettingsPage", () => {
     );
   });
 
-  it("uses quiet tokenized surfaces for real privacy controls and import options", () => {
+  it("keeps import options tokenized while advertising controls remain absent", () => {
     adContextMock.adsSupported = true;
     appStoreMock.hasValidSession = false;
     accountAuthMock.hasSession = false;
@@ -2690,12 +2690,7 @@ describe("SettingsPage", () => {
 
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
-    for (const testId of ["settings-v2-ad-consent"]) {
-      const row = screen.getByTestId(testId);
-      expect(row).toHaveAttribute("data-surface-weight", "quiet");
-      expect(row.className).toContain("border-transparent");
-      expect(within(row).getByRole("switch")).toHaveAccessibleName();
-    }
+    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
 
     const importOptions = screen.getByTestId("settings-v2-import-options");
     expect(importOptions.className).toContain("border-t");
@@ -2870,32 +2865,14 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("shows an immediate privacy choice but rolls it back if durable storage rejects it", async () => {
+  it("does not invoke privacy persistence from a stale advertising compatibility state", () => {
     adContextMock.adsSupported = true;
-    const deferred = createDeferred<void>();
-    void deferred.promise.catch(() => undefined);
     const controls = createSettingsControls();
-    controls.onPrivacyChange.mockReturnValue(deferred.promise);
 
     render(<SettingsPage controls={controls} />);
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
-    const toggle = within(screen.getByTestId("settings-v2-ad-consent")).getByRole("switch", {
-      name: "Rewarded videos",
-    });
-
-    fireEvent.click(toggle);
-    expect(toggle).toBeChecked();
-    expect(toggle).toBeDisabled();
-
-    await act(async () => {
-      deferred.reject(new Error("IndexedDB unavailable"));
-      await deferred.promise.catch(() => undefined);
-    });
-
-    expect(toggle).not.toBeChecked();
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Couldn’t save this change. Your previous setting is still active."
-    );
+    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
+    expect(controls.onPrivacyChange).not.toHaveBeenCalled();
   });
 
   it("falls back to Account & backup when a removed section is requested initially", () => {
@@ -4485,19 +4462,15 @@ describe("SettingsPage", () => {
     );
   });
 
-  it("describes optional privacy services without sync jargon", () => {
+  it("keeps privacy and data available without exposing optional advertising services", () => {
     adContextMock.adsSupported = true;
     render(
       <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />
     );
 
-    const privacyPanel = screen.getByTestId("settings-v2-panel-privacy");
-    expect(privacyPanel).toHaveTextContent("Choose which optional services ZenFlow may use.");
-    expect(privacyPanel).toHaveTextContent("Rewarded videos");
-    expect(privacyPanel).toHaveTextContent(
-      "They load only when you turn them on. Google may ask for your privacy choice when required."
-    );
-    expect(privacyPanel).not.toHaveTextContent(/device sync|turn it on for backup/i);
+    expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-panel-privacy")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
   });
 
   it("does not expose retired analytics, no-tracking, or unavailable rewarded-video controls", () => {
@@ -4514,27 +4487,14 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
   });
 
-  it("shows rewarded-video privacy only when that service is available on this build", () => {
+  it("does not expose rewarded-video privacy even if a stale compatibility context says supported", () => {
     adContextMock.adsSupported = true;
     render(<SettingsPage controls={createSettingsControls()} />);
 
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
 
-    expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
-  });
-
-  it("shows a retryable error when Google ad privacy choices do not open", async () => {
-    adContextMock.adsSupported = true;
-    adContextMock.privacyOptionsRequired = true;
-    adContextMock.openAdPrivacyOptions.mockResolvedValueOnce(false);
-
-    render(<SettingsPage controls={createSettingsControls()} />);
-    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
-    fireEvent.click(screen.getByTestId("settings-v2-open-ad-privacy-options"));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Could not open Google ad privacy choices. Try again."
-    );
+    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-open-ad-privacy-options")).not.toBeInTheDocument();
   });
 
   it("wires account reminder alerts to explicit privacy consent", () => {
@@ -4942,14 +4902,14 @@ describe("SettingsPage", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
-  it("summarizes rewarded-video consent only when that Privacy control is available", () => {
+  it("does not summarize stale rewarded-video consent while Ads-OFF is authoritative", () => {
     adContextMock.adsSupported = true;
     const controls = createSettingsControls();
     controls.privacy = { ...controls.privacy, adConsent: true };
 
     render(<SettingsPage controls={controls} />);
 
-    expect(screen.getByTestId("settings-module-card-privacy")).toHaveTextContent(
+    expect(screen.getByTestId("settings-module-card-privacy")).not.toHaveTextContent(
       "Optional services on"
     );
   });

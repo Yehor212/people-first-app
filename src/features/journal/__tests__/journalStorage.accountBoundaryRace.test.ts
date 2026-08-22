@@ -66,6 +66,7 @@ import {
   getLocalDataOwnerId,
   setLocalDataOwnerId,
 } from "@/storage/db";
+import { notifyAccountSessionTransition } from "@/storage/accountBoundaryRuntime";
 import { compressAndStorePhoto, saveEntry } from "../journalStorage";
 
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
@@ -223,8 +224,8 @@ describe("journal writes at an origin-wide account boundary", () => {
     await delayedSaveEntered.promise;
     expect(locks.isHeld(JOURNAL_SECURITY_WRITE_LOCK)).toBe(true);
 
-    // Resetting the module graph models tab B. Its realm-local journal tail is
-    // distinct, while the mocked Web Locks manager and IndexedDB origin remain shared.
+    // Resetting the module graph models tab B. The origin-wide DATA lock remains
+    // shared even though each tab owns a separate in-realm journal queue.
     vi.resetModules();
     const { runWithDataWriteBarrier: runTabBBoundary } = await import(
       "@/hooks/useIndexedDB"
@@ -245,9 +246,9 @@ describe("journal writes at an origin-wide account boundary", () => {
     await accountBoundary;
 
     expect(locks.requestedLocks().slice(0, 3)).toEqual([
-      JOURNAL_SECURITY_WRITE_LOCK,
       DATA_WRITE_BARRIER_LOCK,
       JOURNAL_SECURITY_WRITE_LOCK,
+      DATA_WRITE_BARRIER_LOCK,
     ]);
 
     // A save initiated from the still-mounted account A realm after the purge
@@ -258,6 +259,21 @@ describe("journal writes at an origin-wide account boundary", () => {
     expect(purgeFinishedBeforeJournalSave).toBe(false);
     expect(await getLocalDataOwnerId()).toBe("account-b");
     expect(await db.journalEntries.toArray()).toEqual([]);
+  });
+
+  it("rolls back a journal commit when an ABA session transition occurs inside its transaction", async () => {
+    await setLocalDataOwnerId("account-a");
+    const originalAdd = db.journalEntries.add.bind(db.journalEntries);
+    vi.spyOn(db.journalEntries, "add").mockImplementationOnce((value, key) => {
+      const primaryKey = originalAdd(value, key);
+      notifyAccountSessionTransition();
+      notifyAccountSessionTransition();
+      return primaryKey;
+    });
+
+    await expect(saveEntry(accountAEntry("opaque-t176"))).rejects.toThrow(/account boundary/i);
+
+    await expect(db.journalEntries.count()).resolves.toBe(0);
   });
 
   it("rejects a photo whose decode finishes after the account boundary changes", async () => {

@@ -1,4 +1,24 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import { areAdsRuntimeEnabled } from "./src/lib/adRuntimePolicy";
+
+const androidOffIncludePlugins = [
+  "@capacitor-community/safe-area",
+  "@capacitor/app",
+  "@capacitor/browser",
+  "@capacitor/filesystem",
+  "@capacitor/haptics",
+  "@capacitor/local-notifications",
+  "@capacitor/push-notifications",
+  "@capacitor/share",
+  "@capacitor/splash-screen",
+  "@capgo/capacitor-social-login",
+];
+
+if (areAdsRuntimeEnabled()) {
+  throw new Error(
+    "Native ad packaging is unavailable until a separately authorized ADR-MON-001 activation restores its native contract.",
+  );
+}
 
 const config: CapacitorConfig = {
   appId: "com.zenflow.app",
@@ -7,6 +27,7 @@ const config: CapacitorConfig = {
   android: {
     webContentsDebuggingEnabled: false,
     allowMixedContent: false,
+    includePlugins: androidOffIncludePlugins,
   },
   ios: {
     scheme: "zenflow",
@@ -18,6 +39,14 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   plugins: {
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: true,
+        twitter: true,
+      },
+    },
     SplashScreen: {
       launchAutoHide: false,
       launchFadeOutDuration: 300,

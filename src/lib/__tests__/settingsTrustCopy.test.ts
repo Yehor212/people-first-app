@@ -230,23 +230,14 @@ describe("Settings trust copy", () => {
     expect(diary).not.toContain("settingsSoundFeedbackOff");
   });
 
-  it("keeps the V2 privacy description separate from legacy security copy", () => {
-    const source = read("src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx");
-
-    expect(source).toContain("settingsPrivacyDataDescription");
-    expect(source).not.toContain("settingsSecurityDesc");
-  });
-
-  it("keeps V2 privacy fallbacks aligned with the approved Settings copy", () => {
-    const privacy = read("src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx");
+  it("keeps the Ads-OFF settings graph free of advertising surfaces and copy", () => {
+    const deck = read("src/pages/nav-v2/settings/V2SettingsControlDeck.tsx");
+    const overview = read("src/pages/nav-v2/settings/useSettingsOverviewModules.ts");
     const reminders = read("src/pages/nav-v2/settings/V2SettingsNotificationsPanel.tsx");
 
-    for (const expected of [
-      'title={tx.privacyAds || "Rewarded videos"}',
-      "They load only when you turn them on. Google may ask for your privacy choice when required.",
-    ]) {
-      expect.soft(privacy).toContain(expected);
-    }
+    expect(deck).not.toContain("V2SettingsPrivacyPanel");
+    expect(overview).not.toContain("AdContext");
+    expect(overview).not.toContain("privacyOptionalServices");
     for (const expected of [
       'title={tx.privacyPushNotifications || "Account reminders"}',
       "Receive reminders from your account on this device. Reminders you set here work separately.",
@@ -254,14 +245,13 @@ describe("Settings trust copy", () => {
       expect.soft(reminders).toContain(expected);
     }
     for (const legacy of [
-      'title={tx.privacyAds || "Rewarded ads"}',
+      "Rewarded videos",
       "Optional videos only. Ad requests stay off unless this is enabled",
       'title={tx.privacyPushNotifications || "Remote push notifications"}',
       "Register this device for account-based push reminders",
     ]) {
-      expect.soft(`${privacy}\n${reminders}`).not.toContain(legacy);
+      expect.soft(`${deck}\n${overview}\n${reminders}`).not.toContain(legacy);
     }
-    expect(privacy).not.toContain("privacyPushNotifications");
   });
 
   it("keeps backup and report actions distinct without rewiring handlers", () => {

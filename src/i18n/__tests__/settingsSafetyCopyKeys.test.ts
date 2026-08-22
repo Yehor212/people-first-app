@@ -94,8 +94,6 @@ const changedExistingCopyKeys = [
   "settingsSoundAmbientOff",
   "themeStyleDescription",
   "themeAccentDescription",
-  "privacyAds",
-  "privacyAdsHint",
   "privacyPushNotifications",
   "privacyPushNotificationsHint",
   "settingsExportImportTitle",
@@ -172,8 +170,6 @@ const platformSpecificRecoveryAndStoreKeys = new Set<string>([
   "notificationSystemSettingsIosDescription",
   "settingsNativeUpdateDescription",
 ]);
-const approvedGermanPrivacyAdsHint =
-  "Sie werden nur geladen, wenn du sie aktivierst. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.";
 const germanFormalAddressTokens = new Set([
   "Sie",
   "Ihr",
@@ -190,8 +186,6 @@ const findGermanFormalAddressViolations = (
   entries: ReadonlyArray<SettingsCopyEntry>
 ) =>
   entries.flatMap(([key, value]) => {
-    if (key === "privacyAdsHint") return [];
-
     return (value.match(/\p{L}+/gu) ?? [])
       .filter((token) => germanFormalAddressTokens.has(token))
       .map((token) => `${key}:${token}`);
@@ -309,7 +303,6 @@ describe("Settings safety copy", () => {
           "settingsAccountDataOnDevice",
           "Melde dich an, um sie zu sichern.",
         ],
-        ["privacyAdsHint", approvedGermanPrivacyAdsHint],
       ])
     ).toEqual([]);
     expect(
@@ -752,7 +745,6 @@ describe("Settings safety copy", () => {
     ]) {
       expect.soft(changedWords("uk")).not.toContain(forbidden);
     }
-    expect.soft(de.privacyAdsHint).toBe(approvedGermanPrivacyAdsHint);
     expect
       .soft(findGermanFormalAddressViolations(changedEntries("de")))
       .toEqual([]);

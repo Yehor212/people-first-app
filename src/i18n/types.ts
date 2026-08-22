@@ -887,8 +887,6 @@ export interface Translations {
   habitReminderAtLeastOneDay: string;
   privacyTitle: string;
   privacyDescription: string;
-  privacyAds: string;
-  privacyAdsHint: string;
   privacyOptionalServicesOn: string;
   privacyOptionalServicesOff: string;
   privacyPushNotifications: string;
@@ -1577,16 +1575,6 @@ export interface Translations {
   claimed: string;
   streakBonus: string;
   dailyRewardsTip: string;
-  // Ad system
-  adWatchToEarn: string;
-  adWatch: string;
-  adRemaining: string;
-  adRewardLabel: string;
-  adRemainingToday: string;
-  adPrivacyOptions: string;
-  adPrivacyOptionsHint: string;
-  adPrivacyOptionsOpen: string;
-  adPrivacyOptionsError: string;
   innerWorld: string;
   tapToInteract: string;
   spinWheel: string;

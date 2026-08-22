@@ -1,5 +1,3 @@
-import java.util.Locale
-
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 
@@ -7,26 +5,6 @@ def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
-def ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS = [
-        "ca-app-pub-3940256099942544~3347511713",
-        "ca-app-pub-3940256099942544~1458002511",
-] as Set
-
-def zenflowAdMobAndroidAppId = project.findProperty("ZENFLOW_ADMOB_ANDROID_APP_ID")
-        ?: System.getenv("ZENFLOW_ADMOB_ANDROID_APP_ID")
-        ?: System.getenv("VITE_ADMOB_APP_ID_ANDROID")
-        ?: "ca-app-pub-3940256099942544~3347511713"
-
-gradle.taskGraph.whenReady { taskGraph ->
-    def releaseBuildRequested = taskGraph.allTasks.any { task ->
-        task.path.toLowerCase(Locale.ROOT).contains("release")
-    }
-
-    if (releaseBuildRequested && (!zenflowAdMobAndroidAppId || ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS.contains(zenflowAdMobAndroidAppId))) {
-        throw new GradleException("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with the real Android AdMob app id; Google sample app ids are only allowed for debug/dev builds.")
-    }
 }
 
 android {
@@ -38,9 +16,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 35
         versionName "2.0.0"
-        manifestPlaceholders = [
-                adMobApplicationId: zenflowAdMobAndroidAppId
-        ]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -107,7 +82,6 @@ dependencies {
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-crashlytics'
-    implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-messaging'
 
     // Google Play In-App Review

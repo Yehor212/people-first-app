@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Clock3, LockKeyhole, Palette, UserRound, Volume2, VolumeX } from "lucide-react";
 
-import { useAds } from "@/contexts/AdContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAccountAuth } from "@/components/settings/account-section/useAccountAuth";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
@@ -61,7 +60,6 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
   const themePreference = useThemeStore((state) => state.theme);
   const appliedTheme = useThemeStore((state) => state.appliedTheme);
   const audioSettings = useAppAudioSettings();
-  const { adsSupported } = useAds();
   const hasValidSession = useAppStore((state) => state.hasValidSession);
   const accountAuth = useAccountAuth({
     onNameChange: controls?.onNameChange ?? ignoreNameChange,
@@ -150,11 +148,6 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
               "Your data stays on this device. Check your connection and try again."
             : tx.settingsAccountBackupDescription ||
               "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.";
-  const privacySummary = adsSupported
-    ? controls?.privacy.adConsent
-      ? tx.privacyOptionalServicesOn || "Optional services on"
-      : tx.privacyOptionalServicesOff || "Optional services off"
-    : undefined;
 
   const modules = useMemo<SettingsModuleCardData[]>(
     () => [
@@ -200,7 +193,6 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
         icon: LockKeyhole,
         label: tx.settingsGroupPrivacyData || "Privacy & data",
         description: dataSummary,
-        value: privacySummary,
         role: "rest",
       },
     ],
@@ -210,7 +202,6 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
       audioSettings.canPlayFeedback,
       dataSummary,
       language,
-      privacySummary,
       reminderSummary,
       soundSummary,
       themeLabel,

@@ -641,9 +641,6 @@ export const ja: Translations = {
   privacyTitle: "プライバシー",
   privacyDescription:
     "隠れた追跡はありません。デバイス同期は、サインインしてオンラインバックアップをオンにした後だけ始まります。",
-  privacyAds: "特典付き動画",
-  privacyAdsHint:
-    "オンにした場合のみ読み込まれます。必要に応じて、Googleからプライバシー設定の選択を求められることがあります。",
   privacyOptionalServicesOn: "オプション機能：オン",
   privacyOptionalServicesOff: "オプション機能：オフ",
   privacyPushNotifications: "アカウントのリマインダー",
@@ -1643,16 +1640,6 @@ export const ja: Translations = {
   claimed: "受取済み",
   streakBonus: "連続ボーナス",
   dailyRewardsTip: "毎日来てより良い報酬を！",
-  adWatchToEarn: "任意の広告: 小さなボーナスを見る",
-  adWatch: "任意の広告を見る",
-  adRemaining: "1日の任意上限があります",
-  adRewardLabel: "{treats}個のおやつを追加",
-  adRemainingToday: "1日の任意上限が適用されます",
-  adPrivacyOptions: "Google 広告プライバシーの選択",
-  adPrivacyOptionsHint: "必要な場合は Google 広告の同意を変更または撤回できます。",
-  adPrivacyOptionsOpen: "広告の選択を確認",
-  adPrivacyOptionsError:
-    "Google の広告プライバシー設定を開けませんでした。もう一度お試しください。",
   innerWorld: "内なる世界",
   tapToInteract: "タップして操作",
   spinWheel: "ホイールを回そう！",

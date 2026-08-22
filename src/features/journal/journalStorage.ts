@@ -47,6 +47,7 @@ import {
   mergeDeletionTrackerIdsInCurrentTransaction,
 } from "@/storage/deletionTracker";
 import { logger } from "@/lib/logger";
+import { runWithOriginExclusiveLock } from "@/lib/originExclusiveLock";
 import { requestPersistentStorageForCriticalData } from "@/storage/persistentStorage";
 import {
   offlineQueue,
@@ -59,7 +60,10 @@ import { validateSyncOwner } from "@/storage/sync/syncOwner";
 import { runWithJournalSecurityWriteLock } from "./journalSecurityWriteLock";
 import { getJournalVaultKeyForWrite } from "./journalWriteSecurity";
 import {
+  ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+  assertAccountSessionTransitionGeneration,
   assertOriginAccountBoundaryGeneration,
+  captureAccountSessionTransitionGeneration,
   captureOriginAccountBoundaryGeneration,
 } from "@/storage/accountBoundaryRuntime";
 import { encodeJournalPhotoWithinLimit } from "./journalPhotoEncoding";
@@ -84,31 +88,19 @@ function captureJournalSyncOwner(): Promise<string | null> {
   return isCloudSyncEnabled() ? getCurrentSessionUserId() : Promise.resolve(null);
 }
 
-function notifyJournalSyncAfterLocalCommit(label: string): void {
+function notifyJournalSyncAfterLocalCommit(_label: string): void {
   try {
-    void offlineQueue.wakeFromDurableStorage().catch((error) => {
-      logger.warn(
-        "[JournalSync]",
-        `${label} committed locally; durable queue wake was deferred:`,
-        error,
-      );
+    void offlineQueue.wakeFromDurableStorage().catch(() => {
+      logger.warn("[JournalSync][DURABLE_QUEUE_WAKE_DEFERRED]");
     });
-  } catch (error) {
-    logger.warn(
-      "[JournalSync]",
-      `${label} committed locally; durable queue wake was deferred:`,
-      error,
-    );
+  } catch {
+    logger.warn("[JournalSync][DURABLE_QUEUE_WAKE_DEFERRED]");
   }
 
   try {
     triggerSync();
-  } catch (error) {
-    logger.warn(
-      "[JournalSync]",
-      `${label} committed locally; sync trigger was deferred:`,
-      error,
-    );
+  } catch {
+    logger.warn("[JournalSync][SYNC_TRIGGER_DEFERRED]");
   }
 }
 
@@ -1296,11 +1288,16 @@ export async function saveEntry(
   const validatedDraftContext = draftContext
     ? assertJournalDraftCommitContext(draftContext)
     : null;
+  const sessionGeneration = captureAccountSessionTransitionGeneration();
   const expectedOwnerUserId = await captureJournalSyncOwner();
-  const localCommit = await runWithJournalSecurityWriteLock(async () => {
-    if (expectedOwnerUserId) {
-      await validateSyncOwner(expectedOwnerUserId, "Diary save outbox");
-    }
+  assertAccountSessionTransitionGeneration(sessionGeneration);
+  const localCommit = await runWithOriginExclusiveLock(ACCOUNT_BOUNDARY_DATA_WRITE_LOCK, () =>
+    runWithJournalSecurityWriteLock(async () => {
+      assertAccountSessionTransitionGeneration(sessionGeneration);
+      if (expectedOwnerUserId) {
+        await validateSyncOwner(expectedOwnerUserId, "Diary save outbox");
+        assertAccountSessionTransitionGeneration(sessionGeneration);
+      }
     const now = Date.now();
     const full: JournalEntry = {
       ...entry,
@@ -1332,6 +1329,7 @@ export async function saveEntry(
         db.settings,
       ],
       async () => {
+        assertAccountSessionTransitionGeneration(sessionGeneration);
         if (validatedDraftContext) {
           await assertJournalDraftWriterOwnedInCurrentTransaction(validatedDraftContext);
         }
@@ -1373,10 +1371,13 @@ export async function saveEntry(
           await db.settings.delete(validatedDraftContext.draftKey);
           await db.settings.delete(SK.journalDraftLease(validatedDraftContext.draftKey));
         }
+        assertAccountSessionTransitionGeneration(sessionGeneration);
       }
     );
     return { full, storedFull, relinkedMedia };
-  });
+    })
+  );
+  assertAccountSessionTransitionGeneration(sessionGeneration);
   const { full } = localCommit;
   void requestPersistentStorageForCriticalData();
 

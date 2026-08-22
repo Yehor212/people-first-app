@@ -21,6 +21,7 @@ const originAccountBoundaryObservationListeners =
 const accountSessionTransitionListeners = new Set<AccountSessionTransitionListener>();
 
 export type OriginAccountBoundaryGeneration = string;
+export type AccountSessionTransitionGeneration = number;
 
 export type PendingLocalBackupAccountClaimState =
   | { status: "none" }
@@ -34,6 +35,7 @@ const IMPORTED_BACKUP_ACCOUNT_CLAIM_LOCK = "zenflow:imported-backup-account-clai
 export const ACCOUNT_BOUNDARY_DATA_WRITE_LOCK = "zenflow:data-write-barrier";
 
 let fallbackGenerationSequence = 0;
+let accountSessionTransitionGeneration: AccountSessionTransitionGeneration = 0;
 
 function readPersistedAccountBoundaryGeneration(): OriginAccountBoundaryGeneration | null {
   const stored = safeLocalStorageGet<unknown>(SK.ACCOUNT_BOUNDARY_GENERATION, null);
@@ -149,8 +151,21 @@ export function subscribeOriginAccountBoundaryObservation(
  * IndexedDB commit window because auth publication is not an IndexedDB write.
  */
 export function notifyAccountSessionTransition(): void {
+  accountSessionTransitionGeneration += 1;
   for (const listener of accountSessionTransitionListeners) {
     listener();
+  }
+}
+
+export function captureAccountSessionTransitionGeneration(): AccountSessionTransitionGeneration {
+  return accountSessionTransitionGeneration;
+}
+
+export function assertAccountSessionTransitionGeneration(
+  expectedGeneration: AccountSessionTransitionGeneration,
+): void {
+  if (expectedGeneration !== accountSessionTransitionGeneration) {
+    throw new AccountBoundaryChangedError();
   }
 }
 

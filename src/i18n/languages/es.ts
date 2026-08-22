@@ -661,9 +661,6 @@ export const es: Translations = {
   privacyTitle: "Privacidad",
   privacyDescription:
     "Sin seguimiento oculto. La sincronización de dispositivos empieza solo después de iniciar sesión y activar la copia en línea.",
-  privacyAds: "Vídeos con recompensa",
-  privacyAdsHint:
-    "Solo se cargan si los activas. Google puede pedirte tus opciones de privacidad cuando sea necesario.",
   privacyOptionalServicesOn: "Servicios opcionales activos",
   privacyOptionalServicesOff: "Servicios opcionales desactivados",
   privacyPushNotifications: "Recordatorios de tu cuenta",
@@ -1688,17 +1685,6 @@ export const es: Translations = {
   claimed: "Reclamado",
   streakBonus: "Bono de Racha",
   dailyRewardsTip: "¡Vuelve cada día para mejores recompensas!",
-  adWatchToEarn: "Anuncio opcional: míralo para un pequeño bonus",
-  adWatch: "Ver anuncio opcional",
-  adRemaining: "Se aplica un límite diario opcional",
-  adRewardLabel: "Añade {treats} premios",
-  adRemainingToday: "Se aplica un limite opcional diario",
-  adPrivacyOptions: "Opciones de privacidad de anuncios de Google",
-  adPrivacyOptionsHint:
-    "Cambia o retira el consentimiento de anuncios de Google cuando sea necesario.",
-  adPrivacyOptionsOpen: "Revisar opciones de anuncios",
-  adPrivacyOptionsError:
-    "No se pudieron abrir las opciones de privacidad de anuncios de Google. Inténtalo de nuevo.",
   innerWorld: "Mundo Interior",
   tapToInteract: "Toca para interactuar",
   spinWheel: "¡Gira la Ruleta!",

@@ -663,9 +663,6 @@ export const fr: Translations = {
   privacyTitle: "Confidentialité",
   privacyDescription:
     "Pas de suivi caché. La synchronisation des appareils démarre seulement après connexion et activation de la sauvegarde en ligne.",
-  privacyAds: "Vidéos récompensées",
-  privacyAdsHint:
-    "Elles ne sont chargées que si vous les activez. Google peut vous demander vos choix de confidentialité si nécessaire.",
   privacyOptionalServicesOn: "Services facultatifs activés",
   privacyOptionalServicesOff: "Services facultatifs désactivés",
   privacyPushNotifications: "Rappels liés à votre compte",
@@ -1696,17 +1693,6 @@ export const fr: Translations = {
   claimed: "Réclamé",
   streakBonus: "Bonus de Série",
   dailyRewardsTip: "Revenez chaque jour pour de meilleures récompenses!",
-  adWatchToEarn: "Pub facultative : regarder pour un petit bonus",
-  adWatch: "Regarder la pub facultative",
-  adRemaining: "Une limite quotidienne facultative s’applique",
-  adRewardLabel: "Ajoute {treats} friandises",
-  adRemainingToday: "Une limite facultative quotidienne s'applique",
-  adPrivacyOptions: "Choix de confidentialité des annonces Google",
-  adPrivacyOptionsHint:
-    "Modifiez ou retirez le consentement aux annonces Google lorsque c'est requis.",
-  adPrivacyOptionsOpen: "Vérifier les choix d'annonces",
-  adPrivacyOptionsError:
-    "Impossible d’ouvrir les choix de confidentialité publicitaire Google. Réessayez.",
   innerWorld: "Monde Intérieur",
   tapToInteract: "Appuyez pour interagir",
   spinWheel: "Tournez la Roue!",

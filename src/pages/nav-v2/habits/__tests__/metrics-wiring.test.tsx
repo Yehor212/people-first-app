@@ -15,6 +15,7 @@
 import { render, cleanup, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { Insight, Habit } from "@/types";
+import { ENTRY } from "@/types";
 
 // ─── Analytics spy ──────────────────────────────────────────────
 // vi.mock() is hoisted above this file's top-level, so the factory runs
@@ -27,6 +28,12 @@ const analyticsSpy = vi.hoisted(() => ({
   insightStripRendered: vi.fn(),
 }));
 vi.mock("@/lib/analytics", () => ({ analytics: analyticsSpy }));
+
+const completionCommit = vi.hoisted(() => ({
+  commitHabitEntry: vi.fn(),
+  commitHabitToggle: vi.fn(),
+}));
+vi.mock("@/storage/habitCompletionCommit", () => completionCommit);
 
 // ─── Language / stores / common mocks ───────────────────────────
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
@@ -169,6 +176,19 @@ beforeEach(() => {
   capturedDetailProps = null;
   mockTopInsight = null;
   setHabitsSpy.mockClear();
+  completionCommit.commitHabitToggle.mockReset();
+  completionCommit.commitHabitEntry.mockReset();
+  completionCommit.commitHabitToggle.mockImplementation(async (habitId: string, date: string) => {
+    const habit = mockHabits.find((item) => item.id === habitId)!;
+    return {
+      habit,
+      nextValue: habit.entries?.[date]?.value ? ENTRY.UNKNOWN : ENTRY.YES_MANUAL,
+    };
+  });
+  completionCommit.commitHabitEntry.mockImplementation(async (habitId: string, date: string, value: number) => {
+    const habit = mockHabits.find((item) => item.id === habitId)!;
+    return { ...habit, entries: { ...habit.entries, [date]: { value } } };
+  });
   analyticsSpy.habitCreated.mockClear();
   analyticsSpy.habitCompleted.mockClear();
   analyticsSpy.habitDetailOpened.mockClear();
@@ -182,6 +202,38 @@ afterEach(() => cleanup());
 // ─── HabitsPage wiring ──────────────────────────────────────────
 
 describe("HabitsPage → analytics wiring (§15)", () => {
+  it("does not publish a V2 completion before its durable commit resolves", async () => {
+    mockHabits = [makeHabit("a")];
+    let resolveCommit: (value: { habit: Habit; nextValue: number }) => void;
+    completionCommit.commitHabitToggle.mockImplementation(
+      () => new Promise((resolve) => { resolveCommit = resolve; }),
+    );
+    render(<HabitsPage />);
+
+    const pending = (capturedHeroProps!.onToggleHabit as unknown as (habitId: string, date: string) => Promise<void>)("a", "2026-04-19");
+
+    expect(completionCommit.commitHabitToggle).toHaveBeenCalledWith("a", "2026-04-19", "quickTap");
+    expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
+    expect(setHabitsSpy).not.toHaveBeenCalled();
+
+    resolveCommit!({ habit: mockHabits[0], nextValue: ENTRY.YES_MANUAL });
+    await pending;
+  });
+
+  it("deduplicates a V2 completion retry after the first commit has resolved", async () => {
+    mockHabits = [makeHabit("a")];
+    render(<HabitsPage />);
+
+    const toggle = capturedHeroProps!.onToggleHabit as unknown as (
+      habitId: string,
+      date: string
+    ) => Promise<void>;
+    await toggle("a", "2026-04-19");
+    await toggle("a", "2026-04-19");
+
+    expect(completionCommit.commitHabitToggle).toHaveBeenCalledTimes(1);
+  });
+
   it("openDetail prop calls analytics.habitDetailOpened with current count", () => {
     mockHabits = [makeHabit("a"), makeHabit("b"), makeHabit("c")];
     render(<HabitsPage />);
@@ -234,26 +286,26 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     expect(analyticsSpy.habitCreated).toHaveBeenCalledWith("template", 2);
   });
 
-  it("onToggleHabit transition to completed emits analytics.habitCompleted with total_habits", () => {
+  it("onToggleHabit transition to completed emits analytics.habitCompleted with total_habits", async () => {
     mockHabits = [makeHabit("a"), makeHabit("b"), makeHabit("c")];
     render(<HabitsPage />);
     // Simulate a completion transition (habit a has no entry for this date).
-    capturedHeroProps!.onToggleHabit("a", "2026-04-19");
+    await (capturedHeroProps!.onToggleHabit as unknown as (habitId: string, date: string) => Promise<void>)("a", "2026-04-19");
     expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1);
     // habitCompleted(habitName, totalHabits) — total_habits filters archived.
     expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith("Habit a", 3);
   });
 
-  it("onToggleHabit un-complete does not emit habit_completed (avoids over-counting)", () => {
+  it("onToggleHabit un-complete does not emit habit_completed (avoids over-counting)", async () => {
     const habit = makeHabit("a");
     habit.entries = { "2026-04-19": { value: 1 } };
     mockHabits = [habit];
     render(<HabitsPage />);
-    capturedHeroProps!.onToggleHabit("a", "2026-04-19");
+    await (capturedHeroProps!.onToggleHabit as unknown as (habitId: string, date: string) => Promise<void>)("a", "2026-04-19");
     expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
   });
 
-  it("onAdjustHabit crossing atLeast target emits habit_completed (numerical)", () => {
+  it("onAdjustHabit crossing atLeast target emits habit_completed (numerical)", async () => {
     const habit = makeHabit("water");
     habit.habitType = "numerical";
     habit.targetValue = 2; // 2 units (e.g., litres)
@@ -264,7 +316,7 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     render(<HabitsPage />);
     // +1 unit crosses 1.5 → 2.5 (≥ 2)
     capturedHeroProps!.onAdjustHabit!("water", "2026-04-19", 1);
-    expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(analyticsSpy.habitCompleted).toHaveBeenCalledTimes(1));
     expect(analyticsSpy.habitCompleted).toHaveBeenCalledWith("Habit water", 1);
   });
 
