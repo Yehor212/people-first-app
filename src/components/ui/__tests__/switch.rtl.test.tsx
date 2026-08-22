@@ -12,7 +12,7 @@ describe("Switch RTL geometry", () => {
     document.documentElement.dir = "ltr";
     const ltr = render(<Switch checked aria-label="LTR" />);
     const ltrThumb = ltr.getByRole("switch").firstElementChild as HTMLElement;
-    expect(ltrThumb.style.insetInlineStart).toBe("3px");
+    expect(ltrThumb).toHaveClass("start-[3px]");
     expect(ltrThumb).toHaveClass("ltr:translate-x-[24px]", "rtl:-translate-x-[24px]");
     expect(ltrThumb.style.transform).toBe("");
     ltr.unmount();
@@ -20,7 +20,7 @@ describe("Switch RTL geometry", () => {
     document.documentElement.dir = "rtl";
     const rtl = render(<Switch checked aria-label="RTL" />);
     const rtlThumb = rtl.getByRole("switch").firstElementChild as HTMLElement;
-    expect(rtlThumb.style.insetInlineStart).toBe("3px");
+    expect(rtlThumb).toHaveClass("start-[3px]");
     expect(rtlThumb).toHaveClass("ltr:translate-x-[24px]", "rtl:-translate-x-[24px]");
     expect(rtlThumb.style.transform).toBe("");
   });

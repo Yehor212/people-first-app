@@ -99,7 +99,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           />
           <h1
             id="language-selector-title"
-            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal] min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
+            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
           >
             {t.welcomeTitle}
           </h1>
@@ -112,7 +112,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           aria-label={t.selectLanguage}
         >
           <motion.div
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(10rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
             role="radiogroup"
             aria-label={t.selectLanguage}
             aria-busy={Boolean(pendingLanguage)}
@@ -143,12 +143,12 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   transition={{ duration: 0.24, ease: [0.25, 0.1, 0.25, 1] }}
                   data-testid={`language-option-${lang}`}
                 >
-                  <span className="flex min-w-0 items-start gap-2.5">
+                  <span className="flex w-full min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-1.5 min-[420px]:flex-nowrap min-[420px]:items-start min-[420px]:justify-start min-[420px]:gap-2.5">
                     <span className="shrink-0 text-xl leading-none" aria-hidden="true">
                       {languageFlags[lang]}
                     </span>
                     <span
-                      className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
+                      className="order-last w-full min-w-0 basis-full break-normal text-center text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:normal] min-[420px]:order-none min-[420px]:w-auto min-[420px]:basis-auto min-[420px]:flex-1 min-[420px]:text-start"
                       dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
                     >
                       {languageNames[lang]}

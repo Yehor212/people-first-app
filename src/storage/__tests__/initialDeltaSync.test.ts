@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
   saveLastSeq: vi.fn(),
   pullFromCloud: vi.fn(),
+  needsAutomationHistoryBootstrap: vi.fn(),
+  bootstrapAutomationHistoryOnce: vi.fn(),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -28,6 +30,11 @@ vi.mock("@/storage/realtimeSync", () => ({
   pullFromCloud: mocks.pullFromCloud,
 }));
 
+vi.mock("@/features/automation/automationBootstrap", () => ({
+  needsAutomationHistoryBootstrap: mocks.needsAutomationHistoryBootstrap,
+  bootstrapAutomationHistoryOnce: mocks.bootstrapAutomationHistoryOnce,
+}));
+
 import { bootstrapSnapshotThenDelta } from "@/storage/initialDeltaSync";
 
 describe("bootstrapSnapshotThenDelta", () => {
@@ -41,6 +48,8 @@ describe("bootstrapSnapshotThenDelta", () => {
     mocks.getPersistentDeviceId.mockResolvedValue("device-current");
     mocks.applyDelta.mockResolvedValue(0);
     mocks.saveLastSeq.mockResolvedValue(undefined);
+    mocks.needsAutomationHistoryBootstrap.mockResolvedValue(false);
+    mocks.bootstrapAutomationHistoryOnce.mockResolvedValue(null);
   });
 
   it("takes a snapshot baseline before fetching the delta tail for a fresh cursor", async () => {
@@ -124,5 +133,23 @@ describe("bootstrapSnapshotThenDelta", () => {
     ).rejects.toThrow("account boundary");
 
     expect(mocks.applyDelta).not.toHaveBeenCalled();
+  });
+
+  it("bootstraps 2.1 automation history after domain catch-up even when the legacy cursor is advanced", async () => {
+    mocks.getLastSeq.mockResolvedValue(10);
+    mocks.needsAutomationHistoryBootstrap.mockResolvedValue(true);
+    mocks.fetchAllDeltas.mockResolvedValue([]);
+
+    await expect(
+      bootstrapSnapshotThenDelta(undefined, "user-1"),
+    ).resolves.toEqual({ fetched: 0, applied: 0, lastSeq: 10 });
+
+    expect(mocks.pullFromCloud).toHaveBeenCalledWith("user-1");
+    expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(10, undefined);
+    expect(mocks.bootstrapAutomationHistoryOnce).toHaveBeenCalledWith("user-1");
+    expect(mocks.pullFromCloud).toHaveBeenCalledBefore(mocks.fetchAllDeltas);
+    expect(mocks.fetchAllDeltas).toHaveBeenCalledBefore(
+      mocks.bootstrapAutomationHistoryOnce,
+    );
   });
 });

@@ -260,6 +260,32 @@ describe("offline queue account boundary", () => {
     }
   });
 
+  it("jitters the first online lifecycle retry instead of reconnecting every client together", async () => {
+    vi.useFakeTimers();
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      const { offlineQueue } = await loadFreshQueue();
+      const processQueue = vi
+        .spyOn(offlineQueue, "processQueue")
+        .mockRejectedValueOnce(new Error("storage unavailable"))
+        .mockResolvedValueOnce(undefined);
+
+      setOnline(true);
+      window.dispatchEvent(new Event("online"));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(processQueue).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(499);
+      expect(processQueue).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(processQueue).toHaveBeenCalledTimes(2);
+    } finally {
+      randomSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it("stops automatic lifecycle retries after the finite retry budget", async () => {
     vi.useFakeTimers();
     try {
@@ -340,6 +366,53 @@ describe("offline queue account boundary", () => {
       expect.objectContaining({ entityId: "handler-not-ready", retries: 0 }),
     ]);
     expect(testState.persistedItems).toHaveLength(1);
+  });
+
+  it("gives a persisted normal action a bounded turn after cold-start hydration", async () => {
+    const persistedCritical = Array.from({ length: 9 }, (_, index): PersistedQueueItem => ({
+      id: `critical-${index}`,
+      operationId: `critical-operation-${index}`,
+      type: "UPDATE_SETTINGS",
+      entityId: `critical-setting-${index}`,
+      ownerUserId: "account-a",
+      payload: { key: `critical-setting-${index}`, value: true },
+      timestamp: 100 + index,
+      retries: 0,
+      maxRetries: 5,
+      priority: "critical",
+    }));
+    testState.persistedItems.push(
+      ...persistedCritical.reverse(),
+      {
+        id: "normal-waiting",
+        operationId: "normal-operation",
+        type: "UPDATE_SETTINGS",
+        entityId: "normal-waiting",
+        ownerUserId: "account-a",
+        payload: { key: "normal-waiting", value: true },
+        timestamp: 1,
+        retries: 0,
+        maxRetries: 5,
+        priority: "normal",
+      },
+    );
+
+    const { offlineQueue } = await loadFreshQueue();
+    const deliveredEntityIds: string[] = [];
+    offlineQueue.registerHandler("UPDATE_SETTINGS", async (queuedAction) => {
+      deliveredEntityIds.push(queuedAction.entityId);
+      return COMMITTED;
+    });
+
+    setOnline(true);
+    await offlineQueue.processQueue();
+
+    expect(deliveredEntityIds.slice(0, 8)).toEqual(
+      Array.from({ length: 8 }, (_, index) => `critical-setting-${index}`),
+    );
+    expect(deliveredEntityIds[8]).toBe("normal-waiting");
+    expect(deliveredEntityIds[9]).toBe("critical-setting-8");
+    expect(testState.persistedItems).toEqual([]);
   });
 
   it("processes a verified retry when navigator.onLine is stale false", async () => {
@@ -1297,9 +1370,74 @@ describe("offline queue account boundary", () => {
         expect.objectContaining({
           entityId: "timed-out-setting",
           retries: 1,
-          lastError: expect.stringMatching(/timed out/i),
+          lastError: "QUEUE_HANDLER_TIMEOUT",
         }),
       ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ignores a late completion and reuses the same operation identity for manual retry", async () => {
+    vi.useFakeTimers();
+    try {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+      const { offlineQueue } = await loadFreshQueue();
+      let releaseFirstAttempt!: () => void;
+      let markFirstAttemptStarted!: () => void;
+      const firstAttemptStarted = new Promise<void>((resolve) => {
+        markFirstAttemptStarted = resolve;
+      });
+      const firstAttemptGate = new Promise<typeof COMMITTED>((resolve) => {
+        releaseFirstAttempt = () => resolve(COMMITTED);
+      });
+      const deliveredOperationIds: string[] = [];
+
+      offlineQueue.registerHandler("UPDATE_SETTINGS", async (_action, context) => {
+        deliveredOperationIds.push(context.operationId);
+        if (deliveredOperationIds.length === 1) {
+          markFirstAttemptStarted();
+          return firstAttemptGate;
+        }
+        return COMMITTED;
+      });
+      await offlineQueue.enqueue(
+        "UPDATE_SETTINGS",
+        "late-completion-setting",
+        { key: "privacy", value: false },
+        { expectedOwnerUserId: "account-a", maxRetries: 1 },
+      );
+      const operationId = offlineQueue.getState().actions[0]?.operationId;
+
+      setOnline(true);
+      const processing = offlineQueue.processQueue();
+      await firstAttemptStarted;
+      await vi.advanceTimersByTimeAsync(30_000);
+      await processing;
+
+      const blockedEvent = dispatchSpy.mock.calls
+        .map(([event]) => event)
+        .find((event) => event.type === "zenflow:offline-queue-blocked") as
+        | CustomEvent<{ retry: () => Promise<void> }>
+        | undefined;
+      expect(blockedEvent).toBeDefined();
+      expect(offlineQueue.getState().actions).toEqual([
+        expect.objectContaining({
+          operationId,
+          retries: 1,
+          lastError: "QUEUE_HANDLER_TIMEOUT",
+        }),
+      ]);
+
+      releaseFirstAttempt();
+      await Promise.resolve();
+      expect(offlineQueue.getState().actions).toHaveLength(1);
+
+      await blockedEvent?.detail.retry();
+      await vi.waitFor(() => {
+        expect(deliveredOperationIds).toEqual([operationId, operationId]);
+        expect(offlineQueue.getState().actions).toEqual([]);
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -1836,7 +1974,7 @@ describe("offline queue account boundary", () => {
       expect.objectContaining({
         entityId: "normal-blocked-setting",
         retries: 1,
-        lastError: "temporary sync failure",
+        lastError: "QUEUE_HANDLER_FAILED",
       }),
     ]);
     expect(
@@ -1928,7 +2066,7 @@ describe("offline queue account boundary", () => {
       expect.objectContaining({
         type: "DELETE_JOURNAL_PHOTO_STORAGE",
         retries: 1,
-        lastError: "temporary storage cleanup failure",
+        lastError: "QUEUE_HANDLER_FAILED",
       }),
     ]);
     const blockedEvent = dispatchSpy.mock.calls

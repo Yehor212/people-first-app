@@ -70,16 +70,13 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         <div
           className={cn(
             // Thumb stays visually compact while the switch keeps a 48px tap target
-            "absolute top-[13px] h-[22px] w-[22px] rounded-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out",
+            "absolute start-[3px] top-[13px] h-[22px] w-[22px] rounded-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out",
             // Background and shadow
             "bg-background shadow-sm",
             isChecked
               ? "ltr:translate-x-[24px] rtl:-translate-x-[24px]"
               : "translate-x-0",
           )}
-          style={{
-            insetInlineStart: '3px',
-          }}
         />
       </button>
     );

@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("journal content session cross-tab invalidation", () => {
+  it("publishes a content-free local session-change signal on unlock", async () => {
+    const session = await import("@/lib/journalContentSession");
+    const listener = vi.fn();
+    window.addEventListener("zenflow:journal-content-session-changed", listener);
+    session.setJournalContentVaultKey("vault-key", 7);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect((listener.mock.calls[0]?.[0] as CustomEvent).detail).toBeUndefined();
+    window.removeEventListener("zenflow:journal-content-session-changed", listener);
+  });
+
   afterEach(() => {
     vi.resetModules();
     Reflect.deleteProperty(window, "BroadcastChannel");

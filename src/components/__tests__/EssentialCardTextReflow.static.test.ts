@@ -58,8 +58,15 @@ describe("essential cards full-text reflow contract", () => {
       "grid grid-cols-[2rem_minmax(0,1fr)] items-start",
     );
     expect(sources.participants).toContain(
-      "min-[420px]:grid-cols-[2rem_minmax(0,1fr)_auto_auto]",
+      "min-[420px]:grid-cols-[2rem_minmax(0,1fr)_auto]",
     );
+    expect(sources.participants).toContain(
+      "col-span-2 row-start-2 flex min-w-0 items-start justify-between",
+    );
+    expect(sources.participants).toContain('className="max-h-[12.5rem] overflow-y-auto');
+    expect(sources.participants).toContain('role="region"');
+    expect(sources.participants).toContain('className="space-y-1" role="list"');
+    expect(sources.participants).toContain('role="listitem"');
     expect(sources.leaderboard).toContain(
       "grid grid-cols-[2.25rem_minmax(0,1fr)] items-start",
     );

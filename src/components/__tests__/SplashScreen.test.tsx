@@ -15,6 +15,7 @@ describe("SplashScreen", () => {
   beforeEach(() => {
     localStorage.clear();
     delete document.documentElement.dataset.theme;
+    document.documentElement.removeAttribute("dir");
   });
 
   it("uses explicit ink theme even when the persisted theme is paper", () => {
@@ -71,6 +72,20 @@ describe("SplashScreen", () => {
     );
     expect(screen.getByTestId("splash-brand-logo")).toBeInTheDocument();
     expect(screen.getByTestId("splash-infinity-loader")).toBeInTheDocument();
+  });
+
+  it("keeps the ZenFlow brand in LTR order inside an RTL interface", () => {
+    document.documentElement.dir = "rtl";
+
+    render(
+      <SplashScreen
+        loadingFadeOut={false}
+        subtitle="Preparing your zen space..."
+        instant
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "ZenFlow" })).toHaveAttribute("dir", "ltr");
   });
 
   it("drives root fade-out through the CSS data contract", () => {
@@ -228,4 +243,22 @@ describe("SplashScreen", () => {
     expect(screen.getByTestId("splash-infinity-loader")).toBeInTheDocument();
   });
 
+  it("keeps the Android startup splash inside a static compositor budget", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    const contractStart = css.indexOf("/* Android WebView splash compositor budget */");
+    const contractEnd = css.indexOf("/* End Android WebView splash compositor budget */");
+
+    expect(contractStart).toBeGreaterThan(-1);
+    expect(contractEnd).toBeGreaterThan(contractStart);
+
+    const androidContract = css.slice(contractStart, contractEnd);
+
+    expect(androidContract).toContain(':root[data-platform="android"] .splash-theme-shell');
+    expect(androidContract).toContain("will-change: auto");
+    expect(androidContract).toContain("filter: none");
+    expect(androidContract).toContain("mix-blend-mode: normal");
+    expect(androidContract).toContain(".splash-night-ribbon--b");
+    expect(androidContract).toContain(".splash-day-bubble:nth-child(n + 3)");
+    expect(androidContract).toContain("display: none");
+  });
 });

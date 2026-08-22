@@ -1,7 +1,6 @@
-import java.util.Locale
-
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'androidx.baselineprofile'
 
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
@@ -19,13 +18,51 @@ def zenflowAdMobAndroidAppId = project.findProperty("ZENFLOW_ADMOB_ANDROID_APP_I
         ?: System.getenv("VITE_ADMOB_APP_ID_ANDROID")
         ?: "ca-app-pub-3940256099942544~3347511713"
 
+// Only distributable app tasks require owner-bound production identifiers.
+// The Baseline Profile plugin's nonMinifiedRelease/benchmarkRelease variants
+// are profiling fixtures and are never eligible for upload.
+def ZENFLOW_RELEASE_DISTRIBUTION_TASKS = [
+        'assembleRelease',
+        'bundleRelease',
+        'installRelease',
+        'packageRelease',
+] as Set
+
+def ZENFLOW_RELEASE_SIGNING_PROPERTY_KEYS = [
+        'storeFile',
+        'storePassword',
+        'keyAlias',
+        'keyPassword',
+] as Set
+
+def zenflowGoogleServicesFile = file('google-services.json')
+def zenflowGoogleServicesConfigured = zenflowGoogleServicesFile.isFile()
+        && zenflowGoogleServicesFile.length() > 0
+
+def zenflowReleaseSigningValuesPresent = keystorePropertiesFile.exists()
+        && ZENFLOW_RELEASE_SIGNING_PROPERTY_KEYS.every { key ->
+            def value = keystoreProperties.getProperty(key)
+            value != null && !value.trim().isEmpty()
+        }
+def zenflowReleaseStoreFile = zenflowReleaseSigningValuesPresent
+        ? file(keystoreProperties.getProperty('storeFile'))
+        : null
+def zenflowReleaseSigningConfigured = zenflowReleaseSigningValuesPresent
+        && zenflowReleaseStoreFile.isFile()
+
 gradle.taskGraph.whenReady { taskGraph ->
     def releaseBuildRequested = taskGraph.allTasks.any { task ->
-        task.path.toLowerCase(Locale.ROOT).contains("release")
+        task.project.path == ':app' && ZENFLOW_RELEASE_DISTRIBUTION_TASKS.contains(task.name)
     }
 
     if (releaseBuildRequested && (!zenflowAdMobAndroidAppId || ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS.contains(zenflowAdMobAndroidAppId))) {
         throw new GradleException("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with the real Android AdMob app id; Google sample app ids are only allowed for debug/dev builds.")
+    }
+    if (releaseBuildRequested && !zenflowGoogleServicesConfigured) {
+        throw new GradleException("Distributable release builds require the owner-provided android/app/google-services.json; Firebase/push configuration cannot be omitted or synthesized.")
+    }
+    if (releaseBuildRequested && !zenflowReleaseSigningConfigured) {
+        throw new GradleException("Distributable release builds require android/key.properties with complete upload-signing inputs and an existing keystore file.")
     }
 }
 
@@ -37,7 +74,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 35
-        versionName "2.0.0"
+        versionName "2.1.0"
         manifestPlaceholders = [
                 adMobApplicationId: zenflowAdMobAndroidAppId
         ]
@@ -50,8 +87,8 @@ android {
     }
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties['storeFile'])
+            if (zenflowReleaseSigningConfigured) {
+                storeFile zenflowReleaseStoreFile
                 storePassword keystoreProperties['storePassword']
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
@@ -62,8 +99,9 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (keystorePropertiesFile.exists()) {
+            if (zenflowReleaseSigningConfigured) {
                 signingConfig signingConfigs.release
             }
             ndk {
@@ -119,6 +157,11 @@ dependencies {
 
     // Required for Firebase Sessions (need 1.1.x for Firebase BOM 33.x)
     implementation 'androidx.datastore:datastore-preferences:1.1.1'
+    implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
+
+    // Generated from release-equivalent Macrobenchmark journeys. The producer
+    // stays separate so a hand-authored or empty profile cannot masquerade as proof.
+    baselineProfile project(':baselineprofile')
 }
 
 apply from: 'capacitor.build.gradle'
@@ -130,12 +173,9 @@ android {
     }
 }
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-        apply plugin: 'com.google.firebase.crashlytics'
-    }
-} catch(Exception e) {
+if (zenflowGoogleServicesConfigured) {
+    apply plugin: 'com.google.gms.google-services'
+    apply plugin: 'com.google.firebase.crashlytics'
+} else {
     logger.info("google-services.json not found, google-services plugin not applied.")
 }

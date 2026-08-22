@@ -252,7 +252,10 @@ export const PlanningPage = memo(function PlanningPage({
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-5 md:gap-6">
         <header className="flex min-w-0 flex-col gap-3">
-          <div className="inline-flex min-h-[44px] w-fit max-w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border border-border/55 bg-card/72 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]">
+          <div
+            className="v2-phone-drawer-inline-clearance inline-flex min-h-[44px] w-fit max-w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border border-border/55 bg-card/72 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+            data-phone-drawer-clearance="true"
+          >
             <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
             <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
               {t.navV2Planning}

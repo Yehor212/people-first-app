@@ -11,7 +11,7 @@
  *   - aria-label: drawer title is read on open.
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,6 +20,7 @@ import { useHabitForm } from "@/hooks/useHabitForm";
 import { HabitCreationForm } from "@/components/habit-creation-form/HabitCreationForm";
 import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
+import { keepElementVisibleInScrollport } from "./habitKeyboardViewport";
 
 interface HabitCreateSheetProps {
   open: boolean;
@@ -48,6 +49,7 @@ export function HabitCreateSheet({
 }: HabitCreateSheetProps) {
   const { t } = useLanguage();
   const tx = t;
+  const [scrollRegion, setScrollRegion] = useState<HTMLDivElement | null>(null);
 
   const handleAdd = useCallback(
     (habit: Habit) => {
@@ -71,7 +73,9 @@ export function HabitCreateSheet({
     useV2IconIds: true,
   });
   const {
+    showCustomForm,
     setIsAdding,
+    setShowCustomForm,
     resetForm,
     handleEditHabit: formBeginEdit,
     startFromTemplate: formBeginTemplate,
@@ -95,7 +99,104 @@ export function HabitCreateSheet({
     }
   }, [open, editHabit, template, setIsAdding, resetForm, formBeginEdit, formBeginTemplate]);
 
-  useBackHandler(open, onClose);
+  const revealFocusedControl = useCallback(() => {
+    const activeElement = document.activeElement;
+    if (
+      !scrollRegion ||
+      !(activeElement instanceof HTMLElement) ||
+      !scrollRegion.contains(activeElement)
+    ) {
+      return;
+    }
+
+    keepElementVisibleInScrollport(activeElement, scrollRegion);
+  }, [scrollRegion]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    if (!scrollRegion) return undefined;
+
+    const visualViewport = window.visualViewport;
+    let firstFrame: number | undefined;
+    let secondFrame: number | undefined;
+    let settleTimer: number | undefined;
+    let lateScrollCorrectionUntil = 0;
+
+    const cancelFrameCheck = () => {
+      if (firstFrame !== undefined) window.cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) window.cancelAnimationFrame(secondFrame);
+      firstFrame = undefined;
+      secondFrame = undefined;
+    };
+
+    const cancelScheduledCheck = () => {
+      cancelFrameCheck();
+      if (settleTimer !== undefined) window.clearTimeout(settleTimer);
+      settleTimer = undefined;
+    };
+
+    const scheduleFrameCheck = () => {
+      cancelFrameCheck();
+      firstFrame = window.requestAnimationFrame(() => {
+        firstFrame = undefined;
+        secondFrame = window.requestAnimationFrame(() => {
+          secondFrame = undefined;
+          revealFocusedControl();
+        });
+      });
+    };
+
+    const scheduleVisibilityCheck = () => {
+      cancelScheduledCheck();
+      // Chromium may apply its own focused-control scroll after the final IME
+      // viewport callback. Limit corrective scroll handling to the keyboard
+      // transition so ordinary user scrolling is never permanently trapped.
+      lateScrollCorrectionUntil = window.performance.now() + 1_500;
+      scheduleFrameCheck();
+      // Android and WKWebView can animate the keyboard after their last
+      // viewport event. Recheck once after that transition settles.
+      settleTimer = window.setTimeout(revealFocusedControl, 450);
+    };
+
+    const handleLateScroll = () => {
+      if (window.performance.now() > lateScrollCorrectionUntil) return;
+      scheduleFrameCheck();
+    };
+
+    scrollRegion.addEventListener("focusin", scheduleVisibilityCheck);
+    scrollRegion.addEventListener("scroll", handleLateScroll, { passive: true });
+    visualViewport?.addEventListener("resize", scheduleVisibilityCheck);
+    visualViewport?.addEventListener("scroll", scheduleVisibilityCheck);
+    window.addEventListener("resize", scheduleVisibilityCheck);
+    window.addEventListener("orientationchange", scheduleVisibilityCheck);
+    scheduleVisibilityCheck();
+
+    return () => {
+      cancelScheduledCheck();
+      scrollRegion.removeEventListener("focusin", scheduleVisibilityCheck);
+      scrollRegion.removeEventListener("scroll", handleLateScroll);
+      visualViewport?.removeEventListener("resize", scheduleVisibilityCheck);
+      visualViewport?.removeEventListener("scroll", scheduleVisibilityCheck);
+      window.removeEventListener("resize", scheduleVisibilityCheck);
+      window.removeEventListener("orientationchange", scheduleVisibilityCheck);
+    };
+  }, [open, revealFocusedControl, scrollRegion]);
+
+  const handleBack = useCallback(() => {
+    if (showCustomForm && !editHabit) {
+      // The scroll region belongs to this component, so return the picker to
+      // its first option before swapping views. Android WebView otherwise
+      // preserves the form's IME-induced scroll position across the swap.
+      if (scrollRegion) scrollRegion.scrollTop = 0;
+      setShowCustomForm(false);
+      return;
+    }
+
+    onClose();
+  }, [editHabit, onClose, scrollRegion, setShowCustomForm, showCustomForm]);
+
+  useBackHandler(open, handleBack);
 
   return (
     <Drawer.Root
@@ -103,6 +204,10 @@ export function HabitCreateSheet({
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      // This sheet already owns focused-control visibility through
+      // visualViewport + keepElementVisibleInScrollport. Vaul's second IME
+      // resize path can leave Android WebView stuck at the keyboard height.
+      repositionInputs={false}
       dismissible
     >
       <Drawer.Portal>
@@ -134,7 +239,11 @@ export function HabitCreateSheet({
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1.5rem,var(--safe-bottom))] scroll-pb-[max(1.5rem,var(--safe-bottom))]">
+          <div
+            ref={setScrollRegion}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1.5rem,var(--safe-bottom))] scroll-pb-[max(1.5rem,var(--safe-bottom))]"
+            data-testid="habits-create-sheet-scroll-region"
+          >
             <HabitCreationForm form={form} habits={habits} presentation="v2" />
           </div>
         </Drawer.Content>

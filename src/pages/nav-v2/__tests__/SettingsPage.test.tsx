@@ -1083,9 +1083,7 @@ vi.mock("@/lib/env", () => ({
   ENABLE_APPLE_AUTH: false,
   ADMOB_APP_ID_ANDROID: "",
   ADMOB_REWARDED_ID_ANDROID: "",
-  ADMOB_BANNER_ID_ANDROID: "",
   ADMOB_REWARDED_ID_IOS: "",
-  ADMOB_BANNER_ID_IOS: "",
 }));
 
 vi.mock("@/lib/notificationSounds", () => ({
@@ -1627,12 +1625,13 @@ describe("SettingsPage", () => {
     expect(privacyCard).not.toHaveTextContent("Mood check-ins: 2");
   });
 
-  it("does not render an empty Privacy panel when no optional privacy control is available", async () => {
+  it("keeps rewarded-video consent reachable when the ad SDK is unavailable", async () => {
     render(
       <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />
     );
 
-    expect(screen.queryByTestId("settings-v2-panel-privacy")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-panel-privacy")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
     expect(screen.getByTestId("settings-v2-panel-data")).toBeInTheDocument();
   });
 
@@ -2746,6 +2745,26 @@ describe("SettingsPage", () => {
     expect(document.getElementById(descriptionId as string)).toHaveTextContent(
       "Limits transitions and decorative movement."
     );
+  });
+
+  it("stacks ToggleRow controls below 360px so enlarged labels keep readable words", () => {
+    render(<SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />);
+
+    const row = screen.getByTestId("settings-v2-ad-consent");
+    const toggle = within(row).getByRole("switch", { name: "Rewarded videos" });
+    const descriptionId = toggle.getAttribute("aria-describedby");
+    const description = document.getElementById(descriptionId as string);
+
+    expect(row.className).toContain("grid-cols-[2.25rem_minmax(0,1fr)]");
+    expect(row.className).toContain(
+      "min-[360px]:grid-cols-[2.25rem_minmax(0,1fr)_auto]"
+    );
+    expect(toggle.className).toContain("col-start-2");
+    expect(toggle.className).toContain("row-start-2");
+    expect(toggle.className).toContain("min-[360px]:col-start-3");
+    expect(toggle.className).toContain("min-[360px]:row-start-1");
+    expect(description?.className).toContain("row-start-3");
+    expect(description?.className).toContain("min-[360px]:row-start-2");
   });
 
   it("keeps critical data errors visible until the next user action", () => {
@@ -4500,7 +4519,7 @@ describe("SettingsPage", () => {
     expect(privacyPanel).not.toHaveTextContent(/device sync|turn it on for backup/i);
   });
 
-  it("does not expose retired analytics, no-tracking, or unavailable rewarded-video controls", () => {
+  it("does not expose retired analytics or no-tracking controls but keeps ad consent reachable", () => {
     const controls = {
       ...createSettingsControls(),
       privacy: { noTracking: true, analytics: false, consentShown: true, adConsent: false },
@@ -4511,7 +4530,7 @@ describe("SettingsPage", () => {
 
     expect(screen.queryByTestId("settings-v2-no-tracking")).not.toBeInTheDocument();
     expect(screen.queryByTestId("settings-v2-analytics")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
   });
 
   it("shows rewarded-video privacy only when that service is available on this build", () => {
@@ -4896,13 +4915,14 @@ describe("SettingsPage", () => {
     expect(appearanceCard.textContent?.match(/Light/g)).toHaveLength(1);
   });
 
-  it("does not render an empty Privacy panel when optional services are unavailable", () => {
+  it("keeps local ad-consent withdrawal reachable when remote services are unavailable", () => {
     supabaseClientMock.client = null;
     render(
       <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }} />
     );
 
-    expect(screen.queryByTestId("settings-v2-panel-privacy")).not.toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-panel-privacy")).toBeInTheDocument();
+    expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
     expect(screen.getByTestId("settings-support-footer")).toBeInTheDocument();
   });
 

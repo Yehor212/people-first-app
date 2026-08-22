@@ -15,6 +15,7 @@ import { logger } from "./logger";
 import { isAbortError } from "./validation";
 import type { SeverityLevel } from "@sentry/core";
 import { BASE_URL } from "@/lib/env";
+import { isAndroid } from "@/lib/platform";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -247,7 +248,16 @@ let audioUnlockHandler: ((event?: Event) => Promise<void>) | null = null;
 let audioUnlockCleanup: (() => void) | null = null;
 let audioUnlockTimeoutId: ReturnType<typeof setTimeout> | null = null;
 const MAX_UNLOCK_ATTEMPTS = 10;
+const AUDIO_UNLOCK_TOUCH_SLOP_PX = 12;
 let unlockAttempts = 0;
+
+interface AudioUnlockTouchPoint {
+  clientX: number;
+  clientY: number;
+}
+
+let audioUnlockTouchStart: AudioUnlockTouchPoint | null = null;
+let audioUnlockTouchMoved = false;
 
 const KEYBOARD_AUDIO_UNLOCK_KEYS = new Set(["Enter", " ", "Spacebar"]);
 const KEYBOARD_AUDIO_UNLOCK_TARGET_SELECTOR = [
@@ -269,12 +279,38 @@ export function isKeyboardAudioUnlockGesture(event: KeyboardEvent): boolean {
   return target.closest(KEYBOARD_AUDIO_UNLOCK_TARGET_SELECTOR) !== null;
 }
 
+export function isTouchAudioUnlockGesture(
+  start: AudioUnlockTouchPoint,
+  end: AudioUnlockTouchPoint,
+): boolean {
+  const deltaX = end.clientX - start.clientX;
+  const deltaY = end.clientY - start.clientY;
+  return Math.hypot(deltaX, deltaY) <= AUDIO_UNLOCK_TOUCH_SLOP_PX;
+}
+
+function getTouchPoint(touches: TouchList): AudioUnlockTouchPoint | null {
+  const touch = touches.item(0);
+  return touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
+}
+
+function resetAudioUnlockTouchGesture(): void {
+  audioUnlockTouchStart = null;
+  audioUnlockTouchMoved = false;
+}
+
 /**
  * Setup global audio unlock listeners.
  * Call this once at app startup to enable audio unlock on first user interaction.
  * This is crucial for iOS which requires audio to be unlocked during user gesture.
  */
 export function setupAudioUnlock(): void {
+  // Android WebView does not need the eager iOS gesture blessing. Actual audio
+  // controls still call unlockAudio() directly before playback.
+  if (isAndroid) {
+    logger.log("[AmbientSounds] Eager global audio unlock skipped on Android");
+    return;
+  }
+
   if (audioUnlockSetup) return;
   audioUnlockSetup = true;
 
@@ -282,6 +318,45 @@ export function setupAudioUnlock(): void {
 
   // Define handler first so it's available for cleanup
   audioUnlockHandler = async (event?: Event) => {
+    if (event?.type === "touchstart") {
+      const touchEvent = event as TouchEvent;
+      audioUnlockTouchStart =
+        touchEvent.touches.length === 1 ? getTouchPoint(touchEvent.touches) : null;
+      audioUnlockTouchMoved = false;
+      return;
+    }
+
+    if (event?.type === "touchmove") {
+      const touchEvent = event as TouchEvent;
+      const currentPoint =
+        touchEvent.touches.length === 1 ? getTouchPoint(touchEvent.touches) : null;
+      if (
+        audioUnlockTouchStart === null ||
+        currentPoint === null ||
+        !isTouchAudioUnlockGesture(audioUnlockTouchStart, currentPoint)
+      ) {
+        audioUnlockTouchMoved = true;
+      }
+      return;
+    }
+
+    if (event?.type === "touchcancel") {
+      resetAudioUnlockTouchGesture();
+      return;
+    }
+
+    if (event?.type === "touchend") {
+      const touchEvent = event as TouchEvent;
+      const endPoint = getTouchPoint(touchEvent.changedTouches);
+      const shouldUnlock =
+        !audioUnlockTouchMoved &&
+        audioUnlockTouchStart !== null &&
+        endPoint !== null &&
+        isTouchAudioUnlockGesture(audioUnlockTouchStart, endPoint);
+      resetAudioUnlockTouchGesture();
+      if (!shouldUnlock) return;
+    }
+
     if (event instanceof KeyboardEvent && !isKeyboardAudioUnlockGesture(event)) return;
     try {
       unlockAttempts++;
@@ -314,7 +389,10 @@ export function setupAudioUnlock(): void {
 
     document.removeEventListener("touchstart", audioUnlockHandler, true);
     document.removeEventListener("touchend", audioUnlockHandler, true);
+    document.removeEventListener("touchmove", audioUnlockHandler, true);
+    document.removeEventListener("touchcancel", audioUnlockHandler, true);
     document.removeEventListener("keydown", audioUnlockHandler, true);
+    resetAudioUnlockTouchGesture();
     logger.log("[AmbientSounds] Audio unlock listeners removed");
 
     // Clear references
@@ -324,6 +402,8 @@ export function setupAudioUnlock(): void {
   // Use capture phase to catch events before they're handled
   document.addEventListener("touchstart", audioUnlockHandler, { capture: true, passive: true });
   document.addEventListener("touchend", audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener("touchmove", audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener("touchcancel", audioUnlockHandler, { capture: true, passive: true });
   document.addEventListener("keydown", audioUnlockHandler, { capture: true, passive: true });
 
   // Note: No safety timeout — listeners are cleaned up on successful unlock (line above).

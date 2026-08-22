@@ -70,7 +70,7 @@ describe("AdMob production readiness guards", () => {
     expect(report.summary.VITE_ADMOB_REWARDED_ID_ANDROID).toBe("present:pub-9501********2808");
   });
 
-  it("does not block Android rewarded-only release readiness on unused optional banner or iOS sample IDs", () => {
+  it("rejects retired banner identifiers while keeping iOS rewarded optional for Android-only readiness", () => {
     const report = admob.evaluateAdMobProductionReadiness({
       env: {
         VITE_ADMOB_APP_ID_ANDROID: realAppId,
@@ -81,11 +81,10 @@ describe("AdMob production readiness guards", () => {
       appAdsText: validAppAds,
     });
 
-    expect(report.ok).toBe(true);
-    expect(report.issues).toEqual([]);
-    expect(report.warnings).toContainEqual(
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
       expect.objectContaining({
-        code: "optional_sample_admob_id",
+        code: "forbidden_ad_format_id",
         key: "VITE_ADMOB_BANNER_ID_ANDROID",
       }),
     );
@@ -97,12 +96,12 @@ describe("AdMob production readiness guards", () => {
     );
   });
 
-  it("can treat optional banner and iOS ad IDs as blocking in strict release audits", () => {
+  it("treats the optional iOS rewarded ID as blocking in strict release audits", () => {
     const report = admob.evaluateAdMobProductionReadiness({
       env: {
         VITE_ADMOB_APP_ID_ANDROID: realAppId,
         VITE_ADMOB_REWARDED_ID_ANDROID: realRewardedId,
-        VITE_ADMOB_BANNER_ID_ANDROID: "ca-app-pub-3940256099942544/6300978111",
+        VITE_ADMOB_REWARDED_ID_IOS: "ca-app-pub-3940256099942544/1712485313",
       },
       appAdsText: validAppAds,
       strictOptionalIds: true,
@@ -112,12 +111,12 @@ describe("AdMob production readiness guards", () => {
     expect(report.issues).toContainEqual(
       expect.objectContaining({
         code: "sample_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_ANDROID",
+        key: "VITE_ADMOB_REWARDED_ID_IOS",
       }),
     );
   });
 
-  it("requires every banner and iOS production ad ID in full cross-platform release audits", () => {
+  it("requires the iOS rewarded production ad ID in full cross-platform release audits", () => {
     const report = admob.evaluateAdMobProductionReadiness({
       env: {
         VITE_ADMOB_APP_ID_ANDROID: realAppId,
@@ -132,20 +131,11 @@ describe("AdMob production readiness guards", () => {
     expect(report.issues).toContainEqual(
       expect.objectContaining({
         code: "missing_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_ANDROID",
-      }),
-    );
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({
-        code: "missing_admob_id",
         key: "VITE_ADMOB_REWARDED_ID_IOS",
       }),
     );
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({
-        code: "missing_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_IOS",
-      }),
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({ key: "VITE_ADMOB_BANNER_ID_IOS" }),
     );
   });
 
@@ -208,9 +198,8 @@ describe("AdMob production readiness guards", () => {
 
       expect(result.status).toBe(2);
       expect(result.stdout).toContain("UNVERIFIED - Full cross-platform AdMob ids");
-      expect(result.stdout).toContain("issue=missing_admob_id key=VITE_ADMOB_BANNER_ID_ANDROID");
       expect(result.stdout).toContain("issue=missing_admob_id key=VITE_ADMOB_REWARDED_ID_IOS");
-      expect(result.stdout).toContain("issue=missing_admob_id key=VITE_ADMOB_BANNER_ID_IOS");
+      expect(result.stdout).not.toContain("key=VITE_ADMOB_BANNER_ID_IOS");
     } finally {
       rmSync(tempDir, { force: true, recursive: true });
     }

@@ -17,7 +17,7 @@ const mockOpenModal = vi.fn();
 
 vi.mock("@/stores", () => ({
   useUserDataStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
-    sel({ setFocusSessions: mockSetFocusSessions })
+    sel({ _publishDurableFocusSessions: mockSetFocusSessions })
   ),
   useGamificationStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
     sel({ rewardUser: mockRewardUser })
@@ -44,8 +44,15 @@ vi.mock("@/lib/randomQuests", () => ({
   updateAllQuestsProgress: vi.fn(() => []),
 }));
 
+vi.mock("@/features/automation", () => ({
+  persistFocusSourceRecord: vi.fn(async () => ({
+    accountBoundaryGeneration: "test-boundary",
+    intentId: null,
+  })),
+}));
+
 vi.mock("@/lib/logger", () => ({
-  logger: { warn: vi.fn() },
+  logger: { log: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock("@/lib/audioManager", () => ({
@@ -86,12 +93,13 @@ describe("useFocusHandlers", () => {
     date: "2026-02-19",
   });
 
-  it("handleCompleteFocusSession adds session to store", () => {
+  it("handleCompleteFocusSession adds session to store", async () => {
     const { result } = renderFocusHandlers();
     const session = makeSession(10);
 
-    act(() => {
+    await act(async () => {
       result.current.handleCompleteFocusSession(session);
+      await Promise.resolve();
     });
 
     expect(mockSetFocusSessions).toHaveBeenCalledTimes(1);
@@ -99,12 +107,13 @@ describe("useFocusHandlers", () => {
     expect(updater([])).toEqual([expect.objectContaining(session)]);
   });
 
-  it("handleCompleteFocusSession rewards treats based on duration", () => {
+  it("handleCompleteFocusSession rewards treats based on duration", async () => {
     const { result } = renderFocusHandlers();
     const session = makeSession(20);
 
-    act(() => {
+    await act(async () => {
       result.current.handleCompleteFocusSession(session);
+      await Promise.resolve();
     });
 
     // Math.round(20 * 0.5) = 10
@@ -115,15 +124,16 @@ describe("useFocusHandlers", () => {
     });
   });
 
-  it("V2 neutral mode skips focus rewards, XP popup, and plays neutral completion feedback", () => {
+  it("V2 neutral mode skips focus rewards, XP popup, and plays neutral completion feedback", async () => {
     vi.mocked(updateAllQuestsProgress).mockReturnValueOnce([
       { title: "Focus quest", reward: { xp: 30 } },
     ] as never);
     const { result } = renderFocusHandlers({ rewardsEnabled: false });
     const session = makeSession(20);
 
-    act(() => {
+    await act(async () => {
       result.current.handleCompleteFocusSession(session);
+      await Promise.resolve();
     });
 
     expect(mockRewardUser).not.toHaveBeenCalled();
@@ -131,12 +141,13 @@ describe("useFocusHandlers", () => {
     expect(playSound).toHaveBeenCalledWith("complete");
   });
 
-  it("handleCompleteFocusSession shows mindful moment for sessions >= 5min", () => {
+  it("handleCompleteFocusSession shows mindful moment for sessions >= 5min", async () => {
     const { result } = renderFocusHandlers();
     const session = makeSession(5);
 
-    act(() => {
+    await act(async () => {
       result.current.handleCompleteFocusSession(session);
+      await Promise.resolve();
     });
 
     // Advance past the 500ms timeout for the mindful moment modal
@@ -145,12 +156,13 @@ describe("useFocusHandlers", () => {
     expect(mockOpenModal).toHaveBeenCalledWith("showMindfulMoment");
   });
 
-  it("handleCompleteFocusSession skips mindful moment for sessions < 5min", () => {
+  it("handleCompleteFocusSession skips mindful moment for sessions < 5min", async () => {
     const { result } = renderFocusHandlers();
     const session = makeSession(4);
 
-    act(() => {
+    await act(async () => {
       result.current.handleCompleteFocusSession(session);
+      await Promise.resolve();
     });
 
     vi.advanceTimersByTime(600);

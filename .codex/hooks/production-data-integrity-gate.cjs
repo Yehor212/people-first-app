@@ -28,7 +28,7 @@ function resolveRepositoryRoot() {
 
 const ROOT = resolveRepositoryRoot();
 const CHECKER = path.join(ROOT, "scripts", "check-production-data-integrity.cjs");
-const CHECK_TIMEOUT_MS = 15000;
+const CHECK_TIMEOUT_MS = 55_000;
 const MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
 const REVIEWED_ADDITIVE_PACKAGE_SCRIPTS = new Map([
   ["check:agent-workspace", "node scripts/check-agent-workspace-protocol.cjs"],

@@ -32,3 +32,15 @@ f4ec5f5ab21bf89a5df115adffc974090c35e6ba:docs/ENTRY_GATE_IOS_CONTRACT.md:generic
 f4ec5f5ab21bf89a5df115adffc974090c35e6ba:docs/ENTRY_GATE_IOS_CONTRACT.md:generic-api-key:564
 f4ec5f5ab21bf89a5df115adffc974090c35e6ba:docs/ENTRY_GATE_IOS_CONTRACT.md:generic-api-key:567
 f4ec5f5ab21bf89a5df115adffc974090c35e6ba:docs/ENTRY_GATE_IOS_CONTRACT.md:generic-api-key:568
+c902b612050dd891e5aa86958ebf8bb7f2e9f5ba:scripts/__tests__/supabase-auth-magic-link-template.test.ts:generic-api-key:95
+c902b612050dd891e5aa86958ebf8bb7f2e9f5ba:supabase/functions/_shared/pushDeletionBarrier.test.ts:generic-api-key:213
+0b557ddc0a71216b3278ddbb39f43ed7444240fc:scripts/__tests__/supabase-auth-magic-link-template.test.ts:generic-api-key:95
+0b557ddc0a71216b3278ddbb39f43ed7444240fc:supabase/functions/_shared/pushDeletionBarrier.test.ts:generic-api-key:213
+6ba34acbf1dd6a53af6b8b734ada330605b7d6b0:src/features/journal/useJournalSecurity.ts:generic-api-key:600
+f04a4ec81c1c3c45f39ec2b2f740834142bc53f4:scripts/__tests__/supabase-auth-smtp-apply.test.ts:generic-api-key:107
+f04a4ec81c1c3c45f39ec2b2f740834142bc53f4:scripts/__tests__/supabase-auth-smtp-apply.test.ts:generic-api-key:108
+ecc4264847fddcf79fed88ebea459eecc9dd71bc:scripts/__tests__/supabase-auth-redirect-allow-list.test.ts:generic-api-key:111
+fd380a7f2b9561c19fb7385166fa958269c616b2:scripts/__tests__/journal-magic-link-github-bootstrap.test.ts:generic-api-key:15
+fd380a7f2b9561c19fb7385166fa958269c616b2:scripts/__tests__/journal-magic-link-github-bootstrap.test.ts:generic-api-key:16
+fd380a7f2b9561c19fb7385166fa958269c616b2:scripts/__tests__/supabase-auth-smtp-apply.test.ts:generic-api-key:134
+d3546b0f236863820e86b766fdd114a0983c485f:.claude/agents/payments/agentic-payments.md:generic-api-key:35

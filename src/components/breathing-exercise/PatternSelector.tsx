@@ -68,16 +68,13 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
 
             <div
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium relative z-10",
+                "relative z-10 rounded-full px-3 py-1.5 text-xs font-medium shadow-[var(--zen-shadow-sm)]",
                 "backdrop-blur-sm border",
                 pattern.effect === 'calming' && "bg-blue-500/20 text-blue-400 border-blue-500/30",
                 pattern.effect === 'focusing' && "bg-violet-500/20 text-violet-400 border-violet-500/30",
                 pattern.effect === 'energizing' && "bg-orange-500/20 text-orange-400 border-orange-500/30",
                 pattern.effect === 'sleeping' && "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
               )}
-              style={{
-                boxShadow: 'var(--zen-shadow-sm)',
-              }}
             >
               {pattern.effect === 'calming' && (t.effectCalming || 'Calming')}
               {pattern.effect === 'focusing' && (t.effectFocusing || 'Focus')}

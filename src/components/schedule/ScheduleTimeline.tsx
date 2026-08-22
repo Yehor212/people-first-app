@@ -384,6 +384,7 @@ export function ScheduleTimeline({
           <AddEventModal
             selectedDate={selectedDate}
             allDates={allDates}
+            forceDark
             onClose={() => setShowAddModal(false)}
             onAdd={(event) => {
               onAddEvent(event);
@@ -395,6 +396,7 @@ export function ScheduleTimeline({
         {selectedEvent && (
           <EventDetailsModal
             event={selectedEvent}
+            forceDark
             onClose={() => setSelectedEvent(null)}
             onDelete={
               onDeleteEvent

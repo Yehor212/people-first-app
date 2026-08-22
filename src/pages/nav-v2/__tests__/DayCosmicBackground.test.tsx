@@ -221,6 +221,144 @@ describe("DayCosmicBackground", () => {
     expect(dayCosmicCss).toContain("box-shadow: none");
   });
 
+  it("collapses static decorative compositor layers only after the Android runtime guard trips", () => {
+    const androidGuard = ':root[data-platform="android"][data-runtime-perf]';
+    const ruleBody = (selector: string) => {
+      const start = dayCosmicCss.indexOf(selector);
+      expect(start, `${selector} must exist`).toBeGreaterThanOrEqual(0);
+      const open = dayCosmicCss.indexOf("{", start);
+      const close = dayCosmicCss.indexOf("}", open);
+      return dayCosmicCss.slice(open + 1, close);
+    };
+
+    const photonRule = ruleBody(`${androidGuard} .day-cosmic__photon`);
+    expect(photonRule).toContain("backface-visibility: visible");
+    expect(photonRule).toContain("transform: translate(-50%, -50%)");
+    expect(photonRule).not.toContain("display: none");
+
+    const moteRule = ruleBody(`${androidGuard} .day-cosmic__mote`);
+    expect(moteRule).toContain("backface-visibility: visible");
+    expect(moteRule).toContain("transform: none");
+    expect(moteRule).not.toContain("display: none");
+
+    const threadRule = ruleBody(`${androidGuard} .day-cosmic__sun-thread`);
+    expect(threadRule).toContain("backface-visibility: visible");
+    expect(threadRule).toContain("transform: rotate(var(--thread-tilt))");
+    expect(threadRule).not.toContain("display: none");
+
+    for (const layer of [
+      "day-cosmic__bokeh",
+      "day-cosmic__horizon-glow",
+      "day-cosmic__light-curtain",
+      "day-cosmic__sun-shower",
+      "day-cosmic__prism-ribbon",
+      "day-cosmic__caustics",
+    ]) {
+      expect(dayCosmicCss).toContain(`${androidGuard} .${layer}`);
+    }
+    const staticLayerRule = ruleBody(`${androidGuard} .day-cosmic__bokeh`);
+    expect(staticLayerRule).toContain("backface-visibility: visible");
+    expect(staticLayerRule).not.toContain("display: none");
+
+    expect(dayCosmicCss).not.toContain(`${androidGuard} .orb-page-rim-glow`);
+    expect(dayCosmicCss).not.toContain(`${androidGuard} canvas`);
+  });
+
+  it("keeps the ordinary Android orb scene inside the WebView tile budget without flattening the orb", () => {
+    const compactCss = dayCosmicCss.replace(/\s+/g, " ");
+    const androidOrb = ':root[data-platform="android"] .day-cosmic[data-presentation="orb"]';
+    const animatedAndroidOrb =
+      ':root[data-platform="android"]:not([data-runtime-perf]) .day-cosmic[data-presentation="orb"][data-animated="true"]';
+
+    expect(compactCss).toContain(`${androidOrb}[data-animated="true"] .day-cosmic__photon`);
+    expect(compactCss).toContain(`${androidOrb}[data-animated="true"] .day-cosmic__mote`);
+    expect(compactCss).toContain(`${androidOrb}[data-animated="true"] .day-cosmic__sun-thread`);
+    expect(compactCss).toContain(`${animatedAndroidOrb} .day-cosmic__photon:nth-child(9n + 1)`);
+    expect(compactCss).toContain(`${animatedAndroidOrb} .day-cosmic__mote:nth-child(9n + 4)`);
+    expect(compactCss).toContain(`${animatedAndroidOrb} .day-cosmic__sun-thread:nth-child(9n + 1)`);
+
+    for (const layer of [
+      "day-cosmic__bokeh",
+      "day-cosmic__horizon-glow",
+      "day-cosmic__light-curtain",
+      "day-cosmic__sun-shower",
+      "day-cosmic__prism-ribbon",
+      "day-cosmic__caustics",
+    ]) {
+      expect(compactCss).toContain(`${androidOrb} .${layer}`);
+    }
+
+    expect(compactCss).toContain(`${androidOrb} .day-cosmic__paper-grain`);
+    expect(compactCss).toContain("display: none");
+    expect(compactCss).toContain(`${androidOrb} .day-cosmic__bokeh::before`);
+    expect(compactCss).toContain("radial-gradient( circle at center");
+    expect(compactCss).not.toContain(`${androidOrb} canvas`);
+    expect(compactCss).not.toContain(`${androidOrb} .orb-page-rim-glow`);
+  });
+
+  it("keeps the Android WebGL orb canonical without a second CSS compositor surface", () => {
+    const compactCss = dayCosmicCss.replace(/\s+/g, " ");
+    const androidCanvas =
+      ':root[data-platform="android"] .orb-day-scope .orb-page-rim-glow > button canvas';
+    const start = compactCss.indexOf(androidCanvas);
+    const close = compactCss.indexOf("}", start);
+    const rule = compactCss.slice(start, close);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(rule).toContain("filter: none");
+    expect(rule).toContain("-webkit-mask-image: none");
+    expect(rule).toContain("mask-image: none");
+    expect(rule).toContain("will-change: auto");
+    expect(rule).toContain("transform: none");
+    expect(rule).toContain("backface-visibility: visible");
+    expect(rule).not.toContain("display: none");
+  });
+
+  it("removes Android full-screen mask sheets that exceed the WebView tile budget", () => {
+    const compactCss = dayCosmicCss.replace(/\s+/g, " ");
+    const androidOrb = ':root[data-platform="android"] .day-cosmic[data-presentation="orb"]';
+    const firstSelector = `${androidOrb} .day-cosmic__sun-threads`;
+    const start = compactCss.indexOf(firstSelector);
+    const close = compactCss.indexOf("}", start);
+    const budgetRule = compactCss.slice(start, close);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    for (const layer of [
+      "day-cosmic__sun-threads",
+      "day-cosmic__photon-field",
+      "day-cosmic__caustics",
+      "day-cosmic__glass-depth",
+      "day-cosmic__light-curtain",
+      "day-cosmic__god-rays",
+      "day-cosmic__sun-shower",
+      "day-cosmic__prism-ribbon",
+      "day-cosmic__bokeh",
+      "day-cosmic__atmosphere",
+      "day-cosmic__horizon-glow",
+    ]) {
+      expect(budgetRule).toContain(`${androidOrb} .${layer}`);
+    }
+    expect(budgetRule).toContain("display: none");
+    expect(budgetRule).not.toContain("canvas");
+    expect(budgetRule).not.toContain("orb-page");
+    expect(budgetRule).not.toContain("day-cosmic__motes");
+
+    const baseAfter = `${androidOrb} .day-cosmic__base::after`;
+    const baseAfterStart = compactCss.indexOf(baseAfter);
+    const baseAfterRule = compactCss.slice(baseAfterStart, compactCss.indexOf("}", baseAfterStart));
+    expect(baseAfterStart).toBeGreaterThanOrEqual(0);
+    expect(baseAfterRule).toContain("display: none");
+
+    const baseBefore = `${androidOrb} .day-cosmic__base::before`;
+    const baseBeforeStart = compactCss.indexOf(baseBefore);
+    const baseBeforeRule = compactCss.slice(
+      baseBeforeStart,
+      compactCss.indexOf("}", baseBeforeStart)
+    );
+    expect(baseBeforeStart).toBeGreaterThanOrEqual(0);
+    expect(baseBeforeRule).toContain("filter: none");
+  });
+
   it("limits Settings motion CSS to transform and opacity allowlists with stop fallbacks", () => {
     expect(dayCosmicCss).toContain(
       '.day-cosmic[data-presentation="settings"][data-animated="true"]'

@@ -4,20 +4,46 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { hapticSuccess, hapticTap, hapticWarning } from "@/lib/haptics";
 import type { Translations } from "@/i18n/types";
-import {
-  Challenge,
-  ChallengeInvite,
-  joinChallenge,
-  joinChallengeByCode,
-} from "@/lib/friendChallenge";
+import { joinChallengeByCode } from "@/lib/friendChallenge";
+import type { Challenge, ChallengeInvite } from "@/lib/friendChallenge";
+import type { ChallengeJoinFailureReason } from "@/lib/friendChallenge";
+
+function getChallengeFailureCopy(
+  reason: ChallengeJoinFailureReason,
+  t: Translations,
+): string {
+  switch (reason) {
+    case "invalid":
+      return t.invalidChallengeCode || "Invalid code. Format: ZEN-XXXXXX";
+    case "offline":
+      return t.challengeInviteOffline || "You are offline. Reconnect and try again.";
+    case "signed_out":
+      return t.challengeInviteSignedOut || "Sign in to join challenges.";
+    case "not_found":
+      return t.challengeInviteNotFound || "We could not find that challenge code.";
+    case "expired":
+      return t.challengeInviteExpired || "This challenge has ended.";
+    case "self":
+      return t.challengeInviteSelf || "This is your own challenge.";
+    case "duplicate":
+      return t.challengeInviteDuplicate || "You already joined this challenge.";
+    case "unavailable":
+      return (
+        t.challengeLookupUnavailable ||
+        "We couldn't verify this challenge. Check your connection and try again."
+      );
+  }
+}
 
 export function JoinChallengeView({
   initialInvite,
+  username,
   onJoined,
   onCancel,
   t,
 }: {
   initialInvite?: ChallengeInvite;
+  username?: string;
   onJoined: (challenge: Challenge) => void;
   onCancel: () => void;
   t: Translations;
@@ -58,32 +84,37 @@ export function JoinChallengeView({
   };
 
   const handleJoin = async () => {
+    if (isJoining) return;
+
     void hapticTap();
     setError("");
 
-    // If we have full invite data, use it
-    if (initialInvite && initialInvite.habitName) {
-      setIsJoining(true);
-      const challenge = joinChallenge(initialInvite);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      void hapticSuccess();
-      onJoined(challenge);
-      return;
-    }
-
-    // Otherwise, join by code only
-    const challenge = joinChallengeByCode(code);
-
-    if (!challenge) {
+    if (!/^ZEN-[A-Z0-9]{6}$/.test(code)) {
       setError(t.invalidChallengeCode || "Invalid code. Format: ZEN-XXXXXX");
       void hapticWarning();
       return;
     }
 
     setIsJoining(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    void hapticSuccess();
-    onJoined(challenge);
+    try {
+      const result = await joinChallengeByCode(code, username || "");
+      if (!result.success) {
+        setError(getChallengeFailureCopy(result.reason, t));
+        void hapticWarning();
+        return;
+      }
+
+      void hapticSuccess();
+      onJoined(result.challenge);
+    } catch {
+      setError(
+        t.challengeLookupUnavailable ||
+          "We couldn't verify this challenge. Check your connection and try again.",
+      );
+      void hapticWarning();
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   const isValidCode = /^ZEN-[A-Z0-9]{6}$/.test(code);
@@ -100,26 +131,6 @@ export function JoinChallengeView({
           {t.enterChallengeCode || "Enter the code from your friend"}
         </p>
       </div>
-
-      {/* Show invite preview if we have full data */}
-      {initialInvite && initialInvite.habitName && (
-        <div className="flex min-w-0 items-center gap-4 p-4 bg-muted/50 rounded-2xl">
-          <div className="text-4xl shrink-0">{initialInvite.habitIcon}</div>
-          <div className="min-w-0 flex-1">
-            <p className="min-w-0 break-words font-semibold text-foreground [overflow-wrap:anywhere]">
-              {initialInvite.habitName}
-            </p>
-            <p className="flex min-w-0 flex-wrap items-baseline gap-x-1 text-sm text-muted-foreground">
-              <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:break-word]">
-                {initialInvite.duration} {t.days || "days"} •
-              </span>
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-                {initialInvite.creatorName || t.friend || "Friend"}
-              </span>
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Code input */}
       <div>
@@ -148,7 +159,6 @@ export function JoinChallengeView({
           autoCapitalize="characters"
           autoComplete="off"
           autoCorrect="off"
-          disabled={!!initialInvite?.habitName}
           onFocus={(e) => {
             const el = e.target;
             scrollTimeoutRef.current = setTimeout(

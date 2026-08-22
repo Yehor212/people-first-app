@@ -62,6 +62,7 @@ describe("runtime performance guards", () => {
   it("scopes the service-worker precache to the app shell and canonical orb boot path", () => {
     const source = readSource("vite.config.ts");
 
+    expect(source).toContain('"icon-source.svg"');
     expect(source).not.toContain('"**/*.{js,css,html,ico,png,svg,woff2}"');
     expect(source).toContain('"assets/index-*.js"');
     expect(source).toContain('"assets/index-*.css"');

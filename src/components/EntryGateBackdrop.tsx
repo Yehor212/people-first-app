@@ -81,13 +81,8 @@ export function EntryGateBackdrop({ animated }: EntryGateBackdropProps) {
       >
         <BackdropSpan
           animated={animated}
-          className="entry-gate-horizon absolute"
+          className="entry-gate-horizon zf-entry-gate-horizon-position absolute"
           data-testid="entry-gate-backdrop-horizon"
-          style={{
-            left: "8%",
-            right: "8%",
-            bottom: "17%",
-          }}
           animate={{ opacity: [0.18, 0.34, 0.22], scaleX: [0.98, 1.02, 1] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
         />

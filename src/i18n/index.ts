@@ -1,5 +1,6 @@
 import type { Language, Translations } from "./types";
 import { en } from "./languages/en";
+import { resolveTranslationPayload } from "./localeAssetRuntime";
 
 export type { Language, Translations };
 
@@ -52,8 +53,11 @@ export async function loadLanguage(code: Language): Promise<Translations> {
   const loader = languageLoaders[code];
   if (!loader) throw new Error(`Unsupported language: ${code}`);
   const module = await loader();
-  const loaded = module[code] || Object.values(module)[0];
-  if (!loaded) throw new Error(`Language dictionary is empty: ${code}`);
+  const loaded = await resolveTranslationPayload(
+    module[code] || Object.values(module)[0],
+    en,
+    code,
+  );
   translations[code] = loaded;
   return loaded;
 }

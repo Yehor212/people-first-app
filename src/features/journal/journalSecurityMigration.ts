@@ -54,6 +54,7 @@ import {
   captureDataWriteBoundaryGeneration,
   runWithDataWriteBarrier,
 } from "@/hooks/useIndexedDB";
+import { assertAutomationHistoryClearedForVaultRemoval } from "./journalAutomationVaultGuard";
 
 export const JOURNAL_SECURITY_MIGRATION_EVENT = "zenflow:journal-security-migration-updated";
 
@@ -582,6 +583,7 @@ export async function removeJournalPasswordProtectionAtomically(
         "Wait for the pending online diary protection update before removing the password."
       );
     }
+    await assertAutomationHistoryClearedForVaultRemoval();
 
     const [entries, photos, audios, settings, spaces, captures] = await Promise.all([
       db.journalEntries.toArray(),
@@ -692,6 +694,8 @@ export async function removeJournalPasswordProtectionAtomically(
         db.journalAudio,
         db.journalSpaces,
         db.journalSpaceCaptures,
+        db.automationTransactions,
+        db.automationRemoteEvents,
       ],
       async () => {
         assertDataWriteBoundaryGeneration(boundary.generation);
@@ -713,6 +717,7 @@ export async function removeJournalPasswordProtectionAtomically(
         ) {
           throw new Error("Diary protection changed during password removal");
         }
+        await assertAutomationHistoryClearedForVaultRemoval();
 
         if (decryptedEntries.length) await db.journalEntries.bulkPut(decryptedEntries);
         if (decryptedPhotos.length) await db.journalPhotos.bulkPut(decryptedPhotos);

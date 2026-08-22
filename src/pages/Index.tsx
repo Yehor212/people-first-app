@@ -38,6 +38,9 @@ import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
 import { canInitializeRewardedAds } from "@/lib/privacyConsent";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAutomation } from "@/features/automation";
+import { useAdPremiumStatus } from "@/features/ads";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
@@ -140,6 +143,7 @@ function IndexV2Impl() {
   useSessionTimeout(!!supabase);
   useReminderMigration();
   useEmotionSync();
+  const { t } = useLanguage();
 
   const challengesRef = useRef<ChallengeList | null>(null);
   const badgesRef = useRef<BadgeList | null>(null);
@@ -161,13 +165,16 @@ function IndexV2Impl() {
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
+  const adPremiumStatus = useAdPremiumStatus();
   const currentMoodForAds = useMemo(() => {
     const latestMood = moods.reduce<(typeof moods)[number] | null>((latest, entry) => {
       if (!latest) return entry;
       return entry.timestamp > latest.timestamp ? entry : latest;
     }, null);
 
-    return latestMood?.mood ?? null;
+    return latestMood
+      ? { mood: latestMood.mood, recordedAt: latestMood.timestamp }
+      : null;
   }, [moods]);
   const emptyScheduleEvents = useMemo(() => [], []);
   const { handleNameChange, handlePrivacyChange, handleRemindersChange, handleResetData } =
@@ -188,6 +195,7 @@ function IndexV2Impl() {
   useAuthSession(isLoading);
   useDeepLinkHandler({ handleDiaryDeepLinks: false });
   useTelegramGradeSyncRuntime();
+  useAutomation({ localizedMoodJournalTitle: t.journalTitle });
 
   const { checkForFeatureUnlocks, updateChallengeProgress } = useChallengeHandlers({
     safeMoods: moods,
@@ -255,10 +263,8 @@ function IndexV2Impl() {
       <StorageErrorBanner />
       <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
         <AdProvider
-          onEarnTreats={(amount) => earnTreats("ad", amount, "Ad reward")}
-          onEarnXp={() => undefined}
           adConsent={canInitializeRewardedAds(privacy)}
-          isPremium={false}
+          premiumStatus={adPremiumStatus}
           currentMood={currentMoodForAds}
         >
           <NavV2Orchestrator

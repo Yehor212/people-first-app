@@ -49,8 +49,7 @@ describe("ThemeToggleV2", () => {
     expect(track.className).toContain("rounded-[8px]");
     expect(track.className).toContain("--settings-v2-shell");
     expect(track.className).not.toContain("theme-toggle-v1");
-    expect(thumb.className).toContain("top-[5px] h-[26px] w-[22px]");
-    expect(thumb.style.insetInlineStart).toBe("5px");
+    expect(thumb.className).toContain("start-[5px] top-[5px] h-[26px] w-[22px]");
     expect(thumb.className).toContain("translate-x-0");
     expect(thumb.className).not.toContain("left-");
     expect(thumb.className).toContain("rounded-[6px]");
@@ -75,7 +74,7 @@ describe("ThemeToggleV2", () => {
     render(<ThemeToggleV2 />);
     const thumb = screen.getByTestId("sidebar-v2-theme-toggle-thumb");
 
-    expect(thumb.style.insetInlineStart).toBe("5px");
+    expect(thumb).toHaveClass("start-[5px]");
     expect(thumb).toHaveClass("ltr:translate-x-[20px]", "rtl:-translate-x-[20px]");
     expect(thumb.className).not.toContain("left-");
   });

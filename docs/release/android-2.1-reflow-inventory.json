@@ -1,0 +1,3434 @@
+{
+  "schemaVersion": 1,
+  "feature": "002-android-2-1-connected-release",
+  "generatedOn": "2026-08-11",
+  "scope": {
+    "fixedDiscovery": "production .tsx className/style fixed declarations and .css position:fixed rules",
+    "dataDiscovery": "literal tables/grids, horizontal data scrollers, and named calendar/heatmap/timeline/schedule/stats/chart/grid/table owners",
+    "exclusions": [
+      "tests and test helpers",
+      "non-UI .ts fixed-code terminology",
+      "production reachability not proven solely by source presence"
+    ]
+  },
+  "summary": {
+    "surfaceOwners": 124,
+    "fixedOwners": 84,
+    "dataOwners": 50,
+    "namedEntryPassRows": 2,
+    "componentMatrixPassRows": 7,
+    "unverifiedRows": 115
+  },
+  "globalUnverified": [
+    "signed-in private-route visual matrix",
+    "installed PWA runtime",
+    "physical Android devices",
+    "iOS/WKWebView",
+    "Desktop/Tauri",
+    "human assistive-technology and artistic acceptance"
+  ],
+  "surfaces": [
+    {
+      "id": "components-aicoachchat",
+      "owner": "AICoachChat",
+      "source": "src/components/AICoachChat.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional AICoachChat render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-animated-stats-animatedcalendar",
+      "owner": "AnimatedCalendar",
+      "source": "src/components/animated-stats/AnimatedCalendar.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional AnimatedCalendar render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-animatedstatscomponents",
+      "owner": "AnimatedStatsComponents",
+      "source": "src/components/AnimatedStatsComponents.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional AnimatedStatsComponents render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-auth-screen-authscreen",
+      "owner": "AuthScreen",
+      "source": "src/components/auth-screen/AuthScreen.tsx",
+      "kinds": [
+        "entry-layout-host"
+      ],
+      "route": "public entry flow",
+      "trigger": "unauthenticated entry after locale selection",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "PASS_NAMED_ENTRY_MATRIX",
+      "evidence": [
+        "Chromium 320 CSS px at 200% text: en/ar/he 3/3",
+        "API 36 Hebrew entry instrumentation 1/1 with panel-incident-footer geometry",
+        "output/android21/t151-entry-storage/native-api36/hebrew-storage-incident.png"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "PASS_NAMED_ENTRY_MATRIX",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_HEBREW_ENTRY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-breathing-exercise-breathingexercise",
+      "owner": "BreathingExercise",
+      "source": "src/components/breathing-exercise/BreathingExercise.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional BreathingExercise render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-canvas-goalactionsheet",
+      "owner": "GoalActionSheet",
+      "source": "src/components/canvas/GoalActionSheet.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional GoalActionSheet render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-celebrations",
+      "owner": "Celebrations",
+      "source": "src/components/Celebrations.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional Celebrations render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-challenges-panel-challengespanel",
+      "owner": "ChallengesPanel",
+      "source": "src/components/challenges-panel/ChallengesPanel.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional ChallengesPanel render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-challenges-participantsleaderboard",
+      "owner": "ParticipantsLeaderboard",
+      "source": "src/components/challenges/ParticipantsLeaderboard.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in challenge details; exact authenticated caller route remains UNVERIFIED",
+      "trigger": "conditional ParticipantsLeaderboard render; production component is covered through an isolated cloud-service boundary, while exact signed-in caller state remains UNVERIFIED",
+      "scrollOwner": "focusable component-local region owns bounded vertical scrolling; its nested participant list reflows without horizontal scrolling in the component matrix",
+      "safeAreaOwner": "N/A at the embedded component boundary; exact signed-in challenge surface safe-area ownership remains UNVERIFIED",
+      "androidBackOwner": "N/A: embedded non-modal participant list",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he logical rank/name order, bidi-isolated progress and current-user copy passed on Web and API 36; signed-in route remains UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/participants-leaderboard-reflow.spec.ts: 1/1 PASS over 32 locale/viewport states after retained horizontal, word-fragmentation, vertical-clipping, scroll-focus and semantics RED evidence",
+        "The untouched narrow-200 matrix exposed 3-5px row overflow and out-of-card progress in all eight locales, fragmented the localized heading in six locales, left the vertical scroller unreachable by keyboard and supplied no list semantics",
+        "An intermediate visual RED proved a 280px first row was cut by the fixed 200px scroll viewport; the rem-scaled viewport now keeps the full first row visible while preserving the original 200px height at 100% text",
+        "8 locales x narrow 200%, short portrait, landscape and split window: document/card/row overflow 0; header/row word fragmentation, out-of-bounds text, child collisions, wrong logical order and console errors 0; region/list/listitem and completion-status semantics present",
+        "API 36 Chrome component harness: Hebrew RTL, 32px root text, 412x783 viewport, document/card/five-row overflow 0, text outside card 0, first 236px row fully visible in the 400px scroller, one current-user marker, two named completion statuses and correct logical rank/name order",
+        "API 36 software-GPU diagnostic smooth scroll sampled 68 intervals: p50 16.7ms, p95/max 33.4ms, 10 over 33ms and 0 over 50ms; this is diagnostic component evidence, not a physical-device or universal motion PASS",
+        "output/android21/t153-participants-leaderboard-reflow/browser-matrix-red.json",
+        "output/android21/t153-participants-leaderboard-reflow/browser-matrix-red-vertical.json",
+        "output/android21/t153-participants-leaderboard-reflow/browser-matrix-green.json",
+        "output/android21/t153-participants-leaderboard-reflow/native-api36/he-api36-facts.json",
+        "output/android21/t153-participants-leaderboard-reflow/native-api36/he-api36-device-chrome.png"
+      ],
+      "rejectionCriteria": "Reject page/card/row horizontal overflow, a row taller than its initial scroll viewport at 200% text, fragmented localized heading copy, clipped participant identity/progress/status, a non-focusable overflow region, missing list/status semantics, wrong RTL rank/name order, or a signed-in/platform claim without fresh route evidence",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-changelogpanel",
+      "owner": "ChangelogPanel",
+      "source": "src/components/ChangelogPanel.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional ChangelogPanel render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-confettiburst",
+      "owner": "ConfettiBurst",
+      "source": "src/components/ConfettiBurst.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional ConfettiBurst render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-desktop-commandpalette",
+      "owner": "CommandPalette",
+      "source": "src/components/desktop/CommandPalette.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional CommandPalette render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-featureunlock",
+      "owner": "FeatureUnlock",
+      "source": "src/components/FeatureUnlock.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FeatureUnlock render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-feedbackbutton",
+      "owner": "FeedbackButton",
+      "source": "src/components/FeedbackButton.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FeedbackButton render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-feedbackform",
+      "owner": "FeedbackForm",
+      "source": "src/components/FeedbackForm.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FeedbackForm render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-flyingmoodemoji",
+      "owner": "FlyingMoodEmoji",
+      "source": "src/components/FlyingMoodEmoji.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FlyingMoodEmoji render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-focusminiplayer",
+      "owner": "FocusMiniPlayer",
+      "source": "src/components/FocusMiniPlayer.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FocusMiniPlayer render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-focusreflectionmodal",
+      "owner": "FocusReflectionModal",
+      "source": "src/components/FocusReflectionModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FocusReflectionModal render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-friends-panel-friendprofilecard",
+      "owner": "FriendProfileCard",
+      "source": "src/components/friends-panel/FriendProfileCard.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FriendProfileCard render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-friends-panel-friendspanel",
+      "owner": "FriendsPanel",
+      "source": "src/components/friends-panel/FriendsPanel.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional FriendsPanel render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-globalschedulebar",
+      "owner": "GlobalScheduleBar",
+      "source": "src/components/GlobalScheduleBar.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional GlobalScheduleBar render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: finite current/next schedule summary reflows inside the action; no horizontal scroll owner is needed",
+      "safeAreaOwner": "N/A at the embedded component boundary; exact signed-in route safe-area ownership remains UNVERIFIED",
+      "androidBackOwner": "N/A: embedded non-modal schedule action",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he wrapping and arrow mirroring passed on Web; API 36 Hebrew component proof passed; signed-in route remains UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/global-schedule-bar-reflow.spec.ts: 2/2 tests PASS after a retained 32/32 clipping RED, including visible Hebrew RTL keyboard focus",
+        "8 locales x narrow 200%, short portrait, landscape, and split-window: document/title overflow 0; no ellipsis, nowrap, out-of-bounds title, or intra-word fragmentation; minimum action target 66px; console errors 0",
+        "API 36 Chrome component harness: Hebrew RTL, 32px root text, document overflow 0, title overflow 0, title inside the action, 341.52px minimum target and mirrored arrow matrix",
+        "output/android21/t153-global-schedule-bar-reflow/browser-matrix.json",
+        "output/android21/t153-global-schedule-bar-reflow/he-narrow-200-keyboard-focus.png",
+        "output/android21/t153-global-schedule-bar-reflow/native-api36/he-api36-facts.json",
+        "output/android21/t153-global-schedule-bar-reflow/native-api36/he-api36-device-chrome.png"
+      ],
+      "rejectionCriteria": "Reject ellipsis or hidden event identity, title/arrow outside the action, page-level horizontal overflow, intra-word fragmentation, targets below the applicable 44 CSS-px Web or 48dp Android contract, wrong RTL arrow direction, or a signed-in-route/platform claim without fresh route evidence",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-completion-celebration-habitcompletioncelebration",
+      "owner": "HabitCompletionCelebration",
+      "source": "src/components/habit-completion-celebration/HabitCompletionCelebration.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional HabitCompletionCelebration render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-addhabitcustomform",
+      "owner": "AddHabitCustomForm",
+      "source": "src/components/habit-hub/AddHabitCustomForm.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional AddHabitCustomForm render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habitbarcard",
+      "owner": "HabitBarCard",
+      "source": "src/components/habit-hub/HabitBarCard.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitBarCard render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habitfrequencychart",
+      "owner": "HabitFrequencyChart",
+      "source": "src/components/habit-hub/HabitFrequencyChart.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitFrequencyChart render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habitheatmapgrid",
+      "owner": "HabitHeatmapGrid",
+      "source": "src/components/habit-hub/HabitHeatmapGrid.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitHeatmapGrid render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habithublist",
+      "owner": "HabitHubList",
+      "source": "src/components/habit-hub/HabitHubList.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitHubList render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habitscorechart",
+      "owner": "HabitScoreChart",
+      "source": "src/components/habit-hub/HabitScoreChart.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitScoreChart render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habitstatssection",
+      "owner": "HabitStatsSection",
+      "source": "src/components/habit-hub/HabitStatsSection.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitStatsSection render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-habitstreaktimeline",
+      "owner": "HabitStreakTimeline",
+      "source": "src/components/habit-hub/HabitStreakTimeline.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HabitStreakTimeline render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: the bounded five-row history reflows vertically; enclosing signed-in sheet scrolling remains UNVERIFIED",
+      "safeAreaOwner": "N/A at the embedded component boundary; exact signed-in Habit detail route safe-area ownership remains UNVERIFIED",
+      "androidBackOwner": "N/A: embedded non-modal read-only data surface",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he geometry and isolated date endpoints passed on Web and API 36; signed-in route remains UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/habit-streak-timeline-reflow.spec.ts: 1/1 test PASS after retained 32-state overflow/fragmentation RED",
+        "8 locales x narrow 200%, short portrait, landscape, and split-window: document/component overflow 0; out-of-bounds text, summary/row collisions, intra-word fragmentation, and console errors 0; ten semantic bidi-isolated date endpoints per state",
+        "API 36 Chrome component harness: Hebrew RTL, 32px root text, document/component overflow 0, text outside card 0, five rows and ten time[dir=auto] endpoints with unicode-bidi:isolate",
+        "output/android21/t153-habit-streak-timeline-reflow/browser-matrix-red.json",
+        "output/android21/t153-habit-streak-timeline-reflow/browser-matrix-green.json",
+        "output/android21/t153-habit-streak-timeline-reflow/native-api36/he-api36-facts.json",
+        "output/android21/t153-habit-streak-timeline-reflow/native-api36/he-api36-device-chrome.png"
+      ],
+      "rejectionCriteria": "Reject page/component horizontal overflow, localized summary or history text outside the card, colliding metadata, character-by-character date fragmentation, missing bidi isolation/semantic dates, or a signed-in-route/platform claim without fresh route evidence",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-hub-miniweekrow",
+      "owner": "MiniWeekRow",
+      "source": "src/components/habit-hub/MiniWeekRow.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional MiniWeekRow render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-habit-tracker-habittracker",
+      "owner": "HabitTracker",
+      "source": "src/components/habit-tracker/HabitTracker.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional HabitTracker render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-hyperfocus-hyperfocusmode",
+      "owner": "HyperfocusMode",
+      "source": "src/components/hyperfocus/HyperfocusMode.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional HyperfocusMode render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-hyperfocus-hyperfocussoundselector",
+      "owner": "HyperfocusSoundSelector",
+      "source": "src/components/hyperfocus/HyperfocusSoundSelector.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional HyperfocusSoundSelector render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-languageselector",
+      "owner": "LanguageSelector",
+      "source": "src/components/LanguageSelector.tsx",
+      "kinds": [
+        "entry-choice-grid"
+      ],
+      "route": "public entry flow",
+      "trigger": "first-run locale selection",
+      "scrollOwner": "public-entry document flow scrolls vertically; all eight choices and Continue remain reachable without horizontal scrolling",
+      "safeAreaOwner": "shared entry-gate safe-area and block-end clearance contract; installed Capacitor cutout/system-bar proof remains UNVERIFIED",
+      "androidBackOwner": "N/A at the non-modal first-run component boundary; installed APK root-exit/Back policy remains UNVERIFIED",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he bidi, wrapping, focus and API 36 Hebrew component checks passed; installed APK and assistive-technology proof remain UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/language-selector-reflow.spec.ts: 1/1 PASS over 32 locale/viewport states after a retained clipping RED",
+        "8 locales x narrow 200%, short portrait, landscape, and split-window: document/component overflow 0; no out-of-bounds or fragmented language names, collisions, or console errors; all options and Continue meet the scoped target contract",
+        "The untouched narrow-200 RED put Ukrainian outside all eight option cards, fragmented Japanese, and hid Spanish/German title text beyond the clipped screen edge",
+        "e2e/storage-incident-reflow.spec.ts: 5/5 PASS for the adjacent AuthScreen title/incident flow in en/es/de/ar/he at 320px and 200% text",
+        "API 36 Chrome component harness: Hebrew RTL, 200% root text, document/component overflow 0, all text inside inline bounds, eight choices, one selected choice, and Continue fully visible after vertical scroll",
+        "output/android21/t153-language-selector-reflow/browser-matrix-red.json",
+        "output/android21/t153-language-selector-reflow/browser-matrix-green.json",
+        "output/android21/t153-language-selector-reflow/he-api36-device-facts.json",
+        "output/android21/t153-language-selector-reflow/he-api36-device-chrome.png",
+        "output/android21/t153-language-selector-reflow/he-api36-device-chrome-action.png"
+      ],
+      "rejectionCriteria": "Reject page/component horizontal overflow, language labels or title text outside their owner, arbitrary intra-word fragmentation outside the locale-scoped title fallback, colliding choices, unreachable Continue, targets below the applicable 44 CSS-px Web or 48dp Android contract, incorrect RTL direction/focus, or an installed-app/platform claim without fresh runtime proof",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-layout-bentogrid",
+      "owner": "BentoGrid",
+      "source": "src/components/layout/BentoGrid.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional BentoGrid render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-leaderboard",
+      "owner": "Leaderboard",
+      "source": "src/components/Leaderboard.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional Leaderboard render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-leaderboard-leaderboard",
+      "owner": "Leaderboard",
+      "source": "src/components/leaderboard/Leaderboard.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional Leaderboard render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-leaderboard-leaderboardentryrow",
+      "owner": "LeaderboardEntryRow",
+      "source": "src/components/leaderboard/LeaderboardEntryRow.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional LeaderboardEntryRow render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: each finite leaderboard row reflows vertically without horizontal scrolling; the enclosing signed-in list remains UNVERIFIED",
+      "safeAreaOwner": "N/A at the embedded row boundary; exact signed-in modal safe-area ownership remains UNVERIFIED",
+      "androidBackOwner": "N/A: embedded non-modal data row",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he logical rank/name order and bidi-isolated score metadata passed on Web and API 36; signed-in route remains UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/leaderboard-entry-row-reflow.spec.ts: 1/1 PASS over 32 locale/viewport states after a retained overflow/fragmentation RED",
+        "8 locales x narrow 200%, short portrait, landscape, and split-window: document/card/row overflow 0; out-of-bounds text, child collisions, localized word fragmentation, wrong logical order, and console errors 0",
+        "The settled untouched narrow-200 RED exposed Ukrainian and Hebrew score units, a Japanese current-user badge, and mid-word Ukrainian/French best-label fragmentation",
+        "API 36 Chrome component harness: Hebrew RTL, 32px root text, document/card/row overflow 0, text outside card 0, five rows, one current-user marker, and logical rank-before-name order",
+        "output/android21/t153-leaderboard-entry-row-reflow/browser-matrix-red.json",
+        "output/android21/t153-leaderboard-entry-row-reflow/browser-matrix-green.json",
+        "output/android21/t153-leaderboard-entry-row-reflow/native-api36/he-api36-facts.json",
+        "output/android21/t153-leaderboard-entry-row-reflow/native-api36/he-api36-device-chrome.png"
+      ],
+      "rejectionCriteria": "Reject page/card/row horizontal overflow, clipped participant identity or score metadata, direct-child collision, mid-word localized-label fragmentation, wrong RTL rank/name order, hidden text, or a signed-in-route/platform claim without fresh route evidence",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-legalmodal",
+      "owner": "LegalModal",
+      "source": "src/components/LegalModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional LegalModal render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-mindfulmoment",
+      "owner": "MindfulMoment",
+      "source": "src/components/MindfulMoment.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional MindfulMoment render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-modallayer",
+      "owner": "ModalLayer",
+      "source": "src/components/ModalLayer.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional ModalLayer render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-moodbackgroundoverlay",
+      "owner": "MoodBackgroundOverlay",
+      "source": "src/components/MoodBackgroundOverlay.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional MoodBackgroundOverlay render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-moodselectioncelebration",
+      "owner": "MoodSelectionCelebration",
+      "source": "src/components/MoodSelectionCelebration.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional MoodSelectionCelebration render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-navigation-v2-drawerv2",
+      "owner": "DrawerV2",
+      "source": "src/components/navigation-v2/DrawerV2.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared V2 navigation shell",
+      "trigger": "conditional DrawerV2 render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-navigation-v2-mobilenavv2",
+      "owner": "MobileNavV2",
+      "source": "src/components/navigation-v2/MobileNavV2.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared V2 navigation shell",
+      "trigger": "conditional MobileNavV2 render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-navigation-v2-navv2routestatus",
+      "owner": "NavV2RouteStatus",
+      "source": "src/components/navigation-v2/NavV2RouteStatus.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared V2 navigation shell",
+      "trigger": "conditional NavV2RouteStatus render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-navigation-v2-sidebarv2",
+      "owner": "SidebarV2",
+      "source": "src/components/navigation-v2/SidebarV2.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared V2 navigation shell",
+      "trigger": "conditional SidebarV2 render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-navigation-v2-v2focusminiplayer",
+      "owner": "V2FocusMiniPlayer",
+      "source": "src/components/navigation-v2/V2FocusMiniPlayer.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared V2 navigation shell",
+      "trigger": "conditional V2FocusMiniPlayer render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-notificationpermission",
+      "owner": "NotificationPermission",
+      "source": "src/components/NotificationPermission.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "notification-permission education flow",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-offlinebanner",
+      "owner": "OfflineBanner",
+      "source": "src/components/OfflineBanner.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "public and signed-in application shell",
+      "trigger": "offline or blocked-sync state",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-onboardingoverlay",
+      "owner": "OnboardingOverlay",
+      "source": "src/components/OnboardingOverlay.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional OnboardingOverlay render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-progressstoriesviewer",
+      "owner": "ProgressStoriesViewer",
+      "source": "src/components/ProgressStoriesViewer.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional ProgressStoriesViewer render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-quests-panel-questspanel",
+      "owner": "QuestsPanel",
+      "source": "src/components/quests-panel/QuestsPanel.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional QuestsPanel render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-schedule-addeventmodal",
+      "owner": "AddEventModal",
+      "source": "src/components/schedule/AddEventModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "add-schedule-event action",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-schedule-eventdetailsmodal",
+      "owner": "EventDetailsModal",
+      "source": "src/components/schedule/EventDetailsModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "selected schedule event",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-schedule-scheduletimeline",
+      "owner": "ScheduleTimeline",
+      "source": "src/components/schedule/ScheduleTimeline.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional ScheduleTimeline render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-schedule-schedulevisuals",
+      "owner": "ScheduleVisuals",
+      "source": "src/components/schedule/ScheduleVisuals.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional ScheduleVisuals render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-schedule-taskfocuspanel",
+      "owner": "TaskFocusPanel",
+      "source": "src/components/schedule/TaskFocusPanel.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional TaskFocusPanel render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-schedule-timelinedaycolumn",
+      "owner": "TimelineDayColumn",
+      "source": "src/components/schedule/TimelineDayColumn.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional TimelineDayColumn render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-scheduletimeline",
+      "owner": "ScheduleTimeline",
+      "source": "src/components/ScheduleTimeline.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional ScheduleTimeline render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-share-unifiedsharemodal",
+      "owner": "UnifiedShareModal",
+      "source": "src/components/share/UnifiedShareModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional UnifiedShareModal render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-splashscreen",
+      "owner": "SplashScreen",
+      "source": "src/components/SplashScreen.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "public and signed-in application shell",
+      "trigger": "native/web startup gate",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-state-of-mind-contextgrid",
+      "owner": "ContextGrid",
+      "source": "src/components/state-of-mind/ContextGrid.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional ContextGrid render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-state-of-mind-emotiontaggrid",
+      "owner": "EmotionTagGrid",
+      "source": "src/components/state-of-mind/EmotionTagGrid.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional EmotionTagGrid render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-state-of-mind-stateofmindmodal",
+      "owner": "StateOfMindModal",
+      "source": "src/components/state-of-mind/StateOfMindModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional StateOfMindModal render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-calendargrid",
+      "owner": "CalendarGrid",
+      "source": "src/components/stats/CalendarGrid.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional CalendarGrid render; exact caller state UNVERIFIED",
+      "scrollOwner": "named keyboard-focusable component-local horizontal scroll; production component exercised in the retained harness",
+      "safeAreaOwner": "N/A at the embedded component boundary; signed-in route safe-area ownership remains UNVERIFIED",
+      "androidBackOwner": "N/A: embedded non-modal data surface",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he and API 36 Hebrew component checks passed; signed-in route remains UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/calendar-reflow.spec.ts: 3/3 tests PASS, including 32/32 locale/viewport states and LTR/RTL keyboard focus/scroll",
+        "8 locales x narrow 200%, short portrait, landscape, and split-window: document overflow 0; two named internal regions; minimum day target >=49.14px; month navigation targets >=48px; no prohibited intra-word fragmentation",
+        "API 36 Chrome component harness: Hebrew RTL, 32px root text, document overflow 0, two overflowing internal regions, minimum day target 98.28px",
+        "output/android21/t153-calendar-reflow/browser-matrix.json",
+        "output/android21/t153-calendar-reflow/native-api36/he-api36-facts.json"
+      ],
+      "rejectionCriteria": "Reject page-level horizontal overflow, hidden columns without one named internal scroll owner, fragmented localized words, targets below the applicable 44 CSS-px Web or 48dp Android contract, invisible keyboard focus, or a signed-in-route/platform claim without fresh route evidence",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-calendartab",
+      "owner": "CalendarTab",
+      "source": "src/components/stats/CalendarTab.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional CalendarTab render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-crystalcalendar",
+      "owner": "CrystalCalendar",
+      "source": "src/components/stats/CrystalCalendar.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional CrystalCalendar render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-habitcalendar",
+      "owner": "HabitCalendar",
+      "source": "src/components/stats/HabitCalendar.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional HabitCalendar render; exact caller state UNVERIFIED",
+      "scrollOwner": "named keyboard-focusable component-local horizontal scroll; production component exercised in the retained harness",
+      "safeAreaOwner": "N/A at the embedded component boundary; signed-in route safe-area ownership remains UNVERIFIED",
+      "androidBackOwner": "N/A: embedded non-modal data surface",
+      "rtlRisk": "LOW_COMPONENT_MATRIX: ar/he and API 36 Hebrew component checks passed; signed-in route remains UNVERIFIED",
+      "evidenceStatus": "PASS_COMPONENT_MATRIX",
+      "evidence": [
+        "e2e/calendar-reflow.spec.ts: 3/3 tests PASS, including 32/32 locale/viewport states and LTR/RTL keyboard focus/scroll",
+        "8 locales x narrow 200%, short portrait, landscape, and split-window: document overflow 0; two named internal regions; minimum day target >=49.14px; month navigation targets >=48px; no prohibited intra-word fragmentation",
+        "API 36 Chrome component harness: Hebrew RTL, 32px root text, document overflow 0, two overflowing internal regions, minimum day target 98.28px",
+        "output/android21/t153-calendar-reflow/browser-matrix.json",
+        "output/android21/t153-calendar-reflow/native-api36/he-api36-facts.json"
+      ],
+      "rejectionCriteria": "Reject page-level horizontal overflow, hidden columns without one named internal scroll owner, fragmented localized words, targets below the applicable 44 CSS-px Web or 48dp Android contract, invisible keyboard focus, or a signed-in-route/platform claim without fresh route evidence",
+      "platformStatus": {
+        "web": "PASS_COMPONENT_MATRIX_32",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_CHROME_COMPONENT_ONLY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-ring-detail-sheet-premiumchart",
+      "owner": "PremiumChart",
+      "source": "src/components/stats/ring-detail-sheet/PremiumChart.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional PremiumChart render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-ring-detail-sheet-ringdetailsheet",
+      "owner": "RingDetailSheet",
+      "source": "src/components/stats/ring-detail-sheet/RingDetailSheet.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional RingDetailSheet render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-stats-statspage",
+      "owner": "StatsPage",
+      "source": "src/components/stats/StatsPage.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional StatsPage render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-statspage",
+      "owner": "StatsPage",
+      "source": "src/components/StatsPage.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional StatsPage render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-storageincidentbanner",
+      "owner": "StorageIncidentBanner",
+      "source": "src/components/StorageIncidentBanner.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "entry-flow-incident"
+      ],
+      "route": "public and signed-in application shell",
+      "trigger": "active storage incident selected by StorageErrorBanner",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "PASS_NAMED_ENTRY_MATRIX",
+      "evidence": [
+        "Chromium 320 CSS px at 200% text: en/ar/he 3/3",
+        "API 36 Hebrew entry instrumentation 1/1 with panel-incident-footer geometry",
+        "output/android21/t151-entry-storage/native-api36/hebrew-storage-incident.png"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "PASS_NAMED_ENTRY_MATRIX",
+        "pwa": "UNVERIFIED",
+        "android": "PASS_API36_HEBREW_ENTRY",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-streakcelebration",
+      "owner": "StreakCelebration",
+      "source": "src/components/StreakCelebration.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional StreakCelebration render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-timehelper",
+      "owner": "TimeHelper",
+      "source": "src/components/TimeHelper.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional TimeHelper render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-ui-alert-dialog",
+      "owner": "alert-dialog",
+      "source": "src/components/ui/alert-dialog.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared overlay primitive; all routes that invoke it",
+      "trigger": "conditional alert-dialog render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-ui-dialog",
+      "owner": "dialog",
+      "source": "src/components/ui/dialog.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared overlay primitive; all routes that invoke it",
+      "trigger": "conditional dialog render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-ui-dialogmotion",
+      "owner": "DialogMotion",
+      "source": "src/components/ui/DialogMotion.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared overlay primitive; all routes that invoke it",
+      "trigger": "conditional DialogMotion render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-ui-sheet",
+      "owner": "sheet",
+      "source": "src/components/ui/sheet.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared overlay primitive; all routes that invoke it",
+      "trigger": "conditional sheet render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-ui-sheetmotion",
+      "owner": "SheetMotion",
+      "source": "src/components/ui/SheetMotion.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "shared overlay primitive; all routes that invoke it",
+      "trigger": "conditional SheetMotion render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-updateprompt",
+      "owner": "UpdatePrompt",
+      "source": "src/components/UpdatePrompt.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "public and signed-in application shell",
+      "trigger": "service-worker update readiness",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-weeklyreport",
+      "owner": "WeeklyReport",
+      "source": "src/components/WeeklyReport.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Insights/Progress",
+      "trigger": "conditional WeeklyReport render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-welcomebackmodal",
+      "owner": "WelcomeBackModal",
+      "source": "src/components/WelcomeBackModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional WelcomeBackModal render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-whats-new-modal-whatsnewmodal",
+      "owner": "WhatsNewModal",
+      "source": "src/components/whats-new-modal/WhatsNewModal.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional WhatsNewModal render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "components-xppopup",
+      "owner": "XpPopup",
+      "source": "src/components/XpPopup.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional XpPopup render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-diarycanvas",
+      "owner": "DiaryCanvas",
+      "source": "src/features/journal/DiaryCanvas.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional DiaryCanvas render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-exportpickerdialog",
+      "owner": "ExportPickerDialog",
+      "source": "src/features/journal/ExportPickerDialog.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional ExportPickerDialog render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalaiconsentdialog",
+      "owner": "JournalAiConsentDialog",
+      "source": "src/features/journal/JournalAiConsentDialog.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalAiConsentDialog render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalcalendar",
+      "owner": "JournalCalendar",
+      "source": "src/features/journal/JournalCalendar.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalCalendar render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalcalendarfull",
+      "owner": "JournalCalendarFull",
+      "source": "src/features/journal/JournalCalendarFull.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalCalendarFull render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalcapturelauncher",
+      "owner": "JournalCaptureLauncher",
+      "source": "src/features/journal/JournalCaptureLauncher.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalCaptureLauncher render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalentryeditor",
+      "owner": "JournalEntryEditor",
+      "source": "src/features/journal/JournalEntryEditor.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalEntryEditor render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalentrylist",
+      "owner": "JournalEntryList",
+      "source": "src/features/journal/JournalEntryList.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalEntryList render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalhubshell",
+      "owner": "JournalHubShell",
+      "source": "src/features/journal/JournalHubShell.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalHubShell render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalimportconfirmdialog",
+      "owner": "JournalImportConfirmDialog",
+      "source": "src/features/journal/JournalImportConfirmDialog.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalImportConfirmDialog render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalmodule",
+      "owner": "JournalModule",
+      "source": "src/features/journal/JournalModule.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalModule render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalonboardinghints",
+      "owner": "JournalOnboardingHints",
+      "source": "src/features/journal/JournalOnboardingHints.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalOnboardingHints render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalphotogallery",
+      "owner": "JournalPhotoGallery",
+      "source": "src/features/journal/JournalPhotoGallery.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalPhotoGallery render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalphotopicker",
+      "owner": "JournalPhotoPicker",
+      "source": "src/features/journal/JournalPhotoPicker.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalPhotoPicker render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalstats",
+      "owner": "JournalStats",
+      "source": "src/features/journal/JournalStats.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalStats render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalstickerpackmanager",
+      "owner": "JournalStickerPackManager",
+      "source": "src/features/journal/JournalStickerPackManager.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalStickerPackManager render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journalstickerpicker",
+      "owner": "JournalStickerPicker",
+      "source": "src/features/journal/JournalStickerPicker.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalStickerPicker render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-journaltemplatepicker",
+      "owner": "JournalTemplatePicker",
+      "source": "src/features/journal/JournalTemplatePicker.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional JournalTemplatePicker render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-keyboardshortcutsoverlay",
+      "owner": "KeyboardShortcutsOverlay",
+      "source": "src/features/journal/KeyboardShortcutsOverlay.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional KeyboardShortcutsOverlay render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-photogridlayout",
+      "owner": "PhotoGridLayout",
+      "source": "src/features/journal/PhotoGridLayout.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional PhotoGridLayout render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-removepasswordconfirmdialog",
+      "owner": "RemovePasswordConfirmDialog",
+      "source": "src/features/journal/RemovePasswordConfirmDialog.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional RemovePasswordConfirmDialog render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-slashcommandmenu",
+      "owner": "SlashCommandMenu",
+      "source": "src/features/journal/SlashCommandMenu.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional SlashCommandMenu render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-streakcelebration",
+      "owner": "StreakCelebration",
+      "source": "src/features/journal/StreakCelebration.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional StreakCelebration render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-themetransitionoverlay",
+      "owner": "ThemeTransitionOverlay",
+      "source": "src/features/journal/ThemeTransitionOverlay.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional ThemeTransitionOverlay render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "features-journal-yearinpixels",
+      "owner": "YearInPixels",
+      "source": "src/features/journal/YearInPixels.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Journal/Diary",
+      "trigger": "conditional YearInPixels render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "N/A: non-interactive visual layer",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "index",
+      "owner": "index",
+      "source": "src/index.css",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional index render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-habits-habitcreatesheet",
+      "owner": "HabitCreateSheet",
+      "source": "src/pages/nav-v2/habits/HabitCreateSheet.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "create-habit action",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-habits-hero-habitactionsheet",
+      "owner": "HabitActionSheet",
+      "source": "src/pages/nav-v2/habits/hero/HabitActionSheet.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "habit action menu",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "HIGH: physical left/right tokens require RTL runtime proof",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-habits-hero-herotemplatelibrarysheet",
+      "owner": "HeroTemplateLibrarySheet",
+      "source": "src/pages/nav-v2/habits/hero/HeroTemplateLibrarySheet.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner",
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in V2 Habits",
+      "trigger": "conditional HeroTemplateLibrarySheet render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner + table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-moodconfirmcta",
+      "owner": "MoodConfirmCta",
+      "source": "src/pages/nav-v2/MoodConfirmCta.css",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional MoodConfirmCta render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: mixed logical and physical direction tokens",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-moodfirstrunhint",
+      "owner": "MoodFirstRunHint",
+      "source": "src/pages/nav-v2/MoodFirstRunHint.css",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional MoodFirstRunHint render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-orbambiencecontrol",
+      "owner": "OrbAmbienceControl",
+      "source": "src/pages/nav-v2/OrbAmbienceControl.css",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional OrbAmbienceControl render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-orbpage",
+      "owner": "OrbPage",
+      "source": "src/pages/nav-v2/OrbPage.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional OrbPage render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-planning-planningmoderail",
+      "owner": "PlanningModeRail",
+      "source": "src/pages/nav-v2/planning/PlanningModeRail.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional PlanningModeRail render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-settings-components-v2settingsformprimitives",
+      "owner": "V2SettingsFormPrimitives",
+      "source": "src/pages/nav-v2/settings/components/V2SettingsFormPrimitives.tsx",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional V2SettingsFormPrimitives render; exact caller state UNVERIFIED",
+      "scrollOwner": "component-local overflow container detected; runtime reachability UNVERIFIED",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "component or shared primitive Back/dismiss contract detected; runtime LIFO UNVERIFIED",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "pages-nav-v2-settings-v2settingsreminderschedule",
+      "owner": "V2SettingsReminderSchedule",
+      "source": "src/pages/nav-v2/settings/V2SettingsReminderSchedule.tsx",
+      "kinds": [
+        "table-grid-or-two-dimensional-surface"
+      ],
+      "route": "signed-in Schedule/Planning",
+      "trigger": "conditional V2SettingsReminderSchedule render; exact caller state UNVERIFIED",
+      "scrollOwner": "UNVERIFIED: no component-local overflow owner detected",
+      "safeAreaOwner": "UNVERIFIED: no local safe-area token detected",
+      "androidBackOwner": "UNVERIFIED: no local Android Back owner detected",
+      "rtlRisk": "MEDIUM: no explicit directional contract detected",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: table-grid-or-two-dimensional-surface",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Reject clipping, page-level horizontal overflow, obscured focus/action, unreachable dismiss/retry, unsafe-area collision, wrong LIFO Back, or RTL/bidi collision",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    },
+    {
+      "id": "styles-themes",
+      "owner": "themes",
+      "source": "src/styles/themes.css",
+      "kinds": [
+        "fixed-overlay-or-notification-owner"
+      ],
+      "route": "signed-in application shell; exact caller route UNVERIFIED",
+      "trigger": "conditional themes render; exact caller state UNVERIFIED",
+      "scrollOwner": "N/A: non-interactive visual layer",
+      "safeAreaOwner": "component uses ZenFlow/environment safe-area tokens",
+      "androidBackOwner": "N/A: non-interactive visual layer",
+      "rtlRisk": "MEDIUM: logical-direction contract detected; RTL runtime proof still required",
+      "evidenceStatus": "UNVERIFIED",
+      "evidence": [
+        "static discovery: fixed-overlay-or-notification-owner",
+        "No fresh retained runtime capture is attributed to this row"
+      ],
+      "rejectionCriteria": "Must not intercept input, alter reading order, or create viewport overflow",
+      "platformStatus": {
+        "web": "UNVERIFIED",
+        "pwa": "UNVERIFIED",
+        "android": "UNVERIFIED",
+        "ios": "UNVERIFIED",
+        "desktop": "UNVERIFIED"
+      }
+    }
+  ]
+}

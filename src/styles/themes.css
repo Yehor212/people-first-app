@@ -2493,6 +2493,14 @@
     );
   }
 
+  /* Android V2 screens already own their atmospheric grain and vignette.
+   * Avoid stacking two additional full-viewport textures above those scenes;
+   * this keeps ordinary WebView tiles available for controls and text. */
+  :root[data-platform="android"][data-theme="paper"] body::before,
+  :root[data-platform="android"][data-theme="paper"] body::after {
+    display: none;
+  }
+
   /* Respect reduced motion — vignette is static so only the noise overlay
    * is a concern visually; at 0.035 opacity it is essentially invisible and
    * adds no animation. Still, disable both for extreme accessibility modes. */

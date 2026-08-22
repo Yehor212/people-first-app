@@ -61,13 +61,7 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
   return (
     <>
       {/* Historical night Hyperfocus — Cosmic Cathedral from before day/night duality. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse at center,
-            hsl(var(--focus-cosmic-mid)) 0%, hsl(var(--focus-cosmic-deep)) 50%, hsl(var(--focus-cosmic-dark)) 100%)`
-        }}
-      />
+      <div className="zf-hyperfocus-cosmic-background absolute inset-0" />
 
       {/* Star field */}
       {cosmicStars.map((star) => (
@@ -76,16 +70,9 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
 
       {/* Animated nebula gradient */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="zf-hyperfocus-nebula pointer-events-none absolute inset-0"
         animate={motionAllowed ? { opacity: [0.2, 0.4, 0.2] } : { opacity: 0.24 }}
         transition={motionAllowed ? { duration: 8, repeat: Infinity } : { duration: 0 }}
-        style={{
-          background: `
-            radial-gradient(circle at 20% 30%, var(--nebula-a) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, var(--nebula-b) 0%, transparent 40%),
-            radial-gradient(circle at 50% 90%, var(--nebula-b) 0%, transparent 30%)
-          `
-        }}
       />
 
       {/* Breathing Animation */}

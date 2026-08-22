@@ -20,18 +20,21 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+vi.mock('@/lib/rewardedAdsGate', () => ({
+  refreshRewardedAdsGate: vi.fn(async () => true),
+  isRewardedAdsGateOpen: vi.fn(() => true),
+}));
+
 vi.mock('@/lib/env', () => ({
   IS_DEV: false,
   ADMOB_REWARDED_ID_ANDROID: 'ca-app-pub-test/rewarded-android',
-  ADMOB_BANNER_ID_ANDROID: 'ca-app-pub-test/banner-android',
   ADMOB_REWARDED_ID_IOS: 'ca-app-pub-test/rewarded-ios',
-  ADMOB_BANNER_ID_IOS: 'ca-app-pub-test/banner-ios',
 }));
 
 vi.mock('@/lib/adConfig', () => ({
   AD_UNIT_IDS: {
-    android: { rewarded: 'ca-app-pub-test/rewarded-android', banner: 'ca-app-pub-test/banner-android' },
-    ios: { rewarded: 'ca-app-pub-test/rewarded-ios', banner: 'ca-app-pub-test/banner-ios' },
+    android: { rewarded: 'ca-app-pub-test/rewarded-android' },
+    ios: { rewarded: 'ca-app-pub-test/rewarded-ios' },
   },
   AD_FREQUENCY: {
     maxRewardedPerDay: 5,
@@ -43,7 +46,9 @@ vi.mock('@/lib/adConfig', () => ({
     blockedMoods: ['terrible', 'bad'],
     reducedMoods: [],
     reducedMaxPerSession: 1,
+    suppressionWindowMs: 2 * 60 * 60 * 1000,
   },
+  AD_SAFE_ZONES: ['optional_rewards'],
   AD_SACRED_ZONES: [
     'focus_active',
     'breathing_active',
@@ -59,6 +64,7 @@ vi.mock('@/lib/storageKeys', () => ({
     AD_DAILY_REWARDED: 'zenflow-ad-rewarded-count',
     AD_COUNT_DATE: 'zenflow-ad-count-date',
     AD_LAST_SHOWN: 'zenflow-ad-last-shown',
+    AD_LAST_DISMISS: 'zenflow-ad-last-dismiss',
     ONBOARDING_STATE: 'zenflow_onboarding_state',
   },
 }));
@@ -99,7 +105,7 @@ describe('adController', () => {
     it('should return not allowed when SDK is unavailable (web/PWA mode)', async () => {
       const { canShowRewardedAd } = await import('../adController');
       // State starts with sdkAvailable = false (default)
-      const result = canShowRewardedAd();
+      const result = canShowRewardedAd({ zone: 'optional_rewards', premiumStatus: 'free' });
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('sdk_unavailable');
     });
@@ -112,7 +118,11 @@ describe('adController', () => {
       const { canShowRewardedAd } = await import('../adController');
       // SDK unavailable takes precedence, so terrible mood won't be reached
       // on web. This tests the priority: sdk check comes first.
-      const result = canShowRewardedAd('terrible');
+      const result = canShowRewardedAd({
+        zone: 'optional_rewards',
+        premiumStatus: 'free',
+        moodSignal: { mood: 'terrible', recordedAt: Date.now() },
+      });
       expect(result.allowed).toBe(false);
       // sdk_unavailable is the first check
       expect(result.reason).toBe('sdk_unavailable');
@@ -249,7 +259,7 @@ describe('adController', () => {
   describe('showRewardedAd', () => {
     it('should return error when SDK is unavailable', async () => {
       const { showRewardedAd } = await import('../adController');
-      const result = await showRewardedAd();
+      const result = await showRewardedAd({ zone: 'optional_rewards', premiumStatus: 'free' });
       expect(result.success).toBe(false);
       expect(result.rewarded).toBe(false);
       expect(result.error).toBe('sdk_unavailable');

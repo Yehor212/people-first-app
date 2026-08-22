@@ -9,6 +9,14 @@ const applyScript = join(process.cwd(), "scripts/apply-admob-owner-evidence.cjs"
 const ownerCheckerPath = join(process.cwd(), "scripts/check-admob-owner-evidence.cjs");
 const externalCheckerPath = join(process.cwd(), "scripts/check-admob-external-readiness.cjs");
 const baseLedgerPath = join(process.cwd(), "docs/release/google-play/ADMOB_EXTERNAL_READINESS.json");
+const baseLedgerUpdatedAt = (JSON.parse(readFileSync(baseLedgerPath, "utf8")) as { updatedAt?: unknown })
+  .updatedAt;
+
+if (typeof baseLedgerUpdatedAt !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(baseLedgerUpdatedAt)) {
+  throw new Error("ADMOB_EXTERNAL_READINESS.json needs updatedAt as YYYY-MM-DD for owner workflow tests");
+}
+
+const CURRENT_LEDGER_DATE = baseLedgerUpdatedAt;
 
 type OwnerEvidenceItem = {
   id: string;
@@ -136,7 +144,7 @@ function loadOwnerIds(): string[] {
   return (require(ownerCheckerPath) as { OWNER_EVIDENCE_ITEM_IDS: string[] }).OWNER_EVIDENCE_ITEM_IDS;
 }
 
-function buildOwnerEvidence(statusById: Record<string, string> = {}, checkedAt = "2026-07-04") {
+function buildOwnerEvidence(statusById: Record<string, string> = {}, checkedAt = CURRENT_LEDGER_DATE) {
   return {
     schemaVersion: "zenflow-admob-owner-evidence/v1",
     packageName: "com.zenflow.app",
@@ -211,7 +219,7 @@ describe("AdMob owner evidence apply workflow", () => {
     const before = readFileSync(ledgerFile, "utf8");
     writeFileSync(evidenceFile, JSON.stringify(buildOwnerEvidence({ admob_app_ads_txt_status: "PASS" }), null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04"]);
+    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", CURRENT_LEDGER_DATE]);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("DRY-RUN");
@@ -228,9 +236,9 @@ describe("AdMob owner evidence apply workflow", () => {
     });
     writeFileSync(evidenceFile, JSON.stringify(ownerEvidence, null, 2));
 
-    const after = loadApplyScript().applyOwnerEvidenceToLedger(before, ownerEvidence, "2026-07-04");
+    const after = loadApplyScript().applyOwnerEvidenceToLedger(before, ownerEvidence, CURRENT_LEDGER_DATE);
 
-    expect(after.updatedAt).toBe("2026-07-04");
+    expect(after.updatedAt).toBe(CURRENT_LEDGER_DATE);
     expect(after.items.find((item: { id: string }) => item.id === "public_app_ads_root")).toEqual(
       before.items.find((item: { id: string }) => item.id === "public_app_ads_root"),
     );
@@ -238,7 +246,7 @@ describe("AdMob owner evidence apply workflow", () => {
     const afterAppAds = after.items.find((item: { id: string }) => item.id === "admob_app_ads_txt_status");
     if (!beforeAppAds || !afterAppAds) throw new Error("admob_app_ads_txt_status fixture row is missing");
     expect(afterAppAds.status).toBe("PASS");
-    expect(afterAppAds.checkedAt).toBe("2026-07-04");
+    expect(afterAppAds.checkedAt).toBe(CURRENT_LEDGER_DATE);
     expect(afterAppAds.ownerAction).toBe(beforeAppAds.ownerAction);
     expect(afterAppAds).not.toHaveProperty("facts");
     expect(readFileSync(ledgerFile, "utf8")).toBe(beforeText);
@@ -249,7 +257,15 @@ describe("AdMob owner evidence apply workflow", () => {
     const before = readFileSync(ledgerFile, "utf8");
     writeFileSync(evidenceFile, JSON.stringify(buildOwnerEvidence({ admob_app_ads_txt_status: "PASS" }), null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04", "--write"]);
+    const result = runApply([
+      "--file",
+      evidenceFile,
+      "--ledger",
+      ledgerFile,
+      "--date",
+      CURRENT_LEDGER_DATE,
+      "--write",
+    ]);
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("canonical ADMOB_EXTERNAL_READINESS.json");
@@ -334,10 +350,18 @@ describe("AdMob owner evidence apply workflow", () => {
   it("refuses live rewarded playback PASS when owner prerequisites are not PASS and leaves the ledger unchanged", () => {
     const { ledgerFile, evidenceFile } = tempFixture();
     const before = readFileSync(ledgerFile, "utf8");
-    const evidence = buildOwnerEvidence({ live_ad_playback_device: "PASS" }, "2026-07-04");
+    const evidence = buildOwnerEvidence({ live_ad_playback_device: "PASS" }, CURRENT_LEDGER_DATE);
     writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04", "--write"]);
+    const result = runApply([
+      "--file",
+      evidenceFile,
+      "--ledger",
+      ledgerFile,
+      "--date",
+      CURRENT_LEDGER_DATE,
+      "--write",
+    ]);
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("live_playback_prerequisite_not_pass");
@@ -347,10 +371,18 @@ describe("AdMob owner evidence apply workflow", () => {
   it("refuses full cross-platform monetization PASS unless the strict full AdMob ID gate passes", () => {
     const { ledgerFile, evidenceFile } = tempFixture();
     const before = readFileSync(ledgerFile, "utf8");
-    const evidence = buildOwnerEvidence({ full_cross_platform_ad_units: "PASS" }, "2026-07-04");
+    const evidence = buildOwnerEvidence({ full_cross_platform_ad_units: "PASS" }, CURRENT_LEDGER_DATE);
     writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04", "--write"]);
+    const result = runApply([
+      "--file",
+      evidenceFile,
+      "--ledger",
+      ledgerFile,
+      "--date",
+      CURRENT_LEDGER_DATE,
+      "--write",
+    ]);
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("full_cross_platform_gate_not_pass");
@@ -362,11 +394,11 @@ describe("AdMob owner evidence apply workflow", () => {
     const ownerEvidence = buildOwnerEvidence({ admob_app_ads_txt_status: "PASS" });
     writeFileSync(evidenceFile, JSON.stringify(ownerEvidence, null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04"]);
+    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", CURRENT_LEDGER_DATE]);
     const finalLedger = loadApplyScript().applyOwnerEvidenceToLedger(
       JSON.parse(readFileSync(ledgerFile, "utf8")),
       ownerEvidence,
-      "2026-07-04",
+      CURRENT_LEDGER_DATE,
     );
     const external = require(externalCheckerPath) as {
       evaluateExternalReadiness: (
@@ -375,7 +407,7 @@ describe("AdMob owner evidence apply workflow", () => {
       ) => { ok: boolean; issues: Array<{ code: string }> };
     };
     const report = external.evaluateExternalReadiness(finalLedger, {
-      now: new Date("2026-07-04T12:00:00.000Z"),
+      now: new Date(`${CURRENT_LEDGER_DATE}T12:00:00.000Z`),
     });
 
     expect(result.status).toBe(0);

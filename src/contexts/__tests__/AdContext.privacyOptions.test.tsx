@@ -41,6 +41,7 @@ vi.mock('@/lib/adController', () => ({
     privacyOptionsRequired: adController.state.privacyOptionsRequired,
   })),
   refreshAdPrivacyOptionsStatus: adController.refreshAdPrivacyOptionsStatus,
+  refreshRewardedAdsServiceGate: vi.fn(async () => false),
   disableAds: adController.disableAds,
 }));
 
@@ -66,7 +67,7 @@ function Probe() {
 describe('AdContext UMP privacy options', () => {
   it('keeps the UMP privacy-options entry available when local ad consent is off', async () => {
     render(
-      <AdProvider adConsent={false} isPremium={false}>
+      <AdProvider adConsent={false} premiumStatus="free">
         <Probe />
       </AdProvider>,
     );

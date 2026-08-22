@@ -45,6 +45,7 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 vi.mock("@/lib/androidBackHandler", () => ({
+  publishAndroidBackNavigationState: vi.fn().mockResolvedValue(undefined),
   registerModalCloseCallback: () => () => undefined,
 }));
 

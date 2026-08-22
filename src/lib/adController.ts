@@ -1,17 +1,23 @@
 /**
  * Ad Controller — AdMob SDK wrapper
  *
- * Abstracts the AdMob plugin behind a clean interface.
- * When @capacitor-community/admob is not installed, all methods
- * gracefully no-op so the app works without ads.
+ * Abstracts the installed AdMob plugin behind a clean interface.
+ * Non-native platforms keep ads unavailable without loading the native SDK.
  */
 
 import { isNative, platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
-import { IS_DEV } from '@/lib/env';
+import {
+  ADMOB_AGE_RESTRICTED_TREATMENT,
+  ADMOB_CHILD_DIRECTED_TREATMENT,
+  ADMOB_UNDER_AGE_OF_CONSENT,
+  IS_DEV,
+  type AdMobAgeRestrictedTreatment,
+} from '@/lib/env';
 import {
   AD_FREQUENCY,
   AD_MOOD_RULES,
+  AD_SAFE_ZONES,
   AD_SACRED_ZONES,
   type AdPlatform,
   type AdSafeZone,
@@ -22,6 +28,10 @@ import {
 } from '@/lib/adConfig';
 import { SK } from '@/lib/storageKeys';
 import { safeJsonParse, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import {
+  isRewardedAdsGateOpen,
+  refreshRewardedAdsGate,
+} from '@/lib/rewardedAdsGate';
 
 // ============================================
 // TYPES
@@ -47,9 +57,22 @@ interface RewardedAdResult {
 
 export type RewardedAdZone = AdSafeZone | AdSacredZone;
 
-interface RewardedAdOptions {
-  currentMood?: string;
-  zone?: RewardedAdZone;
+export type AdPremiumStatus = 'free' | 'premium' | 'unknown';
+
+export interface RewardedMoodSignal {
+  mood: string;
+  recordedAt: number;
+}
+
+export interface RewardedAdGateOptions {
+  moodSignal?: RewardedMoodSignal | null;
+  premiumStatus?: AdPremiumStatus;
+  zone?: string;
+}
+
+interface RewardedAdOptions extends RewardedAdGateOptions {
+  /** Opaque UUID of the durable owner-bound attempt, forwarded to AdMob SSV. */
+  ssvCustomData?: string;
 }
 
 interface PrivacyOptionsResult {
@@ -70,6 +93,12 @@ interface RewardedOutcome {
   error?: string;
 }
 
+interface AdAudienceTreatment {
+  ageRestrictedTreatment: AdMobAgeRestrictedTreatment;
+  childDirected: boolean;
+  underAgeOfConsent: boolean;
+}
+
 // ============================================
 // STATE
 // ============================================
@@ -88,7 +117,10 @@ const state: AdControllerState = {
 let AdMobPlugin: any = null; // any: Capacitor AdMob plugin type is loaded dynamically
 let AdMobModule: any = null;
 let adLifecycleEpoch = 0;
+let initializationPromise: Promise<boolean> | null = null;
+let rewardedAttemptInProgress = false;
 const AD_ONBOARDING_GRACE_DAYS = 3;
+const SAFE_AD_ZONES = new Set<string>(AD_SAFE_ZONES);
 const SACRED_AD_ZONES = new Set<string>(AD_SACRED_ZONES);
 
 interface StoredOnboardingAdState {
@@ -122,6 +154,22 @@ function getNativeAdPlatform(): AdPlatform | null {
   return platform === 'android' || platform === 'ios' ? platform : null;
 }
 
+function getAdAudienceTreatment(): AdAudienceTreatment | null {
+  if (
+    ADMOB_AGE_RESTRICTED_TREATMENT === null ||
+    typeof ADMOB_CHILD_DIRECTED_TREATMENT !== 'boolean' ||
+    typeof ADMOB_UNDER_AGE_OF_CONSENT !== 'boolean'
+  ) {
+    return null;
+  }
+
+  return {
+    ageRestrictedTreatment: ADMOB_AGE_RESTRICTED_TREATMENT,
+    childDirected: ADMOB_CHILD_DIRECTED_TREATMENT,
+    underAgeOfConsent: ADMOB_UNDER_AGE_OF_CONSENT,
+  };
+}
+
 export function isRewardedAdsSupported(): boolean {
   const targetPlatform = getNativeAdPlatform();
   return Boolean(isNative && targetPlatform && hasRewardedAdUnitId(targetPlatform));
@@ -141,7 +189,42 @@ function isSacredAdZone(zone?: RewardedAdZone): boolean {
   return typeof zone === 'string' && SACRED_AD_ZONES.has(zone);
 }
 
-async function canRequestNativeAds(module: any, lifecycleEpoch: number): Promise<boolean> {
+function isApprovedAdZone(zone: unknown): zone is AdSafeZone {
+  return typeof zone === 'string' && SAFE_AD_ZONES.has(zone);
+}
+
+function readStoredTimestamp(key: string): number {
+  const parsed = Number(storageGetRaw(key));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function readStoredRewardedCount(): number | null {
+  const raw = storageGetRaw(SK.AD_DAILY_REWARDED);
+  if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return null;
+
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function recordDismissedNow(): void {
+  const now = Date.now();
+  state.lastDismissTime = now;
+  storageSetRaw(SK.AD_LAST_DISMISS, String(now));
+}
+
+function isRecentBlockedMood(signal?: RewardedMoodSignal | null): boolean {
+  if (!signal || !AD_MOOD_RULES.blockedMoods.includes(signal.mood)) return false;
+  if (!Number.isFinite(signal.recordedAt) || signal.recordedAt <= 0) return false;
+
+  const age = Date.now() - signal.recordedAt;
+  return age >= 0 && age <= AD_MOOD_RULES.suppressionWindowMs;
+}
+
+async function canRequestNativeAds(
+  module: any,
+  lifecycleEpoch: number,
+  audienceTreatment: AdAudienceTreatment,
+): Promise<boolean> {
   if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== 'function') {
     state.canRequestAds = false;
     state.privacyOptionsRequired = false;
@@ -149,7 +232,11 @@ async function canRequestNativeAds(module: any, lifecycleEpoch: number): Promise
   }
 
   try {
-    return await requestNativeConsentInfo(module, { showFormIfRequired: true, lifecycleEpoch });
+    return await requestNativeConsentInfo(module, {
+      showFormIfRequired: true,
+      lifecycleEpoch,
+      audienceTreatment,
+    });
   } catch (err) {
     state.canRequestAds = false;
     logger.warn('[Ads] Consent check failed; ads disabled for this session:', err);
@@ -171,12 +258,17 @@ function updateConsentState(module: any, consentInfo: any): boolean {
 
 async function requestNativeConsentInfo(
   module: any,
-  options: { showFormIfRequired: boolean; lifecycleEpoch?: number },
+  options: {
+    showFormIfRequired: boolean;
+    lifecycleEpoch?: number;
+    audienceTreatment?: AdAudienceTreatment | null;
+  },
 ): Promise<boolean> {
   const requiredStatus = module?.AdmobConsentStatus?.REQUIRED ?? 'REQUIRED';
-  let consentInfo = await AdMobPlugin.requestConsentInfo({
-    tagForUnderAgeOfConsent: false,
-  });
+  const consentRequestOptions = options.audienceTreatment
+    ? { tagForUnderAgeOfConsent: options.audienceTreatment.underAgeOfConsent }
+    : {};
+  let consentInfo = await AdMobPlugin.requestConsentInfo(consentRequestOptions);
 
   if (options.lifecycleEpoch !== undefined && !isLifecycleCurrent(options.lifecycleEpoch)) {
     return false;
@@ -204,10 +296,8 @@ async function loadAdMobModule(): Promise<any | null> {
   if (!isNative) return null;
   if (AdMobPlugin && AdMobModule) return AdMobModule;
 
-  // Dynamic import — if package isn't installed, this throws
-  // @vite-ignore keeps the app resilient if the native package is omitted in web-only builds.
-  const moduleName = '@capacitor-community/admob';
-  const module = await import(/* @vite-ignore */ moduleName);
+  // Keep this a literal import so Vite emits a resolvable Android bundle chunk.
+  const module = await import('@capacitor-community/admob');
   AdMobPlugin = module.AdMob;
   AdMobModule = module;
   return module;
@@ -228,7 +318,10 @@ export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsS
       return { canRequestAds: false, privacyOptionsRequired: false, error: 'consent_api_unavailable' };
     }
 
-    await requestNativeConsentInfo(module, { showFormIfRequired: false });
+    await requestNativeConsentInfo(module, {
+      showFormIfRequired: false,
+      audienceTreatment: getAdAudienceTreatment(),
+    });
     return {
       canRequestAds: state.canRequestAds,
       privacyOptionsRequired: state.privacyOptionsRequired,
@@ -252,7 +345,7 @@ export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsS
  * Initialize AdMob SDK. Call once at app start.
  * Gracefully handles missing SDK (PWA mode).
  */
-export async function initializeAds(): Promise<boolean> {
+async function initializeAdsOnce(): Promise<boolean> {
   if (state.initialized) return state.sdkAvailable;
   const lifecycleEpoch = adLifecycleEpoch;
 
@@ -273,19 +366,40 @@ export async function initializeAds(): Promise<boolean> {
       return false;
     }
 
+    if (isWithinOnboardingAdGracePeriod()) {
+      state.initialized = true;
+      state.sdkAvailable = false;
+      state.rewardedReady = false;
+      logger.log('[Ads] Onboarding grace period — rewarded ads disabled');
+      return false;
+    }
+
+    const audienceTreatment = getAdAudienceTreatment();
+    if (!audienceTreatment) {
+      state.initialized = true;
+      state.sdkAvailable = false;
+      state.canRequestAds = false;
+      state.rewardedReady = false;
+      logger.warn('[Ads] Audience treatment is unverified — ads disabled');
+      return false;
+    }
+
+    if (!(await refreshRewardedAdsGate())) {
+      if (!isLifecycleCurrent(lifecycleEpoch)) return false;
+      state.initialized = true;
+      state.sdkAvailable = false;
+      state.canRequestAds = false;
+      state.rewardedReady = false;
+      logger.warn('[Ads] Service gate is closed — rewarded ads disabled');
+      return false;
+    }
+    if (!isLifecycleCurrent(lifecycleEpoch)) return false;
+
     const module = await loadAdMobModule();
     if (!module || !AdMobPlugin) throw new Error('AdMob module unavailable');
     if (!isLifecycleCurrent(lifecycleEpoch)) return false;
 
-    await AdMobPlugin.initialize({
-      initializeForTesting: IS_DEV,
-      tagForChildDirectedTreatment: false,
-      tagForUnderAgeOfConsent: false,
-      maxAdContentRating: module.MaxAdContentRating?.General ?? 'General',
-    });
-    if (!isLifecycleCurrent(lifecycleEpoch)) return false;
-
-    if (!(await canRequestNativeAds(module, lifecycleEpoch))) {
+    if (!(await canRequestNativeAds(module, lifecycleEpoch, audienceTreatment))) {
       if (!isLifecycleCurrent(lifecycleEpoch)) return false;
       state.initialized = true;
       state.sdkAvailable = false;
@@ -294,13 +408,14 @@ export async function initializeAds(): Promise<boolean> {
     }
     if (!isLifecycleCurrent(lifecycleEpoch)) return false;
 
-    if (isWithinOnboardingAdGracePeriod()) {
-      state.initialized = true;
-      state.sdkAvailable = false;
-      state.rewardedReady = false;
-      logger.log('[Ads] Onboarding grace period — rewarded ads disabled');
-      return false;
-    }
+    await AdMobPlugin.initialize({
+      initializeForTesting: IS_DEV,
+      ageRestrictedTreatment: audienceTreatment.ageRestrictedTreatment,
+      tagForChildDirectedTreatment: audienceTreatment.childDirected,
+      tagForUnderAgeOfConsent: audienceTreatment.underAgeOfConsent,
+      maxAdContentRating: module.MaxAdContentRating?.General ?? 'General',
+    });
+    if (!isLifecycleCurrent(lifecycleEpoch)) return false;
 
     state.initialized = true;
     state.sdkAvailable = true;
@@ -314,6 +429,16 @@ export async function initializeAds(): Promise<boolean> {
     logger.log('[Ads] AdMob SDK not available — ads disabled');
     return false;
   }
+}
+
+export async function initializeAds(): Promise<boolean> {
+  if (state.initialized) return state.sdkAvailable;
+  if (initializationPromise) return initializationPromise;
+
+  initializationPromise = initializeAdsOnce().finally(() => {
+    initializationPromise = null;
+  });
+  return initializationPromise;
 }
 
 /**
@@ -333,7 +458,10 @@ export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
     await AdMobPlugin.showPrivacyOptionsForm();
 
     if (typeof AdMobPlugin.requestConsentInfo === 'function') {
-      await requestNativeConsentInfo(AdMobModule, { showFormIfRequired: false });
+      await requestNativeConsentInfo(AdMobModule, {
+        showFormIfRequired: false,
+        audienceTreatment: getAdAudienceTreatment(),
+      });
     }
 
     state.sdkAvailable = state.initialized && state.canRequestAds;
@@ -362,8 +490,13 @@ export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
 /**
  * Load a rewarded ad only after explicit user opt-in.
  */
-async function prepareRewardedAd(): Promise<void> {
-  if (!state.sdkAvailable || !AdMobPlugin) return;
+async function prepareRewardedAd(ssvCustomData: string): Promise<void> {
+  if (
+    !state.sdkAvailable ||
+    !state.canRequestAds ||
+    !isRewardedAdsGateOpen() ||
+    !AdMobPlugin
+  ) return;
   const lifecycleEpoch = adLifecycleEpoch;
 
   try {
@@ -375,8 +508,14 @@ async function prepareRewardedAd(): Promise<void> {
       adId,
       isTesting: IS_DEV || isGoogleTestAdUnit(adId),
       npa: true,
+      ssv: { customData: ssvCustomData },
     });
-    if (!isLifecycleCurrent(lifecycleEpoch) || !state.sdkAvailable) return;
+    if (
+      !isLifecycleCurrent(lifecycleEpoch) ||
+      !state.sdkAvailable ||
+      !state.canRequestAds ||
+      !isRewardedAdsGateOpen()
+    ) return;
     state.rewardedReady = true;
   } catch (err) {
     state.rewardedReady = false;
@@ -472,20 +611,40 @@ async function showRewardVideoAndWaitForOutcome(): Promise<RewardedOutcome> {
  * Check if a rewarded ad can be shown right now.
  * Respects frequency caps, mood gating, and cooldowns.
  */
-export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): {
+export function canShowRewardedAd(options: RewardedAdGateOptions = {}): {
   allowed: boolean;
   reason?: string;
 } {
-  if (isSacredAdZone(zone)) {
+  if (isSacredAdZone(options.zone as RewardedAdZone | undefined)) {
     return { allowed: false, reason: 'sacred_zone' };
+  }
+
+  if (!isApprovedAdZone(options.zone)) {
+    return { allowed: false, reason: 'invalid_zone' };
+  }
+
+  if (options.premiumStatus === 'premium') {
+    return { allowed: false, reason: 'premium_user' };
+  }
+
+  if (options.premiumStatus !== 'free') {
+    return { allowed: false, reason: 'premium_unknown' };
   }
 
   if (isWithinOnboardingAdGracePeriod()) {
     return { allowed: false, reason: 'onboarding_grace_period' };
   }
 
+  if (!isRewardedAdsGateOpen()) {
+    return { allowed: false, reason: 'service_gate_closed' };
+  }
+
   if (!state.sdkAvailable) {
     return { allowed: false, reason: 'sdk_unavailable' };
+  }
+
+  if (!state.canRequestAds) {
+    return { allowed: false, reason: 'consent_unavailable' };
   }
 
   const targetPlatform = getNativeAdPlatform();
@@ -494,15 +653,8 @@ export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): 
   }
 
   // Mood gating
-  if (currentMood && AD_MOOD_RULES.blockedMoods.includes(currentMood)) {
+  if (isRecentBlockedMood(options.moodSignal)) {
     return { allowed: false, reason: 'mood_blocked' };
-  }
-
-  // Reduced mode for bad mood
-  if (currentMood && AD_MOOD_RULES.reducedMoods.includes(currentMood)) {
-    if (state.sessionAdCount >= AD_MOOD_RULES.reducedMaxPerSession) {
-      return { allowed: false, reason: 'mood_reduced_limit' };
-    }
   }
 
   // Session limit
@@ -513,9 +665,11 @@ export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): 
   // Daily limit
   const today = new Date().toDateString();
   const savedDate = storageGetRaw(SK.AD_COUNT_DATE);
-  const dailyCount = savedDate === today
-    ? parseInt(storageGetRaw(SK.AD_DAILY_REWARDED) || '0', 10)
-    : 0;
+  const storedDailyCount = savedDate === today ? readStoredRewardedCount() : 0;
+  if (storedDailyCount === null) {
+    return { allowed: false, reason: 'daily_limit' };
+  }
+  const dailyCount = storedDailyCount;
 
   if (dailyCount >= AD_FREQUENCY.maxRewardedPerDay) {
     return { allowed: false, reason: 'daily_limit' };
@@ -523,12 +677,17 @@ export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): 
 
   // Cooldown between ads
   const now = Date.now();
-  if (state.lastAdTime > 0 && (now - state.lastAdTime) < AD_FREQUENCY.minIntervalMs) {
+  const lastAdTime = Math.max(state.lastAdTime, readStoredTimestamp(SK.AD_LAST_SHOWN));
+  if (lastAdTime > 0 && (now - lastAdTime) < AD_FREQUENCY.minIntervalMs) {
     return { allowed: false, reason: 'cooldown' };
   }
 
   // Dismiss cooldown
-  if (state.lastDismissTime > 0 && (now - state.lastDismissTime) < AD_FREQUENCY.dismissCooldownMs) {
+  const lastDismissTime = Math.max(
+    state.lastDismissTime,
+    readStoredTimestamp(SK.AD_LAST_DISMISS),
+  );
+  if (lastDismissTime > 0 && (now - lastDismissTime) < AD_FREQUENCY.dismissCooldownMs) {
     return { allowed: false, reason: 'dismiss_cooldown' };
   }
 
@@ -539,15 +698,35 @@ export function canShowRewardedAd(currentMood?: string, zone?: RewardedAdZone): 
  * Show a rewarded video ad. Returns whether the user earned the reward.
  */
 export async function showRewardedAd(options: RewardedAdOptions = {}): Promise<RewardedAdResult> {
-  const gate = canShowRewardedAd(options.currentMood, options.zone);
+  const gate = canShowRewardedAd(options);
   if (!gate.allowed) {
     return { success: false, rewarded: false, error: gate.reason ?? 'not_allowed' };
   }
 
+  if (
+    typeof options.ssvCustomData !== 'string' ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      options.ssvCustomData,
+    )
+  ) {
+    return { success: false, rewarded: false, error: 'attempt_unbound' };
+  }
+
+  if (rewardedAttemptInProgress) {
+    return { success: false, rewarded: false, error: 'ad_in_progress' };
+  }
+
+  rewardedAttemptInProgress = true;
+
   try {
     // Prepare inventory only after the user explicitly opted in from an approved safe zone.
     if (!state.rewardedReady) {
-      await prepareRewardedAd();
+      await prepareRewardedAd(options.ssvCustomData);
+    }
+
+    if (!isRewardedAdsGateOpen()) {
+      state.rewardedReady = false;
+      return { success: false, rewarded: false, error: 'service_gate_closed' };
     }
 
     if (!state.rewardedReady) {
@@ -558,7 +737,7 @@ export async function showRewardedAd(options: RewardedAdOptions = {}): Promise<R
     const outcome = await showRewardVideoAndWaitForOutcome();
 
     if (!outcome.rewarded) {
-      state.lastDismissTime = Date.now();
+      recordDismissedNow();
       state.rewardedReady = false;
 
       return { success: false, rewarded: false, error: outcome.error ?? 'dismissed_or_failed' };
@@ -566,18 +745,19 @@ export async function showRewardedAd(options: RewardedAdOptions = {}): Promise<R
 
     // Track counts
     state.sessionAdCount++;
-    state.lastAdTime = Date.now();
+    const rewardedAt = Date.now();
+    state.lastAdTime = rewardedAt;
 
     const today = new Date().toDateString();
     const savedDate = storageGetRaw(SK.AD_COUNT_DATE);
     let dailyCount = savedDate === today
-      ? parseInt(storageGetRaw(SK.AD_DAILY_REWARDED) || '0', 10)
+      ? readStoredRewardedCount() ?? AD_FREQUENCY.maxRewardedPerDay
       : 0;
 
     dailyCount++;
     storageSetRaw(SK.AD_DAILY_REWARDED, String(dailyCount));
     storageSetRaw(SK.AD_COUNT_DATE, today);
-    storageSetRaw(SK.AD_LAST_SHOWN, String(Date.now()));
+    storageSetRaw(SK.AD_LAST_SHOWN, String(rewardedAt));
 
     state.rewardedReady = false;
 
@@ -586,11 +766,13 @@ export async function showRewardedAd(options: RewardedAdOptions = {}): Promise<R
       rewarded: true,
     };
   } catch (err) {
-    state.lastDismissTime = Date.now();
+    recordDismissedNow();
     state.rewardedReady = false;
     logger.warn('[Ads] Rewarded ad failed/dismissed:', err);
 
     return { success: false, rewarded: false, error: 'dismissed_or_failed' };
+  } finally {
+    rewardedAttemptInProgress = false;
   }
 }
 
@@ -606,15 +788,24 @@ export function isAdSdkAvailable(): boolean {
   return state.sdkAvailable;
 }
 
+export async function refreshRewardedAdsServiceGate(
+  options: { force?: boolean } = {},
+): Promise<boolean> {
+  const open = await refreshRewardedAdsGate(options);
+  if (!open) state.rewardedReady = false;
+  return open;
+}
+
 /**
  * Get remaining rewarded ads for today
  */
 export function getRemainingRewardedAds(): number {
   const today = new Date().toDateString();
   const savedDate = storageGetRaw(SK.AD_COUNT_DATE);
-  const dailyCount = savedDate === today
-    ? parseInt(storageGetRaw(SK.AD_DAILY_REWARDED) || '0', 10)
-    : 0;
+  if (savedDate !== today) return AD_FREQUENCY.maxRewardedPerDay;
+
+  const dailyCount = readStoredRewardedCount();
+  if (dailyCount === null) return 0;
 
   return Math.max(0, AD_FREQUENCY.maxRewardedPerDay - dailyCount);
 }

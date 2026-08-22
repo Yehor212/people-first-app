@@ -1,5 +1,6 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The bounded participants region must receive focus for keyboard scrolling. */
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Users, CheckCircle2, Cloud, CloudOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ export function ParticipantsLeaderboard({
   const [leaderboard, setLeaderboard] = useState<ChallengeLeaderboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
   // Check if cloud is available
   const cloudAvailable = isCloudChallengesAvailable();
@@ -85,7 +87,8 @@ export function ParticipantsLeaderboard({
     return (
       <motion.div
         className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)]"
-        initial={{ opacity: 0, y: 20 }}
+        data-testid="challenge-participants"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <CloudOff className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
@@ -101,10 +104,11 @@ export function ParticipantsLeaderboard({
     return (
       <motion.div
         className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)]"
-        initial={{ opacity: 0, y: 20 }}
+        data-testid="challenge-participants"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary animate-spin" aria-label={t.loadingParticipants || 'Loading participants...'} />
+        <Loader2 className="mx-auto mb-2 h-6 w-6 text-primary motion-safe:animate-spin" aria-label={t.loadingParticipants || 'Loading participants...'} />
         <p className="text-sm text-muted-foreground">{t.loadingParticipants || 'Loading participants...'}</p>
       </motion.div>
     );
@@ -115,7 +119,8 @@ export function ParticipantsLeaderboard({
     return (
       <motion.div
         className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)]"
-        initial={{ opacity: 0, y: 20 }}
+        data-testid="challenge-participants"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-sm text-destructive">{error}</p>
@@ -131,7 +136,8 @@ export function ParticipantsLeaderboard({
     return (
       <motion.div
         className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(139,92,246,0.1)_0%,rgba(168,85,247,0.05)_100%)]"
-        initial={{ opacity: 0, y: 20 }}
+        data-testid="challenge-participants"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <Users className="w-8 h-8 mx-auto mb-2 text-violet-400" />
@@ -146,36 +152,47 @@ export function ParticipantsLeaderboard({
   return (
     <motion.div
       className="rounded-2xl overflow-hidden bg-[linear-gradient(135deg,rgba(139,92,246,0.1)_0%,rgba(168,85,247,0.05)_100%)] shadow-[0_0_20px_rgba(139,92,246,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
-      initial={{ opacity: 0, y: 20 }}
+      data-testid="challenge-participants"
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex min-w-0 items-start gap-2 border-b border-foreground/10 px-5 py-3">
-        <Users className="h-4 w-4 shrink-0 text-violet-400" />
-        <span className="min-w-0 flex-1 whitespace-normal break-words text-sm font-medium text-slate-800 dark:text-white">
-          {t.participants || 'Participants'} ({leaderboard.members.length})
+      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 border-b border-foreground/10 px-5 py-3">
+        <Users className="col-start-1 row-start-1 h-4 w-4 shrink-0 text-violet-400" />
+        <span className="col-span-3 row-start-2 min-w-0 whitespace-normal text-sm font-medium text-slate-800 [overflow-wrap:normal] [word-break:normal] dark:text-white min-[420px]:col-span-1 min-[420px]:col-start-2 min-[420px]:row-start-1">
+          <span>{t.participants || 'Participants'}</span>{' '}
+          <bdi dir="ltr">({leaderboard.members.length})</bdi>
         </span>
-        <Cloud className="ms-auto h-3 w-3 shrink-0 text-emerald-400" />
+        <Cloud className="col-start-3 row-start-1 h-3 w-3 shrink-0 justify-self-end text-emerald-400" />
       </div>
 
-      <div className="p-2 space-y-1 max-h-[200px] overflow-y-auto">
-        {/* Add empty state check before map */}
-        {(!leaderboard.members || leaderboard.members.length === 0) ? (
-          <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
-            {t.noParticipantsYet || 'No participants yet'}
-          </div>
-        ) : leaderboard.members.map((member, index) => (
-          <motion.div
-            key={member.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className={cn(
-              "grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 rounded-xl min-[420px]:grid-cols-[2rem_minmax(0,1fr)_auto_auto]",
-              member.isCurrentUser
-                ? "bg-violet-500/20 border border-violet-500/30"
-                : "bg-foreground/5"
-            )}
-          >
+      <div
+        aria-label={t.participants || 'Participants'}
+        className="max-h-[12.5rem] overflow-y-auto p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+        role="region"
+        tabIndex={0}
+      >
+        <div className="space-y-1" role="list">
+          {/* Add empty state check before map */}
+          {(!leaderboard.members || leaderboard.members.length === 0) ? (
+            <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
+              {t.noParticipantsYet || 'No participants yet'}
+            </div>
+          ) : leaderboard.members.map((member, index) => (
+            <motion.div
+              key={member.id}
+              initial={prefersReducedMotion ? false : { opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={
+                prefersReducedMotion ? { duration: 0 } : { delay: index * 0.05 }
+              }
+              role="listitem"
+              className={cn(
+                "grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2 rounded-xl p-3 min-[420px]:grid-cols-[2rem_minmax(0,1fr)_auto]",
+                member.isCurrentUser
+                  ? "bg-violet-500/20 border border-violet-500/30"
+                  : "bg-foreground/5"
+              )}
+            >
             {/* Rank */}
             <div className="w-8 text-center font-bold text-lg">
               {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
@@ -192,30 +209,38 @@ export function ParticipantsLeaderboard({
                 </span>
                 {member.isCurrentUser && (
                   <span className="shrink-0 text-xs text-violet-700 dark:text-violet-300">
-                    ({t.you || 'You'})
+                    <bdi dir="auto">({t.you || 'You'})</bdi>
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Progress */}
-            <div className="col-start-2 row-start-2 justify-self-start text-start min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:justify-self-end min-[420px]:text-end">
-              <div className="font-semibold text-slate-800 dark:text-white">
-                {member.daysCompleted}/{leaderboard.challenge.duration}
-              </div>
-              {member.currentStreak > 0 && (
-                <div className="text-xs text-amber-500">
-                  🔥 {member.currentStreak}
+            {/* Progress and completion stay associated in one full-width narrow row. */}
+            <div className="col-span-2 row-start-2 flex min-w-0 items-start justify-between gap-3 min-[420px]:col-span-1 min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:justify-end">
+              <div className="min-w-0 text-start min-[420px]:text-end">
+                <div className="font-semibold text-slate-800 dark:text-white">
+                  <bdi dir="ltr">
+                    {member.daysCompleted}/{leaderboard.challenge.duration}
+                  </bdi>
                 </div>
+                {member.currentStreak > 0 && (
+                  <div className="text-xs text-amber-500">
+                    <bdi dir="ltr">🔥 {member.currentStreak}</bdi>
+                  </div>
+                )}
+              </div>
+
+              {member.completed && (
+                <CheckCircle2
+                  aria-label={t.completed || 'Completed'}
+                  className="h-5 w-5 shrink-0 text-emerald-500"
+                  role="img"
+                />
               )}
             </div>
-
-            {/* Completion badge */}
-            {member.completed && (
-              <CheckCircle2 className="col-start-1 row-start-2 h-5 w-5 justify-self-center text-emerald-500 min-[420px]:col-start-4 min-[420px]:row-start-1" />
-            )}
-          </motion.div>
-        ))}
+            </motion.div>
+          ))}
+        </div>
       </div>
     </motion.div>
   );

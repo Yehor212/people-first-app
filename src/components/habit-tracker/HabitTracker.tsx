@@ -214,15 +214,7 @@ export const HabitTracker = memo(function HabitTracker({
       {/* Nature Energy Background */}
       {isPrimaryCTA && (
         <>
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(ellipse at top,
-                hsl(var(--chart-habit) / 0.12) 0%,
-                hsl(var(--chart-habit) / 0.08) 30%,
-                hsl(var(--card)) 60%)`,
-            }}
-          />
+          <div className="zf-habit-tracker-energy-background absolute inset-0" />
           <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_20%,hsl(var(--chart-habit)/0.1)_0%,transparent_40%)] [animation:nature-energy-glow_4s_ease-in-out_infinite]" />
         </>
       )}

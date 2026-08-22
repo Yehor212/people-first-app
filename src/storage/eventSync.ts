@@ -37,9 +37,20 @@ import {
 } from "@/features/journal/types";
 import { normalizeJournalAudioMimeType } from "@/features/journal/journalAudioValidation";
 import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
-import { normalizeJournalStyleFields } from "@/features/journal/journalStyleFields";
+import {
+  normalizeJournalStyleFields,
+  normalizeJournalStyleFieldsFromCloud,
+} from "@/features/journal/journalStyleFields";
 import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
+import {
+  persistAutomationRemoteEventInCurrentTransaction,
+  reconcileAutomationRemoteEventsInCurrentTransaction,
+  reconcilePendingAutomationEvents as reconcilePendingAutomationEventsImpl,
+} from "@/features/automation/automationRemoteSync";
+import { reconcilePendingAutomationHistoryPurges } from "@/features/automation/automationHistoryClear";
+import { hashAutomationValue } from "@/features/automation/canonicalJson";
+import { automationRecordRevisionStoreRowSchema } from "@/features/automation/types";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -50,9 +61,15 @@ export type SyncEntityType =
   | "gratitude"
   | "journal"
   | "habit_completion"
-  | "setting";
+  | "setting"
+  | "automation_transaction"
+  | "automation_history_purge";
 
 export type SyncOp = "upsert" | "delete";
+export type ClientWritableSyncEntityType = Exclude<
+  SyncEntityType,
+  "automation_transaction" | "automation_history_purge"
+>;
 
 export interface SyncEvent {
   id: string;
@@ -71,7 +88,7 @@ export interface DeltaResult {
 }
 
 export interface SyncEventWriteIntent {
-  entityType: SyncEntityType;
+  entityType: ClientWritableSyncEntityType;
   entityId: string;
   op: SyncOp;
   payload: Record<string, unknown> | null;
@@ -101,6 +118,8 @@ const ENTITY_TABLE_MAP: Record<string, string> = {
   gratitude: "gratitudeEntries",
   journal: "journalEntries",
   setting: "settings",
+  automation_transaction: "automationRemoteEvents",
+  automation_history_purge: "automationRemoteEvents",
 };
 
 // ── Cursor management ─────────────────────────────────────────────────
@@ -115,6 +134,8 @@ const SYNC_ENTITY_BROADCAST_MAP: Record<SyncEntityType, SyncEntity> = {
   journal: "journal",
   habit_completion: "habits",
   setting: "settings",
+  automation_transaction: "automation",
+  automation_history_purge: "automation",
 };
 
 const SYNC_ENTITY_TYPES: SyncEntityType[] = [
@@ -125,10 +146,43 @@ const SYNC_ENTITY_TYPES: SyncEntityType[] = [
   "journal",
   "habit_completion",
   "setting",
+  "automation_transaction",
+  "automation_history_purge",
 ];
+
+const CLIENT_WRITABLE_SYNC_ENTITY_TYPES = new Set<ClientWritableSyncEntityType>([
+  "mood",
+  "habit",
+  "focus",
+  "gratitude",
+  "journal",
+  "habit_completion",
+  "setting",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function isSyncEvent(value: unknown): value is SyncEvent {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    value.id.length > 0 &&
+    typeof value.seq === "number" &&
+    Number.isSafeInteger(value.seq) &&
+    value.seq > 0 &&
+    typeof value.entity_type === "string" &&
+    SYNC_ENTITY_TYPES.includes(value.entity_type as SyncEntityType) &&
+    typeof value.entity_id === "string" &&
+    value.entity_id.length > 0 &&
+    (value.op === "upsert" || value.op === "delete") &&
+    (value.payload === null || isRecord(value.payload)) &&
+    typeof value.device_id === "string" &&
+    value.device_id.length > 0 &&
+    typeof value.created_at === "string" &&
+    Number.isFinite(Date.parse(value.created_at))
+  );
 }
 
 const JOURNAL_MOODS = new Set(["great", "good", "okay", "bad", "terrible"]);
@@ -213,18 +267,83 @@ function normalizeJournalDeltaPayload(
   };
 }
 
-async function fetchLinkedJournalAudioMetadata(
+function isContentlessJournalEventPayload(payload: Record<string, unknown> | null): boolean {
+  return (
+    payload !== null &&
+    payload.schemaVersion === 1 &&
+    Object.keys(payload).length === 1
+  );
+}
+
+async function fetchCurrentJournalEntriesForContentlessEvents(
   events: SyncEvent[],
+  ownerUserId: string
+): Promise<Map<string, JournalEntry>> {
+  if (!supabase) return new Map();
+
+  const requestedIds = new Set(
+    events
+      .filter(
+        (event) =>
+          event.entity_type === "journal" &&
+          event.op === "upsert" &&
+          isContentlessJournalEventPayload(event.payload)
+      )
+      .map((event) => event.entity_id)
+  );
+  if (requestedIds.size === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("*")
+    .eq("user_id", ownerUserId)
+    .in("id", [...requestedIds]);
+  if (error) throw error;
+
+  const result = new Map<string, JournalEntry>();
+  for (const rawRow of data ?? []) {
+    const row = rawRow as unknown as Record<string, unknown>;
+    if (
+      typeof row.id !== "string" ||
+      !requestedIds.has(row.id) ||
+      row.user_id !== ownerUserId
+    ) {
+      continue;
+    }
+    const normalized = normalizeJournalDeltaPayload(
+      {
+        id: row.id,
+        date: row.date,
+        title: row.title,
+        content: row.content,
+        stickers: row.stickers,
+        mood: row.mood,
+        tags: row.tags,
+        templateId: row.template_id,
+        habitSnapshot: row.habit_snapshot,
+        photoIds: row.photo_ids,
+        audioIds: row.audio_ids,
+        photoLayout: row.photo_layout,
+        ...normalizeJournalStyleFieldsFromCloud(row),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      },
+      row.id
+    );
+    if (normalized) result.set(row.id, normalized);
+  }
+  return result;
+}
+
+async function fetchLinkedJournalAudioMetadata(
+  entries: JournalEntry[],
   ownerUserId: string
 ): Promise<Map<string, JournalAudio>> {
   if (!supabase) return new Map();
 
   const requestedParents = new Map<string, string>();
   const conflictingIds = new Set<string>();
-  for (const event of events) {
-    if (event.entity_type !== "journal" || event.op !== "upsert" || !event.payload) continue;
-    const entry = normalizeJournalDeltaPayload(event.payload, event.entity_id);
-    if (!entry) continue;
+  for (const entry of entries) {
     for (const audioId of entry.audioIds ?? []) {
       const existingParent = requestedParents.get(audioId);
       if (existingParent && existingParent !== entry.id) {
@@ -288,7 +407,7 @@ export function isSyncEventWriteIntent(value: unknown): value is SyncEventWriteI
   const { entityType, entityId, op, payload, deviceId, idempotencyKey } = value;
   return (
     typeof entityType === "string" &&
-    SYNC_ENTITY_TYPES.includes(entityType as SyncEntityType) &&
+    CLIENT_WRITABLE_SYNC_ENTITY_TYPES.has(entityType as ClientWritableSyncEntityType) &&
     typeof entityId === "string" &&
     entityId.length > 0 &&
     (op === "upsert" || op === "delete") &&
@@ -319,6 +438,12 @@ function isUuid(value: string | undefined): value is string {
 export function normalizeSyncEventWriteIntent(intent: SyncEventWriteIntent): SyncEventWriteIntent {
   return {
     ...intent,
+    payload:
+      intent.entityType === "journal"
+        ? intent.op === "upsert"
+          ? { schemaVersion: 1 }
+          : null
+        : intent.payload,
     idempotencyKey: isUuid(intent.idempotencyKey)
       ? intent.idempotencyKey
       : createEventIdempotencyKey(),
@@ -482,7 +607,7 @@ async function queueSyncEventWrite(
 }
 
 export async function writeEvent(
-  entityType: SyncEntityType,
+  entityType: ClientWritableSyncEntityType,
   entityId: string,
   op: SyncOp,
   payload: Record<string, unknown> | null,
@@ -506,7 +631,7 @@ export async function writeEvent(
  * Broadcast is only a hint; the ordered sync_events row is the source of truth.
  */
 export async function writeEventAndBroadcast(
-  entityType: SyncEntityType,
+  entityType: ClientWritableSyncEntityType,
   entityId: string,
   op: SyncOp,
   payload: Record<string, unknown> | null,
@@ -569,7 +694,13 @@ export async function fetchDelta(lastSeq: number, limit = 200): Promise<DeltaRes
   }
 
   const hasMore = (data?.length ?? 0) > limit;
-  const events = (data ?? []).slice(0, limit) as SyncEvent[];
+  const rawEvents = (data ?? []).slice(0, limit);
+  const events = rawEvents.map((event) => {
+    if (!isSyncEvent(event)) {
+      throw new Error("[EventSync] fetchDelta returned an invalid event envelope");
+    }
+    return event;
+  });
 
   return { events, hasMore };
 }
@@ -784,7 +915,7 @@ async function applyHabitCompletionEvent(
   return true;
 }
 
-async function applySettingEvent(event: SyncEvent): Promise<boolean> {
+async function applySettingEvent(event: SyncEvent, ownerUserId: string): Promise<boolean> {
   const payload = event.payload || {};
   const key = typeof payload.key === "string" ? payload.key : event.entity_id;
   if (!key) return false;
@@ -797,7 +928,31 @@ async function applySettingEvent(event: SyncEvent): Promise<boolean> {
   }
 
   if (!Object.prototype.hasOwnProperty.call(payload, "value")) return false;
-  return applyIncomingAccountSetting(key, payload.value);
+
+  let planningRevision: ReturnType<typeof automationRecordRevisionStoreRowSchema.parse> | null = null;
+  if (key === "zenflow-schedule-events" && payload.automationRevision !== undefined) {
+    const parsedRevision = automationRecordRevisionStoreRowSchema.safeParse({
+      kind: "record_revision",
+      id: "record_revision:setting:zenflow-schedule-events",
+      schemaVersion: 1,
+      ownerUserId,
+      entityType: "setting",
+      entityId: "zenflow-schedule-events",
+      ...(typeof payload.automationRevision === "object" && payload.automationRevision !== null
+        ? payload.automationRevision
+        : {}),
+    });
+    if (!parsedRevision.success) return false;
+    const stateHash = await Dexie.waitFor(hashAutomationValue(payload.value));
+    if (stateHash !== parsedRevision.data.stateHash) return false;
+    planningRevision = parsedRevision.data;
+  }
+
+  const applied = await applyIncomingAccountSetting(key, payload.value);
+  if (applied && planningRevision) {
+    await db.automationTransactions.put(planningRevision);
+  }
+  return applied;
 }
 
 function readDeletedIdsSettingValue(value: unknown): string[] {
@@ -844,14 +999,24 @@ export async function applyDelta(
   ownerOptions?: ApplyDeltaOwnerOptions
 ): Promise<number> {
   if (events.length === 0) return 0;
+  if (!events.every(isSyncEvent)) {
+    throw new Error("[EventSync] Refused an invalid event envelope");
+  }
 
   const ownerUserId = await resolveDeltaOwner(ownerOptions, "Delta apply");
   const assertOwnerInTransaction = () =>
     Dexie.waitFor(assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply transaction"));
 
-  const remoteEvents = events.filter((e) => e.device_id !== currentDeviceId);
+  const remoteEvents = events
+    .filter(
+      (event) =>
+        event.device_id !== currentDeviceId ||
+        event.entity_type === "automation_transaction" ||
+        event.entity_type === "automation_history_purge",
+    )
+    .sort((left, right) => left.seq - right.seq || left.id.localeCompare(right.id));
   if (remoteEvents.length === 0) {
-    const maxSeq = events[events.length - 1].seq;
+    const maxSeq = Math.max(...events.map((event) => event.seq));
     await db.transaction("rw", [db.settings], async () => {
       await assertOwnerInTransaction();
       await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
@@ -860,7 +1025,24 @@ export async function applyDelta(
     return 0;
   }
 
-  const linkedJournalAudio = await fetchLinkedJournalAudioMetadata(remoteEvents, ownerUserId);
+  const fetchedJournalEntries = await fetchCurrentJournalEntriesForContentlessEvents(
+    remoteEvents,
+    ownerUserId
+  );
+  const resolveJournalEntry = (event: SyncEvent): JournalEntry | null => {
+    if (event.entity_type !== "journal" || event.op !== "upsert" || !event.payload) {
+      return null;
+    }
+    return isContentlessJournalEventPayload(event.payload)
+      ? fetchedJournalEntries.get(event.entity_id) ?? null
+      : normalizeJournalDeltaPayload(event.payload, event.entity_id);
+  };
+  const linkedJournalAudio = await fetchLinkedJournalAudioMetadata(
+    remoteEvents
+      .map(resolveJournalEntry)
+      .filter((entry): entry is JournalEntry => entry !== null),
+    ownerUserId
+  );
 
   const tableNames = new Set<string>();
   for (const event of remoteEvents) {
@@ -877,11 +1059,43 @@ export async function applyDelta(
     tables.push(db.journalPhotos as unknown as TransactionTable);
     tables.push(db.journalAudio as unknown as TransactionTable);
   }
+  const includesAutomationEvent = remoteEvents.some(
+    (event) =>
+      event.entity_type === "automation_transaction" ||
+      event.entity_type === "automation_history_purge",
+  );
+  if (includesAutomationEvent) {
+    for (const table of [
+      db.moods,
+      db.habits,
+      db.journalEntries,
+      db.offlineQueue,
+      db.automationTransactions,
+      db.automationHistoryMarkers,
+      db.automationRemoteEvents,
+    ]) {
+      if (!tables.includes(table as unknown as TransactionTable)) {
+        tables.push(table as unknown as TransactionTable);
+      }
+    }
+  }
+  const includesPlanningRevisionEvent = remoteEvents.some(
+    (event) =>
+      event.entity_type === "setting" &&
+      event.entity_id === "zenflow-schedule-events" &&
+      event.payload?.automationRevision !== undefined,
+  );
+  if (
+    includesPlanningRevisionEvent &&
+    !tables.includes(db.automationTransactions as unknown as TransactionTable)
+  ) {
+    tables.push(db.automationTransactions as unknown as TransactionTable);
+  }
   if (!tableNames.has("settings")) {
     tables.push(db.settings as unknown as TransactionTable);
   }
 
-  const maxSeq = events[events.length - 1].seq;
+  const maxSeq = Math.max(...events.map((event) => event.seq));
   let applied = 0;
   const batchTombstones = new Map<string, Set<string>>();
 
@@ -916,7 +1130,25 @@ export async function applyDelta(
             continue;
           }
           if (event.entity_type === "setting") {
-            if (await applySettingEvent(event)) txApplied++;
+            if (await applySettingEvent(event, ownerUserId)) txApplied++;
+            continue;
+          }
+          if (
+            event.entity_type === "automation_transaction" ||
+            event.entity_type === "automation_history_purge"
+          ) {
+            await persistAutomationRemoteEventInCurrentTransaction(
+              {
+                entityType: event.entity_type,
+                id: event.id,
+                seq: event.seq,
+                entityId: event.entity_id,
+                op: event.op,
+                payload: event.payload,
+                createdAt: event.created_at,
+              },
+              ownerUserId,
+            );
             continue;
           }
 
@@ -931,10 +1163,7 @@ export async function applyDelta(
                 let payload: Record<string, unknown> = event.payload;
                 let normalizedJournalEntry: JournalEntry | null = null;
                 if (event.entity_type === "journal") {
-                  normalizedJournalEntry = normalizeJournalDeltaPayload(
-                    event.payload,
-                    event.entity_id
-                  );
+                  normalizedJournalEntry = resolveJournalEntry(event);
                   if (!normalizedJournalEntry) break;
 
                   const protectedJournalAtCommit = Boolean(
@@ -1006,11 +1235,25 @@ export async function applyDelta(
           }
         }
 
+        if (includesAutomationEvent) {
+          const automationResult = await reconcileAutomationRemoteEventsInCurrentTransaction(
+            ownerUserId,
+          );
+          txApplied += automationResult.applied;
+        }
+
         await assertOwnerInTransaction();
         await db.settings.put({ key: SYNC_SEQ_KEY, value: maxSeq });
       });
     };
-    if (remoteEvents.some((event) => event.entity_type === "journal")) {
+    if (
+      remoteEvents.some(
+        (event) =>
+          event.entity_type === "journal" ||
+          event.entity_type === "automation_transaction" ||
+          event.entity_type === "automation_history_purge",
+      )
+    ) {
       await runWithJournalSecurityWriteLock(applyTransaction);
     } else {
       await applyTransaction();
@@ -1028,12 +1271,28 @@ export async function applyDelta(
 
   await assertDeltaOwnerCurrent(ownerUserId, ownerOptions, "Delta apply completion");
 
+  if (includesAutomationEvent) {
+    try {
+      await reconcilePendingAutomationHistoryPurges(ownerUserId);
+    } catch {
+      logger.warn("[EventSync] Accepted automation history purge remains deferred");
+    }
+  }
+
   if (applied > 0) {
     await triggerDataRefresh();
   }
 
   logger.sync(`[EventSync] Applied ${applied} events, cursor at seq=${maxSeq}`);
   return applied;
+}
+
+export async function reconcilePendingAutomationEvents(
+  expectedOwnerUserId: string,
+) {
+  const result = await reconcilePendingAutomationEventsImpl(expectedOwnerUserId);
+  if (result.applied > 0) await triggerDataRefresh();
+  return result;
 }
 
 // ── Server max seq ────────────────────────────────────────────────────

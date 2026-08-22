@@ -25,7 +25,7 @@ async function loadSentry(dsn: string | undefined) {
   sentryMocks.init.mockClear();
   const { initSentry } = await import("../sentry");
 
-  initSentry();
+  initSentry({ externalDiagnosticsEnabled: true });
 
   return sentryMocks.init.mock.calls[0]?.[0] as
     | {
@@ -57,6 +57,18 @@ describe("Sentry privacy scrubbing", () => {
       await loadSentry(dsn);
       expect(sentryMocks.init, `Sentry.init should not run for DSN: ${dsn}`).not.toHaveBeenCalled();
     }
+  });
+
+  it("does not initialize without an explicit external-diagnostics choice", async () => {
+    vi.resetModules();
+    vi.stubEnv("VITE_SENTRY_DSN", "https://public@example.ingest.sentry.io/1");
+    vi.stubGlobal("__APP_VERSION__", "2.0.0-test");
+    sentryMocks.init.mockClear();
+    const { initSentry } = await import("../sentry");
+
+    initSentry();
+
+    expect(sentryMocks.init).not.toHaveBeenCalled();
   });
 
   it("initializes error/performance monitoring without Session Replay", async () => {
@@ -143,10 +155,11 @@ describe("Sentry privacy scrubbing", () => {
     expect(serialized).not.toContain(tokenValue);
     expect(serialized).not.toContain("person@example.com");
     expect(serialized).not.toContain("203.0.113.10");
-    expect(serialized).toContain("[REDACTED]");
-    expect(event.user).toEqual({ id: "safe-user-id" });
-    expect(event.request?.headers?.["x-safe"]).toBe("ok");
-    expect(event.extra?.safeCount).toBe(2);
+    expect(event.message).toBe("ZF_DIAG_ERROR");
+    expect(event.user).toBeUndefined();
+    expect(event.request).toBeUndefined();
+    expect(event.extra).toBeUndefined();
+    expect(event.contexts).toBeUndefined();
   });
 
   it("redacts tokens from top-level message, exception, transaction, tags, and fingerprint", async () => {
@@ -174,8 +187,10 @@ describe("Sentry privacy scrubbing", () => {
 
     const serialized = JSON.stringify(event);
     expect(serialized).not.toContain(tokenValue);
-    expect(serialized).toContain("[REDACTED]");
-    expect(event.tags?.area).toBe("auth");
+    expect(event.message).toBe("ZF_DIAG_ERROR");
+    expect(event.transaction).toBeUndefined();
+    expect(event.tags).toBeUndefined();
+    expect(event.fingerprint).toBeUndefined();
   });
 
   it("redacts structured journal and wellbeing content while preserving operational metadata", async () => {
@@ -226,26 +241,10 @@ describe("Sentry privacy scrubbing", () => {
     for (const canary of Object.values(privateCanaries)) {
       expect(serialized).not.toContain(canary);
     }
-    expect(serialized).toContain("[REDACTED]");
-    expect(event.extra).toMatchObject({
-      operation: "journal-save",
-      retryCount: 2,
-      journalEntry: "[REDACTED]",
-      mood_note: "[REDACTED]",
-    });
-    expect(event.contexts?.coach).toMatchObject({
-      prompt: "[REDACTED]",
-      errorCode: "coach-timeout",
-    });
-    expect(event.request?.data).toMatchObject({
-      audioTranscript: "[REDACTED]",
-      status: "failed",
-      contentType: "application/json",
-      responseStatus: 503,
-    });
-    expect(event.breadcrumbs?.[0]?.data).toMatchObject({
-      reflection_text: "[REDACTED]",
-      recordCount: 1,
-    });
+    expect(event.message).toBe("ZF_DIAG_ERROR");
+    expect(event.extra).toBeUndefined();
+    expect(event.contexts).toBeUndefined();
+    expect(event.request).toBeUndefined();
+    expect(event.breadcrumbs).toBeUndefined();
   });
 });

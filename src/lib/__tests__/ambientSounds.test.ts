@@ -23,6 +23,7 @@ import {
   isAudioUnlocked,
   getAmbientSoundGenerator,
   isKeyboardAudioUnlockGesture,
+  isTouchAudioUnlockGesture,
   preloadAmbientSounds,
   setupAudioUnlock,
   AmbientSoundGenerator,
@@ -168,6 +169,24 @@ describe('isAudioUnlocked', () => {
 });
 
 describe('setupAudioUnlock', () => {
+  it('does not unlock audio for a drag or scroll gesture', () => {
+    expect(
+      isTouchAudioUnlockGesture(
+        { clientX: 24, clientY: 180 },
+        { clientX: 24, clientY: 72 },
+      ),
+    ).toBe(false);
+  });
+
+  it('still unlocks audio for a stationary tap gesture', () => {
+    expect(
+      isTouchAudioUnlockGesture(
+        { clientX: 24, clientY: 180 },
+        { clientX: 28, clientY: 184 },
+      ),
+    ).toBe(true);
+  });
+
   it('does not attach a global click listener that can delay navigation taps', () => {
     const addSpy = vi.spyOn(document, 'addEventListener');
 
@@ -178,6 +197,14 @@ describe('setupAudioUnlock', () => {
       passive: true,
     });
     expect(addSpy).toHaveBeenCalledWith('touchend', expect.any(Function), {
+      capture: true,
+      passive: true,
+    });
+    expect(addSpy).toHaveBeenCalledWith('touchmove', expect.any(Function), {
+      capture: true,
+      passive: true,
+    });
+    expect(addSpy).toHaveBeenCalledWith('touchcancel', expect.any(Function), {
       capture: true,
       passive: true,
     });

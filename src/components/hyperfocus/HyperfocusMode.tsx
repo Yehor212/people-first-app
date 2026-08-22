@@ -121,19 +121,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   return (
     <div
       data-hyperfocus-theme="night"
-      className="dark fixed inset-y-0 left-0 z-[110] min-h-[var(--app-viewport-height)] w-screen max-w-none overflow-hidden bg-[hsl(var(--focus-cosmic-deep))] text-[hsl(var(--zf-text-strong))]"
-      style={{ colorScheme: "dark" }}
+      className="dark fixed inset-y-0 left-0 z-[110] min-h-[var(--app-viewport-height)] w-screen max-w-none overflow-hidden bg-[hsl(var(--focus-cosmic-deep))] text-[hsl(var(--zf-text-strong))] [color-scheme:dark]"
     >
       <HyperfocusBackground showBreathingAnimation={timer.showBreathingAnimation} t={tRecord} />
 
       {/* Close Button */}
       <button
         onClick={onExit}
-        className="fixed top-4 end-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl motion-safe:transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
-        style={{
-          top: "max(1rem, calc(var(--safe-top) + 0.75rem))",
-          insetInlineEnd: "max(1rem, calc(var(--safe-right) + 0.75rem))",
-        }}
+        className="fixed end-[max(1rem,calc(var(--safe-right)+0.75rem))] top-[max(1rem,calc(var(--safe-top)+0.75rem))] z-[110] flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl bg-secondary p-3 text-slate-600 motion-safe:transition-all hover:bg-secondary/80 active:scale-95 dark:text-white"
         aria-label={t.close}
       >
         <X className="w-6 h-6" />

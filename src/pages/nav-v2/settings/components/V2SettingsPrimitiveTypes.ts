@@ -106,6 +106,7 @@ export interface SettingsSelectFieldProps {
   options: Array<{ value: string | number; label: string }>;
   onChange: (value: string) => void;
   ariaDescribedBy?: string;
+  disabled?: boolean;
 }
 
 export interface SettingsStatusProps {

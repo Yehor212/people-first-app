@@ -8,12 +8,24 @@
  */
 
 import * as Sentry from "@sentry/browser";
-import type { Breadcrumb, BreadcrumbHint, Integration, SeverityLevel } from "@sentry/core";
+import type {
+  Breadcrumb,
+  BreadcrumbHint,
+  ErrorEvent,
+  Integration,
+  SeverityLevel,
+} from "@sentry/core";
 import {
   SENTRY_ALLOW_URLS,
   SENTRY_IGNORE_ERRORS,
   shouldDropSentryEvent,
 } from "@/lib/sentryEventFilters";
+import {
+  createDiagnosticError,
+  DIAGNOSTIC_CODES,
+  sanitizeDiagnosticMetadata,
+  setExternalDiagnosticSinkState,
+} from "@/lib/diagnosticPrivacy";
 
 // Declare global app version
 declare const __APP_VERSION__: string;
@@ -32,56 +44,6 @@ function isUsableSentryDsn(dsn: string | undefined): dsn is string {
   } catch {
     return false;
   }
-}
-
-const SENSITIVE_PATTERNS = [
-  /Bearer\s+[A-Za-z0-9\-_.]+/gi,
-  /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-  /refresh_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-  /id_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-  /token[=:]\s*["']?[A-Za-z0-9\-_.]{20,}["']?/gi,
-  /[#&](access_token|refresh_token|id_token|token)=[^&\s"'}]+/gi,
-] as const;
-
-const SENSITIVE_FIELD_NAME_PATTERN =
-  /(^|[_-])(authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|session[_-]?token|token|jwt|secret|password|cookie)s?($|[_-])/i;
-
-// Structured telemetry must never carry ZenFlow's private writing or wellbeing
-// payloads. Exact generic names cover producer-neutral objects, while semantic
-// prefixes cover the camelCase/snake_case names used by journal, mood, coach,
-// reflection, and audio features. The boundary deliberately does not redact
-// operational names such as `contentType`, `responseStatus`, or `errorMessage`.
-const SENSITIVE_CONTENT_FIELD_NAME_PATTERN =
-  /(^|[_-])((?:journal|diary)[_-]?(?:entry|text|content|note|notes)?|mood[_-]?(?:note|notes|text|content)|(?:reflection|gratitude)[_-]?(?:text|content|note|notes)?|coach[_-]?(?:prompt|response|message|content)|audio[_-]?(?:transcript|note|notes|content)|entry[_-]?(?:title|text|content|note|notes)|content|body|text|title|note|notes|prompt|response|transcript)s?($|[_-])/i;
-
-function scrubString(str: string): string {
-  return SENSITIVE_PATTERNS.reduce((result, pattern) => result.replace(pattern, "[REDACTED]"), str);
-}
-
-function shouldRedactField(fieldName: string): boolean {
-  return (
-    SENSITIVE_FIELD_NAME_PATTERN.test(fieldName) ||
-    SENSITIVE_CONTENT_FIELD_NAME_PATTERN.test(fieldName)
-  );
-}
-
-function scrubSentryPayload(value: unknown, seen = new WeakSet<object>()): unknown {
-  if (typeof value === "string") return scrubString(value);
-  if (value === null || typeof value !== "object") return value;
-  if (value instanceof Date) return value;
-  if (seen.has(value)) return "[Circular]";
-
-  seen.add(value);
-
-  if (Array.isArray(value)) {
-    return value.map((item) => scrubSentryPayload(item, seen));
-  }
-
-  const scrubbed: Record<string, unknown> = {};
-  for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
-    scrubbed[key] = shouldRedactField(key) ? "[REDACTED]" : scrubSentryPayload(nestedValue, seen);
-  }
-  return scrubbed;
 }
 
 function getSentryPlatform(): "android" | "ios" | "web" {
@@ -104,13 +66,25 @@ function getSentryPlatform(): "android" | "ios" | "web" {
  * Initialize Sentry error monitoring
  * Call this as early as possible in the app lifecycle
  */
-export function initSentry(): void {
+export interface SentryInitializationOptions {
+  externalDiagnosticsEnabled: boolean;
+}
+
+export function initSentry(
+  options: SentryInitializationOptions = { externalDiagnosticsEnabled: false }
+): void {
+  if (!options.externalDiagnosticsEnabled) {
+    setExternalDiagnosticSinkState("disabled-by-default");
+    return;
+  }
+
   const dsn = SENTRY_DSN?.trim();
   const detectedPlatform = getSentryPlatform();
   const isNativeRuntime = detectedPlatform !== "web";
 
   // Skip if no valid DSN is configured (development without Sentry or copied placeholders)
   if (!isUsableSentryDsn(dsn)) {
+    setExternalDiagnosticSinkState("unconfigured");
     return;
   }
 
@@ -186,71 +160,31 @@ export function initSentry(): void {
         return null;
       }
 
-      // Remove user email and IP
-      if (event.user) {
-        delete event.user.email;
-        delete event.user.ip_address;
-        delete event.user.username;
+      // Redaction heuristics are insufficient for personal writing. Build a
+      // fixed-code event from a tiny allowlist and discard every caller-owned
+      // string, stack, request, breadcrumb, identity, context and fingerprint.
+      const safeEvent: ErrorEvent = {
+        type: undefined,
+        timestamp: event.timestamp,
+        level: event.level,
+        platform: event.platform,
+        release: event.release,
+        environment: event.environment,
+        message: DIAGNOSTIC_CODES.error,
+        exception: {
+          values: [
+            {
+              type: "ZenFlowDiagnosticError",
+              value: DIAGNOSTIC_CODES.error,
+            },
+          ],
+        },
+      };
+      const mutableEvent = event as unknown as Record<string, unknown>;
+      for (const key of Object.keys(mutableEvent)) {
+        delete mutableEvent[key];
       }
-
-      // Scrub top-level strings too. Auth callback failures and manually
-      // captured messages can carry token-bearing URLs outside request fields.
-      if (event.message) {
-        event.message = scrubString(event.message);
-      }
-      if (event.transaction) {
-        event.transaction = scrubString(event.transaction);
-      }
-      if (event.exception) {
-        event.exception = scrubSentryPayload(event.exception) as typeof event.exception;
-      }
-      if (event.fingerprint) {
-        event.fingerprint = scrubSentryPayload(event.fingerprint) as typeof event.fingerprint;
-      }
-      if (event.tags) {
-        event.tags = scrubSentryPayload(event.tags) as typeof event.tags;
-      }
-
-      // Scrub breadcrumb messages, request metadata, and caller-provided context.
-      if (event.breadcrumbs) {
-        event.breadcrumbs = event.breadcrumbs.map((bc) => ({
-          ...bc,
-          message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data ? (scrubSentryPayload(bc.data) as Breadcrumb["data"]) : bc.data,
-        }));
-      }
-
-      // Scrub request URLs and payload-like fields.
-      if (event.request?.url) {
-        event.request.url = scrubString(event.request.url);
-      }
-      if (event.request?.query_string) {
-        const scrubbedQueryString = scrubSentryPayload(event.request.query_string);
-        event.request.query_string =
-          typeof scrubbedQueryString === "string"
-            ? scrubbedQueryString
-            : JSON.stringify(scrubbedQueryString);
-      }
-      if (event.request?.cookies) {
-        event.request.cookies = scrubSentryPayload(event.request.cookies) as typeof event.request.cookies;
-      }
-      if (event.request?.data) {
-        event.request.data = scrubSentryPayload(event.request.data);
-      }
-      if (event.request?.headers) {
-        const headers: Record<string, string> = {};
-        for (const [key, value] of Object.entries(event.request.headers)) {
-          headers[key] = shouldRedactField(key) ? "[REDACTED]" : scrubString(String(value));
-        }
-        event.request.headers = headers;
-      }
-
-      if (event.extra) {
-        event.extra = scrubSentryPayload(event.extra) as typeof event.extra;
-      }
-      if (event.contexts) {
-        event.contexts = scrubSentryPayload(event.contexts) as typeof event.contexts;
-      }
+      Object.assign(mutableEvent, safeEvent);
 
       // Don't send events in development
       if (IS_DEV) {
@@ -268,6 +202,7 @@ export function initSentry(): void {
       },
     },
   });
+  setExternalDiagnosticSinkState("enabled-with-explicit-choice");
 }
 
 /**
@@ -286,9 +221,9 @@ export type ErrorCategory =
  * Capture a custom error with context
  */
 export function captureError(error: Error, context?: Record<string, unknown>): void {
-  Sentry.captureException(error, {
-    extra: context,
-  });
+  void error;
+  void context;
+  Sentry.captureException(createDiagnosticError(DIAGNOSTIC_CODES.error));
 }
 
 /**
@@ -300,26 +235,11 @@ export function captureErrorWithCategory(
   category: ErrorCategory,
   context?: Record<string, unknown>
 ): void {
+  void error;
+  void context;
   Sentry.withScope((scope) => {
     scope.setTag("category", category);
-
-    // Add extra context based on error type
-    if (error.name === "AbortError") {
-      scope.setTag("error_type", "abort");
-      scope.setExtra("abort_reason", error.message);
-    } else if (error.message.includes("Database deleted")) {
-      scope.setTag("error_type", "database_deleted");
-      scope.setExtra("likely_cause", "User cleared site data or Safari ITP");
-    } else if (error.message.includes("chunk") || error.message.includes("module")) {
-      scope.setTag("error_type", "chunk_load");
-      scope.setExtra("likely_cause", "Version mismatch after deployment");
-    }
-
-    if (context) {
-      scope.setExtras(context);
-    }
-
-    Sentry.captureException(error);
+    Sentry.captureException(createDiagnosticError(DIAGNOSTIC_CODES.error));
   });
 }
 
@@ -332,33 +252,30 @@ export function addCategorizedBreadcrumb(
   data?: Record<string, unknown>,
   level: SeverityLevel = "info"
 ): void {
+  const safeData = sanitizeDiagnosticMetadata({ ...data, category });
   Sentry.addBreadcrumb({
     category,
-    message,
+    message: DIAGNOSTIC_CODES.breadcrumb,
     level,
-    data,
+    ...(safeData ? { data: safeData } : {}),
   });
+  void message;
 }
 
 /**
  * Capture a custom message
  */
 export function captureMessage(message: string, level: SeverityLevel = "info"): void {
-  Sentry.captureMessage(message, level);
+  void message;
+  Sentry.captureMessage(DIAGNOSTIC_CODES.message, level);
 }
 
 /**
  * Set user context (anonymized)
  */
 export function setUserContext(userId: string): void {
-  // Hash userId to avoid sending raw PII to Sentry (GDPR pseudonymization)
-  let hash = 5381;
-  for (let i = 0; i < userId.length; i++) {
-    hash = ((hash << 5) + hash + userId.charCodeAt(i)) >>> 0;
-  }
-  Sentry.setUser({
-    id: `u-${hash.toString(36)}`,
-  });
+  void userId;
+  Sentry.setUser(null);
 }
 
 /**
@@ -373,5 +290,21 @@ export function clearUserContext(): void {
  * instead of Sentry packages directly.
  */
 export function addBreadcrumb(breadcrumb: Breadcrumb, hint?: BreadcrumbHint): void {
-  Sentry.addBreadcrumb(breadcrumb, hint);
+  const safeCategory = breadcrumb.category;
+  const safeCategoryValue: ErrorCategory =
+    safeCategory === "audio" ||
+    safeCategory === "cache" ||
+    safeCategory === "version-mismatch" ||
+    safeCategory === "storage" ||
+    safeCategory === "network" ||
+    safeCategory === "sync"
+      ? safeCategory
+      : "general";
+  addCategorizedBreadcrumb(
+    safeCategoryValue,
+    DIAGNOSTIC_CODES.breadcrumb,
+    undefined,
+    breadcrumb.level ?? "info"
+  );
+  void hint;
 }

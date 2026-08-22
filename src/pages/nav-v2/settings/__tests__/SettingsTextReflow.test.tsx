@@ -181,7 +181,7 @@ describe("Settings text reflow contracts", () => {
     }
   });
 
-  it("gives long toggle descriptions the full narrow row without splitting words", () => {
+  it("stacks narrow toggle copy without overlap and restores the full description row at 360px", () => {
     render(
       <ToggleRow
         icon={Settings}
@@ -196,14 +196,20 @@ describe("Settings text reflow contracts", () => {
     const row = screen.getByTestId("canonical-toggle-row");
     const title = screen.getByText("Benachrichtigungen");
     const description = screen.getByText("Benachrichtigungsberechtigung erforderlich.");
+    const toggle = screen.getByRole("switch", { name: "Benachrichtigungen" });
     const icon = row.querySelector<HTMLElement>("svg")?.parentElement;
 
     expect(title.className).toContain("[overflow-wrap:break-word]");
     expect(title.className).toContain("[hyphens:manual]");
     expect(title).toHaveClass("col-start-2", "col-end-3", "row-start-1");
-    expect(description).toHaveClass("col-start-2", "col-end-4", "row-start-2");
+    expect(description).toHaveClass("col-start-2", "col-end-3", "row-start-3");
+    expect(description.className).toContain("min-[360px]:col-end-4");
+    expect(description.className).toContain("min-[360px]:row-start-2");
     expect(description.className).toContain("[overflow-wrap:break-word]");
     expect(description.className).toContain("[hyphens:manual]");
+    expect(toggle).toHaveClass("col-start-2", "row-start-2", "justify-self-end");
+    expect(toggle.className).toContain("min-[360px]:col-start-3");
+    expect(toggle.className).toContain("min-[360px]:row-start-1");
     expect(row).toHaveClass("rounded-none", "border-x-0", "border-t-0", "bg-transparent");
     expect(row.className).not.toContain("shadow-");
     expect(icon).not.toBeNull();

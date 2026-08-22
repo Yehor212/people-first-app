@@ -6,10 +6,9 @@
  */
 
 import { useState } from 'react';
-import { Play, Gift, Loader2 } from 'lucide-react';
+import { Play, Loader2 } from 'lucide-react';
 import { useAds } from '@/contexts/AdContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { type AdSafeZone } from '@/lib/adConfig';
 import { cn } from '@/lib/utils';
 
 function formatTemplate(template: string, values: Record<string, string | number>): string {
@@ -20,12 +19,8 @@ function formatTemplate(template: string, values: Record<string, string | number
 }
 
 interface RewardedAdPromptProps {
-  /** Context where the prompt is shown */
-  context: 'daily_rewards' | 'post_focus' | 'companion' | 'optional_rewards';
-  /** Custom CTA label override */
-  ctaLabel?: string;
-  /** Custom reward description override */
-  rewardLabel?: string;
+  /** The only initial placement is the dedicated, user-opened rewards surface. */
+  context: 'optional_rewards';
   /** Callback after successful reward */
   onRewarded?: (treats: number) => void;
   /** Compact mode (smaller button) */
@@ -34,17 +29,7 @@ interface RewardedAdPromptProps {
   className?: string;
 }
 
-const REWARDED_PROMPT_SAFE_ZONE_BY_CONTEXT: Record<RewardedAdPromptProps['context'], AdSafeZone> = {
-  daily_rewards: 'daily_rewards',
-  post_focus: 'post_focus',
-  companion: 'companion_rewards',
-  optional_rewards: 'optional_rewards',
-};
-
 export function RewardedAdPrompt({
-  context,
-  ctaLabel,
-  rewardLabel,
   onRewarded,
   compact = false,
   className,
@@ -63,7 +48,7 @@ export function RewardedAdPrompt({
     setLoading(true);
 
     try {
-      const earned = await watchRewardedAd(REWARDED_PROMPT_SAFE_ZONE_BY_CONTEXT[context]);
+      const earned = await watchRewardedAd('optional_rewards');
       if (earned) {
         setJustRewarded(true);
         onRewarded?.(rewardTreats);
@@ -79,14 +64,7 @@ export function RewardedAdPrompt({
     { treats: rewardTreats },
   );
   const watchLabel = tx.adWatch || 'Watch optional ad';
-  const resolvedCtaLabel = ctaLabel || defaultCtaLabel;
-  const resolvedRewardLabel = rewardLabel || defaultRewardLabel;
-
-  const contextIcon = context === 'daily_rewards' ? (
-    <Gift className={cn(compact ? 'w-4 h-4' : 'w-5 h-5')} />
-  ) : (
-    <Play className={cn(compact ? 'w-4 h-4' : 'w-5 h-5')} />
-  );
+  const contextIcon = <Play className={cn(compact ? 'w-4 h-4' : 'w-5 h-5')} />;
 
   if (compact) {
     return (
@@ -95,7 +73,7 @@ export function RewardedAdPrompt({
         onClick={handleWatch}
         disabled={loading}
         aria-busy={loading ? 'true' : undefined}
-        aria-label={`${resolvedCtaLabel}. ${resolvedRewardLabel}`}
+        aria-label={`${defaultCtaLabel}. ${defaultRewardLabel}`}
         className={cn(
           'flex min-h-[44px] items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium motion-safe:transition-all',
           'bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 active:scale-95',
@@ -104,8 +82,8 @@ export function RewardedAdPrompt({
         )}
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : contextIcon}
-        <span>{resolvedCtaLabel}</span>
-        <span className="font-bold">{resolvedRewardLabel}</span>
+        <span>{defaultCtaLabel}</span>
+        <span className="font-bold">{defaultRewardLabel}</span>
       </button>
     );
   }
@@ -122,10 +100,10 @@ export function RewardedAdPrompt({
           </div>
           <div className="min-w-0">
             <p className="whitespace-normal break-words text-sm font-medium text-foreground [hyphens:auto] [overflow-wrap:break-word]">
-              {resolvedCtaLabel}
+              {defaultCtaLabel}
             </p>
             <p className="text-xs text-muted-foreground">
-              {resolvedRewardLabel}
+              {defaultRewardLabel}
             </p>
           </div>
         </div>
@@ -135,7 +113,7 @@ export function RewardedAdPrompt({
           onClick={handleWatch}
           disabled={loading}
           aria-busy={loading ? 'true' : undefined}
-          aria-label={`${resolvedCtaLabel}. ${resolvedRewardLabel}`}
+          aria-label={`${defaultCtaLabel}. ${defaultRewardLabel}`}
           className={cn(
             'min-h-[44px] w-full min-w-0 whitespace-normal break-words px-4 py-2 rounded-xl font-medium text-sm motion-safe:transition-all [hyphens:auto] [overflow-wrap:break-word] min-[420px]:w-auto min-[420px]:shrink-0',
             'bg-amber-700 text-white hover:bg-amber-800 active:scale-95',

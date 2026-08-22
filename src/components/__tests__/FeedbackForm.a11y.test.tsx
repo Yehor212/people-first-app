@@ -32,7 +32,15 @@ vi.mock("@/hooks/useThrottledCallback", () => ({
   useThrottledCallback: (callback: () => void) => callback,
 }));
 vi.mock("@/lib/feedbackService", () => feedbackServiceMock);
-vi.mock("@/lib/platform", () => ({ platform: "web" }));
+vi.mock("@/lib/platform", () => ({
+  isNative: false,
+  platform: "web",
+  isAndroid: false,
+  isIos: false,
+  isWeb: true,
+  isDesktopViewport: false,
+  getAppAudioPlatform: () => "web",
+}));
 
 describe("FeedbackForm accessibility", () => {
   beforeEach(() => {

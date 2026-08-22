@@ -97,10 +97,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   const ButtonIcon = useFallback ? ExternalLink : Download;
 
   return (
-    <div
-      className="fixed inset-x-4 top-4 z-[250] motion-safe:animate-slide-down"
-      style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}
-    >
+    <div className="fixed inset-x-4 top-[calc(env(safe-area-inset-top)+1rem)] z-[250] motion-safe:animate-slide-down">
       <div className="max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-gradient-to-r from-primary to-primary/90 p-4 text-primary-foreground shadow-lg">
         <div className="flex items-start gap-3">
           <div className="shrink-0 rounded-xl bg-primary-foreground/20 p-2">

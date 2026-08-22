@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "source": "src/components/AICoachChat.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Coach dialog registers through useModalA11y while it is open."
+    },
+    {
+      "source": "src/components/AchievementsPanel.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Selected achievement detail owns Back before the panel below it."
+    },
+    {
+      "source": "src/components/Celebrations.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Celebration overlays register their active close callback."
+    },
+    {
+      "source": "src/components/ChallengeModal.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Open challenge dialog registers its onOpenChange close path."
+    },
+    {
+      "source": "src/components/ChangelogPanel.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Portal changelog is registered by the shared modal hook."
+    },
+    {
+      "source": "src/components/DatabaseRecoveryDialog.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Recovery alert permits Back only while a retry is not running."
+    },
+    {
+      "source": "src/components/ErrorBoundary.tsx",
+      "ownership": "escape-stack",
+      "expected": "consume-required-recovery",
+      "note": "The focused error alert handles Escape when a close owner exists; otherwise recovery remains visible."
+    },
+    {
+      "source": "src/components/FeatureUnlock.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Feature-unlock celebration registers its explicit close action."
+    },
+    {
+      "source": "src/components/FeedbackButton.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Quick-feedback dialog is owned by useModalState."
+    },
+    {
+      "source": "src/components/FeedbackForm.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Detailed feedback portal registers through useModalA11y."
+    },
+    {
+      "source": "src/components/FocusReflectionModal.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Focus reflection uses the shared modal-close owner."
+    },
+    {
+      "source": "src/components/LegalModal.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Legal portal registers through useModalA11y."
+    },
+    {
+      "source": "src/components/MindfulMoment.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Mindful prompt uses the shared modal-close owner."
+    },
+    {
+      "source": "src/components/OnboardingOverlay.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Welcome overlay registers its mark-seen close path through useModalA11y."
+    },
+    {
+      "source": "src/components/ProgressStoriesViewer.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Story viewer registers its active close action."
+    },
+    {
+      "source": "src/components/TimeHelper.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Time helper owns Back for its always-mounted modal instance."
+    },
+    {
+      "source": "src/components/UpdateRequiredDialog.tsx",
+      "ownership": "registered-lifo",
+      "expected": "consume-required-recovery",
+      "note": "Required-update alert routes Back through its policy-aware requestClose guard."
+    },
+    {
+      "source": "src/components/WeeklyReport.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Weekly report registers its close action while visible."
+    },
+    {
+      "source": "src/components/auth/JournalMagicLinkConfirmGate.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Magic-link confirmation owns Back only when cancellation is safe."
+    },
+    {
+      "source": "src/components/breathing-exercise/BreathingExercise.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Expanded breathing exercise registers through useModalA11y."
+    },
+    {
+      "source": "src/components/challenges-panel/ChallengesPanel.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Challenges panel registers the supplied panel close callback."
+    },
+    {
+      "source": "src/components/desktop/CommandPalette.tsx",
+      "ownership": "escape-stack",
+      "expected": "close-top-layer",
+      "note": "Command palette owns Escape on window while open."
+    },
+    {
+      "source": "src/components/friends-panel/FriendsPanel.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Friends panel registers its close action before underlying navigation."
+    },
+    {
+      "source": "src/components/habit-hub/AddHabitSheet.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Habit creation first closes its nested form, then the sheet."
+    },
+    {
+      "source": "src/components/habit-hub/HabitDetailSheet.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Habit detail closes delete confirmation before the sheet."
+    },
+    {
+      "source": "src/components/hyperfocus/HyperfocusMode.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Hyperfocus closes its DND prompt before exiting the mode."
+    },
+    {
+      "source": "src/components/leaderboard/Leaderboard.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Leaderboard registers its open-state close action."
+    },
+    {
+      "source": "src/components/navigation-v2/DrawerV2.tsx",
+      "ownership": "escape-stack",
+      "expected": "close-top-layer",
+      "note": "Navigation drawer captures Escape in the window capture phase."
+    },
+    {
+      "source": "src/components/quests-panel/QuestsPanel.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Quests panel registers Back when a close owner is supplied."
+    },
+    {
+      "source": "src/components/schedule/AddEventModal.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Schedule creation dialog registers its close action."
+    },
+    {
+      "source": "src/components/schedule/EventDetailsModal.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Schedule details dialog registers its close action."
+    },
+    {
+      "source": "src/components/share/UnifiedShareModal.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Share portal registers onOpenChange(false) while open."
+    },
+    {
+      "source": "src/components/state-of-mind/StateOfMindModal.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "State-of-mind flow registers its policy-aware close handler."
+    },
+    {
+      "source": "src/components/stats/ring-detail-sheet/RingDetailSheet.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Ring detail sheet registers through useModalA11y."
+    },
+    {
+      "source": "src/features/automation/AutomationHistorySheet.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Automation history closes confirmations before the sheet owner."
+    },
+    {
+      "source": "src/features/journal/ExportPickerDialog.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Journal export picker registers its guarded close action."
+    },
+    {
+      "source": "src/features/journal/FloatingMediaLayer.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Floating media closes the active context or resize dialog first."
+    },
+    {
+      "source": "src/features/journal/JournalEntryCard.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Swipe-delete confirmation registers before the journal list."
+    },
+    {
+      "source": "src/features/journal/JournalEntryEditor.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Editor confirmations and recording overlay use shared modal ownership."
+    },
+    {
+      "source": "src/features/journal/JournalEntryList.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Journal list registers spaces and nested active-mode owners."
+    },
+    {
+      "source": "src/features/journal/JournalEntryViewer.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Entry delete confirmation owns Back before the viewer."
+    },
+    {
+      "source": "src/features/journal/JournalHubShell.tsx",
+      "ownership": "escape-stack",
+      "expected": "close-top-layer",
+      "note": "Hub shell resolves customize and practice layers in top-first Escape order."
+    },
+    {
+      "source": "src/features/journal/JournalModule.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Journal module registers each active nested dialog in explicit priority order."
+    },
+    {
+      "source": "src/features/journal/JournalPhotoGallery.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Photo gallery uses shared modal ownership for the active gallery layer."
+    },
+    {
+      "source": "src/features/journal/JournalPhotoPicker.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Photo picker registers through useModalA11y."
+    },
+    {
+      "source": "src/features/journal/JournalStickerPackManager.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Sticker pack manager registers through useModalA11y."
+    },
+    {
+      "source": "src/features/journal/JournalStickerPicker.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Sticker picker registers through useModalA11y."
+    },
+    {
+      "source": "src/features/journal/JournalTemplatePicker.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Template picker registers through useModalA11y."
+    },
+    {
+      "source": "src/features/journal/KeyboardShortcutsOverlay.tsx",
+      "ownership": "shared-modal-hook",
+      "expected": "close-top-layer",
+      "note": "Keyboard help overlay registers through useModalA11y."
+    },
+    {
+      "source": "src/features/journal/RemovePasswordConfirmDialog.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Password-removal confirmation registers its safe cancel path."
+    },
+    {
+      "source": "src/pages/nav-v2/MoodFirstRunHint.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "First-run mood hint registers its dismiss action while visible."
+    },
+    {
+      "source": "src/pages/nav-v2/habits/HabitCreateSheet.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "V2 habit creation returns from the custom form to Quick Add before closing the drawer."
+    },
+    {
+      "source": "src/pages/nav-v2/habits/hero/HabitActionSheet.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Habit actions register an explicit dismiss owner and never activate the first action on Back."
+    },
+    {
+      "source": "src/pages/nav-v2/habits/hero/HeroTemplateLibrarySheet.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "The V2 habit template library registers its close action while the drawer is open."
+    },
+    {
+      "source": "src/pages/nav-v2/settings/components/V2SettingsFormPrimitives.tsx",
+      "ownership": "registered-lifo",
+      "expected": "close-top-layer",
+      "note": "Settings confirmation form registers its cancel action."
+    }
+  ]
+}

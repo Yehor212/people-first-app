@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { zenMotion } from "@/lib/animationUtils";
+import { isAndroid } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { V2HabitPictogram } from "@/components/habit-pictogram/V2HabitPictogram";
 import { Button } from "@/components/ui/button";
@@ -494,10 +495,13 @@ export function HabitCreationForm({
       className={cn(
         "mb-4 p-4 rounded-2xl relative overflow-hidden",
         isElevatedForm
-          ? "border border-[hsl(var(--zf-role-energy)/0.28)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.11),transparent_34%),radial-gradient(circle_at_86%_4%,hsl(var(--zf-role-release)/0.09),transparent_30%),linear-gradient(155deg,hsl(var(--zf-night-0)/0.99)_0%,hsl(var(--zf-night-1)/0.97)_58%,hsl(var(--zf-night-0)/0.99)_100%)] shadow-[0_24px_80px_-56px_hsl(var(--zf-role-energy)/0.68)] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]"
-          : "bg-secondary"
+          ? "border border-[hsl(var(--zf-role-energy)/0.28)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.11),transparent_34%),radial-gradient(circle_at_86%_4%,hsl(var(--zf-role-release)/0.09),transparent_30%),linear-gradient(155deg,hsl(var(--zf-night-0)/0.99)_0%,hsl(var(--zf-night-1)/0.97)_58%,hsl(var(--zf-night-0)/0.99)_100%)] shadow-[0_24px_80px_-56px_hsl(var(--zf-role-energy)/0.68)]"
+          : "bg-secondary",
+        isElevatedForm && !isAndroid
+          ? "backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]"
+          : null
       )}
-      initial={{ opacity: 0, y: 20 }}
+      initial={isAndroid ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={zenMotion.gentle}
       onTouchStart={(e) => e.stopPropagation()}
@@ -505,13 +509,7 @@ export function HabitCreationForm({
       onTouchEnd={(e) => e.stopPropagation()}
     >
       {isElevatedForm && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse at 18% 0%, hsl(var(--zf-role-energy) / 0.10) 0%, transparent 38%), radial-gradient(ellipse at 88% 8%, hsl(var(--zf-role-release) / 0.08) 0%, transparent 34%)",
-          }}
-        />
+        <div className="zf-habit-form-aura pointer-events-none absolute inset-0" />
       )}
 
       <motion.button
@@ -693,13 +691,7 @@ export function HabitCreationForm({
           data-preview-mode={settingsMode === "advanced" ? "habit-lab" : "default"}
         >
           {isElevatedForm && (
-            <div
-              className="absolute inset-0 pointer-events-none [animation:form-shimmer_3s_linear_2s_infinite]"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent 0%, hsl(0 0% 100% / 0.03) 50%, transparent 100%)",
-              }}
-            />
+            <div className="zf-habit-form-shimmer pointer-events-none absolute inset-0 [animation:form-shimmer_3s_linear_2s_infinite]" />
           )}
           <p
             className={cn(
@@ -797,7 +789,9 @@ export function HabitCreationForm({
         style={isElevatedForm ? { boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.05)" } : undefined}
         autoFocus
         onFocus={(e) => {
+          if (isV2Presentation) return;
           const el = e.target;
+          if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
           scrollTimeoutRef.current = setTimeout(
             () => el.scrollIntoView({ behavior: "smooth", block: "center" }),
             300

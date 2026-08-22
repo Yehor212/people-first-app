@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-08-09T15:37:08Z",
+  "releaseStatus": "STOP",
+  "device": {
+    "avd": "codex_pixel_7_api36",
+    "api": 36,
+    "android": 16,
+    "baseResolution": "1080x2400",
+    "baseDensityDpi": 420
+  },
+  "androidTests": {
+    "command": "./gradlew :app:testDebugUnitTest :app:connectedDebugAndroidTest --rerun-tasks",
+    "exitCode": 0,
+    "jvm": {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "instrumentation": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "targetedActivityRecreation": {
+      "command": "./android/gradlew -p android :app:connectedDebugAndroidTest --rerun-tasks --console=plain -Pandroid.testInstrumentationRunnerArguments.class=com.zenflow.app.AndroidBackDispatcherInstrumentedTest",
+      "pixel7Api36": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "receiptPath": "output/android21/device/t083-lifecycle/instrumentation/pixel7-api36.xml",
+        "receiptSha256": "15a8ec0b14263b870c91b71f4a7081842d42fcaf7bf8f53fa5cc78ed0201df3e"
+      },
+      "pixel9FoldApi36": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "receiptPath": "output/android21/device/t083-lifecycle/instrumentation/pixel9-fold-api36.xml",
+        "receiptSha256": "7e69b25df5bf3595ff84c8309aa961e1e3464e8bcb04bebe9cf369b89903d0ee"
+      },
+      "verdict": "PASS"
+    },
+    "latestCandidateInstrumentation": {
+      "command": "./gradlew :app:connectedDebugAndroidTest --console=plain -Pandroid.testInstrumentationRunnerArguments.class=com.zenflow.app.AndroidBackDispatcherInstrumentedTest",
+      "device": "codex_pixel_9_pro_fold_api36",
+      "runtimeApkSha256": "5b2f19938cfb954d1226fbfd354dd190ed6f8b0949776bf30568f6c760c4f913",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "coverage": [
+        "native overlay/navigation ownership and root delegation",
+        "predictive callback start/progress/cancel without commit",
+        "platform-routed touchscreen cancellation with ACTION_CANCEL and triggerBack=false",
+        "conservative recreation state",
+        "MainActivity and Capacitor WebView recreation"
+      ],
+      "receiptPath": "output/android21/t083-android-back-full-class-api36.xml",
+      "receiptSha256": "a967c84e219a2ecb6cbc80eb906db34928263746efb642b0df9b3653d0fa831e",
+      "logPath": "output/android21/t083-android-back-full-class-api36-gradle.txt",
+      "logSha256": "c5eaad4aede9cf186ff83d268bcceda64866fd451de00b5cfa27d523269ef152",
+      "platformLogPath": "output/android21/t083-android-back-full-class-api36-logcat.txt",
+      "platformLogSha256": "2a05c328639d656d04c448ba63e4660305a8c1717096fb919bb3846d59727bd7",
+      "verdict": "PASS"
+    }
+  },
+  "backOwnership": {
+    "matrixEntries": 55,
+    "matrixSha256": "394d58677e345fe2e4a423f66d2cb83038873477be3625f8eb787e3d3f5151ef",
+    "navigationStateSha256": "5c9abc50a7bccf4e5b50c19eec5eb7d62f45100825e2159d0831ef2c68016540",
+    "nativePluginSha256": "5095510fe1f76b35e4eedbe8659982d1cd920f68ef9813808cd2fbc3ae9d8ca8",
+    "webHandlerSha256": "a95e60f56c45000d5e6cc767565eae0b7ae6d81328e3ff990ec3fefe6616b251",
+    "platformInjectedCancellation": {
+      "device": "codex_pixel_9_pro_fold_api36, Android 16 / API 36",
+      "method": "Instrumentation UiAutomation touchscreen sequence from the left edge ending in MotionEvent.ACTION_CANCEL",
+      "assertions": [
+        "the same MainActivity instance remains active at the assertion boundary",
+        "the active accessibility root remains owned by com.zenflow.app",
+        "Android ShellBackPreview records event action 3 and mTriggerBack=false",
+        "Android CoreBackPreview records triggerBack=false"
+      ],
+      "receiptPath": "output/android21/t083-android-back-full-class-api36.xml",
+      "receiptSha256": "a967c84e219a2ecb6cbc80eb906db34928263746efb642b0df9b3653d0fa831e",
+      "platformLogPath": "output/android21/t083-android-back-full-class-api36-logcat.txt",
+      "platformLogSha256": "2a05c328639d656d04c448ba63e4660305a8c1717096fb919bb3846d59727bd7",
+      "verdict": "PASS",
+      "boundary": "This is a deterministic platform-level emulator injection, not a human finger gesture or physical-device acceptance. The instrumentation runner closes its Activity after the assertions, so the post-test Launcher screenshot is diagnostic only."
+    }
+  },
+  "rootBack": {
+    "gestural": {
+      "input": "edge swipe from x=1 to x=500 over 450ms",
+      "beforeTopActivity": "com.zenflow.app/.MainActivity",
+      "afterTopActivity": "com.google.android.apps.nexuslauncher/.NexusLauncherActivity",
+      "verdict": "PASS"
+    },
+    "threeButton": {
+      "input": "KEYCODE_BACK",
+      "beforeTopActivity": "com.zenflow.app/.MainActivity",
+      "afterTopActivity": "com.google.android.apps.nexuslauncher/.NexusLauncherActivity",
+      "verdict": "PASS"
+    },
+    "latestCandidateThreeButton": {
+      "runtimeApkSha256": "5e83a6c001734957df39db92bd8b110bb251fab4878fcbf8ac3bb75aee28fa0d",
+      "input": "KEYCODE_BACK from the public root after the in-app destination returned to https://localhost/",
+      "beforeTopActivity": "com.zenflow.app/.MainActivity",
+      "afterTopActivity": "com.google.android.apps.nexuslauncher/.NexusLauncherActivity",
+      "receiptPath": "output/android21/t083-api36-final-root-back-top-activity.txt",
+      "receiptSha256": "35f20d59d4a653604c044d5619a3deecbae890701b37791a645586cd887a6cb9",
+      "screenshotPath": "output/android21/t083-api36-final-root-back-home.png",
+      "screenshotSha256": "f03ad49e9070388b84594a212324e470fa529e016c6fbac67a67bd8988fa3c97",
+      "verdict": "PASS"
+    }
+  },
+  "lifecycleAndExternalReturn": {
+    "activityRecreation": {
+      "method": "ActivityScenario<MainActivity>.recreate() against the installed debug candidate",
+      "assertions": [
+        "MainActivity instance identity changes",
+        "Capacitor bridge exists before and after recreation",
+        "bridge WebView exists before and after recreation"
+      ],
+      "devices": [
+        "codex_pixel_7_api36",
+        "codex_pixel_9_pro_fold_api36"
+      ],
+      "verdict": "PASS"
+    },
+    "externalSettingsReturn": {
+      "method": "android.settings.APPLICATION_DETAILS_SETTINGS followed by system Back",
+      "settingsTopActivity": "com.android.settings/.spa.SpaActivity",
+      "returnedTopActivity": "com.zenflow.app/.MainActivity",
+      "sameProcessAndActivityInstance": true,
+      "welcomeAndContinueRestored": true,
+      "settingsScreenshotPath": "output/android21/device/t083-lifecycle/in-settings.png",
+      "settingsScreenshotSha256": "1d41d158069c97c0b25e35d45b741ea33c2aad08b5c0d3edb7bbf127ed0c09e8",
+      "afterScreenshotPath": "output/android21/device/t083-lifecycle/after-settings.png",
+      "afterScreenshotSha256": "ae08f983dda29fc012fe7d537921da07996b8123ecd80a0fe4c20e375e29cb9e",
+      "verdict": "PASS"
+    },
+    "webViewReload": {
+      "method": "Chrome DevTools Protocol Page.reload on the installed Capacitor WebView",
+      "loadEventObserved": true,
+      "immediateState": "React UI not hydrated yet",
+      "boundedRecoverySeconds": 10,
+      "welcomeAndContinueRecovered": true,
+      "errorBoundaryObserved": false,
+      "receiptPath": "output/android21/device/t083-lifecycle/webview-reload-runtime.json",
+      "receiptSha256": "5f52fd88f862e7f14f7207eed184a0020291f9a06e341a6ffcfdc5183d74b2c6",
+      "screenshotPath": "output/android21/device/t083-lifecycle/after-webview-reload.png",
+      "screenshotSha256": "7c1e5be238b6b7e53192d822e980d63066c9b9574689546946bf355308936bad",
+      "verdict": "PASS"
+    },
+    "latestCandidateLifecycle": {
+      "runtimeApkSha256": "5e83a6c001734957df39db92bd8b110bb251fab4878fcbf8ac3bb75aee28fa0d",
+      "processDeath": {
+        "method": "am force-stop followed by explicit MainActivity cold launch",
+        "beforePid": 4700,
+        "stoppedPid": null,
+        "afterPid": 5053,
+        "launchState": "COLD",
+        "receiptPath": "output/android21/t083-api36-final-process-death.txt",
+        "receiptSha256": "f680155de52e3a3202028f39dbde0f6f6efe953dd0c12291488dee5065f0e8b3",
+        "recoveredScreenshotPath": "output/android21/t083-api36-final-process-death-recovered.png",
+        "recoveredScreenshotSha256": "9c8f5102ea351b14c5133d37e2f4b4eb718f46ca2c8ac6377448fadc3d318338",
+        "verdict": "PASS"
+      },
+      "externalSettingsReturn": {
+        "settingsTopActivity": "com.android.settings/.spa.SpaActivity",
+        "returnedTopActivity": "com.zenflow.app/.MainActivity",
+        "sameProcess": true,
+        "beforePid": 5053,
+        "afterPid": 5053,
+        "receiptPath": "output/android21/t083-api36-final-settings-return.txt",
+        "receiptSha256": "28a4d2fb87bf1b573e0dd7f790cb7b09798cb7e2dd835846bcca3e4db1e83e7b",
+        "settingsScreenshotPath": "output/android21/t083-api36-final-settings.png",
+        "settingsScreenshotSha256": "5d29bad4148b07d3c708b6c0683773988733fa9f929c0ce0f49655a1319d9ea6",
+        "returnScreenshotPath": "output/android21/t083-api36-final-settings-return.png",
+        "returnScreenshotSha256": "9c8f5102ea351b14c5133d37e2f4b4eb718f46ca2c8ac6377448fadc3d318338",
+        "verdict": "PASS"
+      },
+      "webViewReload": {
+        "method": "Chrome DevTools Protocol Page.reload on the installed Capacitor WebView",
+        "loadEvents": 1,
+        "boundedRecoveryMs": 10014,
+        "readyState": "complete",
+        "authScreenRecovered": true,
+        "errorBoundaryObserved": false,
+        "receiptPath": "output/android21/t083-api36-final-webview-reload.json",
+        "receiptSha256": "a37378877f27dae007ed0684bac5c0406fe7fc06403a8bd8f3480f565195f0b3",
+        "screenshotPath": "output/android21/t083-api36-final-webview-reload.png",
+        "screenshotSha256": "ec32cc3016d36fad90211daa1a9690f16570fe05e10bcface687ac92e484d3d1",
+        "verdict": "PASS"
+      }
+    },
+    "localHabitImeAndNestedBack": {
+      "runtimeApkSha256": "1abc34479f7325b3ea8a1d5f4217b8f7cc7dc66cc04083e89c692b95f080647e",
+      "variant": "debug",
+      "device": "codex_pixel_9_pro_fold_api36 with 1080x2400 / 420dpi phone override",
+      "renderer": "host GPU",
+      "route": "https://localhost/habits?nav=v2&navLayout=phone&dev=true",
+      "authenticatedSession": false,
+      "productionUserDataUsed": false,
+      "typedValue": "ExactAPKBack",
+      "ime": {
+        "inputFullyVisible": true,
+        "screenshotPath": "output/android21/t083-api36-exact-apk-ime.png",
+        "screenshotSha256": "5cf34750db61f0d7ae7c5929c32e651dfd2840eac1a95c1d80b0effd43c72e43",
+        "verdict": "PASS"
+      },
+      "firstBack": {
+        "outcome": "IME dismissed; custom form and typed value preserved; sheet restored to 827.238 CSS px within an 839.238 CSS px visual viewport",
+        "statePath": "output/android21/t083-api36-exact-apk-back-1.json",
+        "stateSha256": "8beb6cfa6059bd7969fcc64c72d7b8819cfb97e3db2e61756b3d87e4813fd137",
+        "screenshotPath": "output/android21/t083-api36-exact-apk-back-1.png",
+        "screenshotSha256": "68c4c2d087430b9ed8729a7283e41eeeb6f2d25b005e84f5c50699dbc8a56648",
+        "verdict": "PASS"
+      },
+      "secondBack": {
+        "outcome": "custom form returned to a visible Quick Add picker without closing the sheet; scrollTop=0",
+        "statePath": "output/android21/t083-api36-exact-apk-back-2.json",
+        "stateSha256": "ace4b1d7b6716fb6167c7b5ef53a2ac3214908b99676b5f02cc84737603494ec",
+        "screenshotPath": "output/android21/t083-api36-exact-apk-back-2.png",
+        "screenshotSha256": "4e548bf08269b447210d1713a3fc261f17a0eb8d70e9eb6aa0e473962065b719",
+        "verdict": "PASS"
+      },
+      "thirdBack": {
+        "outcome": "creation sheet closed; Habits page remained active",
+        "statePath": "output/android21/t083-api36-exact-apk-back-3.json",
+        "stateSha256": "eafedc071ed21acf5bcf165edb46d851cf23f3d7516e899c6eec391218587b48",
+        "verdict": "PASS"
+      },
+      "logcatPath": "output/android21/t083-api36-exact-apk-logcat.txt",
+      "logcatSha256": "d8dadad5dd354bd1ff0d932e9bbc65a09d9096f7665884a52484ee84ce5d8c97",
+      "appAnrOrCrashMatched": false,
+      "sourceSha256": "9a6e37c455acbb1351236bbc07216cf258862b114a21557ce56c20434b32c77c",
+      "testSha256": "32e1727e8284916e3cc2b1b8067ce1e21875d02ca8a7d5b4dce2d903cc962216",
+      "verdict": "PASS",
+      "boundary": "This proves a real local Capacitor WebView and production habit form under the localhost-only dev gate. It does not prove an authenticated session, OAuth return, a physical device or a user-cancelled system gesture."
+    },
+    "authImeAndOauth": {
+      "signInConfigurationAvailable": false,
+      "googleButtonEnabled": false,
+      "telegramButtonEnabled": false,
+      "publicEditableFieldAvailable": false,
+      "observedMessage": "Sign-in setup is not available. Please try again later.",
+      "screenshotPath": "output/android21/device/t083-lifecycle/sign-in-before-ime.png",
+      "screenshotSha256": "0a22b0b9e745ea7ce38f1c24c0b1fce4ce9695b6518903b2e05beea92134f11d",
+      "uiAutomatorPath": "output/android21/device/t083-lifecycle/sign-in-before-ime.xml",
+      "uiAutomatorSha256": "ba762f917a7763ed03b56c87d6d3e1e9a02eeefccf8f6bfa927e8e30915f7812",
+      "imeVerdict": "UNVERIFIED",
+      "oauthReturnVerdict": "UNVERIFIED",
+      "reason": "The candidate intentionally fails closed without auth configuration, so no OAuth flow or private editor can be exercised without owner credentials/configuration."
+    },
+    "taskVerdict": "PARTIAL"
+  },
+  "adMobRuntime": {
+    "capturedAtUtc": "2026-08-09T15:37:08Z",
+    "scope": "API 36 emulator, raw Capacitor AdMob 8.0.0 bridge, Google publisher test configuration only",
+    "build": {
+      "variant": "debug",
+      "installedApkSha256": "36e7c74e6bbd445a55184b38598e270accbb69660e286b217fad3e568a7e052f",
+      "installedHashMatchesBuild": true,
+      "versionName": "2.1.0",
+      "versionCode": 35,
+      "targetSdk": 36,
+      "googleSampleApplicationIdObserved": true,
+      "googleRewardedDemoUnitUsed": true,
+      "sdkLogConfirmedTestDevice": true,
+      "productionAdMobAccountTraffic": false
+    },
+    "officialSources": [
+      "https://developers.google.com/admob/android/test-ads",
+      "https://developers.google.com/admob/android/rewarded",
+      "https://developers.google.com/admob/android/reference/com/google/android/gms/ads/AdRequest",
+      "https://developers.google.com/admob/android/reference/privacy/kotlin/com/google/android/ump/ConsentDebugSettings.DebugGeography",
+      "https://github.com/capacitor-community/admob"
+    ],
+    "ump": {
+      "otherGeography": {
+        "status": "NOT_REQUIRED",
+        "isConsentFormAvailable": false,
+        "canRequestAds": true,
+        "privacyOptionsRequirementStatus": "NOT_REQUIRED",
+        "verdict": "PASS"
+      },
+      "eeaGeographyBeforeChoice": {
+        "status": "REQUIRED",
+        "isConsentFormAvailable": true,
+        "canRequestAds": false,
+        "privacyOptionsRequirementStatus": "REQUIRED",
+        "verdict": "PASS"
+      },
+      "consentForm": {
+        "screenshotPath": "output/android21/device/ump-eea-required-api36.png",
+        "screenshotSha256": "f2471390cea7e2e7f2dee63339e139780a85483fe77ef7f965988fbcd2b011d5",
+        "uiAutomatorPath": "output/android21/device/ump-eea-required-api36.xml",
+        "uiAutomatorSha256": "74732810b094ca103e9bd51d4393c066ce1b6e492e3ea067402605b1bdea92fd",
+        "visibleChoices": [
+          "Consent",
+          "Do not consent",
+          "Manage options"
+        ],
+        "clippedOrObscuredControlsObserved": false,
+        "verdict": "PASS"
+      },
+      "declineResult": {
+        "status": "OBTAINED",
+        "canRequestAds": true,
+        "privacyOptionsRequirementStatus": "REQUIRED",
+        "verdict": "PASS"
+      },
+      "privacyOptions": {
+        "openedAfterDecline": true,
+        "closedWithoutPluginError": true,
+        "screenshotPath": "output/android21/device/ump-privacy-options-api36.png",
+        "screenshotSha256": "f2471390cea7e2e7f2dee63339e139780a85483fe77ef7f965988fbcd2b011d5",
+        "uiAutomatorPath": "output/android21/device/ump-privacy-options-api36.xml",
+        "uiAutomatorSha256": "74732810b094ca103e9bd51d4393c066ce1b6e492e3ea067402605b1bdea92fd",
+        "verdict": "PASS"
+      },
+      "consentResult": {
+        "status": "OBTAINED",
+        "canRequestAds": true,
+        "privacyOptionsRequirementStatus": "REQUIRED",
+        "verdict": "PASS"
+      },
+      "offlineRefresh": {
+        "networkScope": "test emulator airplane mode only; connectivity restored and validated after the check",
+        "error": "Error making request.",
+        "verdict": "PASS"
+      }
+    },
+    "rewarded": {
+      "load": {
+        "googleRewardedDemoUnit": true,
+        "testDeviceLog": "This request is sent from a test device.",
+        "loadedEventObserved": true,
+        "verdict": "PASS"
+      },
+      "visual": {
+        "testAdLabelObserved": true,
+        "screenshotPath": "output/android21/device/rewarded-google-test-ad-api36.png",
+        "screenshotSha256": "d1ad392d296660979400d5b3ad2e3ac856646f352599ba2f5f0bb63c62aad3e7",
+        "uiAutomatorPath": "output/android21/device/rewarded-google-test-ad-api36.xml",
+        "uiAutomatorSha256": "3244474919569741f40adb855694dbcdc502e32dfd6a0be90ceeffae10f1807c",
+        "verdict": "PASS"
+      },
+      "earned": {
+        "showedEventObserved": true,
+        "rewardedEventObserved": true,
+        "rewardType": "coins",
+        "rewardAmount": 10,
+        "verdict": "PASS"
+      },
+      "dismissed": {
+        "dismissedEventObserved": true,
+        "dismissedAfterReward": true,
+        "dismissedBeforeReward": "UNVERIFIED",
+        "verdict": "PASS"
+      },
+      "exactCandidateBackBeforeReward": {
+        "runtimeApkSha256": "36e7c74e6bbd445a55184b38598e270accbb69660e286b217fad3e568a7e052f",
+        "installedHashMatchesBuild": true,
+        "showedAtEpochMs": 1786289699055,
+        "androidBackIssuedImmediatelyAfterShowed": true,
+        "rewardedAtEpochMs": 1786289712548,
+        "dismissedAtEpochMs": 1786289752133,
+        "rewardDelayAfterShowedMs": 13493,
+        "dismissedBeforeReward": false,
+        "receiptPath": "output/android21/device/20260809-exact-candidate-rewarded-runtime.json",
+        "receiptSha256": "50f18007684e0d1b03e07ea4dcb9673ba03802c181bb79c8cf75fb0f9be4b250",
+        "verdict": "PASS",
+        "boundary": "Android Back did not dismiss this observed Google demo creative before reward. This is not evidence that every eligible rewarded creative exposes a dismiss-before-reward path."
+      },
+      "offlineLoadFailure": {
+        "failedToLoadEventObserved": true,
+        "sdkErrorCode": 0,
+        "networkRestoredAndValidated": true,
+        "verdict": "PASS"
+      },
+      "noFill": {
+        "verdict": "UNVERIFIED",
+        "reason": "Google's rewarded demo unit is intentionally configured to fill. An official mismatched-format demo-unit negative control also loaded, so no SDK no-fill response was observed and no production unit was used to manufacture one."
+      }
+    },
+    "taskVerdict": "PARTIAL"
+  },
+  "runtimeVerdicts": {
+    "predictiveBackStateMachine": "PASS",
+    "nativeDispatcherInstrumentation": "PASS",
+    "activityRecreation": "PASS",
+    "webViewReload": "PASS",
+    "externalSettingsReturn": "PASS",
+    "localHabitImeAndNestedBack": "PASS",
+    "publicRootGestureBack": "PASS",
+    "publicRootThreeButtonBack": "PASS",
+    "dialogInventory": "PASS",
+    "umpDebugGeographyAndPrivacyOptions": "PASS",
+    "rewardedGoogleTestAdEarned": "PASS",
+    "rewardedGoogleTestAdDismissed": "PASS",
+    "rewardedNoFill": "UNVERIFIED",
+    "adMobRuntimeTask": "PARTIAL",
+    "predictiveCancellationGestureEmulatorInjection": "PASS",
+    "predictiveCancellationGesture": "UNVERIFIED",
+    "authenticatedNestedLayers": "UNVERIFIED",
+    "externalOauthReturn": "UNVERIFIED",
+    "imeWithPrivateEditors": "UNVERIFIED",
+    "physicalDevice": "UNVERIFIED",
+    "releaseReadiness": "STOP"
+  },
+  "notes": [
+    "UMP and rewarded checks used only Google's sample application and demo ad configuration; the emulator and SDK both identified the request as test traffic.",
+    "The exact installed debug candidate matched the built APK at SHA-256 36e7c74e6bbd445a55184b38598e270accbb69660e286b217fad3e568a7e052f and emitted Loaded, Showed, Rewarded and Dismissed with Google's demo unit. Android Back after Showed was ignored until reward; a genuinely eligible dismiss-before-reward path and a real SDK no-fill response remain UNVERIFIED, so T101 stays open.",
+    "Root Back was exercised on an installed debug candidate without a signed-in account or production data.",
+    "The localhost-only habit editor proves IME visibility and three-level nested Back ordering on API 36. A platform-routed emulator injection now proves the ACTION_CANCEL/triggerBack=false branch; a human finger-cancelled gesture, authenticated nested layers and OAuth return remain separate UNVERIFIED boundaries.",
+    "MainActivity recreation now has real ActivityScenario evidence on two API 36 AVDs, and external Settings return plus bounded WebView reload recovery were visually inspected on the Pixel 7 AVD.",
+    "OAuth return could not be exercised because this candidate has no auth configuration and provider buttons fail closed. The unauthenticated local habit editor was exercised without production data, but authenticated private-editor IME remains UNVERIFIED.",
+    "The exact signed release AAB remains unavailable and no Play upload was performed."
+  ]
+}

@@ -6,6 +6,7 @@
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:extractNativeLibs="false"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -79,16 +80,16 @@
                     android:host="diary" />
             </intent-filter>
 
-            <!-- OWASP L22: Android App Links for verified challenge invites -->
-            <!-- Requires hosting /.well-known/assetlinks.json on zenflow.app with SHA256 fingerprint -->
+            <!-- Canonical Android App Link for code-only social invitation locators. -->
+            <!-- assetlinks.json is hosted at the origin root; app code still rejects other paths/types. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="zenflow.app"
-                    android:pathPrefix="/challenge" />
+                    android:host="yehor212.github.io"
+                    android:path="/people-first-app/" />
             </intent-filter>
 
         </activity>

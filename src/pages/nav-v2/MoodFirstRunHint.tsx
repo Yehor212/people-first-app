@@ -1,9 +1,10 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { haptics } from "@/lib/haptics";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import "./MoodFirstRunHint.css";
 
 /**
@@ -45,6 +46,12 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const [visible, setVisible] = useState(false);
+  const dismiss = useCallback(() => {
+    setVisible(false);
+    writeDismissed();
+  }, []);
+
+  useBackHandler(visible, dismiss);
 
   useEffect(() => {
     if (!eligible) return;
@@ -56,21 +63,14 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
     if (!visible) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        setVisible(false);
-        writeDismissed();
+        dismiss();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [visible]);
+  }, [dismiss, visible]);
 
   if (!visible || typeof document === "undefined") return null;
-
-  const dismiss = () => {
-    void haptics.tabChanged();
-    setVisible(false);
-    writeDismissed();
-  };
 
   return createPortal(
     <div
@@ -114,7 +114,10 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
           type="button"
           data-testid="mood-first-run-dismiss"
           className="mood-first-run-dismiss"
-          onClick={dismiss}
+          onClick={() => {
+            void haptics.tabChanged();
+            dismiss();
+          }}
         >
           {tx.orbFirstRunGotIt || "Got it"}
         </button>

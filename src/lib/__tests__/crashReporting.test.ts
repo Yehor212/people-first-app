@@ -1,180 +1,145 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ─── In-memory localStorage mock ────────────────────────────────
 let mockLocalStorage: Record<string, unknown> = {};
 
-vi.mock('@/lib/platform', () => ({ isNative: false }));
-
-vi.mock('../logger', () => ({
+vi.mock("@/lib/platform", () => ({ isNative: false }));
+vi.mock("../logger", () => ({
   logger: { log: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
-
-vi.mock('../safeJson', () => ({
-  safeLocalStorageGet: vi.fn(<T>(key: string, defaultValue: T): T => {
-    return key in mockLocalStorage ? (mockLocalStorage[key] as T) : defaultValue;
-  }),
+vi.mock("../safeJson", () => ({
+  safeLocalStorageGet: vi.fn(<T>(key: string, defaultValue: T): T =>
+    key in mockLocalStorage ? (mockLocalStorage[key] as T) : defaultValue
+  ),
   safeLocalStorageSet: vi.fn((key: string, value: unknown): boolean => {
     mockLocalStorage[key] = value;
     return true;
   }),
 }));
 
-import { crashReporting, recordError, withCrashReporting } from '@/lib/crashReporting';
-import { logger } from '../logger';
-import { safeLocalStorageSet } from '../safeJson';
-import { SK } from '@/lib/storageKeys';
+import { crashReporting, recordError, withCrashReporting } from "@/lib/crashReporting";
+import {
+  DIAGNOSTIC_CODES,
+  LOCAL_CRASH_RECORD_LIMIT,
+  resetExternalDiagnosticSinkStateForTests,
+} from "@/lib/diagnosticPrivacy";
+import { logger } from "../logger";
+import { SK } from "@/lib/storageKeys";
 
 beforeEach(() => {
   mockLocalStorage = {};
   vi.clearAllMocks();
+  resetExternalDiagnosticSinkStateForTests();
 });
 
-// ─── crashReporting.log ─────────────────────────────────────────
+describe("privacy-safe crash reporting", () => {
+  it("logs and stores only a fixed code", () => {
+    const canary = "PRIVATE_CRASH_CANARY";
+    const error = new Error(canary);
+    error.stack = `Error: ${canary}\n at ${canary}:1:1`;
 
-describe('crashReporting.log', () => {
-  it('calls logger.log with the message', () => {
-    crashReporting.log('test message');
-    expect(logger.log).toHaveBeenCalledWith('[Crash] Log:', 'test message');
-  });
-});
+    crashReporting.log(canary);
+    crashReporting.recordError(error, {
+      content: canary,
+      componentStack: canary,
+      retryable: true,
+      count: 2,
+    });
 
-// ─── crashReporting.recordError ─────────────────────────────────
-
-describe('crashReporting.recordError', () => {
-  it('calls logger.error with the error message', () => {
-    const error = new Error('something failed');
-    crashReporting.recordError(error);
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'something failed');
-  });
-
-  it('logs context when provided', () => {
-    const error = new Error('context error');
-    const context = { component: 'SettingsPage' };
-    crashReporting.recordError(error, context);
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Context:', context);
-  });
-
-  it('stores error entry in localStorage', () => {
-    const error = new Error('stored error');
-    crashReporting.recordError(error);
-    expect(safeLocalStorageSet).toHaveBeenCalledWith(
-      SK.CRASH_LOG,
-      expect.arrayContaining([
-        expect.objectContaining({ message: 'stored error' }),
-      ]),
-    );
+    expect(logger.log).toHaveBeenCalledWith(DIAGNOSTIC_CODES.crash);
+    expect(logger.error).toHaveBeenCalledWith(DIAGNOSTIC_CODES.crash);
+    expect(JSON.stringify(mockLocalStorage)).not.toContain(canary);
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([
+      expect.objectContaining({
+        schemaVersion: 1,
+        code: DIAGNOSTIC_CODES.crash,
+        metadata: { retryable: true, count: 2 },
+      }),
+    ]);
   });
 
-  it('appends to existing entries in localStorage', () => {
+  it("discards legacy content-bearing entries instead of migrating them", () => {
     mockLocalStorage[SK.CRASH_LOG] = [
-      { message: 'old error', time: '2026-02-16T00:00:00.000Z' },
+      {
+        message: "PRIVATE_LEGACY_MESSAGE",
+        stack: "PRIVATE_LEGACY_STACK",
+        context: { content: "PRIVATE_LEGACY_CONTEXT" },
+        time: "2026-02-16T00:00:00.000Z",
+      },
     ];
-    crashReporting.recordError(new Error('new error'));
 
-    const stored = mockLocalStorage[SK.CRASH_LOG] as Array<{ message: string }>;
-    expect(stored).toHaveLength(2);
-    expect(stored[0].message).toBe('old error');
-    expect(stored[1].message).toBe('new error');
+    crashReporting.recordError(new Error("PRIVATE_NEW_MESSAGE"));
+
+    const serialized = JSON.stringify(mockLocalStorage[SK.CRASH_LOG]);
+    expect(serialized).not.toContain("PRIVATE_LEGACY");
+    expect(serialized).not.toContain("PRIVATE_NEW_MESSAGE");
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([
+      expect.objectContaining({ code: DIAGNOSTIC_CODES.crash }),
+    ]);
   });
 
-  it('caps entries at 20 (keeps last 20)', () => {
-    const existing = Array.from({ length: 20 }, (_, i) => ({
-      message: `error-${i}`,
-      time: '2026-02-16T00:00:00.000Z',
-    }));
-    mockLocalStorage[SK.CRASH_LOG] = existing;
+  it("keeps at most the documented number of safe local records", () => {
+    for (let index = 0; index < LOCAL_CRASH_RECORD_LIMIT + 3; index += 1) {
+      crashReporting.recordError(new Error(`private-${index}`), { count: index });
+    }
 
-    crashReporting.recordError(new Error('error-20'));
-
-    const stored = mockLocalStorage[SK.CRASH_LOG] as Array<{ message: string }>;
-    expect(stored).toHaveLength(20);
-    // First entry should be error-1 (error-0 was dropped), last should be error-20
-    expect(stored[0].message).toBe('error-1');
-    expect(stored[19].message).toBe('error-20');
+    const stored = mockLocalStorage[SK.CRASH_LOG] as unknown[];
+    expect(stored).toHaveLength(LOCAL_CRASH_RECORD_LIMIT);
+    expect(JSON.stringify(stored)).not.toContain("private-");
   });
 
-  it('does not log context when not provided', () => {
-    crashReporting.recordError(new Error('no context'));
-    // logger.error should be called once (error message only), not with context
-    expect(logger.error).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'no context');
+  it("provides clear and explicit external-sink state controls", () => {
+    mockLocalStorage[SK.ERROR_LOG] = [{ legacy: "private" }];
+    mockLocalStorage[SK.CRASH_LOG] = [{ legacy: "private" }];
+
+    expect(crashReporting.getState()).toEqual({
+      externalSink: "disabled-by-default",
+      localRecordLimit: LOCAL_CRASH_RECORD_LIMIT,
+    });
+
+    crashReporting.clearLocalRecords();
+
+    expect(mockLocalStorage[SK.ERROR_LOG]).toEqual([]);
+    expect(mockLocalStorage[SK.CRASH_LOG]).toEqual([]);
   });
-});
 
-// ─── crashReporting.setUserId ───────────────────────────────────
-
-describe('crashReporting.setUserId', () => {
-  it('logs the user ID', () => {
-    crashReporting.setUserId('user-123');
-    expect(logger.log).toHaveBeenCalledWith('[Crash] User ID set:', 'user-123');
-  });
-
-  it('logs null when user ID is null', () => {
-    crashReporting.setUserId(null);
-    expect(logger.log).toHaveBeenCalledWith('[Crash] User ID set:', 'null');
-  });
-});
-
-// ─── crashReporting.setEnabled ──────────────────────────────────
-
-describe('crashReporting.setEnabled', () => {
-  it('logs the enabled state', () => {
+  it("does not log owner identifiers or arbitrary custom keys", () => {
+    crashReporting.setUserId("PRIVATE_OWNER_CANARY");
+    crashReporting.setCustomKey("private", "PRIVATE_CUSTOM_CANARY");
     crashReporting.setEnabled(true);
-    expect(logger.log).toHaveBeenCalledWith('[Crash] Reporting enabled:', true);
+
+    expect(logger.log).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });
 
-// ─── crashReporting.setCustomKey ────────────────────────────────
+describe("recordError helper", () => {
+  it.each([
+    new Error("PRIVATE_ERROR_CANARY"),
+    "PRIVATE_STRING_CANARY",
+    { nested: ["PRIVATE_OBJECT_CANARY"] },
+  ])("normalizes arbitrary thrown values without serializing them", (value) => {
+    recordError(value, { content: "PRIVATE_CONTEXT_CANARY" });
 
-describe('crashReporting.setCustomKey', () => {
-  it('logs the custom key and value', () => {
-    crashReporting.setCustomKey('app_version', '1.5.0');
-    expect(logger.log).toHaveBeenCalledWith('[Crash] Custom key:', 'app_version', '=', '1.5.0');
+    expect(logger.error).toHaveBeenCalledWith(DIAGNOSTIC_CODES.crash);
+    expect(JSON.stringify(mockLocalStorage)).not.toContain("PRIVATE_");
   });
 });
 
-// ─── recordError (standalone helper) ────────────────────────────
-
-describe('recordError (standalone helper)', () => {
-  it('passes Error objects directly to crashReporting.recordError', () => {
-    const error = new Error('direct error');
-    recordError(error, { source: 'test' });
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'direct error');
-  });
-
-  it('wraps string errors in Error objects', () => {
-    recordError('string failure');
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'string failure');
-  });
-
-  it('wraps non-string non-Error values via JSON.stringify', () => {
-    recordError({ code: 404 });
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', '{"code":404}');
-  });
-});
-
-// ─── withCrashReporting ─────────────────────────────────────────
-
-describe('withCrashReporting', () => {
-  it('passes through successful return value', async () => {
-    const fn = async () => 42;
+describe("withCrashReporting", () => {
+  it("passes through successful return values and arguments", async () => {
+    const fn = async (a: unknown, b: unknown) => `${String(a)}-${String(b)}`;
     const wrapped = withCrashReporting(fn);
-    await expect(wrapped()).resolves.toBe(42);
+    await expect(wrapped("x", "y")).resolves.toBe("x-y");
   });
 
-  it('records error and rethrows on failure', async () => {
+  it("records a fixed code and rethrows the original failure", async () => {
     const fn = async () => {
-      throw new Error('async boom');
+      throw new Error("PRIVATE_ASYNC_CANARY");
     };
-    const wrapped = withCrashReporting(fn, { action: 'test' });
+    const wrapped = withCrashReporting(fn, { content: "PRIVATE_CONTEXT_CANARY" });
 
-    await expect(wrapped()).rejects.toThrow('async boom');
-    expect(logger.error).toHaveBeenCalledWith('[Crash] Error recorded:', 'async boom');
-  });
-
-  it('passes arguments through to the wrapped function', async () => {
-    const fn = async (a: unknown, b: unknown) => (a as string) + '-' + (b as string);
-    const wrapped = withCrashReporting(fn);
-    await expect(wrapped('x', 'y')).resolves.toBe('x-y');
+    await expect(wrapped()).rejects.toThrow("PRIVATE_ASYNC_CANARY");
+    expect(logger.error).toHaveBeenCalledWith(DIAGNOSTIC_CODES.crash);
+    expect(JSON.stringify(mockLocalStorage)).not.toContain("PRIVATE_");
   });
 });

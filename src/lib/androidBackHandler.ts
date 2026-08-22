@@ -1,30 +1,40 @@
 /**
  * Android Back Button Handler
- * Implements double-tap-to-exit functionality and proper navigation handling
+ * Publishes owned-layer state to the AndroidX predictive Back bridge.
  */
 
-import { App } from "@capacitor/app";
 import type { PluginListenerHandle } from "@capacitor/core";
 import { isNative, isAndroid } from "@/lib/platform";
+import { AndroidBackBridge, type AndroidBackInvokedEvent } from "./androidBackBridge";
 import { logger } from "./logger";
-import { SK } from "./storageKeys";
-import { storageGetRaw } from "./safeJson";
-
-// Track last back button press timestamp
-let lastBackPress = 0;
-const DOUBLE_TAP_DELAY = 2000; // 2 seconds
 
 // Store listener handle for targeted removal (instead of removeAllListeners)
 let backButtonListenerHandle: PluginListenerHandle | null = null;
-
-// Track if we're showing exit toast
-let isShowingExitToast = false;
-let toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
-let toastFadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let modalObserver: MutationObserver | null = null;
+// Public entry/auth screens and the hydrated Orb shell are system-root unless
+// a navigation owner explicitly publishes otherwise. Native starts
+// conservative until this module initializes, then Android owns back-to-home.
+let navigationIsRoot = true;
 
 // Modal close callback registry for React state-based modals
-type ModalCloseCallback = () => boolean; // returns true if modal was closed
-const modalCloseCallbacks: ModalCloseCallback[] = [];
+type ModalCloseCallback = (event: AndroidBackInvokedEvent) => boolean;
+type BackOwnerLayer = "overlay" | "navigation";
+
+interface BackOwnerRegistration {
+  callback: ModalCloseCallback;
+  layer: BackOwnerLayer;
+}
+
+interface BackOwnerRegistrationOptions {
+  /**
+   * Navigation is deliberately below every modal/sheet/dialog owner. React
+   * child effects can register before their shell parent, so registration
+   * order alone cannot express Android's visual Back stack.
+   */
+  layer?: BackOwnerLayer;
+}
+
+const modalCloseCallbacks: BackOwnerRegistration[] = [];
 
 /**
  * Register a callback to be called when back button is pressed.
@@ -32,73 +42,18 @@ const modalCloseCallbacks: ModalCloseCallback[] = [];
  * Return true from callback if you handled the back press.
  * Returns an unregister function.
  */
-export function registerModalCloseCallback(callback: ModalCloseCallback): () => void {
-  modalCloseCallbacks.push(callback);
+export function registerModalCloseCallback(
+  callback: ModalCloseCallback,
+  { layer = "overlay" }: BackOwnerRegistrationOptions = {},
+): () => void {
+  const registration: BackOwnerRegistration = { callback, layer };
+  modalCloseCallbacks.push(registration);
+  void syncNativeBackState();
   return () => {
-    const index = modalCloseCallbacks.indexOf(callback);
+    const index = modalCloseCallbacks.indexOf(registration);
     if (index > -1) modalCloseCallbacks.splice(index, 1);
+    void syncNativeBackState();
   };
-}
-
-/**
- * Show toast notification (simple implementation without dependencies)
- */
-function showExitToast(message: string) {
-  if (isShowingExitToast) return;
-
-  isShowingExitToast = true;
-
-  // Create toast element
-  const toast = document.createElement("div");
-  toast.className = "android-exit-toast";
-  toast.textContent = message;
-  toast.setAttribute("role", "status");
-  toast.setAttribute("aria-live", "polite");
-  toast.style.cssText = `
-    position: fixed;
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-    left: 50%;
-    transform: translateX(-50%);
-    background: hsl(var(--popover));
-    color: hsl(var(--popover-foreground));
-    padding: 12px 24px;
-    border-radius: 24px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    z-index: 310;
-    animation: toast-slide-up 0.3s ease-out;
-    box-shadow: 0 4px 12px hsl(var(--popover) / 0.3);
-  `;
-
-  document.body.appendChild(toast);
-
-  // Clear any existing timeouts
-  if (toastTimeoutId) clearTimeout(toastTimeoutId);
-  if (toastFadeTimeoutId) clearTimeout(toastFadeTimeoutId);
-
-  // Remove toast after delay
-  toastTimeoutId = setTimeout(() => {
-    // Check if toast still exists in DOM before animating
-    if (!toast.parentNode) {
-      isShowingExitToast = false;
-      return;
-    }
-    toast.style.animation = "toast-fade-out 0.2s ease-out";
-    toastFadeTimeoutId = setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-      isShowingExitToast = false;
-    }, 200);
-  }, DOUBLE_TAP_DELAY);
-}
-
-/**
- * Check if user is on root route (main app screen)
- */
-function isOnRootRoute(): boolean {
-  const path = window.location.pathname;
-  return path === "/" || path === "/index.html";
 }
 
 /**
@@ -168,70 +123,60 @@ function isModalOpen(): boolean {
 }
 
 /**
- * Try to close the topmost modal
+ * Publish whether ZenFlow currently owns an in-app Back destination.
  */
-function closeTopModal(): boolean {
-  // First, try registered callbacks (for React state-based modals)
-  // Iterate in reverse order (LIFO) so the most recently opened modal closes first
-  for (let i = modalCloseCallbacks.length - 1; i >= 0; i--) {
-    if (modalCloseCallbacks[i]()) {
-      logger.log("[AndroidBackHandler] Modal closed via registered callback");
-      return true;
-    }
-  }
-
-  // Fallback: Try to find and click close buttons in DOM
-  const closeButtonSelectors = [
-    '[data-radix-dismissable-layer] button[aria-label*="close" i]',
-    '[role="dialog"] button[aria-label*="close" i]',
-    '[role="dialog"] button[aria-label*="закрыть" i]',
-    '[role="dialog"] button:first-child', // Usually close button
-    ".dialog-close",
-    ".modal-close",
-    "[data-close-button]",
-  ];
-
-  for (const selector of closeButtonSelectors) {
-    const button = document.querySelector(selector);
-    if (button && (button as HTMLElement).offsetParent !== null) {
-      (button as HTMLElement).click();
-      return true;
-    }
-  }
-
-  // Try ESC key as fallback
-  const escEvent = new KeyboardEvent("keydown", {
-    key: "Escape",
-    code: "Escape",
-    keyCode: 27,
-    bubbles: true,
-    cancelable: true,
+async function syncNativeBackState(): Promise<void> {
+  if (!isNative || !isAndroid || !backButtonListenerHandle) return;
+  const hasVisibleLayer = typeof document !== "undefined" && isModalOpen();
+  await AndroidBackBridge.setState({
+    canConsume: !navigationIsRoot || modalCloseCallbacks.length > 0 || hasVisibleLayer,
+    hasVisibleLayer,
   });
-  document.dispatchEvent(escEvent);
+}
 
-  return false;
+export async function publishAndroidBackNavigationState({
+  isRoot,
+}: {
+  isRoot: boolean;
+}): Promise<void> {
+  navigationIsRoot = isRoot;
+  await syncNativeBackState();
 }
 
 /**
- * Get translation for "Press again to exit" message
+ * Try to close the topmost modal or let the registered navigation owner act.
  */
-function getExitMessage(): string {
-  try {
-    const lang = storageGetRaw(SK.LANGUAGE, "en");
-    const messages: Record<string, string> = {
-      en: "Press again to exit",
-      uk: "Натисніть ще раз для виходу",
-      es: "Presiona de nuevo para salir",
-      de: "Erneut drücken zum Beenden",
-      fr: "Appuyez à nouveau pour quitter",
-      ja: "もう一度押すと終了します",
-      ar: "اضغط مرة أخرى للخروج",
-      he: "לחץ שוב כדי לצאת",
-    };
-    return messages[lang] || messages.en;
-  } catch {
-    return "Press again to exit";
+function closeTopModal(event: AndroidBackInvokedEvent): boolean {
+  // Overlay ownership always precedes primary navigation, independent of
+  // incidental React effect order. Owners remain LIFO within each layer.
+  const layers: readonly BackOwnerLayer[] = ["overlay", "navigation"];
+  for (const layer of layers) {
+    for (let i = modalCloseCallbacks.length - 1; i >= 0; i--) {
+      const owner = modalCloseCallbacks[i];
+      if (owner.layer === layer && owner.callback(event)) {
+        logger.log("[AndroidBackHandler] Back consumed by registered owner");
+        return true;
+      }
+    }
   }
+
+  // A visible unregistered layer may still own Escape (for example a Radix
+  // dialog). Dispatching Escape lets its own top-layer stack decide what closes;
+  // clicking a DOM-selected close button could close a lower nested layer.
+  // Consume this Back press so it cannot also navigate history or exit.
+  if (isModalOpen()) {
+    const escEvent = new KeyboardEvent("keydown", {
+      key: "Escape",
+      code: "Escape",
+      keyCode: 27,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(escEvent);
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -251,50 +196,62 @@ export async function initAndroidBackHandler(): Promise<void> {
 
   logger.log("[AndroidBackHandler] Initializing...");
 
-  // Store handle for targeted removal later
-  backButtonListenerHandle = await App.addListener("backButton", ({ canGoBack }) => {
+  // AndroidX invokes this only after a committed gesture. A cancelled predictive
+  // gesture produces no JavaScript side effect.
+  backButtonListenerHandle = await AndroidBackBridge.addListener("backInvoked", (event) => {
+    const { canGoBack } = event;
     logger.log("[AndroidBackHandler] Back button pressed, canGoBack:", canGoBack);
 
-    // Priority 1: Try to close modal via callbacks or DOM detection
-    // closeTopModal() first tries registered callbacks, then DOM-based closing
+    // WebView/Radix/Vaul may dismiss a visible layer before the Capacitor
+    // listener receives the same committed Back. The native dispatch snapshot
+    // fences that action so it cannot also traverse history or exit.
+    if (event.hadVisibleLayer && !isModalOpen()) {
+      logger.log("[AndroidBackHandler] Layer already dismissed by committed Back");
+      void syncNativeBackState();
+      return;
+    }
+
     if (modalCloseCallbacks.length > 0 || isModalOpen()) {
       logger.log("[AndroidBackHandler] Modal/panel may be open, attempting to close");
-      if (closeTopModal()) {
+      if (closeTopModal(event)) {
+        void syncNativeBackState();
         return;
       }
     }
 
-    // Priority 2: Navigate back only when Capacitor reports a real WebView history entry.
-    // Cold-start deep links can land on /diary without history; history.back() would no-op.
-    if (!isOnRootRoute() && canGoBack) {
-      logger.log("[AndroidBackHandler] Not on root route, navigating back");
+    if (!navigationIsRoot && canGoBack) {
+      logger.log("[AndroidBackHandler] Navigating WebView history");
       window.history.back();
       return;
     }
 
-    // Priority 3: Double-tap to exit on root route
-    const now = Date.now();
-    const timeSinceLastPress = now - lastBackPress;
-
-    if (timeSinceLastPress < DOUBLE_TAP_DELAY) {
-      // Second tap within delay - exit app
-      logger.log("[AndroidBackHandler] Double tap detected, exiting app");
-      void App.exitApp();
-    } else {
-      // First tap - show toast and update timestamp
-      logger.log("[AndroidBackHandler] First tap, showing exit toast");
-      lastBackPress = now;
-      showExitToast(getExitMessage());
-    }
+    // A root event can arrive only during the brief state-publication window.
+    // Consume this committed event without exiting, then hand subsequent root
+    // gestures back to Android. A no-history non-root owner is expected to move
+    // the shell to Orb through its registered callback.
+    void syncNativeBackState();
   });
+
+  if (typeof MutationObserver !== "undefined" && typeof document !== "undefined") {
+    modalObserver = new MutationObserver(() => {
+      void syncNativeBackState();
+    });
+    modalObserver.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-state"],
+    });
+  }
+
+  await syncNativeBackState();
 
   logger.log("[AndroidBackHandler] Back button handler registered");
 }
 
 /**
  * Remove back button listener (cleanup)
- * Only removes backButton listener, not ALL Capacitor App listeners
- * This preserves pause/resume listeners registered in main.tsx
+ * Removes only the ZenFlow bridge listener and observer.
  */
 export async function removeAndroidBackHandler(): Promise<void> {
   if (!isNative || !isAndroid) {
@@ -304,6 +261,9 @@ export async function removeAndroidBackHandler(): Promise<void> {
   if (backButtonListenerHandle) {
     await backButtonListenerHandle.remove();
     backButtonListenerHandle = null;
+    modalObserver?.disconnect();
+    modalObserver = null;
+    navigationIsRoot = true;
     logger.log("[AndroidBackHandler] Back button handler removed");
   }
 }

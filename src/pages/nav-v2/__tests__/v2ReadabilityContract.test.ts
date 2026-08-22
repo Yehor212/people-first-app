@@ -29,4 +29,18 @@ describe("V2 readability contract", () => {
     expect(css).toContain("text-primary/");
     expect(css).toContain("-webkit-backdrop-filter");
   });
+
+  it("keeps the Android readability veil without a full-viewport backdrop surface", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    const selector =
+      ':root[data-platform="android"] .v2-readable-page--ambient::before';
+    const selectorStart = css.indexOf(selector);
+
+    expect(selectorStart).toBeGreaterThan(-1);
+
+    const rule = css.slice(selectorStart, css.indexOf("}", selectorStart) + 1);
+    expect(rule).toContain("-webkit-backdrop-filter: none;");
+    expect(rule).toContain("backdrop-filter: none;");
+    expect(rule).not.toContain("display: none");
+  });
 });

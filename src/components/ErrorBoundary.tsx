@@ -1,10 +1,14 @@
 import React from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
 import { crashReporting } from "@/lib/crashReporting";
 import { captureOrBuffer } from "@/lib/errorBuffer";
-import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import { safeLocalStorageGet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import {
+  DIAGNOSTIC_CODES,
+  LOCAL_ERROR_RECORD_LIMIT,
+  persistLocalDiagnosticRecord,
+} from "@/lib/diagnosticPrivacy";
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
 import { isChunkLoadError } from "@/lib/chunkErrorDetection";
@@ -108,22 +112,13 @@ function getRootErrorLanguage(): Language {
     : "en";
 }
 
-const logError = (payload: Record<string, unknown>) => {
-  try {
-    const metadata = getAppMetadata();
-    const enhancedPayload = {
-      ...payload,
-      appVersion: APP_VERSION,
-      dataSchemaVersion: metadata?.dataSchemaVersion || "unknown",
-      time: new Date().toISOString(),
-    };
-
-    const existing = safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []);
-    const next = [...existing, enhancedPayload].slice(-10); // Keep last 10 errors
-    safeLocalStorageSet(SK.ERROR_LOG, next);
-  } catch {
-    // Ignore storage errors.
-  }
+const logBoundaryError = () => {
+  persistLocalDiagnosticRecord(
+    SK.ERROR_LOG,
+    DIAGNOSTIC_CODES.boundary,
+    { phase: "render", status: "failed" },
+    LOCAL_ERROR_RECORD_LIMIT
+  );
 };
 
 async function requestSafeReload(context: string): Promise<boolean> {
@@ -204,12 +199,7 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
     this.setState({ error });
 
     // Log to localStorage
-    logError({
-      message: error.message,
-      stack: error.stack,
-      componentStack: info.componentStack,
-      time: new Date().toISOString(),
-    });
+    logBoundaryError();
 
     // Report to Crashlytics (native) or console (web)
     crashReporting.recordError(error, {
@@ -434,13 +424,7 @@ class ModalErrorBoundaryClass extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     // Log to localStorage
-    logError({
-      message: error.message,
-      stack: error.stack,
-      componentStack: info.componentStack,
-      context: "modal",
-      time: new Date().toISOString(),
-    });
+    logBoundaryError();
 
     // Report to Crashlytics
     crashReporting.recordError(error, {

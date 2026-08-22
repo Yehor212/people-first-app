@@ -25,26 +25,26 @@ describe("V2 data-theme glass tokens", () => {
 
   it("keeps V2 habits night cards role-colored instead of black-white", () => {
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]',
+      ':root[data-theme="ink"] [data-surface="ink-paper"] [data-tile="ritual-deck-card"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]',
+      ':root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-card="ritual-library-card"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"]',
+      ':root[data-theme="ink"] [data-surface="ritual-library-deck"] [data-chip="ritual-library-tab"][aria-pressed="true"]'
     );
     expect(normalizedThemesCss).toContain(':root[data-theme="ink"] .habit-growth-group');
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-card="ritual-weekly-card"]',
+      ':root[data-theme="ink"] [data-card="ritual-weekly-card"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-stats"]',
+      ':root[data-theme="ink"] [data-card="ritual-weekly-card"] [data-slot="weekly-stats"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]',
+      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-template-picker-card"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]',
+      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-card="ritual-custom-habit-action"]'
     );
     expect(themesCss).toContain('[data-card="ritual-weekly-card"] {');
     expect(themesCss).toContain("background: var(--habit-card-background);");
@@ -62,23 +62,23 @@ describe("V2 data-theme glass tokens", () => {
     expect(themesCss).not.toContain('[data-slot="template-picker-svg"] {\n  display: block;');
 
     const weeklyNightStart = themesCss.indexOf(
-      ':root[data-theme="ink"] [data-card="ritual-weekly-card"]',
+      ':root[data-theme="ink"] [data-card="ritual-weekly-card"]'
     );
     const weeklyNightEnd = themesCss.indexOf(
       ':root[data-theme="ink"] [data-surface="habit-create-sheet"]',
-      weeklyNightStart,
+      weeklyNightStart
     );
     expect(themesCss.slice(weeklyNightStart, weeklyNightEnd)).not.toContain("!important");
   });
   it("keeps native habit template picker source charm frames transparent across themes", () => {
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"]',
+      ':root[data-theme="paper"] [data-surface="habit-create-sheet"] [data-template-picker-icon="true"][data-icon-frame="real-icon-duo-native"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]',
+      ':root[data-theme="ink"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]'
     );
     expect(normalizedThemesCss).toContain(
-      ':root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]',
+      ':root[data-theme="oled"] [data-surface="habit-create-sheet"] [data-slot="template-picker-icon"][data-icon-frame="real-icon-duo-native"]'
     );
     expect(themesCss).toContain("background-color: transparent;");
     expect(themesCss).toContain("box-shadow: none;");
@@ -86,7 +86,7 @@ describe("V2 data-theme glass tokens", () => {
 
   it("keeps the structural Settings detail region presentationless", () => {
     const detailRegionBlock = blockFor(
-      '[data-v2-readable-page="settings"] [data-visual-role="settings-detail-region"]',
+      '[data-v2-readable-page="settings"] [data-visual-role="settings-detail-region"]'
     );
 
     expect(detailRegionBlock).toContain("background: transparent !important;");
@@ -96,4 +96,9 @@ describe("V2 data-theme glass tokens", () => {
     expect(detailRegionBlock).toContain("backdrop-filter: none !important;");
   });
 
+  it("does not stack global paper grain and vignette above the Android V2 scene", () => {
+    expect(normalizedThemesCss).toContain(
+      ':root[data-platform="android"][data-theme="paper"] body::before, :root[data-platform="android"][data-theme="paper"] body::after { display: none; }'
+    );
+  });
 });

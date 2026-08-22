@@ -61,8 +61,14 @@ describe("habit detail typography and reflow contract", () => {
       'gridTemplateColumns: "repeat(7, minmax(calc(44px * var(--font-scale, 1)), 1fr))"',
     );
     expect(sources.cell).toContain("min-h-8 min-w-8");
+    expect(sources.streaks).toContain("cn('@container', className)");
+    expect(sources.streaks).toContain("grid grid-cols-1 gap-2 @sm:grid-cols-2");
     expect(sources.streaks).toContain(
-      "grid grid-cols-[minmax(1.5rem,auto)_1.25rem_minmax(0,1fr)_auto]",
+      "grid-cols-[minmax(1.5rem,auto)_1.25rem_minmax(0,1fr)]",
     );
+    expect(sources.streaks).toContain("@sm:col-start-3 @sm:row-start-1");
+    expect(sources.streaks).toContain("dateTime={streak.start}");
+    expect(sources.streaks).toContain('dir="auto"');
+    expect(sources.streaks).toContain("[unicode-bidi:isolate]");
   });
 });

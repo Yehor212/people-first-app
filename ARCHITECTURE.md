@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-07-22 (account-boundary closure + freshness metrics refreshed — Law 6 Reality Anchor).
+> Last updated: 2026-08-09 (Android 2.1 connected-records implementation + freshness metrics refreshed — Law 6 Reality Anchor).
 
 ---
 
@@ -16,10 +16,10 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Hooks (src/hooks, non-test) | **76** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **278** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **284** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **39** | `ls src/components/ -d` |
-| Features modules | 1 | `ls src/features/ -d` |
-| V2 coexistence files | 52 | `find src -name '*V2*' -o -name '*-v2*'` |
+| Features modules | 3 | `ls src/features/ -d` |
+| V2 coexistence files | 54 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 7 | regex walk |
 | `as any` total | 167 (167 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **3** | regex walk |
@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
-| Source files                 |   **935** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **592** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Source files                 |   **985** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
+| Test files                   |   **661** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
-| React.memo                   |   **120** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
-| index.css LOC                | **7,602** | `readFileSync(...).split("\\n").length` (constitution guard) |
-| Inline style={{}}            |   **358** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
+| React.memo                   |   **122** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
+| index.css LOC                | **7,769** | `readFileSync(...).split("\\n").length` (constitution guard) |
+| Inline style={{}}            |   **321** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
 | exhaustive-deps suppressions |    **17** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
-| Hook coverage                |   **66%** | `50/76 hook tests`                                           |
+| Hook coverage                |   **71%** | `54/76 hook tests`                                           |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
@@ -988,10 +988,10 @@ On PR to main:
 | TD-21 | ~~MEDIUM~~ → DONE                 | ~~Scattered Capacitor platform checks~~                            | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`.                                    | src/lib/platform.ts                                       |
 | TD-22 | ~~MEDIUM~~ → DONE                 | ~~Scattered import.meta.env access~~                               | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated.                                                                                                                               | src/lib/env.ts                                            |
 | TD-23 | ~~MEDIUM~~ → DONE                 | ~~Direct Supabase calls in UI components~~                         | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21.             | src/lib/feedbackService.ts, src/lib/accountService.ts     |
-| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **120 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                                   |
-| TD-25 | P2                                | index.css monolith                                                 | **7,602 lines** remain in a single CSS file. Further split work needs feature ownership and regression proof.                                                                                                                                                                   | src/index.css                                             |
+| TD-24 | LOW                               | Low memoization + lazy loading coverage                            | React.memo improved: **122 files** currently contain `memo(`. Only **3** lazy() imports (was 6). Heavy components not lazy-loaded.                                                                                                                                              | Various                                                   |
+| TD-25 | P2                                | index.css monolith                                                 | **7,769 lines** remain in a single CSS file. Further split work needs feature ownership and regression proof.                                                                                                                                                                   | src/index.css                                             |
 | TD-26 | P2                                | Feature flags hardcoded                                            | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag.                                                                                                                             | src/pages/Index.tsx                                       |
-| TD-27 | P2                                | Inline style={{}} proliferation                                    | **358 instances** across TSX files by the 2026-07-26 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                                   |
+| TD-27 | P2                                | Inline style={{}} proliferation                                    | **321 instances** across TSX files by the 2026-08-09 constitution check. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants.                                                                                          | Various                                                   |
 | TD-28 | P3                                | Feature module migration stalled                                   | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`.                                                                                                                                   | src/components/, src/hooks/                               |
 | TD-29 | ~~P3~~ → **PARTIALLY RESOLVED**   | Multi-tab sync coordination                                        | Account-bound DATA/JOURNAL writes now serialize through named Web Locks with a same-origin Dexie transaction fallback and passive account-generation invalidation. Full live multi-device sync convergence remains separately unverified.                                       | src/lib/originExclusiveLock.ts, src/hooks/useIndexedDB.ts |
 | TD-30 | P3                                | Missing aria-labels on SVG emojis                                  | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons.                                                                                                                                                     | src/components/animated-emotion-emoji/                    |
@@ -1001,7 +1001,7 @@ On PR to main:
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-07-26 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-08-08 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
 > **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **18 current violations** remain.
 
@@ -1140,8 +1140,8 @@ On PR to main:
 6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track silent catches (target: 0, current: 0)
 7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
 8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption (current: 120)
-9. `wc -l src/index.css` — CSS monolith tracking (current: 7,602 — TD-25)
-10. `grep -rn 'style={{' src/ --include="*.tsx" | wc -l` — inline style objects (current: 358 — TD-27)
+9. `wc -l src/index.css` — CSS monolith tracking (current: 7,769 — TD-25)
+10. `grep -rn 'style={{' src/ --include="*.tsx" | wc -l` — inline style objects (current: 321 — TD-27)
 11. Hook test coverage: `ls src/hooks/__tests__/ | wc -l` vs `ls src/hooks/*.ts | wc -l` — target ≥ 70%
 12. `grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l` — track suppressions (current: 17)
 

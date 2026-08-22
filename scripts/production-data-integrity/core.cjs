@@ -2023,22 +2023,56 @@ function analyzeProductionTextFile(root, relativePath, config, findings, reportP
   }
 }
 
+function maskStoredRoutineBodies(sql) {
+  const masked = sql.split("");
+  const routinePattern = /\bcreate\s+(?:or\s+replace\s+)?(?:function|procedure)\b/gi;
+  let routineMatch;
+
+  while ((routineMatch = routinePattern.exec(sql)) !== null) {
+    const header = sql.slice(routineMatch.index);
+    const bodyStartPattern = /\bas\s+(\$[a-zA-Z_][a-zA-Z0-9_]*\$|\$\$)/i;
+    const bodyStartMatch = bodyStartPattern.exec(header);
+    if (!bodyStartMatch) continue;
+
+    const bodyTagOffset = bodyStartMatch.index + bodyStartMatch[0].lastIndexOf(bodyStartMatch[1]);
+    const bodyTagStart = routineMatch.index + bodyTagOffset;
+    const headerTerminator = sql.indexOf(";", routineMatch.index);
+    if (headerTerminator >= 0 && headerTerminator < bodyTagStart) continue;
+
+    const tag = bodyStartMatch[1];
+    const bodyContentStart = bodyTagStart + tag.length;
+    const bodyContentEnd = sql.indexOf(tag, bodyContentStart);
+    if (bodyContentEnd < 0) continue;
+
+    for (let index = bodyContentStart; index < bodyContentEnd; index += 1) {
+      if (masked[index] !== "\n" && masked[index] !== "\r") masked[index] = " ";
+    }
+    routinePattern.lastIndex = bodyContentEnd + tag.length;
+  }
+
+  return masked.join("");
+}
+
 function analyzeSqlFile(root, relativePath, config, findings, reportPath) {
   if (!reportPath(relativePath) || classifyPath(relativePath, config) === "test") return;
   const text = readText(root, relativePath, config.limits.maxSourceFileBytes);
   if (text === null) return;
   const withoutComments = text.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  // CREATE FUNCTION/PROCEDURE stores source for later invocation; the migration
+  // does not execute that body. Keep DO blocks and top-level statements visible
+  // because PostgreSQL executes them while applying the migration.
+  const executableSql = maskStoredRoutineBodies(withoutComments);
   const userDataTables = new Set(
     config.userDataTables.map((table) => table.split(".").pop().toLowerCase())
   );
   const pattern =
     /\b(?:insert\s+into\s+(?:only\s+)?|merge\s+into\s+|copy\s+)((?:"?[a-zA-Z_][a-zA-Z0-9_$]*"?\s*\.\s*)?"?[a-zA-Z_][a-zA-Z0-9_$]*"?)(?=\s|\(|;|$)/gi;
   let match;
-  while ((match = pattern.exec(withoutComments)) !== null) {
+  while ((match = pattern.exec(executableSql)) !== null) {
     const normalizedTarget = match[1].replace(/["\s]/g, "").toLowerCase();
     const table = normalizedTarget.split(".").pop();
     if (!userDataTables.has(table)) continue;
-    const before = withoutComments.slice(0, match.index);
+    const before = executableSql.slice(0, match.index);
     const line = before.split("\n").length;
     findings.push(
       makeFinding(config, {

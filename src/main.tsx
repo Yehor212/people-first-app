@@ -49,6 +49,7 @@ import { migrateLegacyFeedbackSettings } from "./lib/legacyFeedbackMigration";
 import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
+import { shouldSkipCanonicalOrbPrewarm } from "./components/state-of-mind/orbStartupPolicy";
 
 // The bounded error buffer supports local recovery diagnostics without enabling
 // optional external crash reporting before the user has a corresponding choice.
@@ -84,18 +85,19 @@ scheduleIdle(
 );
 bindPrefersColorSchemeListener();
 
-function isStateOfMindRoute(): boolean {
-  try {
-    return /\/orb\/?$/.test(window.location.pathname);
-  } catch {
-    return false;
-  }
-}
-
 function scheduleCanonicalOrbPrewarmAfterStartup(): void {
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("orbPrewarm") === "off" || isStateOfMindRoute()) return;
+    if (
+      params.get("orbPrewarm") === "off" ||
+      shouldSkipCanonicalOrbPrewarm({
+        isNativeRuntime: isNative,
+        pathname: window.location.pathname,
+        storedPage: safeLocalStorageGet<string>(SK.NAV_V2_LAST_PAGE, ""),
+      })
+    ) {
+      return;
+    }
   } catch {
     // Keep startup resilient; prewarm is an optimization, not a dependency.
   }

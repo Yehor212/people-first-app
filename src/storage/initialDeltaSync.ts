@@ -1,4 +1,8 @@
 import {
+  bootstrapAutomationHistoryOnce,
+  needsAutomationHistoryBootstrap,
+} from "@/features/automation/automationBootstrap";
+import {
   applyDelta,
   fetchAllDeltas,
   getLastSeq,
@@ -32,21 +36,39 @@ export async function bootstrapSnapshotThenDelta(
 
   const localSeq = await getLastSeq();
   await assertOwnerCurrent();
+  const automationBootstrapNeeded = await needsAutomationHistoryBootstrap(ownerUserId);
+  await assertOwnerCurrent();
   if (localSeq > 0) {
-    const events = await fetchAllDeltas(localSeq, signal);
-    await assertOwnerCurrent();
-    if (events.length === 0) {
-      return { fetched: 0, applied: 0, lastSeq: localSeq };
+    if (automationBootstrapNeeded) {
+      const snapshotApplied = await pullFromCloud(ownerUserId);
+      await assertOwnerCurrent();
+      if (!snapshotApplied) {
+        throw new Error("[InitialDeltaSync] Snapshot bootstrap failed");
+      }
     }
 
-    const deviceId = await getPersistentDeviceId();
+    const events = await fetchAllDeltas(localSeq, signal);
     await assertOwnerCurrent();
-    const applied = await applyDelta(events, deviceId, {
-      expectedOwnerUserId: ownerUserId,
-      assertOwnerCurrent,
-    });
+    let result: PullAndApplyDeltaResult;
+    if (events.length === 0) {
+      result = { fetched: 0, applied: 0, lastSeq: localSeq };
+    } else {
+      const deviceId = await getPersistentDeviceId();
+      await assertOwnerCurrent();
+      const applied = await applyDelta(events, deviceId, {
+        expectedOwnerUserId: ownerUserId,
+        assertOwnerCurrent,
+      });
+      result = {
+        fetched: events.length,
+        applied,
+        lastSeq: Math.max(...events.map((event) => event.seq)),
+      };
+    }
     await assertOwnerCurrent();
-    return { fetched: events.length, applied, lastSeq: events[events.length - 1].seq };
+    await bootstrapAutomationHistoryOnce(ownerUserId);
+    await assertOwnerCurrent();
+    return result;
   }
 
   const baselineSeq = await getServerMaxSeq(ownerUserId);
@@ -59,21 +81,29 @@ export async function bootstrapSnapshotThenDelta(
 
   const tailEvents = await fetchAllDeltas(baselineSeq, signal);
   await assertOwnerCurrent();
+  let result: PullAndApplyDeltaResult;
   if (tailEvents.length === 0) {
     await assertOwnerCurrent();
     await saveLastSeq(baselineSeq, {
       expectedOwnerUserId: ownerUserId,
       assertOwnerCurrent,
     });
-    return { fetched: 0, applied: 0, lastSeq: baselineSeq };
+    result = { fetched: 0, applied: 0, lastSeq: baselineSeq };
+  } else {
+    const deviceId = await getPersistentDeviceId();
+    await assertOwnerCurrent();
+    const applied = await applyDelta(tailEvents, deviceId, {
+      expectedOwnerUserId: ownerUserId,
+      assertOwnerCurrent,
+    });
+    result = {
+      fetched: tailEvents.length,
+      applied,
+      lastSeq: Math.max(...tailEvents.map((event) => event.seq)),
+    };
   }
-
-  const deviceId = await getPersistentDeviceId();
   await assertOwnerCurrent();
-  const applied = await applyDelta(tailEvents, deviceId, {
-    expectedOwnerUserId: ownerUserId,
-    assertOwnerCurrent,
-  });
+  await bootstrapAutomationHistoryOnce(ownerUserId);
   await assertOwnerCurrent();
-  return { fetched: tailEvents.length, applied, lastSeq: tailEvents[tailEvents.length - 1].seq };
+  return result;
 }

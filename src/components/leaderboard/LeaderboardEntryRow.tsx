@@ -27,6 +27,7 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
   const rankConfig = RANK_CONFIGS[entry.rank as 1 | 2 | 3] as
     | (typeof RANK_CONFIGS)[1]
     | undefined;
+  const hasBestStreak = activeTab === "streak" && entry.longestStreak > entry.currentStreak;
 
   return (
     <motion.div
@@ -85,26 +86,45 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
           >
             {entry.displayName}
           </span>
-          {entry.isCurrentUser && (
-            <span className="shrink-0 rounded bg-violet-500/20 px-1.5 py-0.5 text-xs text-violet-700 dark:text-violet-300">
-              ({t.you || "you"})
-            </span>
-          )}
           {entry.rank === 1 && <Crown className="h-4 w-4 shrink-0 text-amber-400" />}
         </div>
-        {activeTab === "streak" &&
-          entry.longestStreak > entry.currentStreak && (
-            <span className="whitespace-normal break-words text-xs text-foreground/60">
-              {t.best || "Best"}: {entry.longestStreak} {t.days || "days"}
-            </span>
-          )}
       </div>
 
-      {/* Score */}
-      <div className="col-start-2 row-start-2 min-w-0 justify-self-start text-start min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:justify-self-end min-[420px]:text-end">
+      {entry.isCurrentUser && (
+        <span className="col-span-2 col-start-1 row-start-2 min-w-0 max-w-full justify-self-start whitespace-normal break-words rounded bg-violet-500/20 px-1.5 py-0.5 text-center text-xs leading-tight text-violet-700 min-[420px]:col-span-1 min-[420px]:col-start-2 dark:text-violet-300">
+          ({t.you || "you"})
+        </span>
+      )}
+
+      {hasBestStreak && (
         <span
           className={cn(
-            "font-bold text-lg",
+            "col-span-2 col-start-1 min-w-0 whitespace-normal break-words text-xs text-foreground/60 min-[420px]:col-span-1 min-[420px]:col-start-2",
+            entry.isCurrentUser ? "row-start-3" : "row-start-2",
+          )}
+        >
+          {t.best || "Best"}: <bdi>{entry.longestStreak}</bdi>{" "}
+          <span dir="auto" className="[unicode-bidi:isolate]">
+            {t.days || "days"}
+          </span>
+        </span>
+      )}
+
+      {/* Score */}
+      <div
+        className={cn(
+          "col-span-2 col-start-1 flex max-w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0 justify-self-start text-start min-[420px]:col-span-1 min-[420px]:col-start-3 min-[420px]:row-start-1 min-[420px]:justify-self-end min-[420px]:text-end",
+          entry.isCurrentUser && hasBestStreak
+            ? "row-start-4"
+            : entry.isCurrentUser || hasBestStreak
+              ? "row-start-3"
+              : "row-start-2",
+        )}
+      >
+        <span
+          dir="auto"
+          className={cn(
+            "shrink-0 font-bold text-lg [unicode-bidi:isolate]",
             rankConfig?.textColor ||
               (entry.isCurrentUser
                 ? "text-violet-700 dark:text-violet-300"
@@ -113,7 +133,10 @@ export const LeaderboardEntryRow = memo(function LeaderboardEntryRow({
         >
           {getValue(entry, activeTab).toLocaleString(language)}
         </span>
-        <span className="ms-1 whitespace-normal break-words text-xs text-foreground/60">
+        <span
+          dir="auto"
+          className="min-w-0 whitespace-normal break-words text-xs text-foreground/60 [unicode-bidi:isolate]"
+        >
           {getUnit(activeTab, t)}
         </span>
       </div>

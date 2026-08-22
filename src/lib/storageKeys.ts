@@ -63,6 +63,7 @@ export const SK = {
   AD_LAST_SHOWN: "zenflow-ad-last-shown",
   AD_LAST_DISMISS: "zenflow-ad-last-dismiss",
   AD_CONSENT_SHOWN: "zenflow-ad-consent-shown",
+  REWARDED_AD_ATTEMPT_LEDGER: "zenflow-rewarded-ad-attempt-ledger-v1",
 
   // ─── Timer ───
   TIMER_STATE: "zenflow-timer-state",

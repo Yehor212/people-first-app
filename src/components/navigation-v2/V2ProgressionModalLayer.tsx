@@ -10,8 +10,13 @@ const ChallengeModal = lazyWithRetry(
   () => import("@/components/ChallengeModal").then((m) => ({ default: m.ChallengeModal })),
   "ChallengeModal"
 );
+const FriendsPanel = lazyWithRetry(
+  () => import("@/components/FriendsPanel").then((m) => ({ default: m.FriendsPanel })),
+  "FriendsPanel"
+);
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
+const setShowFriendsPanel = getModalToggle("showFriendsPanel");
 
 export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
   const { isFeatureVisible } = useFeatureFlags();
@@ -19,8 +24,11 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
     featureToUnlock,
     setFeatureToUnlock,
     showChallengeModal,
+    showFriendsPanel,
     challengeInvite,
     setChallengeInvite,
+    friendInvite,
+    setFriendInvite,
     challengeHabit,
     setChallengeHabit,
   } = useUIStore(
@@ -28,13 +36,34 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
       featureToUnlock: s.featureToUnlock,
       setFeatureToUnlock: s.setFeatureToUnlock,
       showChallengeModal: s.showChallengeModal,
+      showFriendsPanel: s.showFriendsPanel,
       challengeInvite: s.challengeInvite,
       setChallengeInvite: s.setChallengeInvite,
+      friendInvite: s.friendInvite,
+      setFriendInvite: s.setFriendInvite,
       challengeHabit: s.challengeHabit,
       setChallengeHabit: s.setChallengeHabit,
     }))
   );
   const userName = useUserDataStore((s) => s.userName);
+
+  const openFriends = () => {
+    useUIStore.setState({
+      showChallengeModal: false,
+      showFriendsPanel: true,
+      friendInvite: undefined,
+      challengeInvite: undefined,
+      challengeHabit: undefined,
+    });
+  };
+
+  const openChallenges = () => {
+    useUIStore.setState({
+      showFriendsPanel: false,
+      showChallengeModal: true,
+      friendInvite: undefined,
+    });
+  };
 
   return (
     <>
@@ -42,7 +71,7 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
         <FeatureUnlock feature={featureToUnlock} onClose={() => setFeatureToUnlock(null)} />
       )}
 
-      {!featureToUnlock && isFeatureVisible("challenges") && (
+      {!featureToUnlock && !showFriendsPanel && isFeatureVisible("challenges") && (
         <LazyErrorBoundary componentName="Challenge">
           <Suspense fallback={null}>
             <ChallengeModal
@@ -57,6 +86,23 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
               habit={challengeHabit}
               initialInvite={challengeInvite}
               username={userName}
+              onOpenFriends={openFriends}
+            />
+          </Suspense>
+        </LazyErrorBoundary>
+      )}
+
+      {!featureToUnlock && showFriendsPanel && (
+        <LazyErrorBoundary componentName="Friends">
+          <Suspense fallback={null}>
+            <FriendsPanel
+              onClose={() => {
+                setShowFriendsPanel(false);
+                setFriendInvite(undefined);
+              }}
+              onOpenChallenges={openChallenges}
+              initialFriendCode={friendInvite?.code}
+              userName={userName}
             />
           </Suspense>
         </LazyErrorBoundary>

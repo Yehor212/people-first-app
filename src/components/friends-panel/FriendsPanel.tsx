@@ -5,7 +5,7 @@
  */
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Users,
   UserPlus,
@@ -37,12 +37,15 @@ import { FriendDetailView } from "./FriendDetailView";
 
 export function FriendsPanel({
   onClose,
+  onOpenChallenges,
+  initialFriendCode,
   userName = "Zen User",
   currentStreak = 0,
   level = 1,
 }: FriendsPanelProps) {
   const { t, language } = useLanguage();
   const tRecord = t as unknown as Record<string, string>;
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
   // --- Orchestrator-owned state (2 useState) ---
   const [showSettings, setShowSettings] = useState(false);
@@ -50,7 +53,7 @@ export function FriendsPanel({
 
   // --- Hooks ---
   const data = useFriendsData({ userName, currentStreak, level });
-  const form = useFriendForm({ onSuccess: data.refreshAll, t: tRecord });
+  const form = useFriendForm({ initialFriendCode, onSuccess: data.refreshAll, t: tRecord });
   const actions = useFriendActions({
     myProfile: data.myProfile,
     onRefresh: data.refreshAll,
@@ -93,48 +96,79 @@ export function FriendsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="friends-panel-title"
-        className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto motion-safe:animate-fade-in"
+        data-testid="friends-panel"
+        className="fixed inset-0 md:mx-auto md:my-6 md:max-w-2xl md:rounded-2xl md:shadow-2xl z-[60] bg-background/95 backdrop-blur-sm overflow-x-hidden overflow-y-auto motion-safe:animate-fade-in"
       >
-        <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        <div className="mx-auto max-w-lg space-y-[24px] px-[16px] py-[24px]">
           {/* Header */}
-          <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+          <div className="flex flex-col gap-[12px] min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
             <div className="min-w-0">
               <h2
                 id="friends-panel-title"
-                className="zen-text-gradient flex min-w-0 items-start gap-2 text-2xl font-bold"
+                className="zen-text-gradient flex min-w-0 items-start gap-[8px] text-2xl font-bold"
               >
-                <Users className="h-6 w-6 shrink-0" aria-hidden="true" />
-                <span className="min-w-0 break-words">{tRecord.friends || "Friends"}</span>
+                <Users className="h-[24px] w-[24px] shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-normal [overflow-wrap:normal]">
+                  {tRecord.friends || "Friends"}
+                </span>
               </h2>
             </div>
-            <div className="flex items-center gap-2 self-end min-[420px]:self-auto">
+            <div className="flex items-center gap-[8px] self-end min-[420px]:self-auto">
               <button
                 onClick={() => void actions.handleRefresh()}
                 disabled={actions.isRefreshing}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-muted p-3 motion-safe:transition-colors hover:bg-muted/80"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-muted p-[12px] motion-safe:transition-colors hover:bg-muted/80"
                 aria-label={tRecord.refresh || "Refresh"}
               >
                 <RefreshCw
-                  className={cn("w-4 h-4", actions.isRefreshing && "animate-spin")}
+                  className={cn("h-[16px] w-[16px]", actions.isRefreshing && "animate-spin")}
                   aria-hidden="true"
                 />
               </button>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-muted p-3 motion-safe:transition-colors hover:bg-muted/80"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-muted p-[12px] motion-safe:transition-colors hover:bg-muted/80"
                 aria-label={tRecord.settings || "Settings"}
               >
-                <Settings className="w-4 h-4" aria-hidden="true" />
+                <Settings className="h-[16px] w-[16px]" aria-hidden="true" />
               </button>
               <button
                 onClick={onClose}
                 aria-label={tRecord.close || "Close"}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-muted p-3 motion-safe:transition-colors hover:bg-muted/80"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-muted p-[12px] motion-safe:transition-colors hover:bg-muted/80"
               >
-                <X className="w-5 h-5" aria-hidden="true" />
+                <X className="h-[20px] w-[20px]" aria-hidden="true" />
               </button>
             </div>
           </div>
+
+          {onOpenChallenges && (
+            <nav
+              aria-label={tRecord.friendChallenges || "Friends & Challenges"}
+              className="grid gap-[8px] [grid-template-columns:repeat(auto-fit,minmax(min(100%,20ch),1fr))]"
+            >
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onOpenChallenges}
+                data-testid="social-hub-challenges-tab"
+                className="h-auto min-h-[48px] min-w-0 whitespace-normal break-normal px-[8px] py-[10px] hyphens-auto [overflow-wrap:normal]"
+              >
+                <Trophy className="me-[6px] h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                {tRecord.socialHubChallengesTab || tRecord.challenges || "Challenges"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                aria-current="page"
+                data-testid="social-hub-friends-tab"
+                className="h-auto min-h-[48px] min-w-0 whitespace-normal break-normal px-[8px] py-[10px] hyphens-auto [overflow-wrap:normal]"
+              >
+                <Users className="me-[6px] h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                {tRecord.friends || "Friends"}
+              </Button>
+            </nav>
+          )}
 
           {/* Content */}
           <div>
@@ -151,16 +185,37 @@ export function FriendsPanel({
                 t={tRecord}
               />
             )}
+            {!data.myProfile && (
+              <div
+                className="flex min-w-0 items-start gap-[10px] border-b bg-card/50 p-[16px]"
+                role="status"
+                aria-live="polite"
+              >
+                <RefreshCw
+                  className={cn(
+                    "mt-[2px] h-[18px] w-[18px] shrink-0 text-muted-foreground",
+                    data.profilePublication === "loading" && "motion-safe:animate-spin",
+                  )}
+                  aria-hidden="true"
+                />
+                <p className="min-w-0 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                  {data.profilePublication === "loading"
+                    ? tRecord.friendProfilePreparing || "Preparing your friend code…"
+                    : tRecord.friendProfileUnavailable ||
+                      "Your friend code is unavailable right now. Check your connection and try again."}
+                </p>
+              </div>
+            )}
 
             {/* Add Friend Section */}
-            <div className="p-4 border-b">
+            <div className="border-b p-[16px]">
               <AnimatePresence mode="wait">
                 {form.showAddFriend ? (
                   <motion.div
                     key="add-form"
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    exit={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
                     className="space-y-3"
                   >
                     <div className="flex items-center gap-2">
@@ -222,14 +277,15 @@ export function FriendsPanel({
                 ) : (
                   <motion.div
                     key="add-button"
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    exit={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
                   >
                     <Button
                       variant="outline"
                       className="h-auto min-h-11 w-full whitespace-normal break-words"
                       onClick={() => form.setShowAddFriend(true)}
+                      data-testid="friends-add-by-code"
                     >
                       <UserPlus className="w-4 h-4 me-2" aria-hidden="true" />
                       {tRecord.addFriendByCode || "Add Friend by Code"}
@@ -240,15 +296,15 @@ export function FriendsPanel({
             </div>
 
             {/* Friends List / Friend Detail */}
-            <div className="p-4">
+            <div className="p-[16px]">
               <AnimatePresence mode="wait">
                 {selectedFriend ? (
                   <motion.div
                     key="friend-detail"
-                    initial={{ opacity: 0, x: 40 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, x: 40 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 40 }}
-                    transition={{ duration: 0.2 }}
+                    exit={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 40 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
                   >
                     <FriendDetailView
                       friend={selectedFriend}
@@ -270,10 +326,10 @@ export function FriendsPanel({
                 ) : (
                   <motion.div
                     key="friends-list"
-                    initial={{ opacity: 0, x: -40 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, x: -40 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -40 }}
-                    transition={{ duration: 0.2 }}
+                    exit={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -40 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
                   >
                     <h3 className="mb-3 break-words text-sm font-medium text-muted-foreground">
                       {tRecord.yourFriends || "Your Friends"} ({data.friends.length})
@@ -353,7 +409,7 @@ export function FriendsPanel({
 
             {/* Recent Activity */}
             {visibleActivities.length > 0 && (
-              <div className="p-4 border-t">
+              <div className="border-t p-[16px]">
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">
                   {tRecord.recentActivity || "Recent Activity"}
                 </h3>

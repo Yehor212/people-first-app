@@ -249,7 +249,7 @@ export function createFocusTrap(
       : fallback?.isConnected
         ? fallback
         : null;
-    target?.focus();
+    target?.focus({ preventScroll: true });
   };
 }
 

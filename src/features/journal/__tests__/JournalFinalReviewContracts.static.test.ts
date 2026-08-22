@@ -22,6 +22,7 @@ const entryListSource = read("src/features/journal/JournalEntryList.tsx");
 const entryCardSource = read("src/features/journal/JournalEntryCard.tsx");
 const entryViewerSource = read("src/features/journal/JournalEntryViewer.tsx");
 const entryEditorSource = read("src/features/journal/JournalEntryEditor.tsx");
+const editorStateSource = read("src/features/journal/useJournalEditorState.ts");
 const diaryMiniOrbSource = read("src/features/journal/DiaryMiniOrb.tsx");
 const aiConsentSource = read("src/features/journal/JournalAiConsentDialog.tsx");
 const audioPlayerSource = read("src/features/journal/JournalAudioPlayer.tsx");
@@ -53,7 +54,8 @@ describe("journal final review contracts", () => {
   it("does not infer emotional state from typing speed or correction patterns", () => {
     expect(entryEditorSource).not.toContain("useTypingDynamics");
     expect(entryEditorSource).not.toContain("TypingDynamicsMirror");
-    expect(entryEditorSource).toContain("const [mobileToolsCollapsed, setMobileToolsCollapsed] = useState(true)");
+    expect(editorStateSource).not.toContain("useTypingDynamics");
+    expect(editorStateSource).not.toContain("TypingDynamicsMirror");
   });
 
   it("keeps mobile style controls grouped, explicit, and legible in dark themes", () => {
@@ -200,6 +202,9 @@ describe("journal final review contracts", () => {
   });
 
   it("keeps memory portal labels readable instead of clipping them at large text", () => {
+    const portalSurfaceCss =
+      /\.zf-memory-portal-surface\s*\{([\s\S]*?)\}/.exec(indexCssSource)?.[1] ?? "";
+
     expect(portalSource).not.toContain("truncate");
     expect(portalSource).not.toContain("text-[10px]");
     expect(portalSource).not.toContain("FAN_POSITIONS");
@@ -208,7 +213,10 @@ describe("journal final review contracts", () => {
     expect(portalSource).toContain("overflow-y-auto overscroll-contain");
     expect(portalSource).toContain("grid-cols-1 min-[420px]:grid-cols-3");
     expect(portalSource).toContain("grid-cols-1 min-[420px]:grid-cols-2");
-    expect(portalSource).toContain("calc(360px*var(--font-scale))");
+    expect(portalSource).toContain("zf-memory-portal-surface");
+    expect(portalSurfaceCss).toContain("min-height: clamp(");
+    expect(portalSurfaceCss).toContain("calc(360px * var(--font-scale))");
+    expect(portalSurfaceCss).toContain("calc(430px * var(--font-scale))");
     expect(portalSource).toContain("flex flex-col items-stretch gap-3");
     expect(portalSource).toContain("min-[420px]:flex-row");
   });

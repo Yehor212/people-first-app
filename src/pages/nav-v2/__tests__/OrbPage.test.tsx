@@ -365,6 +365,7 @@ describe("OrbPage progressive flow", () => {
 
     const main = screen.getByTestId("orb-page");
     expect(screen.getByTestId("orb-cold-loading-screen")).toBeInTheDocument();
+    expect(screen.queryByTestId("cosmic-orb-background")).toBeNull();
     expect(main).toHaveAttribute("aria-hidden", "true");
     expect(main).toHaveAttribute("inert");
     expect(screen.queryByTestId("orb-page-ambience-toggle")).toBeNull();
@@ -379,6 +380,7 @@ describe("OrbPage progressive flow", () => {
       expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
     );
     expect(screen.queryByTestId("orb-cold-loading-screen")).toBeNull();
+    expect(screen.getByTestId("cosmic-orb-background")).toBeInTheDocument();
     expect(main).not.toHaveAttribute("aria-hidden");
     expect(main).not.toHaveAttribute("inert");
     expect(screen.getByTestId("orb-page-ambience-toggle")).toBeInTheDocument();
@@ -461,6 +463,35 @@ describe("OrbPage progressive flow", () => {
     }
   });
 
+  it("automatically retries one transient renderer startup failure before showing the terminal recovery state", async () => {
+    orbVisualControl.mode = "manual";
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const firstError = orbVisualControl.errorCallbacks[0];
+    const selectScroller = screen
+      .getByTestId("orb-page-select")
+      .closest<HTMLElement>("[data-orb-select-layout]");
+    expect(selectScroller).not.toBeNull();
+    selectScroller!.scrollTop = 48;
+
+    act(() => firstError?.());
+
+    await waitFor(() => expect(orbVisualControl.errorCallbacks.length).toBe(2));
+    expect(selectScroller).toHaveProperty("scrollTop", 0);
+    expect(screen.getByTestId("orb-page")).toHaveAttribute(
+      "data-orb-visual-status",
+      "pending",
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    act(() => orbVisualControl.errorCallbacks.at(-1)?.());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn't open your mood check-in. Try again.",
+    );
+    expect(orbVisualControl.errorCallbacks).toHaveLength(2);
+  });
+
   it("shows a localized recovery state and ignores stale readiness after retry", async () => {
     orbVisualControl.mode = "manual";
     const raf = installManualRaf();
@@ -470,18 +501,30 @@ describe("OrbPage progressive flow", () => {
     const firstError = orbVisualControl.errorCallbacks[0];
 
     act(() => firstError?.());
+    await waitFor(() => expect(orbVisualControl.errorCallbacks.length).toBe(2));
+    const automaticRetryReady = orbVisualControl.readyCallbacks.at(-1);
+    const automaticRetryError = orbVisualControl.errorCallbacks.at(-1);
+
+    act(() => firstReady?.());
+    expect(raf.pendingCount()).toBe(0);
+    expect(screen.getByTestId("orb-page")).toHaveAttribute(
+      "data-orb-visual-status",
+      "pending",
+    );
+
+    act(() => automaticRetryError?.());
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "We couldn't open your mood check-in. Try again.",
     );
     expect(screen.getByTestId("orb-page-retry")).toHaveAccessibleName("Try again");
     expect(screen.getByTestId("orb-page-error-back")).toHaveAccessibleName("Back");
 
-    act(() => firstReady?.());
+    act(() => automaticRetryReady?.());
     expect(raf.pendingCount()).toBe(0);
     expect(screen.getByRole("alert")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("orb-page-retry"));
-    await waitFor(() => expect(orbVisualControl.readyCallbacks.length).toBe(2));
+    await waitFor(() => expect(orbVisualControl.readyCallbacks.length).toBe(3));
     expect(screen.getByTestId("orb-warm-loading-indicator")).toBeInTheDocument();
 
     act(() => firstReady?.());
@@ -518,6 +561,11 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
 
     const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    const errorCallbackCount = orbVisualControl.errorCallbacks.length;
+    act(() => orbVisualControl.errorCallbacks.at(-1)?.());
+    await waitFor(() =>
+      expect(orbVisualControl.errorCallbacks.length).toBe(errorCallbackCount + 1),
+    );
     act(() => orbVisualControl.errorCallbacks.at(-1)?.());
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     act(() => {
@@ -530,11 +578,23 @@ describe("OrbPage progressive flow", () => {
     }
   });
 
+  it("does not register an in-app Back owner at the unobstructed Orb root", async () => {
+    render(<OrbPage navigateToPage={vi.fn()} onAddMood={onAddMoodMock} />);
+
+    expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
+    expect(androidBackControl.callback).toBeNull();
+  });
+
   it("preserves the in-progress mood draft across terminal renderer retry", async () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "0.5");
 
+    const errorCallbackCount = orbVisualControl.errorCallbacks.length;
+    act(() => orbVisualControl.errorCallbacks.at(-1)?.());
+    await waitFor(() =>
+      expect(orbVisualControl.errorCallbacks.length).toBe(errorCallbackCount + 1),
+    );
     act(() => orbVisualControl.errorCallbacks.at(-1)?.());
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.getByTestId("orb-page-retry")).toHaveClass("min-h-[44px]");
@@ -620,8 +680,7 @@ describe("OrbPage progressive flow", () => {
       render(<OrbPage onAddMood={onAddMoodMock} />);
 
       const selectScroller = screen.getByTestId("orb-page-select").closest(".overflow-y-auto");
-      expect(selectScroller).toHaveStyle({ justifyContent: "safe center" });
-      expect(selectScroller).not.toHaveClass("[justify-content:safe_center]");
+      expect(selectScroller).toHaveClass("[justify-content:safe_center]");
       expect(selectScroller).not.toHaveClass("justify-center");
       expect(setScrollTop).toHaveBeenCalledWith(0);
 
@@ -997,8 +1056,7 @@ describe("OrbPage progressive flow", () => {
       "sm:px-5",
       "sm:w-auto",
     );
-    expect(saveAndOpen).toHaveStyle({ borderRadius: "clamp(24px, 8vw, 44px)" });
-    expect(saveAndOpen).not.toHaveClass("rounded-[clamp(24px,8vw,44px)]");
+    expect(saveAndOpen).toHaveClass("rounded-[clamp(24px,8vw,44px)]");
     expect(backToSelect).toHaveClass("px-3", "sm:px-5");
     expect(saveAndOpen.querySelector("span")).toHaveClass(
       "min-w-0",

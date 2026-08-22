@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenflow.local/contracts/automation-transaction.schema.json",
+  "title": "ZenFlow Automation Transaction Ledger and Batch Payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "ownerUserId",
+    "consentEpoch",
+    "sourceKey",
+    "ruleId",
+    "ruleVersion",
+    "sourceType",
+    "sourceId",
+    "status",
+    "revisionCiphertext",
+    "createdAt",
+    "updatedAt",
+    "schemaVersion"
+  ],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "ownerUserId": { "type": "string", "format": "uuid" },
+    "consentEpoch": { "type": "string", "format": "uuid" },
+    "sourceKey": { "type": "string", "minLength": 16, "maxLength": 512 },
+    "ruleId": { "type": "string", "enum": [
+      "mood.note-to-journal.v1",
+      "journal.mood-to-checkin.v1",
+      "focus.to-mapped-habit.v1",
+      "habit.to-planning.v1"
+    ] },
+    "ruleVersion": { "const": 1 },
+    "sourceType": { "type": "string", "enum": ["mood", "journal", "focus", "habit"] },
+    "sourceId": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "status": { "type": "string", "enum": ["commit_pending", "committed", "sync_blocked", "commit_conflict", "revoked", "undo_pending", "undone", "conflict"] },
+    "revisionCiphertext": {
+      "type": "string",
+      "pattern": "^zenflow:automation-revision:v1:",
+      "maxLength": 90000
+    },
+    "createdAt": { "type": "integer", "minimum": 0 },
+    "updatedAt": { "type": "integer", "minimum": 0 },
+    "undoneAt": { "type": "integer", "minimum": 0 },
+    "undoTransactionId": { "type": "string", "format": "uuid" },
+    "serverSequence": { "type": "integer", "minimum": 1 },
+    "historyGeneration": { "type": "integer", "minimum": 1 },
+    "schemaVersion": { "const": 1 }
+  }
+}

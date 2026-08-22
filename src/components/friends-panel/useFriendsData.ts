@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { hapticTap } from '@/lib/haptics';
 import { subscribeToPresence } from '@/lib/presenceService';
 import {
-  loadMyProfile,
-  initializeMyProfile,
+  ensureMyFriendProfilePublished,
   updateMyProfile,
   getFriendsSortedByActivity,
   getRecentActivities,
@@ -20,6 +19,7 @@ interface UseFriendsDataOptions {
 
 interface UseFriendsDataReturn {
   myProfile: MyProfile | null;
+  profilePublication: "loading" | "ready" | "unavailable";
   friends: Friend[];
   activities: FriendActivity[];
   refreshAll: () => void;
@@ -28,6 +28,9 @@ interface UseFriendsDataReturn {
 
 export function useFriendsData({ userName, currentStreak, level }: UseFriendsDataOptions): UseFriendsDataReturn {
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
+  const [profilePublication, setProfilePublication] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
   const [friends, setFriends] = useState<Friend[]>([]);
   const [activities, setActivities] = useState<FriendActivity[]>([]);
   const [, forcePresenceUpdate] = useState(0);
@@ -37,20 +40,23 @@ export function useFriendsData({ userName, currentStreak, level }: UseFriendsDat
     return subscribeToPresence(() => forcePresenceUpdate(n => n + 1));
   }, []);
 
-  // Initialize profile and load data on mount
+  // A code is shareable only after the aligned cloud profile can resolve it.
   useEffect(() => {
-    let profile = loadMyProfile();
-    if (!profile) {
-      profile = initializeMyProfile(userName);
-    }
-
-    if (profile.currentStreak !== currentStreak || profile.level !== level) {
-      profile = updateMyProfile({ currentStreak, level });
-    }
-
-    setMyProfile(profile);
+    let cancelled = false;
+    setMyProfile(null);
+    setProfilePublication("loading");
     setFriends(getFriendsSortedByActivity());
     setActivities(getRecentActivities(5));
+
+    void ensureMyFriendProfilePublished(userName, currentStreak, level).then((profile) => {
+      if (cancelled) return;
+      setMyProfile(profile);
+      setProfilePublication(profile ? "ready" : "unavailable");
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [userName, currentStreak, level]);
 
   const refreshAll = useCallback(() => {
@@ -65,5 +71,12 @@ export function useFriendsData({ userName, currentStreak, level }: UseFriendsDat
     void hapticTap();
   }, [myProfile]);
 
-  return { myProfile, friends, activities, refreshAll, handlePrivacyChange };
+  return {
+    myProfile,
+    profilePublication,
+    friends,
+    activities,
+    refreshAll,
+    handlePrivacyChange,
+  };
 }

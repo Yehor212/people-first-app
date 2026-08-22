@@ -142,4 +142,29 @@ describe("syncBroadcast", () => {
     expect(payload).not.toHaveProperty("payload");
     expect(payload).not.toHaveProperty("privateContent");
   });
+
+  it("accepts the ciphertext-only automation wake category without forwarding a payload", () => {
+    const handler = vi.fn();
+    initSyncBroadcast("user-1");
+    onRemoteChange(handler);
+
+    broadcastHandler?.({
+      payload: {
+        entity: "automation",
+        deviceId: "remote-device",
+        ts: 1770000000000,
+        seq: 3,
+        eventSeq: 56,
+        revisionCiphertext: "must not pass through",
+      },
+    });
+
+    expect(handler).toHaveBeenCalledWith({
+      entity: "automation",
+      deviceId: "remote-device",
+      ts: 1770000000000,
+      seq: 3,
+      eventSeq: 56,
+    });
+  });
 });

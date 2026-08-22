@@ -62,13 +62,7 @@ export function FocusReflectionModal({
       >
         {/* Premium background — Sun-Dappled Meadow (light) / Cosmic (dark) */}
         <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
-        <div
-          className="absolute inset-0 hidden dark:block"
-          style={{
-            background: `radial-gradient(ellipse at top,
-              hsl(var(--focus-cosmic-dark)) 0%, hsl(var(--focus-cosmic-mid)) 60%, hsl(var(--focus-cosmic-deep)) 100%)`,
-          }}
-        />
+        <div className="zf-focus-reflection-cosmic-background absolute inset-0 hidden dark:block" />
         {/* Star particles */}
         {cosmicStars.slice(0, 8).map((star) => (
           <CosmicStar key={star.id} {...star} />

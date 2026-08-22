@@ -5,6 +5,13 @@ import { describe, expect, it } from "vitest";
 
 const scriptPath = join(process.cwd(), "scripts/generate-admob-owner-next-steps.cjs");
 const ledgerPath = join(process.cwd(), "docs/release/google-play/ADMOB_EXTERNAL_READINESS.json");
+const ledgerUpdatedAt = (JSON.parse(readFileSync(ledgerPath, "utf8")) as { updatedAt?: unknown }).updatedAt;
+
+if (typeof ledgerUpdatedAt !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(ledgerUpdatedAt)) {
+  throw new Error("ADMOB_EXTERNAL_READINESS.json needs updatedAt as YYYY-MM-DD for owner next-step tests");
+}
+
+const CURRENT_LEDGER_DATE = ledgerUpdatedAt;
 
 function runNextSteps(args: string[] = []) {
   return spawnSync(process.execPath, [scriptPath, ...args], {
@@ -34,7 +41,7 @@ describe("AdMob owner next-steps packet", () => {
 
   it("writes a public-safe owner action packet from the current external ledger", () => {
     const outFile = outputPath("current.md");
-    const result = runNextSteps(["--out", outFile, "--date", "2026-07-04"]);
+    const result = runNextSteps(["--out", outFile, "--date", CURRENT_LEDGER_DATE]);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("WROTE");
@@ -119,7 +126,14 @@ describe("AdMob owner next-steps packet", () => {
     const outFile = outputPath("service-blockers.md");
     writeFileSync(serviceLedger, JSON.stringify(ledger, null, 2));
 
-    const result = runNextSteps(["--file", serviceLedger, "--out", outFile, "--date", "2026-07-04"]);
+    const result = runNextSteps([
+      "--file",
+      serviceLedger,
+      "--out",
+      outFile,
+      "--date",
+      CURRENT_LEDGER_DATE,
+    ]);
 
     expect(result.status).toBe(0);
     const packet = readFileSync(outFile, "utf8");
@@ -134,7 +148,13 @@ describe("AdMob owner next-steps packet", () => {
 
   it("refuses support-ready mode while owner-owned rows remain incomplete", () => {
     const outFile = outputPath("current-support-required.md");
-    const result = runNextSteps(["--out", outFile, "--date", "2026-07-04", "--require-support-ready"]);
+    const result = runNextSteps([
+      "--out",
+      outFile,
+      "--date",
+      CURRENT_LEDGER_DATE,
+      "--require-support-ready",
+    ]);
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("UNVERIFIED");

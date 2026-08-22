@@ -163,8 +163,8 @@ export function useOrbMoodFlow(
     if (onAddMood) {
       onAddMood(entry);
     } else {
-      commitMoodEntry(entry, {
-        setMoods: useUserDataStore.getState().setMoods,
+      void commitMoodEntry(entry, {
+        setMoods: useUserDataStore.getState()._publishDurableMoods,
         rewardUser: useGamificationStore.getState().rewardUser,
         updateChallengeProgress: () => undefined,
       });

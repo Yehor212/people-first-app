@@ -34,8 +34,12 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/challengeService", () => ({
   isCloudChallengesAvailable: vi.fn(() => false),
+  isChallengeMember: vi.fn(() => false),
   syncLocalChallengeToCloud: vi.fn(),
   updateMyProgress: vi.fn(),
+  getChallengeByCode: vi.fn(),
+  joinCloudChallenge: vi.fn(),
+  resolveChallengeInvite: vi.fn(),
 }));
 
 // Mock crypto.getRandomValues
@@ -55,10 +59,17 @@ import {
   generateShareLink,
   getChallengeProgress,
   getDaysRemaining,
+  joinChallengeByCode,
   CHALLENGE_DURATIONS,
   type Challenge,
 } from "@/lib/friendChallenge";
-import { safeLocalStorageGet } from "@/lib/safeJson";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import {
+  isChallengeMember,
+  isCloudChallengesAvailable,
+  joinCloudChallenge,
+  resolveChallengeInvite,
+} from "@/lib/challengeService";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -113,7 +124,7 @@ describe("encodeInviteData", () => {
     expect(encoded.length).toBeGreaterThan(0);
   });
 
-  it("round-trips with decodeInviteData", () => {
+  it("decodes a legacy payload to a code-only locator", () => {
     const challenge = makeChallenge({
       habitName: "Run",
       habitIcon: "🏃",
@@ -126,26 +137,21 @@ describe("encodeInviteData", () => {
     const decoded = decodeInviteData(encoded);
 
     expect(decoded).not.toBeNull();
-    expect(decoded?.habitName).toBe("Run");
-    expect(decoded?.habitIcon).toBe("🏃");
-    expect(decoded?.duration).toBe(14);
-    expect(decoded?.creatorName).toBe("Alice");
-    expect(decoded?.code).toBe("ZEN-XXXXXX");
-    expect(decoded?.startDate).toBe("2024-06-10");
+    expect(decoded).toEqual({ code: "ZEN-XXXXXX" });
   });
 
   it("handles Unicode characters (emoji in habit name)", () => {
     const challenge = makeChallenge({ habitName: "🌸 花を育てる" });
     const encoded = encodeInviteData(challenge);
     const decoded = decodeInviteData(encoded);
-    expect(decoded?.habitName).toBe("🌸 花を育てる");
+    expect(decoded).toEqual({ code: challenge.code });
   });
 
   it("handles empty creatorName", () => {
     const challenge = makeChallenge({ creatorName: undefined });
     const encoded = encodeInviteData(challenge);
     const decoded = decodeInviteData(encoded);
-    expect(decoded?.creatorName).toBeUndefined();
+    expect(decoded).toEqual({ code: challenge.code });
   });
 });
 
@@ -230,17 +236,150 @@ describe("generateShareText", () => {
 // ─── generateShareLink ──────────────────────────────────────────
 
 describe("generateShareLink", () => {
-  it("generates zenflow:// protocol link", () => {
+  it("generates the canonical HTTPS challenge locator", () => {
     const link = generateShareLink(makeChallenge());
-    expect(link).toMatch(/^zenflow:\/\/challenge\?data=/);
+    expect(link).toBe(
+      "https://yehor212.github.io/people-first-app/?invite=challenge.v1&code=ZEN-ABC123",
+    );
   });
 
-  it("includes encoded invite data in URL", () => {
+  it("does not include embedded challenge facts", () => {
     const challenge = makeChallenge();
     const link = generateShareLink(challenge);
-    const encoded = encodeInviteData(challenge);
-    expect(link).toContain(encoded);
+    expect(link).toContain("code=ZEN-ABC123");
+    expect(link).not.toContain(encodeInviteData(challenge));
+    expect(link).not.toMatch(/data=|Meditate|duration|creator/i);
   });
+});
+
+// ─── authoritative manual-code join ─────────────────────────────
+
+describe("joinChallengeByCode", () => {
+  it("persists nothing when a valid-looking code cannot be resolved authoritatively", async () => {
+    (isCloudChallengesAvailable as ReturnType<typeof vi.fn>).mockReturnValue(false);
+
+    const result = await joinChallengeByCode("ZEN-ABC123", "Mina");
+
+    expect(result).toEqual({ success: false, reason: "unavailable" });
+    expect(resolveChallengeInvite).not.toHaveBeenCalled();
+    expect(joinCloudChallenge).not.toHaveBeenCalled();
+    expect(safeLocalStorageSet).not.toHaveBeenCalled();
+  });
+
+  it("persists only the canonical challenge returned by the cloud after membership succeeds", async () => {
+    (isCloudChallengesAvailable as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (resolveChallengeInvite as ReturnType<typeof vi.fn>).mockResolvedValue({
+      status: "found",
+      actorUserId: "current-user-id",
+      challenge: {
+        id: "server-challenge-id",
+        code: "ZEN-ABC123",
+        creatorId: "server-owner-id",
+        habitName: "Morning walk",
+        habitIcon: "🚶",
+        duration: 14,
+        startDate: "2024-06-10",
+        endDate: "2024-06-24",
+        status: "active",
+        createdAt: "2024-06-10T00:00:00.000Z",
+        updatedAt: "2024-06-10T00:00:00.000Z",
+      },
+    });
+    (isChallengeMember as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    (joinCloudChallenge as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "membership-id",
+      challengeId: "server-challenge-id",
+      userId: "current-user-id",
+      displayName: "Mina",
+      daysCompleted: 3,
+      currentStreak: 2,
+      lastActivityDate: "2024-06-15",
+      completed: false,
+      completedAt: null,
+      joinedAt: "2024-06-15T00:00:00.000Z",
+    });
+
+    const result = await joinChallengeByCode("zen-abc123", "Mina");
+
+    expect(resolveChallengeInvite).toHaveBeenCalledWith("ZEN-ABC123");
+    expect(joinCloudChallenge).toHaveBeenCalledWith("server-challenge-id", "Mina");
+    expect(result).toMatchObject({
+      success: true,
+      challenge: {
+        id: "server-challenge-id",
+        code: "ZEN-ABC123",
+        habitName: "Morning walk",
+        habitIcon: "🚶",
+        duration: 14,
+        startDate: "2024-06-10",
+        endDate: "2024-06-24",
+        myProgress: 3,
+        isCreator: false,
+        status: "active",
+      },
+    });
+    expect(safeLocalStorageSet).toHaveBeenCalledWith(
+      "challenges",
+      [expect.objectContaining({ id: "server-challenge-id", habitName: "Morning walk" })],
+    );
+    expect(safeLocalStorageSet).not.toHaveBeenCalledWith(
+      "challenges",
+      [expect.objectContaining({ habitName: "Friend Challenge" })],
+    );
+  });
+
+  it.each([
+    "offline",
+    "signed_out",
+    "not_found",
+    "unavailable",
+  ] as const)("propagates the authoritative %s state without persistence", async (status) => {
+    (isCloudChallengesAvailable as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (resolveChallengeInvite as ReturnType<typeof vi.fn>).mockResolvedValue({ status });
+
+    await expect(joinChallengeByCode("ZEN-ABC123", "Mina")).resolves.toEqual({
+      success: false,
+      reason: status,
+    });
+    expect(joinCloudChallenge).not.toHaveBeenCalled();
+    expect(safeLocalStorageSet).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["expired", "server-owner-id", false, "expired"],
+    ["active", "current-user-id", false, "self"],
+    ["active", "server-owner-id", true, "duplicate"],
+  ] as const)(
+    "returns %s/%s membership state as %s without joining",
+    async (challengeStatus, creatorId, alreadyMember, reason) => {
+      (isCloudChallengesAvailable as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (resolveChallengeInvite as ReturnType<typeof vi.fn>).mockResolvedValue({
+        status: "found",
+        actorUserId: "current-user-id",
+        challenge: {
+          id: "server-challenge-id",
+          code: "ZEN-ABC123",
+          creatorId,
+          habitName: "Morning walk",
+          habitIcon: "🚶",
+          duration: 14,
+          startDate: "2024-06-10",
+          endDate: "2024-06-24",
+          status: challengeStatus,
+          createdAt: "2024-06-10T00:00:00.000Z",
+          updatedAt: "2024-06-10T00:00:00.000Z",
+        },
+      });
+      (isChallengeMember as ReturnType<typeof vi.fn>).mockResolvedValue(alreadyMember);
+
+      await expect(joinChallengeByCode("ZEN-ABC123", "Mina")).resolves.toEqual({
+        success: false,
+        reason,
+      });
+      expect(joinCloudChallenge).not.toHaveBeenCalled();
+      expect(safeLocalStorageSet).not.toHaveBeenCalled();
+    },
+  );
 });
 
 // ─── getChallengeProgress ────────────────────────────────────────

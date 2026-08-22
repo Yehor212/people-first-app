@@ -9,6 +9,7 @@ import { compression } from "vite-plugin-compression2";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { changelogPlugin } from "./vite-plugin-changelog.ts";
 import { versionPlugin } from "./vite-plugin-version.ts";
+import { createLocaleAssetPlugin } from "./vite-plugin-locale-assets.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -157,6 +158,7 @@ export default defineConfig(({ mode }) => {
       __RRWEB_EXCLUDE_SHADOW_DOM__: true,
     },
     plugins: [
+      createLocaleAssetPlugin({ rootDirectory: __dirname }),
       react(),
       changelogPlugin(),
       versionPlugin({ buildTime: appBuildTime }),
@@ -191,6 +193,7 @@ export default defineConfig(({ mode }) => {
               "favicon-48.png",
               "favicon-64.png",
               "apple-touch-icon.png",
+              "icon-source.svg",
               "pwa-192.png",
               "pwa-512.png",
               "pwa-maskable-512.png",

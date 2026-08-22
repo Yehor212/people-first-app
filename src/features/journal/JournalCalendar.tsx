@@ -9,7 +9,7 @@ import { hapticTap } from "@/lib/haptics";
 import type { MoodType } from "@/types";
 import { computeStreaks } from "./computeStreaks";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
-import { shiftJournalDate } from "./journalDateUtils";
+import { formatJournalMonthRange, shiftJournalDate } from "./journalDateUtils";
 
 /** Theme-token-based mood background colors with opacity modulation */
 const MOOD_BG_STYLE: Record<MoodType, string> = {
@@ -96,14 +96,7 @@ export function JournalCalendar({
   // Month label
   const monthLabel = useMemo(() => {
     if (days.length === 0) return "";
-    const first = new Date(days[0].date + "T00:00:00");
-    const last = new Date(days[days.length - 1].date + "T00:00:00");
-    const opts: Intl.DateTimeFormatOptions = { month: "long", year: "numeric" };
-    const locale = getLocale(language);
-    const firstMonth = first.toLocaleDateString(locale, opts);
-    const lastMonth = last.toLocaleDateString(locale, opts);
-    if (firstMonth === lastMonth) return firstMonth;
-    return `${first.toLocaleDateString(locale, { month: "short" })} \u2014 ${last.toLocaleDateString(locale, { month: "short", year: "numeric" })}`;
+    return formatJournalMonthRange(days[0].date, days[days.length - 1].date, language);
   }, [days, language]);
 
   const canGoForward = historicalRangeEnd !== null;

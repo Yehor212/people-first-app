@@ -19,6 +19,10 @@ import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { ExpirationPlugin } from "workbox-expiration";
 import { RangeRequestsPlugin } from "workbox-range-requests";
 import { setCacheNameDetails } from "workbox-core";
+import {
+  LANGUAGE_RUNTIME_CACHE_MAX_ENTRIES,
+  isLanguageRuntimeAssetRequest,
+} from "@/i18n/localeAssetRuntime";
 import { logger } from "@/lib/logger";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -178,19 +182,18 @@ precacheAndRoute(self.__WB_MANIFEST);
 // Clean up old caches
 cleanupOutdatedCaches();
 
-// Cache language chunks on first use (excluded from precache to save install size).
+// Cache language loaders and dictionaries on first use (excluded from precache to save install size).
 // CacheFirst: serve from cache instantly after first network load.
 // This ensures non-English users keep their language available offline.
 registerRoute(
   ({ url, request }) =>
-    request.destination === "script" &&
-    url.pathname.includes("/assets/") &&
-    /\/(uk|es|de|fr|ja|ar|he)-[A-Za-z0-9_-]+\.js$/.test(url.pathname),
+    url.origin === self.location.origin &&
+    isLanguageRuntimeAssetRequest(url.pathname, request.destination),
   new CacheFirst({
     cacheName: "zenflow-lang-chunks",
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 7,
+        maxEntries: LANGUAGE_RUNTIME_CACHE_MAX_ENTRIES,
         maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
         purgeOnQuotaError: true,
       }),

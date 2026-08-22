@@ -3,10 +3,15 @@
  * Part of v1.4.0 Social & Sharing
  */
 
-import { useState, useEffect, memo } from "react";
+import { useCallback, useState, useEffect, memo } from "react";
 import { ChevronRight, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { shouldAnimate, zenTap, zenHover } from "@/lib/animationUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticTap } from "@/lib/haptics";
@@ -30,6 +35,7 @@ interface ChallengeModalProps {
   habit?: Habit; // If provided, opens in create mode for this habit
   username?: string;
   initialInvite?: ChallengeInvite; // If provided, opens in join mode with pre-filled data
+  onOpenFriends?: () => void;
 }
 
 // ============================================
@@ -42,6 +48,7 @@ export const ChallengeModal = memo(function ChallengeModal({
   habit,
   username,
   initialInvite,
+  onOpenFriends,
 }: ChallengeModalProps) {
   const { t } = useLanguage();
 
@@ -55,38 +62,26 @@ export const ChallengeModal = memo(function ChallengeModal({
     ChallengeInvite | undefined
   >(undefined);
 
+  const returnToList = useCallback(() => {
+    setSelectedChallenge(null);
+    setNewlyCreatedChallenge(null);
+    setPendingInvite(undefined);
+    setMode("list");
+  }, []);
+
+  const unwindOrClose = useCallback(() => {
+    if (mode === "details" || mode === "join" || mode === "create") {
+      returnToList();
+      return;
+    }
+    onOpenChange(false);
+  }, [mode, onOpenChange, returnToList]);
+
   // Android back button: navigate sub-views back, or close modal from list view
   useBackHandler(open, () => {
     void hapticTap();
-    if (mode === "details" || mode === "join" || mode === "create") {
-      setSelectedChallenge(null);
-      setNewlyCreatedChallenge(null);
-      setPendingInvite(undefined);
-      setMode("list");
-    } else {
-      onOpenChange(false);
-    }
+    unwindOrClose();
   });
-
-  // Escape key: navigate sub-views back, or close the modal
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        if (mode === "details" || mode === "join" || mode === "create") {
-          setSelectedChallenge(null);
-          setNewlyCreatedChallenge(null);
-          setPendingInvite(undefined);
-          setMode("list");
-        } else {
-          onOpenChange(false);
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, mode, onOpenChange]);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -130,10 +125,7 @@ export const ChallengeModal = memo(function ChallengeModal({
 
   const handleBack = () => {
     void hapticTap();
-    setSelectedChallenge(null);
-    setNewlyCreatedChallenge(null);
-    setPendingInvite(undefined);
-    setMode("list");
+    returnToList();
   };
 
   const getTitle = (): string => {
@@ -151,32 +143,51 @@ export const ChallengeModal = memo(function ChallengeModal({
     }
   };
 
+  const getDescription = (): string => {
+    if (mode === "create") {
+      return t.challengeDescription || "Challenge friends";
+    }
+    if (mode === "join") {
+      return t.enterCodeToJoin || "Enter code to join";
+    }
+    return t.trackWithFriends || "Track with friends";
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85dvh] flex flex-col p-0 gap-0 rounded-2xl">
+      <DialogContent
+        className="max-h-[85dvh] max-w-lg flex flex-col gap-0 overflow-hidden rounded-2xl p-0"
+        data-testid="challenge-modal"
+        onEscapeKeyDown={(event) => {
+          event.preventDefault();
+          unwindOrClose();
+        }}
+      >
         {/* Visually hidden title for accessibility */}
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
+        <DialogDescription className="sr-only">{getDescription()}</DialogDescription>
 
         {/* Premium Header - like AICoachChat */}
-        <div className="flex min-w-0 items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
+        <div className="relative flex min-h-[64px] min-w-0 shrink-0 items-center justify-between border-b border-slate-200/60 p-[16px] pe-[64px] dark:border-white/10">
           {/* Subtle gradient glow */}
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[rgba(139,92,246,0.05)] to-transparent" />
 
-          <div className="flex min-w-0 flex-1 items-center gap-3 relative z-10">
+          <div className="relative z-10 flex min-w-0 flex-1 items-center gap-[12px]">
             {(mode === "details" || mode === "join") && (
               <motion.button
                 onClick={handleBack}
                 aria-label={t.back || "Go back"}
-                className="min-h-11 min-w-11 shrink-0 p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 motion-safe:transition-colors"
+                data-testid="challenge-modal-back"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl border border-slate-200/60 bg-slate-100/60 p-[8px] text-slate-600 motion-safe:transition-colors hover:bg-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
                 whileHover={zenHover.glow}
                 whileTap={zenTap.icon}
               >
-                <ChevronRight className="w-5 h-5 rotate-180 rtl:scale-x-[-1]" />
+              <ChevronRight className="h-[20px] w-[20px] rotate-180 rtl:scale-x-[-1]" />
               </motion.button>
             )}
 
             <motion.div
-              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-gradient-to-br from-[rgba(139,92,246,0.5)] to-[rgba(168,85,247,0.4)] shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+              className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(139,92,246,0.5)] to-[rgba(168,85,247,0.4)] shadow-[0_0_15px_rgba(139,92,246,0.3)] max-[359px]:hidden"
               animate={shouldAnimate() ? { scale: [1, 1.05, 1] } : undefined}
               transition={
                 shouldAnimate()
@@ -184,26 +195,22 @@ export const ChallengeModal = memo(function ChallengeModal({
                   : undefined
               }
             >
-              <Users className="w-5 h-5 text-white" />
+              <Users className="h-[20px] w-[20px] text-white" />
             </motion.div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="min-w-0 break-words font-semibold text-slate-800 dark:text-white [hyphens:manual] [overflow-wrap:break-word]">
+              <h2 className="min-w-0 break-words font-semibold leading-snug text-slate-800 [hyphens:auto] [overflow-wrap:break-word] dark:text-white">
                 {getTitle()}
               </h2>
-              <p className="min-w-0 break-words text-xs text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
-                {mode === "create"
-                  ? t.challengeDescription || "Challenge friends"
-                  : mode === "join"
-                    ? t.enterCodeToJoin || "Enter code to join"
-                    : t.trackWithFriends || "Track with friends"}
+              <p className="min-w-0 break-words text-xs text-slate-500 dark:text-white/60 [hyphens:auto] [overflow-wrap:break-word] max-[359px]:hidden">
+                {getDescription()}
               </p>
             </div>
           </div>
         </div>
 
         {/* Content - flex-1 with its own padding */}
-        <div className="flex-1 overflow-y-auto p-4 bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.03)_0%,transparent_50%)]">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.03)_0%,transparent_50%)] p-[16px]">
           {mode === "create" && habit && (
             <CreateChallengeView
               habit={habit}
@@ -217,6 +224,7 @@ export const ChallengeModal = memo(function ChallengeModal({
             <ChallengesListView
               onSelectChallenge={handleSelectChallenge}
               onJoinChallenge={handleJoinMode}
+              onOpenFriends={onOpenFriends}
               t={t}
             />
           )}
@@ -224,6 +232,7 @@ export const ChallengeModal = memo(function ChallengeModal({
           {mode === "join" && (
             <JoinChallengeView
               initialInvite={pendingInvite}
+              username={username}
               onJoined={handleChallengeJoined}
               onCancel={handleBack}
               t={t}

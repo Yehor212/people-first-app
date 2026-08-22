@@ -76,6 +76,7 @@ async function waitForVisibleHeroOrbCanvas(page: import("@playwright/test").Page
           ].join(", "),
         ),
       ).some((wrapper) =>
+        wrapper.dataset.orbVisualReady === "true" &&
         Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).some(
           (canvas) =>
             canvas.width >= 200 &&
@@ -191,6 +192,7 @@ test.describe("V2 orb renderer lifecycle", () => {
     expect(lateVisibleSwaps).toEqual([]);
 
     await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("orb-page-next")).toBeVisible({ timeout: 30000 });
     await waitForVisibleHeroOrbCanvas(page);
 
     const afterReload = await page.evaluate(() => {

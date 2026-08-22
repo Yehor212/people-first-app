@@ -270,9 +270,8 @@ export function DataMountains({
       {/* SVG Visualization */}
       <svg
         viewBox="0 0 100 70"
-        className="w-full h-full relative z-10"
+        className="relative z-10 h-full min-h-[180px] w-full"
         preserveAspectRatio="xMidYMid meet"
-        style={{ minHeight: 180 }}
       >
         {/* ALL GRADIENT DEFINITIONS FIRST */}
         <defs>

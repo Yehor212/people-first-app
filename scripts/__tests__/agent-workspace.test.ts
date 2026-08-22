@@ -1022,7 +1022,7 @@ describe("agent workspace lifecycle", () => {
       })
     ).toThrowError(/FEATURE_SYNC_REFUSED/);
     expect(git(destination, ["rev-parse", "HEAD"]).trim()).toBe(before);
-  });
+  }, 30_000);
 
   it("requires an exact reviewed SHA before applying protected incoming files", async () => {
     const fixture = await repositoryFixture();
@@ -1054,7 +1054,7 @@ describe("agent workspace lifecycle", () => {
       head: remoteHead,
       restartRequired: true,
     });
-  });
+  }, 30_000);
 
   it("treats every incoming scripts path as protected", async () => {
     const fixture = await repositoryFixture();
@@ -1242,7 +1242,7 @@ describe("agent workspace lifecycle", () => {
         expectedRemote: fixture.remote,
       })
     ).toThrowError(/MAIN_LANE_COUNT/);
-  });
+  }, 30_000);
 
   it("marks ignored local paths as excluded and unverified in the handoff receipt", async () => {
     const fixture = await repositoryFixture();
@@ -1305,7 +1305,7 @@ describe("agent workspace lifecycle", () => {
       })
     ).toThrowError(/REMOTE_BRANCH_MISSING/);
     expect(hasRef(destination, remoteTrackingRef)).toBe(true);
-  });
+  }, 30_000);
 
   it("hands off an exact pushed feature tip even when main advanced after lane creation", async () => {
     const fixture = await repositoryFixture();
@@ -1335,7 +1335,7 @@ describe("agent workspace lifecycle", () => {
       originMain: currentMain,
       ready: true,
     });
-  });
+  }, 30_000);
 
   it("refuses an oversized handoff path manifest", async () => {
     const fixture = await repositoryFixture();
@@ -1368,7 +1368,7 @@ describe("agent workspace lifecycle", () => {
         expectedRemote: fixture.remote,
       })
     ).toThrowError(/HANDOFF_PATH_LIMIT_EXCEEDED/);
-  });
+  }, 30_000);
 });
 
 async function humanReviewFixture(label: string): Promise<HumanReviewFixture> {

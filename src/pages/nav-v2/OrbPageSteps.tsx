@@ -17,12 +17,12 @@ import "./OrbPageSteps.css";
 
 type Tx = Record<string, string>;
 
-function useStepScrollerReset() {
+function useStepScrollerReset(resetKey = 0) {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     if (ref.current) ref.current.scrollTop = 0;
-  }, []);
+  }, [resetKey]);
 
   return ref;
 }
@@ -46,6 +46,7 @@ interface OrbSelectStepProps {
   draftValence: number | null;
   isDenseSelectStep: boolean;
   isUltraDenseSelectStep: boolean;
+  isCompactLandscapeSelectStep: boolean;
   isShortViewport: boolean;
   whisperKey: string;
   whisperText: string;
@@ -73,6 +74,7 @@ export function OrbSelectStep({
   draftValence,
   isDenseSelectStep,
   isUltraDenseSelectStep,
+  isCompactLandscapeSelectStep,
   isShortViewport,
   whisperKey,
   whisperText,
@@ -80,16 +82,28 @@ export function OrbSelectStep({
   handleSliderCommit,
   handleNextStep,
 }: OrbSelectStepProps) {
-  const scrollRef = useStepScrollerReset();
+  const scrollRef = useStepScrollerReset(orbAttempt);
 
   return (
     <>
       <div
         ref={scrollRef}
-        className={cn(selectContentLayoutClass, contentGapClass)}
-        style={{ justifyContent: "safe center" }}
+        className={cn(
+          selectContentLayoutClass,
+          !isCompactLandscapeSelectStep && contentGapClass,
+          isCompactLandscapeSelectStep && "[overflow-anchor:none]",
+          "[justify-content:safe_center]",
+        )}
+        data-orb-select-layout={isCompactLandscapeSelectStep ? "compact-landscape" : "stacked"}
       >
-        <Bloom key="orb-hero" transition={staggerDelay("primary")}>
+        <Bloom
+          key="orb-hero"
+          className={cn(
+            isCompactLandscapeSelectStep &&
+              "col-start-1 row-start-1 row-span-3 self-center",
+          )}
+          transition={staggerDelay("primary")}
+        >
           <div className="flex items-center justify-center" data-testid="orb-page-select">
             <div
               className="relative orb-page-rim-glow"
@@ -143,7 +157,13 @@ export function OrbSelectStep({
         </Bloom>
 
         {!(isDenseSelectStep && draftScope === "specific") && (
-          <Bloom key="orb-whisper" transition={staggerDelay("secondary")}>
+          <Bloom
+            key="orb-whisper"
+            className={cn(
+              isCompactLandscapeSelectStep && "col-start-2 row-start-1 self-end",
+            )}
+            transition={staggerDelay("secondary")}
+          >
             <p
               data-testid="orb-page-whisper"
               data-whisper-key={whisperKey}
@@ -163,13 +183,26 @@ export function OrbSelectStep({
           </Bloom>
         )}
 
-        <Bloom key="orb-scope" transition={staggerDelay("secondary")}>
+        <Bloom
+          key="orb-scope"
+          className={cn(
+            isCompactLandscapeSelectStep && "col-start-2 row-start-2 self-center",
+          )}
+          transition={staggerDelay("secondary")}
+        >
           <div data-testid="orb-page-scope">
             <MoodScopeSelector density={isDenseSelectStep ? "compact" : "default"} />
           </div>
         </Bloom>
 
-        <Bloom key="orb-picker" transition={staggerDelay("cta")}>
+        <Bloom
+          key="orb-picker"
+          className={cn(
+            isCompactLandscapeSelectStep &&
+              "col-start-2 row-start-3 w-full self-start",
+          )}
+          transition={staggerDelay("cta")}
+        >
           <div className="mx-auto w-full" data-testid="orb-page-picker">
             <div data-testid="orb-page-slider">
               <ValenceSlider
@@ -183,11 +216,18 @@ export function OrbSelectStep({
 
       <Bloom key="orb-select-actions" transition={staggerDelay("cta")}>
         <div
-          className="pointer-events-none relative z-20 shrink-0 pt-3 md:pt-4"
+          className={cn(
+            "pointer-events-none relative z-20 shrink-0 pt-3 md:pt-4",
+            isCompactLandscapeSelectStep &&
+              "grid grid-cols-[minmax(12.5rem,0.72fr)_minmax(0,1.28fr)] gap-x-4 px-1",
+          )}
           data-testid="orb-page-footer"
         >
           <div
-            className="pointer-events-auto flex flex-wrap items-center justify-center gap-3"
+            className={cn(
+              "pointer-events-auto flex flex-wrap items-center justify-center gap-3",
+              isCompactLandscapeSelectStep && "col-start-2",
+            )}
             data-testid="orb-page-select-actions"
           >
             <button
@@ -349,8 +389,7 @@ export function OrbRefineStep({
               type="button"
               onClick={handleOpenDiary}
               disabled={!canOpenDiary}
-              className="inline-flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal bg-primary px-3 py-2.5 text-center text-sm font-medium leading-snug text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:flex-1 sm:px-5"
-              style={{ borderRadius: "clamp(24px, 8vw, 44px)" }}
+              className="inline-flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal rounded-[clamp(24px,8vw,44px)] bg-primary px-3 py-2.5 text-center text-sm font-medium leading-snug text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:flex-1 sm:px-5"
               data-testid="orb-page-open-diary"
             >
               <span className="min-w-0 flex-1 [hyphens:manual] [overflow-wrap:normal] [word-break:normal]">

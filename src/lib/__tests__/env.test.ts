@@ -13,9 +13,9 @@ import {
   SENTRY_DSN,
   SPOTIFY_CLIENT_ID,
   ADMOB_REWARDED_ID_ANDROID,
-  ADMOB_BANNER_ID_ANDROID,
   ADMOB_REWARDED_ID_IOS,
-  ADMOB_BANNER_ID_IOS,
+  ADMOB_CHILD_DIRECTED_TREATMENT,
+  ADMOB_UNDER_AGE_OF_CONSENT,
 } from "../env";
 
 describe("env", () => {
@@ -60,29 +60,22 @@ describe("env", () => {
     expect(typeof ADMOB_REWARDED_ID_ANDROID).toBe("string");
   });
 
-  it("ADMOB_BANNER_ID_ANDROID is a string (env-only, no hardcoded fallback)", () => {
-    expect(typeof ADMOB_BANNER_ID_ANDROID).toBe("string");
-  });
-
   it("ADMOB_REWARDED_ID_IOS is a string (env-only, no hardcoded fallback)", () => {
     expect(typeof ADMOB_REWARDED_ID_IOS).toBe("string");
   });
 
-  it("ADMOB_BANNER_ID_IOS is a string (env-only, no hardcoded fallback)", () => {
-    expect(typeof ADMOB_BANNER_ID_IOS).toBe("string");
-  });
-
   it('AdMob IDs follow "ca-app-pub-" format when configured via env', () => {
-    const ids = [
-      ADMOB_REWARDED_ID_ANDROID,
-      ADMOB_BANNER_ID_ANDROID,
-      ADMOB_REWARDED_ID_IOS,
-      ADMOB_BANNER_ID_IOS,
-    ];
+    const ids = [ADMOB_REWARDED_ID_ANDROID, ADMOB_REWARDED_ID_IOS];
     for (const id of ids) {
       if (id.length > 0) {
         expect(id).toMatch(/^ca-app-pub-/);
       }
+    }
+  });
+
+  it("keeps AdMob audience declarations tri-state instead of defaulting unknown to false", () => {
+    for (const value of [ADMOB_CHILD_DIRECTED_TREATMENT, ADMOB_UNDER_AGE_OF_CONSENT]) {
+      expect(value === null || typeof value === "boolean").toBe(true);
     }
   });
 });

@@ -7,6 +7,9 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { Challenge } from "@/types";
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
+vi.mock("@/contexts/FeatureFlagsContext", () => ({
+  useFeatureFlags: () => ({ isFeatureVisible: () => true }),
+}));
 
 const syncMocks = vi.hoisted(() => {
   const logger = {
@@ -69,6 +72,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2HabitsEmpty: "Plant your first seed",
       navV2HabitsStartSmall: "Start with 3 habits — small steps win",
       navV2HabitsRecovery: "One missed day doesn't reset progress",
+      friendChallenges: "Friends & challenges",
+      trackWithFriends: "Track habits together",
       noHabitsToday: "No habits today",
       habitRestDay: "Rest day",
       navV2HabitsCreate: "Create habit",
@@ -105,6 +110,7 @@ let mockHabits: unknown[] = [];
 const setHabitsSpy = vi.fn();
 const setScheduleEventsSpy = vi.fn();
 const setRemindersSpy = vi.fn();
+const openModalSpy = vi.fn();
 
 const makeChallenge = (id: string, habitId: string): Challenge => ({
   id,
@@ -130,13 +136,14 @@ vi.mock("@/stores", async () => {
         moods: [],
         canvasGoals: [],
         setHabits: setHabitsSpy,
+        _publishDurableHabits: setHabitsSpy,
         setScheduleEvents: setScheduleEventsSpy,
         setReminders: setRemindersSpy,
       };
       return selector ? selector(state) : state;
     },
     useUIStore: (selector?: (s: unknown) => unknown) => {
-      const state = { canvasMode: "idle" };
+      const state = { canvasMode: "idle", openModal: openModalSpy };
       return selector ? selector(state) : state;
     },
   };
@@ -166,6 +173,13 @@ vi.mock("@/components/habit-creation-form/HabitCreationForm", () => ({
 
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 
+vi.mock("@/features/automation/automationSourcePersistence", () => ({
+  persistHabitSourceRecord: vi.fn(async () => ({
+    accountBoundaryGeneration: "test-boundary",
+    intentId: null,
+  })),
+}));
+
 // V1 HabitDetailSheet is lazy-loaded; mock its dynamic import so jsdom
 // doesn't try to evaluate the canvas/d3 deep chunk at parse time.
 vi.mock("@/components/habit-hub/HabitDetailSheet", () => ({
@@ -188,6 +202,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     setHabitsSpy.mockClear();
     setScheduleEventsSpy.mockClear();
     setRemindersSpy.mockClear();
+    openModalSpy.mockClear();
     syncMocks.deleteHabitFromCloud.mockClear();
     syncMocks.getChallenges.mockReset();
     syncMocks.getChallenges.mockReturnValue([]);
@@ -219,6 +234,17 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
   it("does not render a table-of-contents nav (single zone, no need)", () => {
     render(<HabitsPage />);
     expect(screen.queryByTestId("habits-page-toc")).not.toBeInTheDocument();
+  });
+
+  it("opens the connected friends and challenges surface from a visible secondary action", () => {
+    render(<HabitsPage />);
+
+    const socialAction = screen.getByRole("button", { name: "Friends & challenges" });
+    expect(socialAction).toHaveClass("min-h-12", "min-w-0", "whitespace-normal");
+
+    fireEvent.click(socialAction);
+
+    expect(openModalSpy).toHaveBeenCalledWith("showChallengeModal");
   });
 
   it("renders the empty state when no habits exist", () => {
@@ -327,14 +353,13 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     const header = heading.closest("header");
     const headingTokens = heading.className.split(/\s+/);
 
-    expect(header?.className).toContain("ps-[4.5rem]");
-    expect(header?.className).toContain("min-[360px]:ps-20");
+    expect(header?.className).toContain("ps-[72px]");
+    expect(header?.className).toContain("min-[360px]:ps-[80px]");
     expect(heading).toHaveClass("text-base");
     expect(heading.className).toContain("min-[360px]:text-lg");
     expect(heading.className).toContain("sm:text-3xl");
-    expect(heading.className).toContain("[overflow-wrap:normal]");
+    expect(heading.className).toContain("[overflow-wrap:anywhere]");
     expect(heading.className).toContain("[hyphens:manual]");
     expect(headingTokens).not.toContain("text-3xl");
-    expect(heading.className).not.toContain("[overflow-wrap:anywhere]");
   });
 });

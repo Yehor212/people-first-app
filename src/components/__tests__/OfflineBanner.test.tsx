@@ -129,13 +129,11 @@ describe("OfflineBanner", () => {
     expect(banner).toBeInTheDocument();
     expect(banner).toHaveClass(
       "max-h-[var(--app-viewport-height)]",
+      "pt-[calc(var(--safe-top)+0.5rem)]",
       "ps-[max(1rem,var(--safe-inline-start))]",
       "pe-[max(1rem,var(--safe-inline-end))]",
     );
     expect(banner).not.toHaveClass("max-h-[100dvh]", "px-4");
-    expect(banner).toHaveStyle({
-      paddingTop: "calc(var(--safe-top) + 0.5rem)",
-    });
 
     await waitFor(() => {
       expect(screen.queryByTestId("offline-banner")).not.toBeInTheDocument();

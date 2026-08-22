@@ -449,6 +449,9 @@ verify_jwt = true
 [functions.resume-account-deletion]
 verify_jwt = false
 
+[functions.rewarded-ads-gate]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

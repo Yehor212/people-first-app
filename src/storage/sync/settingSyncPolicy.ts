@@ -1,5 +1,6 @@
 import { SK } from "@/lib/storageKeys";
 import { DELETION_TRACKER_KEYS } from "@/storage/deletionTracker";
+import { AUTOMATION_PREFERENCE_SETTING_KEY } from "@/features/automation/types";
 
 const LOCAL_ONLY_SETTING_KEYS = new Set<string>([
   "sync-last-seq",
@@ -21,12 +22,14 @@ const LOCAL_ONLY_SETTING_KEYS = new Set<string>([
   SK.JOURNAL_SCREENSHOT_BLOCK,
   SK.JOURNAL_PENDING_ENTRY_DELETES,
   SK.PRIVACY,
+  SK.REWARDED_AD_ATTEMPT_LEDGER,
   ...Object.values(DELETION_TRACKER_KEYS),
 ]);
 
 const LOCAL_ONLY_SETTING_KEY_PREFIXES = ["journal_draft_", SK.JOURNAL_AI_REVOCATION_PREFIX];
 const LEGACY_CLOUD_DELETE_SETTING_PREFIXES = ["journal_draft_"];
 const LEGACY_CLOUD_DELETE_SETTING_KEYS = new Set<string>([SK.PRIVACY]);
+const DEDICATED_SYNC_SETTING_KEYS = new Set<string>([AUTOMATION_PREFERENCE_SETTING_KEY]);
 
 function hasAnyPrefix(key: string, prefixes: readonly string[]): boolean {
   return prefixes.some((prefix) => key.startsWith(prefix));
@@ -36,8 +39,12 @@ export function isLocalOnlySettingKey(key: string): boolean {
   return LOCAL_ONLY_SETTING_KEYS.has(key) || hasAnyPrefix(key, LOCAL_ONLY_SETTING_KEY_PREFIXES);
 }
 
+export function isDedicatedSyncSettingKey(key: string): boolean {
+  return DEDICATED_SYNC_SETTING_KEYS.has(key);
+}
+
 export function isAccountSyncedSettingKey(key: string): boolean {
-  return !isLocalOnlySettingKey(key);
+  return !isLocalOnlySettingKey(key) && !isDedicatedSyncSettingKey(key);
 }
 
 export function shouldDeleteSettingFromCloud(key: string): boolean {

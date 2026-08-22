@@ -6,6 +6,7 @@ import {
   __bufferSize,
   __resetForTests,
 } from "../errorBuffer";
+import { DIAGNOSTIC_CODES } from "../diagnosticPrivacy";
 
 describe("errorBuffer", () => {
   afterEach(() => {
@@ -27,8 +28,8 @@ describe("errorBuffer", () => {
     setCaptureSink(sink);
 
     expect(sink).toHaveBeenCalledTimes(2);
-    expect(sink).toHaveBeenNthCalledWith(1, expect.any(Error), { k: "v1", buffered: true });
-    expect(sink).toHaveBeenNthCalledWith(2, expect.any(Error), { k: "v2", buffered: true });
+    expect(sink).toHaveBeenNthCalledWith(1, expect.any(Error), { buffered: true });
+    expect(sink).toHaveBeenNthCalledWith(2, expect.any(Error), { buffered: true });
     expect(__bufferSize()).toBe(0);
   });
 
@@ -37,9 +38,13 @@ describe("errorBuffer", () => {
     setCaptureSink(sink);
 
     const err = new Error("post-sink");
-    captureOrBuffer(err, { type: "runtime" });
+    captureOrBuffer(err, { phase: "runtime", retryable: true });
 
-    expect(sink).toHaveBeenCalledWith(err, { type: "runtime" });
+    expect(sink).toHaveBeenCalledWith(expect.any(Error), {
+      phase: "runtime",
+      retryable: true,
+    });
+    expect((sink.mock.calls[0][0] as Error).message).toBe(DIAGNOSTIC_CODES.error);
     expect(__bufferSize()).toBe(0);
   });
 
@@ -48,7 +53,7 @@ describe("errorBuffer", () => {
     captureOrBuffer(new Error("x"), { original: 1 });
     setCaptureSink(sink);
 
-    expect(sink).toHaveBeenCalledWith(expect.any(Error), { original: 1, buffered: true });
+    expect(sink).toHaveBeenCalledWith(expect.any(Error), { buffered: true });
   });
 
   it("does NOT tag immediate errors with buffered: true", () => {
@@ -56,7 +61,7 @@ describe("errorBuffer", () => {
     setCaptureSink(sink);
     captureOrBuffer(new Error("y"), { original: 2 });
 
-    expect(sink).toHaveBeenCalledWith(expect.any(Error), { original: 2 });
+    expect(sink).toHaveBeenCalledWith(expect.any(Error), {});
     // Ensure no buffered flag leaks.
     const [, ctx] = sink.mock.calls[0];
     expect(ctx).not.toHaveProperty("buffered");
@@ -69,7 +74,7 @@ describe("errorBuffer", () => {
     expect(__bufferSize()).toBe(BUFFER_CAP);
   });
 
-  it("keeps the first BUFFER_CAP errors (FIFO drop policy)", () => {
+  it("never retains caller-owned messages in the bounded buffer", () => {
     const sink = vi.fn();
     for (let i = 0; i < BUFFER_CAP + 5; i++) {
       captureOrBuffer(new Error(`msg-${i}`));
@@ -77,10 +82,11 @@ describe("errorBuffer", () => {
     setCaptureSink(sink);
 
     expect(sink).toHaveBeenCalledTimes(BUFFER_CAP);
-    const firstMsg = (sink.mock.calls[0][0] as Error).message;
-    const lastMsg = (sink.mock.calls[BUFFER_CAP - 1][0] as Error).message;
-    expect(firstMsg).toBe("msg-0");
-    expect(lastMsg).toBe(`msg-${BUFFER_CAP - 1}`);
+    const serializedMessages = sink.mock.calls.map(([error]) => (error as Error).message);
+    expect(serializedMessages).toEqual(
+      Array.from({ length: BUFFER_CAP }, () => DIAGNOSTIC_CODES.error)
+    );
+    expect(JSON.stringify(sink.mock.calls)).not.toContain("msg-");
   });
 
   it("uses empty object as default context", () => {

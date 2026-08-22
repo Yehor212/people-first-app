@@ -12,6 +12,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Diary: "Diary",
       navV2Planning: "Planning",
       navV2Settings: "Settings",
+      connectedRecordsHistory: "View history and undo",
       navV2PrimaryNav: "Primary navigation",
       navV2CollapseSidebar: "Collapse sidebar",
       navV2ExpandSidebar: "Expand sidebar",
@@ -55,6 +56,29 @@ describe("SidebarV2", () => {
     expect(screen.getByRole("button", { name: "Planning" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
     expect(screen.queryByTestId("sidebar-v2-classic-portal")).not.toBeInTheDocument();
+  });
+
+  it("offers an explicit 48px connected-history action without selecting a page", () => {
+    const onOpenConnectedHistory = vi.fn();
+    render(
+      <SidebarV2
+        {...defaultProps}
+        activePage="habits"
+        onOpenConnectedHistory={onOpenConnectedHistory}
+      />
+    );
+
+    const action = screen.getByRole("button", { name: "View history and undo" });
+    expect(action).toHaveClass("min-h-12");
+    expect(action).not.toHaveAttribute("aria-current");
+
+    fireEvent.click(action);
+
+    expect(onOpenConnectedHistory).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Habits" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
   });
 
   it("marks the active page with aria-current=page", () => {

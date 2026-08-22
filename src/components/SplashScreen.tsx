@@ -470,12 +470,12 @@ export function SplashScreen({
       )}
 
       <div
-        className="splash-brand-logo relative z-10 mb-6 flex h-20 w-20 items-center justify-center"
+        className="splash-brand-logo relative z-10 mb-[24px] flex h-[80px] w-[80px] shrink-0 items-center justify-center"
         data-testid="splash-brand-logo"
       >
         {!isNightBackground ? (
           <div
-            className="splash-logo-ring pointer-events-none absolute left-1/2 top-1/2 h-[7.5rem] w-[7.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            className="splash-logo-ring pointer-events-none absolute left-1/2 top-1/2 h-[120px] w-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full"
             data-testid="splash-day-logo-ring"
             aria-hidden="true"
           />
@@ -550,19 +550,22 @@ export function SplashScreen({
       </div>
 
       <h1
-        className="splash-title relative z-10 text-3xl font-bold tracking-[0.15em] text-[var(--splash-copy)]"
+        aria-label="ZenFlow"
+        dir="ltr"
+        className="splash-title relative z-10 flex max-w-[calc(100vw-2rem)] flex-wrap justify-center text-center text-3xl font-bold leading-none tracking-[0.15em] text-[var(--splash-copy)]"
       >
-        ZenFlow
+        <span aria-hidden="true">Zen</span>
+        <span aria-hidden="true">Flow</span>
       </h1>
 
       <p
-        className="splash-subtitle relative z-10 mt-3 text-sm text-[var(--splash-muted)]"
+        className="splash-subtitle relative z-10 mt-[12px] max-w-[calc(100vw-32px)] text-center text-sm text-[var(--splash-muted)] [overflow-wrap:anywhere]"
       >
         {subtitle}
       </p>
 
       <div
-        className="splash-loader relative z-10 mt-8 flex min-h-[8.125rem] items-center justify-center drop-shadow-[0_0_2rem_var(--splash-loader-shadow)]"
+        className="splash-loader relative z-10 mt-[32px] flex min-h-[130px] shrink-0 items-center justify-center drop-shadow-[0_0_2rem_var(--splash-loader-shadow)]"
         data-testid="splash-infinity-loader"
       >
         <PremiumLoader size="xl" label={t.loading} />

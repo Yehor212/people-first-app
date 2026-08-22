@@ -176,12 +176,11 @@ export function ThemeToggleV2({
         <span
           data-testid={`${testId}-thumb`}
           className={cn(
-            "absolute top-[5px] h-[26px] w-[22px] rounded-[6px] motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:duration-300 flex items-center justify-center shadow-[0_8px_16px_-12px_hsl(var(--settings-v2-shadow)/0.68)] ring-1",
+            "absolute start-[5px] top-[5px] h-[26px] w-[22px] rounded-[6px] motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:duration-300 flex items-center justify-center shadow-[0_8px_16px_-12px_hsl(var(--settings-v2-shadow)/0.68)] ring-1",
             isDark
               ? "ltr:translate-x-[20px] rtl:-translate-x-[20px] bg-[hsl(var(--settings-v2-accent)/0.18)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-accent)/0.34)]"
               : "translate-x-0 bg-[hsl(var(--settings-v2-panel)/0.94)] text-[hsl(var(--settings-v2-accent))] ring-[hsl(var(--settings-v2-border)/0.42)]",
           )}
-          style={{ insetInlineStart: "5px" }}
         >
           {isDark ? (
             <Moon className="w-3.5 h-3.5" aria-hidden="true" />

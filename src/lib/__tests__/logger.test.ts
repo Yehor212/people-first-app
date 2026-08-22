@@ -1,145 +1,52 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock IS_DEV=true BEFORE the logger module loads
-vi.mock('@/lib/env', () => ({ IS_DEV: true }));
+vi.mock("@/lib/env", () => ({ IS_DEV: true }));
 
-import { logger } from '@/lib/logger';
+import { DIAGNOSTIC_CODES } from "@/lib/diagnosticPrivacy";
+import { logger } from "@/lib/logger";
 
-// ─── Console spies ──────────────────────────────────────────────
 const consoleSpy = {
-  log: vi.spyOn(console, 'log').mockImplementation(() => {}),
-  warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
-  error: vi.spyOn(console, 'error').mockImplementation(() => {}),
+  log: vi.spyOn(console, "log").mockImplementation(() => undefined),
+  warn: vi.spyOn(console, "warn").mockImplementation(() => undefined),
+  error: vi.spyOn(console, "error").mockImplementation(() => undefined),
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-afterEach(() => {
-  // Spies stay active for all tests; just clear call history
-});
+describe("privacy-safe logger", () => {
+  it("emits only fixed codes for every logging channel", () => {
+    logger.log("private text", { arbitrary: "private text" });
+    logger.info("private text", ["private text"]);
+    logger.warn(new Error("private text"));
+    logger.error(new Error("private text"), { stack: "private text" });
+    logger.sync("private text", { content: "private text" });
+    logger.auth("private text");
 
-// ─── logger.log ─────────────────────────────────────────────────
-
-describe('logger.log', () => {
-  it('calls console.log with the provided message', () => {
-    logger.log('hello');
-    expect(consoleSpy.log).toHaveBeenCalledWith('hello');
+    expect(consoleSpy.log.mock.calls).toEqual([
+      [DIAGNOSTIC_CODES.log],
+      [DIAGNOSTIC_CODES.info],
+      [DIAGNOSTIC_CODES.sync],
+      [DIAGNOSTIC_CODES.auth],
+    ]);
+    expect(consoleSpy.warn).toHaveBeenCalledWith(DIAGNOSTIC_CODES.warning);
+    expect(consoleSpy.error).toHaveBeenCalledWith(DIAGNOSTIC_CODES.error);
+    expect(JSON.stringify(Object.values(consoleSpy).flatMap((spy) => spy.mock.calls))).not.toContain(
+      "private text"
+    );
   });
 
-  it('passes multiple arguments through', () => {
-    logger.log('count:', 42, true);
-    expect(consoleSpy.log).toHaveBeenCalledWith('count:', 42, true);
-  });
-
-  it('exposes logger.info as an alias of logger.log for production-safe call sites', () => {
-    const info = (logger as { info?: (...args: unknown[]) => void }).info;
-
-    expect(info).toBeTypeOf('function');
-    info?.('migration complete', 2);
-
-    expect(consoleSpy.log).toHaveBeenCalledWith('migration complete', 2);
-  });
-});
-
-// ─── logger.warn ────────────────────────────────────────────────
-
-describe('logger.warn', () => {
-  it('calls console.warn in dev mode', () => {
-    logger.warn('watch out');
-    expect(consoleSpy.warn).toHaveBeenCalledWith('watch out');
-  });
-});
-
-// ─── logger.error ───────────────────────────────────────────────
-
-describe('logger.error', () => {
-  it('calls console.error with the provided message', () => {
-    logger.error('something broke');
-    expect(consoleSpy.error).toHaveBeenCalledWith('something broke');
-  });
-
-  it('passes Error objects through', () => {
-    const err = new Error('oops');
-    logger.error(err);
-    expect(consoleSpy.error).toHaveBeenCalledWith(err);
-  });
-});
-
-// ─── logger.sync ────────────────────────────────────────────────
-
-describe('logger.sync', () => {
-  it('logs with [Sync] prefix', () => {
-    logger.sync('pull complete');
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] pull complete', undefined);
-  });
-
-  it('passes sanitized data as second argument', () => {
-    logger.sync('status', { count: 5 });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] status', { count: 5 });
-  });
-});
-
-// ─── logger.auth ────────────────────────────────────────────────
-
-describe('logger.auth', () => {
-  it('logs with [Auth] prefix', () => {
-    logger.auth('login success');
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Auth] login success');
-  });
-});
-
-// ─── sanitizeLogData (tested indirectly via logger.sync) ────────
-
-describe('sanitizeLogData (via logger.sync)', () => {
-  it('redacts user_id field', () => {
-    logger.sync('test', { user_id: 'abc-123' });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', { user_id: '[REDACTED]' });
-  });
-
-  it('redacts token field', () => {
-    logger.sync('test', { token: 'secret-token-value' });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', { token: '[REDACTED]' });
-  });
-
-  it('redacts email field', () => {
-    logger.sync('test', { email: 'user@example.com' });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', { email: '[REDACTED]' });
-  });
-
-  it('redacts access_token and refresh_token', () => {
-    logger.sync('test', { access_token: 'at-123', refresh_token: 'rt-456' });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', {
-      access_token: '[REDACTED]',
-      refresh_token: '[REDACTED]',
+  it("does not pass Errors, arrays, or otherwise safe-looking arbitrary fields through", () => {
+    const canary = "PRIVATE_CANARY";
+    logger.error(new Error(canary), [canary], {
+      count: 2,
+      status: "ok",
+      user_id: canary,
     });
-  });
 
-  it('redacts account-deletion recovery secrets', () => {
-    logger.sync('test', {
-      recoverySecret: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', {
-      recoverySecret: '[REDACTED]',
-    });
-  });
-
-  it('redacts nested objects containing sensitive keys', () => {
-    logger.sync('test', {
-      user: { userId: 'u-1', name: 'Alice' },
-    });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', {
-      user: { userId: '[REDACTED]', name: 'Alice' },
-    });
-  });
-
-  it('passes through non-sensitive keys unchanged', () => {
-    logger.sync('test', { count: 10, status: 'ok', items: 3 });
-    expect(consoleSpy.log).toHaveBeenCalledWith('[Sync] test', {
-      count: 10,
-      status: 'ok',
-      items: 3,
-    });
+    expect(consoleSpy.error).toHaveBeenCalledTimes(1);
+    expect(consoleSpy.error).toHaveBeenCalledWith(DIAGNOSTIC_CODES.error);
+    expect(JSON.stringify(consoleSpy.error.mock.calls)).not.toContain(canary);
   });
 });

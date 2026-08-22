@@ -410,6 +410,37 @@ describe("bridge pattern (_registerSetters)", () => {
     expect(setters.setMoods).toHaveBeenCalledWith(moods);
   });
 
+  it("publishes an already durable mood without scheduling a second collection rewrite", () => {
+    const setters = createMockSetters();
+    useUserDataStore.getState()._registerSetters(setters);
+    const moods = [makeMood({ id: "durable-mood" })];
+
+    useUserDataStore.getState()._publishDurableMoods(moods);
+
+    expect(useUserDataStore.getState().moods).toEqual(moods);
+    expect(setters.setMoods).not.toHaveBeenCalled();
+  });
+
+  it("publishes an already durable focus session without scheduling a second collection rewrite", () => {
+    const setters = createMockSetters();
+    useUserDataStore.getState()._registerSetters(setters);
+    const focusSessions = [
+      {
+        id: "durable-focus",
+        duration: 25,
+        completedAt: 101,
+        date: "2026-08-08",
+        status: "completed" as const,
+        updatedAt: 101,
+      },
+    ];
+
+    useUserDataStore.getState()._publishDurableFocusSessions(focusSessions);
+
+    expect(useUserDataStore.getState().focusSessions).toEqual(focusSessions);
+    expect(setters.setFocusSessions).not.toHaveBeenCalled();
+  });
+
   it("setHabits calls registered IndexedDB setter", () => {
     const setters = createMockSetters();
     useUserDataStore.getState()._registerSetters(setters);

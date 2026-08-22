@@ -240,12 +240,11 @@ export function OfflineBanner() {
               ? { duration: 0 }
               : { type: 'spring', damping: 25, stiffness: 300 }
           }
-          className={`fixed top-0 inset-x-0 z-[54] ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] ${
+          className={`fixed inset-x-0 top-0 z-[54] pb-2 pt-[calc(var(--safe-top)+0.5rem)] ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] ${
             dataDropWarning
               ? 'bg-destructive text-destructive-foreground'
               : 'bg-[hsl(var(--zf-warning))] text-[hsl(var(--zf-night-0))]'
           } max-h-[var(--app-viewport-height)] overflow-y-auto overscroll-contain shadow-lg`}
-          style={{ paddingTop: 'calc(var(--safe-top) + 0.5rem)', paddingBottom: '0.5rem' }}
           data-testid="offline-banner"
         >
           <div className="mx-auto grid max-w-lg min-w-0 grid-cols-1 items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-3">

@@ -1,8 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { MoodFirstRunHint } from "../MoodFirstRunHint";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+const backHandlerMocks = vi.hoisted(() => ({
+  callback: null as null | (() => void),
+  enabled: false,
+}));
+
+vi.mock("@/hooks/useBackHandler", () => ({
+  useBackHandler: (enabled: boolean, callback: () => void) => {
+    backHandlerMocks.enabled = enabled;
+    backHandlerMocks.callback = callback;
+  },
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -26,6 +38,8 @@ vi.mock("@/lib/haptics", () => ({
 describe("MoodFirstRunHint", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    backHandlerMocks.callback = null;
+    backHandlerMocks.enabled = false;
   });
 
   it("does not render when eligible=false", () => {
@@ -106,5 +120,25 @@ describe("MoodFirstRunHint", () => {
 
     expect(match).not.toBeNull();
     expect(Number(match?.[1])).toBeLessThan(59);
+  });
+
+  it("uses the shared viewport contract instead of a raw viewport unit", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/MoodFirstRunHint.css"),
+      "utf8",
+    );
+
+    expect(css).toContain("var(--app-viewport-height)");
+    expect(css).not.toContain("100dvh");
+  });
+
+  it("registers explicit Android Back ownership only while visible", () => {
+    render(<MoodFirstRunHint eligible={true} />);
+    expect(backHandlerMocks.enabled).toBe(true);
+
+    act(() => backHandlerMocks.callback?.());
+
+    expect(screen.queryByTestId("mood-first-run-hint")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("zenflow-orb-first-run-dismissed")).toBe("1");
   });
 });

@@ -1,3 +1,11 @@
+import {
+  createDiagnosticError,
+  DIAGNOSTIC_CODES,
+  resetExternalDiagnosticSinkStateForTests,
+  sanitizeDiagnosticMetadata,
+  setExternalDiagnosticSinkState,
+} from "@/lib/diagnosticPrivacy";
+
 /**
  * Bounded runtime error buffer.
  *
@@ -25,12 +33,17 @@ const buffer: BufferedError[] = [];
  * loops). Overflow is silently dropped — bootstrap errors are the priority.
  */
 export function captureOrBuffer(error: Error, context: Record<string, unknown> = {}): void {
+  void error;
+  const safeError = createDiagnosticError(DIAGNOSTIC_CODES.error);
+  const safeContext: Record<string, unknown> = {
+    ...(sanitizeDiagnosticMetadata(context) ?? {}),
+  };
   if (sink) {
-    sink(error, context);
+    sink(safeError, safeContext);
     return;
   }
   if (buffer.length < BUFFER_CAP) {
-    buffer.push({ error, context });
+    buffer.push({ error: safeError, context: safeContext });
   }
 }
 
@@ -41,6 +54,7 @@ export function captureOrBuffer(error: Error, context: Record<string, unknown> =
  */
 export function setCaptureSink(nextSink: CaptureSink): void {
   sink = nextSink;
+  setExternalDiagnosticSinkState("enabled-with-explicit-choice");
   if (buffer.length === 0) return;
   const snapshot = buffer.splice(0, buffer.length);
   for (const { error, context } of snapshot) {
@@ -57,6 +71,7 @@ export function setCaptureSink(nextSink: CaptureSink): void {
 export function __resetForTests(): void {
   sink = null;
   buffer.length = 0;
+  resetExternalDiagnosticSinkStateForTests();
 }
 
 /** Read-only snapshot for testing/observability. */

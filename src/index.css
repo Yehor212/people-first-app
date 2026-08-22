@@ -1097,6 +1097,15 @@
     backdrop-filter: saturate(0.94) contrast(0.98);
   }
 
+  /* Android WebView promotes a backdrop-filtered full-screen pseudo-element
+   * to a second viewport-sized compositor surface. Keep the same readability
+   * veil and text contrast, but let the existing background paint directly so
+   * the canonical WebGL orb does not compete with a duplicate 1080p tile set. */
+  :root[data-platform="android"] .v2-readable-page--ambient::before {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   .v2-readable-page :where(h1, h2, h3, h4, p, span, label, legend, button, a, textarea, input, summary, [role="status"]) {
     text-shadow: var(--v2-readable-text-shadow);
   }
@@ -1124,6 +1133,14 @@
     backdrop-filter: blur(14px) saturate(128%);
   }
 
+  @media (min-width: 600px) and (orientation: landscape) and (max-height: 479px) {
+    [data-nav-layout="phone"] .v2-phone-drawer-inline-clearance {
+      margin-inline-start: calc(
+        var(--safe-inline-start) + var(--v2-phone-drawer-size)
+      );
+    }
+  }
+
 
 }
 
@@ -1131,8 +1148,8 @@
   .zf-safe-area-dialog {
     left: calc(var(--safe-left) + (100% - var(--safe-left) - var(--safe-right)) / 2);
     top: calc(var(--safe-top) + (var(--app-viewport-height) - var(--safe-top) - var(--safe-bottom)) / 2);
-    max-height: calc(var(--app-viewport-height) - max(1rem, var(--safe-top)) - max(1rem, var(--safe-bottom)));
-    width: calc(100% - max(1rem, var(--safe-left)) - max(1rem, var(--safe-right)));
+    max-height: calc(var(--app-viewport-height) - max(16px, var(--safe-top)) - max(16px, var(--safe-bottom)));
+    width: calc(100% - max(16px, var(--safe-left)) - max(16px, var(--safe-right)));
   }
 
   .zf-auto-fit-grid-10 {
@@ -4873,6 +4890,49 @@ body.reduce-motion .splash-night-thread {
   transition: none !important;
 }
 
+/* Android WebView splash compositor budget */
+:root[data-platform="android"] .splash-theme-shell {
+  will-change: auto;
+}
+
+:root[data-platform="android"]
+  :is(
+    .splash-day-depth,
+    .splash-day-aurora,
+    .splash-day-bubble,
+    .splash-logo-ring,
+    .splash-night-depth,
+    .splash-night-ribbon,
+    .splash-night-vellum,
+    .splash-night-orb,
+    .splash-night-orb__core,
+    .splash-night-thread,
+    .splash-night-focus-well
+  ) {
+  animation: none !important;
+  filter: none;
+  mix-blend-mode: normal;
+  will-change: auto;
+}
+
+:root[data-platform="android"] .splash-day-bubble {
+  background: radial-gradient(circle, var(--splash-orb-tone) 0%, transparent 72%);
+  opacity: 0.72;
+}
+
+:root[data-platform="android"] .splash-night-ribbon--a {
+  opacity: 0.52;
+}
+
+:root[data-platform="android"] .splash-day-bubble:nth-child(n + 3),
+:root[data-platform="android"] .splash-night-ribbon--b,
+:root[data-platform="android"] .splash-night-vellum,
+:root[data-platform="android"] .splash-night-orb:nth-child(n + 3),
+:root[data-platform="android"] .splash-night-thread {
+  display: none;
+}
+/* End Android WebView splash compositor budget */
+
 /* Subtle scale pulse — replaces FM scale: [1, 1.02, 1] loops */
 @keyframes zen-pulse {
   0%,
@@ -7598,4 +7658,171 @@ html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"] * {
   50% {
     transform: translate3d(-50%, calc(-50% - 3px), 0) scale(1.025);
   }
+}
+
+/* Static visual declarations extracted from React so dynamic inline styles stay
+ * reserved for runtime geometry and motion values. These classes intentionally
+ * preserve the existing token-based rendering across WebView, WKWebView, PWA,
+ * and desktop shells. */
+.zf-entry-gate-horizon-position {
+  right: 8%;
+  bottom: 17%;
+  left: 8%;
+}
+
+.zf-focus-reflection-cosmic-background {
+  background: radial-gradient(
+    ellipse at top,
+    hsl(var(--focus-cosmic-dark)) 0%,
+    hsl(var(--focus-cosmic-mid)) 60%,
+    hsl(var(--focus-cosmic-deep)) 100%
+  );
+}
+
+.zf-focus-cosmic-background {
+  background: radial-gradient(
+    ellipse at center,
+    hsl(var(--focus-cosmic-light)) 0%,
+    hsl(var(--focus-cosmic-mid)) 40%,
+    hsl(var(--focus-cosmic-dark)) 100%
+  );
+}
+
+.zf-focus-cosmic-nebula {
+  background:
+    radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
+    radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%);
+}
+
+.zf-habit-form-aura {
+  background:
+    radial-gradient(
+      ellipse at 18% 0%,
+      hsl(var(--zf-role-energy) / 0.1) 0%,
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 88% 8%,
+      hsl(var(--zf-role-release) / 0.08) 0%,
+      transparent 34%
+    );
+}
+
+.zf-habit-form-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--zf-text-strong) / 0.03) 50%,
+    transparent 100%
+  );
+}
+
+.zf-habit-tracker-energy-background {
+  background: radial-gradient(
+    ellipse at top,
+    hsl(var(--chart-habit) / 0.12) 0%,
+    hsl(var(--chart-habit) / 0.08) 30%,
+    hsl(var(--card)) 60%
+  );
+}
+
+.zf-hyperfocus-cosmic-background {
+  background: radial-gradient(
+    ellipse at center,
+    hsl(var(--focus-cosmic-mid)) 0%,
+    hsl(var(--focus-cosmic-deep)) 50%,
+    hsl(var(--focus-cosmic-dark)) 100%
+  );
+}
+
+.zf-hyperfocus-nebula {
+  background:
+    radial-gradient(circle at 20% 30%, var(--nebula-a) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, var(--nebula-b) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, var(--nebula-b) 0%, transparent 30%);
+}
+
+.zf-emotion-galaxy-cosmic-background {
+  background: radial-gradient(
+    ellipse at center,
+    hsl(var(--cosmic-space-surface)) 0%,
+    hsl(var(--cosmic-space-mid)) 40%,
+    hsl(var(--cosmic-space-deep)) 100%
+  );
+}
+
+.zf-journal-audio-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--journal-paper-muted, var(--diary-border, hsl(var(--border)))) 28%,
+    transparent
+  );
+  background-color: color-mix(
+    in srgb,
+    var(--journal-paper-text, var(--diary-text, hsl(var(--foreground)))) 6%,
+    transparent
+  );
+}
+
+.zf-journal-audio-control {
+  background-color: color-mix(
+    in srgb,
+    var(--journal-paper-text, var(--diary-text, hsl(var(--foreground)))) 12%,
+    transparent
+  );
+}
+
+.zf-journal-audio-range {
+  accent-color: var(--journal-paper-text, var(--diary-text, hsl(var(--foreground))));
+}
+
+.zf-journal-memory-horizontal-rule {
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.34),
+    transparent
+  );
+}
+
+.zf-journal-memory-vertical-rule {
+  background-image: linear-gradient(
+    180deg,
+    transparent,
+    hsl(var(--primary) / 0.24),
+    transparent
+  );
+}
+
+.zf-journal-reflection-paper {
+  background-image:
+    linear-gradient(135deg, hsl(var(--primary) / 0.1), transparent 42%),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 23px,
+      hsl(var(--border) / 0.07) 24px 25px
+    );
+}
+
+.zf-journal-reflection-spine {
+  background-image: linear-gradient(
+    180deg,
+    transparent,
+    hsl(var(--primary) / 0.42),
+    transparent
+  );
+}
+
+.zf-memory-portal-surface {
+  min-height: clamp(
+    calc(360px * var(--font-scale)),
+    calc(100svh - 13rem),
+    calc(430px * var(--font-scale))
+  );
+}
+
+.zf-memory-portal-glow {
+  background:
+    radial-gradient(circle at 50% 48%, hsl(var(--primary) / 0.18), transparent 34%),
+    radial-gradient(circle at 80% 18%, hsl(var(--accent) / 0.1), transparent 30%);
 }

@@ -185,6 +185,25 @@ async function seedPlaintextDraftAndSpaces(): Promise<void> {
   });
 }
 
+async function seedAutomationHistory(): Promise<void> {
+  await db.automationTransactions.put({
+    kind: "transaction",
+    id: "22222222-2222-4222-8222-222222222222",
+    ownerUserId: "11111111-1111-4111-8111-111111111111",
+    consentEpoch: "33333333-3333-4333-8333-333333333333",
+    sourceKey: `sha256:${"0".repeat(64)}`,
+    ruleId: "mood.note-to-journal.v1",
+    ruleVersion: 1,
+    sourceType: "mood",
+    sourceId: "mood-1",
+    status: "commit_pending",
+    revisionCiphertext: "zenflow:automation-revision:v1:encrypted",
+    createdAt: 100,
+    updatedAt: 100,
+    schemaVersion: 1,
+  });
+}
+
 describe("journal password protection migration", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -228,6 +247,8 @@ describe("journal password protection migration", () => {
         db.journalSpaces,
         db.journalSpaceCaptures,
         db.offlineQueue,
+        db.automationTransactions,
+        db.automationRemoteEvents,
       ],
       async () => {
         await db.settings.clear();
@@ -237,6 +258,8 @@ describe("journal password protection migration", () => {
         await db.journalSpaces.clear();
         await db.journalSpaceCaptures.clear();
         await db.offlineQueue.clear();
+        await db.automationTransactions.clear();
+        await db.automationRemoteEvents.clear();
       }
     );
   });
@@ -437,6 +460,55 @@ describe("journal password protection migration", () => {
     await expect(getJournalSecurityRemovalIntent()).resolves.toMatchObject({
       ownerUserId: "account-a",
       status: "pending",
+    });
+  });
+
+  it("keeps password, vault, and ciphertext untouched while connected-record history remains", async () => {
+    await seedPlaintextDiary();
+    await activateJournalPasswordProtection({
+      passwordData,
+      vaultSetting,
+      vaultKey: "vault-key",
+    });
+    await db.settings.delete(SK.JOURNAL_SECURITY_MIGRATION);
+    await seedAutomationHistory();
+
+    const boundary = await captureJournalSecurityBoundary();
+    await expect(
+      removeJournalPasswordProtectionAtomically("vault-key", boundary),
+    ).rejects.toMatchObject({ code: "AUTOMATION_HISTORY_REQUIRES_VAULT" });
+
+    await expect(db.settings.get(SK.JOURNAL_PASSWORD)).resolves.toBeDefined();
+    await expect(db.settings.get(SK.JOURNAL_VAULT_KEY)).resolves.toBeDefined();
+    await expect(db.journalEntries.get("entry-1")).resolves.toMatchObject({
+      content: "entry-enc:vault-key:plaintext entry",
+    });
+    await expect(db.automationTransactions.count()).resolves.toBe(1);
+  });
+
+  it("rechecks automation history in the vault-deletion transaction after decryption preparation", async () => {
+    await seedPlaintextDiary();
+    await activateJournalPasswordProtection({
+      passwordData,
+      vaultSetting,
+      vaultKey: "vault-key",
+    });
+    await db.settings.delete(SK.JOURNAL_SECURITY_MIGRATION);
+    mocks.decryptContent.mockImplementationOnce(async (value: string, key: string) => {
+      await seedAutomationHistory();
+      const prefix = `entry-enc:${key}:`;
+      return value.startsWith(prefix) ? value.slice(prefix.length) : value;
+    });
+
+    const boundary = await captureJournalSecurityBoundary();
+    await expect(
+      removeJournalPasswordProtectionAtomically("vault-key", boundary),
+    ).rejects.toMatchObject({ code: "AUTOMATION_HISTORY_REQUIRES_VAULT" });
+
+    await expect(db.settings.get(SK.JOURNAL_PASSWORD)).resolves.toBeDefined();
+    await expect(db.settings.get(SK.JOURNAL_VAULT_KEY)).resolves.toBeDefined();
+    await expect(db.journalEntries.get("entry-1")).resolves.toMatchObject({
+      content: "entry-enc:vault-key:plaintext entry",
     });
   });
 

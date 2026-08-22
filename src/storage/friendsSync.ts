@@ -21,6 +21,8 @@ import { isAbortError } from "@/lib/validation";
 import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 import { getLocalDataOwnerId } from "@/storage/db";
 import type { SeverityLevel } from "@sentry/core";
+import { buildSocialInviteUrl } from "@/lib/socialInvite";
+import { sanitizeUserName } from "@/lib/sanitize";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -100,6 +102,35 @@ export interface MyProfile {
   shareLevel: boolean;
   shareActivity: boolean;
 }
+
+export type AddFriendFailureReason =
+  | "invalid"
+  | "duplicate"
+  | "self"
+  | "offline"
+  | "not_found"
+  | "signed_out"
+  | "unavailable";
+
+export type AddFriendResult =
+  | { success: true; friend: Friend }
+  | { success: false; reason: AddFriendFailureReason };
+
+interface FriendLookupProfile {
+  userId?: string;
+  displayName: string;
+  avatarEmoji: string;
+  currentStreak: number;
+  level: number;
+  lastActive: string;
+  status?: string;
+  streakHidden: boolean;
+  levelHidden: boolean;
+}
+
+type FriendLookupResult =
+  | { status: "found"; profile: FriendLookupProfile }
+  | { status: "not_found" | "offline" | "unavailable" };
 
 // ============================================
 // CONSTANTS
@@ -278,6 +309,54 @@ export function updateMyProfile(updates: Partial<MyProfile>): MyProfile {
 }
 
 /**
+ * Publish the code shown by the Friends UI only after the active auth user,
+ * cached session and local-data owner agree. A null result means Copy/Share
+ * must stay unavailable because another device could not resolve the code.
+ */
+export async function ensureMyFriendProfilePublished(
+  displayName: string,
+  currentStreak: number,
+  level: number,
+): Promise<MyProfile | null> {
+  if (!supabase) return null;
+
+  const normalizedDisplayName = sanitizeUserName(displayName);
+  if (!normalizedDisplayName) return null;
+
+  const localProfile = await runWithFriendsLocalOwner(
+    undefined,
+    "Prepare friend profile",
+    () => {
+      const existing = loadMyProfile();
+      const profile: MyProfile = existing
+        ? {
+            ...existing,
+            displayName: normalizedDisplayName,
+            currentStreak,
+            level,
+          }
+        : {
+            friendCode: generateFriendCode(),
+            displayName: normalizedDisplayName,
+            avatarEmoji: "🧘",
+            currentStreak,
+            level,
+            shareStreak: true,
+            shareLevel: true,
+            shareActivity: true,
+          };
+      saveMyProfile(profile);
+      return profile;
+    },
+  );
+  if (!localProfile) return null;
+
+  return (await syncMyProfileToCloud(localProfile.value, localProfile.ownerUserId))
+    ? localProfile.value
+    : null;
+}
+
+/**
  * Update my streak (called when streak changes)
  */
 export async function updateMyStreak(
@@ -334,15 +413,23 @@ export async function updateMyLevel(
 /**
  * Add a friend by their code
  */
-export async function addFriendByCode(friendCode: string): Promise<{
-  success: boolean;
-  friend?: Friend;
-  error?: string;
-}> {
+export async function addFriendByCode(friendCode: string): Promise<AddFriendResult> {
   const normalizedCode = normalizeFriendCode(friendCode);
 
   if (!isValidFriendCode(normalizedCode)) {
-    return { success: false, error: "Invalid friend code format" };
+    return { success: false, reason: "invalid" };
+  }
+
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { success: false, reason: "offline" };
+  }
+
+  if (!supabase) {
+    return { success: false, reason: "unavailable" };
+  }
+
+  if (!(await getCurrentUserId())) {
+    return { success: false, reason: "signed_out" };
   }
 
   // Bind both local reads to one owner before the remote lookup starts. A
@@ -357,7 +444,7 @@ export async function addFriendByCode(friendCode: string): Promise<{
         value: { friends: loadFriends(), myProfile: loadMyProfile() },
       };
   if (!localSnapshot) {
-    return { success: false };
+    return { success: false, reason: "unavailable" };
   }
 
   const { friends, myProfile } = localSnapshot.value;
@@ -366,56 +453,46 @@ export async function addFriendByCode(friendCode: string): Promise<{
   // Check if already friends
   const existing = friends.find((f) => f.friendCode === normalizedCode);
   if (existing) {
-    return { success: false, error: "Already friends with this user" };
+    return { success: false, reason: "duplicate" };
   }
 
   // Check if it's own code
   if (myProfile?.friendCode === normalizedCode) {
-    return { success: false, error: "Cannot add yourself as a friend" };
+    return { success: false, reason: "self" };
   }
 
   // Try to find friend in cloud
-  if (supabase) {
-    try {
-      const friendData = await findFriendByCode(normalizedCode);
-      if (friendData) {
-        const friend: Friend = {
-          id: generateSecureId("friend"),
-          userId: friendData.userId,
-          friendCode: normalizedCode,
-          displayName: friendData.displayName,
-          avatarEmoji: friendData.avatarEmoji,
-          currentStreak: friendData.currentStreak,
-          lastActive: friendData.lastActive,
-          level: friendData.level,
-          friendsSince: new Date().toISOString(),
-          status: friendData.status,
-          streakHidden: friendData.streakHidden,
-          levelHidden: friendData.levelHidden,
-        };
-
-        const nextFriends = [...friends, friend];
-        if (
-          operationOwnerUserId &&
-          !(await saveFriendsForOwner(operationOwnerUserId, nextFriends, "Add friend"))
-        ) {
-          return { success: false };
-        }
-        if (!operationOwnerUserId) saveFriends(nextFriends);
-
-        return { success: true, friend };
-      }
-    } catch (error) {
-      if (!isAbortError(error)) {
-        logger.warn("[FriendsSync] Error finding friend in cloud:", error);
-      }
-    }
+  const lookup = await findFriendByCode(normalizedCode);
+  if (lookup.status !== "found") {
+    return { success: false, reason: lookup.status };
   }
 
-  // A friend must be backed by an authoritative cloud profile. Missing data,
-  // an offline lookup, or an unavailable backend is an honest retryable
-  // failure, never permission to persist a fabricated user.
-  return { success: false };
+  const friendData = lookup.profile;
+  const friend: Friend = {
+    id: generateSecureId("friend"),
+    userId: friendData.userId,
+    friendCode: normalizedCode,
+    displayName: friendData.displayName,
+    avatarEmoji: friendData.avatarEmoji,
+    currentStreak: friendData.currentStreak,
+    lastActive: friendData.lastActive,
+    level: friendData.level,
+    friendsSince: new Date().toISOString(),
+    status: friendData.status,
+    streakHidden: friendData.streakHidden,
+    levelHidden: friendData.levelHidden,
+  };
+
+  const nextFriends = [...friends, friend];
+  if (
+    operationOwnerUserId &&
+    !(await saveFriendsForOwner(operationOwnerUserId, nextFriends, "Add friend"))
+  ) {
+    return { success: false, reason: "unavailable" };
+  }
+  if (!operationOwnerUserId) saveFriends(nextFriends);
+
+  return { success: true, friend };
 }
 
 /**
@@ -466,8 +543,8 @@ export function isCloudSyncAvailable(): boolean {
 async function syncMyProfileToCloud(
   profile: MyProfile,
   expectedOwnerUserId: string
-): Promise<void> {
-  if (!supabase || !expectedOwnerUserId.trim()) return;
+): Promise<boolean> {
+  if (!supabase || !expectedOwnerUserId.trim()) return false;
 
   try {
     const ownerCheck = await runWithFriendsLocalOwner(
@@ -475,7 +552,7 @@ async function syncMyProfileToCloud(
       "Sync friend profile",
       () => true
     );
-    if (!ownerCheck) return;
+    if (!ownerCheck) return false;
 
     const query = supabase.from("user_profiles").upsert(
       {
@@ -495,31 +572,23 @@ async function syncMyProfileToCloud(
     const { error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, "syncMyProfileToCloud");
 
     if (error) {
-      // Silently fail - table might not exist yet
       logger.log("[FriendsSync] Profile sync skipped:", error.code);
+      return false;
     }
+    return true;
   } catch (error) {
     if (!isAbortError(error)) {
       logger.log("[FriendsSync] Profile sync failed:", error);
     }
+    return false;
   }
 }
 
 /**
  * Find friend by their code in cloud
  */
-async function findFriendByCode(friendCode: string): Promise<{
-  userId?: string;
-  displayName: string;
-  avatarEmoji: string;
-  currentStreak: number;
-  level: number;
-  lastActive: string;
-  status?: string;
-  streakHidden: boolean;
-  levelHidden: boolean;
-} | null> {
-  if (!supabase) return null;
+async function findFriendByCode(friendCode: string): Promise<FriendLookupResult> {
+  if (!supabase) return { status: "unavailable" };
 
   try {
     const query = supabase
@@ -529,7 +598,15 @@ async function findFriendByCode(friendCode: string): Promise<{
       .maybeSingle();
     const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, "findFriendByCode");
 
-    if (error || !data) return null;
+    if (error) {
+      return {
+        status:
+          typeof navigator !== "undefined" && navigator.onLine === false
+            ? "offline"
+            : "unavailable",
+      };
+    }
+    if (!data) return { status: "not_found" };
 
     const userId = typeof data.user_id === "string" ? data.user_id.trim() : "";
     const displayName =
@@ -540,25 +617,33 @@ async function findFriendByCode(friendCode: string): Promise<{
       typeof data.updated_at === "string" ? data.updated_at.trim() : "";
     if (!userId || !displayName || !avatarEmoji || !lastActive) {
       logger.warn("[FriendsSync] Ignoring incomplete cloud friend profile");
-      return null;
+      return { status: "unavailable" };
     }
 
     return {
-      userId,
-      displayName,
-      avatarEmoji,
-      currentStreak: data.current_streak ?? 0,
-      level: data.level ?? 1,
-      lastActive,
-      status: data.status ?? undefined,
-      streakHidden: data.current_streak === null,
-      levelHidden: data.level === null,
+      status: "found",
+      profile: {
+        userId,
+        displayName,
+        avatarEmoji,
+        currentStreak: data.current_streak ?? 0,
+        level: data.level ?? 1,
+        lastActive,
+        status: data.status ?? undefined,
+        streakHidden: data.current_streak === null,
+        levelHidden: data.level === null,
+      },
     };
   } catch (error) {
     if (!isAbortError(error)) {
       logger.log("[FriendsSync] Find friend failed:", error);
     }
-    return null;
+    return {
+      status:
+        typeof navigator !== "undefined" && navigator.onLine === false
+          ? "offline"
+          : "unavailable",
+    };
   }
 }
 
@@ -678,6 +763,8 @@ export function generateFriendCodeShareText(
     `${t.friendCode || "Friend Code"}: ${profile.friendCode}`,
     "",
     t.friendCodeJoinPrompt || "Track habits together!",
+    "",
+    buildSocialInviteUrl("friend", profile.friendCode),
   ].join("\n");
 }
 
@@ -731,4 +818,5 @@ export default {
   addFriendActivity,
   getRecentActivities,
   shareFriendCode,
+  ensureMyFriendProfilePublished,
 };

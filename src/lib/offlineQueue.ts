@@ -73,6 +73,9 @@ export type OfflineActionType =
   | "DELETE_JOURNAL_PHOTO_STORAGE"
   | "DELETE_JOURNAL_AUDIO_STORAGE"
   | "MIGRATE_JOURNAL_SECURITY"
+  | "REVOKE_AUTOMATION_PREFERENCE"
+  | "COMMIT_AUTOMATION_TRANSACTION"
+  | "UNDO_AUTOMATION_TRANSACTION"
   | "WRITE_SYNC_EVENT";
 
 export type OfflineActionPriority = "critical" | "high" | "normal" | "low";
@@ -202,6 +205,31 @@ class OfflineQueueStorageAccessError extends Error {
   }
 }
 
+export type OfflineQueueFailureCode =
+  | "QUEUE_HANDLER_TIMEOUT"
+  | "QUEUE_STORAGE_UNAVAILABLE"
+  | "QUEUE_HANDLER_FAILED";
+
+/**
+ * Queue failures are persisted and can cross device/account diagnostics
+ * boundaries. Keep them to a fixed allowlist so handler messages can never
+ * turn journal, mood, or habit content into durable diagnostic data.
+ */
+export function getOfflineQueueFailureCode(error: unknown): OfflineQueueFailureCode {
+  const errorName =
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    typeof (error as { name?: unknown }).name === "string"
+      ? (error as { name: string }).name
+      : "";
+  if (errorName === "TimeoutError") return "QUEUE_HANDLER_TIMEOUT";
+  if (errorName === "OfflineQueueStorageAccessError") {
+    return "QUEUE_STORAGE_UNAVAILABLE";
+  }
+  return "QUEUE_HANDLER_FAILED";
+}
+
 export interface OfflineAction {
   id: string;
   operationId?: string;
@@ -217,6 +245,17 @@ export interface OfflineAction {
   priority?: OfflineActionPriority; // V2: priority queue support (default: "normal")
 }
 
+function nextOfflineQueueTimestamp(
+  existing: readonly Pick<OfflineAction, "timestamp">[],
+  now = Date.now(),
+): number {
+  const latestTimestamp = existing.reduce(
+    (latest, action) => Math.max(latest, action.timestamp),
+    0,
+  );
+  return Math.max(now, latestTimestamp + 1);
+}
+
 interface OfflineQueueRemovalTombstone {
   id: string;
   operationId: string;
@@ -229,6 +268,13 @@ interface LocalOfflineQueueSnapshot {
   storageVersion?: 2 | 3;
   mode?: "authoritative-snapshot" | "merge-with-tombstones";
   removedOperations?: OfflineQueueRemovalTombstone[];
+}
+
+export interface CriticalOfflineActionIdentity {
+  /** Stable row identity for a transaction-owned outbox entry. */
+  id?: string;
+  /** Stable idempotency identity reused by every delivery attempt. */
+  operationId?: string;
 }
 
 function isCompleteRemovalTombstone(
@@ -256,7 +302,8 @@ export async function persistCriticalOfflineActionInCurrentTransaction(
   type: OfflineActionType,
   entityId: string,
   payload: unknown,
-  expectedOwnerUserId: string
+  expectedOwnerUserId: string,
+  identity: CriticalOfflineActionIdentity = {},
 ): Promise<OfflineQueueItem> {
   const transaction = Dexie.currentTransaction;
   if (!transaction || transaction.mode !== "readwrite") {
@@ -268,10 +315,22 @@ export async function persistCriticalOfflineActionInCurrentTransaction(
     );
   }
 
-  const timestamp = Date.now();
+  const currentSize = await db.offlineQueue.count();
+  if (currentSize >= MAX_QUEUE_SIZE) {
+    throw new Error(`Offline queue full (${MAX_QUEUE_SIZE} items). Connect to sync.`);
+  }
+  if (identity.id !== undefined && identity.id.length === 0) {
+    throw new Error("Critical offline action identity cannot be empty");
+  }
+  if (identity.operationId !== undefined && identity.operationId.length === 0) {
+    throw new Error("Critical offline operation identity cannot be empty");
+  }
+
+  const latestItem = await db.offlineQueue.orderBy("timestamp").last();
+  const timestamp = nextOfflineQueueTimestamp(latestItem ? [latestItem] : []);
   const item: OfflineQueueItem = {
-    id: `${type}_${entityId}_${timestamp}_${generateSecureRandom()}`,
-    operationId: generateOperationId(),
+    id: identity.id ?? `${type}_${entityId}_${timestamp}_${generateSecureRandom()}`,
+    operationId: identity.operationId ?? generateOperationId(),
     type,
     entityId,
     ownerUserId: expectedOwnerUserId,
@@ -291,6 +350,46 @@ const PRIORITY_ORDER: Record<OfflineActionPriority, number> = {
   normal: 2,
   low: 3,
 };
+const MAX_CONSECUTIVE_CRITICAL_ACTIONS = 8;
+
+export function orderOfflineQueueActionsForProcessing(
+  actions: readonly OfflineAction[],
+): OfflineAction[] {
+  const sorted = [...actions].sort((left, right) => {
+    const leftPriority = isCriticalAction(left)
+      ? PRIORITY_ORDER.critical
+      : PRIORITY_ORDER[left.priority || "normal"];
+    const rightPriority = isCriticalAction(right)
+      ? PRIORITY_ORDER.critical
+      : PRIORITY_ORDER[right.priority || "normal"];
+    if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+    if (left.timestamp !== right.timestamp) return left.timestamp - right.timestamp;
+    return left.id.localeCompare(right.id);
+  });
+
+  const critical = sorted.filter(isCriticalAction);
+  const nonCritical = sorted.filter((action) => !isCriticalAction(action));
+  const ordered: OfflineAction[] = [];
+  let criticalIndex = 0;
+  let nonCriticalIndex = 0;
+
+  while (criticalIndex < critical.length || nonCriticalIndex < nonCritical.length) {
+    const criticalBurstEnd = Math.min(
+      criticalIndex + MAX_CONSECUTIVE_CRITICAL_ACTIONS,
+      critical.length,
+    );
+    while (criticalIndex < criticalBurstEnd) {
+      ordered.push(critical[criticalIndex]);
+      criticalIndex += 1;
+    }
+    if (nonCriticalIndex < nonCritical.length) {
+      ordered.push(nonCritical[nonCriticalIndex]);
+      nonCriticalIndex += 1;
+    }
+  }
+
+  return ordered;
+}
 
 /**
  * Compact redundant operations on the same entity.
@@ -384,6 +483,25 @@ const HANDLER_ATTEMPT_TIMEOUT_MS = 30_000;
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
 const OFFLINE_QUEUE_STORAGE_LOCK = "zenflow:offline-queue-storage";
 const OFFLINE_QUEUE_PROCESSING_LOCK = "zenflow:offline-queue-processing";
+
+function jitterOfflineQueueDelay(baseDelayMs: number, randomValue: number): number {
+  const boundedBase = Math.max(0, Math.floor(baseDelayMs));
+  const boundedRandom = Math.min(1, Math.max(0, randomValue));
+  const lowerBound = Math.ceil(boundedBase / 2);
+  return Math.floor(lowerBound + (boundedBase - lowerBound) * boundedRandom);
+}
+
+export function computeOfflineQueueRetryDelay(
+  retries: number,
+  randomValue = Math.random(),
+): number {
+  const boundedRetries = Math.max(0, Math.floor(retries));
+  const exponentialDelay = Math.min(
+    RETRY_BASE_DELAY * Math.pow(2, boundedRetries),
+    RETRY_MAX_DELAY,
+  );
+  return jitterOfflineQueueDelay(exponentialDelay, randomValue);
+}
 
 class OfflineQueue {
   private state: QueueState = {
@@ -707,7 +825,7 @@ class OfflineQueue {
         const existing = this.state.actions[existingIndex];
         const requeuedWhileProcessing = this.processingActionIds.has(existing.id);
         existing.payload = payload;
-        existing.timestamp = Math.max(Date.now(), existing.timestamp + 1);
+        existing.timestamp = nextOfflineQueueTimestamp(this.state.actions);
         existing.operationId = generateOperationId();
         if (requeuedWhileProcessing) {
           this.requeuedDuringProcessing.add(existing.id);
@@ -729,14 +847,15 @@ class OfflineQueue {
       }
     }
 
+    const timestamp = nextOfflineQueueTimestamp(this.state.actions);
     const action: OfflineAction = {
-      id: `${type}_${entityId}_${Date.now()}_${generateSecureRandom()}`,
+      id: `${type}_${entityId}_${timestamp}_${generateSecureRandom()}`,
       operationId: generateOperationId(),
       type,
       entityId,
       ownerUserId,
       payload,
-      timestamp: Date.now(),
+      timestamp,
       retries: 0,
       maxRetries,
       priority,
@@ -1003,7 +1122,11 @@ class OfflineQueue {
 
         const failureCount = this.lifecycleProcessFailureCount + 1;
         this.lifecycleProcessFailureCount = failureCount;
-        const retryDelay = LIFECYCLE_PROCESS_RETRY_DELAYS_MS[failureCount - 1];
+        const retryBaseDelay = LIFECYCLE_PROCESS_RETRY_DELAYS_MS[failureCount - 1];
+        const retryDelay =
+          retryBaseDelay === undefined
+            ? undefined
+            : jitterOfflineQueueDelay(retryBaseDelay, Math.random());
         const canRetry =
           retryDelay !== undefined &&
           !this.accountBoundarySuspended &&
@@ -1056,8 +1179,9 @@ class OfflineQueue {
 
     logger.log("[OfflineQueue] Processing queue, actions:", this.state.actions.length);
 
-    // Process actions in order (FIFO)
-    const actionsToProcess = [...this.state.actions];
+    // Critical revocation, event and atomic commit rows drain first. FIFO is
+    // retained within each priority, including after cold-start rehydration.
+    const actionsToProcess = orderOfflineQueueActionsForProcessing(this.state.actions);
     let pausedByAbort = false;
 
     for (const action of actionsToProcess) {
@@ -1189,13 +1313,17 @@ class OfflineQueue {
           break;
         }
 
-        logger.error("[OfflineQueue] Action failed:", action.type, error);
+        const failureCode = getOfflineQueueFailureCode(error);
+        logger.error("[OfflineQueue] Action failed", {
+          actionType: action.type,
+          failureCode,
+        });
         recordSyncHealthReceipt({
           kind: "failed",
           source: "queue",
           actionType: action.type,
           priority: action.priority || "normal",
-          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorName: failureCode,
         });
 
         const operationId = action.operationId;
@@ -1204,12 +1332,11 @@ class OfflineQueue {
           continue;
         }
         const retries = action.retries + 1;
-        const lastError = error instanceof Error ? error.message : String(error);
         const persistedFailure = await this.persistAttemptFailure(
           action.id,
           operationId,
           retries,
-          lastError
+          failureCode,
         );
         if (!persistedFailure) {
           logger.log(
@@ -1231,7 +1358,7 @@ class OfflineQueue {
               source: "queue",
               actionType: persistedFailure.type,
               priority: persistedFailure.priority || "normal",
-              errorName: error instanceof Error ? error.name : "UnknownError",
+              errorName: failureCode,
             });
             this.dispatchBlockedAction(persistedFailure);
           } else {
@@ -1239,11 +1366,9 @@ class OfflineQueue {
             this.dispatchBlockedAction(persistedFailure);
           }
         } else {
-          // Exponential backoff before retry
-          const delay = Math.min(
-            RETRY_BASE_DELAY * Math.pow(2, persistedFailure.retries),
-            RETRY_MAX_DELAY
-          );
+          // Equal jitter prevents a reconnect herd while preserving a finite
+          // exponential ceiling and a non-zero lower bound.
+          const delay = computeOfflineQueueRetryDelay(persistedFailure.retries);
           logger.log(`[OfflineQueue] Will retry in ${delay}ms`);
           await this.sleep(delay);
         }
@@ -1802,6 +1927,44 @@ class OfflineQueue {
     if (this.initPromise) {
       await this.initPromise;
     }
+  }
+
+  /**
+   * Removes only owner-bound connected-record commit/undo work after the
+   * authoritative server history marker has committed. In-flight handlers
+   * remain generation-fenced by the automation repository finalizers.
+   */
+  async discardAutomationHistoryActions(
+    ownerUserId: string,
+    transactionIds: readonly string[] | null,
+    options: { dataWriteLockHeld?: boolean } = {},
+  ): Promise<number> {
+    await this.waitForInit();
+    const requestedIds = transactionIds === null ? null : new Set(transactionIds);
+    let removed = 0;
+    const discard = async () => {
+      await runWithOriginExclusiveLock(OFFLINE_QUEUE_STORAGE_LOCK, async () => {
+        await this.refreshActionsFromIndexedDB();
+        const removable = this.state.actions.filter(
+          (action) =>
+            action.ownerUserId === ownerUserId &&
+            (action.type === "COMMIT_AUTOMATION_TRANSACTION" ||
+              action.type === "UNDO_AUTOMATION_TRANSACTION") &&
+            (requestedIds === null || requestedIds.has(action.entityId)),
+        );
+        if (removable.length === 0) return;
+        await db.offlineQueue.bulkDelete(removable.map((action) => action.id));
+        removed = removable.length;
+        await this.refreshActionsFromIndexedDB();
+      });
+    };
+    if (options.dataWriteLockHeld) {
+      await discard();
+    } else {
+      await runWithOriginExclusiveLock(DATA_WRITE_BARRIER_LOCK, discard);
+    }
+    if (removed > 0) this.notifyListeners();
+    return removed;
   }
 
   /** Refreshes memory from durable storage and starts normal processing. */

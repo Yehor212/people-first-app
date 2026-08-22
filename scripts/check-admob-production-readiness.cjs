@@ -24,9 +24,20 @@ const REQUIRED_ADMOB_IDS = [
 ];
 
 const OPTIONAL_ADMOB_IDS = [
-  { key: "VITE_ADMOB_BANNER_ID_ANDROID", kind: "ad_unit_id" },
   { key: "VITE_ADMOB_REWARDED_ID_IOS", kind: "ad_unit_id" },
-  { key: "VITE_ADMOB_BANNER_ID_IOS", kind: "ad_unit_id" },
+];
+
+const FORBIDDEN_ADMOB_IDS = [
+  "VITE_ADMOB_BANNER_ID_ANDROID",
+  "VITE_ADMOB_BANNER_ID_IOS",
+  "VITE_ADMOB_INTERSTITIAL_ID_ANDROID",
+  "VITE_ADMOB_INTERSTITIAL_ID_IOS",
+  "VITE_ADMOB_REWARDED_INTERSTITIAL_ID_ANDROID",
+  "VITE_ADMOB_REWARDED_INTERSTITIAL_ID_IOS",
+  "VITE_ADMOB_NATIVE_ID_ANDROID",
+  "VITE_ADMOB_NATIVE_ID_IOS",
+  "VITE_ADMOB_APP_OPEN_ID_ANDROID",
+  "VITE_ADMOB_APP_OPEN_ID_IOS",
 ];
 
 function maskPublisherId(value) {
@@ -138,7 +149,7 @@ function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds =
   }
 
   for (const entry of REQUIRED_ADMOB_IDS) {
-    const { key, value } = envValue(env, entry);
+    const { value } = envValue(env, entry);
     const result = checkAdMobValue({ key: entry.key, value, kind: entry.kind, appAdsPublisherId: appAds.publisherId, required: true });
     summary[entry.key] = result.status;
     issues.push(...result.issues);
@@ -156,6 +167,17 @@ function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds =
     summary[entry.key] = result.status;
     if (strictOptionalIds) issues.push(...result.issues);
     else warnings.push(...result.issues.map(warningFromOptionalIssue));
+  }
+
+  for (const key of FORBIDDEN_ADMOB_IDS) {
+    if (String(env[key] || "").trim()) {
+      issues.push({
+        code: "forbidden_ad_format_id",
+        key,
+        message: `${key} is not allowed in ZenFlow's rewarded-only release contract`,
+      });
+      summary[key] = "forbidden";
+    }
   }
 
   if (appAds.publisherId) summary["public/app-ads.txt"] = `present:${maskPublisherId(appAds.publisherId)}`;
@@ -211,6 +233,8 @@ if (require.main === module) main();
 
 module.exports = {
   evaluateAdMobProductionReadiness,
+  loadEnv,
   maskPublisherId,
   parseAppAdsText,
+  readAppAdsFile,
 };

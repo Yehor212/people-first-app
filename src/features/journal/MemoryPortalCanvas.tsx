@@ -377,23 +377,13 @@ export const MemoryPortalCanvas = memo(function MemoryPortalCanvas({
       className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pt-3 pb-[calc(0.75rem+var(--memory-portal-nav-reserve))] scroll-pb-[calc(7rem+var(--memory-portal-nav-reserve))]"
     >
       <section
-        style={{
-          minHeight:
-            "clamp(calc(360px*var(--font-scale)), calc(100svh - 13rem), calc(430px*var(--font-scale)))",
-        }}
-        className="relative overflow-hidden rounded-[2rem] border border-primary/15 bg-background/75 shadow-[0_22px_80px_hsl(var(--primary)/0.10)]"
+        className="zf-memory-portal-surface relative overflow-hidden rounded-[2rem] border border-primary/15 bg-background/75 shadow-[0_22px_80px_hsl(var(--primary)/0.10)]"
         aria-label={ts.journalMemoryPortalTitle || "Memory portal"}
       >
         <TimeOfDayGradient />
         <ParticleBackground count={entries.length > 0 ? 10 : 7} color="primary" />
 
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 48%, hsl(var(--primary) / 0.18), transparent 34%), radial-gradient(circle at 80% 18%, hsl(var(--accent) / 0.10), transparent 30%)",
-          }}
-        />
+        <div className="zf-memory-portal-glow pointer-events-none absolute inset-0" />
 
           <div className="relative z-[1] flex flex-col items-stretch gap-3 px-5 pt-5 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
             <div className="min-w-0 flex-1">

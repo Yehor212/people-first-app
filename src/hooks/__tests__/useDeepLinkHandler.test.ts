@@ -122,6 +122,7 @@ import {
   type ChallengeInvite,
 } from "@/lib/friendChallenge";
 import { consumeStagedJournalMagicLinkConfirmation } from "@/lib/journalMagicLinkConfirmation";
+import { buildSocialInviteUrl } from "@/lib/socialInvite";
 import { useAppStore, useUIStore, useUserDataStore } from "@/stores";
 
 const CHALLENGE_FIXTURE: Challenge = {
@@ -140,17 +141,14 @@ const CHALLENGE_FIXTURE: Challenge = {
 
 const EXPECTED_CHALLENGE_INVITE: ChallengeInvite = {
   code: CHALLENGE_FIXTURE.code,
-  habitName: CHALLENGE_FIXTURE.habitName,
-  habitIcon: CHALLENGE_FIXTURE.habitIcon,
-  duration: CHALLENGE_FIXTURE.duration,
-  creatorName: CHALLENGE_FIXTURE.creatorName,
-  startDate: CHALLENGE_FIXTURE.startDate,
 };
 
 function createTrustedWebChallengeUrl(): string {
-  const url = new URL("https://zenflow.app/challenge");
-  url.searchParams.set("data", encodeInviteData(CHALLENGE_FIXTURE));
-  return url.toString();
+  return generateShareLink(CHALLENGE_FIXTURE);
+}
+
+function createLegacyChallengeUrl(): string {
+  return `zenflow://challenge?data=${encodeInviteData(CHALLENGE_FIXTURE)}`;
 }
 
 function createSession(displayName = "Telegram Friend") {
@@ -183,6 +181,8 @@ function resetStores() {
   useUIStore.setState({
     challengeInvite: undefined,
     showChallengeModal: false,
+    friendInvite: undefined,
+    showFriendsPanel: false,
   });
 }
 
@@ -542,14 +542,14 @@ describe("useDeepLinkHandler", () => {
   });
 
   describe("challenge deep links", () => {
-    it("handles the canonical zenflow://challenge?data= custom scheme", async () => {
+    it("normalizes the legacy custom scheme to a code-only locator", async () => {
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
         await flushDeepLinkWork();
       });
 
       await act(async () => {
-        appUrlOpenListeners[0]({ url: generateShareLink(CHALLENGE_FIXTURE) });
+        appUrlOpenListeners[0]({ url: createLegacyChallengeUrl() });
         await flushDeepLinkWork();
       });
 
@@ -557,7 +557,7 @@ describe("useDeepLinkHandler", () => {
       expect(mockHandleAuthCallback).not.toHaveBeenCalled();
     });
 
-    it("handles a trusted https://zenflow.app/challenge?data= URL", async () => {
+    it("handles the canonical asset-linked GitHub Pages HTTPS locator", async () => {
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
         await flushDeepLinkWork();
@@ -572,7 +572,7 @@ describe("useDeepLinkHandler", () => {
       expect(mockHandleAuthCallback).not.toHaveBeenCalled();
     });
 
-    it("decodes the invite payload into the current UI store shape", async () => {
+    it("stores only the untrusted locator code until authoritative resolution", async () => {
       renderHook(() => useDeepLinkHandler());
       await act(async () => {
         await flushDeepLinkWork();
@@ -583,14 +583,9 @@ describe("useDeepLinkHandler", () => {
         await flushDeepLinkWork();
       });
 
-      expect(useUIStore.getState().challengeInvite).toMatchObject({
-        code: "ZEN-TEST24",
-        habitName: "Evening walk",
-        habitIcon: "🚶",
-        duration: 21,
-        creatorName: "Test Friend",
-        startDate: "2026-07-28",
-      });
+      expect(useUIStore.getState().challengeInvite).toEqual({ code: "ZEN-TEST24" });
+      expect(useUIStore.getState().challengeInvite).not.toHaveProperty("habitName");
+      expect(useUIStore.getState().challengeInvite).not.toHaveProperty("creatorName");
     });
 
     it("opens the challenge modal when the challenges feature is enabled", async () => {
@@ -642,6 +637,37 @@ describe("useDeepLinkHandler", () => {
         await flushDeepLinkWork();
       });
 
+      expect(useUIStore.getState().challengeInvite).toBeUndefined();
+      expect(useUIStore.getState().showChallengeModal).toBe(false);
+    });
+
+    it.each([
+      "https://evil.example/people-first-app/?invite=challenge.v1&code=ZEN-TEST24",
+      "https://yehor212.github.io/people-first-app/?invite=challenge.v2&code=ZEN-TEST24",
+    ])("rejects untrusted and unknown-version HTTPS input: %s", async (url) => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+        appUrlOpenListeners[0]({ url });
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().challengeInvite).toBeUndefined();
+      expect(useUIStore.getState().showChallengeModal).toBe(false);
+    });
+
+    it("routes a friend.v1 locator to an explicit code confirmation without auto-adding", async () => {
+      renderHook(() => useDeepLinkHandler());
+      await act(async () => {
+        await flushDeepLinkWork();
+        appUrlOpenListeners[0]({
+          url: buildSocialInviteUrl("friend", "ZF-ABCDEFGH"),
+        });
+        await flushDeepLinkWork();
+      });
+
+      expect(useUIStore.getState().friendInvite).toEqual({ code: "ZF-ABCDEFGH" });
+      expect(useUIStore.getState().showFriendsPanel).toBe(true);
       expect(useUIStore.getState().challengeInvite).toBeUndefined();
       expect(useUIStore.getState().showChallengeModal).toBe(false);
     });

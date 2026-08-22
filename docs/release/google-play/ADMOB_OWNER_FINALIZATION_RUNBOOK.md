@@ -8,22 +8,22 @@ payment, personal, or raw ad identifiers.
 
 ## External Finalization Status
 
-Current state on 2026-07-04:
+Current state on 2026-08-09:
 
 | Item | Current status | Why it is not fully closed |
 | --- | --- | --- |
-| `public_app_ads_root` | PASS | Public root `app-ads.txt` was verified, but it must be rechecked after domain or publisher changes. |
-| `admob_app_ads_txt_status` | PASS | AdMob Verify app showed the ZenFlow Android app confirmed with a Done status; recheck after crawler, developer website, or publisher changes. |
-| `public_google_play_listing` | PASS | Public Play listing shows ads disclosure and optional rewarded-ad copy; recheck after listing edits. |
-| `public_privacy_policy` | PASS | GitHub Pages post-deploy public privacy smoke and `npm run google-play:privacy:public-check` passed for the published privacy URL; recheck after privacy policy, ads SDK, consent, developer website, or Play Data safety changes. |
-| `admob_app_readiness` | PASS | AdMob app list showed Ready and ad serving enabled; recheck before each release. |
-| `admob_policy_center` | PARTIAL | Policy Center no-violations/no-blocking review exists, but granular proof for no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests is still required. |
-| `privacy_messages_cmp` | PARTIAL | Local UMP wiring passes, but AdMob Privacy & messages still needs owner confirmation/publishing. |
-| `payments_tax_info` | UNVERIFIED | Tax information status must be checked by the owner without recording tax details. |
-| `payments_identity_address` | UNVERIFIED | Identity/address verification status must be checked by the owner without recording personal data. |
-| `payments_payment_method` | UNVERIFIED | Payout method eligibility must be checked by the owner without recording bank/payment data. |
-| `payments_holds` | UNVERIFIED | Payment, compliance, identity, tax, and self-hold status must be checked by the owner. |
-| `play_console_ads_data_safety` | PARTIAL | Public listing and repo packet are aligned, but private Play Console Ads, Advertising ID, and Data safety answers need owner proof. |
+| `public_app_ads_root` | PASS | The public root `app-ads.txt` check passed with the publisher value masked; recheck after domain or publisher changes. |
+| `admob_app_ads_txt_status` | PARTIAL | ZenFlow is verified and Ready, but the AdMob app-ads.txt tab still has no recent request/crawl result; require a found-and-verified crawl after an authorized production request. |
+| `public_google_play_listing` | PASS | The public Play listing shows the developer website, ads disclosure, privacy policy, and optional rewarded-ad copy; recheck after listing edits. |
+| `public_privacy_policy` | PASS | The post-deploy public privacy smoke passed for Google Mobile Ads, UMP choices, Advertising ID, rewarded ads, and disclosed SDK data categories; recheck after privacy, SDK, consent, or Data safety changes. |
+| `admob_app_readiness` | PASS | The owner-authenticated inventory showed the account Open, ZenFlow Ready and Play-linked, ad serving enabled, and active units; recheck before every release. |
+| `admob_policy_center` | PARTIAL | Policy Center showed no violations or rejected apps, but granular regulatory, advertiser-preference, and restricted-request signals remain unverified. |
+| `privacy_messages_cmp` | PARTIAL | European- and US-state-regulations messages are active, but exact ZenFlow assignment, language coverage, and Arabic/Hebrew fallback remain unverified. |
+| `payments_tax_info` | UNVERIFIED | The authenticated payments pages did not expose a public-safe tax no-action-required or blocking-action state. |
+| `payments_identity_address` | UNVERIFIED | No current verification request or public-safe verified/no-action-required identity and address state was exposed. |
+| `payments_payment_method` | UNVERIFIED | No public-safe payment-method eligible or no-action-required state was exposed without private details. |
+| `payments_holds` | UNVERIFIED | No public-safe consolidated payment, tax, identity, compliance, and self-hold state was exposed. |
+| `play_console_ads_data_safety` | PARTIAL | Play shows Contains ads and six collected/shared data types; exact Advertising ID and declaration parity remain unverified until the exact AAB exists. |
 | `live_ad_playback_device` | UNVERIFIED | A release-equivalent Android device has not yet proved live rewarded-ad playback. |
 | `full_cross_platform_ad_units` | UNVERIFIED | iOS and banner monetization are outside the current Android rewarded-only path. |
 

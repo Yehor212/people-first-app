@@ -374,20 +374,20 @@ describe("StorageErrorBanner push revocation feedback", () => {
     expect(alert.querySelector("button")).toBeNull();
     expect(surface).toHaveClass(
       "grid",
-      "grid-cols-1",
-      "sm:grid-cols-[auto_minmax(0,1fr)]",
+      "grid-cols-[auto_minmax(0,1fr)]",
       "p-2",
       "min-[420px]:p-4",
       "bg-[hsl(var(--zf-warning))]",
       "text-[hsl(var(--zf-night-0))]",
     );
+    expect(surface).not.toHaveClass("grid-cols-1");
     expect(surface).not.toHaveClass("bg-amber-500/95", "text-white");
     expect(prose).toHaveClass("whitespace-normal", "break-words", "[hyphens:manual]");
     expect(prose.className).toContain("[overflow-wrap:break-word]");
     expect(actions).toHaveClass(
       "grid",
       "grid-cols-1",
-      "sm:col-span-2",
+      "col-span-2",
       "sm:grid-cols-[minmax(0,1fr)_auto]",
     );
     expect(retryButton).toHaveClass(

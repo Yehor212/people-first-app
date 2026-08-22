@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The intrinsic calendar grid must receive focus for keyboard scrolling. */
 /**
  * HabitCalendar - GitHub-style contribution calendar for habits
  *
@@ -176,39 +177,39 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl",
+        "relative @container overflow-hidden rounded-2xl",
         "bg-card border border-border/50",
         "shadow-lg",
         className
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-border/30">
-        <div className="mb-3 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+      <div className="border-b border-border/30 p-2 @sm:p-4">
+        <div className="mb-3 flex flex-col items-stretch gap-3 @sm:flex-row @sm:items-center @sm:justify-between">
           <div className="flex min-w-0 items-center gap-2">
             <div className="shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 p-2">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <h3 className="min-w-0 break-words text-base font-bold text-foreground">
+            <h3 className="min-w-0 whitespace-normal break-normal text-base font-bold text-foreground [hyphens:manual] [overflow-wrap:normal] [word-break:normal]">
               {t.habitCalendar || "Habit Calendar"}
             </h3>
           </div>
 
           {/* Month navigation */}
-          <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
+          <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-1 @sm:gap-2">
             <button
               onClick={() => handleMonthChange(-1)}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-muted/50 p-1.5 motion-safe:transition-colors hover:bg-muted"
+              className="flex h-[48px] w-[48px] items-center justify-center rounded-lg bg-muted/50 p-1.5 motion-safe:transition-colors hover:bg-muted"
               aria-label={t.calendarPrevMonth || "Previous month"}
             >
               <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
             </button>
-            <span className="min-w-0 break-words text-center text-sm font-medium">
+            <span className="min-w-0 whitespace-normal break-normal text-center text-sm font-medium [hyphens:manual] [overflow-wrap:normal] [word-break:normal]">
               {monthNames[selectedMonth]} {selectedYear}
             </span>
             <button
               onClick={() => handleMonthChange(1)}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-muted/50 p-1.5 motion-safe:transition-colors hover:bg-muted"
+              className="flex h-[48px] w-[48px] items-center justify-center rounded-lg bg-muted/50 p-1.5 motion-safe:transition-colors hover:bg-muted"
               aria-label={t.calendarNextMonth || "Next month"}
             >
               <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
@@ -217,7 +218,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
         </div>
 
         {/* Month stats */}
-        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 @sm:grid-cols-3">
           <div className="text-center p-2 bg-muted/30 rounded-xl">
             <p className="text-lg font-bold text-emerald-500">{monthStats.totalCompletions}</p>
             <p className="break-words text-xs text-muted-foreground">
@@ -242,8 +243,13 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
       </div>
 
       {/* Calendar grid */}
-      <div className="p-4">
-        <div className="max-w-full overflow-x-auto overscroll-x-contain pb-1">
+      <div className="p-2 @sm:p-4">
+        <div
+          role="region"
+          tabIndex={0}
+          aria-label={`${t.habitCalendar || "Habit Calendar"} — ${monthNames[selectedMonth]} ${selectedYear}`}
+          className="max-w-full overflow-x-auto overscroll-x-contain rounded-lg pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+        >
           <div className="min-w-[23rem]">
             {/* Day names */}
             <div className="mb-2 grid grid-cols-7 gap-1">

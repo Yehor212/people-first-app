@@ -2,25 +2,27 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const TARGETS = [
-  "src/components/WelcomeBackModal.tsx",
-  "src/components/schedule/EventDetailsModal.tsx",
-  "src/components/FeatureUnlock.tsx",
-  "src/components/OnboardingOverlay.tsx",
-  "src/components/FocusReflectionModal.tsx",
-  "src/components/MindfulMoment.tsx",
-  "src/components/TimeHelper.tsx",
+  { path: "src/components/WelcomeBackModal.tsx", actionFloor: "min-h-[44px] h-auto" },
+  { path: "src/components/schedule/EventDetailsModal.tsx", actionFloor: "min-h-[48px] h-auto" },
+  { path: "src/components/FeatureUnlock.tsx", actionFloor: "min-h-[44px] h-auto" },
+  { path: "src/components/OnboardingOverlay.tsx", actionFloor: "min-h-[44px] h-auto" },
+  { path: "src/components/FocusReflectionModal.tsx", actionFloor: "min-h-[44px] h-auto" },
+  { path: "src/components/MindfulMoment.tsx", actionFloor: "min-h-[44px] h-auto" },
+  { path: "src/components/TimeHelper.tsx", actionFloor: "min-h-[44px] h-auto" },
 ] as const;
 
-const source = (path: (typeof TARGETS)[number]) => readFileSync(path, "utf8");
+type TargetPath = (typeof TARGETS)[number]["path"];
+
+const source = (path: TargetPath) => readFileSync(path, "utf8");
 
 describe("legacy modal viewport recovery contract", () => {
-  it.each(TARGETS)("bounds and scrolls %s inside the safe viewport", (path) => {
+  it.each(TARGETS)("bounds and scrolls $path inside the safe viewport", ({ path, actionFloor }) => {
     const file = source(path);
 
     expect(file).toContain("max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)]");
     expect(file).toContain("overflow-y-auto");
     expect(file).toContain("overscroll-contain");
-    expect(file).toContain("min-h-[44px] h-auto");
+    expect(file).toContain(actionFloor);
     expect(file).toContain("break-words hyphens-manual");
   });
 

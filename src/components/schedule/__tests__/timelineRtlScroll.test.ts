@@ -41,9 +41,11 @@ describe("schedule RTL scroll coordinates", () => {
   it("centers the real localized day pill instead of assuming a fixed width", () => {
     expect(scheduleDataSource).not.toContain("buttonWidth = 68");
     expect(scheduleDataSource).toContain("children.item(index)");
-    expect(scheduleDataSource).toContain("scrollIntoView");
-    expect(scheduleDataSource).toContain('block: "nearest"');
-    expect(scheduleDataSource).toContain('inline: "center"');
+    expect(scheduleDataSource).not.toContain("target.scrollIntoView");
+    expect(scheduleDataSource).toContain("target.getBoundingClientRect()");
+    expect(scheduleDataSource).toContain("daySelector.scrollTo");
+    expect(scheduleDataSource).toContain("domToPhysicalScrollLeft");
+    expect(scheduleDataSource).toContain("physicalToDomScrollLeft");
     expect(scheduleDataSource).toContain(
       'behavior: shouldAnimate() ? "smooth" : "auto"',
     );

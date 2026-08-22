@@ -44,6 +44,16 @@ import {
 import { getCurrentSessionUserId } from "./supabaseClient";
 import { SyncOwnerBoundaryError } from "@/storage/sync/syncOwner";
 import { runJournalSecurityMigration } from "@/features/journal/journalSecurityMigration";
+import {
+  automationPreferenceRevocationIntentSchema,
+  flushAutomationPreferenceRevocation,
+} from "@/features/automation/automationPreferences";
+import { processQueuedAutomationCommit } from "@/features/automation/automationRepository";
+import { processQueuedAutomationUndo } from "@/features/automation/automationUndo";
+import {
+  automationCommitQueueIntentSchema,
+  automationUndoQueueIntentSchema,
+} from "@/features/automation/types";
 
 class OfflineQueuePayloadValidationError extends Error {
   constructor(actionType: string) {
@@ -81,12 +91,12 @@ function isValidGratitudeEntry(payload: unknown): payload is GratitudeEntry {
   return validated !== null;
 }
 
-async function runOwnerBoundCloudMutation(
+async function runOwnerBoundCloudMutation<T>(
   context: OfflineQueueHandlerContext,
-  operation: () => Promise<void>
-): Promise<void> {
+  operation: () => Promise<T>
+): Promise<T> {
   try {
-    await context.runIfOwnerCurrent(operation);
+    return await context.runIfOwnerCurrent(operation);
   } catch (error) {
     if (error instanceof SyncOwnerBoundaryError) {
       // Convert the helper's verified owner mismatch into the queue's own
@@ -255,6 +265,51 @@ export function initializeOfflineQueueHandlers(): void {
       deleteSettingFromCloud(key, context.ownerUserId)
     );
     return COMMITTED;
+  });
+
+  offlineQueue.registerHandler("REVOKE_AUTOMATION_PREFERENCE", async (action, context) => {
+    const parsed = automationPreferenceRevocationIntentSchema.safeParse(action.payload);
+    if (!parsed.success) {
+      logger.warn(
+        "[OfflineQueue] Invalid connected-record revocation payload, skipping:",
+        action.entityId,
+      );
+      throw new OfflineQueuePayloadValidationError(action.type);
+    }
+    await runOwnerBoundCloudMutation(context, async () => {
+      await flushAutomationPreferenceRevocation(parsed.data, context.ownerUserId);
+    });
+    return COMMITTED;
+  });
+
+  offlineQueue.registerHandler("COMMIT_AUTOMATION_TRANSACTION", async (action, context) => {
+    const parsed = automationCommitQueueIntentSchema.safeParse(action.payload);
+    if (!parsed.success || parsed.data.transactionId !== action.entityId) {
+      throw new OfflineQueuePayloadValidationError(action.type);
+    }
+    const outcome = await runOwnerBoundCloudMutation(context, () =>
+      processQueuedAutomationCommit(parsed.data, context.ownerUserId),
+    );
+    return outcome.status === "committed"
+      ? COMMITTED
+      : { status: "obsolete", reason: outcome.reason };
+  });
+
+  offlineQueue.registerHandler("UNDO_AUTOMATION_TRANSACTION", async (action, context) => {
+    const parsed = automationUndoQueueIntentSchema.safeParse(action.payload);
+    if (
+      !parsed.success ||
+      parsed.data.transactionId !== action.entityId ||
+      parsed.data.operationId !== context.operationId
+    ) {
+      throw new OfflineQueuePayloadValidationError(action.type);
+    }
+    const outcome = await runOwnerBoundCloudMutation(context, () =>
+      processQueuedAutomationUndo(parsed.data, context.ownerUserId),
+    );
+    return outcome.status === "committed"
+      ? COMMITTED
+      : { status: "obsolete", reason: outcome.reason };
   });
 
   // Journal handlers

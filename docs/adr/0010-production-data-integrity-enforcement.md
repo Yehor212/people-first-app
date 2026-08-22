@@ -26,7 +26,7 @@ Adopt a combined system with these layers:
 3. Production reachability from actual frontend, PWA, Capacitor/Tauri, Supabase, public-script, and production-tool entries.
 4. Runtime edge modeling for static imports, re-exports, type-only exclusions, literal dynamic imports, aliases, JSON, brace-expanded `import.meta.glob`, literal `new URL(..., import.meta.url)` assets, and workers.
 5. High-confidence, domain-structure-aware source detection plus targeted persistence/sync/analytics/export/share/failure sinks.
-6. Static SQL target parsing with exact user-table membership, plus bounded lexical controls for Java, Swift, Rust, HTML, public JSON, and generated evidence.
+6. Static SQL target parsing with exact user-table membership, masking only unexecuted dollar-quoted bodies in `CREATE FUNCTION`/`CREATE PROCEDURE`; executable top-level statements and `DO` blocks remain visible. Java, Swift, Rust, HTML, public JSON, and generated evidence use bounded lexical controls.
 7. A bounded raw-byte `dist/` canary scan across every artifact, including source maps and `.txt`; an explicit missing, empty, escaped/symlinked, or text-unreadable bundle is an error.
 8. Exact content-sensitive fingerprint baseline and exact, maximum-90-day, human-approved waiver validation; PDI010 is never suppressible.
 9. Per-claim release-evidence binding: proof must be on the claim object or its own direct explicitly named proof child; ancestors and sibling objects cannot launder readiness implicitly.
@@ -126,7 +126,7 @@ The OpenAI manual helper was attempted first but returned no required content ha
 - Treat explicit persisted demo values `false`, `0`, or `off` as disabled; only high-confidence enabling values trigger PDI006.
 - Model product definitions separately from completed history.
 - Keep uncertain PDI012 cases nonblocking until reviewed and covered by a regression test.
-- Use exact operational SQL table treatment instead of excluding all migrations.
+- Use exact operational SQL table treatment instead of excluding all migrations. Routine definitions are not migration-time writes, while top-level DML and `DO` blocks remain blocking and are protected by negative controls.
 - Do not create automatic fixes, baselines, or waivers.
 
 ## False-negative strategy

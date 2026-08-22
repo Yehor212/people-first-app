@@ -564,6 +564,25 @@ export function subscribeDataRefresh(listener: RefreshListener): () => void {
 // Dexie transaction which can take 10-20s on Android, blocking other hooks)
 const INDEXEDDB_TIMEOUT_MS = 30000;
 
+type IndexedDBTimeoutRecoveryState = "cached" | "unavailable" | "unknown";
+
+const reportIndexedDBReadTimeout = (
+  recoveryState: IndexedDBTimeoutRecoveryState,
+): void => {
+  const detail = Object.freeze({
+    code: "IDB_OPERATION_TIMEOUT" as const,
+    phase: "read" as const,
+    deadlineMs: INDEXEDDB_TIMEOUT_MS,
+    recoveryState,
+  });
+  logger.warn("[useIndexedDB] IndexedDB read deadline reached", detail);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("zenflow:indexeddb-timeout", { detail }),
+    );
+  }
+};
+
 const sanitizeStoredValue = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map((item) =>
@@ -583,8 +602,8 @@ interface TimeoutResult<T> {
   timedOut: boolean;
 }
 
-// Helper to add timeout to promises
-// P2-3 Fix: Emit event when timeout occurs so UI can show stale data warning
+// Bound an operation without claiming that a recovery source exists. The caller
+// reports the outcome only after its domain fallback has been validated.
 const withTimeoutResult = <T>(
   promise: Promise<T>,
   ms: number,
@@ -595,18 +614,6 @@ const withTimeoutResult = <T>(
     promise.then((value) => ({ value, timedOut: false })),
     new Promise<TimeoutResult<T>>((resolve) => {
       timerId = setTimeout(() => {
-        logger.warn(`[useIndexedDB] Operation timed out after ${ms}ms, using fallback`);
-        // P2-3 Fix: Emit event so UI can optionally show "data may be stale" indicator
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("zenflow:indexeddb-timeout", {
-              detail: {
-                timeoutMs: ms,
-                message: "IndexedDB operation timed out, using cached data",
-              },
-            })
-          );
-        }
         resolve({ value: fallback, timedOut: true });
       }, ms);
     }),
@@ -893,6 +900,7 @@ export function useIndexedDB<T>({
             }
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
+            let recoveredFromFallback = false;
             try {
               if (readFallbackValueRef.current) {
                 const parsed = prepareStoredValue(readFallbackValueRef.current());
@@ -902,7 +910,15 @@ export function useIndexedDB<T>({
                   ? parsed
                   : { ...defaults, ...parsed };
                 const validated = applyValidation(candidate);
-                commitRead(validated !== null ? validated : defaults, false);
+                const committed = commitRead(
+                  validated !== null ? validated : defaults,
+                  false,
+                );
+                if (timedOut && committed) {
+                  reportIndexedDBReadTimeout(
+                    validated !== null ? "cached" : "unavailable",
+                  );
+                }
                 return;
               }
               const stored = storageGetRaw(localStorageKey, "");
@@ -916,6 +932,7 @@ export function useIndexedDB<T>({
                     // Don't merge primitives or arrays - just use the value directly
                     const validated = applyValidation(parsed);
                     if (!commitRead(validated !== null ? validated : defaults, false)) return;
+                    recoveredFromFallback = validated !== null;
                     void trackPendingDataWrite(
                       runWithAcceptedOriginDataWrite(() =>
                         table.put({ key: localStorageKey, value: parsed })
@@ -929,6 +946,7 @@ export function useIndexedDB<T>({
                     const merged = { ...defaults, ...parsed };
                     const validated = applyValidation(merged);
                     if (!commitRead(validated !== null ? validated : defaults, false)) return;
+                    recoveredFromFallback = validated !== null;
                     // Migrate to IndexedDB (don't wait, fire and forget)
                     void trackPendingDataWrite(
                       runWithAcceptedOriginDataWrite(() =>
@@ -947,8 +965,15 @@ export function useIndexedDB<T>({
               // localStorage not available (Safari Private Mode, quota exceeded)
               logger.warn("localStorage not available:", storageError);
             }
+            if (timedOut) {
+              reportIndexedDBReadTimeout(
+                recoveredFromFallback ? "cached" : "unavailable",
+              );
+            }
           } else if (!timedOut) {
             commitRead(defaults);
+          } else {
+            reportIndexedDBReadTimeout("unknown");
           }
         } else {
           // For array tables - use timeout
@@ -963,6 +988,7 @@ export function useIndexedDB<T>({
             commitRead(nextValue);
           } else if (isInitialLoad) {
             // Try localStorage fallback only on initial load
+            let recoveredFromFallback = false;
             try {
               const stored = storageGetRaw(localStorageKey, "");
               if (stored) {
@@ -975,6 +1001,7 @@ export function useIndexedDB<T>({
                     const validated = applyValidation(filtered);
                     const nextValue = validated !== null ? validated : defaults;
                     if (!commitRead(nextValue, false)) return;
+                    recoveredFromFallback = validated !== null;
                     // Migrate to IndexedDB (don't wait, fire and forget)
                     if (Array.isArray(filtered) && filtered.length > 0) {
                       void trackPendingDataWrite(
@@ -1008,8 +1035,15 @@ export function useIndexedDB<T>({
               // localStorage not available (Safari Private Mode, quota exceeded)
               logger.warn("localStorage not available:", storageError);
             }
+            if (timedOut) {
+              reportIndexedDBReadTimeout(
+                recoveredFromFallback ? "cached" : "unavailable",
+              );
+            }
           } else if (!timedOut) {
             commitRead(defaults);
+          } else {
+            reportIndexedDBReadTimeout("unknown");
           }
         }
       } catch (error) {

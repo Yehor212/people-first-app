@@ -186,12 +186,21 @@ describe("LanguageSelector", () => {
     const languageGroup = screen.getByRole("radiogroup", { name: "Select language" });
     expect(languageGroup).toBeInTheDocument();
     expect(languageGroup.className).toContain("auto-fit");
-    expect(languageGroup.className).toContain("calc(9rem*var(--font-scale");
+    expect(languageGroup.className).toContain("calc(10rem*var(--font-scale");
     expect(languageGroup.className).not.toContain("calc(7rem*var(--font-scale");
+
+    const ukrainianLabel = screen.getByText("Українська");
+    expect(ukrainianLabel.className).toContain("break-normal");
+    expect(ukrainianLabel.className).toContain("[overflow-wrap:normal]");
     expect(within(languageGroup).getAllByRole("radio")).toHaveLength(8);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveClass("min-w-0", "whitespace-normal", "leading-tight", "text-2xl");
-    expect(heading.className).toContain("overflow-wrap:normal");
+    expect(heading).toHaveClass(
+      "entry-gate-title",
+      "min-w-0",
+      "whitespace-normal",
+      "leading-tight",
+      "text-2xl",
+    );
     expect(heading).not.toHaveClass("break-words");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "English" })).toHaveAttribute("lang", "en");

@@ -15,8 +15,36 @@ export interface StorageErrorEvent {
 }
 
 export interface IndexedDBTimeoutEvent {
-  timeoutMs: number;
-  message: string;
+  code: "IDB_OPERATION_TIMEOUT";
+  phase: "read";
+  deadlineMs: number;
+  recoveryState: "cached" | "unavailable" | "unknown";
+}
+
+const INDEXEDDB_TIMEOUT_EVENT_KEYS = new Set([
+  "code",
+  "phase",
+  "deadlineMs",
+  "recoveryState",
+]);
+
+export function isIndexedDBTimeoutEvent(value: unknown): value is IndexedDBTimeoutEvent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  const keys = Object.keys(candidate);
+  return (
+    keys.length === INDEXEDDB_TIMEOUT_EVENT_KEYS.size &&
+    keys.every((key) => INDEXEDDB_TIMEOUT_EVENT_KEYS.has(key)) &&
+    candidate.code === "IDB_OPERATION_TIMEOUT" &&
+    candidate.phase === "read" &&
+    typeof candidate.deadlineMs === "number" &&
+    Number.isInteger(candidate.deadlineMs) &&
+    candidate.deadlineMs >= 1_000 &&
+    candidate.deadlineMs <= 60_000 &&
+    (candidate.recoveryState === "cached" ||
+      candidate.recoveryState === "unavailable" ||
+      candidate.recoveryState === "unknown")
+  );
 }
 
 export interface QueueFullEvent {

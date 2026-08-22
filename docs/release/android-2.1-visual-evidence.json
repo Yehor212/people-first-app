@@ -1,0 +1,850 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-08-09T18:34:24Z",
+  "releaseStatus": "STOP",
+  "scope": "Android 2.1 public entry, adaptive layout, RTL, theme-aware system bars, system navigation, process-death, local connected-history entry, local habit IME/nested-Back and entry-theme final-state visual evidence",
+  "runtime": {
+    "android": 16,
+    "api": 36,
+    "avd": "codex_pixel_7_api36",
+    "baseResolution": "1080x2400",
+    "baseDensityDpi": 420,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "finalDebugApkSha256": "36e7c74e6bbd445a55184b38598e270accbb69660e286b217fad3e568a7e052f"
+  },
+  "latestCurrentCandidateVisualCheck": {
+    "capturedAtUtc": "2026-08-09T10:16:01Z",
+    "android": 16,
+    "api": 36,
+    "avd": "codex_pixel_9_pro_fold_api36",
+    "apkPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+    "apkSha256": "5b2f19938cfb954d1226fbfd354dd190ed6f8b0949776bf30568f6c760c4f913",
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "artifacts": [
+      {
+        "id": "current-api36-hebrew-public-auth",
+        "path": "output/android21/fresh-api36-current.png",
+        "sha256": "e72285536af6526dafcaf889f9a84576b24cee817338e07adf88d8731a24d374",
+        "pixels": "1080x2400",
+        "uiAutomatorPath": "output/android21/fresh-api36-current.xml",
+        "uiAutomatorSha256": "d298650bf310710d3ce413c85282f2cb89c83dd4151772bd00eb6d1c6b8c0b69",
+        "finding": "Fresh installed candidate renders the Hebrew RTL public authentication surface with coherent dark edge-to-edge system chrome and an explicit unavailable sign-in state instead of fabricated account content.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "google-rewarded-demo-test-creative",
+        "path": "output/android21/t101-rewarded-dismiss-before-api36.png",
+        "sha256": "52de42697ec75b3572de0ae00547616734cf939978876da5e280e947b9fb2300",
+        "pixels": "1080x2400",
+        "finding": "Google's rewarded demo creative is visibly labelled Test Ad; no production ad unit or billable traffic was used.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "google-rewarded-demo-return-to-app",
+        "path": "output/android21/t101-rewarded-dismiss-after-api36.png",
+        "sha256": "a2d1db4f34eeb7a3a319050fdbe4384172d7c9b4bb74d73a6261b45ca237fd07",
+        "pixels": "1080x2400",
+        "finding": "After the rewarded demo closes, the current candidate returns to the same Hebrew public authentication surface without exposing synthetic user data.",
+        "verdict": "PASS"
+      }
+    ],
+    "runtimeLogPath": "output/android21/t101-rewarded-dismiss-logcat.txt",
+    "runtimeLogSha256": "787eda5f585a23b4e0e9e487c6dfb1ce941987904c23b2e67da980271d6b5a89",
+    "verdict": "PASS",
+    "boundary": "PASS is limited to the fresh unauthenticated emulator surfaces and Google's demo ad. The creative rewarded before dismissal, so dismiss-before-reward remains UNVERIFIED; this is not artistic acceptance or signed-release proof."
+  },
+  "exactInstalledDebugCandidateVisualCheck": {
+    "capturedAtUtc": "2026-08-09T15:37:08Z",
+    "android": 16,
+    "api": 36,
+    "avd": "codex_pixel_7_api36",
+    "apkPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+    "builtApkSha256": "36e7c74e6bbd445a55184b38598e270accbb69660e286b217fad3e568a7e052f",
+    "installedApkSha256": "36e7c74e6bbd445a55184b38598e270accbb69660e286b217fad3e568a7e052f",
+    "installedHashMatchesBuild": true,
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "artifacts": [
+      {
+        "id": "exact-candidate-public-entry-api36",
+        "path": "output/android21/device/20260809-exact-candidate-public-entry-api36.png",
+        "sha256": "b7b88ced37671b950ec8350db739ad53ef4a19120ff1b2a3755d0e52b7f967fb",
+        "pixels": "1080x2400",
+        "finding": "Direct inspection shows unobscured Android system bars, readable theme controls, all eight locale choices including Arabic and Hebrew directionality, and a fully visible Continue action.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "exact-candidate-google-test-ad-after-reward-api36",
+        "path": "output/android21/device/20260809-exact-candidate-rewarded-after-reward-api36.png",
+        "sha256": "cf3b8ad737f5bf73c77c079ed47be7887affac2e6cca206edf81e095b4f71035",
+        "pixels": "1080x2400",
+        "finding": "The official Google creative is visibly labelled Test Ad and shows Reward granted with its close affordance after reward.",
+        "verdict": "PASS"
+      }
+    ],
+    "runtimeReceiptPath": "output/android21/device/20260809-exact-candidate-rewarded-runtime.json",
+    "runtimeReceiptSha256": "50f18007684e0d1b03e07ea4dcb9673ba03802c181bb79c8cf75fb0f9be4b250",
+    "visualIntegrityCritic": {
+      "technical": "PASS",
+      "visualRuntime": "PASS",
+      "artisticCraft": "UNVERIFIED",
+      "motion": "UNVERIFIED",
+      "model": "N/A",
+      "plan": "PASS"
+    },
+    "verdict": "PASS",
+    "boundary": "PASS is limited to these two API 36 frames from the exact installed debug APK. It is not a whole-app artistic acceptance, motion-smoothness result, physical-device proof or signed release AAB proof."
+  },
+  "releaseEquivalentPublicEntryCheck": {
+    "capturedAtUtc": "2026-08-09T12:48:00Z",
+    "android": 16,
+    "api": 36,
+    "avd": "codex_pixel_9_pro_fold_api36",
+    "configuration": "1080x2400, 420dpi, font scale 1.0, Android animation scales 1.0",
+    "apkPath": "android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk",
+    "apkSizeBytes": 25455086,
+    "apkSha256": "f3e256e5fae705c2f6a486f62fc1d023b917ac0daf87606bd7c0616f88de1256",
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "artifact": {
+      "id": "release-equivalent-public-entry-api36",
+      "path": "output/android21/performance/20260809-post-locale-split/release-equivalent-entry-api36.png",
+      "sha256": "f362751fa29eaafaa45867c2114eb3e6d0f2a77bec8379e0b0270837b50b0fbe",
+      "pixels": "1080x2400",
+      "uiAutomatorPath": "output/android21/performance/20260809-post-locale-split/release-equivalent-entry-api36.xml",
+      "uiAutomatorSha256": "a23891f2106e09d9d05423041d538ef780355698f5418181db25a252937c42c6",
+      "finding": "Direct visual inspection confirms coherent light system bars, safe-area clearance, readable theme controls, an unclipped eight-locale grid with Arabic/Hebrew directionality, and a fully visible primary action.",
+      "verdict": "PASS"
+    },
+    "visualIntegrityCritic": {
+      "decision": "KEEP",
+      "technical": "PASS",
+      "visualRuntime": "PASS",
+      "artisticCraft": "UNVERIFIED",
+      "motion": "UNVERIFIED",
+      "model": "N/A",
+      "plan": "PASS",
+      "reason": "The current release-equivalent still and native hierarchy prove this named public configuration. A still cannot prove motion cadence, every route, physical-device rendering or independent human artistic acceptance."
+    },
+    "boundary": "PASS is limited to the unauthenticated public entry surface on a local release-equivalent emulator APK. It is not an upload-signed AAB, authenticated private-flow, physical-device or human artistic-acceptance result."
+  },
+  "postAudioUnlockBenchmarkReleaseVisualCheck": {
+    "capturedAtUtc": "2026-08-09T16:29:08Z",
+    "android": 16,
+    "api": 36,
+    "avd": "codex_pixel_9_pro_fold_api36",
+    "configuration": "1080x2400 override, 420dpi, font scale 1.0",
+    "apkPath": "android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk",
+    "apkSizeBytes": 25455062,
+    "apkSha256": "41e296dcb956207bcc084cb351f7be2e23a735d36eb3c3e3e1fcfff5cddd2281",
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "artifacts": [
+      {
+        "id": "post-audio-unlock-light-english-public-entry",
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/after.png",
+        "sha256": "d7e2aa6beb8dc897c4bcd1d251083560f685a0527db91b1e9b2d97ee214a6f35",
+        "pixels": "1080x2400",
+        "uiAutomatorPath": "output/android21/performance/20260809-android-audio-unlock-green/window.xml",
+        "uiAutomatorSha256": "cc1d94158b6cedb3621508a99808bec6869d2bd977e5658800d95ad07cfc1972",
+        "finding": "Direct pixel inspection shows coherent light system chrome, safe-area clearance, readable theme controls, all eight locale choices and a fully visible Continue action without clipping or overlap.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "post-audio-unlock-dark-ukrainian-public-entry",
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/after-dark.png",
+        "sha256": "f8dd47c2fc7eb21d10f407133f94796c14cf13e631c299688f17cdbf6bd73787",
+        "pixels": "1080x2400",
+        "uiAutomatorPath": "output/android21/performance/20260809-android-audio-unlock-green/window-dark.xml",
+        "uiAutomatorSha256": "cb26c4443633f0906697a567dab2e73b16d702e8c087712a75b3f9153ecc8f07",
+        "finding": "Direct pixel inspection shows matching dark native chrome, readable Ukrainian reflow, an unclipped eight-locale grid and a fully visible primary action without overlap.",
+        "verdict": "PASS"
+      }
+    ],
+    "visualIntegrityCritic": {
+      "decision": "FIX",
+      "technical": "PASS",
+      "visualRuntime": "PASS",
+      "artisticCraft": "UNVERIFIED",
+      "motion": "UNVERIFIED",
+      "model": "N/A",
+      "plan": "PASS",
+      "reason": "The two exact-APK stills and native hierarchies prove these named light and dark public-entry configurations. They do not prove whole-app craft, animation cadence, physical-device rendering or independent human artistic acceptance."
+    },
+    "boundary": "Visual Runtime PASS is limited to two unauthenticated public-entry configurations on the exact local benchmarkRelease APK. Whole-app artistic quality, motion smoothness, authenticated/private flows, a physical device and the upload-signed AAB remain UNVERIFIED."
+  },
+  "foldableRuntime": {
+    "capturedAtUtc": "2026-08-08T21:10:21Z",
+    "android": 16,
+    "api": 36,
+    "avd": "codex_pixel_9_pro_fold_api36",
+    "apkPath": "android/app/build/outputs/apk/nonMinifiedRelease/app-nonMinifiedRelease.apk",
+    "apkSha256": "181f9ad808f523384ab9463602dbc670fdc70a0ad376d6c6d4a2eb5075f9d987",
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "postureReceiptPath": "output/android21/device/fold-posture-runtime-api36.txt",
+    "postureReceiptSha256": "685c51153cc26a1d03cb82d343452c2dccad6bdcd01b39c35165eedfb558afb3",
+    "splitScreenReceiptPath": "output/android21/device/fold-split-runtime-api36.txt",
+    "splitScreenReceiptSha256": "e3fa857cd9b2ab8d504c69c2932cafbc14caf07ed448e137eb8f97e6fb5f8daf",
+    "postures": {
+      "opened": "2076x2152, sw852dp",
+      "halfOpened": "2076x2152, sw852dp",
+      "closed": "1080x2424, sw443dp"
+    },
+    "splitScreenBounds": {
+      "zenFlow": "[0,0][2076,1064]",
+      "divider": "[0,979][2076,1173]",
+      "settings": "[0,1088][2076,2152]"
+    },
+    "boundary": "PASS is limited to public entry and sign-in surfaces on a local non-minified candidate; signed production, authenticated private surfaces, rear-display mode and physical hinge behavior remain UNVERIFIED."
+  },
+  "edgeToEdgeAudit": {
+    "capturedAtUtc": "2026-08-08T21:17:47Z",
+    "command": "npm test -- src/pages/nav-v2/__tests__/v2FullscreenSurfaceContract.test.ts src/pages/nav-v2/__tests__/androidEdgeToEdgeContract.test.ts src/pages/nav-v2/__tests__/v2FullscreenAgentContract.test.ts src/components/__tests__/EntryGate.safeArea.test.ts src/features/journal/__tests__/journalWebPrivacyStatic.test.ts src/features/journal/__tests__/useJournalEditorState.test.ts src/features/journal/__tests__/JournalPhotoPicker.iosFileTypes.test.ts src/pages/nav-v2/habits/__tests__/HabitCreateSheet.reflow.test.ts src/pages/nav-v2/habits/hero/__tests__/HeroTemplateLibrarySheet.reflow.test.ts src/features/automation/__tests__/AutomationHistorySheet.test.tsx src/components/navigation-v2/__tests__/V2FocusMiniPlayer.test.tsx src/components/navigation-v2/__tests__/MobileNavV2.test.tsx --maxWorkers=1",
+    "testFilesPassed": 12,
+    "testsPassed": 108,
+    "sourceCoverage": [
+      "MainActivity edge-to-edge creation, resume and configuration-change ownership",
+      "transparent system-bar and cutout themes",
+      "single SafeArea CSS inset owner",
+      "entry and V2 fullscreen shell",
+      "logical cutout spacing for navigation and settings",
+      "bottom navigation and focus mini-player IME behavior",
+      "habit, connected-history and journal sheets",
+      "journal editor viewport and keyboard inset behavior"
+    ],
+    "runtimeArtifactIds": [
+      "foldable-opened",
+      "foldable-closed",
+      "foldable-half-opened-transition",
+      "foldable-split-screen-initial",
+      "foldable-split-screen-continue-action"
+    ],
+    "verdict": "PASS",
+    "boundary": "The source and public runtime edge-to-edge contract is verified. A live local-only habit IME and nested sheet are also verified below; authenticated journal layers, external OAuth return and physical-device cutout behavior remain assigned to T083 or physical-device evidence and are not implied by this PASS."
+  },
+  "systemBarThemeAudit": {
+    "capturedAtUtc": "2026-08-09T09:26:31Z",
+    "device": "codex_pixel_7_api36, Android 16 / API 36, 1080x2400, 420dpi",
+    "apkPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+    "apkSha256": "7a864a085e4429a6dfaa60c3c3d4d3a07bc65a7731e36dbba45197ad29fe35cb",
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "automatedProof": {
+      "command": "npm test -- src/pages/nav-v2/__tests__/v2FullscreenSurfaceContract.test.ts src/pages/nav-v2/__tests__/androidEdgeToEdgeContract.test.ts src/pages/nav-v2/__tests__/v2FullscreenAgentContract.test.ts src/components/__tests__/EntryGate.safeArea.test.ts src/stores/__tests__/themeStore.test.ts --maxWorkers=1",
+      "testFilesPassed": 5,
+      "testsPassed": 45,
+      "javaVerification": "./gradlew :app:compileDebugJavaWithJavac :app:testDebugUnitTest",
+      "javaVerdict": "PASS"
+    },
+    "contrast": {
+      "darkStatusAgainstWhiteIcons": 10.88,
+      "darkNavigationAgainstWhiteGesture": 19.01,
+      "lightStatusAgainstDarkIcons": 7.15,
+      "lightNavigationAgainstDarkGesture": 8.96,
+      "method": "WCAG relative-luminance calculation over the exact native resource colors",
+      "verdict": "PASS"
+    },
+    "artifacts": [
+      {
+        "id": "api36-system-bars-dark-red",
+        "path": "output/android21/api36-system-bars-dark-red.png",
+        "sha256": "41506cc59bc490a722414d24b40e77c6a7595a8b6abebf48038d8bf0344ee227",
+        "pixels": "1080x2400",
+        "finding": "The app switched the system icons to light while the native edge backdrop remained light cyan.",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "api36-system-bars-dark-green",
+        "path": "output/android21/api36-system-bars-dark-green.png",
+        "sha256": "7a647a3bd35192c72abecd68c2c7f7268b66ff1e93e65cf190a4059b1725544e",
+        "pixels": "1080x2400",
+        "finding": "Dark app theme now applies the matching dark native status/navigation backdrop and light system affordances after a cold restart.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "api36-system-bars-light-green",
+        "path": "output/android21/api36-system-bars-light-green.png",
+        "sha256": "4a0f97548539cd23d6e98bd87f13f082d26cd8f775498e17fbe6e64ef3b7de39",
+        "pixels": "1080x2400",
+        "finding": "Switching back to the light app theme restores the light edge backdrop and dark system affordances without restarting.",
+        "verdict": "PASS"
+      }
+    ],
+    "visualIntegrityCritic": {
+      "decision": "KEEP",
+      "technical": "PASS",
+      "visualRuntime": "PASS",
+      "artisticCraft": "UNVERIFIED",
+      "motion": "UNVERIFIED",
+      "model": "N/A",
+      "plan": "PASS",
+      "reason": "Fresh API 36 before/after stills and exact color math prove coherent native chrome in light and dark RTL states. They do not prove animation cadence, every route, physical-device rendering or independent human artistic acceptance."
+    },
+    "boundary": "PASS is limited to theme-aware native system bars on the local API 36 debug APK. Physical cutouts, signed release AAB, motion quality, all private routes and independent human artistic acceptance remain UNVERIFIED."
+  },
+  "localHabitImeAndBackCycle": {
+    "capturedAtUtc": "2026-08-09T05:01:04Z",
+    "device": "codex_pixel_9_pro_fold_api36 with 1080x2400 / 420dpi phone override",
+    "renderer": "host GPU",
+    "apkPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+    "apkSha256": "1abc34479f7325b3ea8a1d5f4217b8f7cc7dc66cc04083e89c692b95f080647e",
+    "signedProductionCandidate": false,
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "artifacts": [
+      {
+        "id": "habit-custom-ime-visible",
+        "path": "output/android21/t083-api36-exact-apk-ime.png",
+        "sha256": "5cf34750db61f0d7ae7c5929c32e651dfd2840eac1a95c1d80b0effd43c72e43",
+        "pixels": "1080x2400",
+        "finding": "The habit name field and close action remain visible above the real Gboard surface.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "habit-custom-after-ime-back",
+        "path": "output/android21/t083-api36-exact-apk-back-1.png",
+        "sha256": "68c4c2d087430b9ed8729a7283e41eeeb6f2d25b005e84f5c50699dbc8a56648",
+        "pixels": "1080x2400",
+        "finding": "After IME dismissal the sheet restores its full height, preserves the draft and exposes the remaining form controls and primary Add habit action.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "habit-quick-add-after-inner-back",
+        "path": "output/android21/t083-api36-exact-apk-back-2.png",
+        "sha256": "4e548bf08269b447210d1713a3fc261f17a0eb8d70e9eb6aa0e473962065b719",
+        "pixels": "1080x2400",
+        "finding": "The next Back returns to the Quick Add heading and first row at scrollTop 0 without closing the sheet.",
+        "verdict": "PASS"
+      }
+    ],
+    "visualIntegrityCritic": {
+      "decision": "FIX",
+      "technical": "PASS",
+      "visualRuntime": "PASS",
+      "artisticCraft": "UNVERIFIED",
+      "motion": "UNVERIFIED",
+      "model": "N/A",
+      "plan": "PASS",
+      "reason": "Exact stills prove hierarchy, reachability, sheet restoration and no clipping for this journey. They do not prove animation cadence or independent human artistic acceptance, and debug-emulator gfxinfo is not suitable evidence for a smoothness PASS."
+    },
+    "boundary": "PASS is limited to the local-only production habit form on a debug API 36 emulator. Authenticated private data, OAuth return, physical-device keyboard behavior, motion quality and human artistic acceptance remain UNVERIFIED."
+  },
+  "connectedHistoryEntryCycle": {
+    "capturedAtUtc": "2026-08-08T18:28:08Z",
+    "runtime": "local production preview in Chromium",
+    "authenticatedSession": false,
+    "productionUserDataUsed": false,
+    "consoleErrors": 0,
+    "artifacts": [
+      {
+        "id": "connected-history-phone-drawer",
+        "path": "output/playwright/android21/connected-history-phone-drawer.png",
+        "sha256": "8b86b85539c33163f2dc370ebfe0967cb91f6675f2262d561f8c01db793e23c5",
+        "pixels": "390x844",
+        "verdict": "PASS"
+      },
+      {
+        "id": "connected-history-phone-sheet",
+        "path": "output/playwright/android21/connected-history-phone-sheet.png",
+        "sha256": "a30756e8ed0b5f28f021f382180b230f30102c192e86dafed054153699a332d1",
+        "pixels": "390x844",
+        "verdict": "PASS"
+      },
+      {
+        "id": "connected-history-desktop-entry",
+        "path": "output/playwright/android21/connected-history-desktop-entry.png",
+        "sha256": "5ad391f48b84d02c7b32591ec4301fe9b35228523060b85bab64b2a79280febc",
+        "pixels": "1280x720",
+        "verdict": "PASS"
+      },
+      {
+        "id": "connected-history-desktop-sheet",
+        "path": "output/playwright/android21/connected-history-desktop-sheet.png",
+        "sha256": "84493b30fb68e6cbd4ffe711e048839d0ebd977a430a4244cf26f306d7d0e69a",
+        "pixels": "1280x720",
+        "verdict": "PASS"
+      },
+      {
+        "id": "connected-history-hebrew-rtl-drawer",
+        "path": "output/playwright/android21/connected-history-phone-he-rtl-drawer.png",
+        "sha256": "d4db94520d76307733e3f9309849249b39f5995b91699b28c61713094d54f2f6",
+        "pixels": "390x844",
+        "verdict": "PASS"
+      },
+      {
+        "id": "connected-history-hebrew-rtl-sheet-red",
+        "path": "output/playwright/android21/connected-history-phone-he-rtl-sheet.png",
+        "sha256": "d40318b58f813c85f81c9c1a10b714abc8d287085d7174a630df1719fecd12ce",
+        "pixels": "390x844",
+        "finding": "close control overlapped the title",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "connected-history-hebrew-rtl-sheet-green",
+        "path": "output/playwright/android21/connected-history-phone-he-rtl-sheet-fixed.png",
+        "sha256": "ce69001827c7d3a706f89cd3859aefac39ed2f459ef68f5eae0d65a5587be56b",
+        "pixels": "390x844",
+        "finding": "physical close-control clearance retained without overlap",
+        "verdict": "PASS"
+      }
+    ],
+    "boundary": "The navigation action and unauthenticated sheet states are visually verified; authenticated history rows, undo confirmations and Android WebView rendering remain UNVERIFIED."
+  },
+  "artifacts": [
+    {
+      "id": "phone-portrait",
+      "path": "output/android21/device/phone-portrait-api36-loaded.png",
+      "sha256": "64803683f296f3f8bacf3a3f541a269658ac1f9012cea339b482c05c072f87cb",
+      "pixels": "1080x2400",
+      "verdict": "PASS"
+    },
+    {
+      "id": "phone-landscape-cta",
+      "path": "output/android21/device/phone-landscape-api36-cta.png",
+      "sha256": "32f0d502da0b21fdaf7dff045f3c4a5c4cf831d4c7e14c0a930699c633a25ad1",
+      "pixels": "2400x1080",
+      "uiAutomatorPath": "output/android21/device/phone-landscape-api36-cta.xml",
+      "uiAutomatorSha256": "95fe2257cc6e53a50680a51ac557beec930cc6b4439a65f87541234e42077026",
+      "ctaBounds": "[259,824][2278,958]",
+      "verdict": "PASS"
+    },
+    {
+      "id": "tablet-sw600",
+      "path": "output/android21/device/tablet-sw600-api36-loaded.png",
+      "sha256": "36e9659a41ffeceaea6b8e445a27990cea7fd57e50457caaecf6a03b2103e8e6",
+      "pixels": "1600x2560",
+      "densityDpi": 320,
+      "verdict": "PASS"
+    },
+    {
+      "id": "freeform-220dp",
+      "path": "output/android21/device/freeform-220dp-api36.png",
+      "sha256": "3ce963af73634bec9c9494e2be0409a63d262227d7dd06bf5fcb3ff2b7b8f262",
+      "pixels": "1080x2400",
+      "taskBounds": "[268,665][845,1745]",
+      "reportedWindowDp": "220x411",
+      "uiAutomatorPath": "output/android21/device/freeform-220dp-api36.xml",
+      "uiAutomatorSha256": "ed8666ba57339bf3a39cfed547a465b1494d3326833c96cdb6a3107c3a5baff1",
+      "verdict": "PASS"
+    },
+    {
+      "id": "freeform-220dp-scrolled-bottom",
+      "path": "output/android21/device/zenflow-freeform-current-bottom.png",
+      "sha256": "cea6fecf899e21ec0e55d56710b37841b7c55818de0fa7c16bfe62b7081bf533",
+      "pixels": "1080x2400",
+      "taskBounds": "[268,665][845,1745]",
+      "reportedWindowDp": "220x411",
+      "input": "three upward swipes inside the app window",
+      "visibleOutcome": "all eight language choices and the Continue control remain reachable",
+      "verdict": "PASS"
+    },
+    {
+      "id": "foldable-opened",
+      "path": "output/android21/device/fold-open-api36.png",
+      "sha256": "82a4fb0cc81888e755830a1a67d8af4cac2a5abb3088e4da8af4d39f63d971e0",
+      "pixels": "2076x2152",
+      "deviceState": "OPENED",
+      "reportedWindowDp": "852x883",
+      "uiAutomatorPath": "output/android21/device/fold-open-api36.xml",
+      "uiAutomatorSha256": "044eff24d91b7f47b44387d1863e35a08d9aa1e83db0c479f06f18c2666e2a6f",
+      "verdict": "PASS"
+    },
+    {
+      "id": "foldable-closed",
+      "path": "output/android21/device/fold-closed-api36.png",
+      "sha256": "744fd19bf66f0054509d10ba926935c7d117aaec1f014419cef303b13deefffe",
+      "pixels": "1080x2424",
+      "deviceState": "CLOSED",
+      "reportedWindowDp": "443x994",
+      "uiAutomatorPath": "output/android21/device/fold-closed-api36.xml",
+      "uiAutomatorSha256": "726183fef14707b48169885e47e5e0743af4d462aed8ea469f12e995fb3dbd09",
+      "verdict": "PASS"
+    },
+    {
+      "id": "foldable-half-opened-transition",
+      "path": "output/android21/device/fold-half-open-transition-api36.png",
+      "sha256": "f7100059200e5dedb1be5e838dc5fd03f3857dbe5e3e5d33b370a5d93c1be7e2",
+      "pixels": "2076x2152",
+      "deviceState": "HALF_OPENED",
+      "reportedWindowDp": "852x883",
+      "stabilizationSeconds": 15,
+      "verdict": "PASS"
+    },
+    {
+      "id": "foldable-split-screen-initial",
+      "path": "output/android21/device/fold-split-screen-api36.png",
+      "sha256": "7054581af71b8f2befd72ccd4a7fcbd68e53b4958354fa65a6825674833a89de",
+      "pixels": "2076x2152",
+      "taskBounds": "[0,0][2076,1064]",
+      "uiAutomatorPath": "output/android21/device/fold-split-screen-api36.xml",
+      "uiAutomatorSha256": "14fb50bc53294abaf1c3ad9f91408d663a75423c3ddf13ce92a720aec8d40151",
+      "scrollRequired": true,
+      "visibleOutcome": "Welcome content remains readable; controls below the first viewport are reached through the existing vertical scroll container.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "foldable-split-screen-continue-action",
+      "path": "output/android21/device/fold-split-immediate-click-api36.png",
+      "sha256": "7243e486059ff3b07515907f07bc2fc18b69e2c164aa1339357f6d547a20c95e",
+      "pixels": "2076x2152",
+      "taskBounds": "[0,0][2076,1064]",
+      "uiAutomatorPath": "output/android21/device/fold-split-immediate-click-api36.xml",
+      "uiAutomatorSha256": "4999680c0ea71f005cb03d02d3fe2c2f95f969e922dea4a01c320661c8dcd815",
+      "input": "focus app pane, swipe within the app viewport, then tap Continue before reflow resets scroll",
+      "visibleOutcome": "The sign-in surface opened inside the same split-screen task.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "arabic-rtl",
+      "path": "output/android21/device/phone-arabic-rtl-api36.png",
+      "sha256": "cbec6f1830ea3e282b556e26f956b4ef4e2fb237dc0e30bc1674d05d301d6164",
+      "pixels": "1080x2400",
+      "verdict": "PASS"
+    },
+    {
+      "id": "hebrew-rtl",
+      "path": "output/android21/device/phone-hebrew-rtl-api36.png",
+      "sha256": "ee25e7396a9c9aba2b277cc078f40618e036a61cea624699fd3cc429a49a684c",
+      "pixels": "1080x2400",
+      "verdict": "PASS"
+    },
+    {
+      "id": "three-button-system-navigation",
+      "path": "output/android21/device/phone-three-button-api36.png",
+      "sha256": "06ff3638b6aa00273a2f85f7b7a34d6f6a2d8dc50ea0497452e4200de5fc85ee",
+      "pixels": "1080x2400",
+      "verdict": "PASS"
+    },
+    {
+      "id": "process-death-before",
+      "path": "output/android21/device/sign-in-before-process-death-api36.png",
+      "sha256": "4ba627d2fb221c54dfe2c909c670841e3b799483d09a915e1d3194fb0de88bad",
+      "pixels": "1080x2400",
+      "verdict": "PASS"
+    },
+    {
+      "id": "process-death-after",
+      "path": "output/android21/device/sign-in-after-process-death-api36-loaded.png",
+      "sha256": "167b6ef5120c517f5f6f7fc5c1029ce1654fdd8632fd2174b7d512c9239fe9e2",
+      "pixels": "1080x2400",
+      "verdict": "PASS"
+    },
+    {
+      "id": "large-text-language-grid",
+      "path": "output/playwright/android21/language-tablet-large-text-fixed.png",
+      "sha256": "37590e6d660dd1fde1dd14d3bc2e0bc8312c0e4c334809095e6c3ef208b25f06",
+      "pixels": "800x1280",
+      "nativeUiAutomatorPath": "output/android21/device/tablet-sw600-large-font-fixed-api36-loaded.xml",
+      "nativeUiAutomatorSha256": "9babc1e0fda35faca19e7033f8bb3b32e9c63c10c6bfcacd00cabb2c5268d319",
+      "labelClientWidth": 168,
+      "labelScrollWidth": 168,
+      "overflowWrap": "normal",
+      "wordBreak": "normal",
+      "verdict": "PASS"
+    },
+    {
+      "id": "phone-large-font-display-red-wrap",
+      "path": "output/android21/device/phone-large-font-display-scrolled-api36.png",
+      "sha256": "8db616b5b922fff744be34251f020749cc22a09060503fa2c818db0cfcdad8a8",
+      "pixels": "1080x2400",
+      "densityDpi": 560,
+      "fontScale": 1.3,
+      "finding": "The System theme label wrapped inside the word as Syste/m at an effective 309 CSS-pixel WebView width.",
+      "verdict": "FAIL"
+    },
+    {
+      "id": "phone-large-font-display-red-anr",
+      "path": "output/android21/device/phone-large-font-display-clean-after-one-swipe-api36.png",
+      "sha256": "9f8b7a612ce1a20d9ef9ad924b45c7f9f9bddcf0c6055df785d320c1bb00e64a",
+      "pixels": "1080x2400",
+      "densityDpi": 560,
+      "fontScale": 1.3,
+      "finding": "A clean cold run reproduced an Android ANR after one scroll; the retained DropBox trace placed MainActivity in HardwareRenderer.syncAndDrawFrame while the decorative WebView layer saturated the emulator GPU path.",
+      "verdict": "FAIL"
+    },
+    {
+      "id": "phone-large-font-display-green-top",
+      "path": "output/android21/device/phone-large-font-display-post-anr-fix-top-api36.png",
+      "sha256": "92dae317f2eba743206e6011f742c16c5d402936b35bee5bdc9993b79a2a9e37",
+      "pixels": "1080x2400",
+      "densityDpi": 560,
+      "fontScale": 1.3,
+      "reportedWindowCssPx": "309x623",
+      "visibleOutcome": "Light, Dark and System reflow to one column with whole labels and 48dp minimum actions.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "phone-large-font-display-green-scrolled",
+      "path": "output/android21/device/phone-large-font-display-post-anr-fix-scrolled-api36.png",
+      "sha256": "cc656717b06c55a3612f3be0f120cd16ce5ce482c542bb57b5d1ed5af0e7603c",
+      "pixels": "1080x2400",
+      "densityDpi": 560,
+      "fontScale": 1.3,
+      "uiAutomatorPath": "output/android21/device/phone-large-font-display-post-anr-fix-scrolled-api36.xml",
+      "uiAutomatorSha256": "bce275429f248c5bc7e3637b0d643800acb44a3091aa0dbd161863414c3369fd",
+      "runtimeReceiptPath": "output/android21/device/font-display-runtime-post-anr-fix-api36.txt",
+      "runtimeReceiptSha256": "7df9dc3670e78bb0410565e4e05b02308b961fd89b034d5a58eb072f5e5914c2",
+      "dropboxAnrCountBefore": 3,
+      "dropboxAnrCountAfter": 3,
+      "visibleOutcome": "All eight language choices and Continue remain reachable with no new ANR after the narrow-Android decorative-layer fallback.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "android-reduced-motion-api36",
+      "path": "output/android21/device/phone-reduced-motion-perf-guard-off-api36.png",
+      "sha256": "06f8e6c2deae7ed3d821fc2c588ac43984a544338b3845a53ecce4b4c6b5658b",
+      "pixels": "1080x2400",
+      "runtimeReceiptPath": "output/android21/device/reduced-motion-runtime-api36.txt",
+      "runtimeReceiptSha256": "2cea800257e203cca0dd9a520a21d4eb27b26f599ba5ff5494d63e548effd715",
+      "androidAnimationScales": "0/0/0",
+      "runtimePerfGuard": "off",
+      "prefersReducedMotion": true,
+      "rootReducedMotion": true,
+      "auroraAnimation": "none",
+      "themeTransitionDuration": "1e-05s",
+      "verdict": "PASS"
+    },
+    {
+      "id": "talkback-public-entry-final",
+      "path": "output/android21/device/talkback-instrumentation-final/talkback-traversal-final.png",
+      "sha256": "6ea52bffd0ce3e5c46fb7188657c1d4403a06055b88151467b6e1d88a0505b28",
+      "pixels": "1080x2400",
+      "runtimeReceiptPath": "output/android21/device/talkback-instrumentation-final/talkback-runtime-api36.txt",
+      "runtimeReceiptSha256": "3b45cfbe2677fa7c73445a1456ebb7bfe76b3aa5cfbcd5251b85b85dcc5b569f",
+      "instrumentationResultPath": "output/android21/device/talkback-instrumentation-final/instrumentation-result.txt",
+      "instrumentationResultSha256": "081e5bf20e489a8b23a2648d770728b3a934414c376c18d1fdcab81a8eda7830",
+      "traversalAndTtsPath": "output/android21/device/talkback-instrumentation-final/traversal-and-tts.txt",
+      "traversalAndTtsSha256": "3e8e834c11c050242e89267290ce8b9cddd66b881753e947f2dc63736adf335a",
+      "talkBackService": "com.google.android.marvin.talkback/.TalkBackService",
+      "testsPassed": 1,
+      "exactFocusEvents": 12,
+      "talkBackAudioFocusRequests": 4,
+      "verdict": "PASS",
+      "boundary": "Automation-assisted real TalkBack traversal and speech-service activity; human auditory and assistive-technology acceptance remain UNVERIFIED."
+    },
+    {
+      "id": "public-entry-motion-browser",
+      "path": "output/playwright/android21/public-entry-transition.webm",
+      "sha256": "617aa84c6dbcf53f444d14becbe4a2e058f4ee2ae2b603c277577dad0d8ceb02",
+      "codec": "VP8",
+      "pixels": "390x844",
+      "durationSeconds": 5.4,
+      "frameRate": 25,
+      "consoleErrors": 0,
+      "beforeFrameSha256": "413dc71b97e9ad6e432e021cc9873c22bf5eb5bd5654446dc3c453df93678e85",
+      "afterFrameSha256": "129765f566d004fd30e63635ca8cd4dc8de0d79641bc614d015824cedf7ff66b",
+      "verdict": "PASS"
+    },
+    {
+      "id": "public-entry-motion-native",
+      "path": "output/android21/device/zenflow-public-motion-interaction-api36.mp4",
+      "sha256": "c2a4dfb0707866481e1043d7b114b6878e7975de86e216d580b542c4641ea798",
+      "codec": "H.264",
+      "pixels": "720x1600",
+      "durationSeconds": 2.298655555555555,
+      "recordedCompositorFrames": 18,
+      "verdict": "DIAGNOSTIC_ONLY"
+    },
+    {
+      "id": "talkback-public-entry-tree",
+      "path": "output/android21/device/talkback-traversal-api36.png",
+      "sha256": "727eba7beb70fa41c8b26048e381a2fb770b6e32312c105cdc51a3a8e6f24052",
+      "uiAutomatorPath": "output/android21/device/talkback-traversal-api36.xml",
+      "uiAutomatorSha256": "c0e364f7a132c0b8f894f5e2974eb74ab517b8989b6e46120a962aa5fdb8171c",
+      "talkBackService": "com.google.android.marvin.talkback/.TalkBackService",
+      "clickableNodes": 14,
+      "radioButtons": 11,
+      "buttons": 1,
+      "visualFocus": "whole WebView document",
+      "verdict": "UNVERIFIED"
+    }
+  ],
+  "configurationVerdicts": {
+    "phonePortrait": "PASS",
+    "phoneLandscape": "PASS",
+    "tabletSw600": "PASS",
+    "freeformResizable": "PASS",
+    "arabicRtl": "PASS",
+    "hebrewRtl": "PASS",
+    "largeText": "PASS",
+    "androidLargeFontAndDisplay": "PASS",
+    "threeButtonNavigation": "PASS",
+    "gestureNavigation": "PASS",
+    "publicProcessDeath": "PASS",
+    "browserReducedMotion": "PASS",
+    "androidReducedMotion": "PASS",
+    "splitScreen": "PASS",
+    "foldablePosture": "PASS",
+    "talkBackSemanticTree": "PASS",
+    "talkBackTraversalAndAnnouncements": "PASS",
+    "talkBackHumanAcceptance": "UNVERIFIED",
+    "authenticatedPrivateSurfaces": "UNVERIFIED"
+  },
+  "entryThemeTransitionVisualCheck": {
+    "capturedAtUtc": "2026-08-09T18:34:24Z",
+    "runtime": "API 36 Android emulator, prior benchmark candidate containing the scoped Android root/app/entry transition guard",
+    "inspectionMethod": "Each retained 1080x2400 PNG was opened at original detail and inspected directly, not inferred from tests or file existence.",
+    "artifacts": [
+      {
+        "id": "entry-theme-light-english",
+        "path": "output/android21/performance/20260809-entry-theme-instant-green/visual/entry-light-en.png",
+        "sha256": "60036d765438290575d3c3bb27b47321865b91a1aace22ade92217a3192c21ed",
+        "pixels": "1080x2400",
+        "finding": "Light entry state keeps the complete theme labels, eight locale choices, Continue action and light system chrome visible without clipping or overlap.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "entry-theme-dark-english",
+        "path": "output/android21/performance/20260809-entry-theme-instant-green/visual/entry-dark-en.png",
+        "sha256": "af0a3315f8a6d54e12c43e6f71a063467aa8bb854577802b533062319a621336",
+        "pixels": "1080x2400",
+        "finding": "Dark entry state preserves the intended gradient, panel hierarchy, readable labels, selected control and matching dark system chrome.",
+        "verdict": "PASS"
+      },
+      {
+        "id": "entry-theme-dark-arabic-rtl",
+        "path": "output/android21/performance/20260809-entry-theme-instant-green/visual/entry-dark-ar-rtl.png",
+        "sha256": "a418a1ca28578ccaaa68b23069773c27b61cea95d70c31023adbcd2428c4d498",
+        "pixels": "1080x2400",
+        "finding": "Arabic dark state keeps RTL theme order, title, locale grid, selection mark and Continue direction coherent without overlap.",
+        "verdict": "PASS"
+      }
+    ],
+    "exactFinalCandidateAttempt": {
+      "capturedAtUtc": "2026-08-09T19:17:08Z",
+      "runtime": "Fresh no-snapshot Pixel 7 API 36 AVD codex_visual_api36_20260809 at 1080x2400/420 dpi",
+      "apkPath": "android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk",
+      "apkSha256": "509e7014ce2f61e6e66c6ace918c0a3633e37487f9c967740a89f03628db0bc5",
+      "installedBaseApkSha256": "509e7014ce2f61e6e66c6ace918c0a3633e37487f9c967740a89f03628db0bc5",
+      "packageIdentity": "com.zenflow.app versionName 2.1.0 versionCode 35 targetSdk 36",
+      "inspectionMethod": "The exact installed APK bytes were re-hashed from pm path. Theme and locale controls were selected in the installed WebView through its local CDP target; each resulting PNG was then opened at original detail and inspected directly.",
+      "artifacts": [
+        {
+          "id": "exact-final-entry-light-english",
+          "path": "output/android21/t149-exact-apk-visual/light-en.png",
+          "sha256": "87c2a156433a79f92d4392686e056af00f63e80c6d20a6a74f2cf70b4cc85bcf",
+          "pixels": "1080x2400",
+          "finding": "The light entry state shows the complete title, three theme actions, all eight locale actions, selected English state and Continue control with coherent light system chrome and no visible clipping or overlap.",
+          "verdict": "PASS"
+        },
+        {
+          "id": "exact-final-entry-dark-english",
+          "path": "output/android21/t149-exact-apk-visual/dark-en.png",
+          "sha256": "110b7e48d3e9be4a0819cfec890ff89e628e01bca55c5b0824792a8c77d759bc",
+          "pixels": "1080x2400",
+          "finding": "The ink theme preserves the gradient, readable hierarchy, selected Dark control, locale grid, Continue action and dark edge-to-edge system chrome without visible artifacts.",
+          "verdict": "PASS"
+        },
+        {
+          "id": "exact-final-entry-dark-arabic-rtl",
+          "path": "output/android21/t149-exact-apk-visual/dark-ar.png",
+          "sha256": "94272e5db3684f57a82e0a40efaec133497971b22c92aac2f2bf82434d4a0049",
+          "pixels": "1080x2400",
+          "webViewState": "lang=ar dir=rtl data-theme=ink",
+          "finding": "Arabic reverses the theme and locale layout, keeps the mixed ZenFlow title readable, places the selected mark and Continue arrow consistently for RTL, and shows no visible bidi collision.",
+          "verdict": "PASS"
+        },
+        {
+          "id": "exact-final-entry-dark-hebrew-rtl",
+          "path": "output/android21/t149-exact-apk-visual/dark-he.png",
+          "sha256": "07441e63a4a69abb8498ce6b95eb0c4bfd88ed676b41695ac7312284ab0a52bf",
+          "pixels": "1080x2400",
+          "webViewState": "Hebrew locale selected; RTL layout visibly applied",
+          "finding": "Hebrew retains the two-line mixed-script title, mirrored layout, selected locale state and Continue direction without visible overlap or truncation.",
+          "verdict": "PASS"
+        }
+      ],
+      "systemUiEnvironmentFailure": {
+        "status": "FAIL",
+        "path": "output/android21/t149-exact-apk-visual/system-ui-anr-overlay.png",
+        "sha256": "ea2774361630e39bb83630bf466a5f41c5a903591680ccb8674073978d2269e7",
+        "finding": "The fresh AVD raised an Android package=android dialog stating System UI was not responding. The ZenFlow entry was already rendered behind it; selecting Wait dismissed the dialog. The app process remained alive and the Android crash buffer was empty, but this does not clear the emulator/System UI reliability failure."
+      },
+      "result": "PASS",
+      "boundary": "PASS covers only the four captured settled public-entry states in this exact APK. It does not prove entry-theme motion, smoothness, authenticated/private surfaces, physical hardware, human craft acceptance, signed AAB behavior or store readiness."
+    },
+    "finalStateVerdict": "PASS_EXACT_FINAL_APK_STATIC_ENTRY_STATES",
+    "motionVerdict": "UNVERIFIED",
+    "artisticHumanAcceptance": "UNVERIFIED",
+    "boundary": "The exact final APK now has direct settled-state evidence for light English, dark English and both supported RTL locales. Motion, performance, authenticated surfaces, physical-device behavior and human acceptance remain separate gates."
+  },
+  "criticVerdicts": {
+    "technical": "PASS",
+    "visualRuntimePublicSurfaces": "PASS",
+    "entryThemeFinalStates": "PASS",
+    "entryThemeExactFinalApkVisualRuntime": "PASS",
+    "artisticCraftHumanAcceptance": "UNVERIFIED",
+    "motionPublicTransition": "PASS",
+    "entryThemeMotion": "UNVERIFIED",
+    "motionPrivateSurfaces": "UNVERIFIED",
+    "model3d": "NOT_APPLICABLE",
+    "releasePlan": "STOP"
+  },
+  "adaptiveFailureLedger": [
+    {
+      "id": "split-screen-controls-below-first-viewport",
+      "status": "PASS_WITH_SCROLL",
+      "finding": "The language rows and Continue control are below the first 1064px split viewport, but the existing scroll container exposes them and the retained input sequence opened the next surface.",
+      "evidenceIds": [
+        "foldable-split-screen-initial",
+        "foldable-split-screen-continue-action"
+      ]
+    },
+    {
+      "id": "half-open-transition-bottom-band",
+      "status": "NOT_REPRODUCED_AFTER_STABILIZATION",
+      "finding": "One capture taken five seconds after a posture override showed a transient blank bottom band. A cold restart and a second opened-to-half-opened transition retained for 15 seconds both rendered edge-to-edge without the band; no persistent defect is claimed fixed.",
+      "evidenceIds": [
+        "foldable-half-opened-transition"
+      ]
+    },
+    {
+      "id": "foldable-authenticated-and-physical-hinge",
+      "status": "UNVERIFIED",
+      "finding": "No genuine signed-in account, physical folding device, rear-display mode or human hinge-occlusion review was available."
+    },
+    {
+      "id": "large-font-theme-label-wrap",
+      "status": "FAIL_FIXED",
+      "finding": "System originally split inside the word at density 560/font scale 1.30. The final grid uses whole-word wrapping, a one-column sub-360px layout and 48dp minimum actions.",
+      "evidenceIds": [
+        "phone-large-font-display-red-wrap",
+        "phone-large-font-display-green-top",
+        "phone-large-font-display-green-scrolled"
+      ]
+    },
+    {
+      "id": "large-font-android-gpu-anr",
+      "status": "FAIL_FIXED",
+      "finding": "A clean large-display run reproduced an input ANR in HardwareRenderer. Runtime isolation removed only the multi-element decorative overlay; the scoped sub-360px Android fallback then repeated the cold run and scroll without increasing the system DropBox ANR count.",
+      "evidenceIds": [
+        "phone-large-font-display-red-anr",
+        "phone-large-font-display-green-scrolled"
+      ]
+    }
+  ],
+  "notes": [
+    "Every PASS is limited to the captured public surface and named configuration.",
+    "The 220dp freeform window was scrolled to its end on-device; the final language options and Continue control remained visible and tappable-sized instead of being clipped permanently.",
+    "A separate Pixel 9 Pro Fold API 36 AVD exercised CLOSED, HALF_OPENED and OPENED device states plus a real Android split-screen task. The public entry remained usable after resize; the low-height split required vertical scrolling and the retained tap opened the sign-in surface.",
+    "The edge-to-edge audit passed 108 focused tests across native ownership, themes, entry, V2 shell, nav, sheets and journal editor source contracts; emulator-only or unauthenticated proof is not promoted to private IME/OAuth or physical-device PASS.",
+    "The Ukrainian browser large-text defect and the native System label split were both reproduced before their scoped fixes; the final Android 560dpi/font-scale 1.30 captures keep every label whole and the CTA reachable.",
+    "The native screen recorder emitted sparse compositor frames and is diagnostic only; it does not prove smoothness.",
+    "The retained final instrumentation run kept the real TalkBack service active, matched exact labels for 12 accessibility-focus events and observed TalkBack speech audio-focus requests. This is automation-assisted runtime proof, not human auditory or AT acceptance.",
+    "With Android window, transition and animator scales set to zero, WebView reported prefers-reduced-motion=true and ZenFlow applied its static kill-switch even with the runtime performance guard explicitly disabled; emulator settings were restored afterward.",
+    "A large-display Android ANR was retained as FAIL evidence and traced to the WebView rendering path. The final narrow fallback removes only the decorative multi-element overlay below 360 CSS pixels while preserving the aurora, edge-bleed gradient and content hierarchy.",
+    "No genuine signed-in session was available. The local-only habit create/IME/Back journey is now visually verified on-device, while authenticated connected history, private journal, mood and planning surfaces remain UNVERIFIED.",
+    "The local production-preview V2 history entry was inspected on phone, desktop and Hebrew RTL; an overlapping RTL close control was captured as FAIL and then recaptured as PASS after the regression fix.",
+    "The newest installed debug candidate was hash-matched to the built APK and received a fresh visual inspection on API 36: the public eight-locale entry, coherent system chrome, Google's visibly labelled rewarded Test Ad and its post-reward close affordance were retained. This does not promote authenticated, production-ad, motion or human artistic review to PASS.",
+    "Automated inspection is not a substitute for independent human artistic or assistive-technology acceptance."
+  ]
+}

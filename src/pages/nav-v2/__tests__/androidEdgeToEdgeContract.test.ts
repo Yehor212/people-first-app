@@ -19,7 +19,7 @@ describe("Android edge-to-edge native contract", () => {
     expect(mainActivity).toContain("setNavigationBarColor(Color.TRANSPARENT)");
     expect(mainActivity).toContain("applyNativeEdgeBackdrop();");
     expect(mainActivity).toContain("getWindow().getDecorView().post(this::applyNativeEdgeBackdrop)");
-    expect(mainActivity).toContain("setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop)");
+    expect(mainActivity).toContain("StatusBarStylePlugin.applyCurrentEdgeBackdrop(this)");
     expect(mainActivity).toContain("public void onResume()");
     expect(mainActivity).toContain("onConfigurationChanged(Configuration newConfig)");
     expect(mainActivity).toContain("setStatusBarContrastEnforced(false)");
@@ -83,6 +83,35 @@ describe("Android edge-to-edge native contract", () => {
     expect(backdrop).toContain('android:angle="270"');
     expect(styles).not.toContain('<item name="android:windowBackground">@android:color/transparent</item>');
     expect(styles).not.toContain("zenflow_edge_underlay");
+  });
+
+  it("keeps the native edge backdrop and both system-bar icon modes aligned with the app theme", () => {
+    const mainActivity = read("android/app/src/main/java/com/zenflow/app/MainActivity.java");
+    const statusBarPlugin = read(
+      "android/app/src/main/java/com/zenflow/app/StatusBarStylePlugin.java"
+    );
+    const darkColorsPath = "android/app/src/main/res/values/edge_to_edge_dark_colors.xml";
+    const darkBackdropPath =
+      "android/app/src/main/res/drawable/zenflow_edge_bleed_backdrop_dark.xml";
+
+    expect(existsSync(darkColorsPath)).toBe(true);
+    expect(existsSync(darkBackdropPath)).toBe(true);
+
+    const darkColors = read(darkColorsPath);
+    const darkBackdrop = read(darkBackdropPath);
+
+    expect(mainActivity).toContain("StatusBarStylePlugin.applyCurrentEdgeBackdrop(this)");
+    expect(statusBarPlugin).toContain("static void applyCurrentEdgeBackdrop");
+    expect(statusBarPlugin).toContain("setAppearanceLightStatusBars(!darkTheme)");
+    expect(statusBarPlugin).toContain("setAppearanceLightNavigationBars(!darkTheme)");
+    expect(statusBarPlugin).toContain("R.drawable.zenflow_edge_bleed_backdrop_dark");
+    expect(statusBarPlugin).toContain("window.setBackgroundDrawableResource(backdropResource)");
+    expect(statusBarPlugin).toContain("decorView.setBackgroundResource(backdropResource)");
+    expect(darkColors).toContain('name="zenflow_edge_bleed_status_dark"');
+    expect(darkColors).toContain('name="zenflow_edge_bleed_navigation_dark"');
+    expect(darkColors).toContain('name="zenflow_edge_bleed_window_dark"');
+    expect(darkBackdrop).toContain("@color/zenflow_edge_bleed_status_dark");
+    expect(darkBackdrop).toContain("@color/zenflow_edge_bleed_navigation_dark");
   });
 
   it("serves Capacitor Android assets from the native localhost root, not the GitHub Pages base", () => {

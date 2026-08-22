@@ -17,28 +17,16 @@ export function CosmicBackground({ startHereLabel }: CosmicBackgroundProps) {
       {/* Light mode background — Sun-Dappled Meadow */}
       <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
       {/* Dark mode cosmic gradient */}
-      <div
-        className="absolute inset-0 hidden dark:block"
-        style={{
-          background: `radial-gradient(ellipse at center,
-            hsl(var(--focus-cosmic-light)) 0%, hsl(var(--focus-cosmic-mid)) 40%, hsl(var(--focus-cosmic-dark)) 100%)`
-        }}
-      />
+      <div className="zf-focus-cosmic-background absolute inset-0 hidden dark:block" />
       {/* Star particles */}
       {cosmicStars.map((star) => (
         <CosmicStar key={star.id} {...star} />
       ))}
       {/* Nebula glow */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="zf-focus-cosmic-nebula pointer-events-none absolute inset-0"
         animate={{ opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 5, repeat: Infinity }}
-        style={{
-          background: `
-            radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
-            radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%)
-          `
-        }}
       />
 
       {/* Primary CTA Header */}

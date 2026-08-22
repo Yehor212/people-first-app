@@ -16,6 +16,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Diary: "Diary",
       navV2Planning: "Planning",
       navV2Settings: "Settings",
+      connectedRecordsHistory: "View history and undo",
       navV2PrimaryNav: "Primary navigation",
       navV2SecondaryNav: "Secondary navigation",
       switchToDark: "Switch to dark mode",
@@ -198,6 +199,30 @@ describe("DrawerV2", () => {
     );
     expect(screen.getByTestId("drawer-v2-destination-settings").className).toContain(
       "--settings-v2-accent"
+    );
+  });
+
+  it("closes the drawer before explicitly opening connected history", () => {
+    const onClose = vi.fn();
+    const onOpenConnectedHistory = vi.fn();
+    render(
+      <DrawerV2
+        {...baseProps}
+        onClose={onClose}
+        onOpenConnectedHistory={onOpenConnectedHistory}
+      />
+    );
+
+    const action = screen.getByRole("button", { name: "View history and undo" });
+    expect(action).toHaveClass("min-h-12");
+    expect(action).not.toHaveAttribute("aria-current");
+
+    fireEvent.click(action);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOpenConnectedHistory).toHaveBeenCalledTimes(1);
+    expect(onClose.mock.invocationCallOrder[0]).toBeLessThan(
+      onOpenConnectedHistory.mock.invocationCallOrder[0]
     );
   });
 

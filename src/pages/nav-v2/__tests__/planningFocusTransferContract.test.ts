@@ -52,6 +52,10 @@ describe("Planning V2 focus transfer contract", () => {
     const hyperfocusMode = read("src/components/hyperfocus/HyperfocusMode.tsx");
     const hyperfocusBackground = read("src/components/hyperfocus/HyperfocusBackground.tsx");
     const hyperfocusSoundSelector = read("src/components/hyperfocus/HyperfocusSoundSelector.tsx");
+    const indexCss = read("src/index.css");
+    const cosmicBackgroundCss =
+      /\.zf-hyperfocus-cosmic-background\s*\{([\s\S]*?)\}/.exec(indexCss)?.[1] ?? "";
+    const nebulaCss = /\.zf-hyperfocus-nebula\s*\{([\s\S]*?)\}/.exec(indexCss)?.[1] ?? "";
 
     expect(hyperfocusMode).toContain('data-hyperfocus-theme="night"');
     expect(hyperfocusMode).toContain('className="dark fixed inset-y-0 left-0');
@@ -84,8 +88,17 @@ describe("Planning V2 focus transfer contract", () => {
     expect(hyperfocusMode).not.toContain("components/v1");
 
     expect(hyperfocusBackground).toContain("Historical night Hyperfocus");
-    expect(hyperfocusBackground).toContain("hsl(var(--focus-cosmic-mid))");
-    expect(hyperfocusBackground).toContain("hsl(var(--focus-cosmic-dark))");
+    expect(hyperfocusBackground).toContain(
+      'className="zf-hyperfocus-cosmic-background absolute inset-0"',
+    );
+    expect(cosmicBackgroundCss).toContain("hsl(var(--focus-cosmic-mid))");
+    expect(cosmicBackgroundCss).toContain("hsl(var(--focus-cosmic-deep))");
+    expect(cosmicBackgroundCss).toContain("hsl(var(--focus-cosmic-dark))");
+    expect(hyperfocusBackground).toContain(
+      'className="zf-hyperfocus-nebula pointer-events-none absolute inset-0"',
+    );
+    expect(nebulaCss).toContain("var(--nebula-a)");
+    expect(nebulaCss).toContain("var(--nebula-b)");
     expect(hyperfocusBackground).not.toContain("Light mode");
     expect(hyperfocusBackground).not.toContain("from-amber-50 via-sky-50 to-indigo-50");
     expect(hyperfocusBackground).toContain("motionAllowed");
@@ -123,6 +136,7 @@ describe("Planning V2 focus transfer contract", () => {
   it("keeps schedule modals above V2 nav with attached focus traps", () => {
     const addEventModal = read("src/components/schedule/AddEventModal.tsx");
     const eventDetailsModal = read("src/components/schedule/EventDetailsModal.tsx");
+    const scheduleTimeline = read("src/components/schedule/ScheduleTimeline.tsx");
 
     expect(addEventModal).toContain("const { modalRef, handleKeyDown } = useModalA11y(true, onClose);");
     expect(addEventModal).toContain("ref={modalRef}");
@@ -133,6 +147,22 @@ describe("Planning V2 focus transfer contract", () => {
     expect(eventDetailsModal).toContain("ref={modalRef}");
     expect(eventDetailsModal).toContain("onKeyDown={handleKeyDown}");
     expect(eventDetailsModal).toContain("z-[60]");
+    expect(scheduleTimeline).toContain("<AddEventModal");
+    expect(scheduleTimeline).toContain("<EventDetailsModal");
+    expect(scheduleTimeline.match(/forceDark/g)).toHaveLength(2);
+  });
+
+  it("lets the Add Event dialog use the full resized Android viewport", () => {
+    const addEventModal = read("src/components/schedule/AddEventModal.tsx");
+
+    expect(addEventModal).toContain(
+      '"fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center"',
+    );
+    expect(addEventModal).toContain(
+      "pb-[max(1rem,var(--safe-bottom))]",
+    );
+    expect(addEventModal).not.toContain("mb-[var(--nav-height)]");
+    expect(addEventModal).not.toContain("pb-[calc(var(--nav-height)+var(--safe-bottom))]");
   });
 
   it("keeps Planning review lane local to V2 Planning without V1 stats navigation", () => {

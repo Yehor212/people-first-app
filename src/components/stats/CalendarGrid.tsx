@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- The intrinsic calendar grid must receive focus for keyboard scrolling. */
 /**
  * CalendarGrid — 7×6 crystal day cells for the calendar tab
  * Pure component, 0 useState.
@@ -45,7 +46,12 @@ export function CalendarGrid({
   t,
 }: CalendarGridProps) {
   return (
-    <div className="max-w-full overflow-x-auto overscroll-x-contain pb-1">
+    <div
+      role="region"
+      tabIndex={0}
+      aria-label={`${t.calendarTitle || "Calendar"} — ${monthNames[selectedMonth]} ${selectedYear}`}
+      className="max-w-full overflow-x-auto overscroll-x-contain rounded-lg pb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+    >
       <div className="min-w-[23rem]">
         {/* Day Names */}
         <div className="mb-2 grid grid-cols-7 gap-0.5 text-xs text-muted-foreground sm:gap-1">
@@ -120,10 +126,9 @@ export function CalendarGrid({
                 onClick={() => onSelectDate(cell.dateKey || null)}
                 aria-label={`${cell.day} ${monthNames[selectedMonth]} ${selectedYear}${mood ? `, ${t.mood}: ${t[mood] || mood}` : ""}`}
                 aria-pressed={isSelected}
-                className="relative flex aspect-square min-h-11 min-w-11 items-center justify-center"
+                className="relative flex aspect-square min-h-11 min-w-11 items-center justify-center [perspective:200px]"
                 whileHover={{ scale: 1.15, rotateY: 15, rotateX: -10 }}
                 whileTap={zenTap.button}
-                style={{ perspective: 200 }}
               >
                 {/* Crystal shape (rotated square) with animated glow */}
                 <div

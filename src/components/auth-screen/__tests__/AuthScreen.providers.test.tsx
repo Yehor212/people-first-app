@@ -274,8 +274,13 @@ describe("AuthScreen provider buttons", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveClass("min-w-0", "whitespace-normal", "leading-tight", "text-2xl");
-    expect(heading.className).toContain("overflow-wrap:normal");
+    expect(heading).toHaveClass(
+      "entry-gate-title",
+      "min-w-0",
+      "whitespace-normal",
+      "leading-tight",
+      "text-2xl",
+    );
     expect(heading).not.toHaveClass("break-words");
   });
 

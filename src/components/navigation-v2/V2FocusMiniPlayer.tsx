@@ -38,10 +38,26 @@ export const V2FocusMiniPlayer = memo(function V2FocusMiniPlayer({
   }, [endTime, isRunning]);
 
   useEffect(() => {
-    const threshold = window.screen.height * 0.75;
-    const onResize = () => setKeyboardOpen(window.innerHeight < threshold);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      setKeyboardOpen(false);
+      return undefined;
+    }
+
+    const updateKeyboardState = () => {
+      const imeInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardOpen(imeInset > 50);
+    };
+
+    updateKeyboardState();
+    viewport.addEventListener("resize", updateKeyboardState);
+    viewport.addEventListener("scroll", updateKeyboardState);
+    window.addEventListener("resize", updateKeyboardState);
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardState);
+      viewport.removeEventListener("scroll", updateKeyboardState);
+      window.removeEventListener("resize", updateKeyboardState);
+    };
   }, []);
 
   const visible = activePage !== "planning" && !keyboardOpen && (isRunning || endTime !== null);

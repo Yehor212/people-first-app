@@ -110,6 +110,39 @@ describe("useNavigationV2", () => {
   });
 
   describe("setActivePage", () => {
+    it("finishes phone-drawer navigation when animation frames are throttled", async () => {
+      vi.useFakeTimers();
+      const requestAnimationFrameSpy = vi
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation(() => 1);
+      const cancelAnimationFrameSpy = vi
+        .spyOn(window, "cancelAnimationFrame")
+        .mockImplementation(() => undefined);
+
+      try {
+        const { result } = renderHook(() => useNavigationV2());
+
+        act(() => result.current.openDrawer());
+        await act(async () => {
+          result.current.setActivePage("diary", { skipTransition: true });
+        });
+
+        expect(result.current.activePage).toBe<NavV2Page>("orb");
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1_000);
+        });
+
+        expect(result.current.drawerOpen).toBe(false);
+        expect(result.current.activePage).toBe<NavV2Page>("diary");
+        expect(window.location.pathname).toBe("/diary");
+      } finally {
+        requestAnimationFrameSpy.mockRestore();
+        cancelAnimationFrameSpy.mockRestore();
+        vi.useRealTimers();
+      }
+    });
+
     it("lets a phone drawer close paint on the next frame before mounting a skipped route", async () => {
       const rafCallbacks: FrameRequestCallback[] = [];
       const requestAnimationFrameSpy = vi
@@ -124,6 +157,13 @@ describe("useNavigationV2", () => {
 
       try {
         const { result } = renderHook(() => useNavigationV2());
+
+        // Flush the independent primary-page scroll reset so this test counts
+        // only the two paint frames owned by deferred drawer navigation.
+        await act(async () => {
+          rafCallbacks.shift()?.(performance.now());
+        });
+        requestAnimationFrameSpy.mockClear();
 
         act(() => result.current.openDrawer());
         expect(result.current.drawerOpen).toBe(true);

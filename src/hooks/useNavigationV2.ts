@@ -52,6 +52,7 @@ interface RouteSnapshot {
 
 const ROUTE_PENDING_MIN_VISIBLE_MS = 320;
 const DEFERRED_DRAWER_ROUTE_DELAY_MS = 120;
+const DEFERRED_DRAWER_ROUTE_FALLBACK_MS = 750;
 
 function nowMs(): number {
   if (typeof window !== "undefined" && window.performance?.now) {
@@ -67,16 +68,33 @@ function scheduleAfterNextPaint(callback: () => void): () => void {
   }
 
   let cancelled = false;
+  let completed = false;
   let firstFrameId: number | null = null;
   let secondFrameId: number | null = null;
   let timerId: number | null = null;
+  let fallbackTimerId: number | null = null;
+
+  const complete = () => {
+    if (cancelled || completed) return;
+    completed = true;
+    if (firstFrameId !== null) window.cancelAnimationFrame(firstFrameId);
+    if (secondFrameId !== null) window.cancelAnimationFrame(secondFrameId);
+    if (timerId !== null) window.clearTimeout(timerId);
+    if (fallbackTimerId !== null) window.clearTimeout(fallbackTimerId);
+    callback();
+  };
+
+  // Android WebView can temporarily throttle requestAnimationFrame during
+  // lifecycle or compositor pressure. A bounded timer keeps a drawer tap from
+  // remaining on the loading state forever; complete() makes both paths safe.
+  fallbackTimerId = window.setTimeout(complete, DEFERRED_DRAWER_ROUTE_FALLBACK_MS);
 
   firstFrameId = window.requestAnimationFrame(() => {
     if (cancelled) return;
     secondFrameId = window.requestAnimationFrame(() => {
       if (cancelled) return;
       timerId = window.setTimeout(() => {
-        if (!cancelled) callback();
+        complete();
       }, DEFERRED_DRAWER_ROUTE_DELAY_MS);
     });
   });
@@ -86,6 +104,7 @@ function scheduleAfterNextPaint(callback: () => void): () => void {
     if (firstFrameId !== null) window.cancelAnimationFrame(firstFrameId);
     if (secondFrameId !== null) window.cancelAnimationFrame(secondFrameId);
     if (timerId !== null) window.clearTimeout(timerId);
+    if (fallbackTimerId !== null) window.clearTimeout(fallbackTimerId);
   };
 }
 
@@ -185,8 +204,8 @@ export interface UseNavigationV2Return {
   drawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  /** Android/hardware back. Returns true if handled (drawer close). */
-  handleBackButton: () => boolean;
+  /** Android/hardware back. Returns true if an in-app destination consumed it. */
+  handleBackButton: (event?: { canGoBack: boolean }) => boolean;
   /** Command palette visibility (shared with Ctrl+K shortcut). */
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -226,6 +245,27 @@ export function useNavigationV2(): UseNavigationV2Return {
   useEffect(() => {
     if (typeof window === "undefined") return;
     storageSetRaw(STORAGE_KEY, activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const resetPrimaryPageScroll = () => {
+      const scrollingElement = document.scrollingElement ?? document.documentElement;
+      scrollingElement.scrollTop = 0;
+      scrollingElement.scrollLeft = 0;
+      document.documentElement.scrollTop = 0;
+      document.documentElement.scrollLeft = 0;
+      if (document.body) {
+        document.body.scrollTop = 0;
+        document.body.scrollLeft = 0;
+      }
+    };
+
+    resetPrimaryPageScroll();
+    if (typeof window.requestAnimationFrame !== "function") return undefined;
+    const frameId = window.requestAnimationFrame(resetPrimaryPageScroll);
+    return () => window.cancelAnimationFrame(frameId);
   }, [activePage]);
 
   useEffect(() => {
@@ -376,7 +416,7 @@ export function useNavigationV2(): UseNavigationV2Return {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   // Android hardware back: drawer close > command palette close > (let caller handle page back)
-  const handleBackButton = useCallback((): boolean => {
+  const handleBackButton = useCallback((event?: { canGoBack: boolean }): boolean => {
     if (drawerOpen) {
       setDrawerOpen(false);
       return true;
@@ -385,8 +425,12 @@ export function useNavigationV2(): UseNavigationV2Return {
       setCommandPaletteOpen(false);
       return true;
     }
+    if (!event?.canGoBack && (activePage !== "orb" || unknownPath !== null)) {
+      setActivePage("orb", { skipTransition: true });
+      return true;
+    }
     return false;
-  }, [drawerOpen, commandPaletteOpen]);
+  }, [activePage, commandPaletteOpen, drawerOpen, setActivePage, unknownPath]);
 
   return {
     activePage,

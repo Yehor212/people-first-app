@@ -46,17 +46,10 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
   },
   {
     path: "src/components/GlobalScheduleBar.tsx",
-    token: "truncate",
-    anchor: '<span className="text-sm font-medium truncate">',
-    reason: "Compact current-event preview inside the global schedule button.",
-    fullValuePath: "The containing button opens the complete schedule.",
-  },
-  {
-    path: "src/components/GlobalScheduleBar.tsx",
-    token: "truncate",
-    anchor: '<span className="text-sm text-muted-foreground truncate">',
-    reason: "Compact next-event preview inside the global schedule button.",
-    fullValuePath: "The containing button opens the complete schedule.",
+    token: "whitespace-nowrap",
+    anchor: '<span className="whitespace-nowrap text-lg font-bold text-foreground">',
+    reason: "Atomic current clock value.",
+    fullValuePath: "The complete localized time is rendered; no user-authored text is shortened.",
   },
   {
     path: "src/components/habit-hub/HabitHubList.tsx",
@@ -65,6 +58,42 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
       '"flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap motion-safe:transition-colors",',
     reason: "Complete filter-chip label in an explicit one-axis chip scroller.",
     fullValuePath: "The complete label is rendered on the chip; the scroller exposes every chip.",
+  },
+  {
+    path: "src/components/habit-hub/HabitStreakTimeline.tsx",
+    token: "whitespace-nowrap",
+    anchor: '<strong className="inline-block whitespace-nowrap text-foreground">',
+    reason: "Atomic current-streak number and unit.",
+    fullValuePath: "The complete numeric streak value is rendered; the localized label wraps separately.",
+  },
+  {
+    path: "src/components/habit-hub/HabitStreakTimeline.tsx",
+    token: "whitespace-nowrap",
+    anchor: '<strong className="inline-block whitespace-nowrap text-foreground">',
+    reason: "Atomic best-streak number and unit.",
+    fullValuePath: "The complete numeric streak value is rendered; the localized label wraps separately.",
+  },
+  {
+    path: "src/components/habit-hub/HabitStreakTimeline.tsx",
+    token: "whitespace-nowrap",
+    anchor: 'className="inline whitespace-nowrap [unicode-bidi:isolate]"',
+    reason: "Atomic localized streak start date.",
+    fullValuePath: "The complete date is rendered inside a wrapping range and isolated for bidi safety.",
+  },
+  {
+    path: "src/components/habit-hub/HabitStreakTimeline.tsx",
+    token: "whitespace-nowrap",
+    anchor: 'className="inline whitespace-nowrap [unicode-bidi:isolate]"',
+    reason: "Atomic localized streak end date.",
+    fullValuePath: "The complete date is rendered inside a wrapping range and isolated for bidi safety.",
+  },
+  {
+    path: "src/components/habit-hub/HabitStreakTimeline.tsx",
+    token: "whitespace-nowrap",
+    anchor:
+      "'col-start-3 row-start-1 justify-self-end whitespace-nowrap text-end text-xs font-bold tabular-nums @sm:col-start-4',",
+    reason: "Atomic streak length and unit in the compact row.",
+    fullValuePath: "The complete numeric streak value is rendered; the date range reflows on its own row.",
   },
   {
     path: "src/components/habit-tracker/HabitTracker.tsx",
@@ -93,7 +122,7 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
     path: "src/components/schedule/ScheduleVisuals.tsx",
     token: "whitespace-nowrap",
     anchor:
-      'className="min-w-0 max-w-full whitespace-nowrap text-center text-sm font-bold leading-none tracking-tight [font-variant-numeric:tabular-nums] [text-shadow:0_0_10px_rgba(139,92,246,0.5)] md:text-base"',
+      'className="min-w-0 max-w-full whitespace-nowrap text-center text-sm font-bold leading-none tracking-tight text-[hsl(var(--cosmic-text-primary))] [font-variant-numeric:tabular-nums] [text-shadow:0_0_10px_rgba(139,92,246,0.5)] md:text-base"',
     reason: "Atomic numeric timer value.",
     fullValuePath: "The complete numeric value is rendered; no user text is shortened.",
   },

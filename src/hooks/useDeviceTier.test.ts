@@ -2,15 +2,24 @@ import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useDeviceTier } from "./useDeviceTier";
 
-const mockMatchMedia = (width: number) => {
+const mockMatchMedia = (width: number, height = 800) => {
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
     value: width,
   });
+  Object.defineProperty(window, "innerHeight", {
+    configurable: true,
+    value: height,
+  });
   window.matchMedia = vi.fn((query: string) => {
     const min = query.match(/min-width:\s*(\d+)px/);
+    const maxHeight = query.match(/max-height:\s*(\d+)px/);
     return {
-      matches: min ? width >= parseInt(min[1]) : false,
+      matches: min
+        ? width >= parseInt(min[1])
+        : maxHeight
+          ? height <= parseInt(maxHeight[1])
+          : false,
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -33,6 +42,12 @@ describe("useDeviceTier", () => {
     mockMatchMedia(900);
     const { result } = renderHook(() => useDeviceTier());
     expect(result.current.tier).toBe("tablet");
+  });
+  it("marks a medium-width Android landscape window as compact height", () => {
+    mockMatchMedia(800, 360);
+    const { result } = renderHook(() => useDeviceTier());
+    expect(result.current.tier).toBe("tablet");
+    expect(result.current.isCompactHeight).toBe(true);
   });
   it("laptop for 1200px", () => {
     mockMatchMedia(1200);

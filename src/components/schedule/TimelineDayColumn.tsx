@@ -65,22 +65,37 @@ export function TimelineDayColumn({
             return (
               <div key={hour} className="relative h-full" style={{ width: `${HOUR_WIDTH_PX}px` }}>
                 {isOdd && (
-                  <div className="absolute inset-0" style={{ backgroundColor: 'hsl(var(--timeline-stripe) / 0.04)' }} />
+                  <div className="absolute inset-0 bg-[hsl(var(--timeline-stripe)/0.04)]" />
                 )}
                 <div
-                  className="absolute top-0 bottom-0 end-0"
-                  style={{
-                    width: isMajor ? '2px' : '1px',
-                    backgroundColor: isMajor ? 'hsl(var(--timeline-divider-major) / 0.6)' : 'hsl(var(--timeline-divider) / 0.35)',
-                  }}
+                  className={cn(
+                    'absolute bottom-0 end-0 top-0',
+                    isMajor
+                      ? 'w-0.5 bg-[hsl(var(--timeline-divider-major)/0.6)]'
+                      : 'w-px bg-[hsl(var(--timeline-divider)/0.35)]',
+                  )}
                 />
                 {isMajor && (
                   <div
                     className="absolute top-0 bottom-0 end-0 pointer-events-none w-2 translate-x-1/2 blur-[2px] bg-[linear-gradient(180deg,hsl(var(--timeline-divider-glow)/0.25)_0%,hsl(var(--timeline-divider-glow)/0.08)_40%,hsl(var(--timeline-divider-glow)/0.08)_60%,hsl(var(--timeline-divider-glow)/0.25)_100%)]"
                   />
                 )}
-                <div className="absolute top-0 end-0" style={{ width: '2px', height: isMajor ? '10px' : '6px', backgroundColor: isMajor ? 'hsl(var(--timeline-tick) / 0.8)' : 'hsl(var(--timeline-tick) / 0.4)' }} />
-                <div className="absolute bottom-0 end-0" style={{ width: '2px', height: isMajor ? '10px' : '6px', backgroundColor: isMajor ? 'hsl(var(--timeline-tick) / 0.8)' : 'hsl(var(--timeline-tick) / 0.4)' }} />
+                <div
+                  className={cn(
+                    'absolute end-0 top-0 w-0.5',
+                    isMajor
+                      ? 'h-2.5 bg-[hsl(var(--timeline-tick)/0.8)]'
+                      : 'h-1.5 bg-[hsl(var(--timeline-tick)/0.4)]',
+                  )}
+                />
+                <div
+                  className={cn(
+                    'absolute bottom-0 end-0 w-0.5',
+                    isMajor
+                      ? 'h-2.5 bg-[hsl(var(--timeline-tick)/0.8)]'
+                      : 'h-1.5 bg-[hsl(var(--timeline-tick)/0.4)]',
+                  )}
+                />
               </div>
             );
           })}
@@ -91,7 +106,7 @@ export function TimelineDayColumn({
           <EventCard3D
             key={event.id}
             event={event}
-            isCurrent={isDayToday && isEventCurrent(event)}
+            isCurrent={isDayToday && !event.completed && isEventCurrent(event)}
             onClick={() => onEventClick(event)}
           />
         ))}
@@ -101,7 +116,7 @@ export function TimelineDayColumn({
       </div>
 
       {/* Period labels */}
-      <div className="absolute left-0 right-0 bottom-0 flex text-xs" style={{ color: 'hsl(var(--cosmic-text-muted))' }}>
+      <div className="absolute bottom-0 left-0 right-0 flex text-xs text-[hsl(var(--cosmic-text-muted))]">
         <div className="flex-1 text-center">{t.night || 'Night'}</div>
         <div className="flex-1 text-center">{t.morning || 'Morning'}</div>
         <div className="flex-1 text-center">{t.afternoon || 'Afternoon'}</div>

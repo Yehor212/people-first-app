@@ -34,6 +34,7 @@ import type { MoodEntry } from "@/types";
 
 const BASE_VALENCE_ORB_SIZE = 280;
 const ORB_AMBIENCE_AUDIO_SRC = getAppAudioAssetSrc("orb-ambience");
+const ORB_AUTOMATIC_RECOVERY_DELAY_MS = 150;
 
 type OrbVisualStatus = "pending" | "ready" | "failed";
 
@@ -82,6 +83,8 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
   const failedVisualAttemptRef = useRef<number | null>(null);
   const readySignalAttemptRef = useRef<number | null>(null);
   const revealFrameRef = useRef<number | null>(null);
+  const automaticRecoveryAttemptedRef = useRef(false);
+  const automaticRecoveryTimerRef = useRef<number | null>(null);
   const [visualAttempt, setVisualAttempt] = useState(0);
   const [visualStatus, setVisualStatus] = useState<OrbVisualStatus>("pending");
   const [coldLoading, setColdLoading] = useState(isColdOrbNavigation);
@@ -179,6 +182,31 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     };
   }, [scheduleVisibleReveal]);
 
+  const startVisualAttempt = useCallback((resetAutomaticRecoveryBudget: boolean) => {
+    if (automaticRecoveryTimerRef.current !== null) {
+      window.clearTimeout(automaticRecoveryTimerRef.current);
+      automaticRecoveryTimerRef.current = null;
+    }
+    if (revealFrameRef.current !== null) {
+      window.cancelAnimationFrame(revealFrameRef.current);
+      revealFrameRef.current = null;
+    }
+    if (resetAutomaticRecoveryBudget) {
+      automaticRecoveryAttemptedRef.current = false;
+    }
+    readySignalAttemptRef.current = null;
+    failedVisualAttemptRef.current = null;
+    const nextAttempt = visualAttemptRef.current + 1;
+    visualAttemptRef.current = nextAttempt;
+    setColdLoading(false);
+    setVisualStatus("pending");
+    setVisualAttempt(nextAttempt);
+  }, []);
+
+  const beginNewVisualAttempt = useCallback(() => {
+    startVisualAttempt(true);
+  }, [startVisualAttempt]);
+
   const handleOrbVisualReady = useCallback(() => {
     if (
       visualAttempt !== visualAttemptRef.current ||
@@ -189,28 +217,38 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
   }, [scheduleVisibleReveal, visualAttempt]);
 
   const handleOrbVisualError = useCallback(() => {
-    if (visualAttempt !== visualAttemptRef.current) return;
+    if (
+      visualAttempt !== visualAttemptRef.current ||
+      failedVisualAttemptRef.current === visualAttempt
+    ) return;
     failedVisualAttemptRef.current = visualAttempt;
     readySignalAttemptRef.current = null;
     if (revealFrameRef.current !== null) {
       window.cancelAnimationFrame(revealFrameRef.current);
       revealFrameRef.current = null;
     }
-    setVisualStatus("failed");
-  }, [visualAttempt]);
 
-  const beginNewVisualAttempt = useCallback(() => {
-    if (revealFrameRef.current !== null) {
-      window.cancelAnimationFrame(revealFrameRef.current);
-      revealFrameRef.current = null;
+    if (!automaticRecoveryAttemptedRef.current) {
+      automaticRecoveryAttemptedRef.current = true;
+      automaticRecoveryTimerRef.current = window.setTimeout(() => {
+        automaticRecoveryTimerRef.current = null;
+        if (
+          visualAttemptRef.current !== visualAttempt ||
+          failedVisualAttemptRef.current !== visualAttempt
+        ) return;
+        startVisualAttempt(false);
+      }, ORB_AUTOMATIC_RECOVERY_DELAY_MS);
+      return;
     }
-    readySignalAttemptRef.current = null;
-    failedVisualAttemptRef.current = null;
-    const nextAttempt = visualAttemptRef.current + 1;
-    visualAttemptRef.current = nextAttempt;
-    setColdLoading(false);
-    setVisualStatus("pending");
-    setVisualAttempt(nextAttempt);
+
+    setVisualStatus("failed");
+  }, [startVisualAttempt, visualAttempt]);
+
+  useEffect(() => () => {
+    if (automaticRecoveryTimerRef.current !== null) {
+      window.clearTimeout(automaticRecoveryTimerRef.current);
+      automaticRecoveryTimerRef.current = null;
+    }
   }, []);
 
   const handleBackToSelect = useCallback(() => {
@@ -232,17 +270,18 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     }
   }, [navigateToPage]);
 
-  useEffect(() => registerModalCloseCallback(() => {
-    if (visualStatus === "failed") {
-      handleErrorBack();
-      return true;
-    }
-    if (step !== "orb-select") {
+  useEffect(() => {
+    if (visualStatus !== "failed" && step === "orb-select") return undefined;
+
+    return registerModalCloseCallback(() => {
+      if (visualStatus === "failed") {
+        handleErrorBack();
+        return true;
+      }
       handleBackToSelect();
       return true;
-    }
-    return false;
-  }), [handleBackToSelect, handleErrorBack, step, visualStatus]);
+    });
+  }, [handleBackToSelect, handleErrorBack, step, visualStatus]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -297,6 +336,16 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
 
   const isDesktopViewport = viewport.width >= 768;
   const isShortViewport = viewport.height < 820;
+  const isCompactLandscapeSelectStep =
+    step === "orb-select" &&
+    viewport.width >= 600 &&
+    viewport.width > viewport.height &&
+    viewport.height < 480;
+  const isCompactPortraitSelectStep =
+    step === "orb-select" &&
+    viewport.width < 600 &&
+    viewport.height >= viewport.width &&
+    viewport.height < 700;
   const isUltraDenseSelectStep =
     step === "orb-select" &&
     draftScope === "specific" &&
@@ -306,6 +355,13 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     step === "orb-select" &&
     (viewport.height < 860 || (draftScope === "specific" && viewport.height < 940));
   const heroOrbSize = useMemo(() => {
+    if (isCompactLandscapeSelectStep) {
+      return Math.round(Math.max(156, Math.min(184, viewport.height * 0.46)));
+    }
+    if (isCompactPortraitSelectStep) {
+      return Math.round(Math.max(196, Math.min(220, viewport.height * 0.32)));
+    }
+
     if (!isDenseSelectStep && !isUltraDenseSelectStep) {
       return BASE_VALENCE_ORB_SIZE;
     }
@@ -315,7 +371,14 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     return Math.round(
       Math.max(denseMin, Math.min(BASE_VALENCE_ORB_SIZE, viewport.height * denseScale))
     );
-  }, [isDenseSelectStep, isDesktopViewport, isUltraDenseSelectStep, viewport.height]);
+  }, [
+    isCompactLandscapeSelectStep,
+    isCompactPortraitSelectStep,
+    isDenseSelectStep,
+    isDesktopViewport,
+    isUltraDenseSelectStep,
+    viewport.height,
+  ]);
   const heroOrbGenerationRef = useRef({
     size: heroOrbSize,
     attempt: visualAttemptRef.current,
@@ -339,21 +402,30 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     previousGeneration.attempt = visualAttemptRef.current;
   }, [beginNewVisualAttempt, heroOrbSize, step, visualAttempt]);
 
-  const contentGapClass = isUltraDenseSelectStep
+  const contentGapClass = isCompactPortraitSelectStep
+    ? "gap-2"
+    : isUltraDenseSelectStep
     ? "gap-1.5 md:gap-2"
     : isDenseSelectStep
       ? "gap-2.5 md:gap-3"
       : isShortViewport
         ? "gap-3 md:gap-4"
         : "gap-6 md:gap-7";
-  const pageChromePaddingClass = isUltraDenseSelectStep
+  const pageChromePaddingClass =
+    isCompactLandscapeSelectStep || isCompactPortraitSelectStep
+    ? "pt-[calc(var(--safe-top)+0.5rem)]"
+    : isUltraDenseSelectStep
     ? "pt-[calc(var(--safe-top)+0.75rem)]"
     : isDenseSelectStep
       ? "pt-[calc(var(--safe-top)+0.75rem)]"
       : isShortViewport
         ? "pt-[calc(var(--safe-top)+1rem)]"
         : "pt-[calc(var(--safe-top)+1.25rem)]";
-  const selectContentLayoutClass = isUltraDenseSelectStep
+  const selectContentLayoutClass = isCompactLandscapeSelectStep
+    ? "grid flex-1 min-h-0 grid-cols-[minmax(12.5rem,0.72fr)_minmax(0,1.28fr)] grid-rows-[auto_auto_auto] content-center items-center gap-x-4 gap-y-1 overflow-y-auto overflow-x-hidden px-1 pb-1 pt-1"
+    : isCompactPortraitSelectStep
+      ? "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-2 pt-2"
+    : isUltraDenseSelectStep
     ? "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-3 pt-12 md:pb-4 md:pt-10"
     : isDenseSelectStep
       ? "flex flex-1 min-h-0 flex-col overflow-y-auto overflow-x-hidden px-1 pb-3 pt-12 md:pb-4 md:pt-8"
@@ -383,7 +455,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
             {tx.somLogFeeling || tx.navV2Orb || "Log how you feel"}
           </h1>
 
-          <CosmicBgAdapter />
+          {!coldLoading || visualReady ? <CosmicBgAdapter /> : null}
 
           <div
             ref={parallaxRef}
@@ -428,6 +500,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
                 draftValence={draftValence}
                 isDenseSelectStep={isDenseSelectStep}
                 isUltraDenseSelectStep={isUltraDenseSelectStep}
+                isCompactLandscapeSelectStep={isCompactLandscapeSelectStep}
                 isShortViewport={isShortViewport}
                 whisperKey={whisperKey}
                 whisperText={whisperText}

@@ -80,6 +80,22 @@ describe('a11y utilities', () => {
 
       expect(document.activeElement).toBe(fallback);
     });
+
+    it('restores focus without scrolling the newly rendered Android destination', () => {
+      const opener = document.createElement('button');
+      const dialog = document.createElement('div');
+      dialog.innerHTML = '<button>Confirm</button>';
+      document.body.append(opener, dialog);
+      opener.focus();
+      const restoreFocus = vi.spyOn(opener, 'focus');
+
+      const cleanup = createFocusTrap(dialog);
+      restoreFocus.mockClear();
+      cleanup();
+
+      expect(restoreFocus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(document.activeElement).toBe(opener);
+    });
   });
 
   describe('handleArrowNavigation', () => {

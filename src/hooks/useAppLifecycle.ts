@@ -5,11 +5,10 @@ import { initializeOfflineQueueHandlers } from '@/lib/offlineQueueHandlers';
 import { getToday } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { isNative } from '@/lib/platform';
+import { isAndroid, isIos, isNative } from '@/lib/platform';
 
 const WEB_MIN_DISPLAY_MS = 350;
 const NATIVE_MIN_DISPLAY_MS = 800;
-const LOADING_FADE_MS = 180;
 const UPDATE_STATE_DELAY_MS = 700;
 
 /**
@@ -18,22 +17,43 @@ const UPDATE_STATE_DELAY_MS = 700;
  */
 export function useAppLifecycle(): void {
   const setInitializationState = useAppStore(s => s.setInitializationState);
-  const setLoadingFadeOut = useAppStore(s => s.setLoadingFadeOut);
   const currentDate = useAppStore(s => s.currentDate);
   const setCurrentDate = useAppStore(s => s.setCurrentDate);
   const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // App initialization + splash + loading fade
+  // App initialization + native-to-web splash handoff
   useEffect(() => {
     let active = true;
+    let firstAndroidSplashFrame: number | null = null;
+    let paintedAndroidSplashFrame: number | null = null;
+
+    const hideNativeLaunchSplash = () => {
+      const hide = () => {
+        void SplashScreen.hide().catch(err => logger.warn('[Splash]', 'Hide failed:', err));
+      };
+
+      if (isAndroid) {
+        // Capacitor's launch splash is configured for manual release. Two RAFs
+        // guarantee that the committed React splash receives a compositor frame
+        // before Android removes the native launch surface.
+        firstAndroidSplashFrame = window.requestAnimationFrame(() => {
+          firstAndroidSplashFrame = null;
+          paintedAndroidSplashFrame = window.requestAnimationFrame(() => {
+            paintedAndroidSplashFrame = null;
+            hide();
+          });
+        });
+        return;
+      }
+
+      if (isIos) hide();
+    };
+
     const initialize = async () => {
       logger.log('[Index] Starting app initialization...');
       const startTime = Date.now();
 
-      // Hide native splash IMMEDIATELY so web animation is visible
-      if (isNative) {
-        SplashScreen.hide().catch(err => logger.warn('[Splash]', 'Hide failed:', err));
-      }
+      hideNativeLaunchSplash();
 
       // Initialize offline queue handlers for offline-first sync
       initializeOfflineQueueHandlers();
@@ -49,14 +69,6 @@ export function useAppLifecycle(): void {
 
       if (!active) return;
 
-      // Start exit fade animation
-      setLoadingFadeOut(true);
-
-      // After fade completes, remove loading screen and set final state
-      await new Promise(r => window.setTimeout(r, LOADING_FADE_MS));
-
-      if (!active) return;
-
       if (!result.success) {
         setInitializationState({
           isInitializing: false,
@@ -66,6 +78,10 @@ export function useAppLifecycle(): void {
         return;
       }
 
+      // AuthGate renders one exclusive gate at a time. Switching its state in
+      // one commit preserves account isolation and lets React mount the route
+      // fallback atomically; fading the only mounted surface exposes the empty
+      // root between the splash and the first lazy route.
       if (result.wasUpdated) {
         logger.log('[Index] App was updated, showing update message');
         initTimeoutRef.current = setTimeout(() => {
@@ -88,6 +104,12 @@ export function useAppLifecycle(): void {
     void initialize();
     return () => {
       active = false;
+      if (firstAndroidSplashFrame !== null) {
+        window.cancelAnimationFrame(firstAndroidSplashFrame);
+      }
+      if (paintedAndroidSplashFrame !== null) {
+        window.cancelAnimationFrame(paintedAndroidSplashFrame);
+      }
       if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: register lifecycle listeners once

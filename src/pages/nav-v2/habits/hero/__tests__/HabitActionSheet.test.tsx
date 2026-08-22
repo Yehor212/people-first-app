@@ -7,7 +7,7 @@
  *   - Edit + Open Details items fire handlers + close the sheet
  *   - Conditional rendering (item absent when handler undefined)
  *   - Close button fires onClose
- *   - ≥ 44 px touch targets (min-h-[44px] contract)
+ *   - ≥ 48 px Android-first touch targets
  */
 import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -197,7 +197,7 @@ describe("HabitActionSheet", () => {
     expect(onSkip).not.toHaveBeenCalled();
   });
 
-  it("every action item has min-h-[44px] (Law 9 touch-target contract)", () => {
+  it("every action item has an explicit 48px touch target", () => {
     render(
       <HabitActionSheet
         open
@@ -224,7 +224,7 @@ describe("HabitActionSheet", () => {
     ];
     testIds.forEach((tid) => {
       const el = screen.getByTestId(tid);
-      expect(el.className).toMatch(/min-h-\[(44|48)px\]|h-(11|12|14)/);
+      expect(el.className).toMatch(/min-h-\[48px\]|h-12/);
     });
   });
 

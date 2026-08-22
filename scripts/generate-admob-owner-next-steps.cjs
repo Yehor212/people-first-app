@@ -42,9 +42,9 @@ const OWNER_FACT_LABELS_BY_ITEM = Object.freeze({
     ["policyCenterReviewed", "Policy Center was opened for the ZenFlow app/account scope."],
     ["noViolations", "No policy violations are shown."],
     ["noBlockingIssues", "No blocking issue prevents ad serving."],
-    ["noRegulatoryIssues", "No regulatory issue is shown for the app/account."],
-    ["noAdvertiserPreferenceRestrictions", "No advertiser-preference restriction is shown."],
-    ["noRestrictedOrDisabledAdRequests", "No restricted or disabled ad-request status is shown."],
+    ["noRegulatoryIssues", "Confirm there are no regulatory issues for the app/account."],
+    ["noAdvertiserPreferenceRestrictions", "Confirm there are no advertiser-preference restrictions."],
+    ["noRestrictedOrDisabledAdRequests", "Confirm there are no restricted or disabled ad requests."],
   ],
   privacy_messages_cmp: [
     ["europeanRegulationsMessagePublished", "European regulations message is published."],

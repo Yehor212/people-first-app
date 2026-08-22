@@ -107,7 +107,7 @@ The checker uses layered evidence:
 4. **Failure context:** `catch`, Promise rejection, and error/fallback branches.
 5. **Sink context:** persistence/sync versus analytics/export/share/release output.
 6. **Native/public/text controls:** bounded strict-UTF-8 reads and high-confidence field structure for Java, Swift, Rust, HTML, JSON, and shipped public assets.
-7. **SQL classification:** static statement parsing followed by exact user-table `Set` membership; quoted identifiers are included and config never becomes a dynamic regular expression.
+7. **SQL classification:** static statement parsing followed by exact user-table `Set` membership; quoted identifiers are included and config never becomes a dynamic regular expression. Dollar-quoted bodies belonging to `CREATE FUNCTION` or `CREATE PROCEDURE` are masked because defining a parameter-driven routine does not execute its DML. Executable migration surfaces remain visible: top-level statements and `DO` blocks are still scanned, and adversarial tests pin both sides of that boundary.
 8. **Bundle canary:** `ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E` is defined by the checker/config and injected only into transient adversarial-test or CI artifacts. It must never remain under shipped `dist/**`, including source maps and unknown/text extensions. Every bounded artifact receives a raw-byte sentinel scan; an explicitly requested missing, empty, symlinked, escaped, or text-unreadable bundle is an internal error, not clean.
 9. **Governance contracts:** code-owned, order-insensitive semantic digests pin every detector/exclusion/evidence registry and repository contract; code-owned exact package commands pin all four local entrypoints. Canonical roots may grow only through the reviewed additive coverage fields. Core, CLI, config, ledgers, package, CI, hook, tests, policy, review, and waiver invariants are checked together.
 10. **Evidence association:** every positive status is evaluated separately. Proof must be on the same claim object or its own direct child named `evidence`, `proof`, `verification`, or `commandEvidence`; neither an ancestor nor any sibling artifact can authenticate the claim implicitly.
@@ -120,20 +120,20 @@ Bundle verification is fail-closed before content classification. Finder/FilePro
 
 ## Rule catalog
 
-| Rule | Meaning | Blocking condition |
-| --- | --- | --- |
-| PDI001 | TEST_ARTIFACT_REACHABLE_FROM_PRODUCTION | Production graph reaches test/fixture/dev-only code |
-| PDI002 | SYNTHETIC_USER_HISTORY_IN_PRODUCTION | Reachable code constructs a strongly structured plausible record/history |
-| PDI003 | DECEPTIVE_ERROR_FALLBACK | Failure path returns synthetic facts instead of an honest error/empty state |
-| PDI004 | SYNTHETIC_DATA_TO_PERSISTENCE_OR_SYNC | Synthetic source reaches Dexie, store persistence, queue, backup, or Supabase |
-| PDI005 | STUBBED_PRODUCTION_SUCCESS | Service constructs success/verification facts without authority |
-| PDI006 | UNSAFE_PRODUCTION_DEMO_MODE | Demo defaults on or persists outside the complete demo contract |
-| PDI007 | SYNTHETIC_DATA_TO_ANALYTICS_EXPORT_OR_SHARE | Synthetic facts enter metrics or leave through export/share/backup |
-| PDI008 | PRODUCTION_MIGRATION_SEEDS_USER_DATA | Production SQL inserts/copies rows into user-data tables |
-| PDI009 | PRODUCTION_BUNDLE_CONTAINS_TEST_FIXTURE | Built artifact contains the stable fixture sentinel |
-| PDI010 | ENFORCEMENT_TAMPERING | Required contract is removed, masked, broadened, or stale |
-| PDI011 | FAKE_RELEASE_OR_VERIFICATION_EVIDENCE | Each PASS/ready claim lacks fresh command-bound proof associated with that claim |
-| PDI012 | UNCLASSIFIED_SYNTHETIC_SOURCE | Medium-confidence unreachable/unresolved source needs review |
+| Rule   | Meaning                                     | Blocking condition                                                                                                                                                       |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PDI001 | TEST_ARTIFACT_REACHABLE_FROM_PRODUCTION     | Production graph reaches test/fixture/dev-only code                                                                                                                      |
+| PDI002 | SYNTHETIC_USER_HISTORY_IN_PRODUCTION        | Reachable code constructs a strongly structured plausible record/history                                                                                                 |
+| PDI003 | DECEPTIVE_ERROR_FALLBACK                    | Failure path returns synthetic facts instead of an honest error/empty state                                                                                              |
+| PDI004 | SYNTHETIC_DATA_TO_PERSISTENCE_OR_SYNC       | Synthetic source reaches Dexie, store persistence, queue, backup, or Supabase                                                                                            |
+| PDI005 | STUBBED_PRODUCTION_SUCCESS                  | Service constructs success/verification facts without authority                                                                                                          |
+| PDI006 | UNSAFE_PRODUCTION_DEMO_MODE                 | Demo defaults on or persists outside the complete demo contract                                                                                                          |
+| PDI007 | SYNTHETIC_DATA_TO_ANALYTICS_EXPORT_OR_SHARE | Synthetic facts enter metrics or leave through export/share/backup                                                                                                       |
+| PDI008 | PRODUCTION_MIGRATION_SEEDS_USER_DATA        | Executable production-migration SQL inserts/copies rows into user-data tables; unexecuted stored-routine definitions are not classified as migration-time seed execution |
+| PDI009 | PRODUCTION_BUNDLE_CONTAINS_TEST_FIXTURE     | Built artifact contains the stable fixture sentinel                                                                                                                      |
+| PDI010 | ENFORCEMENT_TAMPERING                       | Required contract is removed, masked, broadened, or stale                                                                                                                |
+| PDI011 | FAKE_RELEASE_OR_VERIFICATION_EVIDENCE       | Each PASS/ready claim lacks fresh command-bound proof associated with that claim                                                                                         |
+| PDI012 | UNCLASSIFIED_SYNTHETIC_SOURCE               | Medium-confidence unreachable/unresolved source needs review                                                                                                             |
 
 ## Baseline policy
 
@@ -172,7 +172,7 @@ The canonical waiver ledger is empty at policy activation.
 - `Stop` runs a final diff check, blocks findings/internal errors, and honors `stop_hook_active` to avoid a continuation loop.
 - `SubagentStart` injects the evidence packet; `SubagentStop` rejects success claims without findings, source evidence, platform impact, verification/skips, remaining risk, and GO/STOP/ASK.
 
-The hook resolves the repository with `git rev-parse --show-toplevel`, even when the session cwd is a subdirectory. It reads one JSON object from stdin, emits JSON-only stdout on success, sends diagnostics to stderr, uses a 15-second checker timeout, stores no user data/secrets, and fails closed on malformed input. OpenAI documents `PreToolUse` interception as incomplete, so the hook is early feedback—not the sole boundary. A changed hook hash may require Codex trust/review again; that trust state is `UNVERIFIED` until observed.
+The hook resolves the repository with `git rev-parse --show-toplevel`, even when the session cwd is a subdirectory. It reads one JSON object from stdin, emits JSON-only stdout on success, sends diagnostics to stderr, gives the checker a bounded 55-second timeout inside the hook handler's 60-second budget, stores no user data/secrets, and fails closed on malformed input. OpenAI documents `PreToolUse` interception as incomplete, so the hook is early feedback—not the sole boundary. A changed hook hash may require Codex trust/review again; that trust state is `UNVERIFIED` until observed.
 
 ## CI behavior
 
@@ -249,7 +249,7 @@ If the checker itself causes an emergency release block, preserve exit 2/fail-cl
 - Nonliteral computed imports, runtime-generated code, reflection, encoded/encrypted payloads, and deliberate obfuscation are not soundly modeled.
 - Data flow is targeted and mostly intra-file; complex interprocedural aliases may produce false negatives.
 - Vite-specific literal/brace globs, literal `new URL` assets, and workers are modeled, but computed patterns and future plugin-generated entrypoints require config/test updates.
-- Rust, Java, Swift, HTML, and SQL receive path/lexical controls rather than a full language semantic model.
+- Rust, Java, Swift, HTML, and SQL receive path/lexical controls rather than a full language semantic model. SQL routine masking recognizes bounded dollar-quoted `CREATE FUNCTION`/`CREATE PROCEDURE` definitions; dynamically assembled SQL and uncommon procedural syntaxes require separate review.
 - Generated evidence scanning is intentionally bounded to tracked release roots, top-level output JSON, one-directory-deep readiness filenames, `output/release/**`, and `artifacts/**`; deeper noncanonical output packets require a new reviewed glob/test and otherwise remain `UNVERIFIED`.
 - Raw-byte bundle canaries detect the known fixture sentinel in bounded artifacts, not every unknown/minified/compressed synthetic value.
 - Code-owned semantic pins and runtime canaries raise the cost of accidental or single-layer weakening, but one authorized actor can still change every same-repository trust layer together.

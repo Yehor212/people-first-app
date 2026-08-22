@@ -69,6 +69,9 @@ import {
   getJournalAudioParentSyncDecision,
   getJournalPhotoParentSyncDecision,
 } from "@/storage/sync/journalMediaParentGuard";
+import { persistAutomationSourceIntentInCurrentTransaction } from "@/features/automation/automationRepository";
+import { prepareJournalAutomationSourceIntent } from "@/features/automation/automationSourcePersistence";
+import { signalAutomationSourceReady } from "@/features/automation/automationRuntimeSignals";
 
 type JournalPhotoSyncMetadata = Pick<
   JournalPhoto,
@@ -1309,6 +1312,10 @@ export async function saveEntry(
       updatedAt: now,
     };
     const storedFull = await encryptEntryContentForStorage(full);
+    const automationSourceIntent = await prepareJournalAutomationSourceIntent(
+      storedFull,
+      expectedOwnerUserId,
+    );
     const uniqueRequiredSpaceIds = [...new Set(requiredSpaceIds.filter(Boolean))];
     const requiredSpaceLinks: JournalEntryLink[] = uniqueRequiredSpaceIds.map((spaceId) => ({
       id: `journal-entry-link:${full.id}:space:${spaceId}`,
@@ -1321,6 +1328,7 @@ export async function saveEntry(
       photos: [],
       audios: [],
     };
+    let automationIntentPersisted = false;
     await db.transaction(
       "rw",
       [
@@ -1330,12 +1338,21 @@ export async function saveEntry(
         db.journalEntryLinks,
         db.offlineQueue,
         db.settings,
+        db.automationTransactions,
       ],
       async () => {
         if (validatedDraftContext) {
           await assertJournalDraftWriterOwnedInCurrentTransaction(validatedDraftContext);
         }
         await db.journalEntries.add(storedFull);
+        if (automationSourceIntent && expectedOwnerUserId) {
+          const result = await persistAutomationSourceIntentInCurrentTransaction(
+            storedFull,
+            automationSourceIntent,
+            expectedOwnerUserId,
+          );
+          automationIntentPersisted = result.intentPersisted;
+        }
         if (requiredSpaceLinks.length > 0) {
           await db.journalEntryLinks.bulkAdd(requiredSpaceLinks);
         }
@@ -1375,9 +1392,10 @@ export async function saveEntry(
         }
       }
     );
-    return { full, storedFull, relinkedMedia };
+    return { full, storedFull, relinkedMedia, automationIntentPersisted };
   });
   const { full } = localCommit;
+  if (localCommit.automationIntentPersisted) signalAutomationSourceReady();
   void requestPersistentStorageForCriticalData();
 
   if (!expectedOwnerUserId) return full;
@@ -1414,6 +1432,7 @@ export async function updateEntry(
     ? assertJournalDraftCommitContext(draftContext)
     : null;
   const expectedOwnerUserId = await captureJournalSyncOwner();
+  let automationIntentPersisted = false;
   const updatedAt = await runWithJournalSecurityWriteLock(async () => {
     if (expectedOwnerUserId) {
       await validateSyncOwner(expectedOwnerUserId, "Diary update outbox");
@@ -1433,6 +1452,10 @@ export async function updateEntry(
       ...changes,
       updatedAt: nextUpdatedAt,
     });
+    const automationSourceIntent = await prepareJournalAutomationSourceIntent(
+      { ...current, ...storageChanges },
+      expectedOwnerUserId,
+    );
     const securityMigrationTools =
       changes.photoIds !== undefined || changes.audioIds !== undefined
         ? await loadPendingJournalSecurityMigrationTools()
@@ -1441,7 +1464,14 @@ export async function updateEntry(
     const removedAudioIds: string[] = [];
     await db.transaction(
       "rw",
-      [db.journalEntries, db.journalPhotos, db.journalAudio, db.offlineQueue, db.settings],
+      [
+        db.journalEntries,
+        db.journalPhotos,
+        db.journalAudio,
+        db.offlineQueue,
+        db.settings,
+        db.automationTransactions,
+      ],
       async () => {
         if (validatedDraftContext) {
           await assertJournalDraftWriterOwnedInCurrentTransaction(validatedDraftContext);
@@ -1518,8 +1548,16 @@ export async function updateEntry(
           }
           await db.journalAudio.delete(audioId);
         }
+        const updated = await db.journalEntries.get(id);
+        if (updated && automationSourceIntent && expectedOwnerUserId) {
+          const result = await persistAutomationSourceIntentInCurrentTransaction(
+            updated,
+            automationSourceIntent,
+            expectedOwnerUserId,
+          );
+          automationIntentPersisted = result.intentPersisted;
+        }
         if (expectedOwnerUserId) {
-          const updated = await db.journalEntries.get(id);
           if (updated) {
             await persistCriticalOfflineActionInCurrentTransaction(
               "SYNC_JOURNAL_ENTRY",
@@ -1563,6 +1601,7 @@ export async function updateEntry(
     return nextUpdatedAt;
   });
 
+  if (automationIntentPersisted) signalAutomationSourceReady();
   if (!expectedOwnerUserId) return updatedAt;
   void notifyJournalSyncAfterLocalCommit("Diary entry update");
   return updatedAt;

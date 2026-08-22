@@ -1,0 +1,548 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-08-09T18:34:24Z",
+  "releaseStatus": "STOP",
+  "scope": "Android 2.1 local diagnostic performance evidence",
+  "source": {
+    "baseCommit": "13ca51a80d23220574deba762851fe5a32372e46",
+    "workingTreeState": "uncommitted",
+    "journeysSha256": "20301651570a3e9ebfd26547a63a9ee61dc6e601bed42fc46c319dc2661a66d8",
+    "macrobenchmarkSha256": "5c93f47192f61005e658edaaf41099287196880df2845a3eb8a74c2bb54b7c8c"
+  },
+  "device": {
+    "kind": "emulator",
+    "avd": "codex_pixel_9_pro_fold_api36",
+    "model": "sdk_gphone64_arm64",
+    "api": 36,
+    "android": 16,
+    "buildType": "userdebug",
+    "fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys",
+    "cpuCoreCount": 4,
+    "cpuLocked": false,
+    "cpuMaxFreqHz": 2000,
+    "memoryBytes": 4111278080,
+    "sustainedPerformanceMode": false,
+    "thermalThrottleSleepSeconds": 0,
+    "androidxEmulatorSuppressionUsed": true,
+    "representativeReleaseEvidence": false
+  },
+  "profile": {
+    "variant": "nonMinifiedRelease",
+    "generationSource": "release-equivalent Macrobenchmark journeys",
+    "generation": {
+      "capturedAtUtc": "2026-08-08T20:52:54Z",
+      "command": "ZENFLOW_ALLOW_DIAGNOSTIC_EMULATOR_BENCHMARK=true ./gradlew :app:generateReleaseBaselineProfile --rerun-tasks --console=plain",
+      "exitCode": 0,
+      "durationSeconds": 369,
+      "actionableTasks": 341,
+      "generatorTestsRun": 2,
+      "macrobenchmarkTestsSkippedByGenerationTask": 4,
+      "failedTests": 0,
+      "generatedRuleCount": 3460
+    },
+    "baselineProfileLines": 3459,
+    "startupProfileLines": 3459,
+    "baselineProfileSizeBytes": 295309,
+    "startupProfileSizeBytes": 295309,
+    "baselineProfileSha256": "1af95ba07387e5e91d74273ba7c890ac588673381b25fd87650b42b8b1ad37c6",
+    "startupProfileSha256": "1af95ba07387e5e91d74273ba7c890ac588673381b25fd87650b42b8b1ad37c6",
+    "packagedInReleaseEquivalentApk": true,
+    "packagedAssets": [
+      "assets/dexopt/baseline.prof",
+      "assets/dexopt/baseline.profm"
+    ],
+    "releaseEquivalentApk": {
+      "path": "android/app/build/outputs/apk/nonMinifiedRelease/app-nonMinifiedRelease.apk",
+      "sizeBytes": 29196851,
+      "sha256": "181f9ad808f523384ab9463602dbc670fdc70a0ad376d6c6d4a2eb5075f9d987"
+    },
+    "packagedInReleaseEquivalentAab": true,
+    "releaseEquivalentAab": {
+      "path": "android/app/build/outputs/bundle/nonMinifiedRelease/app-nonMinifiedRelease.aab",
+      "sizeBytes": 28123936,
+      "sha256": "2a421bd9d02b08eacb71c7cde040b7a8c61d1a6833c9dc7c6decce02b8a1c846",
+      "buildCommand": "./gradlew :app:bundleNonMinifiedRelease --rerun-tasks --console=plain",
+      "buildExitCode": 0,
+      "bundleMetadata": [
+        {
+          "path": "BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof",
+          "sizeBytes": 2561,
+          "sha256": "ac03f289aaf85b6a74e9244fa7ce153a115f60dee0e2474fa0a3856482f554ff"
+        },
+        {
+          "path": "BUNDLE-METADATA/com.android.tools.build.profiles/baseline.profm",
+          "sizeBytes": 256,
+          "sha256": "39adb5004e11b798127d875566fce14fd93db7c4bdc32f4659e1857b7aad4280"
+        }
+      ]
+    },
+    "exactReleaseAab": "UNVERIFIED"
+  },
+  "benchmarks": [
+    {
+      "name": "coldStartupNoCompilation",
+      "compilationMode": "None",
+      "startupMode": "COLD",
+      "iterations": 10,
+      "timeToInitialDisplayMs": {
+        "minimum": 937.217375,
+        "median": 1101.5022295,
+        "maximum": 1153.915292,
+        "coefficientOfVariation": 0.060316204366257384
+      },
+      "receipt": {
+        "path": "output/android21/performance/cold-start-no-compilation-api36-emulator.json",
+        "sha256": "e4728a9f5c043c5090de13c471fe606fb5177814181781f0a86750d76bf15acd"
+      }
+    },
+    {
+      "name": "coldStartupBaselineProfile",
+      "compilationMode": "Partial(BaselineProfileMode.Require)",
+      "startupMode": "COLD",
+      "iterations": 10,
+      "timeToInitialDisplayMs": {
+        "minimum": 947.942834,
+        "median": 987.9956255,
+        "maximum": 1370.236959,
+        "coefficientOfVariation": 0.14995316898731045
+      },
+      "medianChangeVersusNoCompilationPercent": -10.305,
+      "receipt": {
+        "path": "output/android21/performance/cold-start-baseline-profile-api36-emulator.json",
+        "sha256": "2f06732c0abaf88e44f09514146d0bfce0400f1d01abbaafd6c207c558b59afe"
+      }
+    },
+    {
+      "name": "publicEntryFrames",
+      "compilationMode": "Partial(BaselineProfileMode.Require)",
+      "startupMode": "WARM",
+      "iterations": 10,
+      "frameCount": {
+        "minimum": 71,
+        "median": 79,
+        "maximum": 90,
+        "coefficientOfVariation": 0.07892539989579299
+      },
+      "frameDurationCpuMs": {
+        "p50": 27.827771,
+        "p90": 34.062946100000005,
+        "p95": 39.77881249999994,
+        "p99": 58.529212490000084
+      },
+      "frameOverrunMs": {
+        "p50": 16.8687095,
+        "p90": 23.06532240000002,
+        "p95": 31.559601049999905,
+        "p99": 60.38577055
+      },
+      "diagnosticVerdict": "FAIL",
+      "receipt": {
+        "path": "output/android21/performance/20260809-post-locale-split/public-entry-macrobenchmark-api36-emulator.json",
+        "sha256": "eca0714e6fe2142155f86d4a52fccdbb9379d77c903a75ea4c2a7e119df28a53",
+        "junitPath": "output/android21/performance/20260809-post-locale-split/public-entry-macrobenchmark-junit.xml",
+        "junitSha256": "120b919ff1db2fa939f9b30fa543c18399ed5c8d61e6170e7968722677f4ffe0",
+        "messagePath": "output/android21/performance/20260809-post-locale-split/public-entry-macrobenchmark-api36-emulator.txt",
+        "messageSha256": "7156cb86a16ccc8d376e46a0f11c586d310b090207c908cc04ff6a59bd396ef8"
+      }
+    },
+    {
+      "name": "publicEntryFramesAfterAndroidEagerAudioUnlockFix",
+      "requestedCompilationMode": "Partial(BaselineProfileMode.Require)",
+      "observedContextCompilationMode": "run-from-apk",
+      "startupMode": "WARM",
+      "iterations": 10,
+      "apk": {
+        "path": "android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk",
+        "sizeBytes": 25455062,
+        "sha256": "41e296dcb956207bcc084cb351f7be2e23a735d36eb3c3e3e1fcfff5cddd2281"
+      },
+      "frameCount": {
+        "minimum": 51,
+        "median": 58.5,
+        "maximum": 72,
+        "coefficientOfVariation": 0.12232657056272198
+      },
+      "frameDurationCpuMs": {
+        "p50": 36.858000000000004,
+        "p90": 67.05576670000002,
+        "p95": 77.50779114999999,
+        "p99": 106.73368550999999
+      },
+      "frameOverrunMs": {
+        "p50": 33.429978500000004,
+        "p90": 73.3770965,
+        "p95": 87.90628179999997,
+        "p99": 125.4036480099999
+      },
+      "diagnosticVerdict": "FAIL",
+      "boundary": "AndroidX explicitly reports this API 36 AVD run as non-representative. The Gradle instrumentation result is PASS, but both P95 frame thresholds fail, so this is diagnostic evidence only and cannot clear the physical-device release gate.",
+      "receipt": {
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/macrobenchmark/public-entry-benchmark-data.json",
+        "sha256": "ef6056fffc7dca1365fff3b4cd3e35c1b393676dd160229a2851c2f68419696f",
+        "junitPath": "output/android21/performance/20260809-android-audio-unlock-green/macrobenchmark/public-entry-junit.xml",
+        "junitSha256": "f115c169edd647e77fb1b0d01e337ffe7119c888aa28ad38ad1841c9239bc7f8",
+        "messagePath": "output/android21/performance/20260809-android-audio-unlock-green/macrobenchmark/public-entry-message.txt",
+        "messageSha256": "1fa49abd7b240d8fdf220ecc2ad24ea27907374e48e5b7f563a02844854f0926",
+        "perfettoTraceCount": 10
+      }
+    }
+  ],
+  "entryThemeTransitionExperiment": {
+    "capturedAtUtc": "2026-08-09T18:34:24Z",
+    "scope": "Android public-entry theme switching only; no Web, PWA, iOS or Desktop motion behavior changed",
+    "testFirst": {
+      "command": "npx --no-install vitest run src/components/__tests__/EntryThemeSwitcher.test.tsx src/components/__tests__/EntryGate.safeArea.test.ts --maxWorkers=1",
+      "red": {
+        "exitCode": 1,
+        "failedTests": 2,
+        "passedTests": 10,
+        "expectedFailure": "The Android theme-swap attribute and scoped transition kill-switch did not exist."
+      },
+      "green": {
+        "exitCode": 0,
+        "passedTests": 12,
+        "failedTests": 0
+      }
+    },
+    "change": "Before committing a theme on Android, the entry switcher marks one 140 ms commit window. During that window only the Android entry body, root app surface and entry descendants disable CSS interpolation; final colors, gradients and all non-Android transitions are unchanged.",
+    "pairedSameAvdDiagnostic": {
+      "device": "codex_pixel_9_pro_fold_api36 API 36 emulator after a no-snapshot cold boot",
+      "journey": "The same Macrobenchmark method performs three public-entry theme selections per iteration for 10 iterations.",
+      "control": {
+        "apkSha256": "ce97e39731ad27de74dae454c3fa4637e45bbaf9cc3f573fe8660a207cbab428",
+        "totalRunTimeNs": 245691616242,
+        "frameCountMedian": 19,
+        "frameDurationCpuMs": {
+          "p50": 135.427417,
+          "p95": 535.6576328
+        },
+        "frameOverrunMs": {
+          "p50": 182.567676,
+          "p95": 764.162656
+        },
+        "receipt": {
+          "path": "output/android21/performance/20260809-entry-theme-control-clean-avd/macrobenchmark/com.zenflow.benchmark-benchmarkData.json",
+          "sha256": "774230a328b428cc6a36ce2075c0b9077f675eb186e0c93f1c9791800cc626fd",
+          "junitSha256": "3683d8e0b06d25d2996e63a68b33d2d51b3eb5f37f4eeda9ac640ca8ab9db061",
+          "messageSha256": "5bfb2d3002aa896aef6aa248252cc0393b002cabe7e10a0772e193a1b58a9cd3",
+          "perfettoTraceCount": 10
+        }
+      },
+      "scopedInstantCandidate": {
+        "apkSha256": "da1dc51e65f5b0b5e55ef1ccd9d274be2f2dc5e7ed48843e61fea92eca791a0b",
+        "totalRunTimeNs": 104017602674,
+        "frameCountMedian": 20.5,
+        "frameDurationCpuMs": {
+          "p50": 91.3099585,
+          "p95": 267.19561515
+        },
+        "frameOverrunMs": {
+          "p50": 105.7696765,
+          "p95": 331.63206355
+        },
+        "changeVersusControlPercent": {
+          "frameDurationCpuP50": -32.576,
+          "frameDurationCpuP95": -50.118,
+          "frameOverrunP50": -42.065,
+          "frameOverrunP95": -56.602
+        },
+        "receipt": {
+          "path": "output/android21/performance/20260809-entry-theme-instant-clean-avd/macrobenchmark/com.zenflow.benchmark-benchmarkData.json",
+          "sha256": "ba77a1e31e7b9af2d43f98cb6a400cfe4c7c3236e71eabbc7052fcdb0ea2a6a6",
+          "junitSha256": "ca7f336913c1c1ddd315aa4526a7d0480c5afac55d42a943f5ca12d9f38ada1d",
+          "messageSha256": "e35f3f6af792b00e1925f9869b4b90c4a03c738e9f25fc74c450b30f112d5507",
+          "perfettoTraceCount": 10
+        }
+      },
+      "interpretation": "The scoped transition guard materially reduces the paired emulator workload, but both candidate P95 metrics remain far above the 32 ms acceptance threshold."
+    },
+    "exactFinalCandidate": {
+      "apk": {
+        "path": "android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk",
+        "sizeBytes": 25455306,
+        "sha256": "509e7014ce2f61e6e66c6ace918c0a3633e37487f9c967740a89f03628db0bc5"
+      },
+      "additionalGuard": "The final candidate also disables the previously uncovered global body background transition during the same 140 ms Android-only commit window.",
+      "macrobenchmark": {
+        "gradleExitCode": 0,
+        "iterations": 10,
+        "wallClock": "23m55s",
+        "totalRunTimeNs": 879133157961,
+        "frameDurationCpuMsP95": 1948.2051589999994,
+        "frameOverrunMsP95": 3475.5931937999967,
+        "verdict": "INVALID_ENVIRONMENT_DIAGNOSTIC",
+        "invalidReason": "The AVD degraded during the run: individual cold Activity starts reached roughly 42 seconds and a subsequent no-snapshot boot produced a SystemUI ANR plus a corrupt screencap. These absolute values cannot isolate the additional body selector or represent a device.",
+        "receipt": {
+          "path": "output/android21/performance/20260809-entry-theme-full-instant-clean-avd/macrobenchmark/com.zenflow.benchmark-benchmarkData.json",
+          "sha256": "acce03d40282b5374edf6351f3e40f943c8b0349d03cba68f06da90fcca0c1e1",
+          "junitSha256": "8b08f4e5e27f8d7b50c93d5da6cc9ca65f01f957e62a31e504afaaf05f669b05",
+          "messageSha256": "a963c6f4070e8f474f7c5043290b59fa5ced11e2b6ead92c02c60ae1089bc8ec",
+          "perfettoTraceCount": 10
+        }
+      },
+      "exactApkVisualRuntime": "PASS_STATIC_ENTRY_STATES_ONLY",
+      "visualEvidence": "docs/release/android-2.1-visual-evidence.json#entryThemeTransitionVisualCheck.exactFinalCandidateAttempt",
+      "visualBoundary": "Direct exact-APK light/dark/ar/he settled-state evidence exists; motion and the measured frame-budget gate remain UNVERIFIED/FAIL respectively."
+    },
+    "acceptance": {
+      "frameDurationCpuMsP95Max": 32,
+      "frameOverrunMsP95Max": 32,
+      "physicalDeviceRequired": true,
+      "verdict": "FAIL"
+    },
+    "boundary": "AndroidX reports emulator performance as non-representative. The paired result supports keeping the scoped code change; it does not clear the physical-device performance gate or prove exact-final-APK visual runtime."
+  },
+  "browserPerformance": {
+    "runtime": "local production preview of the current dist bundle",
+    "routeCount": 14,
+    "profiles": [
+      "phone 449x698",
+      "desktop 1440x900"
+    ],
+    "maximumRawLongTaskMs": 0,
+    "maximumLongAnimationFrameMs": 162.30000001192093,
+    "maximumBlockingLongAnimationFrameMs": 0,
+    "consoleErrorCount": 0,
+    "failedRequestOrResponseCount": 0,
+    "warningCount": 0,
+    "diagnosticCount": 0,
+    "verdict": "PASS",
+    "receipt": {
+      "path": "output/android21/performance/chrome-performance-production.json",
+      "sha256": "78dad85407e79ad7ced040f85bbadc11275952f39f9f51343f6eb08b7bc753aa"
+    }
+  },
+  "androidGfxInfoCrossCheck": {
+    "capturedAtUtc": "2026-08-09T11:58:00Z",
+    "scope": "current debug APK on API 36 emulator; diagnostic only",
+    "apkSha256": "feb2a6e308e11a21e9efd2360fe4f75ca51e8cee3d24678e9bee48154ca7f4ed",
+    "configuration": {
+      "resolution": "1080x2400",
+      "densityDpi": 560,
+      "fontScale": 1.3,
+      "androidAnimationScales": [0, 0, 0],
+      "refreshRateHz": 60
+    },
+    "journey": "cold launch, settle, gfxinfo reset, four 650 ms down/up public-entry swipe pairs; repeated three times",
+    "runs": [
+      {
+        "totalFrames": 333,
+        "jankyFrames": 7,
+        "jankyPercent": 2.1,
+        "p50Ms": 19,
+        "p90Ms": 22,
+        "p95Ms": 27,
+        "p99Ms": 38,
+        "missedVsync": 0,
+        "slowUiThreadFrames": 1,
+        "slowIssueDrawCommandFrames": 5,
+        "artifactSha256": "f07e692f1f9e85c4f16a4d4d28559e912f6cdc444cf34fdb79b503c3c9b076f7"
+      },
+      {
+        "totalFrames": 331,
+        "jankyFrames": 7,
+        "jankyPercent": 2.11,
+        "p50Ms": 17,
+        "p90Ms": 18,
+        "p95Ms": 18,
+        "p99Ms": 20,
+        "missedVsync": 0,
+        "slowUiThreadFrames": 0,
+        "slowIssueDrawCommandFrames": 6,
+        "artifactSha256": "afaed85d6c2fb5e0d568e1b16ac7928848138c2ba1871dd96ce141361528355f"
+      },
+      {
+        "totalFrames": 327,
+        "jankyFrames": 8,
+        "jankyPercent": 2.45,
+        "p50Ms": 17,
+        "p90Ms": 18,
+        "p95Ms": 19,
+        "p99Ms": 21,
+        "missedVsync": 0,
+        "slowUiThreadFrames": 1,
+        "slowIssueDrawCommandFrames": 7,
+        "artifactSha256": "a7f39ea7be68e066586116618f643b9b5fabcec80b780e93d24a465a2812802d"
+      }
+    ],
+    "memoryAfterJourneyKb": {
+      "totalPss": 131117,
+      "totalRss": 309204,
+      "javaHeap": 12512,
+      "nativeHeap": 37904,
+      "views": 9,
+      "activities": 1,
+      "webViews": 1
+    },
+    "crashOrAnrObserved": false,
+    "pipeline": "Skia OpenGL",
+    "verdict": "PASS_DIAGNOSTIC"
+  },
+  "criticalScrollAndBatteryDiagnostic": {
+    "capturedAtUtc": "2026-08-08T22:54:31Z",
+    "scope": "API 36 emulator diagnostic only; not representative physical-device energy evidence",
+    "artifactStatus": "HISTORICAL_AUDIO_REGRESSION_EVIDENCE_FRAME_BUDGET_SUPERSEDED",
+    "configuration": {
+      "resolution": "1080x2400",
+      "densityDpi": 560,
+      "fontScale": 1.3,
+      "androidAnimationScales": [0, 0, 0],
+      "buildVariant": "debug",
+      "apkSha256": "c96482a5f92d55c45d79b45b8dec47081542d870e4423db7769e72d91357dbc4"
+    },
+    "journey": "cold launch, 12 second settle, gfxinfo reset, four 650 ms down/up scroll pairs plus one final down scroll on the public entry surface",
+    "audioUnlockRegression": {
+      "before": "FAIL: a drag created a ZenFlow AAudio player and batterystats attributed about 10 seconds of audio usage to the app UID",
+      "fix": "touch movement beyond the 12 CSS-pixel slop no longer invokes ambient audio unlock; stationary tap and keyboard activation remain supported",
+      "afterCurrentPidAudioPlayerObserved": false,
+      "afterAppUidAudioDurationObserved": false,
+      "verdict": "PASS_FIXED"
+    },
+    "frameDiagnostic": {
+      "totalFrames": 29,
+      "jankyFrames": 29,
+      "jankyPercent": 100,
+      "frameDurationMs": {
+        "p50": 2200,
+        "p90": 4150,
+        "p95": 4200,
+        "p99": 4600
+      },
+      "slowUiThreadFrames": 28,
+      "slowIssueDrawCommandFrames": 29,
+      "pipeline": "Skia OpenGL",
+      "verdict": "FAIL"
+    },
+    "runtime": {
+      "appRemainedTopResumed": true,
+      "anrOrFatalSignatureObservedInRunLogcat": false,
+      "continueControlReachableInFinalAccessibilityTree": true,
+      "finalScreenshotInspected": true,
+      "verdict": "PASS"
+    },
+    "battery": {
+      "emulatorEstimatedPowerMah": 0.00438,
+      "absoluteEnergyVerdict": "UNVERIFIED",
+      "reason": "Emulator power models and host GPU scheduling are not representative of a physical Android device."
+    },
+    "artifacts": {
+      "gfxinfo": {
+        "path": "output/android21/performance/t091-post-fix-critical-scroll/gfxinfo.txt",
+        "sha256": "014ad026cb7525e5930c3f3074c7d9f0a266abb4baf511577380f64d976f22f2"
+      },
+      "batterystats": {
+        "path": "output/android21/performance/t091-post-fix-critical-scroll/batterystats.txt",
+        "sha256": "935e8728fb3e0e90247e8e8cf7019ec33df2531507c37192974b6b7b1d3b25b3"
+      },
+      "audio": {
+        "path": "output/android21/performance/t091-post-fix-critical-scroll/audio.txt",
+        "sha256": "48eb6329403478392699d1223b473267a9ae325090381d1855dab62d329e4979"
+      },
+      "logcat": {
+        "path": "output/android21/performance/t091-post-fix-critical-scroll/logcat.txt",
+        "sha256": "90233abb687b1cba849af4e4096c52864d1307757215d640c0bf181e5c9f5580"
+      },
+      "screenshot": {
+        "path": "output/android21/performance/t091-post-fix-critical-scroll/final.png",
+        "sha256": "a17210e8d6335df5d8ee552022cfb7e20642339ae3c4dc3c2fd1152e53fde909"
+      },
+      "accessibilityTree": {
+        "path": "output/android21/performance/t091-post-fix-critical-scroll/final.xml",
+        "sha256": "2964fe9d780e13848518cc27b742d7028ffe28962750e49e1ca4e3f960dd6ffd"
+      }
+    },
+    "taskVerdict": "COMPLETE_WITH_RELEASE_STOP"
+  },
+  "androidOrdinaryTapAudioUnlock": {
+    "capturedAtUtc": "2026-08-09T16:21:14Z",
+    "scope": "API 36 emulator, exact installed benchmarkRelease APK, public entry theme controls only",
+    "apk": {
+      "path": "android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk",
+      "sha256": "41e296dcb956207bcc084cb351f7be2e23a735d36eb3c3e3e1fcfff5cddd2281",
+      "installedWithAdb": true,
+      "versionName": "2.1.0",
+      "versionCode": 35
+    },
+    "testFirstEvidence": {
+      "red": "1 file / 1 expected failure: Android setupAudioUnlock registered touchstart, touchend, touchmove, touchcancel and keydown",
+      "green": "1 file / 1 passed: Android setupAudioUnlock registers no eager global listeners",
+      "blastRadius": "3 files / 60 tests passed across Android eager unlock, ambient sound behavior and audio lifecycle",
+      "testPath": "src/lib/__tests__/ambientSounds.androidEagerUnlock.test.ts"
+    },
+    "implementation": {
+      "path": "src/lib/ambientSounds.ts",
+      "behavior": "Android skips eager global gesture blessing; actual audio controls continue to call unlockAudio directly before playback",
+      "nonAndroidBehaviorChanged": false
+    },
+    "runtimeNegativeControl": {
+      "ordinaryThemeTapCount": 32,
+      "sequence": "ten Light/Dark/System cycles followed by Dark and System",
+      "zenFlowAudioPlayerCountBefore": 9,
+      "zenFlowAudioPlayerCountAfter": 9,
+      "currentProcessAudioEvents": 0,
+      "currentProcessAudioFlingerRows": 0,
+      "verdict": "PASS_FIXED"
+    },
+    "artifacts": {
+      "audioBefore": {
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/audio-before.txt",
+        "sha256": "508c284da840f99b35ab35f1bd2601c7f555076c5433c0dde9529b63a0af9b78"
+      },
+      "audioAfter": {
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/audio-after.txt",
+        "sha256": "7946cb6ad939f99801d048a0e63feb82918f76b1cc2c466c31c9e57d750a46c2"
+      },
+      "audioFlingerAfter": {
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/audio-flinger-after.txt",
+        "sha256": "a39bb56bf63cbdab908604e221bf2dd4573a87e6e4402470f5623261c5eb53ac"
+      },
+      "audioFinal": {
+        "path": "output/android21/performance/20260809-android-audio-unlock-green/audio-final.txt",
+        "sha256": "5ad6bcb44f1c88fdb4326426ed4f8cdb8ad44b5f36aa0614a3627ef20a5cfe0a"
+      }
+    },
+    "verdict": "PASS_FIXED",
+    "boundary": "This proves that ordinary public-entry theme taps no longer create a native Android audio player on this exact API 36 emulator APK. Actual sound playback, iOS gesture blessing and physical-device energy remain separate paths."
+  },
+  "releaseThresholds": {
+    "representativePhysicalDeviceRequired": true,
+    "coldStartMedianMsMax": 1500,
+    "coldStartCoefficientOfVariationMax": 0.1,
+    "frameDurationCpuP95MsMax": 32,
+    "frameOverrunP95MsMax": 32,
+    "privateSignedInCriticalJourneyRequired": true,
+    "haltOnThresholdFailure": true
+  },
+  "verdicts": {
+    "profileGeneration": "PASS",
+    "releaseEquivalentProfilePackaging": "PASS",
+    "productionPreviewBrowserPerformance": "PASS",
+    "emulatorStartupDiagnostic": "PASS",
+    "emulatorFrameDiagnostic": "FAIL",
+    "emulatorGfxInfoCrossCheck": "PASS_DIAGNOSTIC",
+    "scrollTriggeredAudioUnlock": "PASS_FIXED",
+    "ordinaryAndroidTapAudioUnlock": "PASS_FIXED",
+    "currentCandidateEmulatorFrameDiagnostic": "FAIL",
+    "criticalScrollRuntime": "PASS",
+    "criticalScrollFrameBudget": "PASS_DIAGNOSTIC_CURRENT_ARTIFACT",
+    "emulatorBatteryDiagnostic": "PARTIAL",
+    "representativePhysicalDevice": "UNVERIFIED",
+    "signedInPrivateJourney": "UNVERIFIED",
+    "exactReleaseAab": "UNVERIFIED",
+    "releasePerformance": "STOP"
+  },
+  "notes": [
+    "The current release-equivalent Baseline Profile generation completed with 0 failed tests and produced 3460 rules; the non-empty compiled profile and metadata were then inspected inside the generated nonMinifiedRelease AAB.",
+    "The clean emulator had no genuine signed-in account, so the generated profile covers the public startup path; private critical journeys remain UNVERIFIED rather than using a benchmark-only auth bypass.",
+    "AndroidX rejects emulator Macrobenchmark results as non-representative by default; EMULATOR was suppressed only to retain diagnostic data.",
+    "The baseline-profile startup median improved in this emulator sample, but its coefficient of variation exceeds the release threshold.",
+    "After non-English locale payloads were split from the startup bundle, the locale-neutral public-entry Macrobenchmark completed 10/10 iterations. CPU P95 improved from 280.49 ms to 39.78 ms and overrun P95 from 687.64 ms to 31.56 ms, but CPU P95 still exceeds the 32 ms local gate, so the emulator frame diagnostic remains FAIL.",
+    "Three current-artifact large-font/high-density reduced-motion gfxinfo runs report modern jank between 2.10% and 2.45%, P95 between 18 ms and 27 ms, zero missed-vsync frames and no crash/ANR. These are diagnostic emulator results, not representative-device release proof.",
+    "The earlier T091 APK exposed and fixed scroll-triggered audio unlock; its retained 29/29 historical frame failure is superseded for current-artifact frame analysis by the three post-locale-split runs, while the audio regression evidence remains applicable.",
+    "A test-first Android-only guard now prevents every ordinary theme tap from creating the eager ambient-audio player. Thirty-two exact-candidate taps left the ZenFlow player count unchanged at 9 and produced zero current-process audio and AudioFlinger rows; direct playback controls still own real audio unlock.",
+    "The fresh post-fix Macrobenchmark instrumentation test completed 1/1, but CPU P95 77.51 ms and overrun P95 87.91 ms both fail the 32 ms diagnostic gate. A discarded SideEffectRunListener attempt ran zero tests because that optional class is absent from the pinned AndroidX 1.4.1 instrumentation classpath; no dependency or source change was made for that attempt.",
+    "The production-preview browser smoke passed all 14 named routes with no raw long task, console error, or failed request/response; this does not replace native physical-device evidence.",
+    "A separate Vite development-server run observed one 516 ms boot task on the diary route and is retained only as a non-release diagnostic because transformed development modules were served.",
+    "No benchmark-only route, synthetic account, authentication bypass, or production user data was used."
+  ]
+}

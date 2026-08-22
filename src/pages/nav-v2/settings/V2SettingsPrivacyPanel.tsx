@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAds } from "@/contexts/AdContext";
+import { ConnectedRecordsSettings } from "@/features/automation";
 import { applyAdConsentPreference } from "@/lib/privacyConsent";
 import { logger } from "@/lib/logger";
 import {
@@ -16,7 +17,7 @@ import type { V2SettingsControls } from "./types";
 export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const { adsSupported, privacyOptionsRequired, openAdPrivacyOptions } = useAds();
+  const { privacyOptionsRequired, openAdPrivacyOptions } = useAds();
   const [isOpeningAdPrivacy, setIsOpeningAdPrivacy] = useState(false);
   const [adPrivacyOpenFailed, setAdPrivacyOpenFailed] = useState(false);
   const [adConsent, setAdConsent] = useState(controls.privacy.adConsent === true);
@@ -64,10 +65,9 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
     }
   };
 
-  if (!adsSupported) return null;
-
   return (
-    <PanelFrame
+    <>
+      <PanelFrame
       icon={Shield}
       title={tx.settingsGroupSecurity || tx.privacyTitle || "Privacy & security"}
       description={
@@ -95,7 +95,7 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
           {adConsentSaveError}
         </p>
       ) : null}
-      {adsSupported && privacyOptionsRequired && (
+      {privacyOptionsRequired && (
         <SettingsInset testId="settings-v2-ad-privacy-options">
           <SettingsFieldHeader
             icon={Shield}
@@ -119,6 +119,8 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
           )}
         </SettingsInset>
       )}
-    </PanelFrame>
+      </PanelFrame>
+      <ConnectedRecordsSettings habits={controls.habits} />
+    </>
   );
 }

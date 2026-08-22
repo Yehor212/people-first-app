@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
+import { V2ConnectedHistoryAction } from "./V2ConnectedHistoryAction";
 
 interface SidebarV2Props {
   activePage: NavV2Page;
@@ -16,6 +17,7 @@ interface SidebarV2Props {
   onToggleCollapsed: () => void;
   forceVisible?: boolean;
   collapseLocked?: boolean;
+  onOpenConnectedHistory?: (returnFocusTarget: HTMLElement | null) => void;
 }
 
 /**
@@ -35,6 +37,7 @@ export const SidebarV2 = memo(function SidebarV2({
   onToggleCollapsed,
   forceVisible = false,
   collapseLocked = false,
+  onOpenConnectedHistory,
 }: SidebarV2Props) {
   const { t, isRTL } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -174,6 +177,13 @@ export const SidebarV2 = memo(function SidebarV2({
       {/* Footer: theme toggle + settings + collapse toggle */}
       <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
         <ThemeToggleV2 collapsed={collapsed} />
+        {onOpenConnectedHistory ? (
+          <V2ConnectedHistoryAction
+            presentation="sidebar"
+            collapsed={collapsed}
+            onOpen={onOpenConnectedHistory}
+          />
+        ) : null}
         {renderItem(settingsItem, true)}
         {!collapseLocked && (
           <button

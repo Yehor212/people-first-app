@@ -156,7 +156,7 @@ export function AuthScreen({
           />
           <h1
             id="auth-title"
-            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal] min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
+            className="entry-gate-title mx-auto min-w-0 max-w-xs whitespace-normal text-2xl font-black leading-tight text-foreground min-[390px]:text-3xl sm:text-display-5xl md:max-w-xl md:text-display-6xl"
           >
             {t.authWelcomeTitle}
           </h1>
@@ -299,6 +299,12 @@ export function AuthScreen({
             </div>
           )}
         </section>
+
+        <div
+          className="min-w-0 max-w-full"
+          data-storage-incident-host
+          data-testid="entry-storage-incident-host"
+        />
 
         <div className="entry-auth-footer space-y-2 px-2 text-center text-xs leading-5">
           <p

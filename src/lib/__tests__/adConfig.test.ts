@@ -14,14 +14,14 @@ import {
 // ============================================
 
 describe('AD_UNIT_IDS', () => {
-  it('has android rewarded and banner IDs', () => {
+  it('has only the Android rewarded ID', () => {
     expect(typeof AD_UNIT_IDS.android.rewarded).toBe('string');
-    expect(typeof AD_UNIT_IDS.android.banner).toBe('string');
+    expect(AD_UNIT_IDS.android).not.toHaveProperty('banner');
   });
 
-  it('has iOS rewarded and banner IDs', () => {
+  it('has only the iOS rewarded ID', () => {
     expect(typeof AD_UNIT_IDS.ios.rewarded).toBe('string');
-    expect(typeof AD_UNIT_IDS.ios.banner).toBe('string');
+    expect(AD_UNIT_IDS.ios).not.toHaveProperty('banner');
   });
 });
 
@@ -95,11 +95,8 @@ describe('AD_SAFE_ZONES', () => {
     expect(AD_SAFE_ZONES.length).toBeGreaterThan(0);
   });
 
-  it('includes post_focus and daily_rewards', () => {
-    expect(AD_SAFE_ZONES).toContain('post_focus');
-    expect(AD_SAFE_ZONES).toContain('daily_rewards');
-    expect(AD_SAFE_ZONES).toContain('optional_rewards');
-    expect(AD_SAFE_ZONES).not.toContain('settings');
+  it('allows only the dedicated optional-rewards surface initially', () => {
+    expect(AD_SAFE_ZONES).toEqual(['optional_rewards']);
   });
 });
 

@@ -1398,6 +1398,35 @@ describe("useJournalEditorState recording save", () => {
     expect(result.current.showUnsavedDialog).toBe(false);
   });
 
+  it("collapses expanded mobile Tools before exiting the editor on Android Back", async () => {
+    const onBack = vi.fn();
+    const { result } = renderHook(
+      () => useJournalEditorState(makeProps({ desktop: false, onBack })),
+      { wrapper: ({ children }: { children: ReactNode }) => <>{children}</> },
+    );
+    await finishDraftPreflight(result);
+
+    const mobileToolsState = () => result.current as typeof result.current & {
+      mobileToolsCollapsed?: boolean;
+      setMobileToolsCollapsed?: (collapsed: boolean) => void;
+    };
+    act(() => {
+      mobileToolsState().setMobileToolsCollapsed?.(false);
+      result.current.setShowStyleBar(true);
+      result.current.setShowPromptsDropdown(true);
+    });
+
+    const androidBack = backHandlerMocks.registerModalCloseCallback.mock.calls.at(-1)?.[0];
+    act(() => {
+      expect(androidBack?.()).toBe(true);
+    });
+
+    expect(mobileToolsState().mobileToolsCollapsed).toBe(true);
+    expect(result.current.showStyleBar).toBe(false);
+    expect(result.current.showPromptsDropdown).toBe(false);
+    expect(onBack).not.toHaveBeenCalled();
+  });
+
   it("keeps draft metadata when dismiss media cleanup fails and clears it after retry", async () => {
     draftStorageMocks.loadJournalDraft.mockResolvedValue({
       title: "Existing edit",

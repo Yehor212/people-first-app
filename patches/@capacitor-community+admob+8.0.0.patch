@@ -1,0 +1,121 @@
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/AdMob.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/AdMob.java
+index b8b36c7..34a9e5d 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/AdMob.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/AdMob.java
+@@ -15,6 +15,7 @@ import com.getcapacitor.community.admob.interstitial.AdInterstitialExecutor;
+ import com.getcapacitor.community.admob.interstitial.InterstitialAdCallbackAndListeners;
+ import com.getcapacitor.community.admob.rewarded.AdRewardExecutor;
+ import com.getcapacitor.community.admob.rewardedinterstitial.AdRewardInterstitialExecutor;
++import com.google.android.gms.ads.AgeRestrictedTreatment;
+ import com.google.android.gms.ads.MobileAds;
+ import com.google.android.gms.ads.RequestConfiguration;
+ import com.google.android.gms.ads.initialization.InitializationStatus;
+@@ -64,7 +65,9 @@ public class AdMob extends Plugin {
+     // Initialize AdMob with appId
+     @PluginMethod
+     public void initialize(final PluginCall call) {
+-        this.setRequestConfiguration(call);
++        if (!this.setRequestConfiguration(call)) {
++            return;
++        }
+ 
+         try {
+             MobileAds.initialize(
+@@ -195,37 +198,13 @@ public class AdMob extends Plugin {
+      * @see <a href="https://developers.google.com/admob/android/test-ads#enable_test_devices">Test Devices</a>
+      * @see <a href="https://developers.google.com/admob/android/targeting">Target Settings</a>
+      */
+-    private void setRequestConfiguration(final PluginCall call) {
++    private boolean setRequestConfiguration(final PluginCall call) {
+         // Testing Devices
+         final boolean initializeForTesting = call.getBoolean("initializeForTesting", false);
+         final JSArray testingDevices = initializeForTesting
+             ? call.getArray("testingDevices", AdMob.EMPTY_TESTING_DEVICES)
+             : EMPTY_TESTING_DEVICES;
+ 
+-        // tagForChildDirectedTreatment
+-        final Boolean tagForChildDirectedTreatment = call.getBoolean("tagForChildDirectedTreatment");
+-        int TAG_FOR_CHILD_DIRECTED_TREATMENT;
+-
+-        if (tagForChildDirectedTreatment == null) {
+-            TAG_FOR_CHILD_DIRECTED_TREATMENT = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED;
+-        } else if (tagForChildDirectedTreatment) {
+-            TAG_FOR_CHILD_DIRECTED_TREATMENT = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE;
+-        } else {
+-            TAG_FOR_CHILD_DIRECTED_TREATMENT = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE;
+-        }
+-
+-        // tagForUnderAgeOfConsent
+-        final Boolean tagForUnderAgeOfConsent = call.getBoolean("tagForUnderAgeOfConsent");
+-        int TAG_FOR_UNDER_AGE_OF_CONSENT;
+-
+-        if (tagForUnderAgeOfConsent == null) {
+-            TAG_FOR_UNDER_AGE_OF_CONSENT = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED;
+-        } else if (tagForUnderAgeOfConsent) {
+-            TAG_FOR_UNDER_AGE_OF_CONSENT = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE;
+-        } else {
+-            TAG_FOR_UNDER_AGE_OF_CONSENT = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE;
+-        }
+-
+         // maxAdContentRating
+         final String maxAdContentRating = call.getString("maxAdContentRating");
+         String MAX_AD_CONTENT_RATING = RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED;
+@@ -248,15 +227,35 @@ public class AdMob extends Plugin {
+         }
+ 
+         try {
+-            RequestConfiguration requestConfiguration = new RequestConfiguration.Builder()
++            RequestConfiguration.Builder requestConfigurationBuilder = new RequestConfiguration.Builder()
+                 .setTestDeviceIds(testingDevices.<String>toList())
+-                .setTagForChildDirectedTreatment(TAG_FOR_CHILD_DIRECTED_TREATMENT)
+-                .setTagForUnderAgeOfConsent(TAG_FOR_UNDER_AGE_OF_CONSENT)
+-                .setMaxAdContentRating(MAX_AD_CONTENT_RATING)
+-                .build();
+-            MobileAds.setRequestConfiguration(requestConfiguration);
++                .setMaxAdContentRating(MAX_AD_CONTENT_RATING);
++
++            final String ageRestrictedTreatment = call.getString("ageRestrictedTreatment");
++            if (ageRestrictedTreatment == null) {
++                requestConfigurationBuilder.setAgeRestrictedTreatment(AgeRestrictedTreatment.UNSPECIFIED);
++            } else {
++                switch (ageRestrictedTreatment) {
++                    case "child":
++                        requestConfigurationBuilder.setAgeRestrictedTreatment(AgeRestrictedTreatment.CHILD);
++                        break;
++                    case "teen":
++                        requestConfigurationBuilder.setAgeRestrictedTreatment(AgeRestrictedTreatment.TEEN);
++                        break;
++                    case "unspecified":
++                        requestConfigurationBuilder.setAgeRestrictedTreatment(AgeRestrictedTreatment.UNSPECIFIED);
++                        break;
++                    default:
++                        call.reject("Unsupported ageRestrictedTreatment value");
++                        return false;
++                }
++            }
++
++            MobileAds.setRequestConfiguration(requestConfigurationBuilder.build());
++            return true;
+         } catch (JSONException error) {
+             call.reject(error.toString());
++            return false;
+         }
+     }
+ }
+diff --git a/node_modules/@capacitor-community/admob/dist/esm/definitions.d.ts b/node_modules/@capacitor-community/admob/dist/esm/definitions.d.ts
+index ed709a2..10fb023 100644
+--- a/node_modules/@capacitor-community/admob/dist/esm/definitions.d.ts
++++ b/node_modules/@capacitor-community/admob/dist/esm/definitions.d.ts
+@@ -61,6 +61,12 @@ export interface AdMobInitializationOptions {
+      * @since 1.2.0
+      */
+     initializeForTesting?: boolean;
++    /**
++     * Applies Google Mobile Ads age-restricted treatment to every Android ad request.
++     * When present, the Android implementation uses the current GMA API instead of
++     * the deprecated child-directed and under-age tags.
++     */
++    ageRestrictedTreatment?: 'child' | 'teen' | 'unspecified';
+     /**
+      * For purposes of the Children's Online Privacy Protection Act (COPPA),
+      * there is a setting called tagForChildDirectedTreatment.

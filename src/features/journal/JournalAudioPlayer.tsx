@@ -158,13 +158,7 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({
   };
 
   return (
-    <div
-      className="rounded-xl border p-2.5 text-[var(--journal-paper-text,var(--diary-text,hsl(var(--foreground))))]"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--journal-paper-text, var(--diary-text, hsl(var(--foreground)))) 6%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--journal-paper-muted, var(--diary-border, hsl(var(--border)))) 28%, transparent)',
-      }}
-    >
+    <div className="zf-journal-audio-shell rounded-xl border p-2.5 text-[var(--journal-paper-text,var(--diary-text,hsl(var(--foreground))))]">
       <div className="flex items-center gap-2.5">
         <button
           type="button"
@@ -174,14 +168,11 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({
           aria-label={!loaded && !playbackError ? loadingLabel : playing ? pauseLabel : playLabel}
           aria-busy={!loaded && !playbackError}
           className={cn(
-            'min-h-[48px] min-w-[48px] rounded-full flex items-center justify-center flex-shrink-0',
+            'zf-journal-audio-control min-h-[48px] min-w-[48px] rounded-full flex items-center justify-center flex-shrink-0',
             'text-[var(--journal-paper-text,var(--diary-text,hsl(var(--foreground))))]',
             'disabled:opacity-40',
             'active:scale-95 motion-safe:transition-transform',
           )}
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--journal-paper-text, var(--diary-text, hsl(var(--foreground)))) 12%, transparent)',
-          }}
         >
           {!loaded && !playbackError ? (
             <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
@@ -204,10 +195,7 @@ export const JournalAudioPlayer = memo(function JournalAudioPlayer({
             value={Math.min(Math.max(0, currentTime), effectiveDuration)}
             disabled={!loaded || playbackError || effectiveDuration <= 0}
             onChange={handleSeek}
-            className="h-12 w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            style={{
-              accentColor: 'var(--journal-paper-text, var(--diary-text, hsl(var(--foreground))))',
-            }}
+            className="zf-journal-audio-range h-12 w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 

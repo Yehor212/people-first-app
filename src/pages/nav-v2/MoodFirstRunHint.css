@@ -27,7 +27,7 @@
   pointer-events: auto;
   width: 100%;
   max-width: min(22rem, 100%);
-  max-height: calc(100dvh - 2rem - var(--safe-top) - var(--safe-bottom));
+  max-height: calc(var(--app-viewport-height) - 2rem - var(--safe-top) - var(--safe-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;

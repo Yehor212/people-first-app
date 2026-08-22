@@ -11,7 +11,10 @@ import {
 } from "@/lib/authRedirect";
 import { isNative } from "@/lib/platform";
 import { supabase } from "@/lib/supabaseClient";
-import { decodeInviteData } from "@/lib/friendChallenge";
+import {
+  parseLegacyChallengeInviteUrl,
+  parseSocialInviteUrl,
+} from "@/lib/socialInvite";
 import { endAuthFlow } from "@/lib/authGuard";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
@@ -25,6 +28,7 @@ import { getLocalDataOwnerId } from "@/storage/db";
 import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
 
 const setShowChallengeModal = getModalToggle("showChallengeModal");
+const setShowFriendsPanel = getModalToggle("showFriendsPanel");
 
 const TRUSTED_AUTH_CALLBACK_WEB_ORIGINS = new Set([
   "https://yehor212.github.io",
@@ -88,10 +92,22 @@ interface UseDeepLinkHandlerOptions {
   handleDiaryDeepLinks?: boolean;
 }
 
+function parseSocialInviteLocator(
+  url: string,
+): { code: string; type: "challenge" | "friend" } | null {
+  const canonical = parseSocialInviteUrl(url);
+  if (canonical.ok) {
+    return { code: canonical.envelope.code, type: canonical.envelope.type };
+  }
+
+  const legacy = parseLegacyChallengeInviteUrl(url);
+  return legacy.ok ? { code: legacy.envelope.code, type: "challenge" } : null;
+}
+
 /**
  * Handles all deep link processing:
  * - Auth deep links (login-callback URLs)
- * - Challenge deep links (zenflow://challenge or https://zenflow.app/challenge)
+ * - Challenge links (canonical HTTPS locator plus legacy zenflow://challenge)
  * - Launch URL processing (cold start)
  * - Runtime appUrlOpen events
  */
@@ -106,6 +122,7 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
   const setUserNameCustom = useUserDataStore((s) => s.setUserNameCustom);
   const setAuthGateChecked = useUserDataStore((s) => s.setAuthGateChecked);
   const setChallengeInvite = useUIStore((s) => s.setChallengeInvite);
+  const setFriendInvite = useUIStore((s) => s.setFriendInvite);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const handledAuthKeysRef = useRef<Set<string>>(new Set());
   const userNameCustomRef = useRef(userNameCustom);
@@ -279,38 +296,32 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
       return true;
     };
 
-    // Handle challenge deep links
+    // A challenge link is only an opaque locator. No embedded challenge facts
+    // are trusted or persisted before the explicit, server-authorized join.
     const handleChallengeUrl = (url: string): boolean => {
-      try {
-        const parsedUrl = new URL(url);
-        // Check if it's a challenge invite URL
-        // Support both: zenflow://challenge?data=... and https://zenflow.app/challenge?data=...
-        const isCustomScheme =
-          parsedUrl.protocol === "zenflow:" && parsedUrl.hostname === "challenge";
-        const isHttpsScheme =
-          parsedUrl.hostname === "zenflow.app" && parsedUrl.pathname.startsWith("/challenge");
+      const invite = parseSocialInviteLocator(url);
+      if (!invite) return false;
 
-        if (isCustomScheme || isHttpsScheme) {
-          const data = parsedUrl.searchParams.get("data");
-          if (data) {
-            const invite = decodeInviteData(data);
-            if (invite) {
-              logger.log("[Index] Challenge invite received:", invite.code);
-              // Only open challenge modal if challenges feature is enabled
-              if (isFeatureVisible("challenges")) {
-                setChallengeInvite(invite);
-                setShowChallengeModal(true);
-                return true;
-              } else {
-                logger.log("[Index] Challenges feature disabled, ignoring invite");
-              }
-            }
-          }
-        }
-      } catch (error) {
-        logger.error("[Index] Failed to parse challenge URL:", error);
+      if (invite.type === "friend") {
+        logger.log("[Index] Friend invite locator received");
+        setChallengeInvite(undefined);
+        setFriendInvite({ code: invite.code });
+        setShowChallengeModal(false);
+        setShowFriendsPanel(true);
+        return true;
       }
-      return false;
+
+      if (!isFeatureVisible("challenges")) {
+        logger.log("[Index] Challenges feature disabled, ignoring invite locator");
+        return false;
+      }
+
+      logger.log("[Index] Challenge invite locator received");
+      setFriendInvite(undefined);
+      setShowFriendsPanel(false);
+      setChallengeInvite({ code: invite.code });
+      setShowChallengeModal(true);
+      return true;
     };
 
     const setup = async () => {

@@ -15,12 +15,11 @@ interface HabitStreakTimelineProps {
   className?: string;
 }
 
-function formatDateRange(start: string, end: string, locale: string): string {
-  const fmt = (s: string) => {
-    const [y, m, d] = s.split('-').map(Number);
-    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(y, m - 1, d));
-  };
-  return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
+function formatShortDate(date: string, locale: string): string {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(
+    new Date(year, month - 1, day),
+  );
 }
 
 export const HabitStreakTimeline = memo(function HabitStreakTimeline({
@@ -38,30 +37,42 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
 
   if (streaks.length === 0) {
     return (
-      <div className={cn('', className)}>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+      <div className={cn('@container', className)}>
+        <h4 className="mb-3 whitespace-normal break-words text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {ts.streakHistory || 'Streaks'}
         </h4>
-        <p className="text-xs text-muted-foreground/60 py-4 text-center">{ts.noStreaksYet || 'No streaks yet'}</p>
+        <p className="whitespace-normal break-words py-4 text-center text-xs text-muted-foreground/60">
+          {ts.noStreaksYet || 'No streaks yet'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className={cn('', className)}>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+    <div className={cn('@container', className)}>
+      <h4 className="mb-3 whitespace-normal break-words text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {ts.streakHistory || 'Streaks'}
       </h4>
 
       {/* Summary badges */}
-      <div className="flex items-center gap-4 mb-3">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="mb-3 grid grid-cols-1 gap-2 @sm:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-1.5 text-xs text-muted-foreground">
           <AnimatedFire intensity={1} size="sm" />
-          <span>{ts.currentStreak || 'Current'}: <strong className="text-foreground">{currentLen}{ts.daysAbbr || 'd'}</strong></span>
+          <span className="min-w-0 whitespace-normal break-words leading-relaxed">
+            {ts.currentStreak || 'Current'}:{' '}
+            <strong className="inline-block whitespace-nowrap text-foreground">
+              {currentLen}{ts.daysAbbr || 'd'}
+            </strong>
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-1.5 text-xs text-muted-foreground">
           <span className="text-amber-400">★</span>
-          <span>{ts.bestStreak || 'Best'}: <strong className="text-foreground">{bestLen}{ts.daysAbbr || 'd'}</strong></span>
+          <span className="min-w-0 whitespace-normal break-words leading-relaxed">
+            {ts.bestStreak || 'Best'}:{' '}
+            <strong className="inline-block whitespace-nowrap text-foreground">
+              {bestLen}{ts.daysAbbr || 'd'}
+            </strong>
+          </span>
         </div>
       </div>
 
@@ -74,7 +85,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
             <div
               key={`${streak.start}-${streak.end}`}
               className={cn(
-                'grid grid-cols-[minmax(1.5rem,auto)_1.25rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 rounded-xl',
+                'grid grid-cols-[minmax(1.5rem,auto)_1.25rem_minmax(0,1fr)] items-center gap-x-2 gap-y-1 rounded-xl px-3 py-2 @sm:grid-cols-[minmax(1.5rem,auto)_1.25rem_minmax(0,1fr)_auto]',
                 'bg-white/[0.02] border border-white/[0.04]',
                 isCurrent && 'bg-orange-500/[0.06] border-orange-500/[0.1]',
               )}
@@ -94,13 +105,31 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
               </div>
 
               {/* Date range */}
-              <span className="min-w-0 whitespace-normal break-words text-xs font-mono text-muted-foreground">
-                {formatDateRange(streak.start, streak.end, language)}
+              <span className="col-span-3 row-start-2 min-w-0 whitespace-normal break-words text-start text-xs font-mono leading-relaxed text-muted-foreground @sm:col-span-1 @sm:col-start-3 @sm:row-start-1">
+                <time
+                  dateTime={streak.start}
+                  dir="auto"
+                  className="inline whitespace-nowrap [unicode-bidi:isolate]"
+                >
+                  {formatShortDate(streak.start, language)}
+                </time>
+                {streak.start !== streak.end && (
+                  <>
+                    <span> – </span>
+                    <time
+                      dateTime={streak.end}
+                      dir="auto"
+                      className="inline whitespace-nowrap [unicode-bidi:isolate]"
+                    >
+                      {formatShortDate(streak.end, language)}
+                    </time>
+                  </>
+                )}
               </span>
 
               {/* Length */}
               <span className={cn(
-                'text-xs font-bold tabular-nums',
+                'col-start-3 row-start-1 justify-self-end whitespace-nowrap text-end text-xs font-bold tabular-nums @sm:col-start-4',
                 isCurrent ? 'text-orange-400' : 'text-muted-foreground',
               )}>
                 {streak.length}{ts.daysAbbr || 'd'}

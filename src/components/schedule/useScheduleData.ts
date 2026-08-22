@@ -15,7 +15,10 @@ import {
   HOUR_WIDTH_PX,
   DAY_WIDTH_PX,
 } from './constants';
-import { physicalToDomScrollLeft } from './timelineScrollCoordinates';
+import {
+  domToPhysicalScrollLeft,
+  physicalToDomScrollLeft,
+} from './timelineScrollCoordinates';
 
 export interface UseScheduleDataReturn {
   currentTime: Date;
@@ -221,12 +224,23 @@ export function useScheduleData(
     const target = daySelector.children.item(index);
     if (!(target instanceof HTMLElement)) return;
 
-    target.scrollIntoView({
-      block: "nearest",
-      inline: "center",
+    const maxScroll = daySelector.scrollWidth - daySelector.clientWidth;
+    const currentPhysicalScroll = domToPhysicalScrollLeft(
+      daySelector.scrollLeft,
+      maxScroll,
+      isRTL,
+    );
+    const selectorRect = daySelector.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const targetCenterInViewport = targetRect.left - selectorRect.left + targetRect.width / 2;
+    const centeredPhysicalScroll =
+      currentPhysicalScroll + targetCenterInViewport - daySelector.clientWidth / 2;
+
+    daySelector.scrollTo({
+      left: physicalToDomScrollLeft(centeredPhysicalScroll, maxScroll, isRTL),
       behavior: shouldAnimate() ? "smooth" : "auto",
     });
-  }, [daySelectorRef, getDateIndex]);
+  }, [daySelectorRef, getDateIndex, isRTL]);
 
   const scrollTimelineToDate = useCallback((date: string, centerOnCurrentHour = false) => {
     if (!timelineRef.current) return;

@@ -18,7 +18,15 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   plugins: {
+    App: {
+      // ZenFlow publishes owned-layer/non-root state to AndroidBackPlugin so
+      // the system, not an always-enabled JS callback, owns root back-to-home.
+      disableBackButtonHandler: true,
+    },
     SplashScreen: {
+      // Keep the native launch surface visible until React has committed and
+      // painted ZenFlow's web splash. A fixed timer leaves a blank WebView gap
+      // on slower devices; useAppLifecycle owns the frame-bound handoff.
       launchAutoHide: false,
       launchFadeOutDuration: 300,
       androidScaleType: "CENTER_CROP",

@@ -1,0 +1,45 @@
+apply plugin: 'com.android.test'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'androidx.baselineprofile'
+
+def allowDiagnosticEmulatorBenchmark =
+    System.getenv('ZENFLOW_ALLOW_DIAGNOSTIC_EMULATOR_BENCHMARK') == 'true'
+
+android {
+    namespace = 'com.zenflow.benchmark'
+    compileSdk = rootProject.ext.compileSdkVersion
+    targetProjectPath = ':app'
+
+    defaultConfig {
+        minSdk = 28
+        targetSdk = rootProject.ext.targetSdkVersion
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+        if (allowDiagnosticEmulatorBenchmark) {
+            // AndroidX correctly rejects emulator performance claims by default.
+            // This opt-in exists only to retain explicitly diagnostic local samples.
+            testInstrumentationRunnerArguments['androidx.benchmark.suppressErrors'] = 'EMULATOR'
+        }
+    }
+
+    buildTypes {
+        release {
+            debuggable = false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+baselineProfile {
+    useConnectedDevices = true
+}
+
+dependencies {
+    implementation 'androidx.test.ext:junit:1.3.0'
+    implementation 'androidx.test.espresso:espresso-core:3.7.0'
+    implementation 'androidx.test.uiautomator:uiautomator:2.3.0'
+    implementation 'androidx.benchmark:benchmark-macro-junit4:1.4.1'
+}

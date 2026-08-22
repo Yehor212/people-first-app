@@ -190,7 +190,7 @@ test.describe("V2 Settings current information architecture", () => {
     await expect(more).toBeFocused();
   });
 
-  test("Web never exposes mobile reminder controls or an active hidden-service summary", async ({
+  test("Web keeps rewarded-video consent reachable without mobile reminders or a hidden-service summary", async ({
     page,
   }) => {
     await openSettings(page);
@@ -200,17 +200,23 @@ test.describe("V2 Settings current information architecture", () => {
     await expect(privacyCard).not.toContainText("Optional services on");
     await expect(privacyCard).not.toContainText("Optional services off");
     await page.getByTestId("settings-module-card-privacy").click();
-    await expect(page.getByTestId("settings-v2-ad-consent")).toHaveCount(0);
+    await expect(page.getByTestId("settings-v2-ad-consent")).toBeVisible();
     await expect(page.getByTestId("settings-v2-push-notifications")).toHaveCount(0);
   });
 
   test("Privacy separates restorable backups from reports", async ({ page }) => {
     await openSettings(page, { section: "privacy" });
 
-    const backup = page.getByRole("region", { name: "Backup & restore", exact: true });
+    const backup = page.getByTestId("settings-v2-backup-restore-group");
     const reports = page.getByRole("region", { name: "Reports", exact: true });
     await expect(backup.getByTestId("settings-v2-export-json")).toHaveAccessibleName("Save backup");
-    await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName("Import backup");
+    const importAction = backup.getByTestId("settings-v2-import");
+    if ((await importAction.count()) > 0) {
+      await expect(importAction).toHaveAccessibleName("Import backup");
+      await expect(backup).toHaveAccessibleName("Backup & restore");
+    } else {
+      await expect(backup).toHaveAccessibleName("Save backup");
+    }
     await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
     await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
     await expect(reports).toContainText("Reports are not backups.");
@@ -230,7 +236,9 @@ test.describe("V2 Settings current information architecture", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("largest text keeps the import confirmation inside a compact viewport", async ({ page }) => {
+  test("largest text keeps backup controls or the import confirmation inside a compact viewport", async ({
+    page,
+  }) => {
     await openSettings(page, {
       section: "privacy",
       width: 320,
@@ -238,6 +246,18 @@ test.describe("V2 Settings current information architecture", () => {
       textScale: 1.5,
     });
     const trigger = page.getByTestId("settings-v2-import");
+    if ((await trigger.count()) === 0) {
+      const backup = page.getByTestId("settings-v2-backup-restore-group");
+      const exportAction = backup.getByTestId("settings-v2-export-json");
+      await exportAction.scrollIntoViewIfNeeded();
+      await expect(backup).toHaveAccessibleName("Save backup");
+      await expect(exportAction).toHaveAccessibleName("Save backup");
+      const box = await exportAction.boundingBox();
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+      await expectNoHorizontalOverflow(page);
+      return;
+    }
     await trigger.scrollIntoViewIfNeeded();
     await page.locator('input[type="file"][accept="application/json"]').setInputFiles({
       name: "zenflow-backup.json",

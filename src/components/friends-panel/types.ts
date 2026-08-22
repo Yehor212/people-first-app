@@ -4,6 +4,8 @@ export type { Friend, MyProfile, FriendActivity };
 
 export interface FriendsPanelProps {
   onClose: () => void;
+  onOpenChallenges?: () => void;
+  initialFriendCode?: string;
   userName?: string;
   currentStreak?: number;
   level?: number;

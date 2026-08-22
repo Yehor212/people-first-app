@@ -3,7 +3,7 @@ import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
 import { SK } from '@/lib/storageKeys';
 import { logger } from './logger';
 
-export const APP_VERSION = '2.0.0'; // Synced with package.json
+export const APP_VERSION = '2.1.0'; // Synced with package.json
 export const DATA_SCHEMA_VERSION = 2; // Data schema version
 export const MIN_SUPPORTED_VERSION = '1.0.0'; // Minimum supported version
 

@@ -10,6 +10,7 @@ import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
+import { V2ConnectedHistoryAction } from "./V2ConnectedHistoryAction";
 
 interface DrawerV2Props {
   open: boolean;
@@ -20,6 +21,7 @@ interface DrawerV2Props {
   onOpenThemeSwitcher?: () => void;
   onOpenArchive?: () => void;
   onOpenAccount?: () => void;
+  onOpenConnectedHistory?: (returnFocusTarget: HTMLElement | null) => void;
 }
 
 /**
@@ -39,6 +41,7 @@ export const DrawerV2 = memo(function DrawerV2({
   activePage,
   onClose,
   onPageChange,
+  onOpenConnectedHistory,
 }: DrawerV2Props) {
   const { t, isRTL } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -322,6 +325,13 @@ export const DrawerV2 = memo(function DrawerV2({
           >
             <ThemeToggleV2 testId="drawer-v2-theme-toggle" presentation="drawer" />
           </div>
+          {onOpenConnectedHistory ? (
+            <V2ConnectedHistoryAction
+              presentation="drawer"
+              beforeOpen={onClose}
+              onOpen={onOpenConnectedHistory}
+            />
+          ) : null}
           <button
             type="button"
             aria-current={isSettingsActive ? "page" : undefined}

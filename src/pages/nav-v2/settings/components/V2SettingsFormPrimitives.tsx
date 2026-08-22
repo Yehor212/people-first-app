@@ -31,7 +31,7 @@ const SETTINGS_BUTTON_GRID_CLASS: Record<
 
 const SETTINGS_INLINE_BUTTON_CLASS = {
   primary:
-    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)] focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2",
+    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-foreground shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)] focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2",
   secondary:
     "border border-[hsl(var(--settings-v2-border)/0.64)] bg-[hsl(var(--settings-v2-panel)/0.78)] text-foreground shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] hover:bg-[hsl(var(--settings-v2-panel)/0.92)] focus-visible:ring-[hsl(var(--settings-v2-accent))] focus-visible:ring-offset-2",
   danger:
@@ -108,6 +108,7 @@ export function SettingsSelectField({
   options,
   onChange,
   ariaDescribedBy,
+  disabled,
 }: SettingsSelectFieldProps) {
   return (
     <div className="relative">
@@ -116,7 +117,8 @@ export function SettingsSelectField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-describedby={ariaDescribedBy}
-        className="min-h-[48px] w-full appearance-none rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]"
+        disabled={disabled}
+        className="min-h-[48px] w-full appearance-none rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {options.map((option) => (
           <option key={String(option.value)} value={option.value}>

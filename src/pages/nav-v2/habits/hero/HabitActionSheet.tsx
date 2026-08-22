@@ -19,16 +19,17 @@
  * violate Hick's law; one safe path (swipe) is enough.
  *
  * Cross-platform:
- *   - Android back: Vaul's internal handler plus `useBackHandler` fallback
- *     on parent row. Law 10 satisfied.
+ *   - Android back: this open sheet explicitly owns one `useBackHandler`
+ *     registration; Back closes it without invoking an action.
  *   - Desktop: Vaul renders a centred bottom sheet on ≥ md viewports too.
  *   - Webkit backdrop-filter paired with standard for Safari.
- *   - All items ≥ 44 × 44 px (Law 9).
+ *   - All controls are at least 48 × 48 px for the Android-first contract.
  */
 
 import { memo, useCallback } from "react";
 import { Drawer } from "vaul";
 import { X } from "lucide-react";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { hapticTap } from "@/lib/haptics";
 import type { Habit } from "@/types";
 import { HabitIconVisual } from "./HabitIconVisual";
@@ -64,9 +65,9 @@ export interface HabitActionSheetProps {
 }
 
 const ITEM_CLASS =
-  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-foreground outline-none min-h-[44px] motion-safe:transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
+  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-foreground outline-none min-h-[48px] motion-safe:transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 const DELETE_ITEM_CLASS =
-  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-destructive outline-none min-h-[44px] motion-safe:transition-colors hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2";
+  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-destructive outline-none min-h-[48px] motion-safe:transition-colors hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2";
 
 export const HabitActionSheet = memo(function HabitActionSheet({
   open,
@@ -84,6 +85,8 @@ export const HabitActionSheet = memo(function HabitActionSheet({
   onOpenDetail,
   onDelete,
 }: HabitActionSheetProps) {
+  useBackHandler(open, onClose);
+
   const fire = useCallback(
     (fn: () => void) => {
       void hapticTap();
@@ -128,7 +131,7 @@ export const HabitActionSheet = memo(function HabitActionSheet({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-full text-muted-foreground motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={labels.close}
               data-testid={`habit-action-sheet-${habit.id}-close`}
             >

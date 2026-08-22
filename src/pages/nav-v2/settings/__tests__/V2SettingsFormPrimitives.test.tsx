@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { Check } from "lucide-react";
 import { useRef, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,6 +22,7 @@ import {
   SettingsStatus,
   SettingsTextInput,
 } from "../components/V2SettingsFormPrimitives";
+import { ActionButton } from "../components/V2SettingsControlPrimitives";
 
 function DialogHarness() {
   const [open, setOpen] = useState(false);
@@ -143,6 +145,27 @@ describe("SettingsTextInput", () => {
 });
 
 describe("Settings form text reflow", () => {
+  it("uses the foreground token for primary action text on dark settings surfaces", () => {
+    render(
+      <>
+        <SettingsInlineButton onClick={() => undefined} variant="primary">
+          Save inline
+        </SettingsInlineButton>
+        <ActionButton icon={Check} onClick={() => undefined} variant="primary">
+          Save action
+        </ActionButton>
+      </>
+    );
+
+    for (const button of [
+      screen.getByRole("button", { name: "Save inline" }),
+      screen.getByRole("button", { name: "Save action" }),
+    ]) {
+      expect(button).toHaveClass("text-foreground");
+      expect(button.className).not.toContain("text-[hsl(var(--settings-v2-accent))]");
+    }
+  });
+
   it("keeps a long mixed-direction import filename fully available", () => {
     render(
       <SettingsDialog

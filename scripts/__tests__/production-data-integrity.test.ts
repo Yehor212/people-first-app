@@ -57,6 +57,8 @@ type CheckerFinding = {
   ruleId: string;
   path: string;
   fingerprint: string;
+  line?: number;
+  sink?: string;
   baselined?: boolean;
   waived?: boolean;
 };
@@ -309,29 +311,39 @@ describe("production data integrity checker", () => {
     expectRule(run(fixture(files)), rule);
   });
 
-  it("follows literal dynamic imports, Vite globs, workers, and fixture JSON", () => {
-    const cases: Record<string, string>[] = [
-      {
+  it.each<{ name: string; files: Record<string, string> }>([
+    {
+      name: "literal dynamic import",
+      files: {
         "src/main.ts": "void import('./test/fixture');",
         "src/test/fixture.ts": "export const value = 1;",
       },
-      {
+    },
+    {
+      name: "Vite glob",
+      files: {
         "src/main.ts": "const modules = import.meta.glob('./test/*.ts'); console.log(modules);",
         "src/test/fixture.ts": "export const value = 1;",
       },
-      {
+    },
+    {
+      name: "worker URL",
+      files: {
         "src/main.ts": "new Worker(new URL('./test/fixture.ts', import.meta.url));",
         "src/test/fixture.ts": "self.postMessage('ready');",
       },
-      {
+    },
+    {
+      name: "fixture JSON import",
+      files: {
         "src/main.ts": "import records from './test/records.json'; console.log(records);",
         "src/test/records.json": JSON.stringify([
           { id: "fixture-1", mood: "good", date: "2026-01-01", timestamp: 1 },
         ]),
       },
-    ];
-
-    for (const files of cases) expectRule(run(fixture(files)), "PDI001");
+    },
+  ])("follows $name into an isolated fixture boundary", ({ files }) => {
+    expectRule(run(fixture(files)), "PDI001");
   });
 
   it("does not mistake a negated DEV branch or mixed runtime/type import for test isolation", () => {
@@ -407,7 +419,7 @@ describe("production data integrity checker", () => {
     expect(result.report.summary.warnings).toBe(1);
   });
 
-  it("honors exact baselines but rejects stale broad or invalid waiver ledgers", () => {
+  it("honors an exact baseline fingerprint", () => {
     const root = fixture({
       "src/main.ts":
         "export const rows = [{ id: crypto.randomUUID(), mood: 'good', note: 'Fine', date: new Date().toISOString(), timestamp: Date.now() }];",
@@ -431,7 +443,10 @@ describe("production data integrity checker", () => {
     const baselined = run(root);
     expect(baselined.status).toBe(0);
     expect(baselined.report.summary.baselined).toBe(1);
+  });
 
+  it("rejects a broad allowed-violations baseline", () => {
+    const root = fixture({ "src/main.ts": "export const value = 1;" });
     write(
       root,
       "config/production-data-integrity-baseline.json",
@@ -440,12 +455,14 @@ describe("production data integrity checker", () => {
     const broad = run(root);
     expect(broad.status).toBe(2);
     expect(broad.report.status).toBe("ERROR");
+  });
 
-    write(
-      root,
-      "config/production-data-integrity-baseline.json",
-      JSON.stringify({ schemaVersion: "1.0.0", entries: [] })
-    );
+  it("rejects a wildcard agent-approved invalid waiver", () => {
+    const root = fixture({
+      "src/main.ts":
+        "export const rows = [{ id: crypto.randomUUID(), mood: 'good', note: 'Fine', date: new Date().toISOString(), timestamp: Date.now() }];",
+    });
+    const finding = expectRule(run(root), "PDI002");
     write(
       root,
       "config/production-data-integrity-waivers.json",
@@ -566,45 +583,53 @@ describe("production data integrity checker", () => {
     }
   });
 
-  it("rejects symlinked or oversized control JSON and invalid source encoding or syntax", () => {
-    const symlinkRoot = fixture({ "src/main.ts": "export const value = 1;" });
-    const external = join(mkdtempSync(join(tmpdir(), "zenflow-pdi-config-")), "config.json");
-    writeFileSync(
-      external,
-      readFileSync(join(symlinkRoot, "config/production-data-integrity.json"))
-    );
-    writeFileSync(join(symlinkRoot, "config/production-data-integrity.json"), "{}");
-    const configPath = join(symlinkRoot, "config/production-data-integrity.json");
-    const replacement = `${configPath}.link`;
-    symlinkSync(external, replacement);
-    const symlinkResult = run(symlinkRoot, [
-      "--all",
-      "--config",
-      "config/production-data-integrity.json.link",
-    ]);
-    expect(symlinkResult.status).toBe(2);
-    expect(symlinkResult.report.error).toMatch(/symlink/i);
+  describe("rejects symlinked or oversized control JSON and invalid source encoding or syntax", () => {
+    it("rejects symlinked control JSON", () => {
+      const symlinkRoot = fixture({ "src/main.ts": "export const value = 1;" });
+      const external = join(mkdtempSync(join(tmpdir(), "zenflow-pdi-config-")), "config.json");
+      writeFileSync(
+        external,
+        readFileSync(join(symlinkRoot, "config/production-data-integrity.json"))
+      );
+      writeFileSync(join(symlinkRoot, "config/production-data-integrity.json"), "{}");
+      const configPath = join(symlinkRoot, "config/production-data-integrity.json");
+      const replacement = `${configPath}.link`;
+      symlinkSync(external, replacement);
+      const symlinkResult = run(symlinkRoot, [
+        "--all",
+        "--config",
+        "config/production-data-integrity.json.link",
+      ]);
+      expect(symlinkResult.status).toBe(2);
+      expect(symlinkResult.report.error).toMatch(/symlink/i);
+    });
 
-    const oversizedRoot = fixture({ "src/main.ts": "export const value = 1;" });
-    const configText = readFileSync(
-      join(oversizedRoot, "config/production-data-integrity.json"),
-      "utf8"
-    );
-    writeFileSync(
-      join(oversizedRoot, "config/production-data-integrity.json"),
-      `${configText}${" ".repeat(2 * 1024 * 1024)}`
-    );
-    expect(run(oversizedRoot).status).toBe(2);
+    it("rejects oversized control JSON", () => {
+      const oversizedRoot = fixture({ "src/main.ts": "export const value = 1;" });
+      const configText = readFileSync(
+        join(oversizedRoot, "config/production-data-integrity.json"),
+        "utf8"
+      );
+      writeFileSync(
+        join(oversizedRoot, "config/production-data-integrity.json"),
+        `${configText}${" ".repeat(2 * 1024 * 1024)}`
+      );
+      expect(run(oversizedRoot).status).toBe(2);
+    });
 
-    const encodingRoot = fixture({ "src/main.ts": "export const value = 1;" });
-    writeFileSync(
-      join(encodingRoot, "src/main.ts"),
-      Buffer.from([0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x20, 0xc3, 0x28])
-    );
-    expect(run(encodingRoot).status).toBe(2);
+    it("rejects invalid source encoding", () => {
+      const encodingRoot = fixture({ "src/main.ts": "export const value = 1;" });
+      writeFileSync(
+        join(encodingRoot, "src/main.ts"),
+        Buffer.from([0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x20, 0xc3, 0x28])
+      );
+      expect(run(encodingRoot).status).toBe(2);
+    });
 
-    const syntaxRoot = fixture({ "src/main.ts": "export const = ;" });
-    expect(run(syntaxRoot).status).toBe(2);
+    it("rejects invalid source syntax", () => {
+      const syntaxRoot = fixture({ "src/main.ts": "export const = ;" });
+      expect(run(syntaxRoot).status).toBe(2);
+    });
   });
 
   it("covers public/native literal records, quoted user-table SQL, and generated evidence roots", () => {
@@ -975,85 +1000,111 @@ describe("production data integrity checker", () => {
     expectRule(run(root), "PDI011");
   });
 
-  it("binds release proof to its positive claim instead of accepting an unrelated sibling", () => {
-    const artifact = "unrelated artifact";
-    const artifactPath = "artifacts/unrelated.bin";
-    const root = fixture({
-      "src/main.ts": "export {};",
-      [artifactPath]: artifact,
-    });
-    write(
-      root,
-      "output/evidence.json",
-      JSON.stringify({
-        release: { ready: true },
-        unrelated: {
-          command: "verify unrelated artifact",
-          exitCode: 0,
-          timestamp: new Date().toISOString(),
-          artifactPath,
-          artifactSha256: createHash("sha256").update(artifact).digest("hex"),
-        },
-      })
-    );
-
-    expectRule(run(root), "PDI011");
-
-    write(
-      root,
-      "output/evidence.json",
-      JSON.stringify({
-        release: { ready: true },
-        proof: {
-          command: "verify unrelated artifact",
-          exitCode: 0,
-          timestamp: new Date().toISOString(),
-          artifactPath,
-          artifactSha256: createHash("sha256").update(artifact).digest("hex"),
-        },
-      })
-    );
-    expectRule(run(root), "PDI011");
-
-    write(
-      root,
-      "output/evidence.json",
-      JSON.stringify({
-        release: {
-          ready: true,
-          proof: {
-            command: "verify release artifact",
+  describe("binds release proof to its positive claim instead of accepting an unrelated sibling", () => {
+    it("rejects a positive release claim with proof on an unrelated sibling", () => {
+      const artifact = "unrelated artifact";
+      const artifactPath = "artifacts/unrelated.bin";
+      const root = fixture({
+        "src/main.ts": "export {};",
+        [artifactPath]: artifact,
+      });
+      write(
+        root,
+        "output/evidence.json",
+        JSON.stringify({
+          release: { ready: true },
+          unrelated: {
+            command: "verify unrelated artifact",
             exitCode: 0,
             timestamp: new Date().toISOString(),
             artifactPath,
             artifactSha256: createHash("sha256").update(artifact).digest("hex"),
           },
-        },
-      })
-    );
-    const linked = run(root);
-    expect(linked.status, JSON.stringify(linked.report, null, 2)).toBe(0);
-    expect(linked.report.findings).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ ruleId: "PDI011" })])
-    );
+        })
+      );
 
-    write(
-      root,
-      "output/evidence.json",
-      JSON.stringify({
-        release: {
-          ready: true,
+      expectRule(run(root), "PDI011");
+    });
+
+    it("rejects a positive release claim with proof on a root sibling", () => {
+      const artifact = "unrelated artifact";
+      const artifactPath = "artifacts/unrelated.bin";
+      const root = fixture({
+        "src/main.ts": "export {};",
+        [artifactPath]: artifact,
+      });
+      write(
+        root,
+        "output/evidence.json",
+        JSON.stringify({
+          release: { ready: true },
           proof: {
-            command: "verify release artifact",
+            command: "verify unrelated artifact",
             exitCode: 0,
             timestamp: new Date().toISOString(),
             artifactPath,
-            artifactSha256: "0".repeat(64),
+            artifactSha256: createHash("sha256").update(artifact).digest("hex"),
           },
-        },
-      })
-    );
-    expectRule(run(root), "PDI011");
+        })
+      );
+      expectRule(run(root), "PDI011");
+    });
+
+    it("accepts proof bound directly to its positive release claim", () => {
+      const artifact = "unrelated artifact";
+      const artifactPath = "artifacts/unrelated.bin";
+      const root = fixture({
+        "src/main.ts": "export {};",
+        [artifactPath]: artifact,
+      });
+      write(
+        root,
+        "output/evidence.json",
+        JSON.stringify({
+          release: {
+            ready: true,
+            proof: {
+              command: "verify release artifact",
+              exitCode: 0,
+              timestamp: new Date().toISOString(),
+              artifactPath,
+              artifactSha256: createHash("sha256").update(artifact).digest("hex"),
+            },
+          },
+        })
+      );
+      const linked = run(root);
+      expect(linked.status, JSON.stringify(linked.report, null, 2)).toBe(0);
+      expect(linked.report.findings).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ ruleId: "PDI011" })])
+      );
+    });
+
+    it("rejects directly bound release proof with an incorrect artifact hash", () => {
+      const artifact = "unrelated artifact";
+      const artifactPath = "artifacts/unrelated.bin";
+      const root = fixture({
+        "src/main.ts": "export {};",
+        [artifactPath]: artifact,
+      });
+      write(
+        root,
+        "output/evidence.json",
+        JSON.stringify({
+          release: {
+            ready: true,
+            proof: {
+              command: "verify release artifact",
+              exitCode: 0,
+              timestamp: new Date().toISOString(),
+              artifactPath,
+              artifactSha256: "0".repeat(64),
+            },
+          },
+        })
+      );
+      expectRule(run(root), "PDI011");
+    });
   });
 
   it("scans readiness packets one directory below output without traversing arbitrary output trees", () => {
@@ -1289,7 +1340,7 @@ describe("production data integrity checker", () => {
 
   it("hashes raw bundle bytes without lossy UTF-8 string coercion", () => {
     expect(CORE.PDI_TEST_API.sha256Bytes(Buffer.from([0x80]))).not.toBe(
-      CORE.PDI_TEST_API.sha256Bytes(Buffer.from([0x81])),
+      CORE.PDI_TEST_API.sha256Bytes(Buffer.from([0x81]))
     );
   });
 
@@ -1326,18 +1377,99 @@ describe("production data integrity checker", () => {
     expectRule(run(root), "PDI008");
   });
 
-  it("rejects semantic config weakening and broad exclusions", () => {
-    const mutations: Array<(config: Record<string, unknown>) => void> = [
-      (config) => {
+  it.each([
+    [
+      "function",
+      [
+        "CREATE OR REPLACE FUNCTION public.write_owned_mood(p_owner uuid, p_mood text)",
+        "RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$",
+        "BEGIN",
+        "  INSERT INTO public.moods(id, user_id, mood)",
+        "  VALUES (extensions.gen_random_uuid(), p_owner, p_mood);",
+        "END;",
+        "$function$;",
+      ].join("\n"),
+    ],
+    [
+      "procedure",
+      [
+        "CREATE PROCEDURE public.write_owned_mood(p_owner uuid, p_mood text)",
+        "LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $procedure$",
+        "BEGIN",
+        "  INSERT INTO public.moods(id, user_id, mood)",
+        "  VALUES (extensions.gen_random_uuid(), p_owner, p_mood);",
+        "END;",
+        "$procedure$;",
+      ].join("\n"),
+    ],
+  ])(
+    "does not classify an unexecuted parameter-driven stored %s body as a migration seed",
+    (_kind, sql) => {
+      const root = fixture({
+        "src/main.ts": "export {};",
+        "supabase/migrations/20260709000011_owned_rpc.sql": sql,
+      });
+
+      const result = run(root);
+      expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+      expect(result.report.findings.some((finding) => finding.ruleId === "PDI008")).toBe(false);
+    }
+  );
+
+  it("still blocks executable DO-body and top-level writes beside stored routine definitions", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000012_executable_writes.sql": [
+        "CREATE FUNCTION public.noop() RETURNS void LANGUAGE plpgsql AS $fn$",
+        "BEGIN",
+        "  INSERT INTO public.moods(id, user_id, mood) VALUES ('routine-only', 'owner', 'neutral');",
+        "END;",
+        "$fn$;",
+        "DO $do$",
+        "BEGIN",
+        "  INSERT INTO public.moods(id, user_id, mood) VALUES ('do-seed', 'owner', 'neutral');",
+        "END;",
+        "$do$;",
+        "COPY public.journal_entries FROM '/tmp/seed.csv';",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    const finding = expectRule(result, "PDI008");
+    const pdi008Findings = result.report.findings.filter(
+      (candidate) => candidate.ruleId === "PDI008"
+    );
+    expect(finding.path).toBe("supabase/migrations/20260709000012_executable_writes.sql");
+    expect(pdi008Findings).toHaveLength(2);
+    expect(pdi008Findings.map((candidate) => candidate.sink).sort()).toEqual([
+      "journal_entries",
+      "moods",
+    ]);
+    expect(pdi008Findings.every((candidate) => (candidate.line ?? 0) >= 8)).toBe(true);
+  });
+
+  it.each<{ name: string; mutate: (config: Record<string, unknown>) => void }>([
+    {
+      name: "domain-field replacement",
+      mutate: (config) => {
         config.domainFields = ["irrelevant"];
       },
-      (config) => {
+    },
+    {
+      name: "user-data-table replacement",
+      mutate: (config) => {
         config.userDataTables = ["irrelevant"];
       },
-      (config) => {
+    },
+    {
+      name: "test-path replacement",
+      mutate: (config) => {
         config.testPathGlobs = ["never/**"];
       },
-      (config) => {
+    },
+    {
+      name: "production-root scan exclusions",
+      mutate: (config) => {
         config.scanExcludeGlobs = [
           ...(config.scanExcludeGlobs as string[]),
           "public/**",
@@ -1347,19 +1479,21 @@ describe("production data integrity checker", () => {
           "src-tauri/**",
         ];
       },
-      (config) => {
+    },
+    {
+      name: "release-evidence exclusion",
+      mutate: (config) => {
         config.releaseEvidenceExcludeGlobs = [
           ...(config.releaseEvidenceExcludeGlobs as string[]),
           "output/**",
         ];
       },
-    ];
-    for (const mutate of mutations) {
-      const root = fixture({ "src/main.ts": "export {};" }, mutate);
-      const result = run(root);
-      expect(result.status, JSON.stringify(result.report, null, 2)).toBe(2);
-      expect(result.report.status).toBe("ERROR");
-    }
+    },
+  ])("rejects semantic config weakening through $name", ({ mutate }) => {
+    const root = fixture({ "src/main.ts": "export {};" }, mutate);
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(2);
+    expect(result.report.status).toBe("ERROR");
   });
 
   it.each([

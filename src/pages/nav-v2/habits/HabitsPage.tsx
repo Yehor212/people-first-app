@@ -26,10 +26,12 @@ import {
   type CSSProperties,
 } from "react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { ChevronRight, UsersRound } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useUserDataStore } from "@/stores";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
+import { useUIStore, useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { analytics } from "@/lib/analytics";
 import { logger } from "@/lib/logger";
@@ -41,6 +43,7 @@ import { triggerSync } from "@/storage/cloudSync";
 import { trackDeletedHabitId } from "@/storage/deletionTracker";
 import { deleteHabitFromCloud, syncHabit, syncHabitCompletion } from "@/storage/realtimeSync";
 import { ENTRY } from "@/types";
+import { commitHabitEntry } from "@/lib/habitEntryCommit";
 import { HabitsHeroZone } from "./HabitsHeroZone";
 import { HabitCreateSheet } from "./HabitCreateSheet";
 import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
@@ -110,11 +113,14 @@ function HabitFieldBackdrop({ isEmpty, animate }: { isEmpty: boolean; animate: b
 
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
+  const { isFeatureVisible } = useFeatureFlags();
   const tx = t;
   const mainRef = useRef<HTMLElement>(null);
   const { habits, todaysHabits, dailyProgress, isEmpty: hasNoActiveHabits } = useHabitsPageState();
   const animateBackdrop = useShouldAnimate();
   const setHabits = useUserDataStore((s) => s.setHabits);
+  const openModal = useUIStore((s) => s.openModal);
+  const publishDurableHabits = useUserDataStore((s) => s._publishDurableHabits);
   const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
   const setReminders = useUserDataStore((s) => s.setReminders);
   const [createOpen, setCreateOpen] = useState(false);
@@ -125,6 +131,7 @@ export const HabitsPage = memo(function HabitsPage() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   /** Template passed to HabitCreateSheet for setup-before-save flow. */
   const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | null>(null);
+  const processingEntryRef = useRef<Set<string>>(new Set());
 
   /** Focus-return: track the element that triggered the most recent sheet
    *  open so the sheet's close handler can restore focus there (spec §11
@@ -213,6 +220,20 @@ export const HabitsPage = memo(function HabitsPage() {
     []
   );
 
+  const reportEntryPersistenceFailure = useCallback(() => {
+    logger.error("[V2 Habits] Durable habit persistence failed");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("zenflow:storage-error", {
+          detail: {
+            type: "write_failed",
+            message: "Unable to save this habit entry. Please try again.",
+          },
+        }),
+      );
+    }
+  }, []);
+
   const recordNumericalValue = useCallback(
     (
       habit: Habit,
@@ -220,47 +241,58 @@ export const HabitsPage = memo(function HabitsPage() {
       realValue: number | null,
       source: HabitEntrySource = "quickTap"
     ) => {
+      const processingKey = `${habit.id}-${date}`;
+      if (processingEntryRef.current.has(processingKey)) return;
+      processingEntryRef.current.add(processingKey);
       const previousStored = habit.entries?.[date]?.value;
       const nextStored = realValue === null ? undefined : toStoredValue(Math.max(0, realValue));
       const prevMet = doesNumericalStoredValueMeetTarget(habit, previousStored);
       const nowMet = doesNumericalStoredValueMeetTarget(habit, nextStored);
+      const isCompletionTransition = !prevMet && nowMet;
+      const metadata = entryMetadata(date, source);
+      const nextHabit: Habit = {
+        ...habit,
+        entries:
+          nextStored === undefined
+            ? setEntryValue(habit.entries || {}, date, ENTRY.UNKNOWN)
+            : setEntryValue(
+                habit.entries || {},
+                date,
+                nextStored,
+                undefined,
+                metadata,
+              ),
+        updatedAt: metadata.loggedAt,
+      };
 
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habit.id) return h;
-          const entries =
-            nextStored === undefined
-              ? setEntryValue(h.entries || {}, date, ENTRY.UNKNOWN)
-              : setEntryValue(
-                  h.entries || {},
-                  date,
-                  nextStored,
-                  undefined,
-                  entryMetadata(date, source)
-                );
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
-
-      triggerSync();
-      void syncHabitCompletion(
-        habit.id,
-        date,
-        nowMet,
-        realValue == null ? undefined : Math.max(1, Math.round(realValue)),
-        nextStored,
-        {
-          habitType: habit.habitType ?? "numerical",
-          targetType: habit.targetType,
-          entryValue: nextStored ?? ENTRY.UNKNOWN,
-        }
-      ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
-
-      if (!prevMet && nowMet) {
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
-      }
+      void commitHabitEntry(nextHabit, isCompletionTransition ? date : null, {
+        setHabits: publishDurableHabits,
+        onCompleted: (committedHabit) => {
+          analytics.habitCompleted(
+            committedHabit.name,
+            habits.filter((candidate) => !candidate.isArchived).length,
+          );
+        },
+        onCommitted: (committedHabit) => {
+          triggerSync();
+          void syncHabitCompletion(
+            committedHabit.id,
+            date,
+            nowMet,
+            realValue == null ? undefined : Math.max(1, Math.round(realValue)),
+            nextStored,
+            {
+              habitType: committedHabit.habitType,
+              targetType: committedHabit.targetType,
+              entryValue: nextStored ?? ENTRY.UNKNOWN,
+            },
+          ).catch((err) => logger.warn("[V2 Habits] Numerical sync failed:", err));
+        },
+      })
+        .catch(reportEntryPersistenceFailure)
+        .finally(() => processingEntryRef.current.delete(processingKey));
     },
-    [habits, setHabits, entryMetadata]
+    [habits, publishDurableHabits, entryMetadata, reportEntryPersistenceFailure]
   );
 
   /**
@@ -309,6 +341,8 @@ export const HabitsPage = memo(function HabitsPage() {
   );
   const handleToggleHabit = useCallback(
     (habitId: string, date: string) => {
+      const processingKey = `${habitId}-${date}`;
+      if (processingEntryRef.current.has(processingKey)) return;
       // Compute the completion transition BEFORE the setter runs so the
       // emission is pure (no state-mutation flag inside the updater). This
       // also keeps the section 15 contract parity with useHabitHandlers —
@@ -317,38 +351,52 @@ export const HabitsPage = memo(function HabitsPage() {
       const isCompletingNow = habit != null && habit.entries?.[date] == null;
       const nextValue =
         habit != null && habit.entries?.[date] == null ? ENTRY.YES_MANUAL : ENTRY.UNKNOWN;
+      if (!habit) return;
+      processingEntryRef.current.add(processingKey);
       void hapticTap();
-      setHabits((prev) =>
-        prev.map((h) => {
-          if (h.id !== habitId) return h;
-          const entries = { ...(h.entries ?? {}) };
-          const existing = entries[date];
-          if (existing) {
-            const { [date]: _drop, ...rest } = entries;
-            void _drop;
-            return { ...h, entries: rest };
-          }
-          entries[date] = {
-            value: ENTRY.YES_MANUAL,
-            ...entryMetadata(date, "quickTap"),
-          };
-          return { ...h, entries, updatedAt: new Date().toISOString() };
-        })
-      );
-      triggerSync();
-      void syncHabitCompletion(habitId, date, nextValue === ENTRY.YES_MANUAL, 1, undefined, {
-        habitType: habit?.habitType ?? "boolean",
-        targetType: habit?.targetType,
-        entryValue: nextValue,
-      }).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
-      if (isCompletingNow && habit) {
-        // §15 retention metric — habit.name carries length-only PII gate at
-        // the Analytics layer (see analytics.ts). total_habits is the active
-        // (non-archived) count so the aggregator can filter ≥3-habit users.
-        analytics.habitCompleted(habit.name, habits.filter((h) => !h.isArchived).length);
-      }
+      const metadata = entryMetadata(date, "quickTap");
+      const nextHabit: Habit = {
+        ...habit,
+        entries:
+          nextValue === ENTRY.UNKNOWN
+            ? setEntryValue(habit.entries ?? {}, date, ENTRY.UNKNOWN)
+            : setEntryValue(
+                habit.entries ?? {},
+                date,
+                ENTRY.YES_MANUAL,
+                undefined,
+                metadata,
+              ),
+        updatedAt: metadata.loggedAt,
+      };
+      void commitHabitEntry(nextHabit, isCompletingNow ? date : null, {
+        setHabits: publishDurableHabits,
+        onCompleted: (committedHabit) => {
+          analytics.habitCompleted(
+            committedHabit.name,
+            habits.filter((candidate) => !candidate.isArchived).length,
+          );
+        },
+        onCommitted: (committedHabit) => {
+          triggerSync();
+          void syncHabitCompletion(
+            habitId,
+            date,
+            nextValue === ENTRY.YES_MANUAL,
+            1,
+            undefined,
+            {
+              habitType: committedHabit.habitType,
+              targetType: committedHabit.targetType,
+              entryValue: nextValue,
+            },
+          ).catch((err) => logger.warn("[V2 Habits] Toggle sync failed:", err));
+        },
+      })
+        .catch(reportEntryPersistenceFailure)
+        .finally(() => processingEntryRef.current.delete(processingKey));
     },
-    [habits, setHabits, entryMetadata]
+    [habits, publishDurableHabits, entryMetadata, reportEntryPersistenceFailure]
   );
   const openCreate = useCallback(() => {
     captureReturnFocus();
@@ -391,6 +439,10 @@ export const HabitsPage = memo(function HabitsPage() {
     captureReturnFocus();
     setLibraryOpen(true);
   }, [captureReturnFocus]);
+  const openFriendChallenges = useCallback(() => {
+    void hapticTap();
+    openModal("showChallengeModal");
+  }, [openModal]);
   const closeLibrary = useCallback(() => {
     setLibraryOpen(false);
     restoreReturnFocus();
@@ -529,14 +581,49 @@ export const HabitsPage = memo(function HabitsPage() {
       >
         <HabitFieldBackdrop isEmpty={isEmpty} animate={animateBackdrop} />
         <div className="relative z-[2] mx-auto min-h-[var(--app-viewport-height)] w-full max-w-3xl lg:max-w-none">
-          <header className="mx-auto min-h-[5.75rem] w-full max-w-[88rem] px-4 ps-[4.5rem] pt-[calc(var(--safe-top)+1.75rem)] min-[360px]:ps-20 md:min-h-0 md:px-6 md:ps-6 md:pt-12 lg:px-10 lg:pt-14 xl:px-14">
+          <header className="mx-auto min-h-[5.75rem] w-full max-w-[88rem] px-[16px] ps-[72px] pt-[calc(var(--safe-top)+1.75rem)] min-[360px]:ps-[80px] md:min-h-0 md:px-6 md:ps-6 md:pt-12 lg:px-10 lg:pt-14 xl:px-14">
             <h1
               id="habits-page-heading"
-              className="break-words font-display text-base font-semibold leading-[1.08] tracking-tight text-foreground [hyphens:manual] [overflow-wrap:normal] min-[360px]:text-lg sm:text-3xl md:text-4xl lg:text-display-5xl"
+              className="v2-phone-drawer-inline-clearance break-words font-display text-base font-semibold leading-[1.08] tracking-tight text-foreground [hyphens:manual] [overflow-wrap:anywhere] min-[360px]:text-lg sm:text-3xl md:text-4xl lg:text-display-5xl"
+              data-phone-drawer-clearance="true"
             >
               {tx.navV2Habits}
             </h1>
           </header>
+
+          {isFeatureVisible("challenges") && (
+            <nav
+              aria-label={tx.friendChallenges}
+              className="mx-auto w-full max-w-[88rem] px-[16px] min-[360px]:px-[20px] md:px-6 lg:px-10 xl:px-14"
+            >
+              <button
+                type="button"
+                onClick={openFriendChallenges}
+                aria-label={tx.friendChallenges}
+                className="group flex min-h-12 w-full min-w-0 items-center gap-[10px] whitespace-normal rounded-2xl border border-[hsl(var(--zf-role-body)/0.28)] bg-[hsl(var(--card)/0.74)] px-[12px] py-[12px] text-start shadow-[0_18px_44px_-38px_hsl(var(--zf-role-body)/0.72)] backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--zf-role-body))] focus-visible:ring-offset-2 motion-safe:transition-[transform,background-color,border-color] motion-safe:hover:-translate-y-0.5 active:scale-[0.99]"
+                data-testid="habits-friend-challenges-action"
+              >
+                <span className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--zf-role-body)/0.16)] text-[hsl(var(--zf-role-body))]">
+                  <UsersRound className="h-[20px] w-[20px]" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block break-words text-sm font-semibold leading-snug text-foreground [hyphens:manual] [overflow-wrap:anywhere]"
+                    data-social-entry-label="primary"
+                  >
+                    {tx.friendChallenges}
+                  </span>
+                  <span className="mt-[2px] hidden break-words text-xs leading-snug text-muted-foreground [hyphens:manual] [overflow-wrap:anywhere] min-[480px]:block">
+                    {tx.trackWithFriends}
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-[20px] w-[20px] shrink-0 text-muted-foreground rtl:scale-x-[-1]"
+                  aria-hidden="true"
+                />
+              </button>
+            </nav>
+          )}
 
           <HabitsHeroZone
             todaysHabits={todaysHabits}

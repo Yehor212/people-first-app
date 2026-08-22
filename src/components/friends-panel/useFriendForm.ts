@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
 import { announce } from '@/lib/a11y';
 import { addFriendByCode } from '@/storage/friendsSync';
+import type { AddFriendFailureReason } from '@/storage/friendsSync';
 
 interface UseFriendFormOptions {
+  initialFriendCode?: string;
   onSuccess: () => void;
   t: Record<string, string>;
 }
@@ -20,11 +22,37 @@ interface UseFriendFormReturn {
   throttledAddFriend: () => void;
 }
 
-export function useFriendForm({ onSuccess, t }: UseFriendFormOptions): UseFriendFormReturn {
-  const [showAddFriend, setShowAddFriend] = useState(false);
-  const [friendCode, setFriendCode] = useState('');
+function getFriendFailureCopy(reason: AddFriendFailureReason, t: Record<string, string>): string {
+  switch (reason) {
+    case 'invalid':
+      return t.friendInviteInvalid || 'That friend code is not valid. Check it and try again.';
+    case 'self':
+      return t.friendInviteSelf || 'That is your own friend code.';
+    case 'duplicate':
+      return t.friendInviteDuplicate || 'This friend is already in your list.';
+    case 'offline':
+      return t.friendInviteOffline || 'You are offline. Reconnect and try again.';
+    case 'not_found':
+      return t.friendInviteNotFound || 'We could not find that friend code. Check it and try again.';
+    case 'signed_out':
+      return t.friendInviteSignedOut || 'Sign in to add friends.';
+    case 'unavailable':
+      return t.friendInviteUnavailable || 'Friend lookup is unavailable right now. Try again later.';
+  }
+}
+
+export function useFriendForm({ initialFriendCode, onSuccess, t }: UseFriendFormOptions): UseFriendFormReturn {
+  const [showAddFriend, setShowAddFriend] = useState(Boolean(initialFriendCode));
+  const [friendCode, setFriendCode] = useState(initialFriendCode ?? '');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialFriendCode) return;
+    setFriendCode(initialFriendCode);
+    setShowAddFriend(true);
+    setAddError(null);
+  }, [initialFriendCode]);
 
   const handleAddFriend = useCallback(async () => {
     if (!friendCode.trim()) return;
@@ -44,7 +72,7 @@ export function useFriendForm({ onSuccess, t }: UseFriendFormOptions): UseFriend
         onSuccess();
       } else {
         void hapticError();
-        setAddError(result.error || t.addFriendError || 'Could not add friend');
+        setAddError(getFriendFailureCopy(result.reason, t));
       }
     } finally {
       setIsAdding(false);

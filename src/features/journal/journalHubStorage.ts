@@ -590,21 +590,15 @@ export async function createJournalSpaceCapture(input: {
   return capture;
 }
 
-export async function createGratitudeSpaceCapture(entry: GratitudeEntry): Promise<JournalSpaceCapture> {
-  const space = await ensureGratitudeSpace();
-  const existing = (await getJournalSpaceCaptures(GRATITUDE_SPACE_ID)).find(
-    (capture) => capture.sourceType === "gratitude" && capture.sourceId === entry.id,
-  );
-  if (existing) return existing;
-
-  return createJournalSpaceCapture({
-    spaceId: GRATITUDE_SPACE_ID,
-    spaceName: space.name || "My gratitudes",
-    mode: "gratitude",
-    title: "gratitude",
-    fields: [{ prompt: "gratitude", value: entry.text }],
-    date: entry.date,
-    sourceType: "gratitude",
-    sourceId: entry.id,
-  });
+export async function createGratitudeSpaceCapture(
+  entry: GratitudeEntry
+): Promise<JournalSpaceCapture | null> {
+  // Release safety: the old projection performed a read followed by a random-ID
+  // write outside the gratitude source transaction. Concurrent saves, vault
+  // locks, account switches, or backup/import could therefore leave duplicate
+  // or orphaned private captures. Keep the optional projection mechanically
+  // disabled until it has one deterministic ID and one atomic source+capture
+  // persistence/outbox contract. The primary gratitude entry is unaffected.
+  void entry;
+  return null;
 }

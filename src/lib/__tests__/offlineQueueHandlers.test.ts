@@ -60,6 +60,26 @@ vi.mock("@/features/journal/journalSecurityMigration", () => ({
   runJournalSecurityMigration: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("@/features/automation/automationPreferences", () => ({
+  automationPreferenceRevocationIntentSchema: {
+    safeParse: vi.fn((value: unknown) => {
+      const candidate = value as { schemaVersion?: unknown; requestedAt?: unknown } | null;
+      return candidate?.schemaVersion === 1 && typeof candidate.requestedAt === "number"
+        ? { success: true, data: candidate }
+        : { success: false, error: new Error("invalid revocation intent") };
+    }),
+  },
+  flushAutomationPreferenceRevocation: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@/features/automation/automationRepository", () => ({
+  processQueuedAutomationCommit: vi.fn(() => Promise.resolve({ status: "committed" })),
+}));
+
+vi.mock("@/features/automation/automationUndo", () => ({
+  processQueuedAutomationUndo: vi.fn(() => Promise.resolve({ status: "committed" })),
+}));
+
 vi.mock("@/storage/eventSync", () => ({
   isSyncEventWriteIntent: vi.fn(
     (value: unknown) =>
@@ -119,6 +139,9 @@ import {
   retryJournalAudioDelete,
 } from "@/features/journal/journalStorage";
 import { runJournalSecurityMigration } from "@/features/journal/journalSecurityMigration";
+import { flushAutomationPreferenceRevocation } from "@/features/automation/automationPreferences";
+import { processQueuedAutomationCommit } from "@/features/automation/automationRepository";
+import { processQueuedAutomationUndo } from "@/features/automation/automationUndo";
 import { writeQueuedEventAndBroadcast } from "@/storage/eventSync";
 import { SyncOwnerBoundaryError } from "@/storage/sync/syncOwner";
 import { safeValidate } from "@/lib/validation";
@@ -207,12 +230,15 @@ describe("offlineQueueHandlers", () => {
       expect(registeredTypes).toContain("DELETE_JOURNAL_PHOTO_STORAGE");
       expect(registeredTypes).toContain("DELETE_JOURNAL_AUDIO_STORAGE");
       expect(registeredTypes).toContain("MIGRATE_JOURNAL_SECURITY");
+      expect(registeredTypes).toContain("REVOKE_AUTOMATION_PREFERENCE");
+      expect(registeredTypes).toContain("COMMIT_AUTOMATION_TRANSACTION");
+      expect(registeredTypes).toContain("UNDO_AUTOMATION_TRANSACTION");
       expect(registeredTypes).toContain("WRITE_SYNC_EVENT");
     });
 
-    it("registers exactly 20 handlers", () => {
+    it("registers exactly 23 handlers", () => {
       initializeOfflineQueueHandlers();
-      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(20);
+      expect(offlineQueue.registerHandler).toHaveBeenCalledTimes(23);
     });
 
     it("calls processQueue when online", () => {
@@ -513,6 +539,137 @@ describe("offlineQueueHandlers", () => {
       );
 
       expect(runJournalSecurityMigration).toHaveBeenCalledWith(payload, "account-a");
+    });
+
+    it("REVOKE_AUTOMATION_PREFERENCE flushes only a valid owner-bound revoke intent", async () => {
+      const handler = getHandler("REVOKE_AUTOMATION_PREFERENCE");
+      const payload = { schemaVersion: 1, requestedAt: 120 } as const;
+
+      await handler(
+        makeAction(
+          "REVOKE_AUTOMATION_PREFERENCE",
+          payload,
+          "zenflow-connected-records-preferences",
+        ),
+      );
+
+      expect(flushAutomationPreferenceRevocation).toHaveBeenCalledWith(payload, "account-a");
+    });
+
+    it("REVOKE_AUTOMATION_PREFERENCE rejects malformed durable payloads", async () => {
+      const handler = getHandler("REVOKE_AUTOMATION_PREFERENCE");
+
+      await expect(
+        handler(
+          makeAction(
+            "REVOKE_AUTOMATION_PREFERENCE",
+            { schemaVersion: 1, requestedAt: "not-a-timestamp" },
+            "zenflow-connected-records-preferences",
+          ),
+        ),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
+
+      expect(flushAutomationPreferenceRevocation).not.toHaveBeenCalled();
+    });
+
+    it("COMMIT_AUTOMATION_TRANSACTION processes only a strict owner-bound opaque intent", async () => {
+      const transactionId = "44444444-4444-4444-8444-444444444444";
+      const payload = {
+        schemaVersion: 1,
+        transactionId,
+        expectedPreferenceRevision: 4,
+        expectedHistoryGeneration: 2,
+        deviceId: "android-install-1",
+      } as const;
+      const handler = getHandler("COMMIT_AUTOMATION_TRANSACTION");
+
+      await handler(makeAction("COMMIT_AUTOMATION_TRANSACTION", payload, transactionId));
+
+      expect(processQueuedAutomationCommit).toHaveBeenCalledWith(payload, "account-a");
+    });
+
+    it("COMMIT_AUTOMATION_TRANSACTION rejects malformed or mismatched durable intents", async () => {
+      const transactionId = "44444444-4444-4444-8444-444444444444";
+      const handler = getHandler("COMMIT_AUTOMATION_TRANSACTION");
+
+      await expect(
+        handler(
+          makeAction(
+            "COMMIT_AUTOMATION_TRANSACTION",
+            {
+              schemaVersion: 1,
+              transactionId,
+              expectedPreferenceRevision: 4,
+              expectedHistoryGeneration: 2,
+              deviceId: "android-install-1",
+            },
+            "55555555-5555-4555-8555-555555555555",
+          ),
+        ),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
+      await expect(
+        handler(
+          makeAction(
+            "COMMIT_AUTOMATION_TRANSACTION",
+            { schemaVersion: 1, transactionId, privateText: "must not persist" },
+            transactionId,
+          ),
+        ),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
+
+      expect(processQueuedAutomationCommit).not.toHaveBeenCalled();
+    });
+
+    it("UNDO_AUTOMATION_TRANSACTION processes only the exact stable operation intent", async () => {
+      const transactionId = "44444444-4444-4444-8444-444444444444";
+      const operationId = "55555555-5555-4555-8555-555555555555";
+      const payload = {
+        schemaVersion: 1,
+        operationId,
+        transactionId,
+        expectedServerSequence: 12,
+        expectedHistoryGeneration: 2,
+        deviceId: "android-install-1",
+      } as const;
+      const handler = getHandler("UNDO_AUTOMATION_TRANSACTION", {
+        ownerUserId: "account-a",
+        operationId,
+        signal: new AbortController().signal,
+        runIfOwnerCurrent: async (operation) => operation(),
+      });
+
+      await handler(makeAction("UNDO_AUTOMATION_TRANSACTION", payload, transactionId));
+
+      expect(processQueuedAutomationUndo).toHaveBeenCalledWith(payload, "account-a");
+    });
+
+    it("UNDO_AUTOMATION_TRANSACTION rejects mismatched row or delivery identity", async () => {
+      const transactionId = "44444444-4444-4444-8444-444444444444";
+      const operationId = "55555555-5555-4555-8555-555555555555";
+      const payload = {
+        schemaVersion: 1,
+        operationId,
+        transactionId,
+        expectedServerSequence: 12,
+        expectedHistoryGeneration: 2,
+        deviceId: "android-install-1",
+      } as const;
+      const handler = getHandler("UNDO_AUTOMATION_TRANSACTION");
+
+      await expect(
+        handler(makeAction("UNDO_AUTOMATION_TRANSACTION", payload, transactionId)),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
+      await expect(
+        handler(
+          makeAction(
+            "UNDO_AUTOMATION_TRANSACTION",
+            { ...payload, privateText: "must not persist" },
+            transactionId,
+          ),
+        ),
+      ).rejects.toMatchObject({ name: "OfflineQueuePayloadValidationError" });
+
+      expect(processQueuedAutomationUndo).not.toHaveBeenCalled();
     });
 
     it("WRITE_SYNC_EVENT handler retries the durable event-log write", async () => {

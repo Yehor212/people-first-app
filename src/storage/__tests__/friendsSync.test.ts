@@ -51,6 +51,8 @@ vi.mock("@/lib/logger", () => ({
 import { SK } from "@/lib/storageKeys";
 import {
   addFriendByCode,
+  ensureMyFriendProfilePublished,
+  generateFriendCodeShareText,
   type Friend,
   type MyProfile,
   refreshFriendsData,
@@ -107,6 +109,65 @@ describe("friendsSync account ownership", () => {
       data: { session: { user: { id: "user-a" } } },
       error: null,
     });
+  });
+
+  it("rejects an invalid locator before any account or cloud read", async () => {
+    await expect(addFriendByCode("not-a-code")).resolves.toEqual({
+      success: false,
+      reason: "invalid",
+    });
+
+    expect(mocks.getCurrentUserId).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("reports an offline locator without starting a cloud lookup", async () => {
+    const onlineSpy = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+
+    await expect(addFriendByCode("ZF-FRIEND01")).resolves.toEqual({
+      success: false,
+      reason: "offline",
+    });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    onlineSpy.mockRestore();
+  });
+
+  it("reports a signed-out locator without writing local friendship state", async () => {
+    mocks.getCurrentUserId.mockResolvedValue(null);
+
+    await expect(addFriendByCode("ZF-FRIEND01")).resolves.toEqual({
+      success: false,
+      reason: "signed_out",
+    });
+
+    expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes own and already-added friend codes before cloud lookup", async () => {
+    mocks.safeLocalStorageGet.mockImplementation((key: string) => {
+      if (key === SK.FRIENDS) return [{ ...friendOwnedByA }];
+      if (key === SK.MY_FRIEND_PROFILE) return { ...profileOwnedByA };
+      return null;
+    });
+
+    await expect(addFriendByCode(friendOwnedByA.friendCode)).resolves.toEqual({
+      success: false,
+      reason: "duplicate",
+    });
+
+    mocks.safeLocalStorageGet.mockImplementation((key: string) => {
+      if (key === SK.FRIENDS) return [];
+      if (key === SK.MY_FRIEND_PROFILE) return { ...profileOwnedByA };
+      return null;
+    });
+    await expect(addFriendByCode(profileOwnedByA.friendCode)).resolves.toEqual({
+      success: false,
+      reason: "self",
+    });
+
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it("does not write account A streak locally or remotely after the active account changes to B", async () => {
@@ -188,7 +249,10 @@ describe("friendsSync account ownership", () => {
       };
       error: null;
     }>();
-    mocks.getCurrentUserId.mockResolvedValueOnce("user-a").mockResolvedValue("user-b");
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("user-a")
+      .mockResolvedValueOnce("user-a")
+      .mockResolvedValue("user-b");
     mocks.safeLocalStorageGet.mockImplementation((key: string) => {
       if (key === SK.FRIENDS) return [];
       if (key === SK.MY_FRIEND_PROFILE) return { ...profileOwnedByA };
@@ -212,13 +276,16 @@ describe("friendsSync account ownership", () => {
       error: null,
     });
 
-    await expect(pendingAdd).resolves.toEqual({ success: false });
+    await expect(pendingAdd).resolves.toEqual({ success: false, reason: "unavailable" });
     expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
   });
 
   it("does not create an account A fallback friend after an empty lookup settles under account B", async () => {
     const lookup = deferred<{ data: null; error: null }>();
-    mocks.getCurrentUserId.mockResolvedValueOnce("user-a").mockResolvedValue("user-b");
+    mocks.getCurrentUserId
+      .mockResolvedValueOnce("user-a")
+      .mockResolvedValueOnce("user-a")
+      .mockResolvedValue("user-b");
     mocks.safeLocalStorageGet.mockImplementation((key: string) => {
       if (key === SK.FRIENDS) return [];
       if (key === SK.MY_FRIEND_PROFILE) return { ...profileOwnedByA };
@@ -231,7 +298,7 @@ describe("friendsSync account ownership", () => {
 
     lookup.resolve({ data: null, error: null });
 
-    await expect(pendingAdd).resolves.toEqual({ success: false });
+    await expect(pendingAdd).resolves.toEqual({ success: false, reason: "not_found" });
     expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
   });
 
@@ -279,7 +346,7 @@ describe("friendsSync account ownership", () => {
 
     const result = await addFriendByCode("ZF-FRIEND01");
 
-    expect(result).toEqual({ success: false });
+    expect(result).toEqual({ success: false, reason: "not_found" });
     expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
   });
 
@@ -304,7 +371,7 @@ describe("friendsSync account ownership", () => {
 
     const result = await addFriendByCode("ZF-FRIEND01");
 
-    expect(result).toEqual({ success: false });
+    expect(result).toEqual({ success: false, reason: "unavailable" });
     expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
   });
 
@@ -352,7 +419,7 @@ describe("friendsSync account ownership", () => {
 
     const result = await addFriendByCode("ZF-FRIEND01");
 
-    expect(result).toEqual({ success: false });
+    expect(result).toEqual({ success: false, reason: "unavailable" });
     expect(mocks.safeLocalStorageSet).not.toHaveBeenCalled();
   });
 
@@ -434,5 +501,44 @@ describe("friendsSync account ownership", () => {
         }),
       ]
     );
+  });
+});
+
+describe("friend share locator", () => {
+  it("includes the canonical code-only friend.v1 HTTPS locator", () => {
+    const text = generateFriendCodeShareText(profileOwnedByA, {});
+
+    expect(text).toContain(
+      "https://yehor212.github.io/people-first-app/?invite=friend.v1&code=ZF-ACCOUNTA",
+    );
+    expect(text).not.toContain("user-a");
+  });
+});
+
+describe("friend profile publication", () => {
+  it("publishes the shareable code only inside the aligned account boundary", async () => {
+    mocks.safeLocalStorageGet.mockImplementation((key: string) =>
+      key === SK.MY_FRIEND_PROFILE ? { ...profileOwnedByA } : null,
+    );
+
+    const profile = await ensureMyFriendProfilePublished("Account A", 4, 2);
+
+    expect(profile).toEqual(profileOwnedByA);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-a",
+        friend_code: "ZF-ACCOUNTA",
+      }),
+      { onConflict: "user_id" },
+    );
+  });
+
+  it("does not expose a share-ready profile when publication fails", async () => {
+    mocks.safeLocalStorageGet.mockImplementation((key: string) =>
+      key === SK.MY_FRIEND_PROFILE ? { ...profileOwnedByA } : null,
+    );
+    mocks.upsert.mockResolvedValue({ error: { code: "offline" } });
+
+    await expect(ensureMyFriendProfilePublished("Account A", 4, 2)).resolves.toBeNull();
   });
 });

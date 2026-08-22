@@ -23,7 +23,7 @@ export {
 
 const ACTION_BUTTON_VARIANT_CLASS: Record<NonNullable<ActionButtonProps["variant"]>, string> = {
   primary:
-    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)]",
+    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-foreground shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)]",
   secondary:
     "border border-[hsl(var(--settings-v2-border)/0.64)] bg-[hsl(var(--settings-v2-panel)/0.78)] text-foreground shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] hover:bg-[hsl(var(--settings-v2-panel)/0.92)]",
   danger:
@@ -159,7 +159,7 @@ export function ToggleRow({
   return (
     <div
       className={cn(
-        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.36)] bg-transparent px-1 py-3 last:border-b-0",
+        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.36)] bg-transparent px-1 py-3 last:border-b-0 min-[360px]:grid-cols-[2.25rem_minmax(0,1fr)_auto]",
         surfaceWeight === "quiet" &&
           "border-transparent focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
         disabled && "opacity-60"
@@ -179,11 +179,11 @@ export function ToggleRow({
         disabled={disabled}
         aria-label={title}
         aria-describedby={descriptionId}
-        className="col-start-3 row-start-1 mt-0.5 shrink-0 justify-self-end"
+        className="col-start-2 row-start-2 mt-1 shrink-0 justify-self-end min-[360px]:col-start-3 min-[360px]:row-start-1 min-[360px]:mt-0.5"
       />
       <span
         id={descriptionId}
-        className="col-start-2 col-end-4 row-start-2 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
+        className="col-start-2 col-end-3 row-start-3 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word] min-[360px]:col-end-4 min-[360px]:row-start-2"
       >
         {description}
       </span>

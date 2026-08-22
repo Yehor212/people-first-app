@@ -62,6 +62,26 @@ describe("journal content crypto envelope", () => {
     await expect(decryptJournalContent(encrypted, "wrong password")).rejects.toThrow(/decrypt/i);
   });
 
+  it("authenticates caller-provided associated data without storing it in plaintext", async () => {
+    const encrypted = await encryptJournalContent("bound entry", "password", {
+      ...testOptions,
+      additionalData: "owner:transaction:source",
+    });
+
+    await expect(
+      decryptJournalContent(encrypted, "password", {
+        additionalData: "owner:transaction:source",
+      }),
+    ).resolves.toBe("bound entry");
+    await expect(
+      decryptJournalContent(encrypted, "password", {
+        additionalData: "different-owner:transaction:source",
+      }),
+    ).rejects.toThrow(/decrypt/i);
+    await expect(decryptJournalContent(encrypted, "password")).rejects.toThrow(/decrypt/i);
+    expect(encrypted).not.toContain("owner:transaction:source");
+  });
+
   it("preserves legacy plaintext through the migration-safe helper", async () => {
     await expect(decryptJournalContentIfNeeded("legacy plaintext", "any password")).resolves.toBe("legacy plaintext");
   });

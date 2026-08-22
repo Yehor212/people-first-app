@@ -13,4 +13,8 @@ ext {
     androidxJunitVersion = '1.3.0'
     androidxEspressoCoreVersion = '3.7.0'
     cordovaAndroidVersion = '14.0.1'
+    // Pinned to make the signed AAB reproducible. Update only with an explicit
+    // AdMob privacy/API compatibility review and a fresh native build proof.
+    playServicesAdsVersion = '25.4.0'
+    userMessagingPlatformVersion = '4.0.0'
 }

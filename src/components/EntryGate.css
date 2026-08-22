@@ -134,6 +134,13 @@ body.zenflow-v2-edge-to-edge .entry-gate-screen {
   background: var(--entry-ink-edge-bleed-background);
 }
 
+:root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] body,
+:root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] body > div,
+:root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] .entry-gate-screen,
+:root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] .entry-gate-screen * {
+  transition: none !important;
+}
+
 :root[data-platform="android"] .entry-gate-aurora {
   filter: none;
   animation: none;
@@ -166,6 +173,12 @@ body.zenflow-v2-edge-to-edge .entry-gate-screen {
 :root[data-platform="android"] [data-testid="entry-gate-backdrop-orb"] {
   opacity: 0.42;
   box-shadow: none !important;
+}
+
+@media (max-width: 359px) {
+  :root[data-platform="android"] [data-testid="entry-gate-backdrop"] {
+    display: none;
+  }
 }
 
 :root[data-platform="android"] .entry-glass-panel {
@@ -243,6 +256,19 @@ body.zenflow-v2-edge-to-edge .entry-gate-screen {
 
 .entry-gate-muted-copy {
   color: hsl(var(--foreground) / 0.66);
+}
+
+.entry-gate-title {
+  -webkit-hyphens: manual;
+  hyphens: manual;
+  overflow-wrap: normal;
+}
+
+:root:lang(es) .entry-gate-title,
+:root:lang(de) .entry-gate-title {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 [data-entry-theme="ink"] .entry-gate-muted-copy {

@@ -47,7 +47,34 @@ export const APPLE_PUBLIC_ACCESS_READY = import.meta.env.VITE_APPLE_PUBLIC_ACCES
 export const ADMOB_APP_ID_ANDROID = (import.meta.env.VITE_ADMOB_APP_ID_ANDROID as string) || "";
 export const ADMOB_REWARDED_ID_ANDROID =
   (import.meta.env.VITE_ADMOB_REWARDED_ID_ANDROID as string) || "";
-export const ADMOB_BANNER_ID_ANDROID =
-  (import.meta.env.VITE_ADMOB_BANNER_ID_ANDROID as string) || "";
 export const ADMOB_REWARDED_ID_IOS = (import.meta.env.VITE_ADMOB_REWARDED_ID_IOS as string) || "";
-export const ADMOB_BANNER_ID_IOS = (import.meta.env.VITE_ADMOB_BANNER_ID_IOS as string) || "";
+
+function parseExplicitAdMobBoolean(value: unknown): boolean | null {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
+export type AdMobAgeRestrictedTreatment = 'child' | 'teen' | 'unspecified';
+
+function parseAdMobAgeRestrictedTreatment(
+  value: unknown,
+): AdMobAgeRestrictedTreatment | null {
+  if (value === 'child' || value === 'teen' || value === 'unspecified') {
+    return value;
+  }
+  return null;
+}
+
+// These are policy declarations, not safe defaults. Missing or malformed
+// values keep native ad initialization disabled until the release owner binds
+// the audience decision to the Play/AdMob evidence packet.
+export const ADMOB_AGE_RESTRICTED_TREATMENT = parseAdMobAgeRestrictedTreatment(
+  import.meta.env.VITE_ADMOB_AGE_RESTRICTED_TREATMENT,
+);
+export const ADMOB_CHILD_DIRECTED_TREATMENT = parseExplicitAdMobBoolean(
+  import.meta.env.VITE_ADMOB_CHILD_DIRECTED_TREATMENT,
+);
+export const ADMOB_UNDER_AGE_OF_CONSENT = parseExplicitAdMobBoolean(
+  import.meta.env.VITE_ADMOB_UNDER_AGE_OF_CONSENT,
+);

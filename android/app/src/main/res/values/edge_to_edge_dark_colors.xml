@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Native counterparts of ZenFlow's ink/night edge palette. -->
+    <color name="zenflow_edge_bleed_status_dark">#16443E</color>
+    <color name="zenflow_edge_bleed_mid_dark">#102728</color>
+    <color name="zenflow_edge_bleed_navigation_dark">#081211</color>
+    <color name="zenflow_edge_bleed_window_dark">#102728</color>
+</resources>

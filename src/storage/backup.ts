@@ -63,6 +63,17 @@ import {
   serializePortableBackupWithinLimit,
   type SerializedPortableBackup,
 } from "@/storage/backupCapacity";
+import {
+  automationHistoryMarkerSchema,
+  automationRecordRevisionStoreRowSchema,
+  automationSourceIntentSchema,
+  automationTransactionSchema,
+  type AutomationHistoryMarker,
+  type AutomationTransactionStoreRow,
+  type AutomationTransactionTableRow,
+} from "@/features/automation/types";
+import { decryptAutomationRevision } from "@/features/automation/revisionCrypto";
+import { captureOriginAccountBoundaryGeneration } from "@/storage/accountBoundaryRuntime";
 
 export type ImportMode = "merge" | "replace";
 
@@ -70,7 +81,11 @@ export type BackupImportBlockCode =
   | "JOURNAL_UNLOCK_REQUIRED"
   | "JOURNAL_REPLACE_AUTHORIZATION_REQUIRED"
   | "JOURNAL_BACKUP_UNREADABLE"
-  | "BACKUP_DELETION_HISTORY_INVALID";
+  | "BACKUP_DELETION_HISTORY_INVALID"
+  | "AUTOMATION_HISTORY_INVALID"
+  | "AUTOMATION_HISTORY_OWNER_REQUIRED"
+  | "AUTOMATION_HISTORY_OWNER_MISMATCH"
+  | "AUTOMATION_HISTORY_STALE";
 
 export type BackupExportBlockCode =
   | "JOURNAL_UNLOCK_REQUIRED"
@@ -162,10 +177,30 @@ export interface BackupPayloadV3 {
   deletedGratitudeIds?: string[];
 }
 
-export type BackupPayload = BackupPayloadV1 | BackupPayloadV2 | BackupPayloadV3;
+export interface BackupPayloadV4 {
+  schemaVersion: 4;
+  createdAt: string;
+  deviceId: string;
+  exportedAt?: string;
+  data: BackupPayloadV3["data"] & {
+    automationTransactions?: AutomationTransactionTableRow[];
+    automationHistoryMarkers?: AutomationHistoryMarker[];
+  };
+  deletedHabitIds?: string[];
+  deletedJournalEntryIds?: string[];
+  deletedMoodIds?: string[];
+  deletedFocusSessionIds?: string[];
+  deletedGratitudeIds?: string[];
+}
+
+export type BackupPayload =
+  | BackupPayloadV1
+  | BackupPayloadV2
+  | BackupPayloadV3
+  | BackupPayloadV4;
 
 export interface PortableBackupArtifact extends SerializedPortableBackup {
-  payload: BackupPayloadV3;
+  payload: BackupPayloadV4;
 }
 
 export interface ImportReportEntry {
@@ -189,6 +224,8 @@ export interface ImportReport {
   journalPracticeSessions?: ImportReportEntry;
   journalEntryLinks?: ImportReportEntry;
   journalSpaceCaptures?: ImportReportEntry;
+  automationTransactions?: ImportReportEntry;
+  automationHistoryMarkers?: ImportReportEntry;
 }
 
 export interface ImportBackupOptions {
@@ -205,9 +242,11 @@ export interface ImportBackupOptions {
   subscribeOwnerRealmInvalidation?: (listener: () => void) => () => void;
 }
 
-export const BACKUP_SCHEMA_VERSION = 3;
+export const BACKUP_SCHEMA_VERSION = 4;
 const MAX_DELETION_TOMBSTONES_PER_COLLECTION = 100000;
 const MAX_JOURNAL_IMPORT_ITEMS_PER_COLLECTION = 100000;
+const MAX_AUTOMATION_BACKUP_ROWS = 128;
+const MAX_AUTOMATION_HISTORY_MARKERS = 1;
 
 function readDeletionHistoryField(
   payload: BackupPayload,
@@ -811,7 +850,7 @@ async function makePortableJournalSpaceCapture(
  */
 const exportBackupWithinJournalSecurityLock = async (
   portable: boolean
-): Promise<BackupPayloadV3> => {
+): Promise<BackupPayloadV4> => {
   const deviceId = await getOrCreateDeviceId();
   const snapshot = await db.transaction(
     "r",
@@ -829,6 +868,8 @@ const exportBackupWithinJournalSecurityLock = async (
       db.journalPracticeSessions,
       db.journalEntryLinks,
       db.journalSpaceCaptures,
+      db.automationTransactions,
+      db.automationHistoryMarkers,
     ],
     async () => {
       const [
@@ -845,6 +886,8 @@ const exportBackupWithinJournalSecurityLock = async (
         journalPracticeSessions,
         journalEntryLinks,
         journalSpaceCaptures,
+        automationTransactions,
+        automationHistoryMarkers,
         deletedHabitSet,
         deletedJournalEntrySet,
         deletedMoodSet,
@@ -864,6 +907,8 @@ const exportBackupWithinJournalSecurityLock = async (
         db.journalPracticeSessions.toArray(),
         db.journalEntryLinks.toArray(),
         db.journalSpaceCaptures.toArray(),
+        db.automationTransactions.toArray(),
+        db.automationHistoryMarkers.toArray(),
         getDeletedHabitIds(),
         getDeletedJournalEntryIds(),
         getDeletedMoodIds(),
@@ -905,6 +950,10 @@ const exportBackupWithinJournalSecurityLock = async (
           journalPracticeSessions,
           journalEntryLinks,
           journalSpaceCaptures,
+          automationTransactions: automationTransactions.filter(
+            (row) => row.kind !== "purge_pending",
+          ),
+          automationHistoryMarkers,
         },
         deletedHabitIds,
         deletedJournalEntryIds,
@@ -989,7 +1038,7 @@ const exportBackupWithinJournalSecurityLock = async (
         : capture
     );
 
-  const data: BackupPayloadV3["data"] = {
+  const data: BackupPayloadV4["data"] = {
     ...snapshot.data,
     journalEntries: normalizedEntries,
     journalPhotos: exportedPhotos,
@@ -1016,7 +1065,7 @@ const exportBackupWithinJournalSecurityLock = async (
   };
 };
 
-export const exportBackup = (): Promise<BackupPayloadV3> =>
+export const exportBackup = (): Promise<BackupPayloadV4> =>
   runWithJournalSecurityWriteLock(() => exportBackupWithinJournalSecurityLock(false));
 
 export const exportPortableBackupArtifact = (): Promise<PortableBackupArtifact> =>
@@ -1025,7 +1074,7 @@ export const exportPortableBackupArtifact = (): Promise<PortableBackupArtifact> 
     return { payload, ...serializePortableBackupWithinLimit(payload) };
   });
 
-export const exportPortableBackup = async (): Promise<BackupPayloadV3> =>
+export const exportPortableBackup = async (): Promise<BackupPayloadV4> =>
   (await exportPortableBackupArtifact()).payload;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -1037,7 +1086,7 @@ const normalizeBackup = (payload: BackupPayload) => {
     throw new Error("Invalid backup payload.");
   }
   const version = (payload as { schemaVersion?: number }).schemaVersion;
-  if (version !== 1 && version !== 2 && version !== BACKUP_SCHEMA_VERSION) {
+  if (version !== 1 && version !== 2 && version !== 3 && version !== BACKUP_SCHEMA_VERSION) {
     throw new Error("Unsupported backup version.");
   }
   if (!("data" in payload) || !isPlainRecord(payload.data)) {
@@ -1058,6 +1107,8 @@ const normalizeBackup = (payload: BackupPayload) => {
     "journalPracticeSessions",
     "journalEntryLinks",
     "journalSpaceCaptures",
+    "automationTransactions",
+    "automationHistoryMarkers",
   ]) {
     if (collection in rawData && !Array.isArray(rawData[collection])) {
       throw new Error(`Invalid backup collection: ${collection} must be an array.`);
@@ -1078,6 +1129,8 @@ const normalizeBackup = (payload: BackupPayload) => {
         journalPracticeSessions: [] as JournalPracticeSession[],
         journalEntryLinks: [] as JournalEntryLink[],
         journalSpaceCaptures: [] as JournalSpaceCapture[],
+        automationTransactions: [] as AutomationTransactionTableRow[],
+        automationHistoryMarkers: [] as AutomationHistoryMarker[],
       },
       collectionPresence: {
         journalEntries: false,
@@ -1088,11 +1141,14 @@ const normalizeBackup = (payload: BackupPayload) => {
         journalPracticeSessions: false,
         journalEntryLinks: false,
         journalSpaceCaptures: false,
+        automationTransactions: false,
+        automationHistoryMarkers: false,
       },
     };
   }
-  const p = payload as BackupPayloadV2 | BackupPayloadV3;
-  const isV3 = version === BACKUP_SCHEMA_VERSION;
+  const p = payload as BackupPayloadV2 | BackupPayloadV3 | BackupPayloadV4;
+  const isV3OrNewer = version === 3 || version === BACKUP_SCHEMA_VERSION;
+  const isV4 = version === BACKUP_SCHEMA_VERSION;
   return {
     schemaVersion: BACKUP_SCHEMA_VERSION,
     createdAt: p.createdAt || p.exportedAt || new Date().toISOString(),
@@ -1111,19 +1167,272 @@ const normalizeBackup = (payload: BackupPayload) => {
         ("journalEntryLinks" in p.data ? p.data.journalEntryLinks : undefined) || [],
       journalSpaceCaptures:
         ("journalSpaceCaptures" in p.data ? p.data.journalSpaceCaptures : undefined) || [],
+      automationTransactions:
+        ("automationTransactions" in p.data ? p.data.automationTransactions : undefined) || [],
+      automationHistoryMarkers:
+        ("automationHistoryMarkers" in p.data ? p.data.automationHistoryMarkers : undefined) || [],
     },
     collectionPresence: {
-      journalEntries: isV3 && "journalEntries" in p.data,
-      journalPhotos: isV3 && "journalPhotos" in p.data,
-      journalAudio: isV3 && "journalAudio" in p.data,
-      journalHubPreferences: isV3 && "journalHubPreferences" in p.data,
-      journalSpaces: isV3 && "journalSpaces" in p.data,
-      journalPracticeSessions: isV3 && "journalPracticeSessions" in p.data,
-      journalEntryLinks: isV3 && "journalEntryLinks" in p.data,
-      journalSpaceCaptures: isV3 && "journalSpaceCaptures" in p.data,
+      journalEntries: isV3OrNewer && "journalEntries" in p.data,
+      journalPhotos: isV3OrNewer && "journalPhotos" in p.data,
+      journalAudio: isV3OrNewer && "journalAudio" in p.data,
+      journalHubPreferences: isV3OrNewer && "journalHubPreferences" in p.data,
+      journalSpaces: isV3OrNewer && "journalSpaces" in p.data,
+      journalPracticeSessions: isV3OrNewer && "journalPracticeSessions" in p.data,
+      journalEntryLinks: isV3OrNewer && "journalEntryLinks" in p.data,
+      journalSpaceCaptures: isV3OrNewer && "journalSpaceCaptures" in p.data,
+      automationTransactions: isV4 && "automationTransactions" in p.data,
+      automationHistoryMarkers: isV4 && "automationHistoryMarkers" in p.data,
     },
   };
 };
+
+interface ValidatedAutomationBackup {
+  rows: AutomationTransactionTableRow[];
+  markers: AutomationHistoryMarker[];
+}
+
+function automationImportError(code: BackupImportBlockCode): never {
+  throw new BackupImportBlockedError(code);
+}
+
+function validateAutomationBackupCollections(
+  rowsValue: unknown,
+  markersValue: unknown,
+  expectedOwnerUserId: string | undefined,
+): ValidatedAutomationBackup {
+  if (!Array.isArray(rowsValue) || !Array.isArray(markersValue)) {
+    return automationImportError("AUTOMATION_HISTORY_INVALID");
+  }
+  if (
+    rowsValue.length > MAX_AUTOMATION_BACKUP_ROWS ||
+    markersValue.length > MAX_AUTOMATION_HISTORY_MARKERS
+  ) {
+    return automationImportError("AUTOMATION_HISTORY_INVALID");
+  }
+  if ((rowsValue.length > 0 || markersValue.length > 0) && !expectedOwnerUserId) {
+    return automationImportError("AUTOMATION_HISTORY_OWNER_REQUIRED");
+  }
+
+  const rows: AutomationTransactionTableRow[] = [];
+  for (const rawRow of rowsValue) {
+    if (!isPlainRecord(rawRow)) {
+      return automationImportError("AUTOMATION_HISTORY_INVALID");
+    }
+    if (rawRow.kind === "source_pending") {
+      const parsed = automationSourceIntentSchema.safeParse(rawRow);
+      if (!parsed.success) return automationImportError("AUTOMATION_HISTORY_INVALID");
+      rows.push(parsed.data);
+      continue;
+    }
+    if (rawRow.kind === "transaction") {
+      const { kind: _kind, ...metadata } = rawRow;
+      const parsed = automationTransactionSchema.safeParse(metadata);
+      if (!parsed.success) return automationImportError("AUTOMATION_HISTORY_INVALID");
+      rows.push({ kind: "transaction", ...parsed.data });
+      continue;
+    }
+    if (rawRow.kind === "record_revision") {
+      const parsed = automationRecordRevisionStoreRowSchema.safeParse(rawRow);
+      if (!parsed.success) return automationImportError("AUTOMATION_HISTORY_INVALID");
+      rows.push(parsed.data);
+      continue;
+    }
+    return automationImportError("AUTOMATION_HISTORY_INVALID");
+  }
+
+  const markers: AutomationHistoryMarker[] = [];
+  for (const rawMarker of markersValue) {
+    const parsed = automationHistoryMarkerSchema.safeParse(rawMarker);
+    if (!parsed.success) return automationImportError("AUTOMATION_HISTORY_INVALID");
+    markers.push(parsed.data);
+  }
+
+  if (
+    expectedOwnerUserId &&
+    [...rows, ...markers].some((item) => item.ownerUserId !== expectedOwnerUserId)
+  ) {
+    return automationImportError("AUTOMATION_HISTORY_OWNER_MISMATCH");
+  }
+
+  const transactionRows = rows.filter(
+    (row): row is AutomationTransactionStoreRow => row.kind === "transaction",
+  );
+  if (transactionRows.length > 0 && markers.length !== 1) {
+    return automationImportError("AUTOMATION_HISTORY_INVALID");
+  }
+  const marker = markers[0];
+  if (
+    marker &&
+    transactionRows.some(
+      (row) =>
+        row.historyGeneration === undefined ||
+        row.historyGeneration !== marker.historyGeneration ||
+        row.serverSequence === undefined ||
+        row.serverSequence > marker.lastAppliedServerSequence,
+    )
+  ) {
+    return automationImportError("AUTOMATION_HISTORY_INVALID");
+  }
+
+  return { rows, markers };
+}
+
+async function authenticateAutomationBackupRows(
+  rows: readonly AutomationTransactionTableRow[],
+  vaultKey: string | null,
+): Promise<void> {
+  const transactionRows = rows.filter(
+    (row): row is AutomationTransactionStoreRow => row.kind === "transaction",
+  );
+  if (transactionRows.length > 0 && !vaultKey) {
+    automationImportError("JOURNAL_UNLOCK_REQUIRED");
+  }
+  for (const row of transactionRows) {
+    try {
+      await decryptAutomationRevision(row.revisionCiphertext, vaultKey || "", {
+        schemaVersion: 1,
+        transactionId: row.id,
+        ownerUserId: row.ownerUserId,
+        consentEpoch: row.consentEpoch,
+        sourceKey: row.sourceKey,
+        sourceType: row.sourceType,
+        sourceId: row.sourceId,
+        ruleId: row.ruleId,
+        ruleVersion: row.ruleVersion,
+      });
+    } catch {
+      automationImportError("AUTOMATION_HISTORY_INVALID");
+    }
+  }
+}
+
+function mergeAutomationHistoryMarkers(
+  local: AutomationHistoryMarker | undefined,
+  incoming: AutomationHistoryMarker | undefined,
+  mode: ImportMode,
+): AutomationHistoryMarker | undefined {
+  if (!incoming) return local;
+  if (!local) return incoming;
+  if (incoming.historyGeneration !== local.historyGeneration) {
+    if (
+      mode === "replace" &&
+      incoming.historyGeneration > local.historyGeneration
+    ) {
+      return incoming;
+    }
+    automationImportError("AUTOMATION_HISTORY_STALE");
+  }
+
+  const purgedTransactionIds = [
+    ...new Set([...(local.purgedTransactionIds ?? []), ...(incoming.purgedTransactionIds ?? [])]),
+  ].sort();
+  return automationHistoryMarkerSchema.parse({
+    ...incoming,
+    snapshotSequence: Math.max(local.snapshotSequence, incoming.snapshotSequence),
+    lastAppliedServerSequence: Math.max(
+      local.lastAppliedServerSequence,
+      incoming.lastAppliedServerSequence,
+    ),
+    bootstrapCompletedAt:
+      local.bootstrapCompletedAt === null
+        ? incoming.bootstrapCompletedAt
+        : incoming.bootstrapCompletedAt === null
+          ? local.bootstrapCompletedAt
+          : Math.max(local.bootstrapCompletedAt, incoming.bootstrapCompletedAt),
+    purgedTransactionIds,
+    allHistoryPurgedAt:
+      local.allHistoryPurgedAt === undefined
+        ? incoming.allHistoryPurgedAt
+        : incoming.allHistoryPurgedAt === undefined
+          ? local.allHistoryPurgedAt
+          : Math.max(local.allHistoryPurgedAt, incoming.allHistoryPurgedAt),
+    updatedAt: Math.max(local.updatedAt, incoming.updatedAt),
+  });
+}
+
+async function applyAutomationBackupInCurrentTransaction(args: {
+  rows: AutomationTransactionTableRow[];
+  markers: AutomationHistoryMarker[];
+  rowsPresent: boolean;
+  markersPresent: boolean;
+  expectedOwnerUserId: string | undefined;
+  mode: ImportMode;
+}): Promise<{
+  transactions?: ImportReportEntry;
+  markers?: ImportReportEntry;
+}> {
+  const { rows, markers, rowsPresent, markersPresent, expectedOwnerUserId, mode } = args;
+  if (!rowsPresent && !markersPresent) return {};
+  if (rows.length === 0 && markers.length === 0) {
+    const emptyReport = { added: 0, updated: 0, skipped: 0 };
+    return {
+      transactions: rowsPresent ? emptyReport : undefined,
+      markers: markersPresent ? emptyReport : undefined,
+    };
+  }
+  if (!expectedOwnerUserId) automationImportError("AUTOMATION_HISTORY_OWNER_REQUIRED");
+
+  const localMarker = await db.automationHistoryMarkers.get(expectedOwnerUserId);
+  const mergedMarker = mergeAutomationHistoryMarkers(localMarker, markers[0], mode);
+  const purgedIds = new Set(mergedMarker?.purgedTransactionIds ?? []);
+  const currentBoundaryGeneration = captureOriginAccountBoundaryGeneration();
+  const acceptedRows = rows.filter((row) => {
+    if (row.kind === "source_pending") {
+      return row.accountBoundaryGeneration === currentBoundaryGeneration;
+    }
+    if (row.kind === "record_revision") {
+      return row.transactionId === null || !purgedIds.has(row.transactionId);
+    }
+    if (row.kind === "purge_pending") return false;
+    return (
+      (row.status === "committed" || row.status === "undone") &&
+      row.historyGeneration === mergedMarker?.historyGeneration &&
+      !purgedIds.has(row.id)
+    );
+  });
+  const existingKeys = new Set(
+    await db.automationTransactions.where("ownerUserId").equals(expectedOwnerUserId).primaryKeys(),
+  );
+
+  if (mode === "replace" && rowsPresent) {
+    await db.automationTransactions.where("ownerUserId").equals(expectedOwnerUserId).delete();
+  }
+  if (purgedIds.size > 0) {
+    await db.automationTransactions.bulkDelete([...purgedIds]);
+  }
+  if (acceptedRows.length > 0) {
+    await db.automationTransactions.bulkPut(acceptedRows);
+  }
+  if (markersPresent) {
+    if (mergedMarker) {
+      await db.automationHistoryMarkers.put(mergedMarker);
+    } else {
+      await db.automationHistoryMarkers.delete(expectedOwnerUserId);
+    }
+  }
+
+  const added =
+    mode === "replace"
+      ? acceptedRows.length
+      : acceptedRows.filter((row) => !existingKeys.has(row.id)).length;
+  return {
+    transactions: rowsPresent
+      ? {
+          added,
+          updated: acceptedRows.length - added,
+          skipped: rows.length - acceptedRows.length,
+        }
+      : undefined,
+    markers: markersPresent
+      ? {
+          added: mergedMarker && !localMarker ? 1 : 0,
+          updated: mergedMarker && localMarker ? 1 : 0,
+          skipped: markers.length - (mergedMarker ? 1 : 0),
+        }
+      : undefined,
+  };
+}
 
 /**
  * Merge incoming items with local by timestamp. Keeps newer per-item.
@@ -1260,8 +1569,10 @@ const importBackupWithinJournalSecurityLock = async (
     journalPracticeSessions,
     journalEntryLinks,
     journalSpaceCaptures,
+    automationTransactions,
+    automationHistoryMarkers,
   } = normalized.data;
-  const journalCollectionPresence = normalized.collectionPresence;
+  const backupCollectionPresence = normalized.collectionPresence;
 
   // Type-safe validation using Zod schemas
   const validateAndSanitize = <T>(
@@ -1347,8 +1658,14 @@ const importBackupWithinJournalSecurityLock = async (
     journalSpaceCaptures,
     validateImportedJournalSpaceCapture
   );
+  const validAutomation = validateAutomationBackupCollections(
+    automationTransactions,
+    automationHistoryMarkers,
+    options.expectedOwnerUserId,
+  );
 
   const journalVaultKey = getJournalContentVaultKey();
+  await authenticateAutomationBackupRows(validAutomation.rows, journalVaultKey);
   const [journalPasswordSetting, journalVaultSetting] = await Promise.all([
     db.settings.get(SK.JOURNAL_PASSWORD),
     db.settings.get(SK.JOURNAL_VAULT_KEY),
@@ -1482,6 +1799,8 @@ const importBackupWithinJournalSecurityLock = async (
         db.journalPracticeSessions,
         db.journalEntryLinks,
         db.journalSpaceCaptures,
+        db.automationTransactions,
+        db.automationHistoryMarkers,
       ],
       async () => {
         importTransaction = Dexie.currentTransaction;
@@ -1500,6 +1819,14 @@ const importBackupWithinJournalSecurityLock = async (
             externalOwnerAssertionInFlight = false;
           });
         };
+        const automationReports = await applyAutomationBackupInCurrentTransaction({
+          rows: validAutomation.rows,
+          markers: validAutomation.markers,
+          rowsPresent: backupCollectionPresence.automationTransactions,
+          markersPresent: backupCollectionPresence.automationHistoryMarkers,
+          expectedOwnerUserId: options.expectedOwnerUserId,
+          mode,
+        });
         const deleted: ImportDeletionSets = {
           moods: await mergeDeletionTrackerIdsInCurrentTransaction(
             DELETION_TRACKER_KEYS.mood,
@@ -1524,7 +1851,7 @@ const importBackupWithinJournalSecurityLock = async (
         };
 
         const existingJournalEntries =
-          mode === "merge" || !journalCollectionPresence.journalEntries
+          mode === "merge" || !backupCollectionPresence.journalEntries
             ? await db.journalEntries.toArray()
             : [];
         const candidateJournalEntries = validJournalEntries.filter(
@@ -1572,11 +1899,11 @@ const importBackupWithinJournalSecurityLock = async (
             !deleted.journalEntries.has(audio.entryId)
         );
         const existingJournalPhotos =
-          mode === "merge" || !journalCollectionPresence.journalPhotos
+          mode === "merge" || !backupCollectionPresence.journalPhotos
             ? await db.journalPhotos.toArray()
             : [];
         const existingJournalAudio =
-          mode === "merge" || !journalCollectionPresence.journalAudio
+          mode === "merge" || !backupCollectionPresence.journalAudio
             ? await db.journalAudio.toArray()
             : [];
         const committedPhotoOwners = new Map<string, string>();
@@ -1626,7 +1953,7 @@ const importBackupWithinJournalSecurityLock = async (
         );
 
         const existingJournalSpaces =
-          mode === "merge" || !journalCollectionPresence.journalSpaces
+          mode === "merge" || !backupCollectionPresence.journalSpaces
             ? await db.journalSpaces.toArray()
             : [];
         const importJournalSpaces = validJournalSpaces;
@@ -1664,20 +1991,20 @@ const importBackupWithinJournalSecurityLock = async (
           if (existingAccountSyncedSettingKeys.length) {
             await db.settings.bulkDelete(existingAccountSyncedSettingKeys);
           }
-          if (journalCollectionPresence.journalEntries) await db.journalEntries.clear();
-          if (journalCollectionPresence.journalPhotos) await db.journalPhotos.clear();
-          if (journalCollectionPresence.journalAudio) await db.journalAudio.clear();
-          if (journalCollectionPresence.journalHubPreferences) {
+          if (backupCollectionPresence.journalEntries) await db.journalEntries.clear();
+          if (backupCollectionPresence.journalPhotos) await db.journalPhotos.clear();
+          if (backupCollectionPresence.journalAudio) await db.journalAudio.clear();
+          if (backupCollectionPresence.journalHubPreferences) {
             await db.journalHubPreferences.clear();
           }
-          if (journalCollectionPresence.journalSpaces) await db.journalSpaces.clear();
-          if (journalCollectionPresence.journalPracticeSessions) {
+          if (backupCollectionPresence.journalSpaces) await db.journalSpaces.clear();
+          if (backupCollectionPresence.journalPracticeSessions) {
             await db.journalPracticeSessions.clear();
           }
-          if (journalCollectionPresence.journalEntryLinks) {
+          if (backupCollectionPresence.journalEntryLinks) {
             await db.journalEntryLinks.clear();
           }
-          if (journalCollectionPresence.journalSpaceCaptures) {
+          if (backupCollectionPresence.journalSpaceCaptures) {
             await db.journalSpaceCaptures.clear();
           }
 
@@ -1686,34 +2013,34 @@ const importBackupWithinJournalSecurityLock = async (
           if (importFocus.length) await db.focusSessions.bulkAdd(importFocus);
           if (importGratitude.length) await db.gratitudeEntries.bulkAdd(importGratitude);
           if (validSettings.valid.length) await db.settings.bulkAdd(validSettings.valid);
-          if (journalCollectionPresence.journalEntries && importJournalEntries.length) {
+          if (backupCollectionPresence.journalEntries && importJournalEntries.length) {
             await db.journalEntries.bulkAdd(importJournalEntries);
           }
-          if (journalCollectionPresence.journalPhotos && importJournalPhotos.length) {
+          if (backupCollectionPresence.journalPhotos && importJournalPhotos.length) {
             await db.journalPhotos.bulkAdd(importJournalPhotos);
           }
-          if (journalCollectionPresence.journalAudio && importJournalAudio.length) {
+          if (backupCollectionPresence.journalAudio && importJournalAudio.length) {
             await db.journalAudio.bulkAdd(importJournalAudio);
           }
           if (
-            journalCollectionPresence.journalHubPreferences &&
+            backupCollectionPresence.journalHubPreferences &&
             importJournalHubPreferences.length
           ) {
             await db.journalHubPreferences.bulkAdd(importJournalHubPreferences);
           }
-          if (journalCollectionPresence.journalSpaces && importJournalSpaces.length) {
+          if (backupCollectionPresence.journalSpaces && importJournalSpaces.length) {
             await db.journalSpaces.bulkAdd(importJournalSpaces);
           }
           if (
-            journalCollectionPresence.journalPracticeSessions &&
+            backupCollectionPresence.journalPracticeSessions &&
             importJournalPracticeSessions.length
           ) {
             await db.journalPracticeSessions.bulkAdd(importJournalPracticeSessions);
           }
-          if (journalCollectionPresence.journalEntryLinks && importJournalEntryLinks.length) {
+          if (backupCollectionPresence.journalEntryLinks && importJournalEntryLinks.length) {
             await db.journalEntryLinks.bulkAdd(importJournalEntryLinks);
           }
-          if (journalCollectionPresence.journalSpaceCaptures && importJournalSpaceCaptures.length) {
+          if (backupCollectionPresence.journalSpaceCaptures && importJournalSpaceCaptures.length) {
             await db.journalSpaceCaptures.bulkAdd(importJournalSpaceCaptures);
           }
 
@@ -1798,6 +2125,8 @@ const importBackupWithinJournalSecurityLock = async (
               updated: 0,
               skipped: (journalSpaceCaptures || []).length - importJournalSpaceCaptures.length,
             },
+            automationTransactions: automationReports.transactions,
+            automationHistoryMarkers: automationReports.markers,
           };
         }
 
@@ -1934,6 +2263,8 @@ const importBackupWithinJournalSecurityLock = async (
           journalPracticeSessions: journalPracticeSessionsReport,
           journalEntryLinks: journalEntryLinksReport,
           journalSpaceCaptures: journalSpaceCapturesReport,
+          automationTransactions: automationReports.transactions,
+          automationHistoryMarkers: automationReports.markers,
         };
       }
     );

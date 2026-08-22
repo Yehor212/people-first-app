@@ -64,6 +64,181 @@
   animation: none;
 }
 
+/* Android WebView can retain a compositor texture for every decorative point
+ * after the runtime guard has already frozen the scene. Keep the same static
+ * positions and artwork, but return those elements to ordinary 2D painting so
+ * the canonical orb and its controls remain within the tile-memory budget. */
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__photon {
+  backface-visibility: visible;
+  transform: translate(-50%, -50%);
+}
+
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__mote {
+  backface-visibility: visible;
+  transform: none;
+}
+
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__sun-thread {
+  backface-visibility: visible;
+  transform: rotate(var(--thread-tilt));
+}
+
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__bokeh,
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__horizon-glow,
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__light-curtain,
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__sun-shower,
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__prism-ribbon,
+:root[data-platform="android"][data-runtime-perf] .day-cosmic__caustics {
+  backface-visibility: visible;
+}
+
+/* The ordinary Android orb keeps the complete daylight composition, but a
+ * small deterministic motion subset. API 36 WebView promoted the previous
+ * 78 photons, 35 motes, 18 threads, and filtered viewport sheets into enough
+ * textures to exceed its tile-memory budget and temporarily omit controls.
+ * Soft radial gradients replace large blur surfaces; the WebGL orb itself is
+ * intentionally outside this selector and remains animated. */
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"][data-animated="true"]
+  .day-cosmic__photon {
+  animation: none;
+  backface-visibility: visible;
+  transform: translate(-50%, -50%);
+  will-change: auto;
+}
+
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"][data-animated="true"]
+  .day-cosmic__mote {
+  animation: none;
+  backface-visibility: visible;
+  transform: none;
+  will-change: auto;
+}
+
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"][data-animated="true"]
+  .day-cosmic__sun-thread {
+  animation: none;
+  backface-visibility: visible;
+  transform: rotate(var(--thread-tilt));
+  will-change: auto;
+}
+
+:root[data-platform="android"]:not([data-runtime-perf])
+  .day-cosmic[data-presentation="orb"][data-animated="true"]
+  .day-cosmic__photon:nth-child(9n + 1) {
+  animation: day-cosmic-photon-twinkle var(--photon-duration) ease-in-out var(--photon-delay)
+    infinite;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+:root[data-platform="android"]:not([data-runtime-perf])
+  .day-cosmic[data-presentation="orb"][data-animated="true"]
+  .day-cosmic__mote:nth-child(9n + 4) {
+  animation-name: day-cosmic-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+:root[data-platform="android"]:not([data-runtime-perf])
+  .day-cosmic[data-presentation="orb"][data-animated="true"]
+  .day-cosmic__sun-thread:nth-child(9n + 1) {
+  animation: day-cosmic-thread-float var(--thread-duration) ease-in-out var(--thread-delay) infinite;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__bokeh,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__horizon-glow,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__light-curtain,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__sun-shower,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__prism-ribbon,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__caustics {
+  animation: none;
+  backface-visibility: visible;
+  filter: none;
+  -webkit-filter: none;
+  will-change: auto;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__bokeh::before {
+  background: radial-gradient(
+    circle at center,
+    hsl(var(--zf-role-body) / 0.22) 0%,
+    transparent 72%
+  );
+  filter: none;
+  -webkit-filter: none;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__bokeh::after {
+  background: radial-gradient(
+    circle at center,
+    hsl(var(--zf-role-mind) / 0.18) 0%,
+    transparent 72%
+  );
+  filter: none;
+  -webkit-filter: none;
+}
+
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"]
+  .day-cosmic__horizon-glow::before,
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"]
+  .day-cosmic__horizon-glow::after,
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"]
+  .day-cosmic__light-curtain::before,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__sun-shower::before,
+:root[data-platform="android"]
+  .day-cosmic[data-presentation="orb"]
+  .day-cosmic__prism-ribbon::before {
+  filter: none;
+  -webkit-filter: none;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__sun-thread::after {
+  background: radial-gradient(ellipse at center, hsl(56 100% 94% / 0.24) 0%, transparent 76%);
+  filter: none;
+  -webkit-filter: none;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__paper-grain {
+  display: none;
+}
+
+/* The Android scene keeps its base mesh, bokeh, horizon, atmosphere, vignette,
+ * motes, and canonical canvas orb. The sheets below either duplicate that
+ * depth or allocate an oversized masked surface (up to 1.76x the viewport on
+ * API 36 WebView). Omitting those compositor sheets prevents tile eviction
+ * without flattening the orb or removing the visible controls. */
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__sun-threads,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__photon-field,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__caustics,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__glass-depth,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__light-curtain,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__god-rays,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__sun-shower,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__prism-ribbon,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__bokeh,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__atmosphere,
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__horizon-glow {
+  display: none;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__base::after {
+  display: none;
+}
+
+:root[data-platform="android"] .day-cosmic[data-presentation="orb"] .day-cosmic__base::before {
+  filter: none;
+}
+
 /* Settings keeps every structural layer and pseudo-element static. Only the
  * explicit data-motion-active allowlist below may override this freeze. */
 .day-cosmic[data-presentation="settings"],
@@ -1018,6 +1193,20 @@
     drop-shadow(0 20px 42px hsl(var(--zf-role-focus) / 0.2));
   -webkit-mask-image: radial-gradient(circle, #000 0 45%, rgba(0, 0, 0, 0.76) 49%, transparent 58%);
   mask-image: radial-gradient(circle, #000 0 45%, rgba(0, 0, 0, 0.76) 49%, transparent 58%);
+}
+
+/* API 36 WebView already composites the canonical WebGL canvas. Applying a
+ * second filter + mask + promoted transform surface to that same canvas
+ * exceeded the tile budget during a normal cold launch. The shader owns its
+ * alpha vignette and glow, so Android can paint that exact WebGL output
+ * directly while the surrounding rim layer preserves the daylight halo. */
+:root[data-platform="android"] .orb-day-scope .orb-page-rim-glow > button canvas {
+  filter: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  will-change: auto !important;
+  transform: none !important;
+  backface-visibility: visible !important;
 }
 
 .day-cosmic__solar-portal {

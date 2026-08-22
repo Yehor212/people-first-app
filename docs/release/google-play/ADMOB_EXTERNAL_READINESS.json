@@ -1,14 +1,14 @@
 {
   "schemaVersion": "zenflow-admob-external-readiness/v1",
   "packageName": "com.zenflow.app",
-  "updatedAt": "2026-07-04",
+  "updatedAt": "2026-08-09",
   "purpose": "Public-safe per-row evidence ledger for Google-owned and owner-owned monetization checks. A row-level PASS means that specific evidence item passed; it does not mean full AdMob production monetization is ready unless the strict pass command passes.",
   "items": [
     {
       "id": "public_app_ads_root",
       "status": "PASS",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: public root app-ads check passed for https://yehor212.github.io/app-ads.txt with masked publisher pub-9501********2808.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the fresh public root app-ads check passed for https://yehor212.github.io/app-ads.txt with a masked publisher; the raw publisher value was omitted from retained console evidence.",
       "ownerAction": "Re-run the public root check after every deploy, publisher change, or developer website change.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/14538460"
@@ -16,10 +16,10 @@
     },
     {
       "id": "admob_app_ads_txt_status",
-      "status": "PASS",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Verify app page showed the ZenFlow Android app confirmed with a Done status; evidence recorded without raw app, ad-unit, or publisher IDs.",
-      "ownerAction": "Owner must re-open the AdMob app verification/app-ads.txt area after crawler refresh and record only a public-safe PASS, PARTIAL, UNVERIFIED, or FAIL summary.",
+      "status": "PARTIAL",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the owner-authenticated AdMob app page showed ZenFlow verified, Ready, Google Play linked, and ad serving enabled. The app-ads.txt tab still showed no recent request/crawl data, so app verification is PASS but end-to-end crawler enforcement is not yet proved.",
+      "ownerAction": "After an authorized release-equivalent production request, re-open the AdMob app-ads.txt tab and require a found-and-verified crawl result before upgrading this row to PASS.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/14538460"
       ]
@@ -27,8 +27,8 @@
     {
       "id": "public_google_play_listing",
       "status": "PASS",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: public listing check passed for com.zenflow.app with developer website, Contains ads signal, privacy policy, rewarded ads copy, and old No ads claim absent. This is a public listing evidence PASS only; it does not prove full AdMob production monetization readiness.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the fresh public listing check passed for com.zenflow.app with developer website, Contains ads signal, privacy policy, rewarded ads copy, and old No ads claim absent. This remains a public listing evidence PASS only.",
       "ownerAction": "Re-run the public listing check after every Google Play listing or policy declaration edit.",
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455"
@@ -37,8 +37,8 @@
     {
       "id": "public_privacy_policy",
       "status": "PASS",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with npm run google-play:privacy:public-check for the published privacy URL; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories including IP address. This is a public privacy evidence PASS only; it does not prove full AdMob production monetization readiness.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: npm run google-play:privacy:public-check performed a GitHub Pages post-deploy public privacy smoke against the published URL and passed. It confirmed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, Google Mobile Ads SDK data categories including IP address, and absence of the retired no-ads claim.",
       "ownerAction": "Re-run the GitHub Pages post-deploy public privacy smoke and npm run google-play:privacy:public-check after every privacy policy, ads SDK, consent, developer website, or Google Play Data safety change.",
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455",
@@ -49,8 +49,8 @@
     {
       "id": "admob_app_readiness",
       "status": "PASS",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob apps list showed the ZenFlow Android app Ready, ad serving enabled, Google Play linked, and active ad units; raw identifiers were not recorded.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the owner-authenticated AdMob inventory showed the account Open and approved, ZenFlow Android verified and Ready, Google Play linked, ad serving enabled, and two active ad units. A five-month no-impressions warning remains, but no reactivation or readiness-review control was presented. Raw identifiers were not retained.",
       "ownerAction": "Re-check AdMob app readiness before each release, after policy/listing changes, and before claiming live ad availability.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/10564477"
@@ -59,9 +59,9 @@
     {
       "id": "admob_policy_center",
       "status": "PARTIAL",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Policy Center was reviewed for no violations and no blocking issues, but granular public-safe proof for no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests is not recorded yet.",
-      "ownerAction": "Owner must re-check AdMob Policy Center and record only public-safe PASS evidence covering no violations, no blocking issues, no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the owner-authenticated AdMob Policy Center explicitly showed no violations, and its rejected-apps tab explicitly showed no rejected apps. The page did not separately expose public-safe proof for no regulatory issues, no advertiser-preference restrictions, and no restricted or disabled ad requests, so this row remains PARTIAL.",
+      "ownerAction": "Re-check immediately before upload and retain public-safe proof for every granular policy-center readiness signal before upgrading this row to PASS.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/10448801",
         "https://support.google.com/admob/answer/15697162"
@@ -70,9 +70,9 @@
     {
       "id": "privacy_messages_cmp",
       "status": "PARTIAL",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Privacy & messaging European regulations card still showed Create, so the published Google-certified CMP TCF v2.3 consent message for ZenFlow remains incomplete.",
-      "ownerAction": "Owner must create/publish the required AdMob Privacy & messages flow for ZenFlow's AdMob app, review Google-supported European regulations languages, document Arabic/Hebrew fallback, and then re-run this ledger before claiming full CMP readiness.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: Privacy & messaging now showed one active European-regulations message and one active US-state-regulations message. Exact ZenFlow app assignment, message-language coverage, and Arabic/Hebrew fallback were not exposed in the read-only page, so the row remains PARTIAL.",
+      "ownerAction": "Verify the active messages are assigned to ZenFlow, review supported message languages and RTL fallback, and retain only public-safe status evidence before upgrading this row to PASS.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/10113207",
         "https://support.google.com/admob/answer/10107561",
@@ -86,8 +86,8 @@
     {
       "id": "payments_tax_info",
       "status": "UNVERIFIED",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Payments tax route did not provide a public-safe tax no action required status in visible UI; no private tax details were recorded.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the owner-authenticated Payments pages still did not surface a public-safe tax no-action-required or blocking-action state. No private tax details were recorded.",
       "ownerAction": "Owner must check the relevant tax information page and record only whether no action is required, review is pending, or Google shows a blocking action.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/2772513"
@@ -96,8 +96,8 @@
     {
       "id": "payments_identity_address",
       "status": "UNVERIFIED",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Payments verification page showed identity verification may be needed after the verification threshold, but did not show a public-safe identity and address verified or no action required status.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: Payments verification said identity verification may be required after the verification threshold; it did not show a current request or a public-safe identity/address verified state.",
       "ownerAction": "Owner must check Payments verification and record only a public-safe status without private identifiers or document details.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/13030080"
@@ -106,8 +106,8 @@
     {
       "id": "payments_payment_method",
       "status": "UNVERIFIED",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Payments settings did not expose a public-safe payment method eligible or no action required status without private payment details.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: Payments did not expose a public-safe payment-method eligible or no-action-required status without entering private payment details.",
       "ownerAction": "Owner must check Payments settings and record only whether the payout method is eligible or still needs owner action.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/12835021"
@@ -116,8 +116,8 @@
     {
       "id": "payments_holds",
       "status": "UNVERIFIED",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Payments pages did not expose a public-safe no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold status; no private payment details were recorded.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: Payments did not expose a public-safe consolidated hold status. No private payment, tax, identity, or compliance details were recorded.",
       "ownerAction": "Owner must check whether any payment hold, self-hold, compliance hold, identity hold, or tax hold is present and record only the public-safe status.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/11601831"
@@ -126,9 +126,9 @@
     {
       "id": "play_console_ads_data_safety",
       "status": "PARTIAL",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: Public Play listing proof passed and owner-console declarations were reviewed by the coordinator, but independent read-only audit could not directly verify Ads=Yes, Advertising ID=Yes, Google Mobile Ads SDK data disclosure, and matching privacy policy URL from owner-console evidence.",
-      "ownerAction": "Owner must verify Play Console App content declarations for Ads, Advertising ID, and Data safety match the release artifact and privacy policy before production monetization claims.",
+      "checkedAt": "2026-08-09",
+      "evidence": "2026-08-09: the owner-authenticated Play App content page showed the ads declaration completed with Contains ads, while Data safety showed six collected/shared data types and an account-deletion URL. Exact Advertising ID and artifact-to-declaration parity remain unverified until the exact AAB exists.",
+      "ownerAction": "After building the exact AAB, compare its permissions and SDK inventory with Ads, Advertising ID, Data safety, privacy-policy, and target-audience declarations before upload.",
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455",
         "https://developers.google.com/admob/android/privacy/play-data-disclosure"

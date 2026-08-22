@@ -49,9 +49,9 @@ const DialogContent = React.forwardRef<
         {children}
         <DialogPrimitive.Close
           aria-label={t.close}
-          className="absolute end-4 top-4 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg opacity-70 ring-offset-background motion-safe:transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          className="absolute end-[12px] top-[12px] z-20 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg opacity-70 ring-offset-background motion-safe:transition-all hover:bg-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
         >
-          <X className="h-4 w-4" />
+          <X className="h-[20px] w-[20px]" />
           <span className="sr-only">{t.close}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

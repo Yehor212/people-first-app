@@ -2,15 +2,20 @@ import { Suspense, lazy, memo, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
+import { scheduleIdle, type IdleHandle } from "@/lib/scheduleIdle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { NAV_V2_PAGES, useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
-import { registerModalCloseCallback } from "@/lib/androidBackHandler";
+import {
+  publishAndroidBackNavigationState,
+  registerModalCloseCallback,
+} from "@/lib/androidBackHandler";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { NotFoundPage } from "@/components/NotFoundPage";
+import { useV2ConnectedHistoryLayer } from "@/features/automation";
 import { SidebarV2 } from "./SidebarV2";
 import { DrawerV2 } from "./DrawerV2";
 import { V2FocusMiniPlayer } from "./V2FocusMiniPlayer";
@@ -48,6 +53,9 @@ const NAV_V2_ROUTE_LOADERS: Record<NavV2Page, RouteLoader> = {
   settings: loadSettingsPage,
 };
 const preloadedNavV2Routes = new Map<NavV2Page, Promise<unknown>>();
+const NAV_V2_PRELOAD_IDLE_TIMEOUT_MS = 2_500;
+const NAV_V2_PRELOAD_STARTUP_DELAY_MS = 4_000;
+const NAV_V2_PRELOAD_BETWEEN_ROUTES_MS = 750;
 
 function preloadNavV2Route(page: NavV2Page) {
   if (preloadedNavV2Routes.has(page)) {
@@ -67,16 +75,10 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
   }
 
   let cancelled = false;
-  let idleId: number | null = null;
-  let timerId: number | null = null;
+  let idleHandle: IdleHandle | null = null;
   const pendingPages = Array.from(new Set<NavV2Page>(["settings", ...NAV_V2_PAGES])).filter(
     (page) => page !== activePage
   );
-
-  const requestIdle = window.requestIdleCallback;
-  const cancelIdle = window.cancelIdleCallback;
-  const scheduleTimeout = window.setTimeout.bind(window);
-  const cancelTimeout = window.clearTimeout.bind(window);
 
   const scheduleNext = () => {
     if (cancelled) {
@@ -90,43 +92,27 @@ function scheduleNavV2RoutePreload(activePage: NavV2Page) {
 
     preloadNavV2Route(page);
     if (pendingPages.length > 0) {
-      schedule();
+      schedule(NAV_V2_PRELOAD_BETWEEN_ROUTES_MS);
     }
   };
 
-  const schedule = () => {
-    if (typeof requestIdle === "function" && typeof cancelIdle === "function") {
-      idleId = requestIdle(scheduleNext, { timeout: 750 });
-      return;
-    }
-
-    timerId = scheduleTimeout(scheduleNext, 120);
+  const schedule = (minimumDelayMs: number) => {
+    idleHandle = scheduleIdle(
+      scheduleNext,
+      NAV_V2_PRELOAD_IDLE_TIMEOUT_MS,
+      minimumDelayMs,
+    );
   };
 
-  schedule();
+  schedule(NAV_V2_PRELOAD_STARTUP_DELAY_MS);
 
   return () => {
     cancelled = true;
-    if (idleId !== null) cancelIdle?.(idleId);
-    if (timerId !== null) cancelTimeout(timerId);
+    idleHandle?.cancel();
   };
 }
 
-/**
- * NavV2Orchestrator — wraps the V2 navigation shell around flag-gated page shells.
- *
- * Renders:
- *   - Desktop (>=md): permanent <SidebarV2> (collapsible rail) + page content
- *   - Mobile (<md):   top-left menu trigger + <DrawerV2> only.
- *                     No bottom tab bar — drawer carries primary + secondary nav.
- *   - Both:           Ctrl+K <CommandPalette> (lazy)
- *
- * Owns the app navigation surface. Root Index mounts this shell directly,
- * while `?nav=v2` remains accepted for existing deep links.
- *
- * Phase 3-A.1 correction: bottom tabs were removed from render; mobile uses
- * the drawer as primary navigation.
- */
+/** Owns the V2 shell: desktop rail, mobile drawer, lazy pages and command palette. */
 interface NavV2OrchestratorProps {
   onAddMood?: (entry: MoodEntry) => void;
   onAddGratitude?: (entry: GratitudeEntry) => void;
@@ -157,9 +143,12 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
 }: NavV2OrchestratorProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
-  const { tier } = useDeviceTier();
+  const { isCompactHeight, tier } = useDeviceTier();
   const forceWebNavigation = shouldForceWebNavigation();
-  const isWebNavigation = forceWebNavigation || tier !== "phone";
+  const compactAndroidLandscapeDrawer =
+    !forceWebNavigation && tier === "tablet" && isCompactHeight;
+  const isWebNavigation =
+    forceWebNavigation || (tier !== "phone" && !compactAndroidLandscapeDrawer);
   const forceCompactWebRail = forceWebNavigation && tier === "phone";
 
   const {
@@ -179,6 +168,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
   const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
   const drawerTriggerRef = useRef<HTMLButtonElement>(null);
+  const { historyLayer, openConnectedHistory } = useV2ConnectedHistoryLayer(drawerTriggerRef);
   const drawerWasOpenRef = useRef(drawerOpen);
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
@@ -201,8 +191,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     void haptics.tabChanged();
     openDrawer();
     preloadNavV2Route("settings");
-    scheduleNavV2RoutePreload(activePage);
-  }, [activePage, openDrawer]);
+  }, [openDrawer]);
 
   const handlePrimaryPageChange = useCallback(
     (page: NavV2Page) => {
@@ -211,11 +200,25 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     [isWebNavigation, setActivePage, tier]
   );
 
-  // Register Android back handler — drawer close > palette close > let native back
+  const ownsAndroidBack =
+    drawerOpen || commandPaletteOpen || activePage !== "orb" || unknownPath !== null;
+
   useEffect(() => {
-    const unregister = registerModalCloseCallback(() => handleBackButton());
+    void publishAndroidBackNavigationState({
+      isRoot: activePage === "orb" && unknownPath === null,
+    });
+  }, [activePage, unknownPath]);
+
+  // Register only while this shell owns a Back destination. At an unobstructed
+  // Orb root the native callback is disabled and Android owns back-to-home.
+  useEffect(() => {
+    if (!ownsAndroidBack) return undefined;
+    const unregister = registerModalCloseCallback(
+      (event) => handleBackButton(event),
+      { layer: "navigation" },
+    );
     return unregister;
-  }, [handleBackButton]);
+  }, [handleBackButton, ownsAndroidBack]);
 
   useEffect(() => {
     if (isWebNavigation && drawerOpen) {
@@ -302,13 +305,14 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     <div
       className={cn(
         "v2-edge-to-edge-surface min-h-[var(--app-viewport-height)] bg-background motion-safe:transition-[padding] motion-safe:duration-300",
-        effectiveSidebarCollapsed
-          ? forceWebNavigation
-            ? "ps-[72px]"
-            : "md:ps-[72px]"
-          : forceWebNavigation
-            ? "ps-64"
-            : "md:ps-64"
+        isWebNavigation &&
+          (effectiveSidebarCollapsed
+            ? forceWebNavigation
+              ? "ps-[72px]"
+              : "md:ps-[72px]"
+            : forceWebNavigation
+              ? "ps-64"
+              : "md:ps-64")
       )}
       data-testid="nav-v2-orchestrator"
       data-fullscreen-surface="v2"
@@ -324,6 +328,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
           onToggleCollapsed={toggleSidebar}
           forceVisible={forceWebNavigation}
           collapseLocked={forceCompactWebRail}
+          onOpenConnectedHistory={openConnectedHistory}
         />
       )}
 
@@ -340,7 +345,12 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         aria-controls={drawerOpen ? "nav-v2-drawer" : undefined}
         data-testid="nav-v2-open-drawer"
         className={cn(
-          shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
+          shouldShowDrawerTrigger
+            ? compactAndroidLandscapeDrawer
+              ? "flex"
+              : "md:hidden flex"
+            : "hidden",
+          activePage === "planning" && "dark",
           "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
           "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
           "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
@@ -364,6 +374,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         onClose={closeDrawer}
         onPageChange={handlePrimaryPageChange}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        onOpenConnectedHistory={openConnectedHistory}
       />
 
       {commandPaletteOpen && (
@@ -386,6 +397,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       />
       <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
       <V2ProgressionModalLayer />
+      {historyLayer}
     </div>
   );
 });

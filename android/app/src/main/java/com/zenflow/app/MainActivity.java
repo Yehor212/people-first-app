@@ -7,7 +7,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.webkit.WebView;
+import android.util.Log;
 import androidx.activity.EdgeToEdge;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
@@ -22,9 +22,6 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // Clear WebView cache on app version change to prevent stale JS bundles
-        clearWebViewCacheOnUpdate();
-
         enableNativeEdgeToEdge();
 
         // Register local plugins before Capacitor creates the bridge.
@@ -36,8 +33,10 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(ScreenSecurityPlugin.class);
         registerPlugin(StatusBarStylePlugin.class);
         registerPlugin(PushRealmPlugin.class);
+        registerPlugin(AndroidBackPlugin.class);
 
         super.onCreate(savedInstanceState);
+        clearWebViewCacheOnUpdate();
         enableNativeEdgeToEdge();
     }
 
@@ -56,8 +55,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     }
 
     private void applyNativeEdgeBackdrop() {
-        getWindow().setBackgroundDrawableResource(R.drawable.zenflow_edge_bleed_backdrop);
-        getWindow().getDecorView().setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop);
+        StatusBarStylePlugin.applyCurrentEdgeBackdrop(this);
     }
 
     @Override
@@ -89,16 +87,14 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             String currentVersion = pInfo.versionName;
 
-            if (!currentVersion.equals(lastVersion)) {
-                // Version changed — clear WebView cache before bridge creates the WebView
-                WebView tempWebView = new WebView(this);
-                tempWebView.clearCache(true);
-                tempWebView.destroy();
-
+            if (!currentVersion.equals(lastVersion) && getBridge() != null && getBridge().getWebView() != null) {
+                // Reuse the initialized bridge WebView; creating a temporary WebView before
+                // Activity initialization adds startup work and can violate lifecycle assumptions.
+                getBridge().getWebView().clearCache(true);
                 prefs.edit().putString("last_web_version", currentVersion).apply();
             }
-        } catch (Exception e) {
-            // Non-critical — if cache clearing fails, app still works (just with potential stale assets)
+        } catch (Exception ignored) {
+            Log.w("ZenFlowStartup", "WEBVIEW_CACHE_CLEAR_FAILED");
         }
     }
 

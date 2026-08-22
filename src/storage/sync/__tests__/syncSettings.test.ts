@@ -43,6 +43,7 @@ vi.mock("../syncUtils", () => ({
 import { deleteSettingFromCloud, syncSetting } from "../syncSettings";
 import { db } from "@/storage/db";
 import { SK } from "@/lib/storageKeys";
+import { AUTOMATION_PREFERENCE_SETTING_KEY } from "@/features/automation/types";
 
 describe("syncSettings", () => {
   beforeEach(async () => {
@@ -152,6 +153,18 @@ describe("syncSettings", () => {
   it("does not sync local-only cursor or device settings to the account", async () => {
     await syncSetting("zenflow-device-id", "device-from-this-browser");
     await syncSetting("sync-last-seq", 42);
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not let generic setting sync upsert, queue, event, or delete connected-records consent", async () => {
+    await syncSetting(AUTOMATION_PREFERENCE_SETTING_KEY, {
+      schemaVersion: 1,
+      enabled: true,
+    });
+    await deleteSettingFromCloud(AUTOMATION_PREFERENCE_SETTING_KEY);
 
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.enqueue).not.toHaveBeenCalled();

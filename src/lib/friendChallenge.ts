@@ -10,11 +10,15 @@ import { Habit } from "@/types";
 import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from "./safeJson";
 import { SK } from "@/lib/storageKeys";
 import { generateSecureId } from "./validation";
-import { sanitizeString } from "./sanitize";
+import { sanitizeString, sanitizeUserName } from "./sanitize";
 import { parseLocalDate, getToday } from "@/lib/utils";
 import { logger } from "./logger";
+import { buildSocialInviteUrl } from "./socialInvite";
 import {
+  isChallengeMember,
   isCloudChallengesAvailable,
+  joinCloudChallenge,
+  resolveChallengeInvite,
   syncLocalChallengeToCloud,
   updateMyProgress as updateCloudProgress,
 } from "./challengeService";
@@ -52,12 +56,21 @@ export interface Challenge {
 
 export interface ChallengeInvite {
   code: string;
-  habitName: string;
-  habitIcon: string;
-  duration: number;
-  creatorName?: string;
-  startDate?: string; // Optional: synced start date from creator
 }
+
+export type ChallengeJoinFailureReason =
+  | "invalid"
+  | "offline"
+  | "signed_out"
+  | "not_found"
+  | "expired"
+  | "self"
+  | "duplicate"
+  | "unavailable";
+
+export type ChallengeJoinResult =
+  | { success: true; challenge: Challenge }
+  | { success: false; reason: ChallengeJoinFailureReason };
 
 // ============================================
 // CONSTANTS
@@ -181,8 +194,10 @@ export function encodeInviteData(challenge: Challenge): string {
 }
 
 /**
- * Decode invite data from encoded string
- * Handles both old format (btoa only) and new format (encodeURIComponent + btoa)
+ * Decode a legacy invite payload into a code-only locator.
+ *
+ * All embedded challenge facts are untrusted and intentionally discarded.
+ * New links use buildSocialInviteUrl() and never include these fields.
  */
 export function decodeInviteData(encoded: string): ChallengeInvite | null {
   try {
@@ -207,77 +222,28 @@ export function decodeInviteData(encoded: string): ChallengeInvite | null {
     if (!parsed.success) return null;
     const data = parsed.data;
 
-    return {
-      code: sanitizeString(data.cd),
-      habitName: sanitizeString(data.n),
-      habitIcon: sanitizeString(data.i),
-      duration: data.d,
-      creatorName: data.c ? sanitizeString(data.c) : undefined,
-      startDate: data.sd, // Already validated as YYYY-MM-DD by Zod regex
-    };
+    return { code: sanitizeString(data.cd) };
   } catch {
     return null;
   }
 }
 
 /**
- * Join an existing challenge from invite data
+ * Resolve and join a challenge by code.
+ *
+ * A code, deep link, or QR payload is only a locator. Challenge facts and
+ * membership must both be confirmed by the authenticated cloud boundary
+ * before anything is persisted locally.
  */
-export function joinChallenge(invite: ChallengeInvite): Challenge {
-  // Use synced start date if provided, otherwise use today
-  const startDate = invite.startDate || getToday();
-
-  const challenge: Challenge = {
-    id: generateId(),
-    code: invite.code,
-    habitName: invite.habitName,
-    habitIcon: invite.habitIcon,
-    duration: invite.duration,
-    startDate,
-    endDate: calculateEndDate(startDate, invite.duration),
-    creatorName: invite.creatorName,
-    myProgress: 0,
-    isCreator: false,
-    status: "active",
-  };
-
-  // Save to local storage
-  const challenges = loadChallenges();
-
-  // Check if already joined this challenge
-  const existing = challenges.find((c) => c.code === invite.code);
-  if (existing) {
-    return existing;
-  }
-
-  challenges.push(challenge);
-  saveChallenges(challenges);
-
-  // Sync to cloud (non-blocking)
-  if (isCloudChallengesAvailable()) {
-    syncLocalChallengeToCloud(
-      challenge.code,
-      challenge.habitName,
-      challenge.habitIcon,
-      challenge.duration,
-      challenge.startDate,
-      "Zen User"
-    ).catch((err) => logger.warn("[FriendChallenge] Cloud sync failed:", err));
-  }
-
-  return challenge;
-}
-
-/**
- * Join a challenge by code only (when no invite data available)
- * Used when user manually enters a code
- */
-export function joinChallengeByCode(code: string): Challenge | null {
+export async function joinChallengeByCode(
+  code: string,
+  displayName: string = "",
+): Promise<ChallengeJoinResult> {
   const normalizedCode = code.trim().toUpperCase();
 
   // Validate code format: ZEN-XXXXXX
   if (!/^ZEN-[A-Z0-9]{6}$/.test(normalizedCode)) {
-    return null;
+    return { success: false, reason: "invalid" };
   }
 
   const challenges = loadChallenges();
@@ -285,30 +251,64 @@ export function joinChallengeByCode(code: string): Challenge | null {
   // Check if already joined
   const existing = challenges.find((c) => c.code === normalizedCode);
   if (existing) {
-    return existing;
+    return { success: false, reason: "duplicate" };
   }
 
-  const today = getToday();
+  if (!isCloudChallengesAvailable()) {
+    return {
+      success: false,
+      reason:
+        typeof navigator !== "undefined" && navigator.onLine === false
+          ? "offline"
+          : "unavailable",
+    };
+  }
 
-  // Create challenge with default values (without server we don't know habit details)
+  const lookup = await resolveChallengeInvite(normalizedCode);
+  if (lookup.status !== "found") {
+    return { success: false, reason: lookup.status };
+  }
+
+  const resolved = lookup.challenge;
+  if (resolved.code.toUpperCase() !== normalizedCode) {
+    return { success: false, reason: "unavailable" };
+  }
+  if (resolved.status !== "active") {
+    return { success: false, reason: "expired" };
+  }
+  if (resolved.creatorId === lookup.actorUserId) {
+    return { success: false, reason: "self" };
+  }
+  if (await isChallengeMember(resolved.id)) {
+    return { success: false, reason: "duplicate" };
+  }
+
+  const membership = await joinCloudChallenge(
+    resolved.id,
+    sanitizeUserName(displayName),
+  );
+  if (!membership || membership.challengeId !== resolved.id) {
+    return { success: false, reason: "unavailable" };
+  }
+
   const challenge: Challenge = {
-    id: generateId(),
-    code: normalizedCode,
-    habitName: "Friend Challenge",
-    habitIcon: "🤝",
-    duration: 7, // Default 7 days
-    startDate: today,
-    endDate: calculateEndDate(today, 7),
+    id: resolved.id,
+    code: resolved.code.toUpperCase(),
+    habitName: sanitizeString(resolved.habitName),
+    habitIcon: sanitizeString(resolved.habitIcon),
+    duration: resolved.duration,
+    startDate: resolved.startDate,
+    endDate: resolved.endDate,
     creatorName: undefined,
-    myProgress: 0,
-    isCreator: false,
-    status: "active",
+    myProgress: membership.daysCompleted,
+    isCreator: membership.userId === resolved.creatorId,
+    status: resolved.status,
   };
 
   challenges.push(challenge);
   saveChallenges(challenges);
 
-  return challenge;
+  return { success: true, challenge };
 }
 
 /**
@@ -420,9 +420,7 @@ export function deleteChallenge(challengeId: string): boolean {
  * Generate a shareable link for a challenge
  */
 export function generateShareLink(challenge: Challenge): string {
-  const encoded = encodeInviteData(challenge);
-  // Use custom scheme for direct app opening (no domain verification needed)
-  return `zenflow://challenge?data=${encoded}`;
+  return buildSocialInviteUrl("challenge", challenge.code);
 }
 
 /**

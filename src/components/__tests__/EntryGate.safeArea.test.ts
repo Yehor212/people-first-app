@@ -88,6 +88,21 @@ describe("EntryGate cross-platform safe areas", () => {
     expect(css).toContain("backdrop-filter: none");
   });
 
+  it("disables full-surface CSS interpolation only during an Android entry theme commit", () => {
+    const css = readProjectFile("src/components/EntryGate.css");
+
+    expect(css).toContain(
+      ':root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] body,',
+    );
+    expect(css).toContain(
+      ':root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] body > div',
+    );
+    expect(css).toContain(
+      ':root[data-platform="android"][data-theme-swap-mode="entry-native-instant"] .entry-gate-screen *',
+    );
+    expect(css).toContain("transition: none !important");
+  });
+
   it("disables entry Framer Motion on Android WebView before compositor layers are created", () => {
     const authScreenSource = readProjectFile("src/components/auth-screen/AuthScreen.tsx");
     const languageSelectorSource = readProjectFile("src/components/LanguageSelector.tsx");
@@ -96,6 +111,16 @@ describe("EntryGate cross-platform safe areas", () => {
     expect(languageSelectorSource).toContain('import { isAndroid } from "@/lib/platform";');
     expect(authScreenSource).toContain("const animated = !isAndroid && shouldAnimate();");
     expect(languageSelectorSource).toContain("const animated = !isAndroid && shouldAnimate();");
+  });
+
+  it("drops only the decorative multi-layer backdrop on sub-360px Android WebViews", () => {
+    const css = readProjectFile("src/components/EntryGate.css");
+
+    expect(css).toContain(`@media (max-width: 359px) {
+  :root[data-platform="android"] [data-testid="entry-gate-backdrop"] {
+    display: none;
+  }
+}`);
   });
 
   it("keeps the short-height title override tied to the user text scale", () => {

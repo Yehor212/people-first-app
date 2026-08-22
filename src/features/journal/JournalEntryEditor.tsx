@@ -478,6 +478,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setShowVoicePrivacyConfirm,
     showPromptsDropdown,
     setShowPromptsDropdown,
+    mobileToolsCollapsed,
+    setMobileToolsCollapsed,
     // draft
     draftAvailable,
     draftSavedAt,
@@ -609,7 +611,6 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     [photoIds, photoLayout]
   );
 
-  const [mobileToolsCollapsed, setMobileToolsCollapsed] = useState(true);
   const [settingsDraftError, setSettingsDraftError] = useState<string | null>(null);
   const [panicUnlockError, setPanicUnlockError] = useState<string | null>(null);
   const [panicExitBusy, setPanicExitBusy] = useState(false);
@@ -805,19 +806,19 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     setMobileToolsCollapsed(true);
     setShowStyleBar(false);
     setShowPromptsDropdown(false);
-  }, [setShowPromptsDropdown, setShowStyleBar]);
+  }, [setMobileToolsCollapsed, setShowPromptsDropdown, setShowStyleBar]);
 
   const handleMobileToolsExpand = useCallback(() => {
     void hapticTap();
     setMobileToolsCollapsed(false);
-  }, []);
+  }, [setMobileToolsCollapsed]);
 
   const handleMobileStyleToggle = useCallback(() => {
     void hapticTap();
     setMobileToolsCollapsed(false);
     setShowPromptsDropdown(false);
     setShowStyleBar((value) => !value);
-  }, [setShowPromptsDropdown, setShowStyleBar]);
+  }, [setMobileToolsCollapsed, setShowPromptsDropdown, setShowStyleBar]);
 
   const collapseMobileToolsForSurface = useCallback(() => {
     if (!desktop) {
@@ -825,7 +826,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     }
     setShowStyleBar(false);
     setShowPromptsDropdown(false);
-  }, [desktop, setShowPromptsDropdown, setShowStyleBar]);
+  }, [desktop, setMobileToolsCollapsed, setShowPromptsDropdown, setShowStyleBar]);
 
   const requestPhotoSelection = useCallback(() => {
     if (!draftReady || photoIds.length >= MAX_PHOTOS_PER_ENTRY) return;

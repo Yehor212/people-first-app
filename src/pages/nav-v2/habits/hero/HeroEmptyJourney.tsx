@@ -47,24 +47,24 @@ const QUICK_PICK_META: Record<string, string> = {
 };
 
 const HERO_RITUAL_DECK_CLASS =
-  "relative mt-3 overflow-hidden rounded-[28px] border border-[hsl(var(--zf-role-energy)/0.24)] bg-[radial-gradient(circle_at_14%_0%,hsl(var(--zf-role-energy)/0.18),transparent_31%),radial-gradient(circle_at_92%_12%,hsl(var(--zf-role-gratitude)/0.13),transparent_30%),radial-gradient(circle_at_52%_118%,hsl(var(--zf-role-body)/0.16),transparent_38%),linear-gradient(155deg,hsl(var(--card)/0.96)_0%,hsl(var(--surface-elevated)/0.90)_56%,hsl(var(--surface-overlay)/0.95)_100%)] px-4 py-4 text-start text-[hsl(var(--foreground))] shadow-[0_28px_96px_-72px_hsl(var(--foreground)/0.38),0_18px_62px_-54px_hsl(var(--zf-role-energy)/0.44)] before:pointer-events-none before:absolute before:inset-x-10 before:top-0 before:h-[2px] before:rounded-b-full before:bg-[linear-gradient(90deg,hsl(var(--zf-role-energy)/0.88),hsl(var(--zf-role-body)/0.82)_28%,hsl(var(--zf-role-gratitude)/0.70)_72%,hsl(var(--zf-role-rest)/0.72))] after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[27px] after:border after:border-[hsl(var(--foreground)/0.07)] md:mt-6 md:px-7 md:py-7";
+  "relative mt-[12px] overflow-hidden rounded-[28px] border border-[hsl(var(--zf-role-energy)/0.24)] bg-[radial-gradient(circle_at_14%_0%,hsl(var(--zf-role-energy)/0.18),transparent_31%),radial-gradient(circle_at_92%_12%,hsl(var(--zf-role-gratitude)/0.13),transparent_30%),radial-gradient(circle_at_52%_118%,hsl(var(--zf-role-body)/0.16),transparent_38%),linear-gradient(155deg,hsl(var(--card)/0.96)_0%,hsl(var(--surface-elevated)/0.90)_56%,hsl(var(--surface-overlay)/0.95)_100%)] px-[16px] py-[16px] text-start text-[hsl(var(--foreground))] shadow-[0_28px_96px_-72px_hsl(var(--foreground)/0.38),0_18px_62px_-54px_hsl(var(--zf-role-energy)/0.44)] before:pointer-events-none before:absolute before:inset-x-[40px] before:top-0 before:h-[2px] before:rounded-b-full before:bg-[linear-gradient(90deg,hsl(var(--zf-role-energy)/0.88),hsl(var(--zf-role-body)/0.82)_28%,hsl(var(--zf-role-gratitude)/0.70)_72%,hsl(var(--zf-role-rest)/0.72))] after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[27px] after:border after:border-[hsl(var(--foreground)/0.07)] md:mt-6 md:px-7 md:py-7";
 
 const QUICK_PICK_CARD_CLASS =
-  "group relative isolate flex min-h-[136px] w-full min-w-[44px] flex-col items-start justify-between overflow-hidden rounded-[22px] border bg-[linear-gradient(155deg,hsl(var(--card)/0.98)_0%,hsl(var(--secondary)/0.92)_52%,hsl(var(--background)/0.74)_100%)] p-3 text-start text-sm font-semibold leading-tight text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),inset_0_-34px_58px_-48px_hsl(var(--foreground)/0.34),0_18px_42px_-34px_hsl(var(--foreground)/0.42)] backdrop-blur-xl after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[21px] after:border after:border-[hsl(var(--foreground)/0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+  "group relative isolate flex min-h-[136px] w-full min-w-[44px] flex-col items-start justify-between overflow-hidden rounded-[22px] border bg-[linear-gradient(155deg,hsl(var(--card)/0.98)_0%,hsl(var(--secondary)/0.92)_52%,hsl(var(--background)/0.74)_100%)] p-[12px] text-start text-sm font-semibold leading-tight text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),inset_0_-34px_58px_-48px_hsl(var(--foreground)/0.34),0_18px_42px_-34px_hsl(var(--foreground)/0.42)] backdrop-blur-xl after:pointer-events-none after:absolute after:inset-[1px] after:rounded-[21px] after:border after:border-[hsl(var(--foreground)/0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
 const QUICK_PICK_ICON_CLASS =
-  "flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-visible rounded-none border-0 bg-transparent text-[hsl(var(--foreground))] shadow-none";
+  "flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-visible rounded-none border-0 bg-transparent text-[hsl(var(--foreground))] shadow-none";
 
 const QUICK_PICK_META_CLASS =
-  "rounded-full border bg-[hsl(var(--card)/0.86)] px-2.5 py-1 text-xs font-bold leading-none text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),0_8px_18px_-15px_hsl(var(--foreground)/0.42)] tabular-nums";
+  "absolute end-[8px] top-[8px] z-[2] rounded-full border bg-[hsl(var(--card)/0.86)] px-[10px] py-[4px] text-xs font-bold leading-none text-[hsl(var(--foreground))] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.12),0_8px_18px_-15px_hsl(var(--foreground)/0.42)] tabular-nums";
 
 const QUICK_PICK_LABEL_CLASS =
-  "relative z-[1] max-w-full min-w-0 break-words pr-1 text-sm font-bold leading-tight whitespace-normal text-[hsl(var(--foreground))] [hyphens:manual] [overflow-wrap:normal]";
+  "relative z-[1] max-w-full min-w-0 pe-[4px] text-[clamp(0.75rem,4.375vw,0.875rem)] font-bold leading-tight whitespace-normal text-[hsl(var(--foreground))] [hyphens:manual] [overflow-wrap:normal]";
 
 function RitualDeckScene({ animate }: { animate: boolean }) {
   return (
     <div
-      className="relative h-24 w-28 overflow-visible"
+      className="relative h-[96px] w-[112px] overflow-visible"
       role="presentation"
       aria-hidden="true"
       data-motion="option-b-liquid-glass-totem-hero"
@@ -75,14 +75,14 @@ function RitualDeckScene({ animate }: { animate: boolean }) {
       />
       <span
         className={
-          "absolute left-1/2 top-1/2 h-[5.1rem] w-[4.25rem] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border border-[hsl(var(--foreground)/0.10)] bg-[linear-gradient(145deg,hsl(var(--card)/0.42),hsl(var(--surface-elevated)/0.18))] shadow-[inset_0_1px_0_hsl(var(--background)/0.72),0_18px_42px_-34px_hsl(var(--foreground)/0.34)] backdrop-blur-xl " +
+          "absolute left-1/2 top-1/2 h-[82px] w-[68px] -translate-x-1/2 -translate-y-1/2 rounded-[32px] border border-[hsl(var(--foreground)/0.10)] bg-[linear-gradient(145deg,hsl(var(--card)/0.42),hsl(var(--surface-elevated)/0.18))] shadow-[inset_0_1px_0_hsl(var(--background)/0.72),0_18px_42px_-34px_hsl(var(--foreground)/0.34)] backdrop-blur-xl " +
           (animate ? "motion-safe:animate-[v2hp-b41-hero-plate_6s_ease-in-out_infinite]" : "")
         }
         data-scene-layer="b41-plate"
       />
       <span
         className={
-          "absolute left-1/2 top-1/2 h-[4.8rem] w-4 -translate-x-1/2 -translate-y-1/2 rotate-[-18deg] rounded-full bg-[linear-gradient(180deg,hsl(var(--background)/0.68),transparent_42%,hsl(var(--zf-role-energy)/0.16)_80%,transparent)] mix-blend-screen " +
+          "absolute left-1/2 top-1/2 h-[77px] w-[16px] -translate-x-1/2 -translate-y-1/2 rotate-[-18deg] rounded-full bg-[linear-gradient(180deg,hsl(var(--background)/0.68),transparent_42%,hsl(var(--zf-role-energy)/0.16)_80%,transparent)] mix-blend-screen " +
           (animate ? "motion-safe:animate-[v2hp-b41-hero-facet_5s_ease-in-out_infinite]" : "")
         }
         data-scene-layer="b41-refraction"
@@ -97,12 +97,12 @@ function RitualDeckScene({ animate }: { animate: boolean }) {
       />
       <span
         className={
-          "absolute left-1/2 top-1/2 grid h-[4.25rem] w-[4.25rem] -translate-x-1/2 -translate-y-1/2 place-items-center " +
+          "absolute left-1/2 top-1/2 grid h-[68px] w-[68px] -translate-x-1/2 -translate-y-1/2 place-items-center " +
           (animate ? "motion-safe:animate-[v2hp-b41-hero-float_4.2s_ease-in-out_infinite]" : "")
         }
         data-scene-layer="b41-symbol"
       >
-        <V2HabitPictogram value="drink-water" className="h-[4.1rem] w-[4.1rem] md:h-[4.85rem] md:w-[4.85rem]" />
+        <V2HabitPictogram value="drink-water" className="h-[66px] w-[66px] md:h-[4.85rem] md:w-[4.85rem]" />
       </span>
       <span
         className="absolute right-5 top-4 h-2.5 w-2.5 rounded-sm bg-[linear-gradient(135deg,hsl(var(--background)/0.92),hsl(var(--zf-role-energy)/0.24))] shadow-[0_0_18px_hsl(var(--zf-role-energy)/0.34)] [clip-path:polygon(50%_0,62%_38%,100%_50%,62%_62%,50%_100%,38%_62%,0_50%,38%_38%)]"
@@ -157,11 +157,11 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
       data-surface="ink-paper"
     >
       <div
-        className="relative z-[1] grid grid-cols-1 items-center gap-3 sm:grid-cols-[auto_1fr]"
+        className="relative z-[1] grid grid-cols-1 items-center gap-[12px] sm:grid-cols-[auto_1fr]"
         data-testid="habits-empty-intro"
       >
         <div
-          className="flex h-24 w-28 items-center justify-center justify-self-center overflow-visible rounded-[24px] border border-[hsl(var(--zf-role-energy)/0.28)] bg-[linear-gradient(145deg,hsl(var(--zf-role-energy)/0.14),hsl(var(--card)/0.84)_46%,hsl(var(--zf-role-gratitude)/0.12)),hsl(var(--surface-elevated)/0.76)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_20px_54px_-40px_hsl(var(--foreground)/0.34)] sm:justify-self-auto"
+          className="flex h-[96px] w-[112px] items-center justify-center justify-self-center overflow-visible rounded-[24px] border border-[hsl(var(--zf-role-energy)/0.28)] bg-[linear-gradient(145deg,hsl(var(--zf-role-energy)/0.14),hsl(var(--card)/0.84)_46%,hsl(var(--zf-role-gratitude)/0.12)),hsl(var(--surface-elevated)/0.76)] shadow-[inset_0_1px_0_hsl(var(--foreground)/0.10),0_20px_54px_-40px_hsl(var(--foreground)/0.34)] sm:justify-self-auto"
           data-testid="hero-ritual-board-scene"
           data-scene="option-b-liquid-glass-totem"
         >
@@ -181,15 +181,15 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
       </div>
 
       {onPickTemplate && !isRestDay && (
-        <div className="relative z-[1] mt-4">
+        <div className="relative z-[1] mt-[16px]">
           <p
-            className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]"
+            className="mb-[8px] text-center text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]"
             data-testid="habits-empty-quickpick-heading"
           >
             {tx.navV2HabitsQuickPick}
           </p>
           <ul
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7rem*var(--font-scale,1))),1fr))] gap-2 md:grid-cols-3"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(7rem*var(--font-scale,1))),1fr))] gap-[8px] md:grid-cols-3"
             data-testid="hero-empty-quickpick"
           >
             {QUICK_PICKS.map((tpl) => {
@@ -238,7 +238,7 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
                         data-icon-frame="real-object-source-icon-native"
                       >
                         <span data-slot="quickpick-svg">
-                          <V2HabitPictogram value={tpl.id} className="h-[4.35rem] w-[4.35rem] md:h-[5rem] md:w-[5rem]" />
+                          <V2HabitPictogram value={tpl.id} className="h-[70px] w-[70px] md:h-[5rem] md:w-[5rem]" />
                         </span>
                       </span>
                       <span
@@ -266,14 +266,14 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
       )}
 
       <div
-        className="relative z-[1] mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2"
+        className="relative z-[1] mt-[16px] grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-[8px]"
         data-testid="habits-empty-actions"
       >
         <button
           type="button"
           onClick={handleCreate}
           className={
-            "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[22px] bg-[linear-gradient(135deg,hsl(var(--zf-role-energy)/0.94),hsl(var(--zf-role-body)/0.86))] px-4 py-3 text-center text-sm font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_20px_48px_-30px_hsl(var(--zf-role-energy)/0.90)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+            "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-[8px] whitespace-normal rounded-[22px] bg-[linear-gradient(135deg,hsl(var(--zf-role-energy)/0.94),hsl(var(--zf-role-body)/0.86))] px-[16px] py-[12px] text-center text-[clamp(0.75rem,4.375vw,0.875rem)] font-semibold text-[hsl(var(--zf-night-0))] shadow-[0_20px_48px_-30px_hsl(var(--zf-role-energy)/0.90)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
             bodyTone.focusRingClass +
             " " +
             (animate ? "motion-safe:transition-transform active:scale-[0.97]" : "")
@@ -281,8 +281,8 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
           aria-label={tx.navV2HabitsCreate}
           data-testid="habits-hero-create-empty"
         >
-          <CreateHabitIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
+          <CreateHabitIcon className="h-[18px] w-[18px] shrink-0 max-[359px]:hidden" aria-hidden="true" />
+          <span className="min-w-0 [hyphens:manual] [overflow-wrap:normal]">
             {tx.navV2HabitsCreate}
           </span>
         </button>
@@ -291,7 +291,7 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
             type="button"
             onClick={handleOpenLibrary}
             className={
-              "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[22px] border bg-[hsl(var(--card)/0.72)] px-3 py-3 text-center text-xs font-semibold text-[hsl(var(--foreground))] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+              "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-[8px] whitespace-normal rounded-[22px] border bg-[hsl(var(--card)/0.72)] px-[12px] py-[12px] text-center text-[clamp(0.75rem,3.75vw,0.75rem)] font-semibold text-[hsl(var(--foreground))] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
               focusTone.borderClass +
               " " +
               focusTone.focusRingClass +
@@ -301,8 +301,8 @@ export const HeroEmptyJourney = memo(function HeroEmptyJourney({
             data-testid="hero-empty-open-library"
             data-visual-role="focus"
           >
-            <LibraryIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
+            <LibraryIcon className="h-[18px] w-[18px] shrink-0 max-[359px]:hidden" aria-hidden="true" />
+            <span className="min-w-0 [hyphens:manual] [overflow-wrap:normal]">
               {tx.navV2HabitsBrowseLibrary}
             </span>
           </button>

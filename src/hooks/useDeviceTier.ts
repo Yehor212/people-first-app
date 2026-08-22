@@ -8,6 +8,7 @@ export function useDeviceTier() {
   const isTabletUp = useMediaQuery(`(min-width: ${BREAKPOINTS.tablet}px)`);
   const isLaptopUp = useMediaQuery(`(min-width: ${BREAKPOINTS.laptop}px)`);
   const isDesktopUp = useMediaQuery(`(min-width: ${BREAKPOINTS.desktop}px)`);
+  const isCompactHeight = useMediaQuery("(max-height: 479px)");
 
   const tier = useMemo<DeviceTier>(() => {
     if (isDesktopUp) return "desktop";
@@ -20,9 +21,10 @@ export function useDeviceTier() {
     () => ({
       tier,
       isDesktopClass: isDesktopClass(tier),
+      isCompactHeight,
       supportsMultiPanel: supportsMultiPanel(tier),
       breakpoints: BREAKPOINTS,
     }),
-    [tier]
+    [isCompactHeight, tier]
   );
 }

@@ -1,7 +1,7 @@
 {
   "name": "zenflow",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "engines": {
     "node": ">=22.12 <25"
@@ -41,7 +41,7 @@
     "test:agent-orchestra": "vitest run --configLoader runner --exclude 'output/**' scripts/__tests__/persistent-agent-orchestra-registry.test.mjs scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs scripts/__tests__/codex-agent-orchestra-integration.test.mjs scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/spec-kit-safety-hook.test.ts && npm run test:agent-workspace",
     "test:agent-workspace": "vitest run --configLoader runner --exclude 'output/**' scripts/__tests__/agent-workspace-core.test.ts scripts/__tests__/agent-workspace.test.ts scripts/__tests__/agent-workspace-command-guard.test.ts scripts/__tests__/agent-workspace-git-hook.test.ts scripts/__tests__/install-kimi-workspace-hook.test.ts scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/production-data-integrity-hook.test.ts",
     "test:release": "vitest run --configLoader runner --exclude 'output/**' src/pages/nav-v2/__tests__/DiaryRouteLoader.test.ts src/features/journal/__tests__/JournalEntryList.spaces.test.tsx src/features/journal/__tests__/JournalEntryList.spaceParity.test.tsx src/components/state-of-mind/__tests__/canonicalOrbInvariant.test.ts src/storage/__tests__/eventSync.test.ts src/lib/__tests__/offlineQueueHandlers.test.ts src/observability/__tests__/runtimeFlightRecorder.test.ts src/observability/__tests__/syncHealthRecorder.test.ts src/components/sync/__tests__/SyncHealthCard.test.tsx src/hooks/__tests__/useDeltaSyncEffects.test.ts",
-    "test:release-contracts": "npm run test:agent-workspace && vitest run --configLoader runner scripts/__tests__/deploy-workflow-contract.test.ts scripts/__tests__/remote-ci-core.test.ts scripts/__tests__/check-remote-ci-cli.test.ts scripts/__tests__/desktop-release-workflow-contract.test.ts scripts/__tests__/production-data-integrity-workflow.test.ts scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/smoke-sync-account-boundary.test.ts scripts/__tests__/check-v2-paper-theme.test.ts scripts/__tests__/playwright-local-port.test.ts scripts/__tests__/prune-duplicate-artifacts.test.ts scripts/__tests__/release-artifact-integrity.test.ts scripts/__tests__/stage-release-artifact.test.ts scripts/__tests__/admob-production-readiness.test.ts scripts/__tests__/admob-ump-readiness.test.ts scripts/__tests__/admob-external-readiness.test.ts scripts/__tests__/admob-owner-finalization-runbook.test.ts scripts/__tests__/admob-owner-evidence.test.ts scripts/__tests__/admob-owner-evidence-apply.test.ts scripts/__tests__/admob-owner-next-steps.test.ts scripts/__tests__/google-play-public-privacy-policy.test.ts scripts/__tests__/google-play-public-listing.test.ts scripts/__tests__/journal-magic-link-live.test.ts scripts/__tests__/github-journal-magic-link-secrets.test.ts scripts/__tests__/journal-magic-link-github-bootstrap.test.ts scripts/__tests__/supabase-auth-smtp-apply.test.ts scripts/__tests__/supabase-auth-magic-link-template.test.ts scripts/__tests__/supabase-auth-redirect-allow-list.test.ts scripts/__tests__/auth-providers-readiness.test.ts scripts/__tests__/apple-auth-live-readiness.test.ts scripts/__tests__/apple-auth-live-apply.test.ts",
+    "test:release-contracts": "npm run test:agent-workspace && vitest run --configLoader runner scripts/__tests__/deploy-workflow-contract.test.ts scripts/__tests__/remote-ci-core.test.ts scripts/__tests__/check-remote-ci-cli.test.ts scripts/__tests__/desktop-release-workflow-contract.test.ts scripts/__tests__/production-data-integrity-workflow.test.ts scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/smoke-sync-account-boundary.test.ts scripts/__tests__/check-v2-paper-theme.test.ts scripts/__tests__/playwright-local-port.test.ts scripts/__tests__/prune-duplicate-artifacts.test.ts scripts/__tests__/release-artifact-integrity.test.ts scripts/__tests__/stage-release-artifact.test.ts scripts/__tests__/admob-production-readiness.test.ts scripts/__tests__/admob-ump-readiness.test.ts scripts/__tests__/admobReleaseConfig.test.ts scripts/__tests__/admob-external-readiness.test.ts scripts/__tests__/admob-owner-finalization-runbook.test.ts scripts/__tests__/admob-owner-evidence.test.ts scripts/__tests__/admob-owner-evidence-apply.test.ts scripts/__tests__/admob-owner-next-steps.test.ts scripts/__tests__/google-play-public-privacy-policy.test.ts scripts/__tests__/google-play-public-listing.test.ts scripts/__tests__/journal-magic-link-live.test.ts scripts/__tests__/github-journal-magic-link-secrets.test.ts scripts/__tests__/journal-magic-link-github-bootstrap.test.ts scripts/__tests__/supabase-auth-smtp-apply.test.ts scripts/__tests__/supabase-auth-magic-link-template.test.ts scripts/__tests__/supabase-auth-redirect-allow-list.test.ts scripts/__tests__/auth-providers-readiness.test.ts scripts/__tests__/apple-auth-live-readiness.test.ts scripts/__tests__/apple-auth-live-apply.test.ts",
     "test:coverage": "vitest run --configLoader runner --exclude 'output/**' --coverage --testTimeout=60000 --no-file-parallelism --maxWorkers=1 && node scripts/check-coverage-evidence.mjs",
     "test:i18n": "vitest run --configLoader runner --exclude 'output/**' test/i18n.test.ts",
     "i18n:check": "npx tsx scripts/check-i18n.ts && npm run i18n:v2-copy && npm run check:translation-quality",
@@ -66,6 +66,7 @@
     "google-play:app-ads:public-check": "node scripts/check-app-ads-public.cjs",
     "google-play:public-listing:check": "node scripts/check-google-play-public-listing.cjs",
     "google-play:admob:check": "node scripts/check-admob-production-readiness.cjs",
+    "google-play:admob:release-config-check": "node scripts/check-admob-release-config.cjs",
     "google-play:assets:check": "node scripts/check-google-play-release-assets.cjs",
     "desktop:store:assets": "node scripts/generate-microsoft-store-logo-assets.cjs",
     "desktop:store:assets:check": "node scripts/check-microsoft-store-logo-assets.cjs",
@@ -75,6 +76,10 @@
     "cap:sync:android": "npm run build:android && npx cap sync android && cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs && node scripts/normalize-android-config.cjs && npm run prune:release-artifacts:android && npm run check:release-artifacts:android",
     "cap:sync:ios": "npm run build:ios && npx cap sync ios && cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs && node scripts/normalize-ios-config.cjs && node scripts/normalize-ios-spm.cjs && npm run prune:release-artifacts:ios && npm run check:release-artifacts:ios",
     "cap:open:android": "npx cap open android",
+    "check:android-release": "node scripts/check-android-release-config.cjs",
+    "check:android-release-signing-inputs": "node scripts/check-android-release-config.cjs --signing-readiness",
+    "check:android-release-native-services-inputs": "node scripts/check-android-release-config.cjs --native-services-readiness",
+    "check:android21-reflow-inventory": "node tools/release/android21-reflow-inventory.mjs --check",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "check:colors": "npx tsx scripts/check-hardcoded-colors.ts",
     "check:strings": "node --experimental-strip-types scripts/check-hardcoded-strings.ts",
@@ -121,7 +126,7 @@
     "setup:sync-test-account": "node scripts/setup-sync-test-account.cjs",
     "diagnose:dev-performance": "node scripts/diagnose-dev-performance.cjs",
     "cleanup:dev-processes": "node scripts/cleanup-dev-processes.cjs",
-    "ci:preflight": "npm run check:production-data-integrity && npm run test:agent-orchestra && npm run check:agent-orchestra && npm run check:agent-orchestra:eval && npm run check:agent-workspace && npx eslint . --max-warnings=0 && npm run typecheck && npm run i18n:check && npm run i18n:deep && npm run oxlint && npm run check:circular && npm run test:coverage && npm run build && npm run check:production-data-integrity:bundle && npm run check:release-artifacts && npm run verify:tailwind && npm run check:size && npm run check:canonical-orbs && npm run check:best-practices && npm run check:no-ai-templates && npm run check:app-audio && npm run check:hyperfocus-audio && npm run check:rag && npm run check:task-completion && npm run check:sync-contract && npm run ratchet:check",
+    "ci:preflight": "npm run check:production-data-integrity && npm run test:agent-orchestra && npm run check:agent-orchestra && npm run check:agent-orchestra:eval && npm run check:agent-workspace && npx eslint . --max-warnings=0 && npm run typecheck && npm run i18n:check && npm run i18n:deep && npm run oxlint && npm run check:circular && npm run test:coverage && npm run build && npm run check:production-data-integrity:bundle && npm run check:release-artifacts && npm run verify:tailwind && npm run check:size && npm run check:canonical-orbs && npm run check:best-practices && npm run check:no-ai-templates && npm run check:app-audio && npm run check:hyperfocus-audio && npm run check:rag && npm run check:task-completion && npm run check:sync-contract && npm run check:android-release && npm run ratchet:check",
     "ci:remote": "npx tsx scripts/check-remote-ci.ts",
     "ci:remote:wait": "npx tsx scripts/check-remote-ci.ts --wait",
     "test:e2e": "playwright test",
@@ -215,13 +220,13 @@
     "check:translation-quality": "node scripts/check-translation-quality.cjs"
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.0.0",
+    "@capacitor-community/admob": "8.0.0",
     "@capacitor-community/safe-area": "^8.0.1",
-    "@capacitor/android": "^8.0.0",
+    "@capacitor/android": "8.4.2",
     "@capacitor/app": "^8.0.0",
     "@capacitor/browser": "^8.0.3",
-    "@capacitor/cli": "^8.0.0",
-    "@capacitor/core": "^8.0.0",
+    "@capacitor/cli": "8.4.2",
+    "@capacitor/core": "8.4.2",
     "@capacitor/filesystem": "^8.0.0",
     "@capacitor/haptics": "^8.0.0",
     "@capacitor/ios": "^8.3.4",
@@ -330,8 +335,7 @@
   "overrides": {
     "@rollup/plugin-terser": "^1.0.0",
     "esbuild": "^0.28.1",
-    "tmp": "^0.2.7",
-    "brace-expansion": "^5.0.8"
+    "tmp": "^0.2.7"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

@@ -4,6 +4,7 @@
     "src",
     "test/**/*.ts",
     "e2e/**/*.ts",
+    "e2e/**/*.tsx",
     "tools/telegram-control/src/**/*.ts",
     "tools/telegram-control/scripts/**/*.ts",
     "tools/telegram-control/test/**/*.ts",

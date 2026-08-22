@@ -207,9 +207,6 @@ describe("JournalAudioPlayer lifecycle", () => {
     expect(progress.parentElement?.parentElement?.parentElement).toHaveClass(
       "text-[var(--journal-paper-text,var(--diary-text,hsl(var(--foreground))))]",
     );
-    expect(progress).toHaveClass("h-12");
-    expect(progress).toHaveStyle({
-      accentColor: "var(--journal-paper-text, var(--diary-text, hsl(var(--foreground))))",
-    });
+    expect(progress).toHaveClass("zf-journal-audio-range", "h-12");
   });
 });

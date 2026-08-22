@@ -62,7 +62,8 @@ describe("HeroEmptyJourney", () => {
       const label = button.querySelector("span");
       expect(button).toHaveClass("min-w-0", "whitespace-normal");
       expect(label).not.toHaveClass("truncate");
-      expect(label).toHaveClass("min-w-0", "break-words");
+      expect(label).toHaveClass("min-w-0");
+      expect(label).not.toHaveClass("break-words");
       expect(label?.className).toContain("[overflow-wrap:normal]");
       expect(label?.className).toContain("[hyphens:manual]");
       expect(label?.className).not.toContain("[overflow-wrap:anywhere]");
@@ -84,7 +85,7 @@ describe("HeroEmptyJourney", () => {
     expect(title).toHaveClass("text-lg");
     expect(quickPickHeading).toHaveClass("text-xs");
     expect(meta).toHaveClass("text-xs");
-    expect(label).toHaveClass("text-sm");
+    expect(label?.className).toContain("text-[clamp(0.75rem,4.375vw,0.875rem)]");
 
     for (const node of [title, quickPickHeading, meta, label]) {
       expect(node?.className).not.toMatch(/text-\[\d+px\]/);
@@ -156,8 +157,8 @@ describe("HeroEmptyJourney", () => {
       expect(chip.className).not.toContain("--zf-night");
       const iconFrame = chip.querySelector("[data-icon-frame='real-object-source-icon-native']");
       expect(iconFrame).toBeTruthy();
-      expect(iconFrame?.className).toContain("h-[4.5rem]");
-      expect(iconFrame?.className).toContain("w-[4.5rem]");
+      expect(iconFrame?.className).toContain("h-[72px]");
+      expect(iconFrame?.className).toContain("w-[72px]");
       expect(iconFrame?.className).toContain("overflow-visible");
       expect(iconFrame?.className).toContain("bg-transparent");
       expect(iconFrame?.className).not.toContain("rounded-[24px]");
@@ -169,8 +170,8 @@ describe("HeroEmptyJourney", () => {
         "[data-slot='quickpick-svg'] [data-habit-pictogram]"
       );
       expect(pictogram).toBeTruthy();
-      expect(pictogram?.className).toContain("h-[4.35rem]");
-      expect(pictogram?.className).toContain("w-[4.35rem]");
+      expect(pictogram?.className).toContain("h-[70px]");
+      expect(pictogram?.className).toContain("w-[70px]");
       const pictogramId = pictogram?.getAttribute("data-habit-pictogram");
       const isApprovedAnimatedRaster = false;
       const isApprovedStaticLottieFallback = ["drink-water", "read"].includes(pictogramId ?? "");
@@ -198,6 +199,9 @@ describe("HeroEmptyJourney", () => {
       expect(iconFrame?.textContent?.trim()).toBe("");
       const meta = chip.querySelector("[data-slot='quickpick-meta']");
       expect(meta).toBeTruthy();
+      expect(meta?.className).toContain("absolute");
+      expect(meta?.className).toContain("end-[8px]");
+      expect(meta?.className).toContain("top-[8px]");
       expect(meta?.className).toContain("text-[hsl(var(--foreground))]");
       expect(meta?.className).toContain("bg-[hsl(var(--card)/0.86)]");
       expect(meta?.className).toContain("tabular-nums");
@@ -206,8 +210,9 @@ describe("HeroEmptyJourney", () => {
       expect(label?.className).toContain("font-bold");
       expect(label?.className).toContain("max-w-full");
       expect(label?.className).not.toContain("line-clamp-2");
-      expect(label?.className).toContain("break-words");
+      expect(label?.className).not.toContain("break-words");
       expect(label?.className).toContain("[hyphens:manual]");
+      expect(label?.className).toContain("[overflow-wrap:normal]");
     }
   });
 

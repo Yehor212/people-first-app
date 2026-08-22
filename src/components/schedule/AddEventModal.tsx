@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X, Check, Sparkles } from "lucide-react";
 import { ScheduleEvent } from "@/types";
@@ -18,11 +19,13 @@ export function AddEventModal({
   allDates,
   onClose,
   onAdd,
+  forceDark = false,
 }: {
   selectedDate: string;
   allDates: string[];
   onClose: () => void;
   onAdd: (event: Omit<ScheduleEvent, "id">) => void;
+  forceDark?: boolean;
 }) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -92,14 +95,19 @@ export function AddEventModal({
     }
   }, [isSaving, customTitle, t, selectedPreset, time, onAdd, eventDate, note]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <motion.div
       ref={modalRef}
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-event-title"
-      className="fixed inset-0 z-[60] mb-[var(--nav-height)] flex items-end justify-center p-4 sm:items-center"
+      className={cn(
+        "fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center",
+        forceDark && "dark",
+      )}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -115,7 +123,7 @@ export function AddEventModal({
 
       {/* Modal content */}
       <motion.div
-        className="relative w-full max-w-sm rounded-3xl max-h-[90dvh] overflow-y-auto overscroll-contain pb-[calc(var(--nav-height)+var(--safe-bottom))]"
+        className="relative w-full max-w-sm rounded-3xl max-h-[90dvh] overflow-y-auto overscroll-contain pb-[max(1rem,var(--safe-bottom))]"
         initial={{ opacity: 0, scale: 0.9, y: 50 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 50 }}
@@ -380,6 +388,7 @@ export function AddEventModal({
           </motion.button>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   );
 }

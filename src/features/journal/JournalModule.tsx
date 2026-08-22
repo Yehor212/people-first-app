@@ -3945,8 +3945,8 @@ type ResetStep =
                     >
                       {/* Header */}
                       <div className="border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
-                        <div className="flex items-center justify-between gap-3 px-4 py-3">
-                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="flex items-start justify-between gap-[8px] px-[12px] py-[12px]">
+                          <div className="flex min-w-0 flex-1 items-start gap-[8px]">
                             {showAppNavMenuButton ? (
                               <button
                                 type="button"
@@ -3961,9 +3961,9 @@ type ResetStep =
                                 <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
                               </button>
                             ) : null}
-                            <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex min-w-0 flex-1 items-center gap-[8px]">
                               <h2
-                                className="min-w-0 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]"
+                                className="min-w-0 flex-1 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:anywhere]"
                                 data-testid="journal-mobile-title"
                               >
                                 {ts.journalTitle || "Diary"}
@@ -4002,7 +4002,7 @@ type ResetStep =
                           </div>
                         </div>
                         <div
-                          className="grid grid-cols-4 gap-1 px-4 pb-3"
+                          className="grid grid-cols-4 gap-[4px] px-[16px] pb-[12px]"
                           role="toolbar"
                           aria-label={ts.journalTitle || "Diary"}
                           data-testid="journal-mobile-section-toolbar"

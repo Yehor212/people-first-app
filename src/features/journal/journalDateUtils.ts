@@ -101,6 +101,45 @@ export function formatJournalCivilDate(
   }
 }
 
+export function formatJournalMonthRange(
+  firstDate: string,
+  lastDate: string,
+  language: Language,
+): string {
+  const first = parseLocalDate(firstDate);
+  const last = parseLocalDate(lastDate);
+  if (Number.isNaN(first.getTime()) || Number.isNaN(last.getTime())) {
+    return firstDate === lastDate ? firstDate : `${firstDate} – ${lastDate}`;
+  }
+
+  try {
+    const formatter = new Intl.DateTimeFormat(getLocale(language), {
+      month: "short",
+      year: "numeric",
+    });
+    const rangeFormatter = formatter as Intl.DateTimeFormat & {
+      formatRange?: (start: Date | number, end: Date | number) => string;
+    };
+    if (typeof rangeFormatter.formatRange === "function") {
+      return rangeFormatter.formatRange(first, last);
+    }
+
+    const firstLabel = formatter.format(first);
+    const lastLabel = formatter.format(last);
+    return firstLabel === lastLabel ? firstLabel : `${firstLabel} – ${lastLabel}`;
+  } catch {
+    const firstLabel = first.toLocaleDateString(getLocale(language), {
+      month: "short",
+      year: "numeric",
+    });
+    const lastLabel = last.toLocaleDateString(getLocale(language), {
+      month: "short",
+      year: "numeric",
+    });
+    return firstLabel === lastLabel ? firstLabel : `${firstLabel} – ${lastLabel}`;
+  }
+}
+
 export function formatJournalDuration(
   template: string,
   seconds: number,

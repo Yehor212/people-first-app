@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useActiveAriaModal } from "@/hooks/useActiveAriaModal";
 import { logger } from "@/lib/logger";
@@ -12,6 +13,7 @@ import { StorageIncidentBanner } from "./StorageIncidentBanner";
 import { useStoragePrivateModeIncident } from "./useStoragePrivateModeIncident";
 import {
   INITIAL_STORAGE_INCIDENT_STATE,
+  isIndexedDBTimeoutEvent,
   storageIncidentReducer,
   type AccountCleanupBlockedEvent,
   type CriticalSyncBlockedEvent,
@@ -38,6 +40,20 @@ export function StorageErrorBanner() {
   activeIncidentRef.current = activeIncident;
   const retryingIncidentKeyRef = useRef<string | null>(null);
   const [retryingIncidentKey, setRetryingIncidentKey] = useState<string | null>(null);
+  const [entryIncidentHost, setEntryIncidentHost] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const updateHost = () => {
+      setEntryIncidentHost(
+        document.querySelector<HTMLElement>("[data-storage-incident-host]"),
+      );
+    };
+    updateHost();
+    const observer = new MutationObserver(updateHost);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
   useStoragePrivateModeIncident(
     t.storageWarningPrivateMode ||
       "Private/Incognito mode detected. Your data will not be saved.",
@@ -79,15 +95,24 @@ export function StorageErrorBanner() {
     const handleIndexedDBTimeout = (
       event: CustomEvent<IndexedDBTimeoutEvent>,
     ) => {
+      if (!isIndexedDBTimeoutEvent(event.detail)) {
+        logger.warn("[StorageErrorBanner] Ignored malformed IndexedDB timeout signal");
+        return;
+      }
       logger.warn("[StorageErrorBanner] IndexedDB timeout:", event.detail);
       dispatchIncident({
         type: "present",
         incident: {
           key: "indexeddb-timeout",
           priority: 1,
-          title: null,
+          title:
+            t.storageTimeoutTitle || "Some saved information is unavailable",
           message:
-            event.detail.message || "Data may be outdated. Try restarting the app.",
+            event.detail.recoveryState === "cached"
+              ? t.storageTimeoutCached ||
+                "ZenFlow is showing the last available copy. Recent changes may be missing."
+              : t.storageTimeoutUnavailable ||
+                "ZenFlow could not load your saved information yet. Close and reopen the app, then try again.",
           retryAction: null,
         },
       });
@@ -379,6 +404,9 @@ export function StorageErrorBanner() {
     t.retry,
     t.storageError,
     t.storageErrorDesc,
+    t.storageTimeoutCached,
+    t.storageTimeoutTitle,
+    t.storageTimeoutUnavailable,
   ]);
 
   const handleDismiss = () => {
@@ -411,7 +439,7 @@ export function StorageErrorBanner() {
 
   const { title: alertTitle, message: errorMessage, retryAction } = activeIncident;
 
-  return (
+  const banner = (
     <StorageIncidentBanner
       title={alertTitle || t.storageWarningTitle || "Storage Warning"}
       message={
@@ -424,8 +452,12 @@ export function StorageErrorBanner() {
       isRetrying={retryingIncidentKey === activeIncident.key}
       closeLabel={t.close || "Close"}
       onDismiss={handleDismiss}
+      placement={entryIncidentHost ? "entry-flow" : "viewport"}
+      announcementRole={activeIncident.key === "indexeddb-timeout" ? "status" : "alert"}
     />
   );
+
+  return entryIncidentHost ? createPortal(banner, entryIncidentHost) : banner;
 }
 
 export default StorageErrorBanner;

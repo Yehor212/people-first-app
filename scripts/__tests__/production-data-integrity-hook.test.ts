@@ -22,7 +22,7 @@ function write(root: string, relativePath: string, content: string): void {
   writeFileSync(target, content);
 }
 
-function makeRoot(stub: Stub = "clean"): string {
+function makeRoot(stub: Stub = "clean", delayMs = 0): string {
   const root = mkdtempSync(join(tmpdir(), "zenflow-pdi-hook-"));
   temporaryRoots.push(root);
   const report =
@@ -52,7 +52,7 @@ function makeRoot(stub: Stub = "clean"): string {
   write(
     root,
     "scripts/check-production-data-integrity.cjs",
-    `process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(${stub === "clean" ? 0 : stub === "finding" ? 1 : 2});\n`
+    `setTimeout(() => { process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(${stub === "clean" ? 0 : stub === "finding" ? 1 : 2}); }, ${delayMs});\n`
   );
   write(
     root,
@@ -112,7 +112,7 @@ describe("production data integrity Codex hook", () => {
       expect(handlers[0].command).toContain("git rev-parse --show-toplevel");
       expect(handlers[0].commandWindows).toContain("git rev-parse --show-toplevel");
       expect(handlers[0].timeout).toBeGreaterThan(0);
-      expect(handlers[0].timeout).toBeLessThanOrEqual(20);
+      expect(handlers[0].timeout).toBeLessThanOrEqual(60);
     }
     expect(config.hooks.PreToolUse[0].matcher).toContain("Bash");
     expect(config.hooks.PreToolUse[0].matcher).toContain("apply_patch");
@@ -333,6 +333,38 @@ describe("production data integrity Codex hook", () => {
     expect(JSON.stringify(result.json)).toContain("block");
     expect(JSON.stringify(result.json)).toContain(stub === "finding" ? "PDI002" : "internal");
   });
+
+  it("allows a clean Stop diff check to exceed the former inner and outer timeouts", () => {
+    const config = JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as {
+      hooks: Record<
+        string,
+        Array<{
+          hooks: Array<{ command: string; timeout?: number }>;
+        }>
+      >;
+    };
+    const stopHandler = config.hooks.Stop.flatMap((entry) => entry.hooks).find((handler) =>
+      handler.command.includes("production-data-integrity-gate.cjs")
+    );
+    expect(stopHandler?.timeout).toBeDefined();
+    const checkerTimeoutLiteral = /const CHECK_TIMEOUT_MS = ([\d_]+);/.exec(
+      readFileSync(HOOK, "utf8")
+    )?.[1];
+    expect(checkerTimeoutLiteral).toBeDefined();
+    const checkerTimeoutMs = Number(checkerTimeoutLiteral?.replaceAll("_", ""));
+    expect(checkerTimeoutMs).toBe(55_000);
+    expect((stopHandler?.timeout ?? 0) * 1000 - checkerTimeoutMs).toBeGreaterThanOrEqual(5_000);
+
+    const result = spawnSync(process.execPath, [HOOK], {
+      cwd: makeRoot("clean", 20_500),
+      encoding: "utf8",
+      input: JSON.stringify({ hook_event_name: "Stop", stop_hook_active: false }),
+      timeout: (stopHandler?.timeout ?? 0) * 1000,
+    });
+
+    expect(result.status, result.error?.message ?? result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({ continue: true });
+  }, 70_000);
 
   it("honors the Stop recursion guard without invoking a missing checker", () => {
     const root = mkdtempSync(join(tmpdir(), "zenflow-pdi-stop-guard-"));

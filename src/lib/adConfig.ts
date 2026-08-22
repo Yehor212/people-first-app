@@ -7,7 +7,7 @@
  * Mood-aware gating prevents ads when user is feeling bad.
  */
 
-import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_IOS, ADMOB_BANNER_ID_IOS, IS_DEV } from '@/lib/env';
+import { ADMOB_REWARDED_ID_ANDROID, ADMOB_REWARDED_ID_IOS, IS_DEV } from '@/lib/env';
 
 // ============================================
 // AD UNIT IDS
@@ -16,11 +16,9 @@ import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_I
 export const GOOGLE_ADMOB_TEST_IDS = {
   android: {
     rewarded: 'ca-app-pub-3940256099942544/5224354917',
-    banner: 'ca-app-pub-3940256099942544/6300978111',
   },
   ios: {
     rewarded: 'ca-app-pub-3940256099942544/1712485313',
-    banner: 'ca-app-pub-3940256099942544/2934735716',
   },
 } as const;
 
@@ -31,11 +29,9 @@ function adUnitId(envValue: string, testValue: string): string {
 export const AD_UNIT_IDS = {
   android: {
     rewarded: adUnitId(ADMOB_REWARDED_ID_ANDROID, GOOGLE_ADMOB_TEST_IDS.android.rewarded),
-    banner: adUnitId(ADMOB_BANNER_ID_ANDROID, GOOGLE_ADMOB_TEST_IDS.android.banner),
   },
   ios: {
     rewarded: adUnitId(ADMOB_REWARDED_ID_IOS, GOOGLE_ADMOB_TEST_IDS.ios.rewarded),
-    banner: adUnitId(ADMOB_BANNER_ID_IOS, GOOGLE_ADMOB_TEST_IDS.ios.banner),
   },
 } as const;
 
@@ -86,6 +82,9 @@ export const AD_MOOD_RULES = {
 
   /** Max ads when mood is reduced */
   reducedMaxPerSession: 1,
+
+  /** A stored mood can suppress ads only while it is plausibly current. */
+  suppressionWindowMs: 2 * 60 * 60 * 1000,
 } as const;
 
 // ============================================
@@ -105,13 +104,8 @@ export const AD_SACRED_ZONES = [
 // SAFE ZONES — places where opt-in ads are OK
 // ============================================
 
-export const AD_SAFE_ZONES = [
-  'post_focus',        // After completing a focus session
-  'daily_rewards',     // Daily rewards screen
-  'stats_view',        // Viewing stats/achievements
-  'companion_rewards', // Explicit optional rewards area in companion surface
-  'optional_rewards',  // Separate opt-in rewards surface, outside Settings/Privacy
-] as const;
+// Separate opt-in rewards surface, outside Settings/Privacy.
+export const AD_SAFE_ZONES = ['optional_rewards'] as const;
 
 // ============================================
 // REWARD VALUES — what users get for watching

@@ -484,11 +484,8 @@ describe('journalHubStorage', () => {
       timestamp: 100,
     });
 
-    expect(capture.spaceId).toBe(GRATITUDE_SPACE_ID);
-    expect(capture.sourceType).toBe('gratitude');
-    expect(capture.sourceId).toBe('gratitude-1');
-    expect(capture).not.toHaveProperty('content');
-    expect(mockSpaceCapturesTable.put).toHaveBeenCalledWith(capture);
+    expect(capture).toBeNull();
+    expect(mockSpaceCapturesTable.put).not.toHaveBeenCalled();
   });
 
   it('sorts local space captures newest first', async () => {

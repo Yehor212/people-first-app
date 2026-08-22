@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { zenTap } from "@/lib/animationUtils";
 import { Share2, Copy, Check, Trophy, Clock, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, interpolate } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { hapticSuccess, hapticTap, hapticWarning } from "@/lib/haptics";
@@ -33,6 +33,7 @@ export function ChallengeDetailsView({
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     return () => {
@@ -117,16 +118,20 @@ export function ChallengeDetailsView({
       {/* Header with icon - Premium */}
       <motion.div
         className="relative min-w-0 text-center py-8 rounded-2xl overflow-hidden bg-[linear-gradient(180deg,hsl(var(--cosmic-nebula-purple)/0.15)_0%,transparent_100%)]"
-        initial={{ opacity: 0, y: 20 }}
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         {/* Glow behind icon */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full opacity-40 bg-[radial-gradient(circle,hsl(var(--cosmic-nebula-purple)/0.4)_0%,transparent_70%)]" />
         <motion.div
           className="text-6xl mb-3 relative z-10"
-          initial={{ scale: 0 }}
+          initial={prefersReducedMotion ? false : { scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          transition={
+            prefersReducedMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 300, damping: 20 }
+          }
         >
           {challenge.habitIcon}
         </motion.div>
@@ -141,9 +146,10 @@ export function ChallengeDetailsView({
       {/* Progress section - Premium */}
       <motion.div
         className="relative min-w-0 overflow-hidden rounded-2xl p-5 bg-[linear-gradient(135deg,theme(colors.white/0.05)_0%,theme(colors.white/0.02)_100%)] shadow-[inset_0_1px_0_theme(colors.white/0.05)]"
-        initial={{ opacity: 0, y: 20 }}
+        data-testid="challenge-personal-progress"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1 }}
       >
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 mb-4">
           <span className="min-w-0 break-words text-sm font-medium text-slate-800 dark:text-white [hyphens:manual] [overflow-wrap:break-word]">
@@ -157,15 +163,21 @@ export function ChallengeDetailsView({
         <div className="h-3 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden mb-3">
           <motion.div
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full w-full origin-left shadow-[0_0_12px_theme(colors.emerald.500/0.5)]"
-            initial={{ scaleX: 0 }}
+            initial={prefersReducedMotion ? false : { scaleX: 0 }}
             animate={{ scaleX: progress / 100 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { duration: 0.8, ease: "easeOut" }
+            }
           />
         </div>
 
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 text-xs">
           <span className="min-w-0 break-words text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
-            {progress}% {t.complete || "complete"}
+            {interpolate(t.challengeProgressComplete || "{percent}% complete", {
+              percent: `\u2068${progress}\u2069`,
+            })}
           </span>
           {challenge.status === "active" && (
             <span className="flex min-w-0 items-center gap-1 break-words text-slate-500 dark:text-white/60 [hyphens:manual] [overflow-wrap:break-word]">
@@ -236,15 +248,21 @@ export function ChallengeDetailsView({
       {/* Challenge code - Premium */}
       <motion.div
         className="relative rounded-2xl p-5 overflow-hidden bg-[linear-gradient(135deg,theme(colors.emerald.500/0.1)_0%,theme(colors.teal.500/0.05)_100%)] shadow-[0_0_20px_theme(colors.emerald.500/0.15),inset_0_1px_0_theme(colors.white/0.05)]"
-        initial={{ opacity: 0, y: 20 }}
+        data-testid="challenge-invitation-controls"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="text-sm font-medium text-slate-600 dark:text-white/80 mb-3">
           {t.challengeCode || "Challenge Code"}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 rounded-xl px-4 py-4 font-mono text-2xl text-center tracking-widest bg-background/40 text-emerald-400 [text-shadow:0_0_10px_theme(colors.emerald.400/0.5)]">
-            {challenge.code}
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="min-w-0 flex-1 rounded-xl px-2.5 py-4 text-center bg-background/40 text-emerald-400 [text-shadow:0_0_10px_theme(colors.emerald.400/0.5)]">
+            <bdi
+              dir="ltr"
+              className="block whitespace-nowrap font-mono text-[clamp(1rem,5.5vw,1.25rem)] tracking-[0.08em]"
+            >
+              {challenge.code}
+            </bdi>
           </div>
           <motion.button
             onClick={throttledCopyCode}
@@ -262,8 +280,8 @@ export function ChallengeDetailsView({
                 ? { boxShadow: "0 0 12px hsl(160 84% 39% / 0.4)" }
                 : undefined
             }
-            whileHover={{ scale: 1.05 }}
-            whileTap={zenTap.button}
+            whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }}
+            whileTap={prefersReducedMotion ? undefined : zenTap.button}
           >
             {copied ? (
               <Check className="w-6 h-6 text-emerald-400" aria-hidden="true" />

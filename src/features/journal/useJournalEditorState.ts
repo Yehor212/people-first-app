@@ -445,6 +445,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const [showVoicePrivacyConfirm, setShowVoicePrivacyConfirm] = useState(false);
   const [voicePrivacyAccepted, setVoicePrivacyAccepted] = useState(false);
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
+  const [mobileToolsCollapsed, setMobileToolsCollapsed] = useState(true);
 
   useEffect(() => {
     if (!showDeleteConfirm) setDeleteError(null);
@@ -1686,6 +1687,12 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           setShowSettingsConfirm(false);
           return;
         }
+        if (!desktop && !mobileToolsCollapsed) {
+          setMobileToolsCollapsed(true);
+          setShowStyleBar(false);
+          setShowPromptsDropdown(false);
+          return;
+        }
         handleBack();
       }
       if (
@@ -1715,6 +1722,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showUnsavedDialog,
     discardSubmitting,
     showSettingsConfirm,
+    desktop,
+    mobileToolsCollapsed,
     panicLocked,
     audioRemovalPendingId,
     handlePanic,
@@ -1790,6 +1799,13 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         setShowTags(false);
         return true;
       });
+    if (!desktop && !mobileToolsCollapsed)
+      return registerModalCloseCallback(() => {
+        setMobileToolsCollapsed(true);
+        setShowStyleBar(false);
+        setShowPromptsDropdown(false);
+        return true;
+      });
     // Fallback: no sub-modal open -> back button triggers editor back (dirty check)
     return registerModalCloseCallback(() => {
       handleBack();
@@ -1810,6 +1826,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showMood,
     showTags,
     showSettingsConfirm,
+    desktop,
+    mobileToolsCollapsed,
     recorder,
     handleBack,
     onExitRequestCancelled,
@@ -2542,6 +2560,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     setShowVoicePrivacyConfirm,
     showPromptsDropdown,
     setShowPromptsDropdown,
+    mobileToolsCollapsed,
+    setMobileToolsCollapsed,
 
     // draft
     draftAvailable,

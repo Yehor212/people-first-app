@@ -95,15 +95,7 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
       <div
         className="absolute inset-0 bg-gradient-to-b from-violet-50 via-purple-50/60 to-indigo-50 dark:bg-none"
       />
-      <div
-        className="absolute inset-0 hidden dark:block"
-        style={{
-          background: `radial-gradient(ellipse at center,
-            hsl(var(--cosmic-space-surface)) 0%,
-            hsl(var(--cosmic-space-mid)) 40%,
-            hsl(var(--cosmic-space-deep)) 100%)`,
-        }}
-      />
+      <div className="zf-emotion-galaxy-cosmic-background absolute inset-0 hidden dark:block" />
 
       {/* 3-Layer Parallax Stars */}
       {/* Layer 1: Distant (back) */}
@@ -174,7 +166,7 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
       </motion.div>
 
       {/* Galaxy Container */}
-      <div className="relative w-full" style={{ minHeight: 280 }}>
+      <div className="relative min-h-[280px] w-full">
         {/* SVG for elliptical orbit paths with 3D tilt */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
           {/* Center glow gradient */}

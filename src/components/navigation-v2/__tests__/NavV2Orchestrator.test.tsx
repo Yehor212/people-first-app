@@ -4,9 +4,31 @@ import { NavV2Orchestrator } from "../NavV2Orchestrator";
 import { readFileSync } from "node:fs";
 import { useUIStore, useUserDataStore } from "@/stores";
 
-const { mockIsFeatureVisible } = vi.hoisted(() => ({
-  mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(),
-}));
+const {
+  mockDeviceTierState,
+  mockIsFeatureVisible,
+  mockRegisterModalCloseCallback,
+  mockScheduleIdle,
+  scheduledIdleCallbacks,
+} = vi.hoisted(() => {
+  const deviceTierState: {
+    isCompactHeight: boolean;
+    tier: "phone" | "tablet" | "laptop" | "desktop";
+  } = {
+    isCompactHeight: false,
+    tier: "phone",
+  };
+
+  return {
+    mockDeviceTierState: deviceTierState,
+    mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(),
+    mockRegisterModalCloseCallback: vi.fn(() => () => undefined),
+    mockScheduleIdle: vi.fn(
+      (_callback: () => void) => ({ cancel: vi.fn() }),
+    ),
+    scheduledIdleCallbacks: [] as Array<() => void>,
+  };
+});
 
 // --- Mocks ---
 
@@ -18,6 +40,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2Diary: "Diary",
       navV2Planning: "Planning",
       navV2Settings: "Settings",
+      connectedRecordsHistory: "View history and undo",
       navV2OpenMenu: "Open menu",
       navV2CloseMenu: "Close menu",
       navV2Menu: "Menu",
@@ -68,18 +91,23 @@ vi.mock("@/components/ChallengeModal", () => ({
     habit,
     initialInvite,
     username,
+    onOpenFriends,
   }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     habit?: { id: string };
     initialInvite?: { code: string };
     username?: string;
+    onOpenFriends?: () => void;
   }) =>
     open ? (
       <section aria-label="Friend challenges" role="dialog">
         <span>{username}</span>
         <span>{habit?.id}</span>
         <span>{initialInvite?.code}</span>
+        <button type="button" onClick={onOpenFriends}>
+          Open friends
+        </button>
         <button type="button" onClick={() => onOpenChange(false)}>
           Close challenge
         </button>
@@ -87,12 +115,34 @@ vi.mock("@/components/ChallengeModal", () => ({
     ) : null,
 }));
 
+vi.mock("@/components/FriendsPanel", () => ({
+  FriendsPanel: ({
+    onClose,
+    onOpenChallenges,
+    userName,
+  }: {
+    onClose: () => void;
+    onOpenChallenges?: () => void;
+    userName?: string;
+  }) => (
+    <section aria-label="Friends" role="dialog">
+      <span>{userName}</span>
+      <button type="button" onClick={onOpenChallenges}>
+        Back to challenges
+      </button>
+      <button type="button" onClick={onClose}>
+        Close friends
+      </button>
+    </section>
+  ),
+}));
+
 vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn(), selection: vi.fn() },
 }));
 
 vi.mock("@/hooks/useDeviceTier", () => ({
-  useDeviceTier: () => ({ tier: "phone" }),
+  useDeviceTier: () => mockDeviceTierState,
 }));
 
 vi.mock("@/hooks/useKeyboardShortcuts", () => ({
@@ -100,7 +150,15 @@ vi.mock("@/hooks/useKeyboardShortcuts", () => ({
 }));
 
 vi.mock("@/lib/androidBackHandler", () => ({
-  registerModalCloseCallback: () => () => undefined,
+  publishAndroidBackNavigationState: vi.fn().mockResolvedValue(undefined),
+  registerModalCloseCallback: mockRegisterModalCloseCallback,
+}));
+
+vi.mock("@/lib/scheduleIdle", () => ({
+  scheduleIdle: mockScheduleIdle.mockImplementation((callback: () => void) => {
+    scheduledIdleCallbacks.push(callback);
+    return { cancel: vi.fn() };
+  }),
 }));
 
 vi.mock("@/lib/motion/morph", () => ({
@@ -135,20 +193,42 @@ vi.mock("@/pages/nav-v2/SettingsPage", () => ({
   SettingsPage: () => <div data-testid="settings-page">settings</div>,
 }));
 
+vi.mock("@/features/automation/AutomationHistorySheet", () => ({
+  AutomationHistorySheet: ({
+    open,
+    onClose,
+  }: {
+    open: boolean;
+    onClose: () => void;
+  }) =>
+    open ? (
+      <section role="dialog" aria-label="Connected-record history">
+        <button type="button" onClick={onClose}>
+          Close history
+        </button>
+      </section>
+    ) : null,
+}));
+
 // Mock SidebarV2 + DrawerV2 so we assert their presence, not their internals
 vi.mock("../SidebarV2", () => ({
   SidebarV2: ({
     collapsed,
+    collapseLocked,
     forceVisible,
     onPageChange,
+    onOpenConnectedHistory,
   }: {
     collapsed?: boolean;
+    collapseLocked?: boolean;
     forceVisible?: boolean;
     onPageChange: (page: "habits" | "planning") => void;
+    onOpenConnectedHistory?: () => void;
   }) => (
     <nav
       data-testid="sidebar-v2"
       data-collapsed={collapsed ? "true" : "false"}
+      data-collapse-locked={collapseLocked ? "true" : "false"}
       data-force-visible={forceVisible ? "true" : "false"}
     >
       sidebar
@@ -158,6 +238,11 @@ vi.mock("../SidebarV2", () => ({
       <button type="button" onClick={() => onPageChange("planning")}>
         Planning
       </button>
+      {onOpenConnectedHistory ? (
+        <button type="button" onClick={onOpenConnectedHistory}>
+          View history and undo
+        </button>
+      ) : null}
     </nav>
   ),
 }));
@@ -166,10 +251,12 @@ vi.mock("../DrawerV2", () => ({
     open,
     onClose,
     onPageChange,
+    onOpenConnectedHistory,
   }: {
     open: boolean;
     onClose: () => void;
     onPageChange: (page: "habits" | "planning") => void;
+    onOpenConnectedHistory?: () => void;
   }) =>
     open ? (
       <div id="nav-v2-drawer" data-testid="drawer-v2-open">
@@ -183,6 +270,17 @@ vi.mock("../DrawerV2", () => ({
         <button type="button" onClick={() => onPageChange("planning")}>
           Planning
         </button>
+        {onOpenConnectedHistory ? (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenConnectedHistory();
+            }}
+          >
+            View history and undo
+          </button>
+        ) : null}
       </div>
     ) : null,
 }));
@@ -208,14 +306,33 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     window.localStorage.clear();
     window.history.replaceState({}, "", "/");
     vi.mocked(morph).mockClear();
+    mockRegisterModalCloseCallback.mockClear();
+    mockScheduleIdle.mockClear();
+    scheduledIdleCallbacks.length = 0;
     mockIsFeatureVisible.mockReturnValue(true);
+    mockDeviceTierState.tier = "phone";
+    mockDeviceTierState.isCompactHeight = false;
     useUIStore.setState({
       featureToUnlock: null,
       showChallengeModal: false,
+      showFriendsPanel: false,
       challengeInvite: undefined,
       challengeHabit: undefined,
     });
     useUserDataStore.setState({ userName: "Friend" });
+  });
+
+  it("registers primary Android Back below every overlay owner", async () => {
+    window.history.replaceState({}, "", "/habits?nav=v2&navLayout=phone");
+
+    render(<NavV2Orchestrator />);
+
+    await waitFor(() => {
+      expect(mockRegisterModalCloseCallback).toHaveBeenCalledWith(
+        expect.any(Function),
+        { layer: "navigation" },
+      );
+    });
   });
 
   it("shows one V2 progression dialog at a time and clears a closed challenge invitation", async () => {
@@ -225,9 +342,6 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
       showChallengeModal: true,
       challengeInvite: {
         code: "ZEN-FOCUS",
-        habitName: "Focus",
-        habitIcon: "target",
-        duration: 7,
       },
       challengeHabit: { id: "habit-focus" } as never,
     });
@@ -268,6 +382,26 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.queryByRole("dialog", { name: "Friend challenges" })).not.toBeInTheDocument();
   });
 
+  it("links the Android Habits social hub between Challenges and Friends without a sixth tab", async () => {
+    useUserDataStore.setState({ userName: "Avery" });
+    useUIStore.setState({ showChallengeModal: true, showFriendsPanel: false });
+
+    render(<NavV2Orchestrator />);
+
+    const challenges = await screen.findByRole("dialog", { name: "Friend challenges" });
+    expect(challenges).toHaveTextContent("Avery");
+
+    fireEvent.click(screen.getByRole("button", { name: "Open friends" }));
+
+    expect(screen.queryByRole("dialog", { name: "Friend challenges" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Friends" })).toHaveTextContent("Avery");
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to challenges" }));
+
+    expect(screen.queryByRole("dialog", { name: "Friends" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Friend challenges" })).toBeInTheDocument();
+  });
+
   it("does not mount the desktop sidebar on phone layout", () => {
     render(<NavV2Orchestrator />);
 
@@ -279,6 +413,38 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     const trigger = screen.getByTestId("nav-v2-open-drawer");
     expect(trigger).toBeInTheDocument();
     expect(trigger.className).toContain("md:hidden");
+  });
+
+  it("keeps connected history closed until the mobile navigation action is requested", () => {
+    render(<NavV2Orchestrator />);
+
+    expect(
+      screen.queryByRole("dialog", { name: "Connected-record history" })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
+    fireEvent.click(screen.getByRole("button", { name: "View history and undo" }));
+
+    expect(screen.queryByTestId("drawer-v2-open")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Connected-record history" })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close history" }));
+    expect(
+      screen.queryByRole("dialog", { name: "Connected-record history" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the same connected-history owner from the desktop sidebar", () => {
+    window.history.replaceState({}, "", "/?nav=v2&dev=true");
+    render(<NavV2Orchestrator />);
+
+    fireEvent.click(screen.getByRole("button", { name: "View history and undo" }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Connected-record history" })
+    ).toBeInTheDocument();
   });
 
   it("recognizes the GitHub Pages base path as a valid V2 route", () => {
@@ -305,6 +471,22 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     const trigger = screen.getByTestId("nav-v2-open-drawer");
     expect(trigger.className).toContain("hidden");
     expect(trigger.className).not.toContain("md:hidden");
+  });
+
+  it("uses the phone drawer for an Android medium-width compact-height window", () => {
+    mockDeviceTierState.tier = "tablet";
+    mockDeviceTierState.isCompactHeight = true;
+    window.history.replaceState({}, "", "/planning?nav=v2&navLayout=phone");
+
+    render(<NavV2Orchestrator />);
+
+    const root = screen.getByTestId("nav-v2-orchestrator");
+    expect(root).toHaveAttribute("data-nav-layout", "phone");
+    expect(root).not.toHaveClass("md:ps-64");
+    expect(root).not.toHaveClass("md:ps-[72px]");
+    expect(screen.queryByTestId("sidebar-v2")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nav-v2-open-drawer")).toHaveClass("flex");
+    expect(screen.getByTestId("nav-v2-open-drawer")).not.toHaveClass("md:hidden");
   });
 
   it("skips full-page morph when a phone-width browser uses the compact web rail", async () => {
@@ -418,6 +600,14 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(trigger.querySelector(".lucide-chevron-left")).not.toBeInTheDocument();
   });
 
+  it("gives the phone menu trigger dark-surface tokens on Planning", () => {
+    window.history.replaceState({}, "", "/planning?nav=v2&navLayout=phone");
+
+    render(<NavV2Orchestrator />);
+
+    expect(screen.getByTestId("nav-v2-open-drawer")).toHaveClass("dark");
+  });
+
   it("drawer trigger is fixed at the safe logical start edge", () => {
     render(<NavV2Orchestrator />);
     const trigger = screen.getByTestId("nav-v2-open-drawer");
@@ -465,7 +655,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(source).not.toContain("<Suspense fallback={null}>{pageNode}</Suspense>");
   });
 
-  it("opens the phone drawer before scheduling route preloads", () => {
+  it("opens the phone drawer before preloading the user-visible Settings destination", () => {
     const source = readFileSync("src/components/navigation-v2/NavV2Orchestrator.tsx", "utf8");
     const start = source.indexOf("const handleOpenDrawer = useCallback");
     const end = source.indexOf("const handlePrimaryPageChange", start);
@@ -473,12 +663,22 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     const openIndex = body.indexOf("openDrawer();");
     const settingsPreloadIndex = body.indexOf('preloadNavV2Route("settings");');
-    const scheduleIndex = body.indexOf("scheduleNavV2RoutePreload(activePage)");
 
     expect(openIndex).toBeGreaterThan(-1);
     expect(settingsPreloadIndex).toBeGreaterThan(openIndex);
-    expect(scheduleIndex).toBeGreaterThan(openIndex);
-    expect(scheduleIndex).toBeGreaterThan(settingsPreloadIndex);
+    expect(body).not.toContain("scheduleNavV2RoutePreload(activePage)");
     expect(body).not.toContain("preloadNavV2Route(page)");
+  });
+
+  it("keeps hidden route preloads behind the stable-startup quiet window", () => {
+    render(<NavV2Orchestrator />);
+
+    expect(mockScheduleIdle).toHaveBeenCalledTimes(1);
+    expect(mockScheduleIdle).toHaveBeenNthCalledWith(1, expect.any(Function), 2_500, 4_000);
+
+    act(() => scheduledIdleCallbacks.shift()?.());
+
+    expect(mockScheduleIdle).toHaveBeenCalledTimes(2);
+    expect(mockScheduleIdle).toHaveBeenNthCalledWith(2, expect.any(Function), 2_500, 750);
   });
 });

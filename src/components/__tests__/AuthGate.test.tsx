@@ -224,6 +224,19 @@ describe("AuthGate", () => {
     expect(screen.getByText("Preparing your zen space...")).toBeInTheDocument();
   });
 
+  it("does not mount gated account content behind an exiting splash", () => {
+    appState.loadingFadeOut = true;
+
+    render(
+      <AuthGate isLoading={false} splashTheme="ink">
+        <div>App</div>
+      </AuthGate>
+    );
+
+    expect(screen.queryByText("App")).not.toBeInTheDocument();
+    expect(screen.getByTestId("mock-splash")).toBeInTheDocument();
+  });
+
   it("keeps startup recovery retryable and exposes a localized alert when safe reload is blocked", async () => {
     appState.initializationState = {
       isInitializing: false,

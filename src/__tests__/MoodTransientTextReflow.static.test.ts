@@ -53,7 +53,7 @@ describe("mood transient text reflow contracts", () => {
     expect(backdrop).toContain("var(--safe-top)");
     expect(backdrop).toContain("var(--safe-left)");
     expect(backdrop).toContain("var(--safe-right)");
-    expect(card).toMatch(/max-height:\s*calc\(100dvh/);
+    expect(card).toMatch(/max-height:\s*calc\(var\(--app-viewport-height\)/);
     expect(card).toMatch(/overflow-y:\s*auto/);
     expect(card).toMatch(/overscroll-behavior:\s*contain/);
     expectScaledFontDeclarations(firstRunCss);

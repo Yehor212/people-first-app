@@ -206,20 +206,8 @@ function JournalMemoryBackdrop() {
             backgroundSize: "cover, cover, auto, auto, auto",
           }}
         />
-        <div
-          className="absolute inset-x-8 top-24 h-px opacity-70"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.34), transparent)",
-          }}
-        />
-        <div
-          className="absolute bottom-20 start-5 h-28 w-px opacity-50"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, transparent, hsl(var(--primary) / 0.24), transparent)",
-          }}
-        />
+        <div className="zf-journal-memory-horizontal-rule absolute inset-x-8 top-24 h-px opacity-70" />
+        <div className="zf-journal-memory-vertical-rule absolute bottom-20 start-5 h-28 w-px opacity-50" />
       </div>
     </>
   );
@@ -1822,23 +1810,10 @@ export const JournalEntryList = memo(function JournalEntryList({
       : getDailyReflection();
     return (
       <div
-        className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card/55 p-3.5 shadow-[0_18px_45px_hsl(var(--foreground)/0.06)] backdrop-blur-xl"
-        style={{
-          backgroundImage: [
-            "linear-gradient(135deg, hsl(var(--primary) / 0.10), transparent 42%)",
-            "repeating-linear-gradient(180deg, transparent 0 23px, hsl(var(--border) / 0.07) 24px 25px)",
-          ].join(", "),
-        }}
+        className="zf-journal-reflection-paper relative overflow-hidden rounded-2xl border border-primary/10 bg-card/55 p-3.5 shadow-[0_18px_45px_hsl(var(--foreground)/0.06)] backdrop-blur-xl"
       >
         <Quote className="absolute top-2 end-2 w-7 h-7 text-primary/10" />
-        <div
-          aria-hidden="true"
-          className="absolute inset-y-3 start-0 w-px"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, transparent, hsl(var(--primary) / 0.42), transparent)",
-          }}
-        />
+        <div aria-hidden="true" className="zf-journal-reflection-spine absolute inset-y-3 start-0 w-px" />
         <p className="text-sm font-serif italic leading-relaxed pe-7 text-foreground/85">
           {ts[reflection.translationId] || reflection.fallback}
         </p>

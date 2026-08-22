@@ -61,8 +61,9 @@ describe('RewardedAdPrompt UX contract', () => {
     expect(source).not.toContain("'general'");
     expect(source).not.toContain("'settings'");
     expect(source).toContain("'optional_rewards'");
-    expect(adConfig).not.toMatch(/'settings'\s*,\s*\/\/ Settings page/);
-    expect(adConfig).toContain("'optional_rewards'");
+    expect(adConfig).toMatch(/AD_SAFE_ZONES\s*=\s*\[\s*'optional_rewards'\s*,?\s*\]/s);
+    expect(source).not.toContain('ctaLabel?:');
+    expect(source).not.toContain('rewardLabel?:');
   });
 
   it('keeps rewarded playback out of privacy control surfaces', () => {
@@ -96,7 +97,7 @@ describe('RewardedAdPrompt UX contract', () => {
   });
 
   it('uses explicit optional-ad copy and a 44px compact touch target', () => {
-    render(<RewardedAdPrompt context="post_focus" compact />);
+    render(<RewardedAdPrompt context="optional_rewards" compact />);
 
     const button = screen.getByRole('button');
     expect(button).toHaveTextContent('Optional ad');
@@ -126,11 +127,20 @@ describe('RewardedAdPrompt UX contract', () => {
   });
 
   it('keeps the watch action user-initiated', () => {
-    render(<RewardedAdPrompt context="daily_rewards" compact />);
+    render(<RewardedAdPrompt context="optional_rewards" compact />);
 
     expect(adState.watchRewardedAd).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button'));
     expect(adState.watchRewardedAd).toHaveBeenCalledTimes(1);
-    expect(adState.watchRewardedAd).toHaveBeenCalledWith('daily_rewards');
+    expect(adState.watchRewardedAd).toHaveBeenCalledWith('optional_rewards');
+  });
+
+  it('keeps local and Google privacy controls reachable without a configured ad unit', () => {
+    const privacySource = readFileSync(
+      join(repoRoot, 'src/pages/nav-v2/settings/V2SettingsPrivacyPanel.tsx'),
+      'utf8',
+    );
+
+    expect(privacySource).not.toContain('if (!adsSupported) return null');
   });
 });

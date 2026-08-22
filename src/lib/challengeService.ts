@@ -15,6 +15,10 @@ import type {
   ChallengeMemberRow
 } from '@/types/challenges';
 
+export type ChallengeInviteLookupResult =
+  | { status: 'found'; actorUserId: string; challenge: FriendChallenge }
+  | { status: 'offline' | 'signed_out' | 'not_found' | 'unavailable' };
+
 // ============================================
 // MAPPERS
 // ============================================
@@ -137,6 +141,53 @@ export async function getChallengeByCode(code: string): Promise<FriendChallenge 
   }
 
   return data ? mapChallengeRow(data as FriendChallengeRow) : null;
+}
+
+/**
+ * Resolve an untrusted invitation locator without joining or persisting it.
+ * The authenticated actor and canonical challenge are returned together so
+ * the caller never trusts identity or challenge facts from the link itself.
+ */
+export async function resolveChallengeInvite(code: string): Promise<ChallengeInviteLookupResult> {
+  if (!supabase) return { status: 'unavailable' };
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return { status: 'offline' };
+  }
+
+  try {
+    const actorUserId = await getCurrentUserId();
+    if (!actorUserId) return { status: 'signed_out' };
+
+    const { data, error } = await supabase
+      .from('friend_challenges')
+      .select('*')
+      .eq('code', code.toUpperCase())
+      .maybeSingle();
+
+    if (error) {
+      return {
+        status:
+          typeof navigator !== 'undefined' && navigator.onLine === false
+            ? 'offline'
+            : 'unavailable',
+      };
+    }
+    if (!data) return { status: 'not_found' };
+
+    return {
+      status: 'found',
+      actorUserId,
+      challenge: mapChallengeRow(data as FriendChallengeRow),
+    };
+  } catch (error) {
+    logger.warn('[ChallengeService] Invitation lookup failed:', error);
+    return {
+      status:
+        typeof navigator !== 'undefined' && navigator.onLine === false
+          ? 'offline'
+          : 'unavailable',
+    };
+  }
 }
 
 /**

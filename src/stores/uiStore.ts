@@ -40,6 +40,7 @@ interface UIState {
 
   // Modal data
   challengeInvite: ChallengeInvite | undefined;
+  friendInvite: { code: string } | undefined;
   challengeHabit: Habit | undefined;
   welcomeBackData: {
     daysAway: number;
@@ -78,6 +79,7 @@ interface UIActions {
   setFeatureToUnlock: (feature: FeatureId | null) => void;
   setUpdateState: (state: UpdateState | null) => void;
   setChallengeInvite: (invite: ChallengeInvite | undefined) => void;
+  setFriendInvite: (invite: { code: string } | undefined) => void;
   setChallengeHabit: (habit: Habit | undefined) => void;
   setWelcomeBackData: (data: UIState["welcomeBackData"]) => void;
   setJournalPromptText: (text: string | undefined) => void;
@@ -129,6 +131,7 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   canvasMode: "idle",
 
   challengeInvite: undefined,
+  friendInvite: undefined,
   challengeHabit: undefined,
   welcomeBackData: null,
   confettiBurst: null,
@@ -160,6 +163,7 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   setFeatureToUnlock: (featureToUnlock) => set({ featureToUnlock }),
   setUpdateState: (updateState) => set({ updateState }),
   setChallengeInvite: (challengeInvite) => set({ challengeInvite }),
+  setFriendInvite: (friendInvite) => set({ friendInvite }),
   setChallengeHabit: (challengeHabit) => set({ challengeHabit }),
   setWelcomeBackData: (welcomeBackData) => set({ welcomeBackData }),
   setJournalPromptText: (journalPromptText) => set({ journalPromptText }),
