@@ -447,6 +447,17 @@ def verify_package(
         or build_environment.get("quarantineDenylist") != expected_denylist_attestation
     ):
         raise VerificationError("QUARANTINE_DENYLIST_PROVENANCE_MISMATCH")
+    git_sha = build_environment.get("gitSha")
+    source_head_sha = build_environment.get("sourceHeadSha")
+    workflow_event_sha = build_environment.get("workflowEventSha")
+    if (
+        not isinstance(git_sha, str)
+        or re.fullmatch(r"[0-9a-f]{40}", git_sha) is None
+        or source_head_sha != git_sha
+        or not isinstance(workflow_event_sha, str)
+        or re.fullmatch(r"[0-9a-f]{40}", workflow_event_sha) is None
+    ):
+        raise VerificationError("BUILD_SOURCE_HEAD_MISMATCH")
 
     unique_numbers = {asset.source.sound_number for asset in spec.hyperfocus if asset.source}
     source_count = verify_rights_evidence(root, inventory, unique_numbers)

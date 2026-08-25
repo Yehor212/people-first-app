@@ -24,6 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -40,6 +41,7 @@ jobs:
       - name: Build review-only package
         env:
           SOURCE_DATE_EPOCH: "1787630400"
+          ZENFLOW_REVIEW_SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python -m scripts.audio_review.build --spec config/audio/cc0-kimi-audio-review-spec.json --output output/cc0-kimi-audio-review --cache output/cc0-kimi-audio-cache
       - name: Independently verify package
         run: python -m scripts.audio_review.verify --spec config/audio/cc0-kimi-audio-review-spec.json --package output/cc0-kimi-audio-review

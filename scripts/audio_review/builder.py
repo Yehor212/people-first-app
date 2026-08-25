@@ -132,6 +132,7 @@ def build_environment_record(
     denylist_source = Path(denylist_path)
     denylist = load_denylist(denylist_source)
     os_release = Path("/etc/os-release")
+    git_sha = _tool_version(["git", "rev-parse", "HEAD"], cwd=root)
     return {
         "python": _tool_version([shutil.which("python3") or "python3", "--version"]),
         "numpy": __import__("numpy").__version__,
@@ -145,8 +146,9 @@ def build_environment_record(
             if os_release.is_file()
             else platform.platform()
         ),
-        "gitSha": os.environ.get("GITHUB_SHA")
-        or _tool_version(["git", "rev-parse", "HEAD"], cwd=root),
+        "gitSha": git_sha,
+        "sourceHeadSha": os.environ.get("ZENFLOW_REVIEW_SOURCE_HEAD_SHA") or git_sha,
+        "workflowEventSha": os.environ.get("GITHUB_SHA") or git_sha,
         "requirementsSha256": file_sha256(requirements),
         "workflowSha256": file_sha256(workflow),
         "sourceDateEpoch": os.environ.get("SOURCE_DATE_EPOCH"),
@@ -439,6 +441,8 @@ def build_review_package(
         )
         if build_environment["quarantineDenylist"]["sha256"] != denylist_sha256:
             raise BuildError("Quarantine denylist changed during build")
+        if build_environment["sourceHeadSha"] != build_environment["gitSha"]:
+            raise BuildError("Checked-out Git SHA does not match declared source head SHA")
         build_environment["schemaVersion"] = 1
         build_environment["generatedAt"] = generated_at
         _write_json(temp_dir / "build-environment.json", build_environment)

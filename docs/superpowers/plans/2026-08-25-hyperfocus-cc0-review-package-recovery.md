@@ -864,7 +864,9 @@ Extend `build-environment.json` with:
 "ffprobe": _tool_version([ffprobe, "-version"]),
 "libmp3lame": _tool_version(["dpkg-query", "-W", "-f=${Version}", "libmp3lame0"]),
 "osRelease": Path("/etc/os-release").read_text(encoding="utf-8") if Path("/etc/os-release").is_file() else platform.platform(),
-"gitSha": os.environ.get("GITHUB_SHA") or _tool_version(["git", "rev-parse", "HEAD"]),
+"gitSha": _tool_version(["git", "rev-parse", "HEAD"]),
+"sourceHeadSha": os.environ.get("ZENFLOW_REVIEW_SOURCE_HEAD_SHA") or _tool_version(["git", "rev-parse", "HEAD"]),
+"workflowEventSha": os.environ.get("GITHUB_SHA") or _tool_version(["git", "rev-parse", "HEAD"]),
 "requirementsSha256": file_sha256(Path("scripts/audio_review/requirements.txt")),
 "workflowSha256": file_sha256(Path(".github/workflows/cc0-kimi-audio-review.yml")),
 ```

@@ -4,9 +4,11 @@ import hashlib
 import http.server
 import json
 import math
+import os
 import re
 import shutil
 import socketserver
+import subprocess
 import sys
 import tempfile
 import threading
@@ -1300,12 +1302,15 @@ class BuilderTests(unittest.TestCase):
                     "libmp3lame",
                     "osRelease",
                     "gitSha",
+                    "sourceHeadSha",
+                    "workflowEventSha",
                     "requirementsSha256",
                     "workflowSha256",
                 ):
                     self.assertTrue(build_environment[field])
                 for field in ("python", "ffmpeg", "ffprobe", "libmp3lame", "gitSha"):
                     self.assertFalse(str(build_environment[field]).startswith("UNAVAILABLE:"))
+                self.assertEqual(build_environment["sourceHeadSha"], build_environment["gitSha"])
                 for number in NUMBERS:
                     receipt_dir = output / "evidence" / "rights" / f"s{number:04d}"
                     self.assertTrue((receipt_dir / "source-page.html").is_file())
@@ -1385,11 +1390,20 @@ class BuilderTests(unittest.TestCase):
 
 class WorkflowContractTests(unittest.TestCase):
     def test_build_environment_record_binds_toolchain_and_inputs(self):
-        environment = build_environment_record(
-            sys.executable,
-            sys.executable,
-            QUARANTINE_CONFIG,
-        )
+        declared_source_head = "a" * 40
+        workflow_event_sha = "f" * 40
+        with mock.patch.dict(
+            os.environ,
+            {
+                "GITHUB_SHA": workflow_event_sha,
+                "ZENFLOW_REVIEW_SOURCE_HEAD_SHA": declared_source_head,
+            },
+        ):
+            environment = build_environment_record(
+                sys.executable,
+                sys.executable,
+                QUARANTINE_CONFIG,
+            )
         for field in (
             "python",
             "numpy",
@@ -1398,12 +1412,26 @@ class WorkflowContractTests(unittest.TestCase):
             "libmp3lame",
             "osRelease",
             "gitSha",
+            "sourceHeadSha",
+            "workflowEventSha",
             "requirementsSha256",
             "workflowSha256",
             "quarantineDenylist",
         ):
             self.assertIn(field, environment)
             self.assertTrue(environment[field])
+        self.assertEqual(
+            environment["gitSha"],
+            subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=ROOT,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            ).stdout.strip(),
+        )
+        self.assertEqual(environment["sourceHeadSha"], declared_source_head)
+        self.assertEqual(environment["workflowEventSha"], workflow_event_sha)
         self.assertEqual(
             environment["requirementsSha256"],
             hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest(),
@@ -1436,6 +1464,11 @@ class WorkflowContractTests(unittest.TestCase):
         )
         self.assertIn("group: cc0-audio-review-${{ github.ref }}", workflow)
         self.assertIn("cancel-in-progress: true", workflow)
+        self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", workflow)
+        self.assertIn(
+            "ZENFLOW_REVIEW_SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}",
+            workflow,
+        )
         self.assertIn('config/audio/quarantine-denylist.json', workflow)
         self.assertIn('docs/audio/kimi-k3-recovery-ledger-2026-07-25.md', workflow)
         artifact_upload_block = workflow[workflow.index("actions/upload-artifact@") :]

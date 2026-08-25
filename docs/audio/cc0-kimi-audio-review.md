@@ -38,7 +38,7 @@ The verifier checks a complete, traversal-safe `SHA256SUMS` inventory before MP3
 
 NumPy wheels are SHA-256-pinned and GitHub Actions are pinned to immutable commit SHAs. The workflow uploads only `output/cc0-kimi-audio-review`; the source cache is excluded.
 
-`build-environment.json` records Python, NumPy, FFmpeg, ffprobe, libmp3lame, OS release, Git SHA, requirements SHA-256, workflow SHA-256, `SOURCE_DATE_EPOCH`, and the quarantine-denylist SHA-256. MP3 encoding is byte-identical only for the same recorded toolchain and inputs; no cross-version or cross-platform byte identity is claimed.
+`build-environment.json` records Python, NumPy, FFmpeg, ffprobe, libmp3lame, OS release, the checked-out source HEAD SHA, the workflow event SHA, requirements SHA-256, workflow SHA-256, `SOURCE_DATE_EPOCH`, and the quarantine-denylist SHA-256. Pull-request CI explicitly checks out the exact PR head and fails if it differs from the declared source head. MP3 encoding is byte-identical only for the same recorded toolchain and inputs; no cross-version or cross-platform byte identity is claimed.
 
 ## Review and promotion
 
