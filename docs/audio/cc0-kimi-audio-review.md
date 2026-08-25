@@ -42,7 +42,22 @@ NumPy wheels are SHA-256-pinned and GitHub Actions are pinned to immutable commi
 
 ## Review and promotion
 
-`human-review.json` starts with every decision at `PENDING` and all five runtime targets at `UNVERIFIED`. Long files require a ten-minute loop listen on headphones and a built-in speaker. A separate explicitly approved change is required to copy accepted files into runtime assets, update manifests and notices, rebuild Web/PWA/Android/iOS/Desktop artifacts, and verify physical playback.
+`human-review.json` starts with every decision at `PENDING` and all five runtime targets at `UNVERIFIED`. Exactly 18 Hyperfocus rows have `promotionScope: true`; the three ambience and five feedback files are reference-only in this package. Long files require a human-attested ten-minute loop listen on both headphones and a built-in speaker.
+
+The reviewer prepares a JSON file outside the package with their real `reviewer` identity, UTC `reviewedAt`, `humanAttested: true`, and a `decisions` array. Every decision must include the exact asset `id` and `sha256`, `decision`, attested `minutes`, playback `contexts`, and reasons for `REVISE` or `REJECT`. Neither an agent nor the generator may prefill identity, listening time, or acceptance.
+
+Apply the owner-prepared file locally:
+
+```bash
+python -m scripts.audio_review.review \
+  --spec config/audio/cc0-kimi-audio-review-spec.json \
+  --package output/cc0-kimi-audio-review \
+  --input "$OWNER_REVIEW_JSON"
+```
+
+The command verifies the original package, atomically changes only `human-review.json` and `SHA256SUMS`, then verifies the complete package again. A failure restores both files byte-for-byte. Accepting all 18 exact hashes can emit only `AUDIO_FIT_PASS_RUNTIME_UNVERIFIED`; `promotionAllowed` remains `false`.
+
+A separate explicitly approved change is required to copy accepted files into runtime assets, update manifests and notices, rebuild Web/PWA/Android/iOS/Desktop artifacts, and verify physical playback.
 
 ## Rollback
 

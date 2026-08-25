@@ -17,6 +17,7 @@ from .quarantine import (
     default_denylist_path,
     load_denylist,
 )
+from .review import ALLOWED_DECISIONS, ReviewError, compute_audio_fit, record_decision
 from .rights import RIGHTS_EVIDENCE_STATUS, RIGHTS_LEGAL_BOUNDARY
 
 class VerificationError(RuntimeError):
@@ -278,6 +279,107 @@ def verify_rights_evidence(
     return len(source_by_number)
 
 
+def verify_human_review(human: dict, provenance: dict) -> str:
+    if not isinstance(human, dict) or not isinstance(provenance, dict):
+        raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    human_rows = human.get("assets")
+    provenance_rows = provenance.get("assets")
+    platforms = human.get("platforms")
+    expected_platforms = {
+        "web-vite",
+        "installed-pwa",
+        "android-capacitor",
+        "ios-wkwebview",
+        "desktop-tauri",
+    }
+    if (
+        not isinstance(human_rows, list)
+        or len(human_rows) != 26
+        or not isinstance(provenance_rows, list)
+        or len(provenance_rows) != 26
+        or human.get("promotionAllowed") is not False
+        or human.get("runtimeStatus") != "UNVERIFIED"
+        or not isinstance(platforms, dict)
+        or set(platforms) != expected_platforms
+        or any(value != "UNVERIFIED" for value in platforms.values())
+    ):
+        raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    provenance_by_id: dict[str, dict] = {}
+    for row in provenance_rows:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str):
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        if row["id"] in provenance_by_id:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        provenance_by_id[row["id"]] = row
+    if len(provenance_by_id) != 26:
+        raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    seen: set[str] = set()
+    reviewed_count = 0
+    for row in human_rows:
+        if not isinstance(row, dict):
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        asset_id = row.get("id")
+        if not isinstance(asset_id, str) or asset_id in seen:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        provenance_row = provenance_by_id.get(asset_id)
+        if provenance_row is None:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        seen.add(asset_id)
+        kind = provenance_row.get("kind")
+        expected_minutes = 10 if kind in {"hyperfocus", "ambience"} else 0
+        required_contexts = row.get("requiredListenOn")
+        if (
+            not isinstance(required_contexts, (list, tuple, set))
+            or any(not isinstance(context, str) for context in required_contexts)
+        ):
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        if (
+            row.get("kind") != kind
+            or row.get("relativePath") != provenance_row.get("relativePath")
+            or row.get("sha256") != provenance_row.get("sha256")
+            or row.get("promotionScope") is not (kind == "hyperfocus")
+            or row.get("minimumLoopMinutes") != expected_minutes
+            or set(required_contexts) != {"headphones", "built-in-speaker"}
+        ):
+            raise VerificationError(f"HUMAN_REVIEW_HASH_MISMATCH:{asset_id}")
+        decision = row.get("decision")
+        if decision == "PENDING":
+            if row.get("listenOn") not in ([], None):
+                raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+            continue
+        if decision not in ALLOWED_DECISIONS:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+        try:
+            record_decision(
+                row,
+                reviewer=row.get("reviewer", ""),
+                decision=decision,
+                minutes=row.get("attestedMinutes", -1),
+                contexts=row.get("listenOn", []),
+                reasons=row.get("rejectReasons", []),
+                reviewed_at=row.get("reviewedAt", ""),
+            )
+        except ReviewError as exc:
+            raise VerificationError(
+                f"HUMAN_REVIEW_ATTESTATION_INVALID:{asset_id}"
+            ) from exc
+        reviewed_count += 1
+    status = human.get("status")
+    audio_fit = compute_audio_fit(human, provenance)
+    if status == "PENDING_HUMAN_REVIEW":
+        if reviewed_count != 0 or human.get("audioFit") is not None:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    elif status == "HUMAN_REVIEW_IN_PROGRESS":
+        if reviewed_count == 0 or audio_fit["pass"] or human.get("audioFit") != audio_fit:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    elif status == "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED":
+        if not audio_fit["pass"] or human.get("audioFit") != audio_fit:
+            raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    else:
+        raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
+    return status
+
+
 def verify_mp3s_not_quarantined(
     root: str | Path,
     relative_paths: set[str],
@@ -352,13 +454,7 @@ def verify_package(
     qc_rows = qc.get("assets") or []
     if len(qc_rows) != 26 or not all(row.get("objectiveStatus") == "PASS" for row in qc_rows):
         raise VerificationError("OBJECTIVE_QC_NOT_PASS")
-    human_rows = human.get("assets") or []
-    if len(human_rows) != 26 or human.get("promotionAllowed") is not False or human.get("status") != "PENDING_HUMAN_REVIEW":
-        raise VerificationError("HUMAN_REVIEW_BOUNDARY_INVALID")
-    hash_by_id = {row["id"]: row["sha256"] for row in assets}
-    for row in human_rows:
-        if hash_by_id.get(row["id"]) != row["sha256"]:
-            raise VerificationError(f"HUMAN_REVIEW_HASH_MISMATCH:{row['id']}")
+    human_status = verify_human_review(human, provenance)
 
     ffprobe = ffprobe_path or shutil.which("ffprobe")
     if not ffprobe:
@@ -371,7 +467,12 @@ def verify_package(
         streams = json.loads(result.stdout).get("streams") or []
         if len(streams) != 1 or int(streams[0].get("sample_rate", 0)) != 48000 or int(streams[0].get("channels", 0)) != 2:
             raise VerificationError(f"AUDIO_CONTRACT_MISMATCH:{asset.id}")
-    return {"status": "TECHNICAL_PASS_HUMAN_PENDING", "assetCount": 26, "sourceCount": source_count, "humanReview": human["status"]}
+    package_status = {
+        "PENDING_HUMAN_REVIEW": "TECHNICAL_PASS_HUMAN_PENDING",
+        "HUMAN_REVIEW_IN_PROGRESS": "TECHNICAL_PASS_HUMAN_REVIEW_IN_PROGRESS",
+        "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED": "TECHNICAL_PASS_AUDIO_FIT_RUNTIME_PENDING",
+    }[human_status]
+    return {"status": package_status, "assetCount": 26, "sourceCount": source_count, "humanReview": human_status}
 
 
 def main(argv=None):

@@ -11,6 +11,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest import mock
 import wave
 from pathlib import Path
 
@@ -23,8 +24,9 @@ from scripts.audio_review.evidence import build_human_review_matrix, write_sha25
 from scripts.audio_review.model import SpecError, load_spec, validate_spec_dict
 from scripts.audio_review.procedural import generate_ambience, generate_feedback
 from scripts.audio_review.quarantine import QuarantineError, assert_not_quarantined, load_denylist
+from scripts.audio_review.review import ReviewError, apply_owner_review, compute_audio_fit, finalize_review_package, record_decision
 from scripts.audio_review.rights import HttpClient, RightsError, SourceRequest, acquire_source, validate_cc0_license_text
-from scripts.audio_review.verify import VerificationError, verify_hash_inventory, verify_mp3s_not_quarantined, verify_package, verify_rights_evidence
+from scripts.audio_review.verify import VerificationError, verify_hash_inventory, verify_human_review, verify_mp3s_not_quarantined, verify_package, verify_rights_evidence
 
 ROOT = Path(__file__).resolve().parents[3]
 SPEC = ROOT / "config/audio/cc0-kimi-audio-review-spec.json"
@@ -935,6 +937,284 @@ class EvidenceTests(unittest.TestCase):
             ):
                 verify_package(root, SPEC)
 
+class HumanReviewTests(unittest.TestCase):
+    @staticmethod
+    def provenance_fixture():
+        assets = []
+        for index in range(18):
+            assets.append({
+                "id": f"hyperfocus-{index}",
+                "kind": "hyperfocus",
+                "relativePath": f"audio/hyperfocus/{index}.mp3",
+                "sha256": f"{index + 1:064x}",
+            })
+        for index in range(3):
+            assets.append({
+                "id": f"ambience-{index}",
+                "kind": "ambience",
+                "relativePath": f"audio/ambience/{index}.mp3",
+                "sha256": f"{index + 101:064x}",
+            })
+        for index in range(5):
+            assets.append({
+                "id": f"feedback-{index}",
+                "kind": "feedback",
+                "relativePath": f"audio/feedback/{index}.mp3",
+                "sha256": f"{index + 201:064x}",
+            })
+        return {"assets": assets}
+
+    def test_cannot_accept_long_loop_without_both_contexts_and_ten_minutes(self):
+        matrix = build_human_review_matrix(self.provenance_fixture()["assets"])
+        row = matrix["assets"][0]
+        with self.assertRaisesRegex(ReviewError, "LISTENING_ATTESTATION_INCOMPLETE"):
+            record_decision(
+                row,
+                reviewer="Owner Fixture",
+                decision="ACCEPT",
+                minutes=9,
+                contexts=["headphones"],
+                reasons=[],
+                reviewed_at="2026-08-25T05:30:00Z",
+            )
+        with self.assertRaisesRegex(ReviewError, "REVIEW_INPUT_INVALID"):
+            record_decision(
+                row,
+                reviewer="Owner Fixture",
+                decision="ACCEPT",
+                minutes=10,
+                contexts=[["headphones"]],
+                reasons=[],
+                reviewed_at="2026-08-25T05:30:00Z",
+            )
+
+    def test_reject_decision_requires_reason(self):
+        matrix = build_human_review_matrix(self.provenance_fixture()["assets"])
+        row = matrix["assets"][0]
+        with self.assertRaisesRegex(ReviewError, "REJECTION_REASON_REQUIRED"):
+            record_decision(
+                row,
+                reviewer="Owner Fixture",
+                decision="REJECT",
+                minutes=10,
+                contexts=["headphones", "built-in-speaker"],
+                reasons=[],
+                reviewed_at="2026-08-25T05:30:00Z",
+            )
+
+    def test_only_exact_18_promotion_scope_hashes_can_complete_audio_fit(self):
+        provenance = self.provenance_fixture()
+        matrix = build_human_review_matrix(provenance["assets"])
+        self.assertEqual(
+            sum(row["promotionScope"] for row in matrix["assets"]),
+            18,
+        )
+        for index, row in enumerate(matrix["assets"]):
+            if row["promotionScope"]:
+                matrix["assets"][index] = record_decision(
+                    row,
+                    reviewer="Owner Fixture",
+                    decision="ACCEPT",
+                    minutes=10,
+                    contexts=["headphones", "built-in-speaker"],
+                    reasons=[],
+                    reviewed_at="2026-08-25T05:30:00Z",
+                )
+        self.assertTrue(compute_audio_fit(matrix, provenance)["pass"])
+        matrix["assets"][0]["sha256"] = "0" * 64
+        self.assertFalse(compute_audio_fit(matrix, provenance)["pass"])
+        matrix["assets"][0]["id"] = []
+        self.assertFalse(compute_audio_fit(matrix, provenance)["pass"])
+
+    def test_owner_input_is_hash_bound_and_never_enables_runtime_promotion(self):
+        provenance = self.provenance_fixture()
+        matrix = build_human_review_matrix(provenance["assets"])
+        decisions = [
+            {
+                "id": row["id"],
+                "sha256": row["sha256"],
+                "decision": "ACCEPT",
+                "minutes": 10,
+                "contexts": ["headphones", "built-in-speaker"],
+                "reasons": [],
+            }
+            for row in matrix["assets"]
+            if row["promotionScope"]
+        ]
+        updated = apply_owner_review(
+            matrix,
+            provenance,
+            {
+                "reviewer": "Owner Fixture",
+                "reviewedAt": "2026-08-25T05:30:00Z",
+                "humanAttested": True,
+                "decisions": decisions,
+            },
+        )
+        self.assertEqual(updated["status"], "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED")
+        self.assertFalse(updated["promotionAllowed"])
+        decisions[0]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ReviewError, "REVIEW_HASH_MISMATCH"):
+            apply_owner_review(
+                matrix,
+                provenance,
+                {
+                    "reviewer": "Owner Fixture",
+                    "reviewedAt": "2026-08-25T05:30:00Z",
+                    "humanAttested": True,
+                    "decisions": decisions,
+                },
+            )
+
+    def test_verifier_accepts_pending_or_audio_fit_but_never_runtime_promotion(self):
+        provenance = self.provenance_fixture()
+        pending = build_human_review_matrix(provenance["assets"])
+        self.assertEqual(
+            verify_human_review(pending, provenance),
+            "PENDING_HUMAN_REVIEW",
+        )
+        decisions = [
+            {
+                "id": row["id"],
+                "sha256": row["sha256"],
+                "decision": "ACCEPT",
+                "minutes": 10,
+                "contexts": ["headphones", "built-in-speaker"],
+                "reasons": [],
+            }
+            for row in pending["assets"]
+            if row["promotionScope"]
+        ]
+        accepted = apply_owner_review(
+            pending,
+            provenance,
+            {
+                "reviewer": "Owner Fixture",
+                "reviewedAt": "2026-08-25T05:30:00Z",
+                "humanAttested": True,
+                "decisions": decisions,
+            },
+        )
+        self.assertEqual(
+            verify_human_review(accepted, provenance),
+            "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED",
+        )
+        accepted["promotionAllowed"] = True
+        with self.assertRaisesRegex(VerificationError, "HUMAN_REVIEW_BOUNDARY_INVALID"):
+            verify_human_review(accepted, provenance)
+        for mutate in (
+            lambda value: value["assets"][0].__setitem__("id", []),
+            lambda value: value["assets"][0].__setitem__(
+                "requiredListenOn",
+                [["headphones"]],
+            ),
+        ):
+            malformed = copy.deepcopy(pending)
+            mutate(malformed)
+            with self.assertRaisesRegex(
+                VerificationError,
+                "HUMAN_REVIEW_BOUNDARY_INVALID",
+            ):
+                verify_human_review(malformed, provenance)
+
+    def test_finalize_review_rehashes_atomically_and_rolls_back_on_post_verify_failure(self):
+        for post_verify_fails in (False, True):
+            with self.subTest(post_verify_fails=post_verify_fails), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory)
+                package = base / "package"
+                package.mkdir()
+                provenance = self.provenance_fixture()
+                matrix = build_human_review_matrix(provenance["assets"])
+                (package / "provenance.json").write_text(
+                    json.dumps(provenance),
+                    encoding="utf-8",
+                )
+                human_path = package / "human-review.json"
+                human_path.write_text(json.dumps(matrix), encoding="utf-8")
+                (package / "marker.txt").write_text("preserve", encoding="utf-8")
+                write_sha256sums(
+                    package,
+                    [
+                        path
+                        for path in package.rglob("*")
+                        if path.is_file() and path.name != "SHA256SUMS"
+                    ],
+                )
+                original_human = human_path.read_bytes()
+                original_sums = (package / "SHA256SUMS").read_bytes()
+                owner_input = base / "owner-review.json"
+                owner_input.write_text(
+                    json.dumps({
+                        "reviewer": "Owner Fixture",
+                        "reviewedAt": "2026-08-25T05:30:00Z",
+                        "humanAttested": True,
+                        "decisions": [
+                            {
+                                "id": row["id"],
+                                "sha256": row["sha256"],
+                                "decision": "ACCEPT",
+                                "minutes": 10,
+                                "contexts": ["headphones", "built-in-speaker"],
+                                "reasons": [],
+                            }
+                            for row in matrix["assets"]
+                            if row["promotionScope"]
+                        ],
+                    }),
+                    encoding="utf-8",
+                )
+                second_result = (
+                    VerificationError("post-review verification failed")
+                    if post_verify_fails
+                    else {
+                        "status": "TECHNICAL_PASS_AUDIO_FIT_RUNTIME_PENDING",
+                        "humanReview": "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED",
+                    }
+                )
+                with mock.patch(
+                    "scripts.audio_review.verify.verify_package",
+                    side_effect=[
+                        {
+                            "status": "TECHNICAL_PASS_HUMAN_PENDING",
+                            "humanReview": "PENDING_HUMAN_REVIEW",
+                        },
+                        second_result,
+                    ],
+                ):
+                    if post_verify_fails:
+                        with self.assertRaisesRegex(
+                            VerificationError,
+                            "post-review verification failed",
+                        ):
+                            finalize_review_package(
+                                package,
+                                SPEC,
+                                owner_input,
+                                denylist_path=QUARANTINE_CONFIG,
+                            )
+                        self.assertEqual(human_path.read_bytes(), original_human)
+                        self.assertEqual((package / "SHA256SUMS").read_bytes(), original_sums)
+                    else:
+                        result = finalize_review_package(
+                            package,
+                            SPEC,
+                            owner_input,
+                            denylist_path=QUARANTINE_CONFIG,
+                        )
+                        self.assertEqual(
+                            result["humanReview"],
+                            "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED",
+                        )
+                        updated = json.loads(human_path.read_text(encoding="utf-8"))
+                        self.assertEqual(
+                            updated["status"],
+                            "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED",
+                        )
+                        self.assertNotEqual(human_path.read_bytes(), original_human)
+                        self.assertNotEqual((package / "SHA256SUMS").read_bytes(), original_sums)
+                self.assertEqual((package / "marker.txt").read_text(encoding="utf-8"), "preserve")
+                verify_hash_inventory(package)
+
 @unittest.skipUnless(FFMPEG, "ffmpeg required")
 class BuilderTests(unittest.TestCase):
     def test_builds_and_verifies_exact_atomic_review_package(self):
@@ -984,6 +1264,40 @@ class BuilderTests(unittest.TestCase):
                 self.assertEqual(
                     [path for path in (output / "evidence" / "rights").rglob("*") if path.suffix.lower() in {".wav", ".flac", ".mp3", ".ogg"}],
                     [],
+                )
+                human = json.loads((output / "human-review.json").read_text(encoding="utf-8"))
+                owner_review = Path(directory) / "owner-review-fixture.json"
+                owner_review.write_text(
+                    json.dumps({
+                        "reviewer": "Owner Fixture",
+                        "reviewedAt": "2026-08-25T05:30:00Z",
+                        "humanAttested": True,
+                        "decisions": [
+                            {
+                                "id": row["id"],
+                                "sha256": row["sha256"],
+                                "decision": "ACCEPT",
+                                "minutes": 10,
+                                "contexts": ["headphones", "built-in-speaker"],
+                                "reasons": [],
+                            }
+                            for row in human["assets"]
+                            if row["promotionScope"]
+                        ],
+                    }),
+                    encoding="utf-8",
+                )
+                finalized = finalize_review_package(output, SPEC, owner_review)
+                self.assertEqual(
+                    finalized["status"],
+                    "TECHNICAL_PASS_AUDIO_FIT_RUNTIME_PENDING",
+                )
+                self.assertEqual(
+                    finalized["humanReview"],
+                    "AUDIO_FIT_PASS_RUNTIME_UNVERIFIED",
+                )
+                self.assertFalse(
+                    json.loads((output / "human-review.json").read_text(encoding="utf-8"))["promotionAllowed"]
                 )
                 custom_denylist = Path(directory) / "candidate-denylist.json"
                 custom_payload = json.loads(QUARANTINE_CONFIG.read_text(encoding="utf-8"))
