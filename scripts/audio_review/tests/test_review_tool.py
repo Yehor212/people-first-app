@@ -15,13 +15,13 @@ from pathlib import Path
 import numpy as np
 
 from scripts.audio_review import rights as rights_module
-from scripts.audio_review.builder import build_review_package
+from scripts.audio_review.builder import build_review_package, write_rights_receipts
 from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, render_hyperfocus
 from scripts.audio_review.evidence import build_human_review_matrix, write_sha256sums
 from scripts.audio_review.model import SpecError, load_spec, validate_spec_dict
 from scripts.audio_review.procedural import generate_ambience, generate_feedback
 from scripts.audio_review.rights import HttpClient, RightsError, SourceRequest, acquire_source, validate_cc0_license_text
-from scripts.audio_review.verify import VerificationError, verify_hash_inventory, verify_package
+from scripts.audio_review.verify import VerificationError, verify_hash_inventory, verify_package, verify_rights_evidence
 
 ROOT = Path(__file__).resolve().parents[3]
 SPEC = ROOT / "config/audio/cc0-kimi-audio-review-spec.json"
@@ -347,6 +347,23 @@ class RightsTests(unittest.TestCase):
         with self.assertRaises(RightsError):
             validate_cc0_license_text("CC0 mentioned, but no rights wording is present")
 
+    def test_license_gate_rejects_negated_commercial_or_redistribution_rights(self):
+        for text in (
+            "CC0 1.0. You may adapt, but commercial use is not permitted. You may distribute.",
+            "CC0 1.0. Commercial use and adaptation are allowed, but redistribution is prohibited.",
+        ):
+            with self.subTest(text=text), self.assertRaises(RightsError):
+                validate_cc0_license_text(text)
+
+    def test_source_page_requires_named_author(self):
+        html = "<h1>Forest</h1><p>Sound number: 100</p><p>CC0 1.0</p>"
+        with self.assertRaisesRegex(RightsError, "AUTHOR_NOT_STATED"):
+            rights_module._extract_page(
+                html,
+                "https://bigsoundbank.com/foret-s0100.html",
+                100,
+            )
+
     def test_acquires_hash_bound_source_and_reuses_offline_cache(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "server"
@@ -361,6 +378,59 @@ class RightsTests(unittest.TestCase):
                 self.assertEqual((record.sample_rate_declared, record.channels_declared), (48000, 2))
                 second = acquire_source(request, HttpClient(cache, offline=True, allow_http_hosts={"127.0.0.1"}))
                 self.assertEqual(second.source_sha256, record.source_sha256)
+
+    def test_source_record_preserves_hash_bound_receipt_snapshots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                record = acquire_source(
+                    SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
+                    HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                )
+                self.assertEqual(
+                    record.source_page_snapshot,
+                    (root / "sound-s0100.html").read_bytes(),
+                )
+                self.assertEqual(
+                    record.license_page_snapshot,
+                    (root / "licenses.html").read_bytes(),
+                )
+                self.assertTrue(record.acquired_at.endswith("Z"))
+                self.assertEqual(record.source_page_redirect_chain, ())
+                self.assertEqual(record.license_page_redirect_chain, ())
+                self.assertEqual(record.audio_redirect_chain, ())
+                serializable = record.serializable()
+                self.assertNotIn("local_path", serializable)
+                self.assertNotIn("source_page_snapshot", serializable)
+                self.assertNotIn("license_page_snapshot", serializable)
+                receipt = record.receipt_manifest()
+                self.assertEqual(
+                    receipt["sourcePage"],
+                    {
+                        "url": record.source_page_url,
+                        "artifactPath": "evidence/rights/s0100/source-page.html",
+                        "sha256": record.source_page_sha256,
+                        "bytes": len(record.source_page_snapshot),
+                        "contentType": record.source_page_content_type,
+                        "redirectChain": [],
+                    },
+                )
+                self.assertEqual(
+                    receipt["licensePage"],
+                    {
+                        "url": record.license_url,
+                        "artifactPath": "evidence/rights/s0100/license-page.html",
+                        "sha256": record.license_page_sha256,
+                        "bytes": len(record.license_page_snapshot),
+                        "contentType": record.license_page_content_type,
+                        "redirectChain": [],
+                    },
+                )
+                self.assertFalse(receipt["audio"]["includedInReviewArtifact"])
+                self.assertNotIn("artifactPath", receipt["audio"])
 
     def test_fails_closed_when_direct_audio_number_is_not_bound(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -439,6 +509,89 @@ class AudioTests(unittest.TestCase):
         self.assertLess(float(np.max(np.abs(cue[-100:]))), 0.01)
 
 class EvidenceTests(unittest.TestCase):
+    def test_writes_private_hash_bound_rights_receipts_without_source_audio(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            review = Path(directory) / "review"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                record = acquire_source(
+                    SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
+                    HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                )
+            manifests = write_rights_receipts(review, {100: record})
+            source_page = review / "evidence/rights/s0100/source-page.html"
+            license_page = review / "evidence/rights/s0100/license-page.html"
+            receipt_path = review / "evidence/rights/s0100/receipt.json"
+            self.assertEqual(source_page.read_bytes(), record.source_page_snapshot)
+            self.assertEqual(license_page.read_bytes(), record.license_page_snapshot)
+            self.assertEqual(json.loads(receipt_path.read_text(encoding="utf-8")), manifests[0])
+            self.assertEqual(manifests[0]["sourcePage"]["sha256"], hashlib.sha256(source_page.read_bytes()).hexdigest())
+            self.assertEqual(manifests[0]["licensePage"]["sha256"], hashlib.sha256(license_page.read_bytes()).hexdigest())
+            self.assertEqual(list((review / "evidence/rights").rglob("*.wav")), [])
+            self.assertTrue(record.local_path.is_file())
+            self.assertFalse(record.local_path.is_relative_to(review))
+
+    def test_rights_evidence_verifier_requires_receipts_and_truthful_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            review = Path(directory) / "review"
+            root.mkdir()
+            review.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                record = acquire_source(
+                    SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
+                    HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                )
+            receipts = write_rights_receipts(review, {100: record})
+            ledger = {
+                "schemaVersion": 1,
+                "status": "CC0_SOURCE_RIGHTS_VERIFIED_AT_BUILD_TIME",
+                "canonicalLicense": "CC0-1.0",
+                "sources": [record.serializable()],
+                "receipts": receipts,
+                "legalBoundary": "Evidence packet, not legal advice.",
+            }
+            ledger_path = review / "rights-ledger.json"
+            ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+
+            def inventory():
+                files = [
+                    path
+                    for path in review.rglob("*")
+                    if path.is_file() and path.name != "SHA256SUMS"
+                ]
+                write_sha256sums(review, files)
+                return verify_hash_inventory(review)
+
+            with self.assertRaisesRegex(VerificationError, "RIGHTS_EVIDENCE_INCOMPLETE"):
+                verify_rights_evidence(review, inventory(), {100})
+
+            ledger["status"] = "RIGHTS_EVIDENCE_CAPTURED_REVIEW_REQUIRED"
+            ledger["legalBoundary"] = "Source-specific technical evidence; not legal clearance, legal advice, exclusivity, or a warranty against third-party claims."
+            ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+            self.assertEqual(verify_rights_evidence(review, inventory(), {100}), 1)
+
+            source_page = review / "evidence/rights/s0100/source-page.html"
+            source_page.write_bytes(record.source_page_snapshot + b"tampered")
+            with self.assertRaisesRegex(
+                VerificationError,
+                r"HASH_MISMATCH:evidence/rights/s0100/source-page\.html",
+            ):
+                verify_hash_inventory(review)
+            source_page.write_bytes(record.source_page_snapshot)
+
+            receipt_path = review / "evidence/rights/s0100/receipt.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            receipt["sourcePage"]["sha256"] = "0" * 64
+            receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+            with self.assertRaisesRegex(VerificationError, "RIGHTS_EVIDENCE_INCOMPLETE"):
+                verify_rights_evidence(review, inventory(), {100})
+
     def test_human_review_is_hash_bound_pending_and_cross_platform(self):
         assets = [{"id": "forest:soft", "relativePath": "audio/hyperfocus/a.mp3", "sha256": "a" * 64, "kind": "hyperfocus"}, {"id": "feedback-success", "relativePath": "audio/feedback/b.mp3", "sha256": "b" * 64, "kind": "feedback"}]
         matrix = build_human_review_matrix(assets)
@@ -474,6 +627,25 @@ class BuilderTests(unittest.TestCase):
                 self.assertEqual(result["status"], "TECHNICAL_PASS_HUMAN_PENDING")
                 self.assertEqual(verify_package(output, SPEC)["assetCount"], 26)
                 self.assertTrue((output / "SHA256SUMS").is_file())
+                rights = json.loads((output / "rights-ledger.json").read_text(encoding="utf-8"))
+                self.assertEqual(rights["status"], "RIGHTS_EVIDENCE_CAPTURED_REVIEW_REQUIRED")
+                self.assertEqual(len(rights["receipts"]), len(NUMBERS))
+                for number in NUMBERS:
+                    receipt_dir = output / "evidence" / "rights" / f"s{number:04d}"
+                    self.assertTrue((receipt_dir / "source-page.html").is_file())
+                    self.assertTrue((receipt_dir / "license-page.html").is_file())
+                    self.assertTrue((receipt_dir / "receipt.json").is_file())
+                self.assertEqual(
+                    [path for path in (output / "evidence" / "rights").rglob("*") if path.suffix.lower() in {".wav", ".flac", ".mp3", ".ogg"}],
+                    [],
+                )
+                tampered = output / "evidence" / "rights" / f"s{NUMBERS[0]:04d}" / "source-page.html"
+                tampered.write_bytes(tampered.read_bytes() + b"tampered")
+                with self.assertRaisesRegex(
+                    VerificationError,
+                    rf"HASH_MISMATCH:evidence/rights/s{NUMBERS[0]:04d}/source-page\.html",
+                ):
+                    verify_package(output, SPEC)
 
     def test_failed_build_does_not_mutate_existing_output(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 import hashlib
 from html import unescape
 from html.parser import HTMLParser
@@ -16,6 +17,14 @@ import xml.etree.ElementTree as ET
 
 class RightsError(RuntimeError):
     pass
+
+
+RIGHTS_EVIDENCE_STATUS = "RIGHTS_EVIDENCE_CAPTURED_REVIEW_REQUIRED"
+RIGHTS_LEGAL_BOUNDARY = (
+    "Source-specific technical evidence; not legal clearance, legal advice, "
+    "exclusivity, or a warranty against third-party claims."
+)
+
 
 @dataclass(frozen=True)
 class SourceRequest:
@@ -51,10 +60,17 @@ class SourceRecord:
     sound_number: int
     title: str
     author: str
+    acquired_at: str
     source_page_url: str
     audio_url: str
     license_url: str
     license_id: str
+    source_page_content_type: str
+    license_page_content_type: str
+    audio_content_type: str
+    source_page_redirect_chain: tuple[str, ...]
+    license_page_redirect_chain: tuple[str, ...]
+    audio_redirect_chain: tuple[str, ...]
     source_page_sha256: str
     license_page_sha256: str
     source_sha256: str
@@ -63,11 +79,56 @@ class SourceRecord:
     channels_declared: int | None
     local_path: Path
     rights_evidence: dict[str, bool]
+    source_page_snapshot: bytes
+    license_page_snapshot: bytes
 
     def serializable(self) -> dict:
         data = asdict(self)
         data.pop("local_path")
+        data.pop("source_page_snapshot")
+        data.pop("license_page_snapshot")
         return data
+
+    def receipt_manifest(self) -> dict:
+        if sha256_bytes(self.source_page_snapshot) != self.source_page_sha256:
+            raise RightsError(f"RECEIPT_SNAPSHOT_HASH_MISMATCH:source-page:{self.sound_number}")
+        if sha256_bytes(self.license_page_snapshot) != self.license_page_sha256:
+            raise RightsError(f"RECEIPT_SNAPSHOT_HASH_MISMATCH:license-page:{self.sound_number}")
+        prefix = f"evidence/rights/s{self.sound_number:04d}"
+        return {
+            "schemaVersion": 1,
+            "soundNumber": self.sound_number,
+            "title": self.title,
+            "author": self.author,
+            "acquiredAt": self.acquired_at,
+            "licenseId": self.license_id,
+            "rightsEvidence": dict(self.rights_evidence),
+            "sourcePage": {
+                "url": self.source_page_url,
+                "artifactPath": f"{prefix}/source-page.html",
+                "sha256": self.source_page_sha256,
+                "bytes": len(self.source_page_snapshot),
+                "contentType": self.source_page_content_type,
+                "redirectChain": list(self.source_page_redirect_chain),
+            },
+            "licensePage": {
+                "url": self.license_url,
+                "artifactPath": f"{prefix}/license-page.html",
+                "sha256": self.license_page_sha256,
+                "bytes": len(self.license_page_snapshot),
+                "contentType": self.license_page_content_type,
+                "redirectChain": list(self.license_page_redirect_chain),
+            },
+            "audio": {
+                "url": self.audio_url,
+                "sha256": self.source_sha256,
+                "bytes": self.source_bytes,
+                "contentType": self.audio_content_type,
+                "redirectChain": list(self.audio_redirect_chain),
+                "includedInReviewArtifact": False,
+            },
+            "legalBoundary": RIGHTS_LEGAL_BOUNDARY,
+        }
 
 class _LinkParser(HTMLParser):
     def __init__(self):
@@ -104,14 +165,29 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _utc_timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def _plain_text(html: str) -> str:
     text = re.sub(r"(?is)<script.*?</script>|<style.*?</style>", " ", html)
     text = re.sub(r"(?s)<[^>]+>", " ", text)
     return re.sub(r"\s+", " ", unescape(text)).strip()
 
 
+NEGATED_RIGHTS = re.compile(
+    r"(?:(?:commercial|redistribut|distribut|adapt|remix|transform).{0,30}"
+    r"(?:not permitted|not allowed|prohibited|forbidden)|"
+    r"(?:prohibited|forbidden|may not).{0,40}"
+    r"(?:commercial|redistribut|distribut|adapt|remix|transform))",
+    re.IGNORECASE,
+)
+
+
 def validate_cc0_license_text(text_or_html: str) -> dict[str, bool]:
     text = _plain_text(text_or_html).lower()
+    if NEGATED_RIGHTS.search(text):
+        raise RightsError("CC0 license evidence contains negated rights language")
     evidence = {
         "cc0": bool(re.search(r"\bcc0\b", text)) and ("1.0" in text or "creative commons zero" in text),
         "distribution": bool(re.search(r"copy.{0,40}(?:redistribute|distribute)|share.{0,50}copy|distribut", text)),
@@ -391,7 +467,11 @@ def _extract_page(html: str, page_url: str, sound_number: int) -> tuple[str, str
     title = " ".join(parser.h1_parts).strip() or " ".join(parser.title_parts).strip()
     title = re.sub(r"\s+", " ", title)[:300] or f"Sound {sound_number}"
     author_match = re.search(r"(?:author|recorded by|auteur|credit)[\s:–-]+([^|•]+?)(?=\s+(?:license|sound\s*(?:number|no\.?|n°)|format|duration)\b|$)", text, re.IGNORECASE)
-    author = re.sub(r"\s+", " ", author_match.group(1)).strip()[:200] if author_match else "Not stated on parsed page"
+    if not author_match:
+        raise RightsError(f"AUTHOR_NOT_STATED:{sound_number}")
+    author = re.sub(r"\s+", " ", author_match.group(1)).strip()[:200]
+    if not author:
+        raise RightsError(f"AUTHOR_NOT_STATED:{sound_number}")
     links = [urljoin(page_url, link) for link in parser.links]
     for match in re.findall(r"(?i)(?:https?:)?//[^\s\"'<>]+|[\w./%-]+\.(?:wav|flac|mp3|ogg)(?:\?[^\s\"'<>]*)?", html):
         links.append(urljoin(page_url, match))
@@ -499,10 +579,17 @@ def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
         sound_number=request.sound_number,
         title=title,
         author=author,
+        acquired_at=_utc_timestamp(),
         source_page_url=page_response.url,
         audio_url=response.url,
         license_url=license_response.url,
         license_id=request.license_id,
+        source_page_content_type=page_response.content_type,
+        license_page_content_type=license_response.content_type,
+        audio_content_type=response.content_type,
+        source_page_redirect_chain=page_response.redirect_chain,
+        license_page_redirect_chain=license_response.redirect_chain,
+        audio_redirect_chain=response.redirect_chain,
         source_page_sha256=sha256_bytes(page_response.body),
         license_page_sha256=sha256_bytes(license_response.body),
         source_sha256=sha256_bytes(response.body),
@@ -511,4 +598,6 @@ def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
         channels_declared=channels,
         local_path=local_path,
         rights_evidence=rights,
+        source_page_snapshot=page_response.body,
+        license_page_snapshot=license_response.body,
     )

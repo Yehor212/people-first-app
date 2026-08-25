@@ -15,7 +15,14 @@ from .dsp import decode_audio, encode_mp3, measure_audio, render_hyperfocus
 from .evidence import build_human_review_matrix, file_sha256, write_sha256sums
 from .model import AssetSpec, ReviewSpec, load_spec
 from .procedural import generate_ambience, generate_feedback
-from .rights import HttpClient, SourceRecord, SourceRequest, acquire_source
+from .rights import (
+    RIGHTS_EVIDENCE_STATUS,
+    RIGHTS_LEGAL_BOUNDARY,
+    HttpClient,
+    SourceRecord,
+    SourceRequest,
+    acquire_source,
+)
 from .verify import verify_package
 
 class BuildError(RuntimeError):
@@ -92,6 +99,26 @@ def _atomic_promote(temp_dir: Path, output_dir: Path) -> None:
 def _write_json(path: Path, payload: dict | list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_rights_receipts(
+    review_root: str | Path,
+    records: dict[int, SourceRecord],
+) -> list[dict]:
+    root = Path(review_root)
+    manifests: list[dict] = []
+    for sound_number in sorted(records):
+        record = records[sound_number]
+        if record.sound_number != sound_number:
+            raise BuildError(f"Source record key mismatch: {sound_number}")
+        receipt = record.receipt_manifest()
+        receipt_dir = root / "evidence" / "rights" / f"s{sound_number:04d}"
+        receipt_dir.mkdir(parents=True, exist_ok=False)
+        (receipt_dir / "source-page.html").write_bytes(record.source_page_snapshot)
+        (receipt_dir / "license-page.html").write_bytes(record.license_page_snapshot)
+        _write_json(receipt_dir / "receipt.json", receipt)
+        manifests.append(receipt)
+    return manifests
 
 
 def _render_source_assets(spec: ReviewSpec, records: dict[int, SourceRecord], temp_dir: Path, ffmpeg: str, duration_cap: float | None) -> tuple[list[dict], list[dict]]:
@@ -249,6 +276,7 @@ def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_di
     temp_dir = output.parent / ("." + output.name + ".tmp-" + uuid.uuid4().hex)
     temp_dir.mkdir(parents=True)
     try:
+        rights_receipts = write_rights_receipts(temp_dir, unique_sources)
         sourced_provenance, sourced_qc = _render_source_assets(spec, unique_sources, temp_dir, ffmpeg, test_duration_cap)
         procedural_provenance, procedural_qc = _render_procedural_assets(spec, temp_dir, ffmpeg, test_duration_cap)
         provenance_rows = sorted(sourced_provenance + procedural_provenance, key=lambda row: row["id"])
@@ -260,11 +288,12 @@ def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_di
         generated_at = _timestamp()
         _write_json(temp_dir / "rights-ledger.json", {
             "schemaVersion": 1,
-            "status": "CC0_SOURCE_RIGHTS_VERIFIED_AT_BUILD_TIME",
+            "status": RIGHTS_EVIDENCE_STATUS,
             "accessedAt": generated_at,
             "canonicalLicense": "CC0-1.0",
             "sources": [unique_sources[number].serializable() for number in sorted(unique_sources)],
-            "legalBoundary": "Evidence packet, not legal advice or a warranty against third-party claims."
+            "receipts": rights_receipts,
+            "legalBoundary": RIGHTS_LEGAL_BOUNDARY,
         })
         _write_json(temp_dir / "provenance.json", {
             "schemaVersion": 1,
