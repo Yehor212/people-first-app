@@ -24,6 +24,9 @@ test("CC0 review workflow is least-privileged and publishes the exact review pac
   assert.match(source, /actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10/);
   assert.match(source, /actions\/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e/);
   assert.match(source, /actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a/);
+  assert.match(source, /cc0-kimi-audio-failure-\$\{\{ github\.sha \}\}/);
+  assert.match(source, /output\/cc0-kimi-source-cache\/2679\.mp3/);
+  assert.match(source, /retention-days: 1/);
   assert.match(source, /retention-days: 30/);
   assert.match(source, /git diff --exit-code -- public\/sounds docs\/sounds src\/sw\.ts android ios src-tauri/);
 });
