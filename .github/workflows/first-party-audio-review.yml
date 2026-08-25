@@ -38,11 +38,16 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes ffmpeg
+
       - name: Verify audio toolchain
         run: |
           node --version
-          ffmpeg -version | head -n 1
-          ffprobe -version | head -n 1
+          ffmpeg -version
+          ffprobe -version
 
       - name: Run focused generator tests
         run: |

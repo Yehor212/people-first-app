@@ -18,6 +18,9 @@ test("review workflow is least-privileged and publishes the exact 26-file pack",
   assert.doesNotMatch(source, /contents:\s*write|pull-requests:\s*write|id-token:\s*write/);
   assert.doesNotMatch(source, /\bsecrets\./);
   assert.doesNotMatch(source, /npm\s+(?:ci|install)/);
+  assert.match(source, /sudo apt-get update/);
+  assert.match(source, /sudo apt-get install --no-install-recommends --yes ffmpeg/);
+  assert.doesNotMatch(source, /ffmpeg -version \| head|ffprobe -version \| head/);
 
   assert.match(
     source,
