@@ -277,7 +277,7 @@ function makeDefinitions() {
     familyDefinition("forest", "intense", "forestIntense", 4, "highpass=f=80,lowpass=f=14000,acompressor=threshold=0.18:ratio=1.7:attack=35:release=280"),
 
     familyDefinition("rain", "soft", "rainSoft", 0, "highpass=f=115,lowpass=f=9000,equalizer=f=2600:t=q:w=1.1:g=-1.5", 0.5),
-    familyDefinition("rain", "deep", "rainDeep", 40, "highpass=f=95,lowpass=f=12500,equalizer=f=450:t=q:w=1.0:g=-1.0"),
+    familyDefinition("rain", "deep", "rainDeep", 30, "highpass=f=95,lowpass=f=12500,equalizer=f=450:t=q:w=1.0:g=-1.0"),
     familyDefinition("rain", "intense", "rainIntense", 20, "highpass=f=80,lowpass=f=15000,acompressor=threshold=0.12:ratio=2.0:attack=12:release=180"),
 
     familyDefinition("ocean", "soft", "oceanSoft", 15, "highpass=f=38,lowpass=f=7200,equalizer=f=180:t=q:w=1.0:g=1.2"),
