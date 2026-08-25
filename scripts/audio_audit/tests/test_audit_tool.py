@@ -59,6 +59,20 @@ def load_runner_common_api(test_case: unittest.TestCase):
         test_case.fail(f"strict audio audit backend validation is missing: {exc}")
 
 
+def load_audit_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.audit")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit orchestrator is missing: {exc}")
+
+
+def load_verify_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.verify")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit verifier is missing: {exc}")
+
+
 class AuditPolicyTests(unittest.TestCase):
     def load_json(self, path: Path) -> dict:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -509,6 +523,145 @@ class BackendIntegrationTests(unittest.TestCase):
             for path in smoke_root.iterdir():
                 path.unlink()
             smoke_root.rmdir()
+
+
+class OrchestratorTests(unittest.TestCase):
+    def test_visible_regression_cli_rejects_caller_controlled_paths(self):
+        audit = load_audit_api(self)
+
+        with self.assertRaisesRegex(audit.AuditError, "does not accept path arguments"):
+            audit.main(["--package", "/tmp/input", "--output", "/tmp/output"])
+
+    def test_prompt_rows_cover_positive_siblings_and_hard_negatives_without_duplicates(self):
+        audit = load_audit_api(self)
+        self.assertTrue(hasattr(audit, "build_clap_prompts"), "CLAP prompt construction is missing")
+        model = load_model_api(self)
+        policy = model.load_audit_policy(POLICY_PATH)
+
+        prompts = audit.build_clap_prompts(policy, "forest")
+
+        self.assertGreaterEqual(len(prompts), 11)
+        self.assertEqual({row["group"] for row in prompts}, {"positive", "sibling", "hard-negative"})
+        self.assertEqual(len({row["id"] for row in prompts}), len(prompts))
+
+    def test_semantic_summary_reports_literal_target_margin_but_abstains_before_calibration(self):
+        audit = load_audit_api(self)
+        self.assertTrue(hasattr(audit, "summarize_semantic"), "semantic summary is missing")
+
+        result = audit.summarize_semantic(
+            {
+                "rows": [
+                    {"promptId": "p1", "group": "positive", "probability": 0.6, "logit": 3.0},
+                    {"promptId": "p2", "group": "positive", "probability": 0.5, "logit": 2.0},
+                    {"promptId": "s1", "group": "sibling", "probability": 0.2, "logit": 1.0},
+                    {"promptId": "h1", "group": "hard-negative", "probability": 0.1, "logit": 0.5},
+                ]
+            }
+        )
+
+        self.assertEqual(result["status"], "ABSTAIN")
+        self.assertAlmostEqual(result["targetMargin"], 0.4)
+        self.assertEqual(result["reasons"], ["UNCALIBRATED_SEMANTIC_THRESHOLDS"])
+
+    def test_any_fail_or_abstain_blocks_and_pass_never_sets_human_status(self):
+        audit = load_audit_api(self)
+
+        report = audit.combine_results(
+            provenance={"status": "PASS", "reasons": []},
+            semantic={"status": "PASS", "reasons": []},
+            events={"status": "ABSTAIN", "reasons": ["uncalibrated event threshold"]},
+            auditor_admitted=False,
+        )
+
+        self.assertEqual(report["verdict"], "ABSTAIN")
+        self.assertEqual(report["status"], "TRIAL_ONLY_NOT_ADMITTED")
+        self.assertNotIn("humanSemanticPass", report)
+        self.assertNotIn("promotionAllowed", report)
+
+    def test_one_critical_event_cannot_be_hidden_by_high_semantic_score(self):
+        audit = load_audit_api(self)
+
+        report = audit.combine_results(
+            provenance={"status": "PASS", "reasons": []},
+            semantic={"status": "PASS", "targetMargin": 0.99, "reasons": []},
+            events={"status": "FAIL", "reasons": ["speech detected at 4.8 seconds"]},
+            auditor_admitted=True,
+        )
+
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertIn("speech detected at 4.8 seconds", report["reasons"])
+
+    def test_legacy_v1_package_is_provenance_fail_even_for_owner_positive_asset(self):
+        audit = load_audit_api(self)
+
+        result = audit.classify_provenance(
+            package_id="zenflow-cc0-kimi-audio-reconstruction-v1",
+            asset={
+                "id": "fireplace:deep",
+                "processing": {"profile": "fireplace_deep", "seed": 2054002473},
+                "source": {"sourceSha256": "9ac70d55"},
+            },
+        )
+
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("LEGACY_LEVEL_SPECIFIC_OFFSET_AND_TEXTURE", result["reasons"])
+
+
+class AuditVerifierTests(unittest.TestCase):
+    def test_visible_regression_verifier_cli_rejects_caller_controlled_paths(self):
+        verify = load_verify_api(self)
+
+        with self.assertRaisesRegex(verify.AuditVerificationError, "does not accept path arguments"):
+            verify.main(["--report", "/tmp/report"])
+
+    def test_hash_inventory_rejects_tampered_report_before_semantic_parsing(self):
+        verify = load_verify_api(self)
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            report = root / "ai-audit-report.json"
+            report.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "status": "TRIAL_ONLY_NOT_ADMITTED",
+                        "verdict": "ABSTAIN",
+                        "assets": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            digest = __import__("hashlib").sha256(report.read_bytes()).hexdigest()
+            (root / "SHA256SUMS").write_text(f"{digest}  ai-audit-report.json\n", encoding="utf-8")
+            report.write_text("{}", encoding="utf-8")
+
+            with self.assertRaisesRegex(verify.AuditVerificationError, "hash mismatch"):
+                verify.verify_audit_report(root)
+
+    def test_verifier_rejects_ai_authored_human_or_promotion_fields(self):
+        verify = load_verify_api(self)
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            report = root / "ai-audit-report.json"
+            report.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "status": "TRIAL_ONLY_NOT_ADMITTED",
+                        "verdict": "ABSTAIN",
+                        "assets": [],
+                        "humanSemanticPass": True,
+                    },
+                    sort_keys=True,
+                ),
+                encoding="utf-8",
+            )
+            digest = __import__("hashlib").sha256(report.read_bytes()).hexdigest()
+            (root / "SHA256SUMS").write_text(f"{digest}  ai-audit-report.json\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(verify.AuditVerificationError, "forbidden authority field"):
+                verify.verify_audit_report(root)
 
     @unittest.skipUnless(
         os.environ.get("ZENFLOW_RUN_MODEL_INTEGRATION") == "1",
