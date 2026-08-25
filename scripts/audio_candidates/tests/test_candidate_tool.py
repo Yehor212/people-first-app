@@ -19,6 +19,11 @@ from scripts.audio_candidates.preview import (
     verify_operations,
     verify_preview,
 )
+from scripts.audio_candidates.blind import (
+    ReviewError,
+    apply_source_review,
+    build_blind_bundle,
+)
 from scripts.audio_review.rights import SourceRecord
 
 
@@ -277,6 +282,73 @@ class PreviewTests(unittest.TestCase):
                     hashlib.sha256(source_bytes).hexdigest(),
                     root / "other-previews",
                 )
+
+
+class BlindBundleTests(unittest.TestCase):
+    def _preview_records(self, root: Path):
+        records = []
+        for family_index, family in enumerate(EXPECTED_FAMILIES, start=1):
+            for position in (1, 2, 3):
+                candidate_id = f"{family}-c{position}"
+                source = root / f"{candidate_id}-source.wav"
+                with wave.open(str(source), "wb") as output:
+                    output.setnchannels(2)
+                    output.setsampwidth(2)
+                    output.setframerate(48000)
+                    sample = family_index * 10 + position
+                    frame = sample.to_bytes(2, "little", signed=True) * 2
+                    output.writeframes(frame * 48000 * 30)
+                source_bytes = source.read_bytes()
+                records.append(
+                    build_raw_preview(
+                        candidate_id,
+                        source,
+                        hashlib.sha256(source_bytes).hexdigest(),
+                        root / "previews",
+                    )
+                )
+        return tuple(records)
+
+    def test_public_bundle_contains_only_family_and_abc_names(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            records = self._preview_records(root)
+            bundle = build_blind_bundle(
+                records,
+                root / "bundle",
+                bytes.fromhex("00" * 32),
+            )
+
+            public_names = {path.name for path in bundle.public_files}
+            expected_names = {
+                f"{family}-{label}.wav"
+                for family in EXPECTED_FAMILIES
+                for label in ("A", "B", "C")
+            } | {"SOURCE_REVIEW.md"}
+            self.assertEqual(public_names, expected_names)
+            public_text = (bundle.listen_root / "SOURCE_REVIEW.md").read_text(
+                encoding="utf-8"
+            )
+            for forbidden in (
+                "BigSoundBank",
+                "current",
+                "incumbent",
+                "source title",
+                "candidate",
+                "c1",
+                "c2",
+                "c3",
+            ):
+                self.assertNotIn(forbidden.lower(), public_text.lower())
+            self.assertEqual(len(bundle.mapping), 18)
+            self.assertEqual(len({row["previewSha256"] for row in bundle.mapping}), 18)
+
+    def test_ai_report_cannot_choose_candidate_or_fill_owner_fields(self):
+        with self.assertRaisesRegex(ReviewError, "owner decision required"):
+            apply_source_review(
+                {"forest": ("A", "B", "C", "NONE")},
+                {"forest": {"decision": "AI_TOP_SCORE"}},
+            )
 
 
 if __name__ == "__main__":
