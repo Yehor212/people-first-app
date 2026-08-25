@@ -8,9 +8,9 @@ import json
 from pathlib import Path
 import re
 import tempfile
-from typing import Iterable
+from typing import Callable, Iterable
 from urllib.parse import urljoin, urlparse
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 import wave
 import xml.etree.ElementTree as ET
 
@@ -29,6 +29,22 @@ class HttpResponse:
     url: str
     body: bytes
     content_type: str
+    redirect_chain: tuple[str, ...]
+
+
+class _ValidatingRedirectHandler(HTTPRedirectHandler):
+    def __init__(self, validate_target: Callable[[str], None]):
+        super().__init__()
+        self._validate_target = validate_target
+        self.redirect_chain: list[str] = []
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target_url = urljoin(req.full_url, newurl)
+        if len(self.redirect_chain) >= 5:
+            raise RightsError(f"REDIRECT_LIMIT_EXCEEDED:{req.full_url}")
+        self._validate_target(target_url)
+        self.redirect_chain.append(target_url)
+        return super().redirect_request(req, fp, code, msg, headers, target_url)
 
 @dataclass(frozen=True)
 class SourceRecord:
@@ -112,34 +128,106 @@ class HttpClient:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.offline = offline
-        self.allow_http_hosts = set(allow_http_hosts)
+        self.allow_http_hosts = {host.lower().rstrip(".") for host in allow_http_hosts}
         self.timeout = timeout
 
-    def _validate_url(self, url: str) -> None:
+    def _validate_url(self, url: str, *, allowed_hosts: frozenset[str] | None = None) -> None:
         parsed = urlparse(url)
-        if not parsed.hostname:
+        if parsed.username is not None or parsed.password is not None or parsed.fragment:
+            raise RightsError(f"URL contains forbidden authority or fragment: {url}")
+        try:
+            hostname = parsed.hostname
+            port = parsed.port
+        except ValueError as exc:
+            raise RightsError(f"URL has an invalid port: {url}") from exc
+        if not hostname:
             raise RightsError(f"URL has no hostname: {url}")
+        host = hostname.lower().rstrip(".")
+        normalized_allowed_hosts = (
+            frozenset(item.lower().rstrip(".") for item in allowed_hosts)
+            if allowed_hosts is not None
+            else None
+        )
+        if normalized_allowed_hosts is not None and host not in normalized_allowed_hosts:
+            raise RightsError(f"URL host is outside the request allowlist: {host}")
+        if port not in (None, 443) and not (
+            parsed.scheme == "http" and host in self.allow_http_hosts
+        ):
+            raise RightsError(f"URL uses an unexpected port: {url}")
         if parsed.scheme == "https":
             return
-        if parsed.scheme == "http" and parsed.hostname in self.allow_http_hosts:
+        if parsed.scheme == "http" and host in self.allow_http_hosts:
             return
         raise RightsError(f"Only HTTPS is allowed outside explicit test hosts: {url}")
 
-    def fetch(self, url: str, *, max_bytes: int = 100 * 1024 * 1024) -> HttpResponse:
-        self._validate_url(url)
+    def fetch(
+        self,
+        url: str,
+        *,
+        max_bytes: int = 100 * 1024 * 1024,
+        allowed_hosts: frozenset[str] | None = None,
+    ) -> HttpResponse:
+        self._validate_url(url, allowed_hosts=allowed_hosts)
         key = hashlib.sha256(url.encode("utf-8")).hexdigest()
-        body_path = self.cache_dir / "http" / f"{key}.body"
-        meta_path = self.cache_dir / "http" / f"{key}.json"
-        if body_path.exists() and meta_path.exists():
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            return HttpResponse(meta["url"], body_path.read_bytes(), meta.get("contentType", ""))
+        http_dir = self.cache_dir / "http"
+        body_path = http_dir / f"{key}.body"
+        meta_path = http_dir / f"{key}.json"
+        if body_path.is_symlink() or meta_path.is_symlink():
+            raise RightsError(f"CACHE_SYMLINK_REJECTED:{url}")
+        body_exists = body_path.exists()
+        meta_exists = meta_path.exists()
+        if body_exists != meta_exists:
+            raise RightsError(f"CACHE_METADATA_INVALID:{url}")
+        if body_exists and meta_exists:
+            if not body_path.is_file() or not meta_path.is_file():
+                raise RightsError(f"CACHE_METADATA_INVALID:{url}")
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise RightsError(f"CACHE_METADATA_INVALID:{url}") from exc
+            required = {"url", "contentType", "sha256", "bytes", "redirectChain"}
+            if not isinstance(meta, dict) or not required.issubset(meta):
+                raise RightsError(f"CACHE_METADATA_INVALID:{url}")
+            redirect_chain = meta["redirectChain"]
+            if (
+                not isinstance(meta["url"], str)
+                or not isinstance(meta["contentType"], str)
+                or not isinstance(meta["sha256"], str)
+                or re.fullmatch(r"[0-9a-f]{64}", meta["sha256"]) is None
+                or not isinstance(meta["bytes"], int)
+                or isinstance(meta["bytes"], bool)
+                or meta["bytes"] < 0
+                or not isinstance(redirect_chain, list)
+                or len(redirect_chain) > 5
+                or any(not isinstance(hop, str) for hop in redirect_chain)
+                or (redirect_chain and redirect_chain[-1] != meta["url"])
+            ):
+                raise RightsError(f"CACHE_METADATA_INVALID:{url}")
+            body = body_path.read_bytes()
+            if len(body) != meta["bytes"] or sha256_bytes(body) != meta["sha256"]:
+                raise RightsError(f"CACHE_INTEGRITY_MISMATCH:{url}")
+            if len(body) > max_bytes:
+                raise RightsError(f"Response exceeds byte limit: {url}")
+            self._validate_url(meta["url"], allowed_hosts=allowed_hosts)
+            for hop in redirect_chain:
+                self._validate_url(hop, allowed_hosts=allowed_hosts)
+            return HttpResponse(
+                meta["url"],
+                body,
+                meta["contentType"],
+                tuple(redirect_chain),
+            )
         if self.offline:
             raise RightsError(f"Offline cache miss: {url}")
         request = Request(url, headers={"User-Agent": "ZenFlow-Audio-Provenance/1.0 (+https://github.com/Yehor212/people-first-app)"})
+        redirect_handler = _ValidatingRedirectHandler(
+            lambda target: self._validate_url(target, allowed_hosts=allowed_hosts)
+        )
+        opener = build_opener(redirect_handler)
         try:
-            with urlopen(request, timeout=self.timeout) as response:
+            with opener.open(request, timeout=self.timeout) as response:
                 final_url = response.geturl()
-                self._validate_url(final_url)
+                self._validate_url(final_url, allowed_hosts=allowed_hosts)
                 declared = response.headers.get("Content-Length")
                 if declared and int(declared) > max_bytes:
                     raise RightsError(f"Response exceeds byte limit: {url}")
@@ -151,16 +239,50 @@ class HttpClient:
             raise
         except Exception as exc:
             raise RightsError(f"HTTP fetch failed for {url}: {exc}") from exc
-        body_path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=body_path.parent, delete=False) as tmp:
-            tmp.write(body)
-            temp_body = Path(tmp.name)
-        temp_body.replace(body_path)
-        meta = {"url": final_url, "contentType": content_type, "sha256": sha256_bytes(body), "bytes": len(body)}
-        temp_meta = meta_path.with_suffix(".tmp")
-        temp_meta.write_text(json.dumps(meta, sort_keys=True), encoding="utf-8")
-        temp_meta.replace(meta_path)
-        return HttpResponse(final_url, body, content_type)
+        http_dir.mkdir(parents=True, exist_ok=True)
+        meta = {
+            "url": final_url,
+            "contentType": content_type,
+            "sha256": sha256_bytes(body),
+            "bytes": len(body),
+            "redirectChain": redirect_handler.redirect_chain,
+        }
+        temp_body: Path | None = None
+        temp_meta: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                dir=http_dir,
+                prefix=f".{key}.",
+                suffix=".body.tmp",
+                delete=False,
+            ) as tmp:
+                tmp.write(body)
+                temp_body = Path(tmp.name)
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=http_dir,
+                prefix=f".{key}.",
+                suffix=".json.tmp",
+                delete=False,
+            ) as tmp:
+                json.dump(meta, tmp, sort_keys=True)
+                temp_meta = Path(tmp.name)
+            temp_body.replace(body_path)
+            temp_body = None
+            temp_meta.replace(meta_path)
+            temp_meta = None
+        finally:
+            if temp_body is not None:
+                temp_body.unlink(missing_ok=True)
+            if temp_meta is not None:
+                temp_meta.unlink(missing_ok=True)
+        return HttpResponse(
+            final_url,
+            body,
+            content_type,
+            tuple(redirect_handler.redirect_chain),
+        )
 
 
 def _parse_sitemap(xml_bytes: bytes) -> list[str]:
@@ -171,30 +293,68 @@ def _parse_sitemap(xml_bytes: bytes) -> list[str]:
     return [element.text.strip() for element in root.iter() if element.tag.rsplit("}", 1)[-1] == "loc" and element.text]
 
 
-def _collect_sitemap_urls(client: HttpClient, provider_root: str) -> list[str]:
+def _collect_sitemap_urls(
+    client: HttpClient,
+    provider_root: str,
+    *,
+    allowed_hosts: frozenset[str],
+) -> list[str]:
     candidates = [urljoin(provider_root, "sitemap.xml"), urljoin(provider_root, "sitemap_index.xml")]
     errors: list[str] = []
     for candidate in candidates:
         try:
-            response = client.fetch(candidate, max_bytes=20 * 1024 * 1024)
+            response = client.fetch(
+                candidate,
+                max_bytes=20 * 1024 * 1024,
+                allowed_hosts=allowed_hosts,
+            )
             locations = _parse_sitemap(response.body)
             pages: list[str] = []
             for loc in locations:
-                if loc.lower().endswith(".xml"):
-                    child = client.fetch(loc, max_bytes=20 * 1024 * 1024)
-                    pages.extend(_parse_sitemap(child.body))
+                try:
+                    client._validate_url(loc, allowed_hosts=allowed_hosts)
+                except RightsError as exc:
+                    raise RightsError(f"SITEMAP_HOST_MISMATCH:{loc}: {exc}") from exc
+                if urlparse(loc).path.lower().endswith(".xml"):
+                    child = client.fetch(
+                        loc,
+                        max_bytes=20 * 1024 * 1024,
+                        allowed_hosts=allowed_hosts,
+                    )
+                    for page in _parse_sitemap(child.body):
+                        try:
+                            client._validate_url(page, allowed_hosts=allowed_hosts)
+                        except RightsError as exc:
+                            raise RightsError(f"SITEMAP_HOST_MISMATCH:{page}: {exc}") from exc
+                        pages.append(page)
                 else:
                     pages.append(loc)
             if pages:
                 return pages
         except RightsError as exc:
+            if str(exc).startswith("SITEMAP_HOST_MISMATCH:"):
+                raise
             errors.append(str(exc))
     raise RightsError("No usable provider sitemap: " + " | ".join(errors))
 
 
-def resolve_sound_page(sound_number: int, provider_root: str, client: HttpClient) -> str:
+def resolve_sound_page(
+    sound_number: int,
+    provider_root: str,
+    client: HttpClient,
+    *,
+    allowed_hosts: frozenset[str],
+) -> str:
     pattern = re.compile(rf"s0*{sound_number}\.html$", re.IGNORECASE)
-    matches = [url for url in _collect_sitemap_urls(client, provider_root) if pattern.search(urlparse(url).path)]
+    matches = [
+        url
+        for url in _collect_sitemap_urls(
+            client,
+            provider_root,
+            allowed_hosts=allowed_hosts,
+        )
+        if pattern.search(urlparse(url).path)
+    ]
     unique = list(dict.fromkeys(matches))
     if len(unique) != 1:
         raise RightsError(f"Expected one sitemap page for sound {sound_number}, found {len(unique)}")
@@ -261,24 +421,44 @@ def _declared_wav_format(path: Path) -> tuple[int | None, int | None]:
 def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
     if request.license_id != "CC0-1.0":
         raise RightsError(f"Unsupported source license: {request.license_id}")
-    page_url = resolve_sound_page(request.sound_number, request.provider_root, client)
-    page_response = client.fetch(page_url, max_bytes=5 * 1024 * 1024)
-    license_response = client.fetch(request.license_url, max_bytes=5 * 1024 * 1024)
+    provider_host = (urlparse(request.provider_root).hostname or "").lower().rstrip(".")
+    if not provider_host:
+        raise RightsError(f"Provider root has no hostname: {request.provider_root}")
+    allowed_hosts = frozenset({provider_host})
+    client._validate_url(request.provider_root, allowed_hosts=allowed_hosts)
+    client._validate_url(request.license_url, allowed_hosts=allowed_hosts)
+    page_url = resolve_sound_page(
+        request.sound_number,
+        request.provider_root,
+        client,
+        allowed_hosts=allowed_hosts,
+    )
+    page_response = client.fetch(
+        page_url,
+        max_bytes=5 * 1024 * 1024,
+        allowed_hosts=allowed_hosts,
+    )
+    license_response = client.fetch(
+        request.license_url,
+        max_bytes=5 * 1024 * 1024,
+        allowed_hosts=allowed_hosts,
+    )
     rights = validate_cc0_license_text(license_response.body.decode("utf-8", "replace"))
     html = page_response.body.decode("utf-8", "replace")
     title, author, links = _extract_page(html, page_response.url, request.sound_number)
-    number_tokens = {str(request.sound_number), f"{request.sound_number:04d}"}
+    number_pattern = re.compile(
+        rf"(?<!\d)0*{re.escape(str(request.sound_number))}(?!\d)"
+    )
     audio_candidates = []
     for url in links:
         parsed = urlparse(url)
         if not parsed.hostname:
             continue
-        host = parsed.hostname.lower()
-        provider_host = urlparse(request.provider_root).hostname or ""
-        if host != provider_host and not host.endswith("." + provider_host):
+        host = parsed.hostname.lower().rstrip(".")
+        if host != provider_host:
             continue
         lower = url.lower()
-        if not any(token in (parsed.path + "?" + parsed.query) for token in number_tokens):
+        if number_pattern.search(parsed.path + "?" + parsed.query) is None:
             continue
         if re.search(r"\.(?:wav|flac|mp3|ogg)(?:$|\?)", lower) or "download" in lower or "upload" in lower:
             audio_candidates.append(url)
@@ -289,7 +469,11 @@ def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
     failures: list[str] = []
     for candidate in audio_candidates:
         try:
-            response = client.fetch(candidate, max_bytes=100 * 1024 * 1024)
+            response = client.fetch(
+                candidate,
+                max_bytes=100 * 1024 * 1024,
+                allowed_hosts=allowed_hosts,
+            )
             kind = _audio_magic(response.body)
             if not kind:
                 raise RightsError("download is not recognized audio")

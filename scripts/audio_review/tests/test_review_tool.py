@@ -46,6 +46,78 @@ def fixture_server(root: Path):
             server.shutdown()
             thread.join(timeout=2)
 
+@contextlib.contextmanager
+def response_server(host: str = "127.0.0.1", body: bytes = b"target"):
+    state = {"requests": 0}
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, format, *args):
+            pass
+
+        def do_GET(self):
+            state["requests"] += 1
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    with socketserver.TCPServer((host, 0), Handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://{host}:{server.server_address[1]}/target", state
+        finally:
+            server.shutdown()
+            thread.join(timeout=2)
+
+@contextlib.contextmanager
+def redirect_server(target_url: str):
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, format, *args):
+            pass
+
+        def do_GET(self):
+            self.send_response(302)
+            self.send_header("Location", target_url)
+            self.end_headers()
+
+    with socketserver.TCPServer(("127.0.0.1", 0), Handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_address[1]}/redirect"
+        finally:
+            server.shutdown()
+            thread.join(timeout=2)
+
+@contextlib.contextmanager
+def redirect_chain_server(redirects: int):
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, format, *args):
+            pass
+
+        def do_GET(self):
+            index = int(self.path.lstrip("/") or "0")
+            if index < redirects:
+                self.send_response(302)
+                self.send_header("Location", f"/{index + 1}")
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"ok")
+
+    with socketserver.TCPServer(("127.0.0.1", 0), Handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_address[1]}/0"
+        finally:
+            server.shutdown()
+            thread.join(timeout=2)
+
 def write_source_fixture(root: Path, base: str, numbers=NUMBERS):
     (root / "audio").mkdir(exist_ok=True)
     (root / "licenses.html").write_text(LICENSE_TEXT, encoding="utf-8")
@@ -119,6 +191,156 @@ class RightsTests(unittest.TestCase):
                     2715,
                 )
 
+    def test_offline_cache_rejects_body_tampering(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                client = HttpClient(cache, allow_http_hosts={"127.0.0.1"})
+                response = client.fetch(base + "/sitemap.xml")
+                body_path = next((cache / "http").glob("*.body"))
+                body_path.write_bytes(response.body + b"tampered")
+            with self.assertRaisesRegex(RightsError, "CACHE_INTEGRITY_MISMATCH"):
+                HttpClient(cache, offline=True, allow_http_hosts={"127.0.0.1"}).fetch(
+                    base + "/sitemap.xml"
+                )
+
+    def test_offline_cache_rejects_missing_hash_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            http = cache / "http"
+            http.mkdir()
+            url = "https://bigsoundbank.com/sitemap.xml"
+            key = hashlib.sha256(url.encode("utf-8")).hexdigest()
+            (http / f"{key}.body").write_bytes(b"x")
+            (http / f"{key}.json").write_text(
+                '{"url":"https://bigsoundbank.com/sitemap.xml"}',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(RightsError, "CACHE_METADATA_INVALID"):
+                HttpClient(cache, offline=True).fetch(url)
+
+    def test_offline_cache_rejects_symlinked_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            http = cache / "http"
+            http.mkdir()
+            url = "https://bigsoundbank.com/sitemap.xml"
+            key = hashlib.sha256(url.encode("utf-8")).hexdigest()
+            real_body = cache / "outside.body"
+            real_body.write_bytes(b"x")
+            (http / f"{key}.body").symlink_to(real_body)
+            (http / f"{key}.json").write_text(
+                json.dumps(
+                    {
+                        "url": url,
+                        "contentType": "application/xml",
+                        "sha256": hashlib.sha256(b"x").hexdigest(),
+                        "bytes": 1,
+                        "redirectChain": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(RightsError, "CACHE_SYMLINK_REJECTED"):
+                HttpClient(cache, offline=True).fetch(url)
+
+    def test_rejects_unsafe_or_out_of_allowlist_urls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            client = HttpClient(Path(directory))
+            for url in (
+                "https://user@bigsoundbank.com/file.mp3",
+                "https://bigsoundbank.com:444/file.mp3",
+                "https://bigsoundbank.com/file.mp3#fragment",
+                "ftp://bigsoundbank.com/file.mp3",
+            ):
+                with self.subTest(url=url), self.assertRaises(RightsError):
+                    client._validate_url(
+                        url,
+                        allowed_hosts=frozenset({"bigsoundbank.com"}),
+                    )
+            with self.assertRaisesRegex(RightsError, "outside the request allowlist"):
+                client._validate_url(
+                    "https://cdn.bigsoundbank.com/file.mp3",
+                    allowed_hosts=frozenset({"bigsoundbank.com"}),
+                )
+
+    def test_redirect_to_out_of_allowlist_host_is_rejected_before_fetch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with response_server("localhost") as (target_url, state):
+                with redirect_server(target_url) as source_url:
+                    client = HttpClient(
+                        Path(directory),
+                        allow_http_hosts={"127.0.0.1"},
+                    )
+                    with self.assertRaisesRegex(RightsError, "outside the request allowlist"):
+                        client.fetch(
+                            source_url,
+                            allowed_hosts=frozenset({"127.0.0.1"}),
+                        )
+            self.assertEqual(state["requests"], 0)
+
+    def test_same_host_redirect_chain_is_hash_bound_in_offline_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                target_url = base + "/sitemap.xml"
+                with redirect_server(target_url) as source_url:
+                    client = HttpClient(cache, allow_http_hosts={"127.0.0.1"})
+                    response = client.fetch(
+                        source_url,
+                        allowed_hosts=frozenset({"127.0.0.1"}),
+                    )
+                    self.assertEqual(response.redirect_chain, (target_url,))
+                    cached = HttpClient(
+                        cache,
+                        offline=True,
+                        allow_http_hosts={"127.0.0.1"},
+                    ).fetch(
+                        source_url,
+                        allowed_hosts=frozenset({"127.0.0.1"}),
+                    )
+                    self.assertEqual(cached.redirect_chain, response.redirect_chain)
+
+    def test_more_than_five_redirects_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with redirect_chain_server(6) as source_url:
+                client = HttpClient(
+                    Path(directory),
+                    allow_http_hosts={"127.0.0.1"},
+                )
+                with self.assertRaisesRegex(RightsError, "REDIRECT_LIMIT_EXCEEDED"):
+                    client.fetch(
+                        source_url,
+                        allowed_hosts=frozenset({"127.0.0.1"}),
+                    )
+
+    def test_child_sitemap_outside_provider_host_is_rejected_before_fetch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with response_server("localhost", b"<urlset></urlset>") as (target_url, state):
+                child_url = target_url.replace("/target", "/child.xml")
+                with fixture_server(root) as base:
+                    (root / "sitemap.xml").write_text(
+                        f"<?xml version='1.0'?><sitemapindex><sitemap><loc>{child_url}</loc></sitemap></sitemapindex>",
+                        encoding="utf-8",
+                    )
+                    client = HttpClient(cache, allow_http_hosts={"127.0.0.1"})
+                    with self.assertRaisesRegex(RightsError, "SITEMAP_HOST_MISMATCH"):
+                        rights_module._collect_sitemap_urls(
+                            client,
+                            base + "/",
+                            allowed_hosts=frozenset({"127.0.0.1"}),
+                        )
+            self.assertEqual(state["requests"], 0)
+
     def test_license_gate_requires_all_four_right_classes(self):
         evidence = validate_cc0_license_text(LICENSE_TEXT)
         self.assertTrue(all(evidence.values()))
@@ -152,6 +374,27 @@ class RightsTests(unittest.TestCase):
                 (root / "audio" / "sound-9999.wav").write_bytes((root / "audio" / "sound-0100.wav").read_bytes())
                 with self.assertRaises(RightsError):
                     acquire_source(SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"), HttpClient(cache, allow_http_hosts={"127.0.0.1"}))
+
+    def test_fails_closed_when_audio_url_only_contains_nearby_sound_number(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                page = root / "sound-s0100.html"
+                page.write_text(
+                    page.read_text().replace("sound-0100.wav", "sound-01000.wav"),
+                    encoding="utf-8",
+                )
+                (root / "audio" / "sound-01000.wav").write_bytes(
+                    (root / "audio" / "sound-0100.wav").read_bytes()
+                )
+                with self.assertRaisesRegex(RightsError, "No sound-number-bound audio URL"):
+                    acquire_source(
+                        SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
+                        HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                    )
 
 @unittest.skipUnless(FFMPEG, "ffmpeg required")
 class AudioTests(unittest.TestCase):
