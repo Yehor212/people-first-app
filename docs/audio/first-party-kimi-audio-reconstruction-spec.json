@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "project": "ZenFlow clean-room Kimi audio reconstruction",
+  "status": "REVIEW_ONLY",
+  "runtimeReplacementAuthorized": false,
+  "generatorVersion": "1.0.0",
+  "audioContract": {
+    "sampleRate": 48000,
+    "channels": 2,
+    "releaseFormat": "MP3",
+    "bitrateKbps": 128,
+    "hyperfocusDurationSeconds": 30,
+    "ambienceDurationSeconds": 96,
+    "peakLimitDbfs": -3,
+    "feedbackPeakLimitDbfs": -6,
+    "minimumIntensityGap": 3,
+    "hyperfocusLevelOrder": ["soft", "deep", "intense"]
+  },
+  "rightsContract": {
+    "sourceType": "first-party-deterministic-procedural-synthesis",
+    "thirdPartySamples": false,
+    "stockRecordings": false,
+    "voices": false,
+    "aiGeneratedAudioInputs": false,
+    "recoveredKimiBinaryInputs": false,
+    "externalAudioDownloads": false,
+    "ownerLicenseDecision": "UNVERIFIED",
+    "legalReview": "UNVERIFIED"
+  },
+  "inventory": {
+    "hyperfocusFamilies": ["forest", "rain", "ocean", "fireplace", "river", "wind"],
+    "hyperfocusLevels": ["soft", "deep", "intense"],
+    "ambience": [
+      "soft-air-veil.mp3",
+      "gentle-water-bed.mp3",
+      "soft-rain-veil.mp3"
+    ],
+    "feedback": [
+      "feedback-success.mp3",
+      "feedback-complete.mp3",
+      "feedback-streak.mp3",
+      "feedback-milestone.mp3",
+      "feedback-notification.mp3"
+    ],
+    "totalFiles": 26
+  },
+  "releaseGate": {
+    "humanListeningRequired": true,
+    "minimumLoopListeningMinutes": 10,
+    "hashBoundAcceptance": true,
+    "platformPlayback": {
+      "web": "UNVERIFIED",
+      "pwa": "UNVERIFIED",
+      "android": "UNVERIFIED",
+      "ios": "UNVERIFIED",
+      "desktop": "UNVERIFIED"
+    }
+  }
+}
