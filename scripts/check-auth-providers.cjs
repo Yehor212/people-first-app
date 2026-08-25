@@ -244,7 +244,7 @@ checkSourceContains(
 );
 checkSourceContains(
   "docs/auth-facebook-telegram-setup.md",
-  "discovery_url: https://api.zenflowapp.online/functions/v1/telegram-oidc/.well-known/openid-configuration",
+  "discovery_url: https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/.well-known/openid-configuration",
   "Telegram Supabase discovery override is documented"
 );
 checkSourceContains(

@@ -52,7 +52,7 @@ describe("Settings trust copy", () => {
     expect(form).not.toContain("logger.log(\"[Feedback] Submitting:\"");
   });
 
-  it("keeps public privacy copy aligned with the retired analytics controls", () => {
+  it("keeps public privacy copy aligned with retired analytics and banner-only ads", () => {
     const privacy = read("public/privacy.html");
     const privacyAlias = read("public/privacy-policy.html");
 
@@ -63,6 +63,13 @@ describe("Settings trust copy", () => {
       "ZenFlow does not initialize its optional in-app behavioral analytics runtime.",
     );
     expect(privacy).toContain(
+      "the bottom banner is requested only after Google consent allows ads",
+    );
+    expect(privacy).toContain("This release path uses the banner format only");
+    expect(privacy).toContain(
+      "it does not use video-for-reward or full-screen interstitial formats",
+    );
+    expect(privacy).not.toContain(
       "Optional rewarded ads are controlled separately through the Optional ads setting",
     );
   });

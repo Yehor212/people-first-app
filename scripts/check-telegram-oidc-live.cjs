@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
-const DEFAULT_TELEGRAM_OIDC_BASE_URL = "https://api.zenflowapp.online/functions/v1/telegram-oidc";
+const DEFAULT_TELEGRAM_OIDC_BASE_URL =
+  "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc";
 const TELEGRAM_ISSUER = "https://oauth.telegram.org";
 const TELEGRAM_AUTHORIZATION_ENDPOINT = "https://oauth.telegram.org/auth";
 const TELEGRAM_TOKEN_ENDPOINT = "https://oauth.telegram.org/token";
+const DEFAULT_SUPABASE_URL = "https://bwgfslmxmueyglpumkbf.supabase.co";
+const DEFAULT_AUTH_REDIRECT_URL = "https://yehor212.github.io/people-first-app/";
 
 function line(status, message) {
   console.log("[telegram-oidc-live] " + status + " " + message);
@@ -111,6 +114,61 @@ async function fetchJson(url, fetchImpl) {
   }
 }
 
+async function checkHostedAuthorize({ fetchImpl, supabaseUrl, redirectUrl }) {
+  const authorizeUrl = new URL("/auth/v1/authorize", supabaseUrl);
+  authorizeUrl.searchParams.set("provider", "custom:telegram");
+  authorizeUrl.searchParams.set("redirect_to", redirectUrl);
+
+  let response;
+  try {
+    response = await fetchImpl(authorizeUrl, {
+      headers: { Accept: "application/json" },
+      redirect: "manual",
+    });
+  } catch {
+    return ["Hosted Supabase Telegram authorize request failed"];
+  }
+
+  const location = response.headers.get("location");
+  if (response.status >= 300 && response.status < 400 && location) {
+    let target;
+    try {
+      target = new URL(location);
+    } catch {
+      return ["Hosted Supabase Telegram authorize redirect is not a valid URL"];
+    }
+
+    const failures = [];
+    if (target.origin !== "https://oauth.telegram.org" || target.pathname !== "/auth") {
+      failures.push("Hosted Supabase Telegram authorize does not redirect to https://oauth.telegram.org/auth");
+    }
+    if (!target.searchParams.get("client_id")) {
+      failures.push("Telegram authorize redirect is missing client_id");
+    }
+    if (!target.searchParams.get("state")) {
+      failures.push("Telegram authorize redirect is missing state");
+    }
+    if (!target.searchParams.get("code_challenge")) {
+      failures.push("Telegram authorize redirect is missing PKCE code_challenge");
+    }
+    if (target.searchParams.get("code_challenge_method") !== "S256") {
+      failures.push("Telegram authorize redirect does not require PKCE S256");
+    }
+    return failures;
+  }
+
+  let message = "HTTP " + response.status;
+  try {
+    const body = await response.json();
+    const safeMessage = typeof body?.msg === "string" ? body.msg : "";
+    const safeCode = typeof body?.error_code === "string" ? body.error_code : "";
+    message = [safeCode, safeMessage].filter(Boolean).join(": ") || message;
+  } catch {
+    // The HTTP status remains sufficient evidence when the body is not JSON.
+  }
+  return ["Hosted Supabase Telegram authorize failed: " + message];
+}
+
 async function checkTelegramOidcLive({ env = process.env, fetchImpl = fetch } = {}) {
   const required = env.ZENFLOW_TELEGRAM_OIDC_LIVE_REQUIRED === "true";
   const baseUrl = normalizeBaseUrl(env.ZENFLOW_TELEGRAM_OIDC_LIVE_URL);
@@ -164,11 +222,18 @@ async function checkTelegramOidcLive({ env = process.env, fetchImpl = fetch } = 
   }
 
   const failures = [...discoveryFailures, ...inspectJwks(jwksResult.body || {})];
+  failures.push(
+    ...(await checkHostedAuthorize({
+      fetchImpl,
+      supabaseUrl: normalizeBaseUrl(env.ZENFLOW_SUPABASE_URL || DEFAULT_SUPABASE_URL),
+      redirectUrl: String(env.ZENFLOW_TELEGRAM_AUTH_REDIRECT_URL || DEFAULT_AUTH_REDIRECT_URL),
+    })),
+  );
   if (failures.length > 0) {
-    return buildResult("FAIL", "Public Telegram OIDC endpoint is incomplete: " + failures.join("; "), 1, failures);
+    return buildResult("FAIL", "Telegram hosted auth readiness failed: " + failures.join("; "), 1, failures);
   }
 
-  return buildResult("PASS", "Public Telegram OIDC discovery and JWKS are compatible with hosted Supabase Auth.", 0);
+  return buildResult("PASS", "Telegram discovery, JWKS, and hosted Supabase authorize redirect are compatible.", 0);
 }
 
 function printResult(result) {
@@ -193,6 +258,7 @@ if (require.main === module) {
 module.exports = {
   DEFAULT_TELEGRAM_OIDC_BASE_URL,
   checkTelegramOidcLive,
+  checkHostedAuthorize,
   inspectDiscovery,
   inspectJwks,
   isUnsupportedTelegramJwk,

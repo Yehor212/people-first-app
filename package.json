@@ -41,7 +41,7 @@
     "test:agent-orchestra": "vitest run --configLoader runner --exclude 'output/**' scripts/__tests__/persistent-agent-orchestra-registry.test.mjs scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs scripts/__tests__/codex-agent-orchestra-integration.test.mjs scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/spec-kit-safety-hook.test.ts && npm run test:agent-workspace",
     "test:agent-workspace": "vitest run --configLoader runner --exclude 'output/**' scripts/__tests__/agent-workspace-core.test.ts scripts/__tests__/agent-workspace.test.ts scripts/__tests__/agent-workspace-command-guard.test.ts scripts/__tests__/agent-workspace-git-hook.test.ts scripts/__tests__/install-kimi-workspace-hook.test.ts scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/production-data-integrity-hook.test.ts",
     "test:release": "vitest run --configLoader runner --exclude 'output/**' src/pages/nav-v2/__tests__/DiaryRouteLoader.test.ts src/features/journal/__tests__/JournalEntryList.spaces.test.tsx src/features/journal/__tests__/JournalEntryList.spaceParity.test.tsx src/components/state-of-mind/__tests__/canonicalOrbInvariant.test.ts src/storage/__tests__/eventSync.test.ts src/lib/__tests__/offlineQueueHandlers.test.ts src/observability/__tests__/runtimeFlightRecorder.test.ts src/observability/__tests__/syncHealthRecorder.test.ts src/components/sync/__tests__/SyncHealthCard.test.tsx src/hooks/__tests__/useDeltaSyncEffects.test.ts",
-    "test:release-contracts": "npm run test:agent-workspace && vitest run --configLoader runner scripts/__tests__/deploy-workflow-contract.test.ts scripts/__tests__/remote-ci-core.test.ts scripts/__tests__/check-remote-ci-cli.test.ts scripts/__tests__/desktop-release-workflow-contract.test.ts scripts/__tests__/production-data-integrity-workflow.test.ts scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/smoke-sync-account-boundary.test.ts scripts/__tests__/check-v2-paper-theme.test.ts scripts/__tests__/playwright-local-port.test.ts scripts/__tests__/prune-duplicate-artifacts.test.ts scripts/__tests__/release-artifact-integrity.test.ts scripts/__tests__/stage-release-artifact.test.ts scripts/__tests__/admob-production-readiness.test.ts scripts/__tests__/admob-ump-readiness.test.ts scripts/__tests__/admob-external-readiness.test.ts scripts/__tests__/admob-owner-finalization-runbook.test.ts scripts/__tests__/admob-owner-evidence.test.ts scripts/__tests__/admob-owner-evidence-apply.test.ts scripts/__tests__/admob-owner-next-steps.test.ts scripts/__tests__/google-play-public-privacy-policy.test.ts scripts/__tests__/google-play-public-listing.test.ts scripts/__tests__/journal-magic-link-live.test.ts scripts/__tests__/github-journal-magic-link-secrets.test.ts scripts/__tests__/journal-magic-link-github-bootstrap.test.ts scripts/__tests__/supabase-auth-smtp-apply.test.ts scripts/__tests__/supabase-auth-magic-link-template.test.ts scripts/__tests__/supabase-auth-redirect-allow-list.test.ts scripts/__tests__/auth-providers-readiness.test.ts scripts/__tests__/apple-auth-live-readiness.test.ts scripts/__tests__/apple-auth-live-apply.test.ts",
+    "test:release-contracts": "npm run test:agent-workspace && vitest run --configLoader runner scripts/__tests__/deploy-workflow-contract.test.ts scripts/__tests__/remote-ci-core.test.ts scripts/__tests__/check-remote-ci-cli.test.ts scripts/__tests__/desktop-release-workflow-contract.test.ts scripts/__tests__/production-data-integrity-workflow.test.ts scripts/__tests__/skill-routing-hook-payload.test.ts scripts/__tests__/codex-change-governance-gate.test.mjs scripts/__tests__/private-receipt-export.test.mjs scripts/__tests__/smoke-sync-account-boundary.test.ts scripts/__tests__/check-v2-paper-theme.test.ts scripts/__tests__/playwright-local-port.test.ts scripts/__tests__/prune-duplicate-artifacts.test.ts scripts/__tests__/release-artifact-integrity.test.ts scripts/__tests__/stage-release-artifact.test.ts scripts/__tests__/admob-production-readiness.test.ts scripts/__tests__/admob-ump-readiness.test.ts scripts/__tests__/admob-external-readiness.test.ts scripts/__tests__/admob-owner-finalization-runbook.test.ts scripts/__tests__/admob-owner-evidence.test.ts scripts/__tests__/admob-owner-evidence-apply.test.ts scripts/__tests__/admob-owner-next-steps.test.ts scripts/__tests__/google-native-auth-readiness.test.ts scripts/__tests__/android-deep-link-manifest.test.ts scripts/__tests__/google-play-public-privacy-policy.test.ts scripts/__tests__/google-play-public-listing.test.ts scripts/__tests__/journal-magic-link-live.test.ts scripts/__tests__/github-journal-magic-link-secrets.test.ts scripts/__tests__/journal-magic-link-github-bootstrap.test.ts scripts/__tests__/supabase-auth-smtp-apply.test.ts scripts/__tests__/supabase-auth-magic-link-template.test.ts scripts/__tests__/supabase-auth-redirect-allow-list.test.ts scripts/__tests__/auth-providers-readiness.test.ts scripts/__tests__/apple-auth-live-readiness.test.ts scripts/__tests__/apple-auth-live-apply.test.ts",
     "test:coverage": "vitest run --configLoader runner --exclude 'output/**' --coverage --testTimeout=60000 --no-file-parallelism --maxWorkers=1 && node scripts/check-coverage-evidence.mjs",
     "test:i18n": "vitest run --configLoader runner --exclude 'output/**' test/i18n.test.ts",
     "i18n:check": "npx tsx scripts/check-i18n.ts && npm run i18n:v2-copy && npm run check:translation-quality",
@@ -94,6 +94,7 @@
     "check:subagent-governance": "node scripts/check-subagent-teamlead-governance.mjs",
     "check:sync-contract": "node scripts/check-sync-contract.cjs",
     "check:auth-providers": "node scripts/check-auth-providers.cjs",
+    "check:google-native-auth": "node scripts/check-google-native-auth-readiness.cjs --strict",
     "check:facebook-auth-public": "node scripts/check-facebook-auth-public.cjs",
     "check:facebook-auth-live": "node scripts/check-facebook-auth-live.cjs",
     "check:telegram-oidc-live": "node scripts/check-telegram-oidc-live.cjs",
@@ -286,6 +287,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.21",
+    "brace-expansion": "1.1.18",
     "cross-env": "^10.1.0",
     "esbuild": "^0.28.1",
     "eslint": "^9.32.0",
@@ -330,8 +332,7 @@
   "overrides": {
     "@rollup/plugin-terser": "^1.0.0",
     "esbuild": "^0.28.1",
-    "tmp": "^0.2.7",
-    "brace-expansion": "^5.0.8"
+    "tmp": "^0.2.7"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

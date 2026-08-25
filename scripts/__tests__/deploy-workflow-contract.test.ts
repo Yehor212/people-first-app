@@ -558,10 +558,28 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["cap:sync:android"]).toContain("npm run check:release-artifacts:android");
     expect(pkg.scripts["cap:sync:ios"]).toContain("npm run prune:release-artifacts:ios");
     expect(pkg.scripts["cap:sync:ios"]).toContain("npm run check:release-artifacts:ios");
+    expect(pkg.scripts["test:release-contracts"]).toContain(
+      "scripts/__tests__/google-native-auth-readiness.test.ts"
+    );
 
     const androidGate = sliceBetween(workflow, "android-gate:", "ios-gate:");
     expect(androidGate).not.toContain("continue-on-error: true");
     expect(androidGate).toContain("npm run check:release-artifacts:android");
+    expect(androidGate).toContain("npm run check:google-native-auth");
+    expect(androidGate).toContain(
+      "VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.VITE_GOOGLE_WEB_CLIENT_ID }}"
+    );
+    expect(androidGate).toContain("ZENFLOW_GOOGLE_WEB_CLIENT_REQUIRED: true");
+
+    const googleNativeAuthGate = indexOfOrThrow(
+      androidGate,
+      "name: Check Google Play native auth registration"
+    );
+    const androidWebBuild = indexOfOrThrow(
+      androidGate,
+      "name: Build Android web assets (required before cap sync)"
+    );
+    expect(googleNativeAuthGate).toBeLessThan(androidWebBuild);
 
     const androidSync = indexOfOrThrow(
       androidGate,

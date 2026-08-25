@@ -36,7 +36,8 @@ function evaluatePublicPrivacyPolicyHtml({ html }) {
     googleMobileAdsVisible: /AdMob|Google Mobile Ads/i.test(body),
     umpVisible: /Google User Messaging Platform|\bUMP\b|privacy choices/i.test(body),
     advertisingIdVisible: /Advertising ID|ad ID|ad-services/i.test(body),
-    rewardedAdsVisible: /optional rewarded ads|rewarded ads/i.test(body),
+    bannerAdsVisible: /\bbanner(?: ad| ads| advertising)?\b|bottom banner/i.test(body),
+    staleRewardedAdsVisible: /optional rewarded ads|rewarded ads/i.test(body),
     googleMobileAdsDataVisible: hasAll(body, [
       /IP address/i,
       /user product interactions|ad interactions|video views/i,
@@ -59,8 +60,11 @@ function evaluatePublicPrivacyPolicyHtml({ html }) {
   if (!signals.advertisingIdVisible) {
     issues.push({ code: "advertising_id_missing", message: "Privacy policy must mention Advertising ID or ad-services declarations for ads-enabled Android builds" });
   }
-  if (!signals.rewardedAdsVisible) {
-    issues.push({ code: "rewarded_ads_missing", message: "Privacy policy must describe ZenFlow ads as optional rewarded ads" });
+  if (!signals.bannerAdsVisible) {
+    issues.push({ code: "banner_ads_missing", message: "Privacy policy must describe the banner format used by the current ads-enabled Android release path" });
+  }
+  if (signals.staleRewardedAdsVisible) {
+    issues.push({ code: "stale_rewarded_ads_visible", message: "Privacy policy must not describe the current banner-only release path as rewarded ads" });
   }
   if (!signals.googleMobileAdsDataVisible) {
     issues.push({ code: "google_mobile_ads_data_missing", message: "Privacy policy must disclose Google Mobile Ads SDK data categories: IP address, user product interactions, diagnostic information, and device/account identifiers" });
@@ -131,7 +135,8 @@ async function main() {
   console.log("[privacy-public] googleMobileAds=" + (report.signals.googleMobileAdsVisible ? "present" : "missing"));
   console.log("[privacy-public] ump=" + (report.signals.umpVisible ? "present" : "missing"));
   console.log("[privacy-public] advertisingId=" + (report.signals.advertisingIdVisible ? "present" : "missing"));
-  console.log("[privacy-public] rewardedAds=" + (report.signals.rewardedAdsVisible ? "present" : "missing"));
+  console.log("[privacy-public] bannerAds=" + (report.signals.bannerAdsVisible ? "present" : "missing"));
+  console.log("[privacy-public] staleRewardedAds=" + (report.signals.staleRewardedAdsVisible ? "visible" : "absent"));
   console.log("[privacy-public] googleMobileAdsData=" + (report.signals.googleMobileAdsDataVisible ? "present" : "missing"));
   console.log("[privacy-public] oldNoAdsClaim=" + (report.signals.oldNoAdsClaimVisible ? "visible" : "absent"));
   for (const issue of report.issues) {

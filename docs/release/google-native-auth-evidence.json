@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "VERIFIED",
+  "observedAt": "2026-08-25T01:59:26.000Z",
+  "googleCloudProjectId": "vibemeter",
+  "packageName": "com.zenflow.app",
+  "webClientId": "830119095963-krjibmbag0tuastn4sk0sf58m1c4v4qa.apps.googleusercontent.com",
+  "androidOAuthClients": [
+    {
+      "name": "ZenFlow Android (Release)",
+      "clientId": "830119095963-su0i64bdemaf8tqv2pq1qvhljipjagiv.apps.googleusercontent.com",
+      "signingRole": "upload",
+      "sha1": "2D:76:82:17:D0:39:43:8B:68:27:A1:F2:00:2F:0D:58:E8:EA:10:8F",
+      "status": "VERIFIED"
+    },
+    {
+      "name": "ZenFlow Android (Google Play)",
+      "clientId": "830119095963-s0ao3nhjcp9vire3annqgbr4dghnctv3.apps.googleusercontent.com",
+      "signingRole": "play-app-signing",
+      "sha1": "93:F9:95:0E:A3:31:0F:B4:B7:81:FC:E1:BD:70:61:8B:C7:7C:BA:A0",
+      "status": "VERIFIED"
+    }
+  ],
+  "proofBoundary": "Google Play Console supplied the Play App Signing SHA-1. Google Cloud rejected creation in vibemeter until the same package and SHA-1 registration was removed from the wrong project zenflow-192e8. The replacement client was created and read back in vibemeter with project number 830119095963. Physical Play-installed account completion is tracked separately."
+}
