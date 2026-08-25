@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import io
 import json
+import os
 from pathlib import Path
 import tarfile
 import tempfile
@@ -42,6 +43,20 @@ def load_preprocess_api(test_case: unittest.TestCase):
         return importlib.import_module("scripts.audio_audit.preprocess")
     except ModuleNotFoundError as exc:
         test_case.fail(f"strict audio audit preprocessing is missing: {exc}")
+
+
+def load_backend_protocol_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.backend_protocol")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit backend protocol is missing: {exc}")
+
+
+def load_runner_common_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.backends.common")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit backend validation is missing: {exc}")
 
 
 class AuditPolicyTests(unittest.TestCase):
@@ -361,6 +376,184 @@ class PreprocessTests(unittest.TestCase):
             sf.write(invalid, np.array([[float("nan"), 0.0]], dtype=np.float32), 48000, subtype="FLOAT")
             with self.assertRaisesRegex(preprocess.PreprocessError, "non-finite"):
                 preprocess.decode_audio_view(invalid)
+
+
+class BackendProtocolTests(unittest.TestCase):
+    def test_backend_protocol_rejects_duplicate_keys_and_trailing_output(self):
+        protocol = load_backend_protocol_api(self)
+
+        for raw in (
+            '{"schemaVersion":1,"status":"PASS","status":"FAIL","requestId":"r1","backend":"clap","results":{}}',
+            '{"schemaVersion":1,"status":"PASS","requestId":"r1","backend":"clap","results":{}}\nnoise',
+        ):
+            with self.subTest(raw=raw), self.assertRaisesRegex(protocol.BackendProtocolError, "invalid backend response"):
+                protocol.parse_backend_response(raw)
+
+    def test_backend_runner_sets_offline_cpu_and_private_cache(self):
+        protocol = load_backend_protocol_api(self)
+        executable = Path(
+            "/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit/envs/clap/bin/python"
+        )
+
+        command, environment = protocol.build_backend_command(
+            executable,
+            "scripts.audio_audit.backends.clap_runner",
+        )
+
+        self.assertEqual(command, [str(executable), "-m", "scripts.audio_audit.backends.clap_runner"])
+        self.assertEqual(environment["HF_HUB_OFFLINE"], "1")
+        self.assertEqual(environment["TRANSFORMERS_OFFLINE"], "1")
+        self.assertEqual(environment["CUDA_VISIBLE_DEVICES"], "")
+        self.assertEqual(environment["TOKENIZERS_PARALLELISM"], "false")
+        self.assertEqual(environment["OMP_NUM_THREADS"], "1")
+
+    def test_backend_protocol_accepts_one_strict_result_document(self):
+        protocol = load_backend_protocol_api(self)
+
+        response = protocol.parse_backend_response(
+            '{"schemaVersion":1,"status":"PASS","requestId":"r1","backend":"clap","results":{"rows":[]}}'
+        )
+
+        self.assertEqual(response.request_id, "r1")
+        self.assertEqual(response.backend, "clap")
+        self.assertEqual(response.status, "PASS")
+
+
+class RunnerValidationTests(unittest.TestCase):
+    def test_clap_request_rejects_unknown_fields_and_wrong_backend(self):
+        common = load_runner_common_api(self)
+        valid = {
+            "schemaVersion": 1,
+            "requestId": "r1",
+            "backend": "clap",
+            "audioPath": "/private/audio.wav",
+            "family": "forest",
+            "prompts": [
+                {"id": "forest-positive-1", "group": "positive", "text": "forest ambience"}
+            ],
+        }
+
+        with self.assertRaisesRegex(common.RunnerInputError, "request keys mismatch"):
+            common.validate_clap_request({**valid, "unexpected": True})
+        with self.assertRaisesRegex(common.RunnerInputError, "backend must be clap"):
+            common.validate_clap_request({**valid, "backend": "yamnet"})
+
+    def test_audio_path_must_be_regular_and_inside_private_evidence(self):
+        common = load_runner_common_api(self)
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            private = root / "private-evidence"
+            private.mkdir()
+            valid = private / "audio.wav"
+            valid.write_bytes(b"RIFF")
+            outside = root / "outside.wav"
+            outside.write_bytes(b"RIFF")
+            link = private / "link.wav"
+            link.symlink_to(valid)
+
+            self.assertEqual(common.validate_private_audio_path(valid, private), valid.resolve())
+            with self.assertRaisesRegex(common.RunnerInputError, "private evidence"):
+                common.validate_private_audio_path(outside, private)
+            with self.assertRaisesRegex(common.RunnerInputError, "regular file"):
+                common.validate_private_audio_path(link, private)
+
+
+class BackendIntegrationTests(unittest.TestCase):
+    @unittest.skipUnless(
+        os.environ.get("ZENFLOW_RUN_MODEL_INTEGRATION") == "1",
+        "set ZENFLOW_RUN_MODEL_INTEGRATION=1 for pinned local model smoke",
+    )
+    def test_clap_runner_loads_pinned_safetensors_offline(self):
+        import numpy as np
+        import soundfile as sf
+
+        protocol = load_backend_protocol_api(self)
+        private_root = Path(
+            "/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit"
+        )
+        smoke_root = private_root / "integration-test"
+        if smoke_root.exists():
+            self.fail(f"integration smoke root already exists: {smoke_root}")
+        smoke_root.mkdir()
+        try:
+            sample_rate = 48000
+            time = np.arange(sample_rate * 10, dtype=np.float32) / sample_rate
+            samples = 0.05 * np.sin(2 * np.pi * 220 * time)
+            audio_path = smoke_root / "protocol.wav"
+            sf.write(audio_path, samples, sample_rate, subtype="PCM_24")
+            try:
+                response = protocol.run_backend(
+                    private_root / "envs/clap/bin/python",
+                    "scripts.audio_audit.backends.clap_runner",
+                    {
+                        "schemaVersion": 1,
+                        "requestId": "integration-clap-1",
+                        "backend": "clap",
+                        "audioPath": str(audio_path),
+                        "family": "forest",
+                        "prompts": [
+                            {"id": "p1", "group": "positive", "text": "forest ambience"},
+                            {"id": "p2", "group": "sibling", "text": "ocean waves"},
+                            {"id": "p3", "group": "hard-negative", "text": "music"},
+                        ],
+                    },
+                    timeout_seconds=300,
+                )
+            except protocol.BackendProtocolError as exc:
+                self.fail(f"pinned CLAP runner did not complete: {exc}")
+            self.assertEqual(response.status, "PASS")
+            self.assertEqual(response.backend, "clap")
+            self.assertEqual(len(response.results["rows"]), 3)
+        finally:
+            for path in smoke_root.iterdir():
+                path.unlink()
+            smoke_root.rmdir()
+
+    @unittest.skipUnless(
+        os.environ.get("ZENFLOW_RUN_MODEL_INTEGRATION") == "1",
+        "set ZENFLOW_RUN_MODEL_INTEGRATION=1 for pinned local model smoke",
+    )
+    def test_yamnet_runner_loads_pinned_saved_model_offline(self):
+        import numpy as np
+        import soundfile as sf
+
+        protocol = load_backend_protocol_api(self)
+        private_root = Path(
+            "/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit"
+        )
+        smoke_root = private_root / "integration-test-yamnet"
+        if smoke_root.exists():
+            self.fail(f"integration smoke root already exists: {smoke_root}")
+        smoke_root.mkdir()
+        try:
+            sample_rate = 48000
+            time = np.arange(sample_rate * 10, dtype=np.float32) / sample_rate
+            samples = 0.05 * np.sin(2 * np.pi * 220 * time)
+            audio_path = smoke_root / "protocol.wav"
+            sf.write(audio_path, samples, sample_rate, subtype="PCM_24")
+            try:
+                response = protocol.run_backend(
+                    private_root / "envs/yamnet/bin/python",
+                    "scripts.audio_audit.backends.yamnet_runner",
+                    {
+                        "schemaVersion": 1,
+                        "requestId": "integration-yamnet-1",
+                        "backend": "yamnet",
+                        "audioPath": str(audio_path),
+                    },
+                    timeout_seconds=300,
+                )
+            except protocol.BackendProtocolError as exc:
+                self.fail(f"pinned YAMNet runner did not complete: {exc}")
+            self.assertEqual(response.status, "PASS")
+            self.assertEqual(response.backend, "yamnet")
+            self.assertEqual(len(response.results["rows"]), 521)
+            self.assertGreater(response.results["scoreFrames"], 0)
+        finally:
+            for path in smoke_root.iterdir():
+                path.unlink()
+            smoke_root.rmdir()
 
 
 if __name__ == "__main__":
