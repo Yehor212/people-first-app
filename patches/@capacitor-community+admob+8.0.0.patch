@@ -1,0 +1,216 @@
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+index c629139..32ca0b3 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+@@ -52,6 +52,7 @@ public class BannerExecutor extends Executor {
+         float density = contextSupplier.get().getResources().getDisplayMetrics().density;
+
+         int defaultWidthPixels = contextSupplier.get().getResources().getDisplayMetrics().widthPixels;
++        int availableWidthPixels = mViewGroup.getWidth() > 0 ? mViewGroup.getWidth() : defaultWidthPixels;
+
+         DisplayMetrics metrics = new DisplayMetrics();
+         activitySupplier.get().getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
+@@ -76,7 +77,7 @@ public class BannerExecutor extends Executor {
+             } else {
+                 // ADAPTIVE BANNER
+                 mAdView.setAdSize(
+-                    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(contextSupplier.get(), (int) (defaultWidthPixels / density))
++                    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(contextSupplier.get(), (int) (availableWidthPixels / density))
+                 );
+             }
+
+@@ -85,10 +86,9 @@ public class BannerExecutor extends Executor {
+             mAdViewLayout.setHorizontalGravity(Gravity.CENTER_HORIZONTAL);
+             mAdViewLayout.setVerticalGravity(Gravity.BOTTOM);
+
+-            final CoordinatorLayout.LayoutParams mAdViewLayoutParams = new CoordinatorLayout.LayoutParams(
+-                CoordinatorLayout.LayoutParams.WRAP_CONTENT,
+-                CoordinatorLayout.LayoutParams.WRAP_CONTENT
+-            );
++            final int adWidthPixels = mAdView.getAdSize().getWidthInPixels(contextSupplier.get());
++            final int adHeightPixels = mAdView.getAdSize().getHeightInPixels(contextSupplier.get());
++            final CoordinatorLayout.LayoutParams mAdViewLayoutParams = new CoordinatorLayout.LayoutParams(adWidthPixels, adHeightPixels);
+
+             // TODO: Make an enum like the AdSizeEnum?
+             switch (adOptions.position) {
+@@ -103,10 +103,12 @@ public class BannerExecutor extends Executor {
+                     break;
+             }
+
+-            // set Safe Area only for Android 15+
++            // Keep Android 15+ safe-area handling local to the banner. Installing
++            // this listener on DecorView overrides Capacitor's edge-to-edge
++            // insets handling for the entire WebView and leaves stale composition
++            // state behind after the banner is removed.
+             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+-                View rootView = activitySupplier.get().getWindow().getDecorView();
+-                rootView.setOnApplyWindowInsetsListener((v, insets) -> {
++                mAdViewLayout.setOnApplyWindowInsetsListener((v, insets) -> {
+                     int bottomInset = insets.getSystemWindowInsetBottom();
+                     int topInset = insets.getSystemWindowInsetTop();
+
+@@ -116,7 +118,7 @@ public class BannerExecutor extends Executor {
+                         mAdViewLayoutParams.setMargins(0, 0, 0, bottomInset);
+                     }
+
+-                    mAdViewLayout.setLayoutParams(mAdViewLayoutParams);
++                    v.setLayoutParams(mAdViewLayoutParams);
+                     return insets;
+                 });
+             }
+@@ -160,16 +162,19 @@ public class BannerExecutor extends Executor {
+             activitySupplier
+                 .get()
+                 .runOnUiThread(() -> {
+-                    if (mAdViewLayout != null) {
+-                        mAdViewLayout.setVisibility(View.GONE);
+-                        mAdView.pause();
++                    if (mAdViewLayout == null || mAdView == null) {
++                        call.reject("You tried to hide a banner that was never shown");
++                        return;
++                    }
+
+-                        final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
++                    mAdViewLayout.setVisibility(View.GONE);
++                    mAdView.pause();
+
+-                        notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++                    final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
+
+-                        call.resolve();
+-                    }
++                    notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++
++                    call.resolve();
+                 });
+         } catch (Exception ex) {
+             call.reject(ex.getLocalizedMessage(), ex);
+@@ -181,18 +186,20 @@ public class BannerExecutor extends Executor {
+             activitySupplier
+                 .get()
+                 .runOnUiThread(() -> {
+-                    if (mAdViewLayout != null && mAdView != null) {
+-                        mAdViewLayout.setVisibility(View.VISIBLE);
+-                        mAdView.resume();
++                    if (mAdViewLayout == null || mAdView == null) {
++                        call.reject("You tried to resume a banner that was never shown");
++                        return;
++                    }
+
+-                        final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(mAdView);
+-                        notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++                    mAdViewLayout.setVisibility(View.VISIBLE);
++                    mAdView.resume();
+
+-                        Log.d(logTag, "Banner AD Resumed");
+-                    }
+-                });
++                    final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(mAdView);
++                    notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+
+-            call.resolve();
++                    Log.d(logTag, "Banner AD Resumed");
++                    call.resolve();
++                });
+         } catch (Exception ex) {
+             call.reject(ex.getLocalizedMessage(), ex);
+         }
+@@ -200,23 +207,36 @@ public class BannerExecutor extends Executor {
+
+     public void removeBanner(final PluginCall call) {
+         try {
+-            if (mAdView != null) {
+-                activitySupplier
+-                    .get()
+-                    .runOnUiThread(() -> {
+-                        if (mAdView != null) {
++            if (mAdView == null && mAdViewLayout == null) {
++                call.resolve();
++                return;
++            }
++
++            activitySupplier
++                .get()
++                .runOnUiThread(() -> {
++                    try {
++                        if (mAdViewLayout != null) {
++                            mAdViewLayout.setOnApplyWindowInsetsListener(null);
++                            if (mAdView != null) {
++                                mAdViewLayout.removeView(mAdView);
++                            }
+                             mViewGroup.removeView(mAdViewLayout);
+-                            mAdViewLayout.removeView(mAdView);
++                        }
++                        if (mAdView != null) {
+                             mAdView.destroy();
+-                            mAdView = null;
+-                            Log.d(logTag, "Banner AD Removed");
+-                            final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
+-                            notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+                         }
+-                    });
+-            }
++                        mAdView = null;
++                        mAdViewLayout = null;
++                        Log.d(logTag, "Banner AD Removed");
++                        final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
++                        notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+
+-            call.resolve();
++                        call.resolve();
++                    } catch (Exception ex) {
++                        call.reject(ex.getLocalizedMessage(), ex);
++                    }
++                });
+         } catch (Exception ex) {
+             call.reject(ex.getLocalizedMessage(), ex);
+         }
+@@ -243,8 +263,14 @@ public class BannerExecutor extends Executor {
+                 final AdRequest adRequest = RequestHelper.createRequest(adOptions);
+                 // Assign the correct id needed
+                 AdViewIdHelper.assignIdToAdView(mAdView, adOptions, adRequest, logTag, contextSupplier.get());
+-                // Add the AdView to the view hierarchy.
+-                mAdViewLayout.addView(mAdView);
++                // The CoordinatorLayout container already has the measured
++                // creative size, so the AdView can safely fill it without a
++                // wrap-content/centering measurement cycle.
++                final RelativeLayout.LayoutParams adViewLayoutParams = new RelativeLayout.LayoutParams(
++                    RelativeLayout.LayoutParams.MATCH_PARENT,
++                    RelativeLayout.LayoutParams.MATCH_PARENT
++                );
++                mAdViewLayout.addView(mAdView, adViewLayoutParams);
+                 // Start loading the ad.
+                 mAdView.loadAd(adRequest);
+                 mAdView.setAdListener(
+@@ -260,12 +286,18 @@ public class BannerExecutor extends Executor {
+
+                         @Override
+                         public void onAdFailedToLoad(@NonNull LoadAdError adError) {
+-                            if (mAdView != null) {
++                            if (mAdViewLayout != null) {
++                                mAdViewLayout.setOnApplyWindowInsetsListener(null);
++                                if (mAdView != null) {
++                                    mAdViewLayout.removeView(mAdView);
++                                }
+                                 mViewGroup.removeView(mAdViewLayout);
+-                                mAdViewLayout.removeView(mAdView);
++                            }
++                            if (mAdView != null) {
+                                 mAdView.destroy();
+-                                mAdView = null;
+                             }
++                            mAdView = null;
++                            mAdViewLayout = null;
+
+                             final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
+                             notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+@@ -298,6 +330,9 @@ public class BannerExecutor extends Executor {
+
+                 // Add AdViewLayout top of the WebView
+                 mViewGroup.addView(mAdViewLayout);
++                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
++                    mAdViewLayout.requestApplyInsets();
++                }
+             });
+     }
+ }

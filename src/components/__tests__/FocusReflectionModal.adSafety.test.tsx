@@ -26,10 +26,6 @@ vi.mock('@/components/cosmic/CosmicStarField', () => ({
   cosmicStars: [{ id: 's1' }, { id: 's2' }],
 }));
 
-vi.mock('@/components/ads/RewardedAdPrompt', () => ({
-  RewardedAdPrompt: () => <div data-testid="rewarded-ad-prompt" />,
-}));
-
 vi.mock('framer-motion', async () => {
   const React = await import('react');
   const stripMotionProps = <T extends Record<string, unknown>>(props: T) => {
@@ -63,7 +59,7 @@ vi.mock('framer-motion', async () => {
 });
 
 describe('FocusReflectionModal ad safety', () => {
-  it('does not place rewarded ads inside the reflection decision moment', () => {
+  it('does not place advertising inside the reflection decision moment', () => {
     render(
       <FocusReflectionModal
         reflectionValue={3}
@@ -74,7 +70,7 @@ describe('FocusReflectionModal ad safety', () => {
     );
 
     expect(screen.getByRole('dialog', { name: 'Focus reflection' })).toBeInTheDocument();
-    expect(screen.queryByTestId('rewarded-ad-prompt')).not.toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close' }).className).toContain('min-h-[44px]');
   });
 });

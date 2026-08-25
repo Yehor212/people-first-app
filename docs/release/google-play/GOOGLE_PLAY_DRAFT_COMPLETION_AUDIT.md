@@ -128,16 +128,38 @@ production monetization blockers.
 | Final Google Play review submission | PUBLISHED / ADMOB VERIFY PENDING | 2026-06-30 Play Console Publishing overview shows the update was published after the 6-change package: short description, full description, app icon, feature graphic, Ads declaration, Data safety, and Advertising ID declaration. Do not claim AdMob verification PASS until AdMob removes the app-ads.txt mismatch warning after its crawler refreshes. |
 | External monetization readiness ledger | UNVERIFIED / OWNER ACTION NEEDED | `npm run google-play:privacy:artifact-check`, the GitHub Pages post-deploy public privacy smoke, and `npm run google-play:privacy:public-check` must pass before public privacy can become PASS. `npm run google-play:admob:external-check` must keep AdMob app readiness, Policy Center, Privacy & messages/CMP, payments/tax, live device ad playback, and full cross-platform IDs explicit. `npm run google-play:admob:external-check:pass` must stay blocking until every required external item is freshly `PASS`. |
 
+## 2026-08-24 Banner-Only Reconciliation
+
+The rewarded-only entries above are retained as dated historical evidence and
+must not be used as the current release contract. The current Android contract
+is one optional adaptive banner below a non-empty Habits list after consent and
+the first three onboarding days. It excludes mood check-ins, focus sessions,
+journaling, habit creation and editing, settings, overlays, and every non-Android
+platform. Rewarded, interstitial, app-open, and native-feed formats are disabled.
+
+Fresh local evidence for this reconciliation:
+
+- `npm run google-play:admob:check` validates a real Android app ID and banner
+  ad-unit ID from the same publisher without printing their values.
+- `npm run google-play:admob:ump-check` validates consent and privacy-options
+  wiring.
+- `npm run google-play:assets:check` validates five Play assets and all eight
+  localized banner-only listings.
+- The release AAB is built with target SDK 36, version code 38, version 2.1.1,
+  `AD_ID`, one real app ID, and one real banner ID. Its application bundle has no
+  Google sample publisher ID and no ZenFlow rewarded runtime call site.
+- `public/app-ads.txt` remains publisher-bound. Production builds fail closed
+  when the configured app publisher does not match that file.
+
+Live ad serving is `UNVERIFIED` until a real device request and AdMob reporting
+are freshly observed. Public privacy-policy deployment is also `UNVERIFIED`
+until the updated GitHub Pages artifact is deployed and the post-deploy check
+passes.
+
 ## Completion Decision
 
-Google Play Console is now corrected and the 6-change package has been
-published. The public listing exposes the correct developer website, contains
-ads disclosure, rewarded ads copy, and no longer shows the stale no-ads claim.
-The local Android rewarded-only AdMob path now uses a real rewarded ad unit and
-passes `npm run google-play:admob:check`. Full cross-platform/banner+iOS
-monetization remains `UNVERIFIED` until `npm run google-play:admob:check:full`
-passes with owner-controlled production IDs. Public production monetization
-also remains `UNVERIFIED` until `npm run google-play:admob:external-check:pass`
-passes with fresh AdMob app readiness, Policy Center, Privacy & messages/CMP,
-payments/tax, and live device ad playback evidence. Release/CI env still needs
-owner confirmation before a production Android artifact is built.
+The repository and fresh Android artifact are locally ready for the banner-only
+contract with no mock, sample, demo, rewarded, or fallback ad data in production
+runtime. Google Play continues to declare `Contains ads`. External publication
+and live serving remain separate gates and cannot be called PASS from static or
+local build evidence.

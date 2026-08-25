@@ -5,7 +5,7 @@
  * Secondary actions stay behind long-press / keyboard on the row shell.
  */
 
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isHabitCompletedOnDate } from "@/lib/habits";
 import { getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -29,6 +29,7 @@ interface HeroHabitRowProps {
   onUnskip?: (habitId: string, date: string) => void;
   onArchive?: (habitId: string) => void;
   onUnarchive?: (habitId: string) => void;
+  onActionSheetOpenChange?: (open: boolean) => void;
   initiallyCollapsed?: boolean;
 }
 
@@ -47,6 +48,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   onUnskip,
   onArchive,
   onUnarchive,
+  onActionSheetOpenChange,
   initiallyCollapsed = false,
 }: HeroHabitRowProps) {
   const today = getToday();
@@ -59,6 +61,12 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const closeActionSheet = useCallback(() => setActionSheetOpen(false), []);
+
+  useEffect(() => {
+    if (!actionSheetOpen) return;
+    onActionSheetOpenChange?.(true);
+    return () => onActionSheetOpenChange?.(false);
+  }, [actionSheetOpen, onActionSheetOpenChange]);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFiredRef = useRef(false);

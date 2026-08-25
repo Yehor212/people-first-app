@@ -52,6 +52,17 @@ describe("AdMob UMP/native privacy readiness guard", () => {
     });
   });
 
+  it("validates the banner non-personalized default without relying on rewarded code", () => {
+    const checker = loadChecker();
+    const files = checker.readFileMap();
+    files.adController = files.adController.replaceAll("prepareRewardVideoAd", "removedRewardPath");
+
+    const report = checker.evaluateAdMobUmpReadiness(files);
+
+    expect(report.ok).toBe(true);
+    expect(report.issues).toEqual([]);
+  });
+
   it("fails if UMP consent refresh is removed from the ad controller", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
@@ -91,7 +102,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
     files.androidManifest = files.androidManifest.replace("${adMobApplicationId}", "");
-    files.androidBuildGradle = files.androidBuildGradle.replaceAll("ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS", "");
+    files.androidBuildGradle = files.androidBuildGradle.replaceAll("zenflowExpectedAdMobPublisher", "");
 
     const report = checker.evaluateAdMobUmpReadiness(files);
 
@@ -100,7 +111,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
       expect.objectContaining({ code: "missing_android_admob_placeholder" }),
     );
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_android_sample_id_release_guard" }),
+      expect.objectContaining({ code: "missing_android_publisher_release_guard" }),
     );
   });
 

@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { logger } from "@/lib/logger";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAds } from "@/contexts/AdContext";
+import { useUIStore } from "@/stores";
 import { NAV_V2_PAGES, useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
@@ -156,6 +158,12 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   settingsControls,
 }: NavV2OrchestratorProps) {
   const { t } = useLanguage();
+  const { setGlobalAdOverlayOpen } = useAds();
+  const featureToUnlock = useUIStore((state) => state.featureToUnlock);
+  const showChallengeModal = useUIStore((state) => state.showChallengeModal);
+  const showMindfulMoment = useUIStore((state) => state.showMindfulMoment);
+  const focusIsRunning = useUIStore((state) => state.focusIsRunning);
+  const focusEndTime = useUIStore((state) => state.focusEndTime);
   const tx = t as unknown as Record<string, string>;
   const { tier } = useDeviceTier();
   const forceWebNavigation = shouldForceWebNavigation();
@@ -182,6 +190,29 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const drawerWasOpenRef = useRef(drawerOpen);
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
+
+  useEffect(() => {
+    setGlobalAdOverlayOpen(
+      (!isWebNavigation && drawerOpen) ||
+        commandPaletteOpen ||
+        Boolean(featureToUnlock) ||
+        showChallengeModal ||
+        showMindfulMoment ||
+        focusIsRunning ||
+        focusEndTime !== null,
+    );
+    return () => setGlobalAdOverlayOpen(false);
+  }, [
+    commandPaletteOpen,
+    drawerOpen,
+    featureToUnlock,
+    focusEndTime,
+    focusIsRunning,
+    isWebNavigation,
+    setGlobalAdOverlayOpen,
+    showChallengeModal,
+    showMindfulMoment,
+  ]);
 
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
 

@@ -663,9 +663,9 @@ export const fr: Translations = {
   privacyTitle: "Confidentialité",
   privacyDescription:
     "Pas de suivi caché. La synchronisation des appareils démarre seulement après connexion et activation de la sauvegarde en ligne.",
-  privacyAds: "Vidéos récompensées",
+  privacyAds: "Bannière de la liste d’habitudes",
   privacyAdsHint:
-    "Elles ne sont chargées que si vous les activez. Google peut vous demander vos choix de confidentialité si nécessaire.",
+    "Une fois activée, une petite bannière s’affiche sous votre liste d’habitudes. Elle ne s’affiche pas dans les bilans d’humeur, le journal, les sessions de concentration ni les menus. Google peut vous demander vos choix de confidentialité si nécessaire.",
   privacyOptionalServicesOn: "Services facultatifs activés",
   privacyOptionalServicesOff: "Services facultatifs désactivés",
   privacyPushNotifications: "Rappels liés à votre compte",

@@ -1,6 +1,6 @@
 import type { PrivacySettings } from "@/types";
 
-export function canInitializeRewardedAds(privacy: PrivacySettings): boolean {
+export function canInitializeAds(privacy: PrivacySettings): boolean {
   return privacy.adConsent === true;
 }
 

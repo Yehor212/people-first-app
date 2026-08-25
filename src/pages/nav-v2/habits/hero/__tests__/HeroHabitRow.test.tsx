@@ -174,6 +174,28 @@ describe("HeroHabitRow", () => {
     expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
   });
 
+  it("notifies the native banner gate while the action sheet is open", () => {
+    const onActionSheetOpenChange = vi.fn();
+    const view = render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenDetail={vi.fn()}
+        onSkip={vi.fn()}
+        onActionSheetOpenChange={onActionSheetOpenChange}
+      />,
+    );
+
+    const row = screen.getByTestId("hero-habit-row-h1");
+    row.focus();
+    fireEvent.keyDown(row, { key: "Enter" });
+
+    expect(onActionSheetOpenChange).toHaveBeenLastCalledWith(true);
+    view.unmount();
+    expect(onActionSheetOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it("passes progressive collapse state into the weekly card", () => {
     render(
       <HeroHabitRow

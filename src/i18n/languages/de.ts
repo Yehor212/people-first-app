@@ -661,9 +661,9 @@ export const de: Translations = {
   privacyTitle: "Datenschutz",
   privacyDescription:
     "Kein verstecktes Tracking. Die Gerätesynchronisierung startet erst, wenn du dich anmeldest und die Online-Sicherung aktivierst.",
-  privacyAds: "Belohnungsvideos",
+  privacyAds: "Banner unter der Gewohnheitsliste",
   privacyAdsHint:
-    "Sie werden nur geladen, wenn du sie aktivierst. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.",
+    "Nach der Aktivierung erscheint ein kleines Banner unter deiner Gewohnheitsliste. Es bleibt bei Stimmungs-Check-ins, im Journal, im Fokus und in Menüs ausgeblendet. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.",
   privacyOptionalServicesOn: "Optionale Dienste aktiv",
   privacyOptionalServicesOff: "Optionale Dienste aus",
   privacyPushNotifications: "Konto-Erinnerungen",

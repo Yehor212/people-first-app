@@ -49,7 +49,7 @@
   <ul>
     <li><strong>Supabase:</strong> authentication, optional sync, and storage for synced user content.</li>
     <li><strong>Sentry:</strong> crash and error diagnostics. Error reports must not include journal text, raw audio payloads, or unnecessary personal content.</li>
-    <li><strong>AdMob / Google Mobile Ads:</strong> supported ads-enabled Android builds may show one bottom banner ad after Google consent allows ad requests. The banner stays outside active journaling, mood check-ins, focus moments, and other private or emotional input flows. This release path uses the banner format only; it does not use video-for-reward or full-screen interstitial formats. The Google Mobile Ads SDK may collect and share IP address, user product interactions such as ad views and taps, diagnostic information, and device/account identifiers such as Android Advertising ID or app set ID for advertising, analytics, and fraud prevention.</li>
+    <li><strong>AdMob / Google Mobile Ads:</strong> an optional adaptive banner below the active Habits list after ZenFlow consent and Google consent on supported Android builds. The Google Mobile Ads SDK may collect and share IP address, user product interactions such as ad views or taps, diagnostic information, and device/account identifiers such as Android Advertising ID or app set ID for advertising, analytics, and fraud prevention. The banner is not shown in mood check-ins, the journal, focus, planning, settings, menus, drawers, sheets, or modal dialogs.</li>
     <li><strong>Firebase/Google services:</strong> Android builds may use Firebase Crashlytics for crash diagnostics and Google services for notifications or ads. Automatic Firebase Analytics collection is disabled.</li>
     <li><strong>Resend:</strong> sends a feedback notification email when the feedback email service is configured.</li>
   </ul>
@@ -65,7 +65,7 @@
   <p>When you submit Feedback, ZenFlow sends your category, message, optional email address, app version, and device information such as platform, browser, screen size, and language to Supabase. Where the feedback email service is configured, ZenFlow also attempts to send a notification email containing that information through Resend. Do not include journal text, urgent safety information, or medical information in Feedback.</p>
 
   <h2>5. Ads and Consent</h2>
-  <p>ZenFlow does not initialize its optional in-app behavioral analytics runtime. Automatic Firebase Analytics collection is disabled in the Android app manifest. On supported ads-enabled Android builds, the bottom banner is requested only after Google consent allows ads. Advertising ID and ad-services declarations are tied to those builds. Where Google User Messaging Platform (UMP) requires it, ZenFlow shows a Google ad privacy choices entry point in Settings so you can change or withdraw ad consent.</p>
+  <p>ZenFlow does not initialize its optional in-app behavioral analytics runtime. Automatic Firebase Analytics collection is disabled in the Android app manifest. The optional Habits-list banner is controlled separately through the Optional ads setting and Google consent on supported Android builds. Advertising ID and ad-services declarations are tied to ads-enabled Android builds. Where Google User Messaging Platform (UMP) requires it, ZenFlow shows a Google ad privacy choices entry point in Settings so you can change or withdraw ad consent.</p>
 
   <h2>6. Data Safety Notes for Store Review</h2>
   <p>Store forms must match the actual artifact submitted for review. If the artifact includes microphone recording, Supabase sync, Journal AI Search, AI Coach, Feedback, AdMob, Sentry, Firebase, or journal audio storage, those surfaces must be reflected in Data safety and privacy declarations.</p>
@@ -74,6 +74,7 @@
   <ul>
     <li>Use ZenFlow without signing in for local-first use.</li>
     <li>Turn off app sound, ambience, completion cues, reminder cues, or milestone cues in Settings.</li>
+    <li>Turn the optional Habits-list banner off in Settings.</li>
     <li>Review Google ad privacy choices in Settings when Google requires a privacy-options entry point.</li>
     <li>Export or delete your data from Settings where supported.</li>
     <li>Revoke microphone permission in your browser or operating system settings.</li>

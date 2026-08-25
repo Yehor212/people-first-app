@@ -653,9 +653,9 @@ export const en: Translations = {
   privacyTitle: "Privacy",
   privacyDescription:
     "No hidden tracking. Device sync starts only after you sign in and turn on online backup.",
-  privacyAds: "Rewarded videos",
+  privacyAds: "Habit list banner",
   privacyAdsHint:
-    "They load only when you turn them on. Google may ask for your privacy choice when required.",
+    "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required.",
   privacyOptionalServicesOn: "Optional services on",
   privacyOptionalServicesOff: "Optional services off",
   privacyPushNotifications: "Account reminders",

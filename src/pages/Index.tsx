@@ -37,7 +37,7 @@ import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
-import { canInitializeRewardedAds } from "@/lib/privacyConsent";
+import { canInitializeAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
@@ -255,9 +255,7 @@ function IndexV2Impl() {
       <StorageErrorBanner />
       <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
         <AdProvider
-          onEarnTreats={(amount) => earnTreats("ad", amount, "Ad reward")}
-          onEarnXp={() => undefined}
-          adConsent={canInitializeRewardedAds(privacy)}
+          adConsent={canInitializeAds(privacy)}
           isPremium={false}
           currentMood={currentMoodForAds}
         >

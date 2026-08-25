@@ -30,6 +30,7 @@ interface HeroTimeOfDayGroupProps {
   onArchiveHabit?: (habitId: string) => void;
   onUnarchiveHabit?: (habitId: string) => void;
   onOpenDetail?: (habit: Habit) => void;
+  onActionSheetOpenChange?: (open: boolean) => void;
 }
 
 const BUCKET_LABEL_KEY: Record<TimeOfDay, string> = {
@@ -62,6 +63,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   onArchiveHabit,
   onUnarchiveHabit,
   onOpenDetail,
+  onActionSheetOpenChange,
 }: HeroTimeOfDayGroupProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
@@ -169,6 +171,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 onArchive={onArchiveHabit}
                 onUnarchive={onUnarchiveHabit}
                 onOpenDetail={onOpenDetail}
+                onActionSheetOpenChange={onActionSheetOpenChange}
                 initiallyCollapsed={tier === "phone"}
               />
             </motion.div>
