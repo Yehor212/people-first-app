@@ -106,7 +106,7 @@ def _build_environment() -> dict:
     }
 
 
-def _seal_read_only(root: Path) -> None:
+def _seal_contents_read_only(root: Path) -> None:
     for path in root.rglob("*"):
         if path.is_symlink():
             raise BundleBuildError(f"review bundle contains a symlink: {path}")
@@ -119,7 +119,6 @@ def _seal_read_only(root: Path) -> None:
     )
     for path in directories:
         path.chmod(0o555)
-    root.chmod(0o555)
 
 
 def build_source_audition_bundle() -> Path:
@@ -185,8 +184,9 @@ def build_source_audition_bundle() -> Path:
             and path.relative_to(staging).as_posix() != "SHA256SUMS"
         )
         write_sha256sums(staging, files)
-        _seal_read_only(staging)
+        _seal_contents_read_only(staging)
         staging.replace(OUTPUT_ROOT)
+        OUTPUT_ROOT.chmod(0o555)
     return OUTPUT_ROOT
 
 
