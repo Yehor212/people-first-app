@@ -19,7 +19,7 @@ import numpy as np
 
 from scripts.audio_review import rights as rights_module
 from scripts.audio_review.builder import build_environment_record, build_review_package, write_rights_receipts
-from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, measure_pcm, render_hyperfocus
+from scripts.audio_review.dsp import AudioError, _family_texture, _intensity_score, _normalize, encode_mp3, measure_audio, measure_pcm, render_hyperfocus
 from scripts.audio_review.evidence import build_human_review_matrix, write_sha256sums
 from scripts.audio_review.model import SpecError, load_spec, validate_spec_dict
 from scripts.audio_review.procedural import generate_ambience, generate_feedback
@@ -661,9 +661,47 @@ class DspMetricTests(unittest.TestCase):
         seamless = np.column_stack([mono, mono]).astype(np.float32)
         self.assertLess(measure_pcm(seamless, sample_rate).seam_mean_abs_diff, 0.01)
 
+        noise = np.random.default_rng(11).normal(0.0, 0.2, (sample_rate, 2)).astype(np.float32)
+        noise[-1] = noise[0]
+        self.assertLess(measure_pcm(noise, sample_rate).seam_mean_abs_diff, 1e-6)
+
         broken = seamless.copy()
         broken[-1] = -0.5
         self.assertGreater(measure_pcm(broken, sample_rate).seam_mean_abs_diff, 0.08)
+
+    def test_normalization_meets_rms_target_without_breaking_peak_limit(self):
+        rng = np.random.default_rng(7)
+        high_crest = rng.normal(0.0, 0.02, (48000, 2)).astype(np.float32)
+        high_crest[100] = (1.0, -1.0)
+        for target_rms_db, peak_limit_db in (
+            (-32.0, -5.0),
+            (-27.0, -4.0),
+            (-22.0, -3.0),
+        ):
+            with self.subTest(target_rms_db=target_rms_db):
+                normalized = _normalize(high_crest, target_rms_db, peak_limit_db)
+                stereo_rms = float(np.sqrt(np.mean(normalized.astype(np.float64) ** 2)))
+                peak = float(np.max(np.abs(normalized)))
+                self.assertAlmostEqual(
+                    20.0 * math.log10(stereo_rms),
+                    target_rms_db,
+                    delta=0.15,
+                )
+                self.assertLessEqual(
+                    20.0 * math.log10(peak),
+                    peak_limit_db + 0.01,
+                )
+
+    def test_zcr_cannot_invert_a_five_db_intensity_step(self):
+        ocean_deep = _intensity_score(-27.39938043449675, -40.99112200380904)
+        ocean_intense = _intensity_score(-22.41980952686246, -41.515061144919855)
+        self.assertGreaterEqual(ocean_intense - ocean_deep, 3.0)
+
+    def test_periodic_texture_rotates_to_a_quiet_real_boundary(self):
+        texture = _family_texture("rain", "intense", 48000, 48000, seed=42)
+        boundary = float(np.mean(np.abs(texture[0] - texture[-1])))
+        internal = np.mean(np.abs(texture - np.roll(texture, 1, axis=0)), axis=1)
+        self.assertLessEqual(boundary, float(np.min(internal)) + 1e-6)
 
 @unittest.skipUnless(FFMPEG, "ffmpeg required")
 class AudioTests(unittest.TestCase):

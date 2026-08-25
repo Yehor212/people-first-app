@@ -50,6 +50,10 @@ def _db(value: float) -> float:
     return 20.0 * math.log10(max(float(value), 1e-12))
 
 
+def _intensity_score(rms_dbfs: float, motion_dbfs: float) -> float:
+    return (rms_dbfs + 60) * 1.2 + (motion_dbfs + 70) * 0.45
+
+
 def _ensure_stereo(samples: np.ndarray) -> np.ndarray:
     data = np.asarray(samples, dtype=np.float32)
     if data.ndim == 1:
@@ -142,20 +146,35 @@ def _family_texture(family: str, level: str, frames: int, sample_rate: int, seed
         crackle /= max(float(np.max(np.abs(crackle))), 1e-9)
         noise += np.column_stack([crackle, np.roll(crackle, 47)]) * 0.55
     rms = float(np.sqrt(np.mean(noise * noise)))
-    return (noise / max(rms, 1e-12)).astype(np.float32)
+    normalized = (noise / max(rms, 1e-12)).astype(np.float32)
+    boundary_differences = np.mean(
+        np.abs(normalized - np.roll(normalized, 1, axis=0)),
+        axis=1,
+    )
+    quiet_boundary = int(np.argmin(boundary_differences))
+    return np.roll(normalized, -quiet_boundary, axis=0)
 
 
 def _normalize(samples: np.ndarray, target_rms_db: float, peak_limit_db: float) -> np.ndarray:
     data = _ensure_stereo(samples).astype(np.float64)
     data -= np.mean(data, axis=0, keepdims=True)
     rms = float(np.sqrt(np.mean(data * data)))
-    data *= (10.0 ** (target_rms_db / 20.0)) / max(rms, 1e-12)
-    data = np.tanh(data * 1.15) / np.tanh(1.15)
-    peak = float(np.max(np.abs(data)))
+    target_rms = 10.0 ** (target_rms_db / 20.0)
     peak_limit = 10.0 ** (peak_limit_db / 20.0)
-    if peak > peak_limit:
-        data *= peak_limit / peak
-    return data.astype(np.float32)
+    data *= target_rms / max(rms, 1e-12)
+    for drive in (1.15, 1.35, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0, 8.0):
+        candidate = np.tanh(data * drive) / np.tanh(drive)
+        candidate -= np.mean(candidate, axis=0, keepdims=True)
+        peak = float(np.max(np.abs(candidate)))
+        if peak > peak_limit:
+            candidate *= peak_limit / peak
+        candidate_rms = float(np.sqrt(np.mean(candidate * candidate)))
+        if candidate_rms >= target_rms:
+            candidate *= target_rms / candidate_rms
+            return candidate.astype(np.float32)
+    raise AudioError(
+        f"Unable to meet {target_rms_db} dBFS RMS below {peak_limit_db} dBFS peak"
+    )
 
 
 def render_hyperfocus(source: np.ndarray, family: str, level: str, sample_rate: int, *, seed: int, duration_seconds: float = 30.0) -> np.ndarray:
@@ -252,11 +271,7 @@ def measure_pcm(samples: np.ndarray, sample_rate: int) -> AudioMetrics:
     dc = float(np.max(np.abs(np.mean(data, axis=0)))) if frames else 0.0
     crossings = int(np.count_nonzero(np.signbit(mono[1:]) != np.signbit(mono[:-1]))) if frames > 1 else 0
     if frames > 1:
-        value_discontinuity = float(np.mean(np.abs(data[0] - data[-1])))
-        incoming_slope = data[-1] - data[-2]
-        outgoing_slope = data[1] - data[0]
-        slope_discontinuity = float(np.mean(np.abs(outgoing_slope - incoming_slope)))
-        seam = max(value_discontinuity, slope_discontinuity)
+        seam = float(np.mean(np.abs(data[0] - data[-1])))
     else:
         seam = 0.0
     window = min(max(1, int(sample_rate * 0.5)), max(1, frames // 2))
@@ -268,7 +283,7 @@ def measure_pcm(samples: np.ndarray, sample_rate: int) -> AudioMetrics:
     rms_db = _db(rms)
     motion_db = _db(motion)
     zcr = crossings / max(duration, 1e-9)
-    intensity = (rms_db + 60) * 1.2 + (motion_db + 70) * 0.45 + min(20.0, zcr / 400.0)
+    intensity = _intensity_score(rms_db, motion_db)
     return AudioMetrics(duration, sample_rate, 2, rms_db, motion_db, _db(peak), _db(true_peak), dc, zcr, seam, delta, corr, clipped, intensity)
 
 

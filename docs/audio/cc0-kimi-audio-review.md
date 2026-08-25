@@ -30,7 +30,7 @@ The source numbers are a reviewed shortlist, but source suitability is not infer
 
 ## Objective QC
 
-The build fails unless all files decode as 48 kHz stereo, remain below peak/DC/clipping limits, and long files meet loop-boundary limits. Every Hyperfocus family must progress by at least three points on the decoded intensity score from soft to deep and deep to intense.
+The build fails unless all files decode as 48 kHz stereo, remain below peak/DC/clipping limits, and long files meet loop-boundary limits. Hyperfocus mastering uses the minimum deterministic soft-clip drive that can meet the declared stereo RMS target without exceeding its peak limit. Periodic textures rotate to their quietest real boundary. Every family must progress by at least three points on a decoded RMS-plus-motion intensity score; zero-crossing rate remains diagnostic and cannot invert levels merely because two field recordings have different spectral brightness.
 
 The verifier checks a complete, traversal-safe `SHA256SUMS` inventory before MP3 signatures, then checks the 26-hash quarantine denylist, provenance, rights receipts, QC, and human-review bindings. Listed or unlisted symlinks, non-regular members, duplicate paths, and extra files fail closed.
 
