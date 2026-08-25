@@ -2,6 +2,12 @@
   command = "npm ci && npm run build"
   publish = "dist"
 
+[build.environment]
+  # Netlify restores node_modules before its automatic npm install. Skipping
+  # lifecycle scripts there prevents patch-package from reapplying to cached
+  # files; the clean npm ci build command above runs postinstall exactly once.
+  NPM_FLAGS = "--ignore-scripts"
+
 [[redirects]]
   from = "/people-first-app/assets/*"
   to = "/assets/:splat"
