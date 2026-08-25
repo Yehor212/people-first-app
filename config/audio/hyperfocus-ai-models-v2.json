@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "status": "UNVERIFIED_DISCOVERY",
+  "canonicalDevice": "cpu",
+  "networkDuringInference": false,
+  "models": [
+    {
+      "id": "semantic-clap",
+      "role": "open-vocabulary-semantic",
+      "provider": "LAION",
+      "repository": "https://huggingface.co/laion/clap-htsat-fused",
+      "revision": "365dea6ef167def6676140ed93bbc43f84dabb28",
+      "licenseId": "Apache-2.0",
+      "status": "HASH_PINNED_NOT_ACQUIRED",
+      "allowedFiles": [
+        "config.json",
+        "merges.txt",
+        "model.safetensors",
+        "preprocessor_config.json",
+        "special_tokens_map.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "vocab.json"
+      ],
+      "deniedFiles": [
+        "pytorch_model.bin",
+        "model.pt",
+        "model.pth",
+        "model.pkl",
+        "model.pickle"
+      ]
+    },
+    {
+      "id": "temporal-yamnet",
+      "role": "temporal-sound-event",
+      "provider": "Google",
+      "repository": "https://tfhub.dev/google/yamnet/1",
+      "revision": "1",
+      "licenseId": "Apache-2.0",
+      "status": "UNVERIFIED_DISCOVERY",
+      "allowedFiles": ["yamnet-v1.tar.gz"],
+      "deniedFiles": [
+        "model.pt",
+        "model.pth",
+        "model.bin",
+        "model.pkl",
+        "model.pickle"
+      ]
+    }
+  ]
+}
