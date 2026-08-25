@@ -251,8 +251,14 @@ def measure_pcm(samples: np.ndarray, sample_rate: int) -> AudioMetrics:
             true_peak = max(true_peak, float(np.max(np.abs(interpolated))))
     dc = float(np.max(np.abs(np.mean(data, axis=0)))) if frames else 0.0
     crossings = int(np.count_nonzero(np.signbit(mono[1:]) != np.signbit(mono[:-1]))) if frames > 1 else 0
-    seam_frames = min(max(1, int(sample_rate * 0.02)), max(1, frames // 4))
-    seam = float(np.mean(np.abs(data[:seam_frames] - data[-seam_frames:]))) if frames else 0.0
+    if frames > 1:
+        value_discontinuity = float(np.mean(np.abs(data[0] - data[-1])))
+        incoming_slope = data[-1] - data[-2]
+        outgoing_slope = data[1] - data[0]
+        slope_discontinuity = float(np.mean(np.abs(outgoing_slope - incoming_slope)))
+        seam = max(value_discontinuity, slope_discontinuity)
+    else:
+        seam = 0.0
     window = min(max(1, int(sample_rate * 0.5)), max(1, frames // 2))
     start_rms = float(np.sqrt(np.mean(data[:window] ** 2))) if frames else 0.0
     end_rms = float(np.sqrt(np.mean(data[-window:] ** 2))) if frames else 0.0

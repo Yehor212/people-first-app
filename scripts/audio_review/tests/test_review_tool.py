@@ -19,7 +19,7 @@ import numpy as np
 
 from scripts.audio_review import rights as rights_module
 from scripts.audio_review.builder import build_environment_record, build_review_package, write_rights_receipts
-from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, render_hyperfocus
+from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, measure_pcm, render_hyperfocus
 from scripts.audio_review.evidence import build_human_review_matrix, write_sha256sums
 from scripts.audio_review.model import SpecError, load_spec, validate_spec_dict
 from scripts.audio_review.procedural import generate_ambience, generate_feedback
@@ -652,6 +652,18 @@ class RightsTests(unittest.TestCase):
                         HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
                         denylist=frozenset(),
                     )
+
+class DspMetricTests(unittest.TestCase):
+    def test_loop_seam_metric_measures_boundary_discontinuity_not_window_equality(self):
+        sample_rate = 48000
+        time = np.arange(sample_rate, dtype=np.float64) / sample_rate
+        mono = 0.5 * np.sin(2 * np.pi * 17 * time)
+        seamless = np.column_stack([mono, mono]).astype(np.float32)
+        self.assertLess(measure_pcm(seamless, sample_rate).seam_mean_abs_diff, 0.01)
+
+        broken = seamless.copy()
+        broken[-1] = -0.5
+        self.assertGreater(measure_pcm(broken, sample_rate).seam_mean_abs_diff, 0.08)
 
 @unittest.skipUnless(FFMPEG, "ffmpeg required")
 class AudioTests(unittest.TestCase):
@@ -1374,15 +1386,15 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertNotRegex(workflow, r"uses:\s+actions/[^@\s]+@v\d")
         self.assertRegex(
             workflow,
-            r"actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+            r"actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
         )
         self.assertRegex(
             workflow,
-            r"actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
+            r"actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
         )
         self.assertRegex(
             workflow,
-            r"actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+            r"actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
         )
         self.assertIn("group: cc0-audio-review-${{ github.ref }}", workflow)
         self.assertIn("cancel-in-progress: true", workflow)
