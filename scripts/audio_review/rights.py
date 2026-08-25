@@ -15,6 +15,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 import wave
 import xml.etree.ElementTree as ET
 
+from .quarantine import assert_not_quarantined
+
 class RightsError(RuntimeError):
     pass
 
@@ -498,7 +500,12 @@ def _declared_wav_format(path: Path) -> tuple[int | None, int | None]:
         return None, None
 
 
-def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
+def acquire_source(
+    request: SourceRequest,
+    client: HttpClient,
+    *,
+    denylist: frozenset[str],
+) -> SourceRecord:
     if request.license_id != "CC0-1.0":
         raise RightsError(f"Unsupported source license: {request.license_id}")
     provider_host = (urlparse(request.provider_root).hostname or "").lower().rstrip(".")
@@ -566,10 +573,25 @@ def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
     if selected is None:
         raise RightsError("No valid source audio: " + " | ".join(failures))
     response, extension = selected
+    source_sha256 = assert_not_quarantined(
+        response.body,
+        f"source:s{request.sound_number:04d}",
+        denylist,
+    )
     source_dir = client.cache_dir / "sources"
     source_dir.mkdir(parents=True, exist_ok=True)
-    local_path = source_dir / f"bigsoundbank-s{request.sound_number:04d}-{sha256_bytes(response.body)[:16]}.{extension}"
-    if not local_path.exists():
+    local_path = source_dir / f"bigsoundbank-s{request.sound_number:04d}-{source_sha256[:16]}.{extension}"
+    if local_path.is_symlink():
+        raise RightsError(f"SOURCE_CACHE_SYMLINK_REJECTED:s{request.sound_number:04d}")
+    if local_path.exists():
+        cached_source_sha256 = assert_not_quarantined(
+            local_path.read_bytes(),
+            f"source-cache:s{request.sound_number:04d}",
+            denylist,
+        )
+        if cached_source_sha256 != source_sha256:
+            raise RightsError(f"SOURCE_CACHE_INTEGRITY_MISMATCH:s{request.sound_number:04d}")
+    else:
         with tempfile.NamedTemporaryFile(dir=source_dir, delete=False) as tmp:
             tmp.write(response.body)
             temp_path = Path(tmp.name)
@@ -592,7 +614,7 @@ def acquire_source(request: SourceRequest, client: HttpClient) -> SourceRecord:
         audio_redirect_chain=response.redirect_chain,
         source_page_sha256=sha256_bytes(page_response.body),
         license_page_sha256=sha256_bytes(license_response.body),
-        source_sha256=sha256_bytes(response.body),
+        source_sha256=source_sha256,
         source_bytes=len(response.body),
         sample_rate_declared=sample_rate,
         channels_declared=channels,

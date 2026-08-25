@@ -9,6 +9,13 @@ import shutil
 import subprocess
 
 from .model import load_spec
+from .quarantine import (
+    DENYLIST_REPOSITORY_PATH,
+    QuarantineError,
+    assert_not_quarantined,
+    default_denylist_path,
+    load_denylist,
+)
 from .rights import RIGHTS_EVIDENCE_STATUS, RIGHTS_LEGAL_BOUNDARY
 
 class VerificationError(RuntimeError):
@@ -199,6 +206,23 @@ def verify_rights_evidence(
     return len(source_by_number)
 
 
+def verify_mp3s_not_quarantined(
+    root: str | Path,
+    relative_paths: set[str],
+    denylist: frozenset[str],
+) -> None:
+    root = Path(root)
+    for relative in sorted(relative_paths):
+        try:
+            assert_not_quarantined(
+                (root / relative).read_bytes(),
+                f"package:{relative}",
+                denylist,
+            )
+        except QuarantineError as exc:
+            raise VerificationError(str(exc)) from exc
+
+
 def _mp3_magic(path: Path) -> bool:
     data = path.read_bytes()[:4096]
     if data.startswith(b"ID3"):
@@ -206,13 +230,23 @@ def _mp3_magic(path: Path) -> bool:
     return any(data[index] == 0xFF and (data[index + 1] & 0xE0) == 0xE0 for index in range(max(0, len(data) - 1)))
 
 
-def verify_package(package_dir: str | Path, spec_path: str | Path, *, ffprobe_path: str | None = None) -> dict:
+def verify_package(
+    package_dir: str | Path,
+    spec_path: str | Path,
+    *,
+    ffprobe_path: str | None = None,
+    denylist_path: str | Path | None = None,
+) -> dict:
     root = Path(package_dir)
     spec = load_spec(spec_path)
+    denylist_source = Path(denylist_path) if denylist_path is not None else default_denylist_path()
+    denylist = load_denylist(denylist_source)
+    denylist_sha256 = _sha(denylist_source)
     inventory = verify_hash_inventory(root)
     expected_paths = {asset.relative_path for asset in spec.all_assets}
     if {path for path in inventory if path.endswith(".mp3")} != expected_paths:
         raise VerificationError("AUDIO_INVENTORY_MISMATCH")
+    verify_mp3s_not_quarantined(root, expected_paths, denylist)
     for relative in sorted(expected_paths):
         if not _mp3_magic(root / relative):
             raise VerificationError(f"INVALID_MP3_SIGNATURE:{relative}")
@@ -220,6 +254,7 @@ def verify_package(package_dir: str | Path, spec_path: str | Path, *, ffprobe_pa
     provenance = json.loads((root / "provenance.json").read_text(encoding="utf-8"))
     qc = json.loads((root / "qc-report.json").read_text(encoding="utf-8"))
     human = json.loads((root / "human-review.json").read_text(encoding="utf-8"))
+    build_environment = json.loads((root / "build-environment.json").read_text(encoding="utf-8"))
     if provenance.get("status") != "REVIEW_ONLY" or provenance.get("runtimePromotionAllowed") is not False:
         raise VerificationError("PACKAGE_IS_NOT_REVIEW_ONLY")
     assets = provenance.get("assets") or []
@@ -228,6 +263,16 @@ def verify_package(package_dir: str | Path, spec_path: str | Path, *, ffprobe_pa
     for row in assets:
         if inventory.get(row["relativePath"]) != row["sha256"]:
             raise VerificationError(f"PROVENANCE_HASH_MISMATCH:{row['id']}")
+    expected_denylist_attestation = {
+        "path": DENYLIST_REPOSITORY_PATH,
+        "sha256": denylist_sha256,
+        "entries": len(denylist),
+    }
+    if (
+        provenance.get("quarantineDenylist") != expected_denylist_attestation
+        or build_environment.get("quarantineDenylist") != expected_denylist_attestation
+    ):
+        raise VerificationError("QUARANTINE_DENYLIST_PROVENANCE_MISMATCH")
 
     unique_numbers = {asset.source.sound_number for asset in spec.hyperfocus if asset.source}
     source_count = verify_rights_evidence(root, inventory, unique_numbers)

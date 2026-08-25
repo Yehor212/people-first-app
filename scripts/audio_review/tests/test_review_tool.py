@@ -20,15 +20,47 @@ from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, rend
 from scripts.audio_review.evidence import build_human_review_matrix, write_sha256sums
 from scripts.audio_review.model import SpecError, load_spec, validate_spec_dict
 from scripts.audio_review.procedural import generate_ambience, generate_feedback
+from scripts.audio_review.quarantine import QuarantineError, assert_not_quarantined, load_denylist
 from scripts.audio_review.rights import HttpClient, RightsError, SourceRequest, acquire_source, validate_cc0_license_text
-from scripts.audio_review.verify import VerificationError, verify_hash_inventory, verify_package, verify_rights_evidence
+from scripts.audio_review.verify import VerificationError, verify_hash_inventory, verify_mp3s_not_quarantined, verify_package, verify_rights_evidence
 
 ROOT = Path(__file__).resolve().parents[3]
 SPEC = ROOT / "config/audio/cc0-kimi-audio-review-spec.json"
+QUARANTINE_CONFIG = ROOT / "config/audio/quarantine-denylist.json"
 WORKFLOW = ROOT / ".github/workflows/cc0-kimi-audio-review.yml"
 FFMPEG = shutil.which("ffmpeg")
 LICENSE_TEXT = "Creative Commons CC0 1.0 Universal. Share — copy and redistribute the material in any medium or format. Adapt — remix, transform, and build upon the material for any purpose, even commercially. Commercial purposes are permitted."
 NUMBERS = sorted({row["source"]["soundNumber"] for row in json.loads(SPEC.read_text())["hyperfocus"]})
+BLOCKED_HASHES = {
+    "4e8c8f757848aba7337047c4d91ec9f9f5d973454ed9e86d978a1a76ac61296a",
+    "49fdbd5296ac8de4b8c44b8f39643607e741109362b94b1cce25deed85967ceb",
+    "affa686a1772877d8ea23c0769833e89d3c6d234ff2f4a611af85a914978565c",
+    "015b77908929a3354de99e5d4c6bdb8e5db7a99e03d29cd52f2a1ef573c1b1a6",
+    "84af13be0ebf0b042915a4487650b80bce4f3ed53024540dc0e48c1334752de4",
+    "b47f9368dd4ff4df0403825e791ffe5b585032805d3ac6583d33f899e648f220",
+    "79de9727c528e2de3b0986eea739005b3c66955adf0ab0735dd20da1dd5aa7a9",
+    "b2b08f17fbf6a8ae73bdf1c66fa6fc6f8140d398039bf79cf63e4c3ae32bf5ff",
+    "a0534266e5fbab15119f1fe8f2fd3bc371090346c04556dc9665549df6bc89e4",
+}
+QUARANTINED_HASHES = {
+    "f5c8e70570f38bd86d993d3de484c85ef4e1e8c676094020360042afc5722189",
+    "fa40413b5882b79825af7e74880cd7252268405b97d78655470915ab1c5358cf",
+    "6fd3b57c14f83a6418fc26f6cfa4f346ee4bd7e585c14f2dc9935ac8b142bdd9",
+    "b79c475c1ee1501e6dfc8949ecf8947baa2c83f76d6e89992d16c9ca7aa111c8",
+    "a67528b3a9e8621c906c53f28f8e7ca9dc1629e36e57c776c161c3ce4ebf980c",
+    "e2e5988ccfca12edc45332ce6209660c056936caa4a2d07863be6214d73e0e43",
+    "c64fc737ff4e945ad1a198d5ed66ebfc6b1908bb57daa817d8b6e87db86174cc",
+    "adc7126e82e1a9e11b19084927c679115698b7b1a29125b3bc0855ca6f5aa323",
+    "e587d5b24016ee444dfd5de9213709fed1589b738d943d0b2b60f614c22c9d22",
+    "8e01ff606b2e63cf23fa89406a17db038495980828b6d10d57473069f8c39cd2",
+    "e4eafb4061e1db9a389b1365180f90afd425cf93c1e8cc244422e0a29061f1a2",
+    "cdcbe3fb0c8c251c2131495c66e22061b18e0091cb26027326ce9d20cfc4e3c5",
+    "13eb0d8d3e12041a534b9e6b9390de0d2c6dfdb5b20e46394782271b53d4621d",
+    "e1a7f87669f5aaba5668cfded53c6d43a7f43eefb4823a456e51a53e507b79a0",
+    "5004f7057a1bf4678e8201a9eb75ec5ac96baf40a8bea613989e19a016b3122e",
+    "62f042ea5520d6024d06703497d2a6e43a327c11668020bb8e72094c217ce18c",
+    "0b859de27b4ea7c5f6ea5a4aa3032ebba586d9308730751a62e171dde3dd4065",
+}
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -170,6 +202,126 @@ class ModelContractTests(unittest.TestCase):
         with self.assertRaises(SpecError) as context:
             validate_spec_dict(data)
         self.assertIn("exact 26-role inventory", str(context.exception))
+
+class QuarantineTests(unittest.TestCase):
+    def test_canonical_denylist_matches_recovery_ledger_exactly(self):
+        payload = json.loads(QUARANTINE_CONFIG.read_text(encoding="utf-8"))
+        denylist = load_denylist(QUARANTINE_CONFIG)
+        by_classification = {
+            classification: {
+                row["sha256"]
+                for row in payload["entries"]
+                if row["classification"] == classification
+            }
+            for classification in ("BLOCKED", "QUARANTINED")
+        }
+        self.assertEqual(len(denylist), 26)
+        self.assertEqual(len(BLOCKED_HASHES), 9)
+        self.assertEqual(len(QUARANTINED_HASHES), 17)
+        self.assertEqual(by_classification["BLOCKED"], BLOCKED_HASHES)
+        self.assertEqual(by_classification["QUARANTINED"], QUARANTINED_HASHES)
+        self.assertEqual(denylist, frozenset(BLOCKED_HASHES | QUARANTINED_HASHES))
+        ledger = ROOT / payload["sourceLedger"]["path"]
+        self.assertEqual(
+            hashlib.sha256(ledger.read_bytes()).hexdigest(),
+            payload["sourceLedger"]["sha256"],
+        )
+
+    def test_rejects_quarantined_bytes(self):
+        quarantined_bytes = b"known quarantined fixture"
+        digest = hashlib.sha256(quarantined_bytes).hexdigest()
+        with self.assertRaisesRegex(QuarantineError, f"QUARANTINED_HASH:source:forest:soft:{digest}"):
+            assert_not_quarantined(
+                quarantined_bytes,
+                "source:forest:soft",
+                frozenset({digest}),
+            )
+
+    def test_rejects_invalid_denylist_schema(self):
+        payload = json.loads(QUARANTINE_CONFIG.read_text(encoding="utf-8"))
+        cases = []
+
+        duplicate = copy.deepcopy(payload)
+        duplicate["entries"][1]["sha256"] = duplicate["entries"][0]["sha256"]
+        cases.append(("duplicate", duplicate, "QUARANTINE_HASH_DUPLICATE"))
+
+        malformed = copy.deepcopy(payload)
+        malformed["entries"][0]["sha256"] = "not-a-sha256"
+        cases.append(("malformed", malformed, "QUARANTINE_HASH_INVALID"))
+
+        unknown = copy.deepcopy(payload)
+        unknown["entries"][0]["classification"] = "UNKNOWN"
+        cases.append(("classification", unknown, "QUARANTINE_CLASSIFICATION_INVALID"))
+
+        wrong_counts = copy.deepcopy(payload)
+        quarantined = next(
+            row for row in wrong_counts["entries"] if row["classification"] == "QUARANTINED"
+        )
+        quarantined["classification"] = "BLOCKED"
+        cases.append(("classification-counts", wrong_counts, "QUARANTINE_CLASSIFICATION_INVALID"))
+
+        wrong_ledger = copy.deepcopy(payload)
+        wrong_ledger["sourceLedger"]["path"] = "docs/audio/not-canonical.md"
+        cases.append(("ledger", wrong_ledger, "QUARANTINE_LEDGER_INVALID"))
+
+        wrong_ledger_hash = copy.deepcopy(payload)
+        wrong_ledger_hash["sourceLedger"]["sha256"] = "0" * 64
+        cases.append(("ledger-hash", wrong_ledger_hash, "QUARANTINE_LEDGER_INVALID"))
+
+        with tempfile.TemporaryDirectory() as directory:
+            for name, candidate, error in cases:
+                with self.subTest(name=name):
+                    path = Path(directory) / f"{name}.json"
+                    path.write_text(json.dumps(candidate), encoding="utf-8")
+                    with self.assertRaisesRegex(QuarantineError, error):
+                        load_denylist(path)
+
+    def test_acquired_source_bytes_are_checked_before_source_cache_write(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                source_bytes = (root / "audio" / "sound-0100.wav").read_bytes()
+                digest = hashlib.sha256(source_bytes).hexdigest()
+                with self.assertRaisesRegex(QuarantineError, f"QUARANTINED_HASH:source:s0100:{digest}"):
+                    acquire_source(
+                        SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
+                        HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                        denylist=frozenset({digest}),
+                    )
+            self.assertEqual(list((cache / "sources").glob("*")), [])
+
+    def test_existing_source_cache_is_rehashed_and_quarantine_checked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "server"
+            cache = Path(directory) / "cache"
+            root.mkdir()
+            with fixture_server(root) as base:
+                write_source_fixture(root, base, [100])
+                request = SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0")
+                record = acquire_source(
+                    request,
+                    HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                    denylist=frozenset(),
+                )
+                poisoned = b"ID3poisoned source cache"
+                poisoned_sha256 = hashlib.sha256(poisoned).hexdigest()
+                record.local_path.write_bytes(poisoned)
+                with self.assertRaisesRegex(
+                    QuarantineError,
+                    f"QUARANTINED_HASH:source-cache:s0100:{poisoned_sha256}",
+                ):
+                    acquire_source(
+                        request,
+                        HttpClient(
+                            cache,
+                            offline=True,
+                            allow_http_hosts={"127.0.0.1"},
+                        ),
+                        denylist=frozenset({poisoned_sha256}),
+                    )
 
 class RightsTests(unittest.TestCase):
     def test_accepts_comma_grouped_live_sound_number(self):
@@ -372,11 +524,19 @@ class RightsTests(unittest.TestCase):
             with fixture_server(root) as base:
                 write_source_fixture(root, base, [100])
                 request = SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0")
-                record = acquire_source(request, HttpClient(cache, allow_http_hosts={"127.0.0.1"}))
+                record = acquire_source(
+                    request,
+                    HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                    denylist=frozenset(),
+                )
                 self.assertEqual(record.sound_number, 100)
                 self.assertEqual(record.source_sha256, hashlib.sha256(record.local_path.read_bytes()).hexdigest())
                 self.assertEqual((record.sample_rate_declared, record.channels_declared), (48000, 2))
-                second = acquire_source(request, HttpClient(cache, offline=True, allow_http_hosts={"127.0.0.1"}))
+                second = acquire_source(
+                    request,
+                    HttpClient(cache, offline=True, allow_http_hosts={"127.0.0.1"}),
+                    denylist=frozenset(),
+                )
                 self.assertEqual(second.source_sha256, record.source_sha256)
 
     def test_source_record_preserves_hash_bound_receipt_snapshots(self):
@@ -389,6 +549,7 @@ class RightsTests(unittest.TestCase):
                 record = acquire_source(
                     SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
                     HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                    denylist=frozenset(),
                 )
                 self.assertEqual(
                     record.source_page_snapshot,
@@ -443,7 +604,11 @@ class RightsTests(unittest.TestCase):
                 page.write_text(page.read_text().replace("sound-0100.wav", "sound-9999.wav"), encoding="utf-8")
                 (root / "audio" / "sound-9999.wav").write_bytes((root / "audio" / "sound-0100.wav").read_bytes())
                 with self.assertRaises(RightsError):
-                    acquire_source(SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"), HttpClient(cache, allow_http_hosts={"127.0.0.1"}))
+                    acquire_source(
+                        SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
+                        HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                        denylist=frozenset(),
+                    )
 
     def test_fails_closed_when_audio_url_only_contains_nearby_sound_number(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -464,6 +629,7 @@ class RightsTests(unittest.TestCase):
                     acquire_source(
                         SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
                         HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                        denylist=frozenset(),
                     )
 
 @unittest.skipUnless(FFMPEG, "ffmpeg required")
@@ -509,6 +675,20 @@ class AudioTests(unittest.TestCase):
         self.assertLess(float(np.max(np.abs(cue[-100:]))), 0.01)
 
 class EvidenceTests(unittest.TestCase):
+    def test_independent_mp3_verifier_rejects_quarantined_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            relative = "audio/hyperfocus/quarantined.mp3"
+            path = root / relative
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b"ID3known quarantined package bytes")
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(
+                VerificationError,
+                f"QUARANTINED_HASH:package:{relative}:{digest}",
+            ):
+                verify_mp3s_not_quarantined(root, {relative}, frozenset({digest}))
+
     def test_writes_private_hash_bound_rights_receipts_without_source_audio(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "server"
@@ -520,6 +700,7 @@ class EvidenceTests(unittest.TestCase):
                 record = acquire_source(
                     SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
                     HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                    denylist=frozenset(),
                 )
             manifests = write_rights_receipts(review, {100: record})
             source_page = review / "evidence/rights/s0100/source-page.html"
@@ -546,6 +727,7 @@ class EvidenceTests(unittest.TestCase):
                 record = acquire_source(
                     SourceRequest(100, base + "/", base + "/licenses.html", "CC0-1.0"),
                     HttpClient(cache, allow_http_hosts={"127.0.0.1"}),
+                    denylist=frozenset(),
                 )
             receipts = write_rights_receipts(review, {100: record})
             ledger = {
@@ -630,6 +812,15 @@ class BuilderTests(unittest.TestCase):
                 rights = json.loads((output / "rights-ledger.json").read_text(encoding="utf-8"))
                 self.assertEqual(rights["status"], "RIGHTS_EVIDENCE_CAPTURED_REVIEW_REQUIRED")
                 self.assertEqual(len(rights["receipts"]), len(NUMBERS))
+                expected_denylist_attestation = {
+                    "path": "config/audio/quarantine-denylist.json",
+                    "sha256": hashlib.sha256(QUARANTINE_CONFIG.read_bytes()).hexdigest(),
+                    "entries": 26,
+                }
+                provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+                build_environment = json.loads((output / "build-environment.json").read_text(encoding="utf-8"))
+                self.assertEqual(provenance["quarantineDenylist"], expected_denylist_attestation)
+                self.assertEqual(build_environment["quarantineDenylist"], expected_denylist_attestation)
                 for number in NUMBERS:
                     receipt_dir = output / "evidence" / "rights" / f"s{number:04d}"
                     self.assertTrue((receipt_dir / "source-page.html").is_file())
@@ -639,6 +830,22 @@ class BuilderTests(unittest.TestCase):
                     [path for path in (output / "evidence" / "rights").rglob("*") if path.suffix.lower() in {".wav", ".flac", ".mp3", ".ogg"}],
                     [],
                 )
+                custom_denylist = Path(directory) / "candidate-denylist.json"
+                custom_payload = json.loads(QUARANTINE_CONFIG.read_text(encoding="utf-8"))
+                first_candidate = output / "audio/hyperfocus/hyperfocus-forest-soft.mp3"
+                custom_payload["entries"][0]["sha256"] = hashlib.sha256(first_candidate.read_bytes()).hexdigest()
+                custom_denylist.write_text(json.dumps(custom_payload), encoding="utf-8")
+                with self.assertRaisesRegex(QuarantineError, "QUARANTINED_HASH:candidate:forest:soft"):
+                    build_review_package(
+                        SPEC,
+                        Path(directory) / "blocked-review",
+                        cache,
+                        provider_root_override=base + "/",
+                        license_url_override=base + "/licenses.html",
+                        allow_http_hosts={"127.0.0.1"},
+                        test_duration_cap=1.2,
+                        denylist_path=custom_denylist,
+                    )
                 tampered = output / "evidence" / "rights" / f"s{NUMBERS[0]:04d}" / "source-page.html"
                 tampered.write_bytes(tampered.read_bytes() + b"tampered")
                 with self.assertRaisesRegex(

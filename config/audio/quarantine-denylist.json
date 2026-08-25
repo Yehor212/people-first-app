@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sourceLedger": {
+    "path": "docs/audio/kimi-k3-recovery-ledger-2026-07-25.md",
+    "sha256": "d91a9ae1372a4a2ccd6614cec67c6f09df40cc0b8f37de3a99f8fce4d7e9a2d2"
+  },
+  "entries": [
+    {"legacyPath": "fixed/feedback/feedback-complete.mp3", "sha256": "4e8c8f757848aba7337047c4d91ec9f9f5d973454ed9e86d978a1a76ac61296a", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/feedback/feedback-milestone.mp3", "sha256": "49fdbd5296ac8de4b8c44b8f39643607e741109362b94b1cce25deed85967ceb", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/feedback/feedback-notification.mp3", "sha256": "affa686a1772877d8ea23c0769833e89d3c6d234ff2f4a611af85a914978565c", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/feedback/feedback-streak.mp3", "sha256": "015b77908929a3354de99e5d4c6bdb8e5db7a99e03d29cd52f2a1ef573c1b1a6", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/feedback/feedback-success.mp3", "sha256": "84af13be0ebf0b042915a4487650b80bce4f3ed53024540dc0e48c1334752de4", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/gentle-water-bed.mp3", "sha256": "b47f9368dd4ff4df0403825e791ffe5b585032805d3ac6583d33f899e648f220", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/soft-air-veil.mp3", "sha256": "79de9727c528e2de3b0986eea739005b3c66955adf0ab0735dd20da1dd5aa7a9", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/soft-rain-veil.mp3", "sha256": "b2b08f17fbf6a8ae73bdf1c66fa6fc6f8140d398039bf79cf63e4c3ae32bf5ff", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-ocean-intense.mp3", "sha256": "a0534266e5fbab15119f1fe8f2fd3bc371090346c04556dc9665549df6bc89e4", "classification": "BLOCKED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-fireplace-deep.mp3", "sha256": "f5c8e70570f38bd86d993d3de484c85ef4e1e8c676094020360042afc5722189", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-fireplace-intense.mp3", "sha256": "fa40413b5882b79825af7e74880cd7252268405b97d78655470915ab1c5358cf", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-fireplace-soft.mp3", "sha256": "6fd3b57c14f83a6418fc26f6cfa4f346ee4bd7e585c14f2dc9935ac8b142bdd9", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-forest-deep.mp3", "sha256": "b79c475c1ee1501e6dfc8949ecf8947baa2c83f76d6e89992d16c9ca7aa111c8", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-forest-intense.mp3", "sha256": "a67528b3a9e8621c906c53f28f8e7ca9dc1629e36e57c776c161c3ce4ebf980c", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-forest-soft.mp3", "sha256": "e2e5988ccfca12edc45332ce6209660c056936caa4a2d07863be6214d73e0e43", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-ocean-deep.mp3", "sha256": "c64fc737ff4e945ad1a198d5ed66ebfc6b1908bb57daa817d8b6e87db86174cc", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-ocean-soft.mp3", "sha256": "adc7126e82e1a9e11b19084927c679115698b7b1a29125b3bc0855ca6f5aa323", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-rain-deep.mp3", "sha256": "e587d5b24016ee444dfd5de9213709fed1589b738d943d0b2b60f614c22c9d22", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-rain-intense.mp3", "sha256": "8e01ff606b2e63cf23fa89406a17db038495980828b6d10d57473069f8c39cd2", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-rain-soft.mp3", "sha256": "e4eafb4061e1db9a389b1365180f90afd425cf93c1e8cc244422e0a29061f1a2", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-river-deep.mp3", "sha256": "cdcbe3fb0c8c251c2131495c66e22061b18e0091cb26027326ce9d20cfc4e3c5", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-river-intense.mp3", "sha256": "13eb0d8d3e12041a534b9e6b9390de0d2c6dfdb5b20e46394782271b53d4621d", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-river-soft.mp3", "sha256": "e1a7f87669f5aaba5668cfded53c6d43a7f43eefb4823a456e51a53e507b79a0", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-wind-deep.mp3", "sha256": "5004f7057a1bf4678e8201a9eb75ec5ac96baf40a8bea613989e19a016b3122e", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-wind-intense.mp3", "sha256": "62f042ea5520d6024d06703497d2a6e43a327c11668020bb8e72094c217ce18c", "classification": "QUARANTINED"},
+    {"legacyPath": "fixed/hyperfocus/hyperfocus-wind-soft.mp3", "sha256": "0b859de27b4ea7c5f6ea5a4aa3032ebba586d9308730751a62e171dde3dd4065", "classification": "QUARANTINED"}
+  ]
+}

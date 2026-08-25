@@ -15,6 +15,12 @@ from .dsp import decode_audio, encode_mp3, measure_audio, render_hyperfocus
 from .evidence import build_human_review_matrix, file_sha256, write_sha256sums
 from .model import AssetSpec, ReviewSpec, load_spec
 from .procedural import generate_ambience, generate_feedback
+from .quarantine import (
+    DENYLIST_REPOSITORY_PATH,
+    assert_not_quarantined,
+    default_denylist_path,
+    load_denylist,
+)
 from .rights import (
     RIGHTS_EVIDENCE_STATUS,
     RIGHTS_LEGAL_BOUNDARY,
@@ -121,7 +127,14 @@ def write_rights_receipts(
     return manifests
 
 
-def _render_source_assets(spec: ReviewSpec, records: dict[int, SourceRecord], temp_dir: Path, ffmpeg: str, duration_cap: float | None) -> tuple[list[dict], list[dict]]:
+def _render_source_assets(
+    spec: ReviewSpec,
+    records: dict[int, SourceRecord],
+    temp_dir: Path,
+    ffmpeg: str,
+    duration_cap: float | None,
+    denylist: frozenset[str],
+) -> tuple[list[dict], list[dict]]:
     assets_by_source: dict[int, list[AssetSpec]] = defaultdict(list)
     for asset in spec.hyperfocus:
         if not asset.source:
@@ -140,7 +153,11 @@ def _render_source_assets(spec: ReviewSpec, records: dict[int, SourceRecord], te
             pcm = render_hyperfocus(source_pcm, asset.family or "", asset.level or "", 48000, seed=seed, duration_seconds=duration)
             output = temp_dir / asset.relative_path
             encode_mp3(pcm, output, 48000, spec.audio_contract.bitrate_kbps, ffmpeg)
-            digest = file_sha256(output)
+            digest = assert_not_quarantined(
+                output.read_bytes(),
+                f"candidate:{asset.id}",
+                denylist,
+            )
             metrics = measure_audio(output, ffmpeg)
             status, failures = _objective_status(asset, metrics, duration)
             provenance.append({
@@ -180,7 +197,13 @@ def _render_source_assets(spec: ReviewSpec, records: dict[int, SourceRecord], te
     return provenance, qc
 
 
-def _render_procedural_assets(spec: ReviewSpec, temp_dir: Path, ffmpeg: str, duration_cap: float | None) -> tuple[list[dict], list[dict]]:
+def _render_procedural_assets(
+    spec: ReviewSpec,
+    temp_dir: Path,
+    ffmpeg: str,
+    duration_cap: float | None,
+    denylist: frozenset[str],
+) -> tuple[list[dict], list[dict]]:
     provenance: list[dict] = []
     qc: list[dict] = []
     for asset in tuple(spec.ambience) + tuple(spec.feedback):
@@ -196,7 +219,11 @@ def _render_procedural_assets(spec: ReviewSpec, temp_dir: Path, ffmpeg: str, dur
             parameters = {"notes": list(asset.notes), "runtimeGain": asset.runtime_gain}
         output = temp_dir / asset.relative_path
         encode_mp3(pcm, output, 48000, spec.audio_contract.bitrate_kbps, ffmpeg)
-        digest = file_sha256(output)
+        digest = assert_not_quarantined(
+            output.read_bytes(),
+            f"candidate:{asset.id}",
+            denylist,
+        )
         metrics = measure_audio(output, ffmpeg)
         status, failures = _objective_status(asset, metrics, duration)
         provenance.append({
@@ -245,8 +272,22 @@ def _assert_progression(qc_rows: list[dict]) -> dict:
     return progression
 
 
-def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_dir: str | Path, *, offline: bool = False, provider_root_override: str | None = None, license_url_override: str | None = None, allow_http_hosts: set[str] | None = None, test_duration_cap: float | None = None) -> dict:
+def build_review_package(
+    spec_path: str | Path,
+    output_dir: str | Path,
+    cache_dir: str | Path,
+    *,
+    offline: bool = False,
+    provider_root_override: str | None = None,
+    license_url_override: str | None = None,
+    allow_http_hosts: set[str] | None = None,
+    test_duration_cap: float | None = None,
+    denylist_path: str | Path | None = None,
+) -> dict:
     spec = load_spec(spec_path)
+    denylist_source = Path(denylist_path) if denylist_path is not None else default_denylist_path()
+    denylist = load_denylist(denylist_source)
+    denylist_sha256 = file_sha256(denylist_source)
     output = Path(output_dir).resolve()
     cache = Path(cache_dir).resolve()
     if output == cache or output in cache.parents or cache in output.parents:
@@ -270,15 +311,32 @@ def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_di
             license_url=license_url_override or source.license_url,
             license_id=source.license_id
         )
-        unique_sources[source.sound_number] = acquire_source(request, client)
+        unique_sources[source.sound_number] = acquire_source(
+            request,
+            client,
+            denylist=denylist,
+        )
 
     output.parent.mkdir(parents=True, exist_ok=True)
     temp_dir = output.parent / ("." + output.name + ".tmp-" + uuid.uuid4().hex)
     temp_dir.mkdir(parents=True)
     try:
         rights_receipts = write_rights_receipts(temp_dir, unique_sources)
-        sourced_provenance, sourced_qc = _render_source_assets(spec, unique_sources, temp_dir, ffmpeg, test_duration_cap)
-        procedural_provenance, procedural_qc = _render_procedural_assets(spec, temp_dir, ffmpeg, test_duration_cap)
+        sourced_provenance, sourced_qc = _render_source_assets(
+            spec,
+            unique_sources,
+            temp_dir,
+            ffmpeg,
+            test_duration_cap,
+            denylist,
+        )
+        procedural_provenance, procedural_qc = _render_procedural_assets(
+            spec,
+            temp_dir,
+            ffmpeg,
+            test_duration_cap,
+            denylist,
+        )
         provenance_rows = sorted(sourced_provenance + procedural_provenance, key=lambda row: row["id"])
         qc_rows = sorted(sourced_qc + procedural_qc, key=lambda row: row["id"])
         failed = [row for row in qc_rows if row["objectiveStatus"] != "PASS"]
@@ -302,6 +360,11 @@ def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_di
             "runtimePromotionAllowed": False,
             "generatedAt": generated_at,
             "cleanRoomStatement": "No Kimi MP3, decoded waveform, spectrogram, or derivative audio was used as an input.",
+            "quarantineDenylist": {
+                "path": DENYLIST_REPOSITORY_PATH,
+                "sha256": denylist_sha256,
+                "entries": len(denylist),
+            },
             "audioContract": {"sampleRate": 48000, "channels": 2, "format": "mp3", "bitrateKbps": 128},
             "assets": provenance_rows
         })
@@ -321,7 +384,12 @@ def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_di
             "python": _tool_version([shutil.which("python3") or "python3", "--version"]),
             "ffmpeg": _tool_version([ffmpeg, "-version"]),
             "numpy": __import__("numpy").__version__,
-            "sourceDateEpoch": os.environ.get("SOURCE_DATE_EPOCH")
+            "sourceDateEpoch": os.environ.get("SOURCE_DATE_EPOCH"),
+            "quarantineDenylist": {
+                "path": DENYLIST_REPOSITORY_PATH,
+                "sha256": denylist_sha256,
+                "entries": len(denylist),
+            },
         })
         (temp_dir / "README.md").write_text(
             "# ZenFlow CC0 Kimi audio reconstruction — review package\n\n"
@@ -333,7 +401,11 @@ def build_review_package(spec_path: str | Path, output_dir: str | Path, cache_di
         )
         files = [path for path in temp_dir.rglob("*") if path.is_file() and path.name != "SHA256SUMS"]
         write_sha256sums(temp_dir, files)
-        verification = verify_package(temp_dir, spec_path)
+        verification = verify_package(
+            temp_dir,
+            spec_path,
+            denylist_path=denylist_source,
+        )
         _atomic_promote(temp_dir, output)
         return {**verification, "sourceCount": len(unique_sources), "packagePath": str(output)}
     except Exception:
