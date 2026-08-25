@@ -268,10 +268,10 @@ Run: `python3 -m unittest scripts.audio_audit.tests.test_audit_tool.ModelAcquisi
 Run:
 
 ```bash
-/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit/envs/clap/bin/python -m scripts.audio_audit.acquire_models --manifest config/audio/hyperfocus-ai-models-v2.json --cache /Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit/models --receipt /Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit/model-acquisition-receipt.json
+/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit/envs/clap/bin/python -m scripts.audio_audit.acquire_models
 ```
 
-Expected: exact file hashes and model bytes are private; no `.bin` file is downloaded or loaded; network is not used again during inference.
+The command derives the exact tracked manifest and sibling `private-evidence/audio-ai-audit` paths from the current worktree, and accepts no caller-controlled write target. Expected: exact file hashes and model bytes are private; no `.bin` file is downloaded or loaded; network is not used again during inference.
 
 - [ ] **Step 6: Run narrow security scans before any weight is loaded**
 

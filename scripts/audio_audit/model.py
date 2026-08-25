@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 
@@ -48,6 +49,10 @@ class ModelSpec:
     license_id: str
     allowed_files: tuple[str, ...]
     denied_files: tuple[str, ...]
+    file_sha256: dict[str, str]
+    file_bytes: dict[str, int]
+    archive_sha256: str | None
+    archive_bytes: int | None
     status: str
 
 
@@ -175,8 +180,8 @@ def load_model_manifest(path: str | Path) -> ModelManifest:
 
     if data.get("schemaVersion") != 1:
         errors.append("schemaVersion must be 1")
-    if data.get("status") != "UNVERIFIED_DISCOVERY":
-        errors.append("status must be UNVERIFIED_DISCOVERY")
+    if data.get("status") != "HASH_PINNED_NOT_ADMITTED":
+        errors.append("status must be HASH_PINNED_NOT_ADMITTED")
     if data.get("canonicalDevice") != "cpu":
         errors.append("canonicalDevice must be cpu")
     if data.get("networkDuringInference") is not False:
@@ -206,6 +211,46 @@ def load_model_manifest(path: str | Path) -> ModelManifest:
             errors.append("semantic-clap must allow model.safetensors")
         if model_id == "semantic-clap" and "pytorch_model.bin" not in denied:
             errors.append("semantic-clap must deny pytorch_model.bin")
+        hashes_value = row.get("fileSha256")
+        bytes_value = row.get("fileBytes")
+        if not isinstance(hashes_value, dict):
+            hashes_value = {}
+            errors.append(f"{model_id}.fileSha256 must be an object")
+        if not isinstance(bytes_value, dict):
+            bytes_value = {}
+            errors.append(f"{model_id}.fileBytes must be an object")
+        hashes = {str(name): str(value) for name, value in hashes_value.items()}
+        file_bytes: dict[str, int] = {}
+        for name, value in bytes_value.items():
+            try:
+                parsed_bytes = int(value)
+                if parsed_bytes <= 0:
+                    raise ValueError
+                file_bytes[str(name)] = parsed_bytes
+            except (TypeError, ValueError):
+                errors.append(f"{model_id}.fileBytes.{name} must be a positive integer")
+        if set(hashes) != set(allowed) or set(file_bytes) != set(allowed):
+            errors.append(f"{model_id} file hashes/bytes must cover the exact allowed files")
+        for name, digest in hashes.items():
+            if not re.fullmatch(r"[0-9a-f]{64}", digest):
+                errors.append(f"{model_id}.fileSha256.{name} must be lowercase SHA-256")
+        archive_sha_value = row.get("archiveSha256")
+        archive_sha = str(archive_sha_value) if archive_sha_value is not None else None
+        archive_bytes_value = row.get("archiveBytes")
+        archive_bytes: int | None = None
+        if archive_bytes_value is not None:
+            try:
+                archive_bytes = int(archive_bytes_value)
+                if archive_bytes <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                errors.append(f"{model_id}.archiveBytes must be a positive integer")
+        if archive_sha is not None and not re.fullmatch(r"[0-9a-f]{64}", archive_sha):
+            errors.append(f"{model_id}.archiveSha256 must be lowercase SHA-256")
+        if (archive_sha is None) != (archive_bytes is None):
+            errors.append(f"{model_id} archive SHA and bytes must be present together")
+        if model_id == "temporal-yamnet" and archive_sha is None:
+            errors.append("temporal-yamnet must bind its downloaded archive")
         for field in ("role", "provider", "repository", "revision", "licenseId", "status"):
             if not isinstance(row.get(field), str) or not row[field].strip():
                 errors.append(f"{model_id}.{field} must be a non-empty string")
@@ -219,6 +264,10 @@ def load_model_manifest(path: str | Path) -> ModelManifest:
                 license_id=str(row.get("licenseId", "")),
                 allowed_files=allowed,
                 denied_files=denied,
+                file_sha256=hashes,
+                file_bytes=file_bytes,
+                archive_sha256=archive_sha,
+                archive_bytes=archive_bytes,
                 status=str(row.get("status", "")),
             )
 
@@ -227,9 +276,8 @@ def load_model_manifest(path: str | Path) -> ModelManifest:
 
     return ModelManifest(
         schema_version=1,
-        status="UNVERIFIED_DISCOVERY",
+        status="HASH_PINNED_NOT_ADMITTED",
         canonical_device="cpu",
         network_during_inference=False,
         models=models,
     )
-

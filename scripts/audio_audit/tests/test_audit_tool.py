@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib
+import io
 import json
 from pathlib import Path
+import tarfile
 import tempfile
 import unittest
 
@@ -26,6 +28,13 @@ def load_environment_api(test_case: unittest.TestCase):
         return importlib.import_module("scripts.audio_audit.environment")
     except ModuleNotFoundError as exc:
         test_case.fail(f"strict audio audit environment validator is missing: {exc}")
+
+
+def load_acquisition_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.acquire_models")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit model acquisition is missing: {exc}")
 
 
 class AuditPolicyTests(unittest.TestCase):
@@ -63,6 +72,28 @@ class AuditPolicyTests(unittest.TestCase):
         self.assertIn("model.safetensors", clap.allowed_files)
         self.assertNotIn("pytorch_model.bin", clap.allowed_files)
         self.assertIn("pytorch_model.bin", clap.denied_files)
+
+    def test_hash_pinned_manifest_matches_acquired_model_bytes(self):
+        model = load_model_api(self)
+
+        manifest = model.load_model_manifest(MODEL_MANIFEST_PATH)
+        clap = manifest.models["semantic-clap"]
+        yamnet = manifest.models["temporal-yamnet"]
+
+        self.assertEqual(manifest.status, "HASH_PINNED_NOT_ADMITTED")
+        self.assertEqual(
+            clap.file_sha256["model.safetensors"],
+            "3f648de6d030e17494be455d323b8d191233fbae0c7ce0ba745fd21a926a63a6",
+        )
+        self.assertEqual(
+            yamnet.archive_sha256,
+            "b80da2a1a56926fb0767205051a200dd7b3beaf3ea1ea126c42a53943996e5e0",
+        )
+        self.assertEqual(yamnet.archive_bytes, 14242921)
+        self.assertEqual(
+            yamnet.file_sha256["saved_model.pb"],
+            "672af6e1e34fe15a42d45d70217fd39f97e10aef9b0effbf9b0bf7826fccd462",
+        )
 
     def test_policy_rejects_extra_family_missing_abstain_and_ai_human_authority(self):
         model = load_model_api(self)
@@ -128,6 +159,123 @@ class EnvironmentTests(unittest.TestCase):
         self.assertEqual(yamnet["tensorflow"], "2.21.0")
         self.assertEqual(yamnet["tensorflow-hub"], "0.16.1")
         self.assertEqual(yamnet["tf-keras"], "2.21.0")
+
+
+class ModelAcquisitionTests(unittest.TestCase):
+    def test_cli_path_boundary_accepts_only_canonical_manifest_and_private_targets(self):
+        acquisition = load_acquisition_api(self)
+        self.assertTrue(
+            hasattr(acquisition, "validate_acquisition_paths"),
+            "canonical acquisition path validation is missing",
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo = root / "worktrees" / "task"
+            manifest = repo / "config/audio/hyperfocus-ai-models-v2.json"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("{}", encoding="utf-8")
+            private = root / "private-evidence" / "audio-ai-audit"
+            private.mkdir(parents=True)
+
+            paths = acquisition.validate_acquisition_paths(repo, private, manifest)
+
+            self.assertEqual(paths.cache_root, private.resolve() / "models")
+            self.assertEqual(paths.receipt_path, private.resolve() / "model-acquisition-receipt.json")
+
+    def test_cli_path_boundary_rejects_repo_write_and_arbitrary_manifest(self):
+        acquisition = load_acquisition_api(self)
+        self.assertTrue(
+            hasattr(acquisition, "validate_acquisition_paths"),
+            "canonical acquisition path validation is missing",
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            repo = root / "worktrees" / "task"
+            repo.mkdir(parents=True)
+            private = root / "private-evidence" / "audio-ai-audit"
+            private.mkdir(parents=True)
+            outside_manifest = root / "outside.json"
+            outside_manifest.write_text("{}", encoding="utf-8")
+            repo_private = repo / "models"
+            repo_private.mkdir()
+            canonical_manifest = repo / "config/audio/hyperfocus-ai-models-v2.json"
+            canonical_manifest.parent.mkdir(parents=True)
+            canonical_manifest.write_text("{}", encoding="utf-8")
+
+            with self.assertRaisesRegex(acquisition.ModelAcquisitionError, "manifest path must be canonical"):
+                acquisition.validate_acquisition_paths(repo, private, outside_manifest)
+            with self.assertRaisesRegex(acquisition.ModelAcquisitionError, "private root cannot be inside the repository"):
+                acquisition.validate_acquisition_paths(repo, repo_private, canonical_manifest)
+
+    def test_clap_acquisition_copies_only_allowlisted_safe_files(self):
+        acquisition = load_acquisition_api(self)
+        model = load_model_api(self)
+        spec = model.load_model_manifest(MODEL_MANIFEST_PATH).models["semantic-clap"]
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            upstream = root / "upstream"
+            upstream.mkdir()
+            for name in spec.allowed_files:
+                path = upstream / name
+                path.write_bytes(f"safe:{name}".encode("utf-8"))
+
+            def fetch_file(_spec, filename: str, _download_root: Path) -> Path:
+                return upstream / filename
+
+            receipt = acquisition.acquire_hf_model(spec, root / "cache", fetch_file)
+
+            self.assertEqual(tuple(receipt.files), spec.allowed_files)
+            self.assertFalse((root / "cache" / spec.id / "pytorch_model.bin").exists())
+            self.assertTrue((root / "cache" / spec.id / "model.safetensors").is_file())
+
+    def test_model_cache_rejects_tamper_and_symlink(self):
+        acquisition = load_acquisition_api(self)
+        model = load_model_api(self)
+        spec = model.load_model_manifest(MODEL_MANIFEST_PATH).models["semantic-clap"]
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            upstream = root / "upstream"
+            upstream.mkdir()
+            for name in spec.allowed_files:
+                (upstream / name).write_bytes(f"safe:{name}".encode("utf-8"))
+
+            receipt = acquisition.acquire_hf_model(
+                spec,
+                root / "cache",
+                lambda _spec, filename, _download_root: upstream / filename,
+            )
+            cached = root / "cache" / spec.id / "model.safetensors"
+            cached.write_bytes(b"tampered")
+            with self.assertRaisesRegex(acquisition.ModelAcquisitionError, "model hash mismatch"):
+                acquisition.verify_model_cache(receipt, root / "cache")
+
+            cached.unlink()
+            cached.symlink_to(upstream / "model.safetensors")
+            with self.assertRaisesRegex(acquisition.ModelAcquisitionError, "model cache entry must be a regular file"):
+                acquisition.verify_model_cache(receipt, root / "cache")
+
+    def test_yamnet_archive_rejects_parent_path_and_symbolic_link(self):
+        acquisition = load_acquisition_api(self)
+
+        for name, linkname in (("../escape", ""), ("saved/link", "../target")):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp:
+                archive = Path(temp) / "model.tar.gz"
+                with tarfile.open(archive, "w:gz") as stream:
+                    info = tarfile.TarInfo(name)
+                    if linkname:
+                        info.type = tarfile.SYMTYPE
+                        info.linkname = linkname
+                        stream.addfile(info)
+                    else:
+                        body = b"unsafe"
+                        info.size = len(body)
+                        stream.addfile(info, io.BytesIO(body))
+                with self.assertRaisesRegex(acquisition.ModelAcquisitionError, "unsafe model archive member"):
+                    acquisition.extract_yamnet_archive(archive, Path(temp) / "out")
 
 
 if __name__ == "__main__":
