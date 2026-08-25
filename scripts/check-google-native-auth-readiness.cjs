@@ -45,8 +45,8 @@ function inspectEvidence(evidence, now = new Date()) {
   if (evidence?.schemaVersion !== 1) {
     failures.push("Google native auth evidence schemaVersion is not 1");
   }
-  if (evidence?.status !== "VERIFIED") {
-    failures.push("Google native auth console evidence is not VERIFIED");
+  if (evidence?.status !== "OBSERVED_UNVERIFIED") {
+    failures.push("Tracked Google native auth evidence must remain OBSERVED_UNVERIFIED");
   }
   if (!expectedPackage || evidence?.packageName !== expectedPackage) {
     failures.push(`Google native auth evidence package does not match ${expectedPackage || "the Android app"}`);
@@ -67,8 +67,8 @@ function inspectEvidence(evidence, now = new Date()) {
   const play = clients.find((client) => client?.signingRole === "play-app-signing");
 
   for (const [label, client] of [["Upload", upload], ["Play App Signing", play]]) {
-    if (!client || client.status !== "VERIFIED") {
-      failures.push(`${label} Android OAuth client is not VERIFIED`);
+    if (!client || client.status !== "OBSERVED_UNVERIFIED") {
+      failures.push(`${label} tracked OAuth client status must remain OBSERVED_UNVERIFIED`);
       continue;
     }
     if (!sha1Pattern.test(String(client.sha1 || ""))) {
@@ -100,7 +100,7 @@ function inspectEvidence(evidence, now = new Date()) {
   if (webClientRequired && !configuredWebClientId) {
     failures.push("VITE_GOOGLE_WEB_CLIENT_ID is required for the Android release build");
   } else if (configuredWebClientId && configuredWebClientId !== evidence?.webClientId) {
-    failures.push("VITE_GOOGLE_WEB_CLIENT_ID does not match the verified Google Web OAuth client");
+    failures.push("VITE_GOOGLE_WEB_CLIENT_ID does not match the tracked Google Web OAuth observation");
   }
 
   return { failures, packageName: expectedPackage };
@@ -137,8 +137,16 @@ function main() {
   }
 
   output(
-    "PASS",
-    `Google Play App Signing OAuth registration is verified for ${result.packageName}`,
+    "STRUCTURE_PASS",
+    `Android OAuth evidence structure is valid for ${result.packageName}`,
+  );
+  output(
+    "CONSOLE_UNVERIFIED",
+    "Tracked repository data cannot independently verify the current Google Cloud or Play Console state",
+  );
+  output(
+    "RUNTIME_UNVERIFIED",
+    "Completed sign-in must be proven with the exact Play-installed Android artifact",
   );
 }
 

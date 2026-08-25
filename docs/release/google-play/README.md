@@ -46,6 +46,7 @@ npm run google-play:app-ads:public-check:zenflow
 npm run google-play:public-listing:check
 npm run google-play:privacy:public-check
 npm run google-play:admob:check
+npm run google-play:admob:aab-check
 npm run google-play:admob:ump-check
 npm run google-play:admob:owner-runbook:check
 npm run google-play:admob:owner-next-steps
@@ -65,13 +66,13 @@ is missing or does not match `public/app-ads.txt`. Set
 rewarded IDs for this release. Google sample IDs are forbidden in production
 source, generated bundles, and Android release artifacts.
 Run `npm run google-play:admob:external-check` to keep the public-safe ledger for
-AdMob app readiness, Policy Center, Privacy & messages/CMP, payments/tax, live
-device ad playback, and full cross-platform ad-unit status honest. Run
-this only as historical context because it still records the superseded rewarded-only decision;
-it is not PASS evidence for the current Android banner release. Run
+the current Android banner-only release: public disclosure, AdMob app readiness,
+Policy Center, Privacy & messages/CMP, payments/tax, live device request and
+impression, protected surfaces, and future iOS banner status remain independent.
+The ledger is structurally valid evidence tracking, not production-serving PASS. Run
 `npm run google-play:admob:owner-runbook:check` to keep the owner-only CMP,
-payments/tax/holds, live-device smoke, cross-platform expansion, and
-psychological-safety handoff in `ADMOB_OWNER_FINALIZATION_RUNBOOK.md` linked and
+payments/tax/holds, live-device banner smoke, and future iOS expansion in
+`ADMOB_OWNER_FINALIZATION_RUNBOOK.md` linked and
 public-safe. Run `npm run google-play:admob:owner-evidence:check` before asking
 the owner to fill private evidence, then run `npm run google-play:admob:owner-evidence:prepare`
 to create `output/private/admob-owner-evidence.json` from the public-safe template.

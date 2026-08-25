@@ -6,6 +6,7 @@ import {
   AD_UNIT_IDS,
   getBannerAdUnitId,
   hasBannerAdUnitId,
+  isValidProductionBannerAdUnitId,
 } from '../adConfig';
 
 describe('banner-only AdMob configuration', () => {
@@ -22,6 +23,14 @@ describe('banner-only AdMob configuration', () => {
     expect(configSource).not.toContain('GOOGLE_ADMOB_TEST_IDS');
     expect(configSource).not.toContain('isGoogleTestAdUnit');
     expect(configSource).not.toContain('3940256099942544');
+  });
+
+  it('rejects blank, malformed, and Google sample banner IDs at the runtime boundary', () => {
+    expect(isValidProductionBannerAdUnitId('')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('banner-123')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('ca-app-pub-3940256099942544/6300978111')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('ca-app-pub-9501460293702808/9876543210')).toBe(true);
+    expect(hasBannerAdUnitId('ios')).toBe(false);
   });
 
   it('reports configured banner slots without inventing a production fallback', () => {

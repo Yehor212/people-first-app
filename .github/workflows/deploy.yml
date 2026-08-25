@@ -466,11 +466,17 @@ jobs:
       - name: Check production data integrity for Android
         run: npm run check:production-data-integrity
 
-      - name: Check Google Play native auth registration
+      - name: Check Google native auth repository structure
         env:
           VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.VITE_GOOGLE_WEB_CLIENT_ID }}
           ZENFLOW_GOOGLE_WEB_CLIENT_REQUIRED: true
         run: npm run check:google-native-auth
+
+      - name: Check Android production banner configuration
+        env:
+          VITE_ADMOB_APP_ID_ANDROID: ${{ vars.VITE_ADMOB_APP_ID_ANDROID }}
+          VITE_ADMOB_BANNER_ID_ANDROID: ${{ vars.VITE_ADMOB_BANNER_ID_ANDROID }}
+        run: npm run google-play:admob:check
 
       - name: Check Sentry readiness for Android web assets
         if: github.event_name != 'pull_request'
@@ -502,6 +508,8 @@ jobs:
           VITE_ENABLE_APPLE_AUTH: ${{ vars.VITE_ENABLE_APPLE_AUTH || 'true' }}
           VITE_APPLE_PUBLIC_ACCESS_READY: ${{ vars.VITE_APPLE_PUBLIC_ACCESS_READY || 'false' }}
           VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.VITE_GOOGLE_WEB_CLIENT_ID }}
+          VITE_ADMOB_APP_ID_ANDROID: ${{ vars.VITE_ADMOB_APP_ID_ANDROID }}
+          VITE_ADMOB_BANNER_ID_ANDROID: ${{ vars.VITE_ADMOB_BANNER_ID_ANDROID }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
@@ -530,6 +538,18 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
+
+      - name: Android bundleRelease configuration proof
+        env:
+          VITE_ADMOB_APP_ID_ANDROID: ${{ vars.VITE_ADMOB_APP_ID_ANDROID }}
+          VITE_ADMOB_BANNER_ID_ANDROID: ${{ vars.VITE_ADMOB_BANNER_ID_ANDROID }}
+        run: cd android && ./gradlew bundleRelease --console=plain
+
+      - name: Check Android release bundle AdMob contract
+        env:
+          VITE_ADMOB_APP_ID_ANDROID: ${{ vars.VITE_ADMOB_APP_ID_ANDROID }}
+          VITE_ADMOB_BANNER_ID_ANDROID: ${{ vars.VITE_ADMOB_BANNER_ID_ANDROID }}
+        run: npm run google-play:admob:aab-check
 
       - name: Android assembleDebug
         run: cd android && ./gradlew assembleDebug --console=plain

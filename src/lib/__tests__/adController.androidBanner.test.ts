@@ -185,6 +185,32 @@ describe("adController Android banner-only contracts", () => {
     expect(reportedHeights.at(-1)).toBe(0);
   });
 
+  it("removes a pending native show when a protected surface opens before it resolves", async () => {
+    let resolveShow: (() => void) | undefined;
+    bannerHarness.adMob.showBanner.mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        resolveShow = resolve;
+      }),
+    );
+    const controller = await import("../adController");
+    const reportedHeights: number[] = [];
+
+    await controller.initializeAds();
+    const showResult = controller.showHabitsBanner((height: number) => {
+      reportedHeights.push(height);
+    });
+    await vi.waitFor(() => expect(bannerHarness.adMob.showBanner).toHaveBeenCalledTimes(1));
+
+    const hideResult = controller.hideHabitsBanner();
+    resolveShow?.();
+
+    await expect(showResult).resolves.toEqual({ shown: false, error: "placement_changed" });
+    await expect(hideResult).resolves.toBeUndefined();
+    expect(bannerHarness.adMob.removeBanner).toHaveBeenCalledTimes(1);
+    expect(bannerHarness.adMob.hideBanner).not.toHaveBeenCalled();
+    expect(reportedHeights.at(-1)).toBe(0);
+  });
+
   it("recreates the adaptive banner when the Android viewport width changes", async () => {
     const controller = await import("../adController");
 

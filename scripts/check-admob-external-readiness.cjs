@@ -32,14 +32,9 @@ const REQUIRED_EXTERNAL_READINESS_IDS = [
   "payments_holds",
   "play_console_ads_data_safety",
   "live_ad_playback_device",
-  "full_cross_platform_ad_units",
 ];
 
-const CURRENT_ANDROID_REWARDED_READINESS_IDS = REQUIRED_EXTERNAL_READINESS_IDS.filter(
-  (id) => id !== "full_cross_platform_ad_units",
-);
-
-const FULL_CROSS_PLATFORM_READINESS_IDS = [...REQUIRED_EXTERNAL_READINESS_IDS];
+const CURRENT_ANDROID_BANNER_READINESS_IDS = [...REQUIRED_EXTERNAL_READINESS_IDS];
 
 const LIVE_PLAYBACK_PREREQUISITE_IDS = [
   "privacy_messages_cmp",
@@ -58,7 +53,7 @@ const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = Object.freeze({
     /developer website/i,
     /contains ads/i,
     /privacy policy/i,
-    /rewarded ads copy/i,
+    /habits banner|banner ad copy/i,
   ],
   public_privacy_policy: [
     /google-play:privacy:public-check|public privacy policy check passed/i,
@@ -66,7 +61,7 @@ const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = Object.freeze({
     /Google Mobile Ads/i,
     /\bUMP\b|Google User Messaging Platform|privacy choices/i,
     /Advertising ID|ad-services/i,
-    /optional rewarded ads|rewarded ads/i,
+    /habits banner|banner ad/i,
     /Google Mobile Ads SDK data categories|IP address/i,
   ],
   admob_app_readiness: [/ready/i, /ad serving enabled/i, /google play linked/i, /active ad units/i],
@@ -84,19 +79,21 @@ const REQUIRED_PASS_EVIDENCE_PATTERNS_BY_ITEM = Object.freeze({
   ],
   live_ad_playback_device: [
     /release-equivalent android/i,
-    /rewarded/i,
+    /habits banner/i,
     /consent/i,
-    /video opened/i,
-    /reward callback granted/i,
+    /banner rendered/i,
+    /ad request observed/i,
+    /ad impression observed/i,
     /revocation stopped new ad requests/i,
-    /no prompt.{0,120}mood logging|mood logging.{0,120}no prompt/i,
-    /no prompt.{0,120}active focus|active focus.{0,120}no prompt/i,
-    /no prompt.{0,120}focus reflection|focus reflection.{0,120}no prompt/i,
-    /no prompt.{0,120}journal editor|journal editor.{0,120}no prompt/i,
-    /no prompt.{0,120}onboarding|onboarding.{0,120}no prompt/i,
-    /bad\/terrible mood states.{0,120}no prompt|no prompt.{0,120}bad\/terrible mood states/i,
+    /no banner.{0,120}mood logging|mood logging.{0,120}no banner/i,
+    /no banner.{0,120}active focus|active focus.{0,120}no banner/i,
+    /no banner.{0,120}focus reflection|focus reflection.{0,120}no banner/i,
+    /no banner.{0,120}journal editor|journal editor.{0,120}no banner/i,
+    /no banner.{0,120}onboarding|onboarding.{0,120}no banner/i,
+    /bad\/terrible mood states.{0,120}no banner|no banner.{0,120}bad\/terrible mood states/i,
+    /drawer.{0,120}no banner|no banner.{0,120}drawer/i,
+    /rotation.{0,120}adaptive banner/i,
   ],
-  full_cross_platform_ad_units: [/android/i, /ios/i, /banner/i, /rewarded/i, /owner-controlled/i, /non-sample/i, /same publisher/i],
 });
 
 const PRIVATE_VALUE_PATTERNS = [
@@ -253,7 +250,6 @@ function normalizeItems(ledger, issues) {
 
 function evaluateExternalReadiness(input, options = {}) {
   const requirePass = options.requirePass === true;
-  const requireFullCrossPlatform = options.requireFullCrossPlatform === true;
   const now = options.now instanceof Date ? options.now : new Date();
   const maxPassAgeDays = Number.isFinite(options.maxPassAgeDays) ? Number(options.maxPassAgeDays) : DEFAULT_MAX_PASS_AGE_DAYS;
   const issues = [];
@@ -362,7 +358,7 @@ function evaluateExternalReadiness(input, options = {}) {
     }
   }
 
-  const passGateIds = requireFullCrossPlatform ? FULL_CROSS_PLATFORM_READINESS_IDS : CURRENT_ANDROID_REWARDED_READINESS_IDS;
+  const passGateIds = CURRENT_ANDROID_BANNER_READINESS_IDS;
   for (const requiredId of REQUIRED_EXTERNAL_READINESS_IDS) {
     const item = byId.get(requiredId);
     if (!item) {
@@ -374,28 +370,24 @@ function evaluateExternalReadiness(input, options = {}) {
     }
   }
 
-  const currentRequiredItems = CURRENT_ANDROID_REWARDED_READINESS_IDS.map((id) => byId.get(id)).filter(Boolean);
-  const fullRequiredItems = FULL_CROSS_PLATFORM_READINESS_IDS.map((id) => byId.get(id)).filter(Boolean);
+  const currentRequiredItems = CURRENT_ANDROID_BANNER_READINESS_IDS.map((id) => byId.get(id)).filter(Boolean);
   const nonPassIssues = issues.filter((itemIssue) => itemIssue.code !== "external_item_not_pass");
-  const passReady = currentRequiredItems.length === CURRENT_ANDROID_REWARDED_READINESS_IDS.length && currentRequiredItems.every((item) => item.status === "PASS") && nonPassIssues.length === 0;
-  const fullCrossPlatformReady = fullRequiredItems.length === FULL_CROSS_PLATFORM_READINESS_IDS.length && fullRequiredItems.every((item) => item.status === "PASS") && nonPassIssues.length === 0;
+  const passReady = currentRequiredItems.length === CURRENT_ANDROID_BANNER_READINESS_IDS.length && currentRequiredItems.every((item) => item.status === "PASS") && nonPassIssues.length === 0;
 
   return {
     ok: issues.length === 0,
     passReady,
-    fullCrossPlatformReady,
     issues,
     items,
   };
 }
 
 function parseArgs(argv) {
-  const args = { ledgerFile: DEFAULT_LEDGER, requirePass: false, requireFullCrossPlatform: false };
+  const args = { ledgerFile: DEFAULT_LEDGER, requirePass: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--file") args.ledgerFile = path.resolve(ROOT, argv[++i]);
     else if (arg === "--require-pass") args.requirePass = true;
-    else if (arg === "--require-full-cross-platform") args.requireFullCrossPlatform = true;
   }
   return args;
 }
@@ -413,15 +405,14 @@ function main() {
   try {
     report = evaluateExternalReadiness(readLedger(args.ledgerFile), {
       requirePass: args.requirePass,
-      requireFullCrossPlatform: args.requireFullCrossPlatform,
     });
   } catch (error) {
     console.log(`[admob-external-readiness] UNVERIFIED - ${error.message}`);
     process.exit(2);
   }
 
-  const gate = args.requireFullCrossPlatform ? "full-cross-platform" : "current-android-rewarded";
-  const gateReady = args.requireFullCrossPlatform ? report.fullCrossPlatformReady : report.passReady;
+  const gate = "current-android-banner";
+  const gateReady = report.passReady;
   const status = gateReady && report.ok ? "PASS" : "UNVERIFIED";
   console.log(`[admob-external-readiness] ${status} - ${gate} Google/owner monetization evidence ${gateReady ? "is ready" : "still has unresolved checks"}`);
   for (const item of report.items) {
@@ -441,7 +432,6 @@ if (require.main === module) main();
 module.exports = {
   evaluateExternalReadiness,
   REQUIRED_EXTERNAL_READINESS_IDS,
-  CURRENT_ANDROID_REWARDED_READINESS_IDS,
-  FULL_CROSS_PLATFORM_READINESS_IDS,
+  CURRENT_ANDROID_BANNER_READINESS_IDS,
   REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM,
 };

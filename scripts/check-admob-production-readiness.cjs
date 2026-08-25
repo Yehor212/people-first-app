@@ -16,22 +16,14 @@ const ADMOB_IDS = [
     aliases: ["ZENFLOW_ADMOB_ANDROID_APP_ID"],
     kind: "android_app_id",
   },
-  { key: "VITE_ADMOB_REWARDED_ID_ANDROID", aliases: [], kind: "ad_unit_id" },
   { key: "VITE_ADMOB_BANNER_ID_ANDROID", aliases: [], kind: "ad_unit_id" },
-  { key: "VITE_ADMOB_REWARDED_ID_IOS", kind: "ad_unit_id" },
-  { key: "VITE_ADMOB_BANNER_ID_IOS", kind: "ad_unit_id" },
 ];
 
 const REQUIRED_KEYS_BY_MODE = {
-  "android-rewarded": new Set([
-    "VITE_ADMOB_APP_ID_ANDROID",
-    "VITE_ADMOB_REWARDED_ID_ANDROID",
-  ]),
   "android-banner": new Set([
     "VITE_ADMOB_APP_ID_ANDROID",
     "VITE_ADMOB_BANNER_ID_ANDROID",
   ]),
-  full: new Set(ADMOB_IDS.map(({ key }) => key)),
 };
 
 function maskPublisherId(value) {
@@ -123,25 +115,19 @@ function checkAdMobValue({ key, value, kind, appAdsPublisherId, required }) {
   return { status: `${prefix}:${masked}`, issues };
 }
 
-function warningFromOptionalIssue(issue) {
-  if (issue.code === "sample_admob_id") return { ...issue, code: "optional_sample_admob_id" };
-  if (issue.code === "publisher_mismatch") return { ...issue, code: "optional_publisher_mismatch" };
-  if (issue.code === "invalid_admob_id_format") return { ...issue, code: "optional_invalid_admob_id_format" };
-  return { ...issue, code: `optional_${issue.code}` };
-}
-
 function evaluateAdMobProductionReadiness({
   env,
   appAdsText,
-  strictOptionalIds = false,
-  requireOptionalIds = false,
-  monetizationMode = requireOptionalIds ? "full" : "android-banner",
+  monetizationMode = "android-banner",
 }) {
   const issues = [];
   const warnings = [];
   const summary = {};
   const appAds = parseAppAdsText(appAdsText || "");
-  const requiredKeys = REQUIRED_KEYS_BY_MODE[monetizationMode] || REQUIRED_KEYS_BY_MODE["android-banner"];
+  const requiredKeys = REQUIRED_KEYS_BY_MODE[monetizationMode];
+  if (!requiredKeys) {
+    throw new Error("Unsupported AdMob monetization mode: " + monetizationMode);
+  }
 
   if (!appAdsText) {
     issues.push({ code: "missing_app_ads", message: "public/app-ads.txt is required before production monetization" });
@@ -160,8 +146,7 @@ function evaluateAdMobProductionReadiness({
       required,
     });
     summary[entry.key] = result.status;
-    if (required || strictOptionalIds) issues.push(...result.issues);
-    else warnings.push(...result.issues.map(warningFromOptionalIssue));
+    issues.push(...result.issues);
   }
 
   if (appAds.publisherId) summary["public/app-ads.txt"] = `present:${maskPublisherId(appAds.publisherId)}`;
@@ -173,20 +158,13 @@ function parseArgs(argv) {
   const args = {
     envFiles: [],
     appAdsFile: DEFAULT_APP_ADS_FILE,
-    strictOptionalIds: process.env.ZENFLOW_ADMOB_STRICT_OPTIONAL_IDS === "true",
-    requireOptionalIds: process.env.ZENFLOW_ADMOB_REQUIRE_OPTIONAL_IDS === "true",
     monetizationMode: process.env.ZENFLOW_ADMOB_MODE || "android-banner",
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--env-file") args.envFiles.push(argv[++i]);
     else if (arg === "--app-ads-file") args.appAdsFile = path.resolve(ROOT, argv[++i]);
-    else if (arg === "--strict-optional") args.strictOptionalIds = true;
-    else if (arg === "--require-optional") {
-      args.requireOptionalIds = true;
-      args.strictOptionalIds = true;
-      args.monetizationMode = "full";
-    } else if (arg === "--mode") {
+    else if (arg === "--mode") {
       args.monetizationMode = argv[++i] || "";
       if (!REQUIRED_KEYS_BY_MODE[args.monetizationMode]) {
         throw new Error("Unsupported AdMob monetization mode: " + args.monetizationMode);
@@ -202,17 +180,10 @@ function main() {
   const report = evaluateAdMobProductionReadiness({
     env,
     appAdsText: readAppAdsFile(args.appAdsFile),
-    strictOptionalIds: args.strictOptionalIds,
-    requireOptionalIds: args.requireOptionalIds,
     monetizationMode: args.monetizationMode,
   });
   const status = report.ok ? "PASS" : "UNVERIFIED";
-  const scope =
-    args.monetizationMode === "android-banner"
-      ? "Android banner AdMob ids"
-      : args.monetizationMode === "full"
-        ? "Full cross-platform AdMob ids"
-        : "Android rewarded AdMob ids";
+  const scope = "Android banner AdMob ids";
   console.log(`[admob-readiness] ${status} - ${scope} and local app-ads.txt ${report.ok ? "are ready" : "need release-owner action"}`);
   for (const [key, value] of Object.entries(report.summary)) {
     console.log(`[admob-readiness] ${key}=${value}`);

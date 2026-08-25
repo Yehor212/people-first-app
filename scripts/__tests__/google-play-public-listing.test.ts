@@ -7,7 +7,7 @@ const checker = require("../check-google-play-public-listing.cjs") as {
     html: string;
     expectedDeveloperWebsite?: string;
     expectedPrivacyPolicyUrl?: string;
-    requiredRewardedAdsText?: boolean;
+    requiredBannerAdsText?: boolean;
     requireContainsAds?: boolean;
   }) => {
     ok: boolean;
@@ -19,14 +19,14 @@ const checker = require("../check-google-play-public-listing.cjs") as {
 };
 
 describe("Google Play public listing guard", () => {
-  it("passes when developer website, privacy policy, Contains ads, and rewarded copy are public", () => {
+  it("passes when developer website, privacy policy, Contains ads, and Habits banner copy are public", () => {
     const report = checker.evaluateGooglePlayListingHtml({
       html:
         "Developer website " +
         checker.DEFAULT_DEVELOPER_WEBSITE +
         " Privacy Policy " +
         checker.DEFAULT_PRIVACY_POLICY_URL +
-        " Contains ads ZenFlow may offer optional rewarded ads.",
+        " Contains ads ZenFlow may show a banner ad on the Habits screen.",
     });
 
     expect(report.ok).toBe(true);
@@ -34,12 +34,12 @@ describe("Google Play public listing guard", () => {
     expect(report.signals.developerWebsiteVisible).toBe(true);
     expect(report.signals.privacyPolicyVisible).toBe(true);
     expect(report.signals.containsAdsVisible).toBe(true);
-    expect(report.signals.rewardedAdsVisible).toBe(true);
+    expect(report.signals.bannerAdsVisible).toBe(true);
   });
 
   it("rejects a listing that hides the public privacy policy URL", () => {
     const report = checker.evaluateGooglePlayListingHtml({
-      html: checker.DEFAULT_DEVELOPER_WEBSITE + " Contains ads ZenFlow may offer optional rewarded ads.",
+      html: checker.DEFAULT_DEVELOPER_WEBSITE + " Contains ads ZenFlow may show a banner ad on the Habits screen.",
     });
 
     expect(report.ok).toBe(false);
@@ -55,7 +55,7 @@ describe("Google Play public listing guard", () => {
         checker.DEFAULT_DEVELOPER_WEBSITE +
         " " +
         customPrivacyUrl +
-        " Contains ads ZenFlow may offer optional rewarded ads.",
+        " Contains ads ZenFlow may show a banner ad on the Habits screen.",
     });
 
     expect(report.ok).toBe(true);
@@ -77,7 +77,7 @@ describe("Google Play public listing guard", () => {
 
   it("rejects missing public ads disclosure", () => {
     const report = checker.evaluateGooglePlayListingHtml({
-      html: checker.DEFAULT_DEVELOPER_WEBSITE + " " + checker.DEFAULT_PRIVACY_POLICY_URL + " optional rewarded ads",
+      html: checker.DEFAULT_DEVELOPER_WEBSITE + " " + checker.DEFAULT_PRIVACY_POLICY_URL + " Habits banner ad",
     });
 
     expect(report.ok).toBe(false);

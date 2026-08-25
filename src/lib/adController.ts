@@ -66,6 +66,8 @@ const AD_ONBOARDING_GRACE_DAYS = 3;
 
 const AdMobPlugin: any = AdMob;
 let adLifecycleEpoch = 0;
+let bannerPlacementEpoch = 0;
+let bannerCommandQueue: Promise<void> = Promise.resolve();
 let bannerCreated = false;
 let bannerVisible = false;
 let bannerHeight = 0;
@@ -76,6 +78,19 @@ let bannerViewportWidth: number | null = null;
 
 function isLifecycleCurrent(epoch: number): boolean {
   return epoch === adLifecycleEpoch;
+}
+
+function isBannerPlacementCurrent(epoch: number): boolean {
+  return epoch === bannerPlacementEpoch;
+}
+
+function enqueueBannerCommand<T>(command: () => Promise<T>): Promise<T> {
+  const result = bannerCommandQueue.then(command, command);
+  bannerCommandQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
 }
 
 function resetAdAvailability(options: DisableAdsOptions = {}): void {
@@ -301,165 +316,195 @@ function readViewportWidth(): number | null {
   return Number.isFinite(width) && width > 0 ? width : null;
 }
 
-export async function showHabitsBanner(
+export function showHabitsBanner(
   onHeightChange: (height: number) => void,
 ): Promise<BannerAdCommandResult> {
-  if (!state.sdkAvailable || !state.canRequestAds || !isBannerAdsSupported()) {
-    onHeightChange(0);
-    return { shown: false, error: 'banner_unavailable' };
-  }
-
-  const lifecycleEpoch = adLifecycleEpoch;
-  try {
-    if (!AdMobPlugin || !isLifecycleCurrent(lifecycleEpoch)) {
+  const placementEpoch = ++bannerPlacementEpoch;
+  return enqueueBannerCommand(async () => {
+    if (!state.sdkAvailable || !state.canRequestAds || !isBannerAdsSupported()) {
       onHeightChange(0);
-      return { shown: false, error: 'sdk_unavailable' };
+      return { shown: false, error: 'banner_unavailable' };
     }
 
-    bannerHeightCallback = onHeightChange;
-    const currentViewportWidth = readViewportWidth();
-    if (
-      bannerCreated &&
-      bannerViewportWidth !== null &&
-      currentViewportWidth !== null &&
-      bannerViewportWidth !== currentViewportWidth
-    ) {
-      await AdMobPlugin.removeBanner?.();
-      if (!isLifecycleCurrent(lifecycleEpoch)) {
+    const lifecycleEpoch = adLifecycleEpoch;
+    try {
+      if (
+        !AdMobPlugin ||
+        !isLifecycleCurrent(lifecycleEpoch) ||
+        !isBannerPlacementCurrent(placementEpoch)
+      ) {
         onHeightChange(0);
-        return { shown: false, error: 'lifecycle_changed' };
+        return { shown: false, error: 'placement_changed' };
       }
+
+      bannerHeightCallback = onHeightChange;
+      const currentViewportWidth = readViewportWidth();
+      if (
+        bannerCreated &&
+        bannerViewportWidth !== null &&
+        currentViewportWidth !== null &&
+        bannerViewportWidth !== currentViewportWidth
+      ) {
+        await AdMobPlugin.removeBanner?.();
+        if (
+          !isLifecycleCurrent(lifecycleEpoch) ||
+          !isBannerPlacementCurrent(placementEpoch)
+        ) {
+          onHeightChange(0);
+          return { shown: false, error: 'placement_changed' };
+        }
+        bannerCreated = false;
+        bannerVisible = false;
+        bannerViewportWidth = null;
+        reportBannerHeight(0);
+      }
+
+      if (bannerCreated) {
+        if (!bannerVisible) {
+          await AdMobPlugin.resumeBanner();
+          if (
+            !isLifecycleCurrent(lifecycleEpoch) ||
+            !isBannerPlacementCurrent(placementEpoch)
+          ) {
+            await AdMobPlugin.removeBanner?.();
+            bannerCreated = false;
+            bannerVisible = false;
+            bannerViewportWidth = null;
+            onHeightChange(0);
+            return { shown: false, error: 'placement_changed' };
+          }
+          bannerVisible = true;
+        } else if (bannerHeight > 0) {
+          onHeightChange(bannerHeight);
+        }
+        return { shown: true };
+      }
+
+      if (!bannerSizeListener && typeof AdMobPlugin.addListener === 'function') {
+        const sizeChangedEvent = BannerAdPluginEvents.SizeChanged;
+        bannerSizeListener = await AdMobPlugin.addListener(
+          sizeChangedEvent,
+          (info: { height?: number }) => {
+            if (!isLifecycleCurrent(lifecycleEpoch) || !bannerCreated || !bannerVisible) return;
+            const height = Number(info?.height);
+            reportBannerHeight(Number.isFinite(height) && height > 0 ? height : 0);
+          },
+        );
+      }
+
+      if (!bannerFailureListener && typeof AdMobPlugin.addListener === 'function') {
+        const failedEvent = BannerAdPluginEvents.FailedToLoad;
+        bannerFailureListener = await AdMobPlugin.addListener(
+          failedEvent,
+          (failure: { code?: number; message?: string }) => {
+            if (!isLifecycleCurrent(lifecycleEpoch)) return;
+            bannerPlacementEpoch += 1;
+            bannerCreated = false;
+            bannerVisible = false;
+            bannerViewportWidth = null;
+            reportBannerHeight(0);
+            logger.warn('[Ads] Android habits banner failed to load:', failure);
+            void Promise.resolve(AdMobPlugin?.removeBanner?.()).catch((error) => {
+              logger.warn('[Ads] Failed to remove unloaded Android habits banner:', error);
+            });
+          },
+        );
+      }
+
+      if (
+        !isLifecycleCurrent(lifecycleEpoch) ||
+        !isBannerPlacementCurrent(placementEpoch)
+      ) {
+        onHeightChange(0);
+        return { shown: false, error: 'placement_changed' };
+      }
+
+      const adId = getBannerAdUnitId('android');
+      await AdMobPlugin.showBanner({
+        adId,
+        adSize: BannerAdSize.ADAPTIVE_BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
+        margin: 0,
+        isTesting: false,
+        npa: true,
+      });
+
+      if (
+        !isLifecycleCurrent(lifecycleEpoch) ||
+        !isBannerPlacementCurrent(placementEpoch)
+      ) {
+        await AdMobPlugin.removeBanner?.();
+        bannerCreated = false;
+        bannerVisible = false;
+        bannerViewportWidth = null;
+        onHeightChange(0);
+        return { shown: false, error: 'placement_changed' };
+      }
+
+      bannerCreated = true;
+      bannerVisible = true;
+      bannerViewportWidth = currentViewportWidth;
+      return { shown: true };
+    } catch (err) {
       bannerCreated = false;
       bannerVisible = false;
       bannerViewportWidth = null;
       reportBannerHeight(0);
-    }
-
-    if (bannerCreated) {
-      if (!bannerVisible) {
-        await AdMobPlugin.resumeBanner();
-        if (!isLifecycleCurrent(lifecycleEpoch)) {
-          await AdMobPlugin.removeBanner?.();
-          onHeightChange(0);
-          return { shown: false, error: 'lifecycle_changed' };
-        }
-        bannerVisible = true;
-      } else if (bannerHeight > 0) {
-        onHeightChange(bannerHeight);
-      }
-      return { shown: true };
-    }
-
-    if (!bannerSizeListener && typeof AdMobPlugin.addListener === 'function') {
-      const sizeChangedEvent = BannerAdPluginEvents.SizeChanged;
-      bannerSizeListener = await AdMobPlugin.addListener(
-        sizeChangedEvent,
-        (info: { height?: number }) => {
-          if (!isLifecycleCurrent(lifecycleEpoch)) return;
-          const height = Number(info?.height);
-          reportBannerHeight(Number.isFinite(height) && height > 0 ? height : 0);
-        },
-      );
-    }
-
-    if (!bannerFailureListener && typeof AdMobPlugin.addListener === 'function') {
-      const failedEvent = BannerAdPluginEvents.FailedToLoad;
-      bannerFailureListener = await AdMobPlugin.addListener(
-        failedEvent,
-        (failure: { code?: number; message?: string }) => {
-          if (!isLifecycleCurrent(lifecycleEpoch)) return;
-          bannerCreated = false;
-          bannerVisible = false;
-          bannerViewportWidth = null;
-          reportBannerHeight(0);
-          logger.warn('[Ads] Android habits banner failed to load:', failure);
-          void Promise.resolve(AdMobPlugin?.removeBanner?.()).catch((error) => {
-            logger.warn('[Ads] Failed to remove unloaded Android habits banner:', error);
-          });
-        },
-      );
-    }
-
-    const adId = getBannerAdUnitId('android');
-    bannerCreated = true;
-    bannerVisible = true;
-    bannerViewportWidth = currentViewportWidth;
-    await AdMobPlugin.showBanner({
-      adId,
-      adSize: BannerAdSize.ADAPTIVE_BANNER,
-      position: BannerAdPosition.BOTTOM_CENTER,
-      margin: 0,
-      isTesting: false,
-      npa: true,
-    });
-
-    if (!isLifecycleCurrent(lifecycleEpoch)) {
-      await AdMobPlugin.removeBanner?.();
-      bannerCreated = false;
-      bannerVisible = false;
-      bannerViewportWidth = null;
+      bannerHeightCallback = null;
       onHeightChange(0);
-      return { shown: false, error: 'lifecycle_changed' };
+      logger.warn('[Ads] Android habits banner failed:', err);
+      return { shown: false, error: 'banner_failed' };
     }
-
-    return { shown: true };
-  } catch (err) {
-    bannerCreated = false;
-    bannerVisible = false;
-    bannerViewportWidth = null;
-    reportBannerHeight(0);
-    bannerHeightCallback = null;
-    onHeightChange(0);
-    logger.warn('[Ads] Android habits banner failed:', err);
-    return { shown: false, error: 'banner_failed' };
-  }
+  });
 }
 
-export async function hideHabitsBanner(): Promise<void> {
-  if (!bannerCreated || !AdMobPlugin) {
-    reportBannerHeight(0);
-    return;
-  }
+export function hideHabitsBanner(): Promise<void> {
+  bannerPlacementEpoch += 1;
+  bannerVisible = false;
+  reportBannerHeight(0);
+  return enqueueBannerCommand(async () => {
+    if (!bannerCreated || !AdMobPlugin) return;
 
-  try {
-    if (bannerVisible) await AdMobPlugin.hideBanner();
-  } catch (err) {
-    logger.warn('[Ads] Failed to hide Android habits banner:', err);
-  } finally {
-    bannerVisible = false;
-    reportBannerHeight(0);
-  }
+    try {
+      await AdMobPlugin.hideBanner();
+    } catch (err) {
+      logger.warn('[Ads] Failed to hide Android habits banner:', err);
+    }
+  });
 }
 
-export async function removeHabitsBanner(): Promise<void> {
+export function removeHabitsBanner(): Promise<void> {
+  bannerPlacementEpoch += 1;
   bannerCreated = false;
   bannerVisible = false;
   bannerViewportWidth = null;
-
-  try {
-    if (AdMobPlugin && typeof AdMobPlugin.removeBanner === 'function') {
-      await AdMobPlugin.removeBanner();
-    }
-  } catch (err) {
-    logger.warn('[Ads] Failed to remove Android habits banner:', err);
-  }
-
-  try {
-    await bannerSizeListener?.remove?.();
-  } catch (err) {
-    logger.warn('[Ads] Failed to remove Android banner size listener:', err);
-  }
-
-  try {
-    await bannerFailureListener?.remove?.();
-  } catch (err) {
-    logger.warn('[Ads] Failed to remove Android banner failure listener:', err);
-  }
-
   reportBannerHeight(0);
-  bannerSizeListener = null;
-  bannerFailureListener = null;
-  bannerHeightCallback = null;
+
+  return enqueueBannerCommand(async () => {
+    try {
+      if (AdMobPlugin && typeof AdMobPlugin.removeBanner === 'function') {
+        await AdMobPlugin.removeBanner();
+      }
+    } catch (err) {
+      logger.warn('[Ads] Failed to remove Android habits banner:', err);
+    }
+
+    try {
+      await bannerSizeListener?.remove?.();
+    } catch (err) {
+      logger.warn('[Ads] Failed to remove Android banner size listener:', err);
+    }
+
+    try {
+      await bannerFailureListener?.remove?.();
+    } catch (err) {
+      logger.warn('[Ads] Failed to remove Android banner failure listener:', err);
+    }
+
+    bannerSizeListener = null;
+    bannerFailureListener = null;
+    bannerHeightCallback = null;
+  });
 }
 
 export function getAdState(): AdControllerState {

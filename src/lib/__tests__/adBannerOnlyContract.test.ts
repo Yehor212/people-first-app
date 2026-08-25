@@ -26,6 +26,12 @@ describe("production advertising is Android banner-only", () => {
     expect(context).not.toMatch(/watchRewarded|canShowRewarded|rewardTreats|rewardXp/);
   });
 
+  it("does not retain unreachable rewarded or ad-counter storage keys in production", () => {
+    const storageKeys = readFileSync(resolve(root, "src/lib/storageKeys.ts"), "utf8");
+
+    expect(storageKeys).not.toMatch(/AD_DAILY_REWARDED|AD_SESSION_COUNT|AD_LAST_SHOWN|AD_LAST_DISMISS/);
+  });
+
   it("bundles the native AdMob bridge instead of leaving a bare runtime import in WebView", () => {
     const controller = readFileSync(resolve(root, "src/lib/adController.ts"), "utf8");
 

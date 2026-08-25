@@ -14,11 +14,16 @@ def zenflowAdMobAndroidAppId = project.findProperty("ZENFLOW_ADMOB_ANDROID_APP_I
         ?: System.getenv("VITE_ADMOB_APP_ID_ANDROID")
         ?: ""
 
+def zenflowAdMobAndroidBannerId = project.findProperty("VITE_ADMOB_BANNER_ID_ANDROID")
+        ?: System.getenv("VITE_ADMOB_BANNER_ID_ANDROID")
+        ?: ""
+
 def zenflowAppAdsFile = rootProject.file("../public/app-ads.txt")
 def zenflowExpectedAdMobPublisher = zenflowAppAdsFile.exists()
         ? (zenflowAppAdsFile.text =~ /google\.com, (pub-\d{16}), DIRECT,/).with { matcher -> matcher.find() ? matcher.group(1) : "" }
         : ""
 def zenflowConfiguredAdMobPublisher = (zenflowAdMobAndroidAppId =~ /ca-app-(pub-\d{16})~\d+/).with { matcher -> matcher.matches() ? matcher.group(1) : "" }
+def zenflowConfiguredAdMobBannerPublisher = (zenflowAdMobAndroidBannerId =~ /ca-app-(pub-\d{16})\/\d+/).with { matcher -> matcher.matches() ? matcher.group(1) : "" }
 
 gradle.taskGraph.whenReady { taskGraph ->
     def publishableReleaseTaskNames = [
@@ -35,6 +40,9 @@ gradle.taskGraph.whenReady { taskGraph ->
     if (publishableReleaseTaskRequested && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)) {
         throw new GradleException("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt.")
     }
+    if (publishableReleaseTaskRequested && (!zenflowConfiguredAdMobBannerPublisher || zenflowConfiguredAdMobBannerPublisher != zenflowExpectedAdMobPublisher)) {
+        throw new GradleException("Release builds require VITE_ADMOB_BANNER_ID_ANDROID with a real banner id matching public/app-ads.txt.")
+    }
 }
 
 android {
@@ -44,8 +52,8 @@ android {
         applicationId "com.zenflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 38
-        versionName "2.1.1"
+        versionCode 39
+        versionName "2.1.2"
         manifestPlaceholders = [
                 adMobApplicationId: zenflowAdMobAndroidAppId
         ]

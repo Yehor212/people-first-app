@@ -1,14 +1,14 @@
 {
   "schemaVersion": "zenflow-admob-external-readiness/v1",
   "packageName": "com.zenflow.app",
-  "updatedAt": "2026-07-04",
+  "updatedAt": "2026-08-24",
   "purpose": "Public-safe per-row evidence ledger for Google-owned and owner-owned monetization checks. A row-level PASS means that specific evidence item passed; it does not mean full AdMob production monetization is ready unless the strict pass command passes.",
   "items": [
     {
       "id": "public_app_ads_root",
       "status": "PASS",
-      "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: public root app-ads check passed for https://yehor212.github.io/app-ads.txt with masked publisher pub-9501********2808.",
+      "checkedAt": "2026-08-24",
+      "evidence": "2026-08-24: public root app-ads check passed for https://yehor212.github.io/app-ads.txt with masked publisher pub-9501********2808.",
       "ownerAction": "Re-run the public root check after every deploy, publisher change, or developer website change.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/14538460"
@@ -16,9 +16,9 @@
     },
     {
       "id": "admob_app_ads_txt_status",
-      "status": "PASS",
+      "status": "UNVERIFIED",
       "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: AdMob Verify app page showed the ZenFlow Android app confirmed with a Done status; evidence recorded without raw app, ad-unit, or publisher IDs.",
+      "evidence": "Historical AdMob Verify app Done evidence is stale; current app-ads.txt console status has not been freshly rechecked without exposing account identifiers.",
       "ownerAction": "Owner must re-open the AdMob app verification/app-ads.txt area after crawler refresh and record only a public-safe PASS, PARTIAL, UNVERIFIED, or FAIL summary.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/14538460"
@@ -26,9 +26,9 @@
     },
     {
       "id": "public_google_play_listing",
-      "status": "PASS",
+      "status": "UNVERIFIED",
       "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: public listing check passed for com.zenflow.app with developer website, Contains ads signal, privacy policy, rewarded ads copy, and old No ads claim absent. This is a public listing evidence PASS only; it does not prove full AdMob production monetization readiness.",
+      "evidence": "Historical 2026-07-04 listing proof used rewarded copy and is superseded by the current Habits banner contract; the current public listing banner ad copy has not been freshly verified.",
       "ownerAction": "Re-run the public listing check after every Google Play listing or policy declaration edit.",
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455"
@@ -36,9 +36,9 @@
     },
     {
       "id": "public_privacy_policy",
-      "status": "PASS",
+      "status": "UNVERIFIED",
       "checkedAt": "2026-07-04",
-      "evidence": "2026-07-04: GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with npm run google-play:privacy:public-check for the published privacy URL; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories including IP address. This is a public privacy evidence PASS only; it does not prove full AdMob production monetization readiness.",
+      "evidence": "Historical 2026-07-04 privacy proof used rewarded copy and is superseded by the current Habits banner contract; the current public banner disclosure has not been freshly verified.",
       "ownerAction": "Re-run the GitHub Pages post-deploy public privacy smoke and npm run google-play:privacy:public-check after every privacy policy, ads SDK, consent, developer website, or Google Play Data safety change.",
       "sourceUrls": [
         "https://support.google.com/googleplay/android-developer/answer/9859455",
@@ -48,7 +48,7 @@
     },
     {
       "id": "admob_app_readiness",
-      "status": "PASS",
+      "status": "UNVERIFIED",
       "checkedAt": "2026-07-04",
       "evidence": "2026-07-04: AdMob apps list showed the ZenFlow Android app Ready, ad serving enabled, Google Play linked, and active ad units; raw identifiers were not recorded.",
       "ownerAction": "Re-check AdMob app readiness before each release, after policy/listing changes, and before claiming live ad availability.",
@@ -137,21 +137,11 @@
     {
       "id": "live_ad_playback_device",
       "status": "UNVERIFIED",
-      "evidence": "2026-07-04: Release-equivalent Android rewarded live ad playback was not tested end to end; consent, video opened, reward callback, dismissal, revocation, and no-prompt protected surfaces remain unverified.",
-      "ownerAction": "Run a release-equivalent Android device smoke for rewarded ads only after all current owner-evidence prerequisites are PASS; do not force live ad requests while review is pending.",
+      "evidence": "Release-equivalent Android Habits banner serving is unverified: no current device render, AdMob request/impression, rotation, background, overlap, revocation, or protected-surface proof is recorded.",
+      "ownerAction": "Install the exact production artifact, complete consent, verify the Habits banner and protected-surface removal, then confirm a real AdMob request and impression without using production live ads on a development emulator.",
       "sourceUrls": [
         "https://support.google.com/admob/answer/7313578",
-        "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/"
-      ],
-      "checkedAt": "2026-07-04"
-    },
-    {
-      "id": "full_cross_platform_ad_units",
-      "status": "UNVERIFIED",
-      "evidence": "2026-07-04: Full cross-platform ad units were not proved because Android, iOS, banner, rewarded, owner-controlled, non-sample, and same publisher family checks are not all complete.",
-      "ownerAction": "Run npm run google-play:admob:check:full and keep this UNVERIFIED until every required banner/iOS ID is owner-controlled and non-sample.",
-      "sourceUrls": [
-        "https://support.google.com/admob/answer/7356431"
+        "https://developers.google.com/admob/android/banner"
       ],
       "checkedAt": "2026-07-04"
     }

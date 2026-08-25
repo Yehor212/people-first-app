@@ -213,6 +213,7 @@ npm run google-play:privacy:artifact-check
 # After GitHub Pages deploy, the post-deploy public privacy smoke must pass.
 npm run google-play:privacy:public-check
 npm run google-play:admob:check
+npm run google-play:admob:aab-check
 npm run google-play:admob:ump-check
 ```
 
@@ -224,8 +225,10 @@ The AdMob production readiness script must pass with the real Android app ID
 and real Android banner ad-unit ID before the Android banner-only release can be built.
 Android release Gradle builds must also fail fast when `ZENFLOW_ADMOB_ANDROID_APP_ID`
 / `VITE_ADMOB_APP_ID_ANDROID` is missing or does not match the publisher in
-`public/app-ads.txt`. The release must contain no Google sample IDs. The legacy external readiness ledger still models the superseded rewarded-only decision;
-do not use it as PASS evidence for this Android banner-only release. Live ad
+`public/app-ads.txt`. The release must contain no Google sample IDs. The
+external readiness ledger now models the current Android banner-only release
+and keeps public listing, privacy, account, and device rows non-PASS until fresh
+Habits banner evidence is recorded. Live ad
 serving remains `UNVERIFIED` until a real device request and AdMob reporting are
 freshly observed.
 

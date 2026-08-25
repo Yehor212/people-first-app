@@ -27,7 +27,7 @@ const ADMOB_READINESS_APPROVED_SOURCE_URLS = new Set([
   "https://support.google.com/admob/answer/11601831",
   "https://support.google.com/googleplay/android-developer/answer/9859455",
   "https://support.google.com/admob/answer/7313578",
-  "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/",
+  "https://developers.google.com/admob/android/banner",
   "https://support.google.com/admob/answer/7356431",
 ]);
 
@@ -80,10 +80,7 @@ const ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM = Object.freeze({
   ],
   live_ad_playback_device: [
     "https://support.google.com/admob/answer/7313578",
-    "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/",
-  ],
-  full_cross_platform_ad_units: [
-    "https://support.google.com/admob/answer/7356431",
+    "https://developers.google.com/admob/android/banner",
   ],
 });
 
