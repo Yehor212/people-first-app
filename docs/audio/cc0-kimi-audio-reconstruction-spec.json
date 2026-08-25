@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "project": "ZenFlow source-rights-documented Kimi-role audio reconstruction",
+  "status": "SOURCE_RIGHTS_DOCUMENTED_REVIEW_ONLY",
+  "runtimeReplacementAuthorized": false,
+  "generatorVersion": "2.0.0-cc0-hybrid",
+  "scope": {
+    "hyperfocus": {
+      "families": ["forest", "rain", "ocean", "fireplace", "river", "wind"],
+      "levels": ["soft", "deep", "intense"],
+      "files": 18,
+      "durationSeconds": 30
+    },
+    "ambience": {
+      "files": ["soft-air-veil.mp3", "gentle-water-bed.mp3", "soft-rain-veil.mp3"],
+      "durationSeconds": 96
+    },
+    "feedback": {
+      "files": [
+        "feedback-success.mp3",
+        "feedback-complete.mp3",
+        "feedback-streak.mp3",
+        "feedback-milestone.mp3",
+        "feedback-notification.mp3"
+      ]
+    },
+    "totalFiles": 26
+  },
+  "sourcePolicy": {
+    "cc0DerivedFiles": 20,
+    "firstPartyProceduralFiles": 6,
+    "cc0Provider": "BigSoundBank / LaSonotheque",
+    "officialLicenseUrl": "https://bigsoundbank.com/licenses.html",
+    "recoveredKimiBinaryInputs": false,
+    "recoveredKimiDecodedDerivatives": false,
+    "aiGeneratedAudioInputs": false,
+    "voicesOrSpeechInputs": false,
+    "unrecordedStockLibraries": false,
+    "attributionPolicy": "Retain source titles, authors, page URLs and exact source SHA-256 even where attribution is not required."
+  },
+  "audioContract": {
+    "format": "MP3",
+    "sampleRate": 48000,
+    "channels": 2,
+    "bitrateKbps": 128,
+    "peakLimitDbfs": -2,
+    "clippedSamples": 0,
+    "maximumDcOffset": 0.001,
+    "maximumLoopSeamJump": 0.055,
+    "maximumLoopSeamMeanAbsDifference250ms": 0.105,
+    "maximumStartEndRmsDeltaDb": 2.5,
+    "minimumIntensityGap": 3,
+    "maximumCrossFamilySpectralCorrelationExclusive": 0.995
+  },
+  "releaseGate": {
+    "exactSha256InventoryRequired": true,
+    "sourceByteLockRequiredForFinalCandidate": true,
+    "decodedQcRequired": true,
+    "spectralFamilyDistinctnessRequired": true,
+    "humanListeningRequired": true,
+    "minimumLoopListeningMinutes": 10,
+    "platformPlayback": {
+      "web": "UNVERIFIED",
+      "pwa": "UNVERIFIED",
+      "android": "UNVERIFIED",
+      "ios": "UNVERIFIED",
+      "desktop": "UNVERIFIED"
+    },
+    "formalLegalReview": "UNVERIFIED",
+    "releaseAuthorization": false
+  }
+}
