@@ -327,6 +327,22 @@ class QuarantineTests(unittest.TestCase):
                     )
 
 class RightsTests(unittest.TestCase):
+    def test_sitemap_parser_rejects_entities_and_non_sitemap_loc_elements(self):
+        unsafe = (
+            b'<!DOCTYPE urlset [<!ENTITY injected "https://bigsoundbank.com/sound-s0100.html">]><urlset><url><loc>&injected;</loc></url></urlset>',
+            b'<root><loc>https://bigsoundbank.com/sound-s0100.html</loc></root>',
+            b'<urlset><url><loc>https://bigsoundbank.com/sound-s0100.html</urlset>',
+        )
+        for payload in unsafe:
+            with self.subTest(payload=payload), self.assertRaises(RightsError):
+                rights_module._parse_sitemap(payload)
+
+        valid = b'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://bigsoundbank.com/sound-s0100.html?a=1&amp;b=2</loc></url></urlset>'
+        self.assertEqual(
+            rights_module._parse_sitemap(valid),
+            ["https://bigsoundbank.com/sound-s0100.html?a=1&b=2"],
+        )
+
     def test_accepts_comma_grouped_live_sound_number(self):
         html = "<h1>Forest #3</h1><p>Sound number: 2,715</p><p>Author: Pierre SIBANARCO</p><p>License: CC0 1.0</p>"
         title, author, _ = rights_module._extract_page(

@@ -13,7 +13,6 @@ from typing import Callable, Iterable
 from urllib.parse import urljoin, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 import wave
-import xml.etree.ElementTree as ET
 
 from .quarantine import assert_not_quarantined
 
@@ -161,6 +160,83 @@ class _LinkParser(HTMLParser):
             self.title_parts.append(data)
         if self._in_h1:
             self.h1_parts.append(data)
+
+
+class _SitemapParser(HTMLParser):
+    _ROOTS = {"urlset", "sitemapindex"}
+    _LOC_PARENTS = {"url", "sitemap"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack: list[str] = []
+        self.root: str | None = None
+        self.locations: list[str] = []
+        self._loc_parts: list[str] | None = None
+        self._xml_declaration_seen = False
+
+    @staticmethod
+    def _local_name(tag: str) -> str:
+        return tag.rsplit(":", 1)[-1].lower()
+
+    def handle_starttag(self, tag, attrs):
+        local = self._local_name(tag)
+        if not self.stack:
+            if self.root is not None or local not in self._ROOTS:
+                raise RightsError(f"Invalid sitemap root element: {local}")
+            self.root = local
+        elif self._loc_parts is not None:
+            raise RightsError("Nested markup is forbidden inside sitemap loc")
+        if local == "loc":
+            if not self.stack or self.stack[-1] not in self._LOC_PARENTS:
+                raise RightsError("Sitemap loc is outside url or sitemap")
+            self._loc_parts = []
+        self.stack.append(local)
+        if len(self.stack) > 16:
+            raise RightsError("Sitemap nesting exceeds limit")
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        local = self._local_name(tag)
+        if not self.stack or self.stack[-1] != local:
+            raise RightsError(f"Mismatched sitemap end tag: {local}")
+        if local == "loc":
+            value = "".join(self._loc_parts or []).strip()
+            if not value or len(value) > 8192:
+                raise RightsError("Sitemap loc is empty or exceeds limit")
+            self.locations.append(value)
+            if len(self.locations) > 100_000:
+                raise RightsError("Sitemap location count exceeds limit")
+            self._loc_parts = None
+        self.stack.pop()
+
+    def handle_data(self, data):
+        if self._loc_parts is not None:
+            self._loc_parts.append(data)
+        elif not self.stack and data.strip():
+            raise RightsError("Unexpected data outside sitemap root")
+
+    def handle_decl(self, decl):
+        raise RightsError("Sitemap declarations are forbidden")
+
+    def unknown_decl(self, data):
+        raise RightsError("Unknown sitemap declaration")
+
+    def handle_pi(self, data):
+        if (
+            self.root is not None
+            or self._xml_declaration_seen
+            or not data.lower().startswith("xml ")
+        ):
+            raise RightsError("Sitemap processing instruction is forbidden")
+        self._xml_declaration_seen = True
+
+    def finish(self) -> list[str]:
+        if self.root not in self._ROOTS or self.stack or self._loc_parts is not None:
+            raise RightsError("Sitemap document is incomplete")
+        return list(self.locations)
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -365,10 +441,20 @@ class HttpClient:
 
 def _parse_sitemap(xml_bytes: bytes) -> list[str]:
     try:
-        root = ET.fromstring(xml_bytes)
-    except ET.ParseError as exc:
+        if len(xml_bytes) > 20 * 1024 * 1024:
+            raise RightsError("Sitemap exceeds byte limit")
+        text = xml_bytes.decode("utf-8-sig")
+        upper = text.upper()
+        if "<!DOCTYPE" in upper or "<!ENTITY" in upper or "<![CDATA[" in upper:
+            raise RightsError("Sitemap declarations are forbidden")
+        parser = _SitemapParser()
+        parser.feed(text)
+        parser.close()
+        return parser.finish()
+    except RightsError:
+        raise
+    except (UnicodeDecodeError, ValueError) as exc:
         raise RightsError(f"Invalid sitemap XML: {exc}") from exc
-    return [element.text.strip() for element in root.iter() if element.tag.rsplit("}", 1)[-1] == "loc" and element.text]
 
 
 def _collect_sitemap_urls(
