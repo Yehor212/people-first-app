@@ -28,7 +28,7 @@ test("review workflow is least-privileged and publishes the exact 26-file pack",
   );
   assert.match(
     source,
-    /node --expose-gc scripts\/audio-review\/generate-first-party-review-pack\.mjs[\s\S]*--output output\/first-party-audio-review/
+    /mkdir -p output[\s\S]*node --expose-gc scripts\/audio-review\/generate-first-party-review-pack\.mjs[\s\S]*--output output\/first-party-audio-review/
   );
   assert.match(source, /first-party-audio-review\.zip/);
   assert.match(source, /SHA256SUMS/);

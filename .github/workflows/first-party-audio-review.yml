@@ -57,6 +57,7 @@ jobs:
 
       - name: Generate full review pack
         run: |
+          mkdir -p output
           node --expose-gc scripts/audio-review/generate-first-party-review-pack.mjs \
             --output output/first-party-audio-review \
             > output/first-party-audio-review-build.json
