@@ -44,8 +44,7 @@ const passEvidenceByItem: Record<string, string> = {
   payments_payment_method: "Payments settings showed payment method eligible for payouts.",
   payments_holds: "Payments page showed no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.",
   play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, privacy policy URL matches listing, IP address, user product interactions, diagnostics, device or other identifiers, and Advertising ID matches the release manifest.",
-  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; clear reward and action disclosure appeared before the ad, affirmative opt-in was required before each rewarded ad, video opened, dismissal or skip did not block normal use, reward callback granted reward only after completion, revocation stopped new ad requests, no pressure or misleading choice copy appeared, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
-  full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
+  live_ad_playback_device: "Release-equivalent Android Habits banner smoke completed after consent; banner rendered, AdMob ad request observed, AdMob ad impression observed, banner does not overlap content or bottom navigation, rotation recreated the adaptive banner, backgrounding removed banner, revocation stopped new ad requests; no banner in mood logging; no banner in active focus; no banner in focus reflection; no banner in journal editor; no banner in onboarding; no banner in bad/terrible mood states; no banner above a drawer.",
 };
 
 const passFactsByItem: Record<string, Record<string, boolean>> = {
@@ -120,27 +119,20 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
   live_ad_playback_device: {
     releaseEquivalentAndroid: true,
     consentPathCompleted: true,
-    clearRewardAndActionDisclosureConfirmed: true,
-    affirmativeOptInBeforeEachRewardedAd: true,
-    rewardedVideoOpened: true,
-    dismissWithoutRewardChecked: true,
-    dismissOrSkipDoesNotBlockNormalUse: true,
-    noPressureOrMisleadingChoiceCopy: true,
-    rewardCallbackGrantedAfterCompletion: true,
+    habitsBannerRendered: true,
+    adMobRequestObserved: true,
+    adMobImpressionObserved: true,
+    bannerDoesNotOverlapAppContent: true,
+    rotationRecreatesAdaptiveBanner: true,
+    backgroundRemovesBanner: true,
     revocationStopsNewAdRequests: true,
-    noMoodCheckInPromptOrRequest: true,
-    noActiveFocusPromptOrRequest: true,
-    noFocusReflectionPromptOrRequest: true,
-    noJournalEditorPromptOrRequest: true,
-    noOnboardingPromptOrRequest: true,
-    noBadOrTerribleMoodPromptOrRequest: true,
-  },
-  full_cross_platform_ad_units: {
-    androidOwnerControlledNonSample: true,
-    iosOwnerControlledNonSample: true,
-    bannerOwnerControlledNonSample: true,
-    rewardedOwnerControlledNonSample: true,
-    samePublisherFamily: true,
+    noMoodCheckInBannerOrRequest: true,
+    noActiveFocusBannerOrRequest: true,
+    noFocusReflectionBannerOrRequest: true,
+    noJournalEditorBannerOrRequest: true,
+    noOnboardingBannerOrRequest: true,
+    noBadOrTerribleMoodBannerOrRequest: true,
+    noDrawerSheetModalBanner: true,
   },
 };
 
@@ -203,7 +195,7 @@ describe("AdMob owner evidence intake", () => {
     expect(templateText).toContain("output/private/admob-owner-evidence.json");
     expect(templateText).toContain("dataSafetyIncludesGoogleMobileAdsSdkData");
     expect(templateText).toContain("noPaymentHold");
-    expect(templateText).toContain("rewardCallbackGrantedAfterCompletion");
+    expect(templateText).toContain("adMobImpressionObserved");
     expect(gitignore).toContain("output/private/");
     expect(templateText).not.toMatch(/ca-app-pub-\d{16}[~/]\d+/);
     expect(templateText).not.toMatch(/\bpub-\d{16}\b/);
@@ -224,7 +216,6 @@ describe("AdMob owner evidence intake", () => {
       "payments_holds",
       "play_console_ads_data_safety",
       "live_ad_playback_device",
-      "full_cross_platform_ad_units",
     ]);
   });
 
@@ -233,7 +224,7 @@ describe("AdMob owner evidence intake", () => {
     const template = JSON.parse(readFileSync(templatePath, "utf8"));
     const report = checker.evaluateOwnerEvidence(template);
 
-    expect(report.ok).toBe(true);
+    expect(report.ok, JSON.stringify(report.issues)).toBe(true);
     expect(report.ownerReady).toBe(false);
     expect(report.issues).toEqual([]);
     expect(report.items.some((item) => item.status !== "PASS")).toBe(true);
@@ -714,8 +705,7 @@ describe("AdMob owner evidence intake", () => {
       payments_payment_method: "Payments settings showed payment method not eligible for payouts.",
       payments_holds: "Payments page showed no payment hold was not shown, no tax hold was not shown, no identity hold was not shown, no compliance hold was not shown, and no self-hold was not shown.",
       play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes no Google Mobile Ads SDK data, privacy policy URL matches listing, IP address, user product interactions, diagnostics, device or other identifiers, and Advertising ID matches the release manifest.",
-      live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; clear reward and action disclosure did not appear before the ad, affirmative opt-in was not required before each rewarded ad, video opened, dismissal or skip blocked normal use, reward callback granted reward only after completion, revocation stopped new ad requests, pressure or misleading choice copy appeared, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
-      full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are not owner-controlled non-sample units from the same publisher family.",
+      live_ad_playback_device: "Release-equivalent Android Habits banner smoke completed after consent; banner did not render, AdMob ad request was not observed, AdMob ad impression was not observed, banner covered content and navigation, backgrounding did not remove banner, and revocation was not checked.",
     };
 
     for (const [itemId, evidenceText] of Object.entries(contradictoryEvidenceByItem)) {
@@ -733,7 +723,7 @@ describe("AdMob owner evidence intake", () => {
     }
   });
 
-  it("rejects live rewarded playback PASS when anti-pressure rewarded facts are missing", () => {
+  it("rejects live banner PASS when protected-surface facts are missing", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
     evidence.items = evidence.items.map((item) =>
@@ -741,19 +731,17 @@ describe("AdMob owner evidence intake", () => {
         ? {
             ...item,
             evidence:
-              "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
+              "Release-equivalent Android Habits banner smoke completed after consent; banner rendered and revocation stopped new ad requests.",
             facts: {
               releaseEquivalentAndroid: true,
               consentPathCompleted: true,
-              rewardedVideoOpened: true,
-              dismissWithoutRewardChecked: true,
-              rewardCallbackGrantedAfterCompletion: true,
+              habitsBannerRendered: true,
               revocationStopsNewAdRequests: true,
-              noMoodCheckInPromptOrRequest: true,
-              noActiveFocusPromptOrRequest: true,
-              noFocusReflectionPromptOrRequest: true,
-              noJournalEditorPromptOrRequest: true,
-              noBadOrTerribleMoodPromptOrRequest: true,
+              noMoodCheckInBannerOrRequest: true,
+              noActiveFocusBannerOrRequest: true,
+              noFocusReflectionBannerOrRequest: true,
+              noJournalEditorBannerOrRequest: true,
+              noBadOrTerribleMoodBannerOrRequest: true,
             },
           }
         : item,
@@ -770,7 +758,7 @@ describe("AdMob owner evidence intake", () => {
     );
   });
 
-  it("rejects contradictory PASS evidence for live rewarded playback", () => {
+  it("rejects contradictory PASS evidence for live banner serving", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
     evidence.items = evidence.items.map((item) =>
@@ -778,7 +766,7 @@ describe("AdMob owner evidence intake", () => {
         ? {
             ...item,
             evidence:
-              "Release-equivalent Android rewarded ad smoke after consent: video did not open, reward callback never fired, and revocation stop check was not completed.",
+              "Release-equivalent Android Habits banner smoke after consent: banner did not render, AdMob ad request was not observed, AdMob ad impression was not observed, and revocation stop check was not completed.",
           }
         : item,
     );
@@ -791,7 +779,7 @@ describe("AdMob owner evidence intake", () => {
     );
   });
 
-  it("rejects live rewarded playback PASS when onboarding no-prompt fact is missing", () => {
+  it("rejects live banner PASS when onboarding protection is missing", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
     evidence.items = evidence.items.map((item) =>
@@ -800,7 +788,7 @@ describe("AdMob owner evidence intake", () => {
             ...item,
             facts: {
               ...passFactsByItem.live_ad_playback_device,
-              noOnboardingPromptOrRequest: false,
+              noOnboardingBannerOrRequest: false,
             },
           }
         : item,
@@ -814,7 +802,7 @@ describe("AdMob owner evidence intake", () => {
     );
   });
 
-  it("rejects live rewarded playback PASS when sacred-zone no-prompt facts are missing", () => {
+  it("rejects live banner PASS when protected-zone facts are missing", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
     evidence.items = evidence.items.map((item) =>
@@ -822,13 +810,11 @@ describe("AdMob owner evidence intake", () => {
         ? {
             ...item,
             evidence:
-              "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, and revocation stopped new ad requests.",
+              "Release-equivalent Android Habits banner smoke completed after consent; banner rendered and revocation stopped new ad requests.",
             facts: {
               releaseEquivalentAndroid: true,
               consentPathCompleted: true,
-              rewardedVideoOpened: true,
-              dismissWithoutRewardChecked: true,
-              rewardCallbackGrantedAfterCompletion: true,
+              habitsBannerRendered: true,
               revocationStopsNewAdRequests: true,
             },
           }
@@ -879,7 +865,7 @@ describe("AdMob owner evidence intake", () => {
     );
   });
 
-  it("refuses live rewarded-ad PASS until consent, Play declaration, app-ads, readiness, and policy prerequisites are PASS", () => {
+  it("refuses live banner PASS until consent, Play declaration, app-ads, readiness, and policy prerequisites are PASS", () => {
     const checker = loadChecker();
     const evidence = completeOwnerEvidence();
     const report = checker.evaluateOwnerEvidence({
@@ -910,7 +896,7 @@ describe("AdMob owner evidence intake", () => {
       now: new Date("2026-07-04T12:00:00.000Z"),
     });
 
-    expect(report.ok).toBe(true);
+    expect(report.ok, JSON.stringify(report.issues)).toBe(true);
     expect(report.ownerReady).toBe(true);
   });
 

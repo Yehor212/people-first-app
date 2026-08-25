@@ -45,9 +45,6 @@ export const APPLE_PUBLIC_ACCESS_READY = import.meta.env.VITE_APPLE_PUBLIC_ACCES
 
 // AdMob — IDs must come from environment variables, no hardcoded production IDs
 export const ADMOB_APP_ID_ANDROID = (import.meta.env.VITE_ADMOB_APP_ID_ANDROID as string) || "";
-export const ADMOB_REWARDED_ID_ANDROID =
-  (import.meta.env.VITE_ADMOB_REWARDED_ID_ANDROID as string) || "";
 export const ADMOB_BANNER_ID_ANDROID =
   (import.meta.env.VITE_ADMOB_BANNER_ID_ANDROID as string) || "";
-export const ADMOB_REWARDED_ID_IOS = (import.meta.env.VITE_ADMOB_REWARDED_ID_IOS as string) || "";
 export const ADMOB_BANNER_ID_IOS = (import.meta.env.VITE_ADMOB_BANNER_ID_IOS as string) || "";

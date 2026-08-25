@@ -18,7 +18,6 @@ type ExternalReadinessIssue = {
 type ExternalReadinessReport = {
   ok: boolean;
   passReady: boolean;
-  fullCrossPlatformReady?: boolean;
   issues: ExternalReadinessIssue[];
   items: Array<{ id: string; status: string }>;
 };
@@ -47,7 +46,6 @@ const requiredRowSources = {
   payments_holds: "https://support.google.com/admob/answer/11601831",
   play_console_ads_data_safety: "https://developers.google.com/admob/android/privacy/play-data-disclosure",
   live_ad_playback_device: "https://support.google.com/admob/answer/7313578",
-  full_cross_platform_ad_units: "https://support.google.com/admob/answer/7356431",
 };
 
 const passEvidenceByItem: Record<string, string> = {
@@ -56,9 +54,9 @@ const passEvidenceByItem: Record<string, string> = {
   admob_app_ads_txt_status:
     "AdMob Verify app page showed the ZenFlow app selected and confirmed with Done status.",
   public_google_play_listing:
-    "Public listing check passed for com.zenflow.app with developer website, Contains ads signal, privacy policy, and rewarded ads copy.",
+    "Public listing check passed for com.zenflow.app with developer website, Contains ads signal, privacy policy, and Habits banner ad copy.",
   public_privacy_policy:
-    "GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with google-play:privacy:public-check; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories including IP address.",
+    "GitHub Pages post-deploy public privacy smoke passed, and public privacy policy check passed with google-play:privacy:public-check; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, the Habits banner ad, and Google Mobile Ads SDK data categories including IP address.",
   admob_app_readiness:
     "AdMob apps list showed ZenFlow Ready, ad serving enabled, Google Play linked, and active ad units.",
   admob_policy_center:
@@ -74,20 +72,17 @@ const passEvidenceByItem: Record<string, string> = {
   play_console_ads_data_safety:
     "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, and privacy policy URL matches listing.",
   live_ad_playback_device:
-    "Release-equivalent Android rewarded ad smoke completed after consent; video opened, reward callback granted reward only after completion, revocation stopped new ad requests, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
-  full_cross_platform_ad_units:
-    "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
+    "Release-equivalent Android Habits banner smoke completed after consent; banner rendered, AdMob ad request observed, AdMob ad impression observed, banner does not overlap content or bottom navigation, rotation recreated the adaptive banner, backgrounding removed banner, revocation stopped new ad requests; no banner in mood logging; no banner in active focus; no banner in focus reflection; no banner in journal editor; no banner in onboarding; no banner in bad/terrible mood states; no banner above a drawer.",
 };
 
 function loadChecker() {
   return require(checkerPath) as {
     evaluateExternalReadiness: (
       input: unknown,
-      options?: { requirePass?: boolean; requireFullCrossPlatform?: boolean; maxPassAgeDays?: number; now?: Date },
+      options?: { requirePass?: boolean; maxPassAgeDays?: number; now?: Date },
     ) => ExternalReadinessReport;
     REQUIRED_EXTERNAL_READINESS_IDS: string[];
-    CURRENT_ANDROID_REWARDED_READINESS_IDS: string[];
-    FULL_CROSS_PLATFORM_READINESS_IDS: string[];
+    CURRENT_ANDROID_BANNER_READINESS_IDS: string[];
     REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM: Record<string, string[]>;
   };
 }
@@ -118,9 +113,7 @@ describe("AdMob external monetization readiness guard", () => {
     expect(packageJson.scripts["google-play:admob:external-check:pass"]).toBe(
       "node scripts/check-admob-external-readiness.cjs --require-pass",
     );
-    expect(packageJson.scripts["google-play:admob:external-check:full-pass"]).toBe(
-      "node scripts/check-admob-external-readiness.cjs --require-pass --require-full-cross-platform",
-    );
+    expect(packageJson.scripts).not.toHaveProperty("google-play:admob:external-check:full-pass");
     expect(packageJson.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/admob-external-readiness.test.ts",
     );
@@ -131,7 +124,7 @@ describe("AdMob external monetization readiness guard", () => {
 
     expect(taskCompletionGuard).toContain("google-play:admob:external-check");
     expect(taskCompletionGuard).toContain("google-play:admob:external-check:pass");
-    expect(taskCompletionGuard).toContain("google-play:admob:external-check:full-pass");
+    expect(taskCompletionGuard).not.toContain("google-play:admob:external-check:full-pass");
   });
 
   it("keeps a public-safe external readiness ledger in the release packet", () => {
@@ -260,7 +253,7 @@ describe("AdMob external monetization readiness guard", () => {
     );
   });
 
-  it("keeps the current Android rewarded-only gate separate from future full cross-platform expansion", () => {
+  it("defines only the current Android banner external readiness gate", () => {
     const checker = loadChecker();
 
     expect(checker.REQUIRED_EXTERNAL_READINESS_IDS).toEqual([
@@ -277,9 +270,8 @@ describe("AdMob external monetization readiness guard", () => {
       "payments_holds",
       "play_console_ads_data_safety",
       "live_ad_playback_device",
-      "full_cross_platform_ad_units",
     ]);
-    expect(checker.CURRENT_ANDROID_REWARDED_READINESS_IDS).toEqual([
+    expect(checker.CURRENT_ANDROID_BANNER_READINESS_IDS).toEqual([
       "public_app_ads_root",
       "admob_app_ads_txt_status",
       "public_google_play_listing",
@@ -294,63 +286,27 @@ describe("AdMob external monetization readiness guard", () => {
       "play_console_ads_data_safety",
       "live_ad_playback_device",
     ]);
-    expect(checker.FULL_CROSS_PLATFORM_READINESS_IDS).toContain("full_cross_platform_ad_units");
+    expect(checker).not.toHaveProperty("FULL_CROSS_PLATFORM_READINESS_IDS");
   });
 
-  it("does not require future banner/iOS expansion for the current Android rewarded-only pass gate", () => {
-    const checker = loadChecker();
-    const ledger = completePassLedger();
-    const report = checker.evaluateExternalReadiness({
-      ...ledger,
-      items: ledger.items.map((item) =>
-        item.id === "full_cross_platform_ad_units"
-          ? { ...item, status: "UNVERIFIED", evidence: "Future banner/iOS expansion remains intentionally separate." }
-          : item,
-      ),
-    }, { requirePass: true, now: new Date("2026-07-04T12:00:00.000Z") });
-
-    expect(report.ok).toBe(true);
-    expect(report.passReady).toBe(true);
-    expect(report.fullCrossPlatformReady).toBe(false);
-  });
-
-  it("requires future banner/iOS expansion only for the explicit full cross-platform pass gate", () => {
-    const checker = loadChecker();
-    const ledger = completePassLedger();
-    const report = checker.evaluateExternalReadiness({
-      ...ledger,
-      items: ledger.items.map((item) =>
-        item.id === "full_cross_platform_ad_units"
-          ? { ...item, status: "UNVERIFIED", evidence: "Future banner/iOS expansion remains intentionally separate." }
-          : item,
-      ),
-    }, { requirePass: true, requireFullCrossPlatform: true, now: new Date("2026-07-04T12:00:00.000Z") });
-
-    expect(report.ok).toBe(false);
-    expect(report.passReady).toBe(true);
-    expect(report.fullCrossPlatformReady).toBe(false);
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "external_item_not_pass", itemId: "full_cross_platform_ad_units" }),
-    );
-  });
-
-  it("keeps the Play Console field packet from treating future full cross-platform IDs as current-pass blockers", () => {
+  it("keeps the console packet aligned with current Android banner evidence", () => {
     const packet = readFileSync("docs/release/google-play/GOOGLE_PLAY_CONSOLE_FIELD_PACKET.md", "utf8");
 
-    expect(packet).toMatch(/Use `npm run google-play:admob:external-check:pass` only for\s+the current Android rewarded-only production gate/);
-    expect(packet).toMatch(/Use `npm run google-play:admob:external-check:full-pass` only for future full\s+cross-platform\/banner\+iOS monetization readiness/);
-    expect(packet).not.toContain("playback, or full cross-platform IDs are not freshly `PASS`");
+    expect(packet).toContain("current Android banner-only release");
+    expect(packet).toContain("Habits banner");
+    expect(packet).toMatch(/Live ad\s+serving remains `UNVERIFIED` until a real device request and AdMob reporting are\s+freshly observed/);
+    expect(packet).not.toContain("current Android rewarded-only production gate");
   });
 
-  it("marks the older monetization brainstorm as superseded by the current rewarded-only safety gate", () => {
+  it("marks the current monetization plan as Android Habits banner-only", () => {
     const plan = readFileSync("docs/AD_MONETIZATION_PLAN.md", "utf8");
 
-    expect(plan).toContain("Status: superseded historical brainstorm");
-    expect(plan).toContain("Current approved release path is optional Android rewarded-only");
-    expect(plan).toMatch(/Do not implement Native Ads, interstitials, banners, app-open ads,\s+> companion\/tree placements, or full cross-platform monetization from this\s+> document/);
+    expect(plan).toContain("Status: current Android banner-only contract");
+    expect(plan).toContain("Habits screen");
+    expect(plan).not.toMatch(/current approved release path.{0,80}rewarded/i);
   });
 
-  it("rejects live rewarded playback PASS until consent, Play declaration, app-ads, readiness, and policy are PASS", () => {
+  it("rejects live banner serving PASS until consent, Play declaration, app-ads, readiness, and policy are PASS", () => {
     const checker = loadChecker();
     const ledger = completePassLedger();
     const report = checker.evaluateExternalReadiness({
@@ -431,7 +387,7 @@ describe("AdMob external monetization readiness guard", () => {
         items: ledger.items.map((item) =>
           item.id === id ? { ...item, evidence: `Fresh public-safe evidence recorded for ${id}.` } : item,
         ),
-      }, { requirePass: true, requireFullCrossPlatform: true, now: new Date("2026-07-04T12:00:00.000Z") });
+      }, { requirePass: true, now: new Date("2026-07-04T12:00:00.000Z") });
 
       expect(report.ok, id).toBe(false);
       expect(report.issues, id).toContainEqual(
@@ -456,14 +412,14 @@ describe("AdMob external monetization readiness guard", () => {
     );
   });
 
-  it("uses the shared source policy that also covers AdMob rewarded-video guidance", () => {
+  it("uses the shared source policy that covers official Android banner guidance", () => {
     const sourcePolicy = require(sourcePolicyPath) as {
       ADMOB_READINESS_APPROVED_SOURCE_URLS: Set<string>;
       ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM: Record<string, string[]>;
     };
 
     expect(sourcePolicy.ADMOB_READINESS_APPROVED_SOURCE_URLS.has(
-      "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/",
+      "https://developers.google.com/admob/android/banner",
     )).toBe(true);
     expect(sourcePolicy.ADMOB_READINESS_REQUIRED_SOURCE_URLS_BY_ITEM).toBe(
       loadChecker().REQUIRED_OFFICIAL_SOURCE_URLS_BY_ITEM,
@@ -621,7 +577,7 @@ describe("AdMob external monetization readiness guard", () => {
           ? {
               ...item,
               evidence:
-                "Public privacy policy check passed with google-play:privacy:public-check; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories.",
+                "Public privacy policy check passed with google-play:privacy:public-check; it disclosed Google Mobile Ads, UMP privacy choices, Advertising ID, the Habits banner ad, and Google Mobile Ads SDK data categories.",
             }
           : item,
       ),

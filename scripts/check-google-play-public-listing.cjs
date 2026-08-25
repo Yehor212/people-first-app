@@ -15,7 +15,7 @@ function evaluateGooglePlayListingHtml({
   html,
   expectedDeveloperWebsite = DEFAULT_DEVELOPER_WEBSITE,
   expectedPrivacyPolicyUrl = DEFAULT_PRIVACY_POLICY_URL,
-  requiredRewardedAdsText = true,
+  requiredBannerAdsText = true,
   requireContainsAds = true,
 }) {
   const body = normalizeText(html);
@@ -24,7 +24,7 @@ function evaluateGooglePlayListingHtml({
     developerWebsiteVisible: body.includes(expectedDeveloperWebsite),
     privacyPolicyVisible: body.includes(expectedPrivacyPolicyUrl),
     oldNoAdsClaimVisible: body.includes(OLD_NO_ADS_CLAIM),
-    rewardedAdsVisible: /optional rewarded ads|rewarded ads/i.test(body),
+    bannerAdsVisible: /banner ad|banner advertising|habits banner/i.test(body),
     containsAdsVisible: /Contains ads/i.test(body),
   };
 
@@ -37,8 +37,8 @@ function evaluateGooglePlayListingHtml({
   if (signals.oldNoAdsClaimVisible) {
     issues.push({ code: "old_no_ads_claim_visible", message: "Public listing must not expose the old no-ads claim" });
   }
-  if (requiredRewardedAdsText && !signals.rewardedAdsVisible) {
-    issues.push({ code: "rewarded_ads_copy_missing", message: "Public listing must disclose optional rewarded ads copy" });
+  if (requiredBannerAdsText && !signals.bannerAdsVisible) {
+    issues.push({ code: "banner_ads_copy_missing", message: "Public listing must disclose the Habits banner ad" });
   }
   if (requireContainsAds && !signals.containsAdsVisible) {
     issues.push({ code: "contains_ads_missing", message: "Public listing must show the Google Play Contains ads signal" });
@@ -75,7 +75,7 @@ async function main() {
   console.log("[google-play-public] developerWebsite=" + (report.signals.developerWebsiteVisible ? "present" : "missing"));
   console.log("[google-play-public] privacyPolicy=" + (report.signals.privacyPolicyVisible ? "present" : "missing"));
   console.log("[google-play-public] containsAds=" + (report.signals.containsAdsVisible ? "present" : "missing"));
-  console.log("[google-play-public] rewardedAdsCopy=" + (report.signals.rewardedAdsVisible ? "present" : "missing"));
+  console.log("[google-play-public] bannerAdsCopy=" + (report.signals.bannerAdsVisible ? "present" : "missing"));
   console.log("[google-play-public] oldNoAdsClaim=" + (report.signals.oldNoAdsClaimVisible ? "visible" : "absent"));
   for (const issue of report.issues) {
     console.log("[google-play-public] issue=" + issue.code + " - " + issue.message);

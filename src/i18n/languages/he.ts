@@ -601,8 +601,8 @@ const hebrewOverrides: Partial<Translations> = {
   // Privacy
   privacyTitle: "פרטיות",
   privacyDescription: "אין מעקב מוסתר. סנכרון מכשירים מתחיל רק אחרי כניסה והפעלת הגיבוי המקוון.",
-  privacyAds: "סרטוני תגמול",
-  privacyAdsHint: "הסרטונים נטענים רק לאחר הפעלתם. Google עשויה לבקש בחירת העדפות פרטיות כשנדרש.",
+  privacyAds: "באנר ברשימת ההרגלים",
+  privacyAdsHint: "לאחר ההפעלה יופיע באנר קטן מתחת לרשימת ההרגלים. הוא לא יופיע בבדיקת מצב הרוח, ביומן, במיקוד או בתפריטים. ייתכן ש-Google תבקש לבחור העדפות פרטיות בעת הצורך.",
   privacyOptionalServicesOn: "שירותים אופציונליים פעילים",
   privacyOptionalServicesOff: "שירותים אופציונליים כבויים",
   privacyPushNotifications: "תזכורות מהחשבון",

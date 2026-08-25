@@ -744,9 +744,9 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalLockTimeoutThirtyMinutes: "After thirty minutes",
       privacyTitle: "Privacy",
       privacyDescription: "Your data stays on device.",
-      privacyAds: "Rewarded videos",
+      privacyAds: "Habit list banner",
       privacyAdsHint:
-        "They load only when you turn them on. Google may ask for your privacy choice when required.",
+        "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required.",
       privacyPushNotifications: "Account reminders",
       privacyPushNotificationsHint:
         "Receive reminders from your account on this device. Reminders you set on this device still work when this is off.",
@@ -1082,9 +1082,7 @@ vi.mock("@/lib/env", () => ({
   ENABLE_TELEGRAM_AUTH: false,
   ENABLE_APPLE_AUTH: false,
   ADMOB_APP_ID_ANDROID: "",
-  ADMOB_REWARDED_ID_ANDROID: "",
   ADMOB_BANNER_ID_ANDROID: "",
-  ADMOB_REWARDED_ID_IOS: "",
   ADMOB_BANNER_ID_IOS: "",
 }));
 
@@ -1143,15 +1141,9 @@ vi.mock("@/contexts/AdContext", () => ({
   useAds: () => ({
     adsSupported: adContextMock.adsSupported,
     adsAvailable: false,
-    canShowRewarded: false,
-    remainingToday: 0,
     googleConsentReady: false,
     privacyOptionsRequired: adContextMock.privacyOptionsRequired,
     openAdPrivacyOptions: adContextMock.openAdPrivacyOptions,
-    watchRewardedAd: vi.fn(),
-    rewardTreats: 0,
-    rewardXp: 0,
-    setCurrentMood: vi.fn(),
   }),
 }));
 
@@ -2880,7 +2872,7 @@ describe("SettingsPage", () => {
     render(<SettingsPage controls={controls} />);
     fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
     const toggle = within(screen.getByTestId("settings-v2-ad-consent")).getByRole("switch", {
-      name: "Rewarded videos",
+      name: "Habit list banner",
     });
 
     fireEvent.click(toggle);
@@ -4493,14 +4485,14 @@ describe("SettingsPage", () => {
 
     const privacyPanel = screen.getByTestId("settings-v2-panel-privacy");
     expect(privacyPanel).toHaveTextContent("Choose which optional services ZenFlow may use.");
-    expect(privacyPanel).toHaveTextContent("Rewarded videos");
+    expect(privacyPanel).toHaveTextContent("Habit list banner");
     expect(privacyPanel).toHaveTextContent(
-      "They load only when you turn them on. Google may ask for your privacy choice when required."
+      "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required."
     );
     expect(privacyPanel).not.toHaveTextContent(/device sync|turn it on for backup/i);
   });
 
-  it("does not expose retired analytics, no-tracking, or unavailable rewarded-video controls", () => {
+  it("does not expose retired analytics, no-tracking, or unavailable banner controls", () => {
     const controls = {
       ...createSettingsControls(),
       privacy: { noTracking: true, analytics: false, consentShown: true, adConsent: false },
@@ -4514,7 +4506,7 @@ describe("SettingsPage", () => {
     expect(screen.queryByTestId("settings-v2-ad-consent")).not.toBeInTheDocument();
   });
 
-  it("shows rewarded-video privacy only when that service is available on this build", () => {
+  it("shows banner privacy only when that service is available on this build", () => {
     adContextMock.adsSupported = true;
     render(<SettingsPage controls={createSettingsControls()} />);
 

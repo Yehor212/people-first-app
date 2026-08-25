@@ -52,7 +52,7 @@ describe("Settings trust copy", () => {
     expect(form).not.toContain("logger.log(\"[Feedback] Submitting:\"");
   });
 
-  it("keeps public privacy copy aligned with the retired analytics controls", () => {
+  it("keeps public privacy copy aligned with retired analytics and banner-only ads", () => {
     const privacy = read("public/privacy.html");
     const privacyAlias = read("public/privacy-policy.html");
 
@@ -63,8 +63,10 @@ describe("Settings trust copy", () => {
       "ZenFlow does not initialize its optional in-app behavioral analytics runtime.",
     );
     expect(privacy).toContain(
-      "Optional rewarded ads are controlled separately through the Optional ads setting",
+      "The optional Habits-list banner is controlled separately through the Optional ads setting",
     );
+    expect(privacy).toContain("optional adaptive banner below the active Habits list");
+    expect(privacy).not.toMatch(/rewarded ads|rewarded video/i);
   });
 
   it("disables automatic Firebase Analytics collection in the Android app artifact", () => {
@@ -242,8 +244,9 @@ describe("Settings trust copy", () => {
     const reminders = read("src/pages/nav-v2/settings/V2SettingsNotificationsPanel.tsx");
 
     for (const expected of [
-      'title={tx.privacyAds || "Rewarded videos"}',
-      "They load only when you turn them on. Google may ask for your privacy choice when required.",
+      'title={tx.privacyAds || "Habit list banner"}',
+      "Shows a small banner below your habit list after you turn it on.",
+      "It stays out of mood check-ins, journal, focus, and menus.",
     ]) {
       expect.soft(privacy).toContain(expected);
     }
@@ -255,6 +258,7 @@ describe("Settings trust copy", () => {
     }
     for (const legacy of [
       'title={tx.privacyAds || "Rewarded ads"}',
+      'title={tx.privacyAds || "Rewarded videos"}',
       "Optional videos only. Ad requests stay off unless this is enabled",
       'title={tx.privacyPushNotifications || "Remote push notifications"}',
       "Register this device for account-based push reminders",

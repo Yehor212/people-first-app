@@ -10,8 +10,7 @@ const admob = require("../check-admob-production-readiness.cjs") as {
   evaluateAdMobProductionReadiness: (input: {
     env: Record<string, string | undefined>;
     appAdsText?: string;
-    strictOptionalIds?: boolean;
-    requireOptionalIds?: boolean;
+    monetizationMode?: "android-banner";
   }) => {
     ok: boolean;
     issues: Array<{ code: string; key?: string; message: string }>;
@@ -30,17 +29,35 @@ const publicCheck = require("../check-app-ads-public.cjs") as {
 
 const realPublisherId = "pub-9501460293702808";
 const realAppId = `ca-app-${realPublisherId}~1234567890`;
-const realRewardedId = `ca-app-${realPublisherId}/1234567890`;
-const sampleRewardedId = "ca-app-pub-3940256099942544/5224354917";
+const realBannerId = `ca-app-${realPublisherId}/9876543210`;
+const sampleBannerId = "ca-app-pub-3940256099942544/6300978111";
 const validAppAds = `google.com, ${realPublisherId}, DIRECT, f08c47fec0942fa0`;
 const script = "scripts/check-admob-production-readiness.cjs";
 
 describe("AdMob production readiness guards", () => {
-  it("rejects Google sample ad unit IDs before production monetization", () => {
+  it("accepts Android banner-only readiness without a rewarded ad unit", () => {
     const report = admob.evaluateAdMobProductionReadiness({
       env: {
         VITE_ADMOB_APP_ID_ANDROID: realAppId,
-        VITE_ADMOB_REWARDED_ID_ANDROID: sampleRewardedId,
+        VITE_ADMOB_BANNER_ID_ANDROID: realBannerId,
+      },
+      appAdsText: validAppAds,
+      monetizationMode: "android-banner",
+    });
+
+    expect(report.ok).toBe(true);
+    expect(report.issues).toEqual([]);
+    expect(report.summary.VITE_ADMOB_BANNER_ID_ANDROID).toBe(
+      "present:pub-9501********2808",
+    );
+    expect(report.summary).not.toHaveProperty("VITE_ADMOB_REWARDED_ID_ANDROID");
+  });
+
+  it("rejects Google's sample banner ID before production monetization", () => {
+    const report = admob.evaluateAdMobProductionReadiness({
+      env: {
+        VITE_ADMOB_APP_ID_ANDROID: realAppId,
+        VITE_ADMOB_BANNER_ID_ANDROID: sampleBannerId,
       },
       appAdsText: validAppAds,
     });
@@ -49,17 +66,17 @@ describe("AdMob production readiness guards", () => {
     expect(report.issues).toContainEqual(
       expect.objectContaining({
         code: "sample_admob_id",
-        key: "VITE_ADMOB_REWARDED_ID_ANDROID",
+        key: "VITE_ADMOB_BANNER_ID_ANDROID",
       }),
     );
     expect(JSON.stringify(report.summary)).not.toContain(realPublisherId);
   });
 
-  it("passes for a real Android app ID, real rewarded unit, and matching app-ads.txt", () => {
+  it("passes for a real Android app ID, real banner unit, and matching app-ads.txt", () => {
     const report = admob.evaluateAdMobProductionReadiness({
       env: {
         VITE_ADMOB_APP_ID_ANDROID: realAppId,
-        VITE_ADMOB_REWARDED_ID_ANDROID: realRewardedId,
+        VITE_ADMOB_BANNER_ID_ANDROID: realBannerId,
       },
       appAdsText: validAppAds,
     });
@@ -67,95 +84,64 @@ describe("AdMob production readiness guards", () => {
     expect(report.ok).toBe(true);
     expect(report.issues).toEqual([]);
     expect(report.summary.VITE_ADMOB_APP_ID_ANDROID).toBe("present:pub-9501********2808");
-    expect(report.summary.VITE_ADMOB_REWARDED_ID_ANDROID).toBe("present:pub-9501********2808");
+    expect(report.summary.VITE_ADMOB_BANNER_ID_ANDROID).toBe("present:pub-9501********2808");
   });
 
-  it("does not block Android rewarded-only release readiness on unused optional banner or iOS sample IDs", () => {
-    const report = admob.evaluateAdMobProductionReadiness({
-      env: {
-        VITE_ADMOB_APP_ID_ANDROID: realAppId,
-        VITE_ADMOB_REWARDED_ID_ANDROID: realRewardedId,
-        VITE_ADMOB_BANNER_ID_ANDROID: "ca-app-pub-3940256099942544/6300978111",
-        VITE_ADMOB_REWARDED_ID_IOS: "ca-app-pub-3940256099942544/1712485313",
-      },
-      appAdsText: validAppAds,
-    });
-
-    expect(report.ok).toBe(true);
-    expect(report.issues).toEqual([]);
-    expect(report.warnings).toContainEqual(
-      expect.objectContaining({
-        code: "optional_sample_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_ANDROID",
+  it("rejects retired monetization modes instead of falling back to banner", () => {
+    expect(() =>
+      admob.evaluateAdMobProductionReadiness({
+        env: {
+          VITE_ADMOB_APP_ID_ANDROID: realAppId,
+          VITE_ADMOB_BANNER_ID_ANDROID: realBannerId,
+        },
+        appAdsText: validAppAds,
+        monetizationMode: "android-rewarded" as never,
       }),
-    );
-    expect(report.warnings).toContainEqual(
-      expect.objectContaining({
-        code: "optional_sample_admob_id",
-        key: "VITE_ADMOB_REWARDED_ID_IOS",
-      }),
-    );
+    ).toThrow("Unsupported AdMob monetization mode");
   });
 
-  it("can treat optional banner and iOS ad IDs as blocking in strict release audits", () => {
-    const report = admob.evaluateAdMobProductionReadiness({
-      env: {
-        VITE_ADMOB_APP_ID_ANDROID: realAppId,
-        VITE_ADMOB_REWARDED_ID_ANDROID: realRewardedId,
-        VITE_ADMOB_BANNER_ID_ANDROID: "ca-app-pub-3940256099942544/6300978111",
-      },
-      appAdsText: validAppAds,
-      strictOptionalIds: true,
-    });
-
-    expect(report.ok).toBe(false);
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({
-        code: "sample_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_ANDROID",
-      }),
-    );
-  });
-
-  it("requires every banner and iOS production ad ID in full cross-platform release audits", () => {
-    const report = admob.evaluateAdMobProductionReadiness({
-      env: {
-        VITE_ADMOB_APP_ID_ANDROID: realAppId,
-        VITE_ADMOB_REWARDED_ID_ANDROID: realRewardedId,
-      },
-      appAdsText: validAppAds,
-      strictOptionalIds: true,
-      requireOptionalIds: true,
-    });
-
-    expect(report.ok).toBe(false);
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({
-        code: "missing_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_ANDROID",
-      }),
-    );
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({
-        code: "missing_admob_id",
-        key: "VITE_ADMOB_REWARDED_ID_IOS",
-      }),
-    );
-    expect(report.issues).toContainEqual(
-      expect.objectContaining({
-        code: "missing_admob_id",
-        key: "VITE_ADMOB_BANNER_ID_IOS",
-      }),
-    );
-  });
-
-  it("exposes a separate full AdMob readiness command that cannot be confused with Android rewarded-only readiness", () => {
+  it("makes the default release command explicitly Android banner-only", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+    const assetChecker = readFileSync("scripts/check-google-play-release-assets.cjs", "utf8");
 
-    expect(packageJson.scripts["google-play:admob:check"]).toBe("node scripts/check-admob-production-readiness.cjs");
-    expect(packageJson.scripts["google-play:admob:check:full"]).toBe(
-      "node scripts/check-admob-production-readiness.cjs --strict-optional --require-optional",
+    expect(packageJson.scripts["google-play:admob:check"]).toBe(
+      "node scripts/check-admob-production-readiness.cjs --mode android-banner",
     );
+    expect(assetChecker).toContain(
+      'packageJson.scripts?.["google-play:admob:check"] !== "node scripts/check-admob-production-readiness.cjs --mode android-banner"',
+    );
+    expect(packageJson.scripts).not.toHaveProperty("google-play:admob:check:full");
+  });
+
+  it("returns PASS from the banner-only CLI without a rewarded ad unit", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "zenflow-admob-banner-readiness-"));
+    const appAdsFile = join(tempDir, "app-ads.txt");
+    writeFileSync(appAdsFile, validAppAds, "utf8");
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        [script, "--mode", "android-banner", "--app-ads-file", appAdsFile],
+        {
+          cwd: process.cwd(),
+          env: {
+            ...process.env,
+            VITE_ADMOB_APP_ID_ANDROID: realAppId,
+            VITE_ADMOB_BANNER_ID_ANDROID: realBannerId,
+            VITE_ADMOB_REWARDED_ID_ANDROID: "",
+            VITE_ADMOB_REWARDED_ID_IOS: "",
+            VITE_ADMOB_BANNER_ID_IOS: "",
+          },
+          encoding: "utf8",
+        },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("PASS - Android banner AdMob ids");
+      expect(result.stdout).not.toContain("VITE_ADMOB_REWARDED_ID_ANDROID");
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
   });
 
   it("exposes a ZenFlow-specific public app-ads check command for repeatable live proof", () => {
@@ -183,39 +169,6 @@ describe("AdMob production readiness guards", () => {
     expect(releaseContracts).toContain("scripts/__tests__/google-play-public-listing.test.ts");
   });
 
-  it("returns a blocking CLI exit code for full readiness when optional IDs are not production-ready", () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "zenflow-admob-readiness-"));
-    const appAdsFile = join(tempDir, "app-ads.txt");
-    writeFileSync(appAdsFile, validAppAds, "utf8");
-
-    try {
-      const result = spawnSync(
-        process.execPath,
-        [script, "--app-ads-file", appAdsFile, "--strict-optional", "--require-optional"],
-        {
-          cwd: process.cwd(),
-          env: {
-            ...process.env,
-            VITE_ADMOB_APP_ID_ANDROID: realAppId,
-            VITE_ADMOB_REWARDED_ID_ANDROID: realRewardedId,
-            VITE_ADMOB_BANNER_ID_ANDROID: "",
-            VITE_ADMOB_REWARDED_ID_IOS: "",
-            VITE_ADMOB_BANNER_ID_IOS: "",
-          },
-          encoding: "utf8",
-        },
-      );
-
-      expect(result.status).toBe(2);
-      expect(result.stdout).toContain("UNVERIFIED - Full cross-platform AdMob ids");
-      expect(result.stdout).toContain("issue=missing_admob_id key=VITE_ADMOB_BANNER_ID_ANDROID");
-      expect(result.stdout).toContain("issue=missing_admob_id key=VITE_ADMOB_REWARDED_ID_IOS");
-      expect(result.stdout).toContain("issue=missing_admob_id key=VITE_ADMOB_BANNER_ID_IOS");
-    } finally {
-      rmSync(tempDir, { force: true, recursive: true });
-    }
-  });
-
   it("validates the public app-ads.txt body against the expected publisher", () => {
     const result = publicCheck.validateAppAdsBody({
       body: `${validAppAds}\n`,
@@ -240,12 +193,19 @@ describe("AdMob production readiness guards", () => {
 
 
 describe("Android release Gradle guard", () => {
-  it("fails release builds instead of falling back to Google sample AdMob app id", () => {
+  it("fails release builds instead of accepting an app id outside public app-ads.txt", () => {
     const buildGradle = readFileSync("android/app/build.gradle", "utf8");
 
-    expect(buildGradle).toContain("ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS");
+    expect(buildGradle).toContain("zenflowExpectedAdMobPublisher");
+    expect(buildGradle).toContain(
+      "zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher",
+    );
     expect(buildGradle).toContain("throw new GradleException");
     expect(buildGradle).toContain("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID");
+    expect(buildGradle).toContain("zenflowAdMobAndroidBannerId");
+    expect(buildGradle).toContain("VITE_ADMOB_BANNER_ID_ANDROID");
+    expect(buildGradle).toContain("zenflowConfiguredAdMobBannerPublisher");
+    expect(buildGradle).toContain("real banner id matching public/app-ads.txt");
     expect(buildGradle).toContain("gradle.taskGraph.whenReady");
   });
 });

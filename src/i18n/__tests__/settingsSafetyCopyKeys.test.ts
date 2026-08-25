@@ -38,6 +38,40 @@ const remindersNativeOnly = {
   ar: "يمكن إعداد التذكيرات في تطبيق ZenFlow للهاتف.",
   he: "אפשר להגדיר תזכורות באפליקציית ZenFlow לנייד.",
 } as const;
+const habitBannerCopy = {
+  en: {
+    title: "Habit list banner",
+    hint: "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required.",
+  },
+  uk: {
+    title: "Банер у списку звичок",
+    hint: "Після ввімкнення невеликий банер з’являється під списком звичок. Він не показується під час перевірки настрою, у щоденнику, фокусі та меню. За потреби Google може попросити обрати налаштування конфіденційності.",
+  },
+  es: {
+    title: "Banner de la lista de hábitos",
+    hint: "Al activarlo, aparece un pequeño banner debajo de la lista de hábitos. No se muestra en los registros de ánimo, el diario, las sesiones de concentración ni los menús. Google puede pedirte tus opciones de privacidad cuando sea necesario.",
+  },
+  de: {
+    title: "Banner unter der Gewohnheitsliste",
+    hint: "Nach der Aktivierung erscheint ein kleines Banner unter deiner Gewohnheitsliste. Es bleibt bei Stimmungs-Check-ins, im Journal, im Fokus und in Menüs ausgeblendet. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.",
+  },
+  fr: {
+    title: "Bannière de la liste d’habitudes",
+    hint: "Une fois activée, une petite bannière s’affiche sous votre liste d’habitudes. Elle ne s’affiche pas dans les bilans d’humeur, le journal, les sessions de concentration ni les menus. Google peut vous demander vos choix de confidentialité si nécessaire.",
+  },
+  ja: {
+    title: "習慣リストのバナー",
+    hint: "オンにすると、習慣リストの下に小さなバナーが表示されます。気分のチェックイン、日記、集中セッション、メニューには表示されません。必要に応じて、Googleからプライバシー設定の選択を求められることがあります。",
+  },
+  ar: {
+    title: "لافتة قائمة العادات",
+    hint: "بعد تفعيلها، تظهر لافتة صغيرة أسفل قائمة العادات. ولا تظهر أثناء تسجيل المزاج أو في اليوميات أو جلسات التركيز أو القوائم. قد تطلب Google اختيار إعدادات الخصوصية عند الحاجة.",
+  },
+  he: {
+    title: "באנר ברשימת ההרגלים",
+    hint: "לאחר ההפעלה יופיע באנר קטן מתחת לרשימת ההרגלים. הוא לא יופיע בבדיקת מצב הרוח, ביומן, במיקוד או בתפריטים. ייתכן ש-Google תבקש לבחור העדפות פרטיות בעת הצורך.",
+  },
+} as const;
 const modeNeutralImportQuestions = {
   en: "How do you want to use this backup?",
   uk: "Що зробити з цією резервною копією?",
@@ -173,7 +207,7 @@ const platformSpecificRecoveryAndStoreKeys = new Set<string>([
   "settingsNativeUpdateDescription",
 ]);
 const approvedGermanPrivacyAdsHint =
-  "Sie werden nur geladen, wenn du sie aktivierst. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.";
+  habitBannerCopy.de.hint;
 const germanFormalAddressTokens = new Set([
   "Sie",
   "Ihr",
@@ -300,6 +334,17 @@ describe("Settings safety copy", () => {
     expect.soft(english.settingsAccountBackupDescription).toBe(
       "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device."
     );
+  });
+
+  it("describes the Habits-only banner without rewarded-ad language in every locale", () => {
+    for (const [language, translations] of Object.entries(locales)) {
+      const expected = habitBannerCopy[language as keyof typeof habitBannerCopy];
+      expect.soft(translations.privacyAds, `${language}.privacyAds`).toBe(expected.title);
+      expect.soft(translations.privacyAdsHint, `${language}.privacyAdsHint`).toBe(expected.hint);
+      expect.soft(`${translations.privacyAds} ${translations.privacyAdsHint}`).not.toMatch(
+        /reward|rewarded|винагород|recompensa|belohn|récompens|特典|مكافأة|תגמול/i,
+      );
+    }
   });
 
   it("distinguishes German object pronouns from formal direct address", () => {

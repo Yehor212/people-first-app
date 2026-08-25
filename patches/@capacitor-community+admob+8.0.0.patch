@@ -1,0 +1,454 @@
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+index c629139..32ca0b3 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
+@@ -52,6 +52,7 @@ public class BannerExecutor extends Executor {
+         float density = contextSupplier.get().getResources().getDisplayMetrics().density;
+
+         int defaultWidthPixels = contextSupplier.get().getResources().getDisplayMetrics().widthPixels;
++        int availableWidthPixels = mViewGroup.getWidth() > 0 ? mViewGroup.getWidth() : defaultWidthPixels;
+
+         DisplayMetrics metrics = new DisplayMetrics();
+         activitySupplier.get().getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
+@@ -76,7 +77,7 @@ public class BannerExecutor extends Executor {
+             } else {
+                 // ADAPTIVE BANNER
+                 mAdView.setAdSize(
+-                    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(contextSupplier.get(), (int) (defaultWidthPixels / density))
++                    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(contextSupplier.get(), (int) (availableWidthPixels / density))
+                 );
+             }
+
+@@ -85,10 +86,9 @@ public class BannerExecutor extends Executor {
+             mAdViewLayout.setHorizontalGravity(Gravity.CENTER_HORIZONTAL);
+             mAdViewLayout.setVerticalGravity(Gravity.BOTTOM);
+
+-            final CoordinatorLayout.LayoutParams mAdViewLayoutParams = new CoordinatorLayout.LayoutParams(
+-                CoordinatorLayout.LayoutParams.WRAP_CONTENT,
+-                CoordinatorLayout.LayoutParams.WRAP_CONTENT
+-            );
++            final int adWidthPixels = mAdView.getAdSize().getWidthInPixels(contextSupplier.get());
++            final int adHeightPixels = mAdView.getAdSize().getHeightInPixels(contextSupplier.get());
++            final CoordinatorLayout.LayoutParams mAdViewLayoutParams = new CoordinatorLayout.LayoutParams(adWidthPixels, adHeightPixels);
+
+             // TODO: Make an enum like the AdSizeEnum?
+             switch (adOptions.position) {
+@@ -103,10 +103,12 @@ public class BannerExecutor extends Executor {
+                     break;
+             }
+
+-            // set Safe Area only for Android 15+
++            // Keep Android 15+ safe-area handling local to the banner. Installing
++            // this listener on DecorView overrides Capacitor's edge-to-edge
++            // insets handling for the entire WebView and leaves stale composition
++            // state behind after the banner is removed.
+             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+-                View rootView = activitySupplier.get().getWindow().getDecorView();
+-                rootView.setOnApplyWindowInsetsListener((v, insets) -> {
++                mAdViewLayout.setOnApplyWindowInsetsListener((v, insets) -> {
+                     int bottomInset = insets.getSystemWindowInsetBottom();
+                     int topInset = insets.getSystemWindowInsetTop();
+
+@@ -116,7 +118,7 @@ public class BannerExecutor extends Executor {
+                         mAdViewLayoutParams.setMargins(0, 0, 0, bottomInset);
+                     }
+
+-                    mAdViewLayout.setLayoutParams(mAdViewLayoutParams);
++                    v.setLayoutParams(mAdViewLayoutParams);
+                     return insets;
+                 });
+             }
+@@ -160,16 +162,19 @@ public class BannerExecutor extends Executor {
+             activitySupplier
+                 .get()
+                 .runOnUiThread(() -> {
+-                    if (mAdViewLayout != null) {
+-                        mAdViewLayout.setVisibility(View.GONE);
+-                        mAdView.pause();
++                    if (mAdViewLayout == null || mAdView == null) {
++                        call.reject("You tried to hide a banner that was never shown");
++                        return;
++                    }
+
+-                        final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
++                    mAdViewLayout.setVisibility(View.GONE);
++                    mAdView.pause();
+
+-                        notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++                    final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
+
+-                        call.resolve();
+-                    }
++                    notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++
++                    call.resolve();
+                 });
+         } catch (Exception ex) {
+             call.reject(ex.getLocalizedMessage(), ex);
+@@ -181,18 +186,20 @@ public class BannerExecutor extends Executor {
+             activitySupplier
+                 .get()
+                 .runOnUiThread(() -> {
+-                    if (mAdViewLayout != null && mAdView != null) {
+-                        mAdViewLayout.setVisibility(View.VISIBLE);
+-                        mAdView.resume();
++                    if (mAdViewLayout == null || mAdView == null) {
++                        call.reject("You tried to resume a banner that was never shown");
++                        return;
++                    }
+
+-                        final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(mAdView);
+-                        notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++                    mAdViewLayout.setVisibility(View.VISIBLE);
++                    mAdView.resume();
+
+-                        Log.d(logTag, "Banner AD Resumed");
+-                    }
+-                });
++                    final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(mAdView);
++                    notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+
+-            call.resolve();
++                    Log.d(logTag, "Banner AD Resumed");
++                    call.resolve();
++                });
+         } catch (Exception ex) {
+             call.reject(ex.getLocalizedMessage(), ex);
+         }
+@@ -200,23 +207,36 @@ public class BannerExecutor extends Executor {
+
+     public void removeBanner(final PluginCall call) {
+         try {
+-            if (mAdView != null) {
+-                activitySupplier
+-                    .get()
+-                    .runOnUiThread(() -> {
+-                        if (mAdView != null) {
++            if (mAdView == null && mAdViewLayout == null) {
++                call.resolve();
++                return;
++            }
++
++            activitySupplier
++                .get()
++                .runOnUiThread(() -> {
++                    try {
++                        if (mAdViewLayout != null) {
++                            mAdViewLayout.setOnApplyWindowInsetsListener(null);
++                            if (mAdView != null) {
++                                mAdViewLayout.removeView(mAdView);
++                            }
+                             mViewGroup.removeView(mAdViewLayout);
+-                            mAdViewLayout.removeView(mAdView);
++                        }
++                        if (mAdView != null) {
+                             mAdView.destroy();
+-                            mAdView = null;
+-                            Log.d(logTag, "Banner AD Removed");
+-                            final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
+-                            notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+                         }
+-                    });
+-            }
++                        mAdView = null;
++                        mAdViewLayout = null;
++                        Log.d(logTag, "Banner AD Removed");
++                        final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
++                        notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+
+-            call.resolve();
++                        call.resolve();
++                    } catch (Exception ex) {
++                        call.reject(ex.getLocalizedMessage(), ex);
++                    }
++                });
+         } catch (Exception ex) {
+             call.reject(ex.getLocalizedMessage(), ex);
+         }
+@@ -243,8 +263,14 @@ public class BannerExecutor extends Executor {
+                 final AdRequest adRequest = RequestHelper.createRequest(adOptions);
+                 // Assign the correct id needed
+                 AdViewIdHelper.assignIdToAdView(mAdView, adOptions, adRequest, logTag, contextSupplier.get());
+-                // Add the AdView to the view hierarchy.
+-                mAdViewLayout.addView(mAdView);
++                // The CoordinatorLayout container already has the measured
++                // creative size, so the AdView can safely fill it without a
++                // wrap-content/centering measurement cycle.
++                final RelativeLayout.LayoutParams adViewLayoutParams = new RelativeLayout.LayoutParams(
++                    RelativeLayout.LayoutParams.MATCH_PARENT,
++                    RelativeLayout.LayoutParams.MATCH_PARENT
++                );
++                mAdViewLayout.addView(mAdView, adViewLayoutParams);
+                 // Start loading the ad.
+                 mAdView.loadAd(adRequest);
+                 mAdView.setAdListener(
+@@ -260,12 +286,18 @@ public class BannerExecutor extends Executor {
+
+                         @Override
+                         public void onAdFailedToLoad(@NonNull LoadAdError adError) {
+-                            if (mAdView != null) {
++                            if (mAdViewLayout != null) {
++                                mAdViewLayout.setOnApplyWindowInsetsListener(null);
++                                if (mAdView != null) {
++                                    mAdViewLayout.removeView(mAdView);
++                                }
+                                 mViewGroup.removeView(mAdViewLayout);
+-                                mAdViewLayout.removeView(mAdView);
++                            }
++                            if (mAdView != null) {
+                                 mAdView.destroy();
+-                                mAdView = null;
+                             }
++                            mAdView = null;
++                            mAdViewLayout = null;
+
+                             final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
+                             notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+@@ -298,6 +330,9 @@ public class BannerExecutor extends Executor {
+
+                 // Add AdViewLayout top of the WebView
+                 mViewGroup.addView(mAdViewLayout);
++                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
++                    mAdViewLayout.requestApplyInsets();
++                }
+             });
+     }
+ }
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java
+index 02531cd..9538744 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java
+@@ -11,16 +11,7 @@ public final class AdViewIdHelper {
+     private AdViewIdHelper() {}
+
+     public static String getFinalAdId(AdOptions adOptions, AdRequest adRequest, String logTag, Context context) {
+-        if (!adOptions.isTesting) {
+-            return adOptions.adId;
+-        }
+-
+-        if (adRequest.isTestDevice(context)) {
+-            Log.w(logTag, "This device is registered as Testing Device. The real Ad Id will be used");
+-            return adOptions.adId;
+-        }
+-
+-        return adOptions.getTestingId();
++        return adOptions.adId;
+     }
+
+     public static void assignIdToAdView(AdView adView, AdOptions adOptions, AdRequest adRequest, String logTag, Context context) {
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java
+index 9fdaf8b..5e3f722 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java
+@@ -1,6 +1,5 @@
+ package com.getcapacitor.community.admob.models;
+
+-import androidx.annotation.VisibleForTesting;
+ import com.getcapacitor.PluginCall;
+ import com.getcapacitor.community.admob.banner.BannerAdSizeEnum;
+ import com.getcapacitor.community.admob.rewarded.models.SsvInfo;
+@@ -9,7 +8,7 @@ import com.getcapacitor.community.admob.rewarded.models.SsvInfo;
+  * Holds the options for an Ad Request
+  * TODO: automatically create type definitions https://github.com/vojtechhabarta/typescript-generator ?
+  */
+-public abstract class AdOptions {
++public final class AdOptions {
+
+     /**
+      * The ad unit ID that you want to request
+@@ -24,11 +23,6 @@ public abstract class AdOptions {
+      */
+     public final BannerAdSizeEnum adSize;
+
+-    public static final String BANNER_TESTER_ID = "ca-app-pub-3940256099942544/6300978111";
+-    public static final String INTERSTITIAL_TESTER_ID = "ca-app-pub-3940256099942544/1033173712";
+-    public static final String REWARD_VIDEO_TESTER_ID = "ca-app-pub-3940256099942544/5224354917";
+-    public static final String REWARD_INTERSTITIAL_TESTER_ID = "ca-app-pub-3940256099942544/5354046379";
+-
+     /**
+      * The position of the ad, it can be TOP_CENTER,
+      * CENTER or BOTTOM
+@@ -37,11 +31,7 @@ public abstract class AdOptions {
+      */
+     public final String position;
+
+-    /**
+-     * If set to true, an test app will be requested using the official sample ads unit ids
+-     *
+-     * @see <a href="https://developers.google.com/admob/android/test-ads#sample_ad_units">Sample ad units</a>
+-     */
++    /** Test requests are rejected for ZenFlow production builds. */
+     public final boolean isTesting;
+
+     /**
+@@ -67,15 +57,16 @@ public abstract class AdOptions {
+     public final SsvInfo ssvInfo;
+
+     private AdOptions(PluginCall call) {
+-        /*
+-         * TODO: Since the Id in the Typescript AdOptions interface is not optional
+-         *  the default value here should never be used. In case it is used it means this is an error.
+-         *  Would not be better to print an error (call.reject()) and do not create any Ad?
+-         *  Why? Because an distracted dev could think that everything is working when it is not.
+-         */
+-
+-        this.adId = call.getString("adId", getTestingId());
+-        this.isTesting = call.getBoolean("isTesting", false);
++        String configuredAdId = call.getString("adId");
++        if (configuredAdId == null || configuredAdId.trim().isEmpty()) {
++            throw new IllegalArgumentException("A real adId is required in ZenFlow production builds");
++        }
++        if (Boolean.TRUE.equals(call.getBoolean("isTesting", false))) {
++            throw new IllegalArgumentException("Test ad requests are disabled in ZenFlow production builds");
++        }
++
++        this.adId = configuredAdId;
++        this.isTesting = false;
+         this.position = call.getString("position", "BOTTOM_CENTER");
+         this.margin = call.getInt("margin", 0);
+         this.npa = call.getBoolean("npa", false);
+@@ -85,21 +76,6 @@ public abstract class AdOptions {
+         this.adSize = AdOptions.adSizeStringToAdSizeEnum(sizeString);
+     }
+
+-    private AdOptions(String id, boolean isTesting, String position, int margin, boolean npa, BannerAdSizeEnum adSize, SsvInfo ssvInfo) {
+-        this.adId = id;
+-        this.isTesting = isTesting;
+-        this.position = position;
+-        this.margin = margin;
+-        this.npa = npa;
+-        this.adSize = adSize;
+-        this.ssvInfo = ssvInfo;
+-    }
+-
+-    /**
+-     * @return the id used for this type of test ads.
+-     */
+-    public abstract String getTestingId();
+-
+     private static BannerAdSizeEnum adSizeStringToAdSizeEnum(String sizeString) {
+         try {
+             return BannerAdSizeEnum.valueOf(sizeString);
+@@ -113,48 +89,23 @@ public abstract class AdOptions {
+         private AdOptionsFactory() {}
+
+         public AdOptions createBannerOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.BANNER_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createInterstitialOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.INTERSTITIAL_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createRewardVideoOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.REWARD_VIDEO_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createRewardInterstitialOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.REWARD_INTERSTITIAL_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createGenericOptions(PluginCall call, final String testingID) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return testingID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+     }
+
+@@ -168,68 +119,4 @@ public abstract class AdOptions {
+         return AdOptions.factory;
+     }
+
+-    /**
+-     * Just for testing
+-     */
+-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+-    public static class TesterAdOptionsBuilder {
+-
+-        private String id = "TesterAdOptionsBuilder__defaultID";
+-        private String testingID = "TesterAdOptionsBuilder__testingID";
+-        private boolean isTesting = true;
+-        private String position = "TesterAdOptionsBuilder__position";
+-        private int margin = 1;
+-        private boolean npa = false;
+-        private BannerAdSizeEnum adSize = BannerAdSizeEnum.ADAPTIVE_BANNER;
+-        private SsvInfo ssvInfo = new SsvInfo();
+-
+-        public TesterAdOptionsBuilder setSsvInfo(SsvInfo info) {
+-            ssvInfo = info;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setIsTesting(boolean value) {
+-            isTesting = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setNpa(boolean value) {
+-            npa = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setPosition(String value) {
+-            position = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setTestingID(String value) {
+-            testingID = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setID(String value) {
+-            id = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setMargin(int value) {
+-            margin = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setAdSize(BannerAdSizeEnum value) {
+-            adSize = value;
+-            return this;
+-        }
+-
+-        public AdOptions build() {
+-            return new AdOptions(id, isTesting, position, margin, npa, adSize, ssvInfo) {
+-                @Override
+-                public String getTestingId() {
+-                    return testingID;
+-                }
+-            };
+-        }
+-    }
+ }

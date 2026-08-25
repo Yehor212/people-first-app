@@ -558,10 +558,40 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["cap:sync:android"]).toContain("npm run check:release-artifacts:android");
     expect(pkg.scripts["cap:sync:ios"]).toContain("npm run prune:release-artifacts:ios");
     expect(pkg.scripts["cap:sync:ios"]).toContain("npm run check:release-artifacts:ios");
+    expect(pkg.scripts["test:release-contracts"]).toContain(
+      "scripts/__tests__/google-native-auth-readiness.test.ts"
+    );
 
     const androidGate = sliceBetween(workflow, "android-gate:", "ios-gate:");
     expect(androidGate).not.toContain("continue-on-error: true");
     expect(androidGate).toContain("npm run check:release-artifacts:android");
+    expect(androidGate).toContain("npm run check:google-native-auth");
+    expect(androidGate).toContain(
+      "VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.VITE_GOOGLE_WEB_CLIENT_ID }}"
+    );
+    expect(androidGate).toContain("ZENFLOW_GOOGLE_WEB_CLIENT_REQUIRED: true");
+
+    const googleNativeAuthGate = indexOfOrThrow(
+      androidGate,
+      "name: Check Google native auth repository structure"
+    );
+    const adMobReleaseGate = indexOfOrThrow(
+      androidGate,
+      "name: Check Android production banner configuration"
+    );
+    const androidWebBuild = indexOfOrThrow(
+      androidGate,
+      "name: Build Android web assets (required before cap sync)"
+    );
+    expect(googleNativeAuthGate).toBeLessThan(androidWebBuild);
+    expect(adMobReleaseGate).toBeLessThan(androidWebBuild);
+    expect(androidGate).toContain("npm run google-play:admob:check");
+    expect(androidGate).toContain(
+      "VITE_ADMOB_APP_ID_ANDROID: ${{ vars.VITE_ADMOB_APP_ID_ANDROID }}"
+    );
+    expect(androidGate).toContain(
+      "VITE_ADMOB_BANNER_ID_ANDROID: ${{ vars.VITE_ADMOB_BANNER_ID_ANDROID }}"
+    );
 
     const androidSync = indexOfOrThrow(
       androidGate,
@@ -571,9 +601,27 @@ describe("GitHub Pages deploy workflow contract", () => {
       androidGate,
       "name: Check Android synced duplicate release artifacts"
     );
-    const androidAssemble = indexOfOrThrow(androidGate, "name: Android assembleDebug");
+    const androidAssemble = indexOfOrThrow(
+      androidGate,
+      "name: Android bundleRelease configuration proof"
+    );
     expect(androidSync).toBeLessThan(androidPostSyncGate);
     expect(androidPostSyncGate).toBeLessThan(androidAssemble);
+    expect(androidGate).toContain("./gradlew bundleRelease --console=plain");
+    const androidBundleStep = sliceBetween(
+      androidGate,
+      "name: Android bundleRelease configuration proof",
+      "name: Check Android release bundle AdMob contract",
+    );
+    expect(androidBundleStep).toContain(
+      "VITE_ADMOB_BANNER_ID_ANDROID: ${{ vars.VITE_ADMOB_BANNER_ID_ANDROID }}",
+    );
+    const androidAdMobArtifactGate = indexOfOrThrow(
+      androidGate,
+      "name: Check Android release bundle AdMob contract"
+    );
+    expect(androidAssemble).toBeLessThan(androidAdMobArtifactGate);
+    expect(androidGate).toContain("npm run google-play:admob:aab-check");
 
     const iosGate = sliceBetween(workflow, "ios-gate:", "deploy:");
     expect(iosGate).toContain("npm run check:release-artifacts:ios");

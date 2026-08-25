@@ -1,143 +1,40 @@
-import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+
+import { describe, expect, it } from 'vitest';
+
 import {
   AD_UNIT_IDS,
-  AD_FREQUENCY,
-  AD_MOOD_RULES,
-  AD_SACRED_ZONES,
-  AD_SAFE_ZONES,
-  AD_REWARDS,
-  AD_STORAGE_KEYS,
+  getBannerAdUnitId,
+  hasBannerAdUnitId,
+  isValidProductionBannerAdUnitId,
 } from '../adConfig';
 
-// ============================================
-// AD_UNIT_IDS
-// ============================================
-
-describe('AD_UNIT_IDS', () => {
-  it('has android rewarded and banner IDs', () => {
-    expect(typeof AD_UNIT_IDS.android.rewarded).toBe('string');
-    expect(typeof AD_UNIT_IDS.android.banner).toBe('string');
+describe('banner-only AdMob configuration', () => {
+  it('exposes only a banner slot on Android and iOS', () => {
+    expect(Object.keys(AD_UNIT_IDS.android)).toEqual(['banner']);
+    expect(Object.keys(AD_UNIT_IDS.ios)).toEqual(['banner']);
+    expect(getBannerAdUnitId('android')).toBe(AD_UNIT_IDS.android.banner);
+    expect(getBannerAdUnitId('ios')).toBe(AD_UNIT_IDS.ios.banner);
   });
 
-  it('has iOS rewarded and banner IDs', () => {
-    expect(typeof AD_UNIT_IDS.ios.rewarded).toBe('string');
-    expect(typeof AD_UNIT_IDS.ios.banner).toBe('string');
-  });
-});
+  it('contains no sample-id detector or fallback path in production configuration', () => {
+    const configSource = readFileSync('src/lib/adConfig.ts', 'utf8');
 
-// ============================================
-// AD_FREQUENCY
-// ============================================
-
-describe('AD_FREQUENCY', () => {
-  it('has sensible frequency caps', () => {
-    expect(AD_FREQUENCY.maxRewardedPerDay).toBeGreaterThan(0);
-    expect(AD_FREQUENCY.maxRewardedPerSession).toBeGreaterThan(0);
-    expect(AD_FREQUENCY.maxRewardedPerSession).toBeLessThanOrEqual(AD_FREQUENCY.maxRewardedPerDay);
+    expect(configSource).not.toContain('GOOGLE_ADMOB_TEST_IDS');
+    expect(configSource).not.toContain('isGoogleTestAdUnit');
+    expect(configSource).not.toContain('3940256099942544');
   });
 
-  it('has minimum interval between ads', () => {
-    expect(AD_FREQUENCY.minIntervalMs).toBeGreaterThan(0);
-    // At least 1 minute between ads
-    expect(AD_FREQUENCY.minIntervalMs).toBeGreaterThanOrEqual(60_000);
+  it('rejects blank, malformed, and Google sample banner IDs at the runtime boundary', () => {
+    expect(isValidProductionBannerAdUnitId('')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('banner-123')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('ca-app-pub-3940256099942544/6300978111')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('ca-app-pub-9501460293702808/9876543210')).toBe(true);
+    expect(hasBannerAdUnitId('ios')).toBe(false);
   });
 
-  it('has dismiss cooldown longer than min interval', () => {
-    expect(AD_FREQUENCY.dismissCooldownMs).toBeGreaterThan(AD_FREQUENCY.minIntervalMs);
-  });
-});
-
-// ============================================
-// AD_MOOD_RULES
-// ============================================
-
-describe('AD_MOOD_RULES', () => {
-  it('blocks ads for terrible and bad mood', () => {
-    expect(AD_MOOD_RULES.blockedMoods).toContain('terrible');
-    expect(AD_MOOD_RULES.blockedMoods).toContain('bad');
-  });
-
-  it('does not reduce ads for low mood because low mood is blocked', () => {
-    expect(AD_MOOD_RULES.reducedMoods).not.toContain('bad');
-  });
-
-  it('has a reduced max per session that is less than normal', () => {
-    expect(AD_MOOD_RULES.reducedMaxPerSession).toBeLessThan(AD_FREQUENCY.maxRewardedPerSession);
-  });
-});
-
-// ============================================
-// AD_SACRED_ZONES
-// ============================================
-
-describe('AD_SACRED_ZONES', () => {
-  it('is a non-empty array of zones', () => {
-    expect(AD_SACRED_ZONES.length).toBeGreaterThan(0);
-  });
-
-  it('includes focus_active and breathing_active', () => {
-    expect(AD_SACRED_ZONES).toContain('focus_active');
-    expect(AD_SACRED_ZONES).toContain('breathing_active');
-  });
-
-  it('includes mood_logging and journaling', () => {
-    expect(AD_SACRED_ZONES).toContain('mood_logging');
-    expect(AD_SACRED_ZONES).toContain('journaling');
-  });
-});
-
-// ============================================
-// AD_SAFE_ZONES
-// ============================================
-
-describe('AD_SAFE_ZONES', () => {
-  it('is a non-empty array of zones', () => {
-    expect(AD_SAFE_ZONES.length).toBeGreaterThan(0);
-  });
-
-  it('includes post_focus and daily_rewards', () => {
-    expect(AD_SAFE_ZONES).toContain('post_focus');
-    expect(AD_SAFE_ZONES).toContain('daily_rewards');
-    expect(AD_SAFE_ZONES).toContain('optional_rewards');
-    expect(AD_SAFE_ZONES).not.toContain('settings');
-  });
-});
-
-// ============================================
-// AD_REWARDS
-// ============================================
-
-describe('AD_REWARDS', () => {
-  it('gives positive treat rewards for watching ads', () => {
-    expect(AD_REWARDS.rewardedVideoTreats).toBeGreaterThan(0);
-  });
-
-  it('gives bonus XP for rewarded videos', () => {
-    expect(AD_REWARDS.rewardedVideoXp).toBeGreaterThan(0);
-  });
-
-  it('has a daily reward multiplier of at least 2x', () => {
-    expect(AD_REWARDS.dailyRewardMultiplier).toBeGreaterThanOrEqual(2);
-  });
-});
-
-// ============================================
-// AD_STORAGE_KEYS
-// ============================================
-
-describe('AD_STORAGE_KEYS', () => {
-  it('has all required storage keys as non-empty strings', () => {
-    expect(typeof AD_STORAGE_KEYS.dailyRewardedCount).toBe('string');
-    expect(typeof AD_STORAGE_KEYS.dailyCountDate).toBe('string');
-    expect(typeof AD_STORAGE_KEYS.sessionRewardedCount).toBe('string');
-    expect(typeof AD_STORAGE_KEYS.lastAdTimestamp).toBe('string');
-    expect(typeof AD_STORAGE_KEYS.lastDismissTimestamp).toBe('string');
-    expect(typeof AD_STORAGE_KEYS.adConsentShown).toBe('string');
-  });
-
-  it('all storage keys have zenflow prefix', () => {
-    for (const key of Object.values(AD_STORAGE_KEYS)) {
-      expect(key).toMatch(/^zenflow-/);
-    }
+  it('reports configured banner slots without inventing a production fallback', () => {
+    expect(hasBannerAdUnitId('android')).toBe(AD_UNIT_IDS.android.banner.length > 0);
+    expect(hasBannerAdUnitId('ios')).toBe(AD_UNIT_IDS.ios.banner.length > 0);
   });
 });

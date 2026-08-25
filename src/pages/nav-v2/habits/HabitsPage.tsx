@@ -29,6 +29,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAds } from "@/contexts/AdContext";
 import { useUserDataStore } from "@/stores";
 import { hapticTap } from "@/lib/haptics";
 import { analytics } from "@/lib/analytics";
@@ -111,6 +112,7 @@ function HabitFieldBackdrop({ isEmpty, animate }: { isEmpty: boolean; animate: b
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
   const tx = t;
+  const { bannerHeight, setHabitsBannerActive } = useAds();
   const mainRef = useRef<HTMLElement>(null);
   const { habits, todaysHabits, dailyProgress, isEmpty: hasNoActiveHabits } = useHabitsPageState();
   const animateBackdrop = useShouldAnimate();
@@ -120,6 +122,7 @@ export const HabitsPage = memo(function HabitsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [pendingDetailEditHabit, setPendingDetailEditHabit] = useState<Habit | null>(null);
   /** Habit passed to HabitCreateSheet in edit mode (null = create mode). */
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
@@ -507,9 +510,23 @@ export const HabitsPage = memo(function HabitsPage() {
   );
 
   const isEmpty = hasNoActiveHabits;
+  const bannerPlacementActive =
+    !isEmpty &&
+    !createOpen &&
+    !libraryOpen &&
+    !actionSheetOpen &&
+    detailHabit === null &&
+    pendingDetailEditHabit === null;
+
+  useEffect(() => {
+    setHabitsBannerActive(bannerPlacementActive);
+    return () => setHabitsBannerActive(false);
+  }, [bannerPlacementActive, setHabitsBannerActive]);
+
   const habitFieldStyle = {
     "--habit-field-progress": dailyProgress.total > 0 ? dailyProgress.ratio : 0,
     "--habit-field-density": Math.min(todaysHabits.length, 8),
+    "--android-ad-banner-height": `${bannerHeight}px`,
   } as CSSProperties;
 
   return (
@@ -519,13 +536,14 @@ export const HabitsPage = memo(function HabitsPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative isolate min-h-[var(--app-viewport-height)] w-full overflow-hidden pb-16 outline-none motion-safe:transition-[background] motion-safe:duration-700"
+        className="v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative isolate min-h-[var(--app-viewport-height)] w-full overflow-hidden pb-[calc(4rem+var(--android-ad-banner-height,0px))] outline-none motion-safe:transition-[background] motion-safe:duration-700"
         style={habitFieldStyle}
         aria-labelledby="habits-page-heading"
         data-testid="habits-page"
         data-v2-readable-page="habits"
         data-habit-state={isEmpty ? "empty" : "active"}
         data-habit-count={todaysHabits.length}
+        data-android-banner-height={bannerHeight}
       >
         <HabitFieldBackdrop isEmpty={isEmpty} animate={animateBackdrop} />
         <div className="relative z-[2] mx-auto min-h-[var(--app-viewport-height)] w-full max-w-3xl lg:max-w-none">
@@ -555,6 +573,7 @@ export const HabitsPage = memo(function HabitsPage() {
             onPickTemplate={handlePickTemplate}
             onOpenLibrary={openLibrary}
             onOpenDetail={openDetail}
+            onActionSheetOpenChange={setActionSheetOpen}
           />
         </div>
 

@@ -2,7 +2,8 @@ export const TELEGRAM_OIDC_ISSUER = "https://oauth.telegram.org";
 export const TELEGRAM_OIDC_AUTHORIZATION_ENDPOINT = `${TELEGRAM_OIDC_ISSUER}/auth`;
 export const TELEGRAM_OIDC_TOKEN_ENDPOINT = `${TELEGRAM_OIDC_ISSUER}/token`;
 export const TELEGRAM_OIDC_JWKS_URI = `${TELEGRAM_OIDC_ISSUER}/.well-known/jwks.json`;
-export const TELEGRAM_OIDC_PUBLIC_BASE_URL = "https://api.zenflowapp.online/functions/v1/telegram-oidc";
+export const TELEGRAM_OIDC_PUBLIC_BASE_URL =
+  "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc";
 
 export type TelegramJwk = Record<string, unknown> & {
   alg?: string;

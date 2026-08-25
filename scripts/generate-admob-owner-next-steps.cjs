@@ -5,8 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {
   evaluateExternalReadiness,
-  CURRENT_ANDROID_REWARDED_READINESS_IDS,
-  FULL_CROSS_PLATFORM_READINESS_IDS,
+  CURRENT_ANDROID_BANNER_READINESS_IDS,
 } = require("./check-admob-external-readiness.cjs");
 
 const ROOT = path.join(__dirname, "..");
@@ -99,27 +98,20 @@ const OWNER_FACT_LABELS_BY_ITEM = Object.freeze({
   live_ad_playback_device: [
     ["releaseEquivalentAndroid", "Release-equivalent Android build/device was used."],
     ["consentPathCompleted", "Consent path completed before ad request."],
-    ["clearRewardAndActionDisclosureConfirmed", "Clear reward and required action disclosure appears before the ad."],
-    ["affirmativeOptInBeforeEachRewardedAd", "The user gives affirmative opt-in before each rewarded ad."],
-    ["rewardedVideoOpened", "Rewarded video opened only from an approved optional surface."],
-    ["dismissWithoutRewardChecked", "Dismissal without reward was checked."],
-    ["dismissOrSkipDoesNotBlockNormalUse", "Dismiss or skip does not block normal app use."],
-    ["noPressureOrMisleadingChoiceCopy", "No pressure, guilt, scarcity, or misleading choice copy appears."],
-    ["rewardCallbackGrantedAfterCompletion", "Reward callback grants only after completion."],
+    ["habitsBannerRendered", "The anchored adaptive banner rendered only on the Habits screen."],
+    ["adMobRequestObserved", "AdMob recorded a request from the release-equivalent artifact."],
+    ["adMobImpressionObserved", "AdMob recorded an impression from the release-equivalent artifact."],
+    ["bannerDoesNotOverlapAppContent", "The banner does not cover app content or bottom navigation."],
+    ["rotationRecreatesAdaptiveBanner", "Rotation or split-screen resize recreates the adaptive banner safely."],
+    ["backgroundRemovesBanner", "Backgrounding removes the native banner."],
     ["revocationStopsNewAdRequests", "Consent revocation stops new ad requests."],
-    ["noMoodCheckInPromptOrRequest", "No prompt/request in mood check-in."],
-    ["noActiveFocusPromptOrRequest", "No prompt/request during active focus."],
-    ["noFocusReflectionPromptOrRequest", "No prompt/request in focus reflection."],
-    ["noJournalEditorPromptOrRequest", "No prompt/request in journal editor."],
-    ["noOnboardingPromptOrRequest", "No prompt/request during onboarding."],
-    ["noBadOrTerribleMoodPromptOrRequest", "No prompt/request for bad or terrible mood states."],
-  ],
-  full_cross_platform_ad_units: [
-    ["androidOwnerControlledNonSample", "Android IDs are owner-controlled and non-sample."],
-    ["iosOwnerControlledNonSample", "iOS IDs are owner-controlled and non-sample."],
-    ["bannerOwnerControlledNonSample", "Banner IDs are owner-controlled and non-sample."],
-    ["rewardedOwnerControlledNonSample", "Rewarded IDs are owner-controlled and non-sample."],
-    ["samePublisherFamily", "All ad units belong to the same publisher family as app-ads.txt."],
+    ["noMoodCheckInBannerOrRequest", "No banner/request in mood check-in."],
+    ["noActiveFocusBannerOrRequest", "No banner/request during active focus."],
+    ["noFocusReflectionBannerOrRequest", "No banner/request in focus reflection."],
+    ["noJournalEditorBannerOrRequest", "No banner/request in journal editor."],
+    ["noOnboardingBannerOrRequest", "No banner/request during onboarding."],
+    ["noBadOrTerribleMoodBannerOrRequest", "No banner/request for bad or terrible mood states."],
+    ["noDrawerSheetModalBanner", "No native banner survives above drawers, sheets, or modals."],
   ],
 });
 function usage() {
@@ -214,7 +206,7 @@ function statusLine(ready) {
 
 function evaluateSupportReadiness(report) {
   const byId = itemMap(report.items);
-  const currentRows = rowsFor(CURRENT_ANDROID_REWARDED_READINESS_IDS, byId);
+  const currentRows = rowsFor(CURRENT_ANDROID_BANNER_READINESS_IDS, byId);
   const ownerBlockers = nonPassRows(currentRows).filter((item) => OWNER_ACTION_IDS.has(item.id));
   const serviceBlockers = nonPassRows(currentRows).filter((item) => GOOGLE_SERVICE_IDS.has(item.id));
 
@@ -247,7 +239,7 @@ function evaluateSupportReadiness(report) {
 
   return {
     supportStatus: report.passReady ? "NOT NEEDED" : "NOT READY",
-    reason: report.passReady ? "current Android rewarded gate is ready" : "current Android rewarded gate still has unresolved checks",
+    reason: report.passReady ? "current Android banner gate is ready" : "current Android banner gate still has unresolved checks",
     ownerBlockers,
     serviceBlockers,
   };
@@ -291,16 +283,12 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
   const report = evaluateExternalReadiness(ledger, { now });
   const support = evaluateSupportReadiness(report);
   const byId = itemMap(report.items);
-  const currentRows = rowsFor(CURRENT_ANDROID_REWARDED_READINESS_IDS, byId);
-  const fullRows = rowsFor(FULL_CROSS_PLATFORM_READINESS_IDS, byId);
+  const currentRows = rowsFor(CURRENT_ANDROID_BANNER_READINESS_IDS, byId);
   const currentBlockers = nonPassRows(currentRows);
-  const fullBlockers = nonPassRows(fullRows);
   const currentStatus = statusLine(report.ok && report.passReady);
-  const fullStatus = statusLine(report.ok && report.fullCrossPlatformReady);
   const ownerRows = currentBlockers.filter((item) => OWNER_ACTION_IDS.has(item.id));
   const serviceRows = currentBlockers.filter((item) => GOOGLE_SERVICE_IDS.has(item.id));
-  const futureRows = fullBlockers.filter((item) => !CURRENT_ANDROID_REWARDED_READINESS_IDS.includes(item.id));
-  const checklistRows = uniqueRows([...ownerRows, ...serviceRows, ...futureRows]);
+  const checklistRows = uniqueRows([...ownerRows, ...serviceRows]);
 
   const unsafeIssues = report.issues.map((itemIssue) => {
     const item = itemIssue.itemId ? ` item=${itemIssue.itemId}` : "";
@@ -313,8 +301,7 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
     `Generated: ${generated}`,
     "Source ledger: `docs/release/google-play/ADMOB_EXTERNAL_READINESS.json`",
     "",
-    `Current Android rewarded monetization: ${currentStatus}`,
-    `Full cross-platform monetization: ${fullStatus}`,
+    `Current Android banner monetization: ${currentStatus}`,
     "",
     "## Support Escalation Status",
     "",
@@ -334,12 +321,6 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
     serviceRows.length > 0
       ? tableFor(serviceRows)
       : "_None in the current ledger. Recheck these rows before escalating because Google crawler and policy states can change._",
-    "",
-    "## Future Expansion Blockers",
-    "",
-    futureRows.length > 0
-      ? tableFor(futureRows)
-      : "_None. Current Android rewarded readiness and full cross-platform readiness now match._",
     "",
     "## Public-Safe Owner Evidence Checklist",
     "",
@@ -361,7 +342,7 @@ function buildOwnerNextStepsPacket(ledger, options = {}) {
     "- Keep `output/private/admob-owner-evidence.json` untracked.",
     "- Record only PASS, PARTIAL, UNVERIFIED, or FAIL summaries and boolean facts.",
     "- Do not paste payment, tax, identity, address, email, bank, or raw AdMob identifiers into public files.",
-    "- Do not run live rewarded playback inside Settings or Privacy; use only the separately approved optional rewards surface after CMP and Play Console declarations are closed.",
+    "- Request the anchored adaptive banner only on Habits after consent; remove it for overlays, protected flows, backgrounding, and route exit.",
     "",
     report.ok ? "## Ledger Validation\n\nSource ledger validation: STRUCTURALLY_VALID. This only means the ledger is public-safe and structurally valid; it does not mean monetization is ready." : "## Ledger Validation\n\nSource ledger validation: UNVERIFIED. The source ledger has validation issues.",
     "",

@@ -9,23 +9,39 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-def ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS = [
-        "ca-app-pub-3940256099942544~3347511713",
-        "ca-app-pub-3940256099942544~1458002511",
-] as Set
-
 def zenflowAdMobAndroidAppId = project.findProperty("ZENFLOW_ADMOB_ANDROID_APP_ID")
         ?: System.getenv("ZENFLOW_ADMOB_ANDROID_APP_ID")
         ?: System.getenv("VITE_ADMOB_APP_ID_ANDROID")
-        ?: "ca-app-pub-3940256099942544~3347511713"
+        ?: ""
+
+def zenflowAdMobAndroidBannerId = project.findProperty("VITE_ADMOB_BANNER_ID_ANDROID")
+        ?: System.getenv("VITE_ADMOB_BANNER_ID_ANDROID")
+        ?: ""
+
+def zenflowAppAdsFile = rootProject.file("../public/app-ads.txt")
+def zenflowExpectedAdMobPublisher = zenflowAppAdsFile.exists()
+        ? (zenflowAppAdsFile.text =~ /google\.com, (pub-\d{16}), DIRECT,/).with { matcher -> matcher.find() ? matcher.group(1) : "" }
+        : ""
+def zenflowConfiguredAdMobPublisher = (zenflowAdMobAndroidAppId =~ /ca-app-(pub-\d{16})~\d+/).with { matcher -> matcher.matches() ? matcher.group(1) : "" }
+def zenflowConfiguredAdMobBannerPublisher = (zenflowAdMobAndroidBannerId =~ /ca-app-(pub-\d{16})\/\d+/).with { matcher -> matcher.matches() ? matcher.group(1) : "" }
 
 gradle.taskGraph.whenReady { taskGraph ->
-    def releaseBuildRequested = taskGraph.allTasks.any { task ->
-        task.path.toLowerCase(Locale.ROOT).contains("release")
+    def publishableReleaseTaskNames = [
+            "assemblerelease",
+            "bundlerelease",
+            "packagerelease",
+    ] as Set
+    def publishableReleaseTaskRequested = gradle.startParameter.taskNames.any { requestedTask ->
+        publishableReleaseTaskNames.contains(requestedTask.tokenize(":").last().toLowerCase(Locale.ROOT))
+    } || taskGraph.getAllTasks().any { task ->
+        task.project == project && publishableReleaseTaskNames.contains(task.name.toLowerCase(Locale.ROOT))
     }
 
-    if (releaseBuildRequested && (!zenflowAdMobAndroidAppId || ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS.contains(zenflowAdMobAndroidAppId))) {
-        throw new GradleException("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with the real Android AdMob app id; Google sample app ids are only allowed for debug/dev builds.")
+    if (publishableReleaseTaskRequested && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)) {
+        throw new GradleException("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt.")
+    }
+    if (publishableReleaseTaskRequested && (!zenflowConfiguredAdMobBannerPublisher || zenflowConfiguredAdMobBannerPublisher != zenflowExpectedAdMobPublisher)) {
+        throw new GradleException("Release builds require VITE_ADMOB_BANNER_ID_ANDROID with a real banner id matching public/app-ads.txt.")
     }
 }
 
@@ -36,8 +52,8 @@ android {
         applicationId "com.zenflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 35
-        versionName "2.0.0"
+        versionCode 39
+        versionName "2.1.2"
         manifestPlaceholders = [
                 adMobApplicationId: zenflowAdMobAndroidAppId
         ]

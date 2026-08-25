@@ -12,9 +12,7 @@ import {
   SUPABASE_PUBLIC_API_KEY,
   SENTRY_DSN,
   SPOTIFY_CLIENT_ID,
-  ADMOB_REWARDED_ID_ANDROID,
   ADMOB_BANNER_ID_ANDROID,
-  ADMOB_REWARDED_ID_IOS,
   ADMOB_BANNER_ID_IOS,
 } from "../env";
 
@@ -56,16 +54,8 @@ describe("env", () => {
     expect(typeof SPOTIFY_CLIENT_ID).toBe("string");
   });
 
-  it("ADMOB_REWARDED_ID_ANDROID is a string (env-only, no hardcoded fallback)", () => {
-    expect(typeof ADMOB_REWARDED_ID_ANDROID).toBe("string");
-  });
-
   it("ADMOB_BANNER_ID_ANDROID is a string (env-only, no hardcoded fallback)", () => {
     expect(typeof ADMOB_BANNER_ID_ANDROID).toBe("string");
-  });
-
-  it("ADMOB_REWARDED_ID_IOS is a string (env-only, no hardcoded fallback)", () => {
-    expect(typeof ADMOB_REWARDED_ID_IOS).toBe("string");
   });
 
   it("ADMOB_BANNER_ID_IOS is a string (env-only, no hardcoded fallback)", () => {
@@ -74,9 +64,7 @@ describe("env", () => {
 
   it('AdMob IDs follow "ca-app-pub-" format when configured via env', () => {
     const ids = [
-      ADMOB_REWARDED_ID_ANDROID,
       ADMOB_BANNER_ID_ANDROID,
-      ADMOB_REWARDED_ID_IOS,
       ADMOB_BANNER_ID_IOS,
     ];
     for (const id of ids) {

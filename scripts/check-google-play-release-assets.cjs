@@ -365,13 +365,10 @@ function assertAdDeclarationMatchesArtifact(packet) {
     fail("package.json must expose google-play:app-ads:public-check:zenflow for repeatable ZenFlow public app-ads.txt proof");
   }
 
-  if (packageJson.scripts?.["google-play:admob:check"] !== "node scripts/check-admob-production-readiness.cjs") {
+  if (packageJson.scripts?.["google-play:admob:check"] !== "node scripts/check-admob-production-readiness.cjs --mode android-banner") {
     fail("package.json must expose google-play:admob:check for real non-sample AdMob app/ad-unit ids");
   }
 
-  if (packageJson.scripts?.["google-play:admob:check:full"] !== "node scripts/check-admob-production-readiness.cjs --strict-optional --require-optional") {
-    fail("package.json must expose google-play:admob:check:full for full cross-platform/banner+iOS AdMob readiness proof");
-  }
 
   if (packageJson.scripts?.["google-play:admob:external-check"] !== "node scripts/check-admob-external-readiness.cjs") {
     fail("package.json must expose google-play:admob:external-check for public-safe external AdMob readiness evidence");
@@ -403,9 +400,10 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "post-deploy public privacy smoke",
     "npm run google-play:privacy:public-check",
     "npm run google-play:admob:check",
-    "npm run google-play:admob:check:full",
-    "npm run google-play:admob:external-check",
-    "npm run google-play:admob:external-check:pass",
+    "VITE_ADMOB_BANNER_ID_ANDROID",
+    "Do not configure rewarded IDs for this release",
+    "Android banner-only release",
+    "external readiness ledger now models the current Android banner-only release",
     "Do not hand-write the file",
     "do not use Google's sample publisher id",
     "Play Console/AdMob",
@@ -416,7 +414,7 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "appstore:developer_url=about:invalid#navigation",
     "public probe",
     "Contains ads",
-    "no stale `No ads` claim",
+    "stale `No ads` claim",
   ]);
 
   assertIncludes(GOOGLE_PLAY_DRAFT_AUDIT, [
@@ -429,7 +427,6 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "post-deploy public privacy smoke",
     "npm run google-play:privacy:public-check",
     "npm run google-play:admob:check",
-    "npm run google-play:admob:check:full",
     "npm run google-play:admob:external-check",
     "npm run google-play:admob:external-check:pass",
     "Do not invent this value",
@@ -453,9 +450,10 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "google-play:privacy:artifact-check",
     "post-deploy public privacy smoke",
     "google-play:privacy:public-check",
-    "google-play:admob:check:full",
-    "google-play:admob:external-check",
-    "google-play:admob:external-check:pass",
+    "google-play:admob:check",
+    "google-play:admob:ump-check",
+    "VITE_ADMOB_BANNER_ID_ANDROID",
+    "current Android banner-only release",
     "Verify app",
   ]);
 
@@ -465,7 +463,8 @@ function assertAdDeclarationMatchesArtifact(packet) {
   }
 
   assertIncludes(ANDROID_BUILD_GRADLE, [
-    "ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS",
+    "zenflowExpectedAdMobPublisher",
+    "zenflowConfiguredAdMobPublisher",
     "gradle.taskGraph.whenReady",
     "throw new GradleException",
     "Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID",

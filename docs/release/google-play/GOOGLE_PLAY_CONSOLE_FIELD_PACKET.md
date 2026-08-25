@@ -47,7 +47,7 @@ Why people use ZenFlow:
 - Continue across supported web and app surfaces
 - Use a calm interface built for daily repetition
 
-ZenFlow may offer optional rewarded ads for small in-app bonuses after consent. Ads are not shown inside mood check-ins, active focus sessions, or journaling moments.
+After consent and the first three onboarding days, ZenFlow may show one optional adaptive banner below the Habits list. It is not shown during mood check-ins, focus sessions, journaling, habit creation or editing, settings, or overlays.
 ```
 
 Product feature bullets:
@@ -56,14 +56,14 @@ Product feature bullets:
 Fast mood check-ins for the moment you are in
 Habit tracking that keeps routines visible
 Private journaling without social pressure
-Optional rewarded bonuses after consent
+Optional Habits-list banner after consent
 A calm daily interface built for return use
 ```
 
 What's new:
 
 ```text
-Initial Android release with ZenFlow V2: mood flow, habits, private journal, refreshed brand assets, and optional rewarded ads support.
+Android release with ZenFlow V2, mood, habits, private journal, refreshed brand assets, and an optional adaptive Habits-list banner.
 ```
 
 ## Graphics Upload Map
@@ -121,7 +121,7 @@ Yes
 Reason:
 
 ```text
-The current Android release path installs the official Capacitor AdMob plugin and supports optional rewarded ads after user consent. ZenFlow must not show banners, pop-ups, or interstitial ads during mood check-ins, active focus sessions, or journaling.
+The current Android release path installs the official Capacitor AdMob plugin and supports one optional adaptive banner below a non-empty Habits list after user consent and the first three onboarding days. ZenFlow must not show ads during mood check-ins, focus sessions, journaling, habit creation or editing, settings, overlays, or on any non-Android platform.
 ```
 
 Advertising ID:
@@ -163,7 +163,7 @@ Adults and general wellness users. Not directed to children.
 Data safety note:
 
 ```text
-Declare only the data types actually collected by the current Android artifact. Mood, habit, and journal content are user-entered wellness data and must not be described as advertising data. Advertising ID and Android ad services permissions are present for the installed Google Mobile Ads / AdMob release path and should be declared only for ads/analytics purposes tied to that SDK. Before submitting, run `npm run google-play:privacy:artifact-check`, require the GitHub Pages post-deploy public privacy smoke to pass, then run `npm run google-play:privacy:public-check` and confirm the public privacy policy discloses Google Mobile Ads, UMP privacy choices, Advertising ID, optional rewarded ads, and Google Mobile Ads SDK data categories.
+Declare only the data types actually collected by the current Android artifact. Mood, habit, and journal content are user-entered wellness data and must not be described as advertising data. Advertising ID and Android ad services permissions are present for the installed Google Mobile Ads / AdMob release path and should be declared only for ads/analytics purposes tied to that SDK. Before submitting, run `npm run google-play:privacy:artifact-check`, require the GitHub Pages post-deploy public privacy smoke to pass, then run `npm run google-play:privacy:public-check` and confirm the public privacy policy discloses Google Mobile Ads, UMP privacy choices, Advertising ID, the optional Habits-list banner, and Google Mobile Ads SDK data categories.
 ```
 
 ## Pre-Submit Checklist
@@ -187,8 +187,8 @@ Declare only the data types actually collected by the current Android artifact. 
 
 Before publishing production monetization:
 
-1. Create the real Android app and rewarded ad unit in AdMob.
-2. Set `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_REWARDED_ID_ANDROID`.
+1. Create the real Android app and adaptive banner ad unit in AdMob.
+2. Set `VITE_ADMOB_APP_ID_ANDROID` and `VITE_ADMOB_BANNER_ID_ANDROID`. Do not configure rewarded IDs for this release.
 3. In Play Console, open Store settings and set Store listing contact details -> website to:
 
 ```text
@@ -213,9 +213,8 @@ npm run google-play:privacy:artifact-check
 # After GitHub Pages deploy, the post-deploy public privacy smoke must pass.
 npm run google-play:privacy:public-check
 npm run google-play:admob:check
-npm run google-play:admob:check:full
-npm run google-play:admob:external-check
-npm run google-play:admob:external-check:pass
+npm run google-play:admob:aab-check
+npm run google-play:admob:ump-check
 ```
 
 Do not hand-write the file and do not use Google's sample publisher id.
@@ -223,20 +222,15 @@ Deploy it and verify the live `app-ads.txt` at the root of the developer
 website configured in Play Console/AdMob. A GitHub Pages project subpath is not
 enough proof by itself if AdMob crawls the host root.
 The AdMob production readiness script must pass with the real Android app ID
-and real rewarded ad unit ID before production monetization can be called ready.
+and real Android banner ad-unit ID before the Android banner-only release can be built.
 Android release Gradle builds must also fail fast when `ZENFLOW_ADMOB_ANDROID_APP_ID`
-/ `VITE_ADMOB_APP_ID_ANDROID` is missing or still points at a Google sample app ID.
-Unused banner/iOS sample IDs are warnings for the Android rewarded-only release
-path. Use `npm run google-play:admob:check:full` only for full
-cross-platform/banner+iOS monetization readiness; it requires every banner and
-iOS ad-unit ID to be configured, non-sample, and matched to the same publisher.
-Use `npm run google-play:admob:external-check` for the public-safe external
-readiness ledger. Use `npm run google-play:admob:external-check:pass` only for
-the current Android rewarded-only production gate; it must stay blocking while
-AdMob app readiness, Policy Center, Privacy & messages/CMP, payments/tax, Play
-Console Ads/Data safety, or live device ad playback is not freshly `PASS`.
-Use `npm run google-play:admob:external-check:full-pass` only for future full
-cross-platform/banner+iOS monetization readiness.
+/ `VITE_ADMOB_APP_ID_ANDROID` is missing or does not match the publisher in
+`public/app-ads.txt`. The release must contain no Google sample IDs. The
+external readiness ledger now models the current Android banner-only release
+and keeps public listing, privacy, account, and device rows non-PASS until fresh
+Habits banner evidence is recorded. Live ad
+serving remains `UNVERIFIED` until a real device request and AdMob reporting are
+freshly observed.
 
 Current public root proof for this app:
 
@@ -249,4 +243,4 @@ npm run google-play:app-ads:public-check:zenflow
    the public Play listing ads label with `npm run google-play:public-listing:check`,
    and the public privacy policy with `npm run google-play:privacy:public-check`.
    The 2026-06-30 public listing proof shows the developer website, Google Play
-   `Contains ads` signal, rewarded ads copy, and no stale `No ads` claim.
+   `Contains ads` signal, banner ads copy, and no stale `No ads` claim.
