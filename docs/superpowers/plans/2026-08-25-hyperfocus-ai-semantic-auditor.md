@@ -174,7 +174,7 @@ soundfile==0.14.0
 Run:
 
 ```bash
-uv pip compile scripts/audio_audit/requirements-clap.in --python-version 3.12 --python-platform aarch64-apple-darwin --only-binary=:all: --generate-hashes -o scripts/audio_audit/requirements-clap.txt
+uv pip compile scripts/audio_audit/requirements-clap.in --python 3.12 --only-binary=:all: --generate-hashes -o scripts/audio_audit/requirements-clap.txt
 uv pip compile scripts/audio_audit/requirements-yamnet.in --python-version 3.12 --python-platform aarch64-apple-darwin --only-binary=:all: --generate-hashes -o scripts/audio_audit/requirements-yamnet.txt
 ```
 

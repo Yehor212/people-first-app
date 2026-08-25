@@ -10,6 +10,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 POLICY_PATH = ROOT / "config/audio/hyperfocus-semantic-audit-v2.json"
 MODEL_MANIFEST_PATH = ROOT / "config/audio/hyperfocus-ai-models-v2.json"
+CLAP_INPUT = ROOT / "scripts/audio_audit/requirements-clap.in"
+YAMNET_INPUT = ROOT / "scripts/audio_audit/requirements-yamnet.in"
 
 
 def load_model_api(test_case: unittest.TestCase):
@@ -17,6 +19,13 @@ def load_model_api(test_case: unittest.TestCase):
         return importlib.import_module("scripts.audio_audit.model")
     except ModuleNotFoundError as exc:
         test_case.fail(f"strict audio audit model is missing: {exc}")
+
+
+def load_environment_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.environment")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit environment validator is missing: {exc}")
 
 
 class AuditPolicyTests(unittest.TestCase):
@@ -86,6 +95,39 @@ class AuditPolicyTests(unittest.TestCase):
             path = self.write_json(Path(temp), "models.json", payload)
             with self.assertRaisesRegex(model.AuditSpecError, "unsafe model file is allowed"):
                 model.load_model_manifest(path)
+
+
+class EnvironmentTests(unittest.TestCase):
+    def test_environment_rejects_system_python_for_canonical_model_evidence(self):
+        environment = load_environment_api(self)
+
+        with self.assertRaisesRegex(environment.EnvironmentError, "Python 3.12 audit environment required"):
+            environment.validate_environment(
+                kind="clap",
+                executable=Path("/usr/bin/python3"),
+                observed={
+                    "pythonVersion": "3.9.6",
+                    "packages": {
+                        "torch": "2.13.0",
+                        "transformers": "5.15.1",
+                        "safetensors": "0.8.0",
+                    },
+                },
+            )
+
+    def test_requirement_inputs_pin_every_direct_dependency(self):
+        environment = load_environment_api(self)
+
+        clap = environment.parse_direct_requirements(CLAP_INPUT)
+        yamnet = environment.parse_direct_requirements(YAMNET_INPUT)
+
+        self.assertEqual(clap["torch"], "2.13.0")
+        self.assertEqual(clap["transformers"], "5.15.1")
+        self.assertEqual(clap["safetensors"], "0.8.0")
+        self.assertEqual(clap["huggingface-hub"], "1.28.0")
+        self.assertEqual(yamnet["tensorflow"], "2.21.0")
+        self.assertEqual(yamnet["tensorflow-hub"], "0.16.1")
+        self.assertEqual(yamnet["tf-keras"], "2.21.0")
 
 
 if __name__ == "__main__":
