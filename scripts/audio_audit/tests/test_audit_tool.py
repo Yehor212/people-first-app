@@ -13,6 +13,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 POLICY_PATH = ROOT / "config/audio/hyperfocus-semantic-audit-v2.json"
 MODEL_MANIFEST_PATH = ROOT / "config/audio/hyperfocus-ai-models-v2.json"
+VISIBLE_REGRESSION_PATH = ROOT / "config/audio/hyperfocus-visible-regression-v1.json"
 CLAP_INPUT = ROOT / "scripts/audio_audit/requirements-clap.in"
 YAMNET_INPUT = ROOT / "scripts/audio_audit/requirements-yamnet.in"
 
@@ -71,6 +72,13 @@ def load_verify_api(test_case: unittest.TestCase):
         return importlib.import_module("scripts.audio_audit.verify")
     except ModuleNotFoundError as exc:
         test_case.fail(f"strict audio audit verifier is missing: {exc}")
+
+
+def load_regression_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.regression")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"visible semantic regression evaluator is missing: {exc}")
 
 
 class AuditPolicyTests(unittest.TestCase):
@@ -662,6 +670,50 @@ class AuditVerifierTests(unittest.TestCase):
 
             with self.assertRaisesRegex(verify.AuditVerificationError, "forbidden authority field"):
                 verify.verify_audit_report(root)
+
+
+class VisibleRegressionTests(unittest.TestCase):
+    def test_visible_regression_is_bound_to_rejected_artifact_and_not_a_holdout(self):
+        regression = load_regression_api(self)
+
+        fixture = regression.load_visible_regression(VISIBLE_REGRESSION_PATH)
+
+        self.assertEqual(
+            fixture.archive_sha256,
+            "48931c2f8723e246112303604dd5a070107733850c2ea9d53e23b5c8a66eeb6b",
+        )
+        self.assertEqual(fixture.semantic_positive_ids, ("fireplace:deep",))
+        self.assertEqual(len(fixture.semantic_negative_ids), 17)
+        self.assertEqual(fixture.evidence_class, "VISIBLE_REGRESSION")
+
+    def test_diagnostic_target_win_cannot_hide_false_accepts_or_false_rejects(self):
+        regression = load_regression_api(self)
+        fixture = regression.VisibleRegression(
+            schema_version=1,
+            evidence_class="VISIBLE_REGRESSION",
+            package_id="fixture",
+            archive_sha256="a" * 64,
+            semantic_positive_ids=("fireplace:deep",),
+            semantic_negative_ids=("rain:soft", "wind:soft"),
+        )
+        report = {
+            "status": "TRIAL_ONLY_NOT_ADMITTED",
+            "verdict": "FAIL",
+            "assets": [
+                {"id": "fireplace:deep", "gates": {"semantic": {"targetMargin": -0.2}}},
+                {"id": "rain:soft", "gates": {"semantic": {"targetMargin": 0.3}}},
+                {"id": "wind:soft", "gates": {"semantic": {"targetMargin": -0.1}}},
+            ],
+        }
+
+        result = regression.evaluate_visible_regression(report, fixture)
+
+        self.assertEqual(result["status"], "FAIL_VISIBLE_REGRESSION")
+        self.assertEqual(result["truePositive"], 0)
+        self.assertEqual(result["falsePositive"], 1)
+        self.assertEqual(result["trueNegative"], 1)
+        self.assertEqual(result["falseNegative"], 1)
+        self.assertEqual(result["criticalFalseAcceptIds"], ["rain:soft"])
 
     @unittest.skipUnless(
         os.environ.get("ZENFLOW_RUN_MODEL_INTEGRATION") == "1",
