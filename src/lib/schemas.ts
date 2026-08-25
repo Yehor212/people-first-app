@@ -278,6 +278,7 @@ export const privacySettingsSchema = z
     analytics: z.boolean(),
     consentShown: z.boolean().optional(),
     adConsent: z.boolean().optional(),
+    adAgeEligibility: z.enum(["unknown", "adult", "minor"]).optional(),
     pushNotifications: z.boolean().optional(),
   })
   .passthrough();

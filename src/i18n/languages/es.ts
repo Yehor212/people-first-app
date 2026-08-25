@@ -664,6 +664,18 @@ export const es: Translations = {
   privacyAds: "Banner de la lista de hábitos",
   privacyAdsHint:
     "Al activarlo, aparece un pequeño banner debajo de la lista de hábitos. No se muestra en los registros de ánimo, el diario, las sesiones de concentración ni los menús. Google puede pedirte tus opciones de privacidad cuando sea necesario.",
+  adAgeCheckTitle: "Comprueba tu edad",
+  adAgeCheckDescription: "Introduce tu fecha de nacimiento antes de activar el banner.",
+  adAgeBirthDate: "Fecha de nacimiento",
+  adAgeBirthDateHint:
+    "Se usa solo ahora para comprobar si el banner está disponible. ZenFlow no guarda esta fecha.",
+  adAgeCheckCancel: "Cancelar",
+  adAgeCheckContinue: "Continuar",
+  adAgeCheckInvalid: "No hemos podido comprobar esa fecha. Revísala e inténtalo de nuevo.",
+  adAgeMinorNotice: "El banner no está disponible para esta edad. No se inició ningún servicio publicitario.",
+  adAgeReview: "Revisar la información de edad",
+  adAgeReviewHint:
+    "Vuelve a introducir tu fecha de nacimiento si ha cambiado. ZenFlow la comprueba sin guardarla.",
   privacyOptionalServicesOn: "Servicios opcionales activos",
   privacyOptionalServicesOff: "Servicios opcionales desactivados",
   privacyPushNotifications: "Recordatorios de tu cuenta",

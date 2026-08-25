@@ -666,6 +666,18 @@ export const fr: Translations = {
   privacyAds: "Bannière de la liste d’habitudes",
   privacyAdsHint:
     "Une fois activée, une petite bannière s’affiche sous votre liste d’habitudes. Elle ne s’affiche pas dans les bilans d’humeur, le journal, les sessions de concentration ni les menus. Google peut vous demander vos choix de confidentialité si nécessaire.",
+  adAgeCheckTitle: "Vérifier votre âge",
+  adAgeCheckDescription: "Saisissez votre date de naissance avant d’activer la bannière.",
+  adAgeBirthDate: "Date de naissance",
+  adAgeBirthDateHint:
+    "Elle sert uniquement maintenant à vérifier si la bannière est disponible. ZenFlow ne conserve pas cette date.",
+  adAgeCheckCancel: "Annuler",
+  adAgeCheckContinue: "Continuer",
+  adAgeCheckInvalid: "Impossible de vérifier cette date. Vérifiez-la puis réessayez.",
+  adAgeMinorNotice: "La bannière n’est pas disponible pour cet âge. Aucun service publicitaire n’a été lancé.",
+  adAgeReview: "Vérifier les informations d’âge",
+  adAgeReviewHint:
+    "Saisissez à nouveau votre date de naissance si elle a changé. ZenFlow la vérifie sans la conserver.",
   privacyOptionalServicesOn: "Services facultatifs activés",
   privacyOptionalServicesOff: "Services facultatifs désactivés",
   privacyPushNotifications: "Rappels liés à votre compte",

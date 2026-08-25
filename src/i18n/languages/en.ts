@@ -656,6 +656,18 @@ export const en: Translations = {
   privacyAds: "Habit list banner",
   privacyAdsHint:
     "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required.",
+  adAgeCheckTitle: "Check your age",
+  adAgeCheckDescription: "Enter your date of birth before turning on the banner.",
+  adAgeBirthDate: "Date of birth",
+  adAgeBirthDateHint:
+    "Used only now to determine whether the banner is available. ZenFlow does not save this date.",
+  adAgeCheckCancel: "Cancel",
+  adAgeCheckContinue: "Continue",
+  adAgeCheckInvalid: "We couldn’t verify that date. Check it and try again.",
+  adAgeMinorNotice: "The banner isn’t available for this age. No ad service was started.",
+  adAgeReview: "Review age information",
+  adAgeReviewHint:
+    "Enter your date of birth again if it has changed. ZenFlow checks it without saving the date.",
   privacyOptionalServicesOn: "Optional services on",
   privacyOptionalServicesOff: "Optional services off",
   privacyPushNotifications: "Account reminders",

@@ -664,6 +664,18 @@ export const de: Translations = {
   privacyAds: "Banner unter der Gewohnheitsliste",
   privacyAdsHint:
     "Nach der Aktivierung erscheint ein kleines Banner unter deiner Gewohnheitsliste. Es bleibt bei Stimmungs-Check-ins, im Journal, im Fokus und in Menüs ausgeblendet. Google kann dich bei Bedarf nach deinen Datenschutzeinstellungen fragen.",
+  adAgeCheckTitle: "Alter prüfen",
+  adAgeCheckDescription: "Gib dein Geburtsdatum ein, bevor du das Banner einschaltest.",
+  adAgeBirthDate: "Geburtsdatum",
+  adAgeBirthDateHint:
+    "Es wird nur jetzt verwendet, um zu prüfen, ob das Banner verfügbar ist. ZenFlow speichert dieses Datum nicht.",
+  adAgeCheckCancel: "Abbrechen",
+  adAgeCheckContinue: "Weiter",
+  adAgeCheckInvalid: "Dieses Datum konnte nicht geprüft werden. Kontrolliere es und versuche es erneut.",
+  adAgeMinorNotice: "Das Banner ist für dieses Alter nicht verfügbar. Es wurde kein Werbedienst gestartet.",
+  adAgeReview: "Altersangabe prüfen",
+  adAgeReviewHint:
+    "Gib dein Geburtsdatum erneut ein, wenn sich die Angabe geändert hat. ZenFlow prüft es, ohne das Datum zu speichern.",
   privacyOptionalServicesOn: "Optionale Dienste aktiv",
   privacyOptionalServicesOff: "Optionale Dienste aus",
   privacyPushNotifications: "Konto-Erinnerungen",

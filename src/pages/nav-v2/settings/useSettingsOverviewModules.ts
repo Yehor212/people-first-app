@@ -8,6 +8,7 @@ import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { languageNames } from "@/i18n/translations";
 import { normalizeHabitReminderDays } from "@/lib/habitScheduling";
 import { isNative } from "@/lib/platform";
+import { canInitializeAds } from "@/lib/privacyConsent";
 import { supabase } from "@/lib/supabaseClient";
 import { useAppStore } from "@/stores";
 import { useThemeStore } from "@/stores/themeStore";
@@ -151,7 +152,7 @@ export function useSettingsOverviewModules(controls?: V2SettingsControls) {
             : tx.settingsAccountBackupDescription ||
               "Your account is connected. If ZenFlow can’t save an update online, your changes stay on this device.";
   const privacySummary = adsSupported
-    ? controls?.privacy.adConsent
+    ? controls?.privacy && canInitializeAds(controls.privacy)
       ? tx.privacyOptionalServicesOn || "Optional services on"
       : tx.privacyOptionalServicesOff || "Optional services off"
     : undefined;

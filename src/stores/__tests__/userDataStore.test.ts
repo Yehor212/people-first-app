@@ -182,6 +182,7 @@ describe("userDataStore initial state", () => {
       analytics: false,
       consentShown: false,
       pushNotifications: false,
+      adAgeEligibility: "unknown",
     });
   });
 

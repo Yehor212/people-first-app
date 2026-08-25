@@ -112,16 +112,78 @@ describe("adController Android banner-only contracts", () => {
     });
   });
 
-  it("initializes AdMob when Android has a banner unit and no rewarded unit", async () => {
+  it("fails closed before touching AdMob when age or local consent is missing", async () => {
+    const { initializeAds, refreshAdPrivacyOptionsStatus, showAdPrivacyOptions } =
+      await import("../adController");
+
+    await expect(
+      initializeAds({ adConsent: true, ageEligibility: "minor" }),
+    ).resolves.toBe(false);
+    await expect(
+      initializeAds({ adConsent: false, ageEligibility: "adult" }),
+    ).resolves.toBe(false);
+    await expect(
+      refreshAdPrivacyOptionsStatus({ ageEligibility: "minor" }),
+    ).resolves.toMatchObject({
+      canRequestAds: false,
+      privacyOptionsRequired: false,
+      error: "authorization_required",
+    });
+    await expect(showAdPrivacyOptions()).resolves.toMatchObject({ opened: false });
+    expect(bannerHarness.adMob.initialize).not.toHaveBeenCalled();
+    expect(bannerHarness.adMob.requestConsentInfo).not.toHaveBeenCalled();
+    expect(bannerHarness.adMob.showPrivacyOptionsForm).not.toHaveBeenCalled();
+  });
+
+  it("keeps UMP withdrawal available to an adult while local banner consent is off", async () => {
+    bannerHarness.adMob.requestConsentInfo.mockResolvedValueOnce({
+      status: "OBTAINED",
+      isConsentFormAvailable: true,
+      canRequestAds: false,
+      privacyOptionsRequirementStatus: "REQUIRED",
+    });
+    const controller = await import("../adController");
+
+    controller.disableAds({ clearPrivacyOptions: false });
+    await expect(
+      controller.refreshAdPrivacyOptionsStatus({ ageEligibility: "adult" }),
+    ).resolves.toMatchObject({
+      canRequestAds: false,
+      privacyOptionsRequired: true,
+    });
+    await expect(controller.showAdPrivacyOptions()).resolves.toMatchObject({
+      opened: true,
+    });
+
+    expect(bannerHarness.adMob.initialize).not.toHaveBeenCalled();
+    expect(bannerHarness.adMob.requestConsentInfo).toHaveBeenCalledWith({
+      tagForUnderAgeOfConsent: false,
+    });
+    expect(bannerHarness.adMob.showPrivacyOptionsForm).toHaveBeenCalledTimes(1);
+    expect(bannerHarness.adMob.showBanner).not.toHaveBeenCalled();
+  });
+
+  it("initializes AdMob when an adult explicitly enables the configured banner", async () => {
     const { getAdState, initializeAds } = await import("../adController");
 
-    await expect(initializeAds()).resolves.toBe(true);
+    await expect(
+      initializeAds({ adConsent: true, ageEligibility: "adult" }),
+    ).resolves.toBe(true);
     expect(getAdState()).toMatchObject({
       initialized: true,
       sdkAvailable: true,
       canRequestAds: true,
     });
     expect(bannerHarness.adMob.initialize).toHaveBeenCalledTimes(1);
+    expect(bannerHarness.adMob.initialize).toHaveBeenCalledWith({
+      initializeForTesting: false,
+      tagForChildDirectedTreatment: false,
+      tagForUnderAgeOfConsent: false,
+      maxAdContentRating: "General",
+    });
+    expect(bannerHarness.adMob.requestConsentInfo).toHaveBeenCalledWith({
+      tagForUnderAgeOfConsent: false,
+    });
     expect(bannerHarness.adMob.prepareRewardVideoAd).not.toHaveBeenCalled();
     expect(bannerHarness.adMob.showRewardVideoAd).not.toHaveBeenCalled();
   });
@@ -133,7 +195,9 @@ describe("adController Android banner-only contracts", () => {
     if (typeof controller.showHabitsBanner !== "function") return;
 
     const reportedHeights: number[] = [];
-    await expect(controller.initializeAds()).resolves.toBe(true);
+    await expect(
+      controller.initializeAds({ adConsent: true, ageEligibility: "adult" }),
+    ).resolves.toBe(true);
     await expect(
       controller.showHabitsBanner((height: number) => reportedHeights.push(height)),
     ).resolves.toEqual({ shown: true });
@@ -167,7 +231,7 @@ describe("adController Android banner-only contracts", () => {
     }
 
     const reportedHeights: number[] = [];
-    await controller.initializeAds();
+    await controller.initializeAds({ adConsent: true, ageEligibility: "adult" });
     await controller.showHabitsBanner((height: number) => reportedHeights.push(height));
     bannerHarness.emit("bannerAdSizeChanged", { width: 360, height: 50 });
 
@@ -195,7 +259,7 @@ describe("adController Android banner-only contracts", () => {
     const controller = await import("../adController");
     const reportedHeights: number[] = [];
 
-    await controller.initializeAds();
+    await controller.initializeAds({ adConsent: true, ageEligibility: "adult" });
     const showResult = controller.showHabitsBanner((height: number) => {
       reportedHeights.push(height);
     });
@@ -214,7 +278,7 @@ describe("adController Android banner-only contracts", () => {
   it("recreates the adaptive banner when the Android viewport width changes", async () => {
     const controller = await import("../adController");
 
-    await controller.initializeAds();
+    await controller.initializeAds({ adConsent: true, ageEligibility: "adult" });
     await controller.showHabitsBanner(() => undefined);
     bannerHarness.emit("bannerAdSizeChanged", { width: 360, height: 50 });
 
@@ -233,7 +297,7 @@ describe("adController Android banner-only contracts", () => {
     const controller = await import("../adController");
     const reportedHeights: number[] = [];
 
-    await controller.initializeAds();
+    await controller.initializeAds({ adConsent: true, ageEligibility: "adult" });
     await controller.showHabitsBanner((height: number) => reportedHeights.push(height));
     bannerHarness.emit("bannerAdSizeChanged", { width: 360, height: 50 });
 
@@ -254,7 +318,7 @@ describe("adController Android banner-only contracts", () => {
   it("clears a failed native banner so a later request retries instead of resuming a dead view", async () => {
     const controller = await import("../adController");
 
-    await controller.initializeAds();
+    await controller.initializeAds({ adConsent: true, ageEligibility: "adult" });
     await expect(controller.showHabitsBanner(() => undefined)).resolves.toEqual({ shown: true });
 
     bannerHarness.emit("bannerAdFailedToLoad", { code: 3, message: "no fill" });

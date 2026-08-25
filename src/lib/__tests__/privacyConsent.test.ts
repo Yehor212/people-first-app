@@ -20,11 +20,32 @@ describe("privacyConsent", () => {
   });
 
   it("does not let a retired no-tracking value override explicit ad consent", () => {
-    expect(canInitializeAds({ ...base, noTracking: true, adConsent: true })).toBe(true);
+    expect(
+      canInitializeAds({
+        ...base,
+        noTracking: true,
+        adConsent: true,
+        adAgeEligibility: "adult",
+      }),
+    ).toBe(true);
   });
 
-  it("allows the optional banner only after explicit ad consent", () => {
-    expect(canInitializeAds({ ...base, adConsent: true })).toBe(true);
+  it("requires both explicit ad consent and adult eligibility", () => {
+    expect(canInitializeAds({ ...base, adConsent: true })).toBe(false);
+    expect(
+      canInitializeAds({
+        ...base,
+        adConsent: true,
+        adAgeEligibility: "minor",
+      }),
+    ).toBe(false);
+    expect(
+      canInitializeAds({
+        ...base,
+        adConsent: true,
+        adAgeEligibility: "adult",
+      }),
+    ).toBe(true);
   });
 
   it("changes only explicit ad consent and leaves retired fields inert", () => {
