@@ -81,7 +81,7 @@ describe("AdContext Android banner placement", () => {
 
   it("shows the Habits banner on request and clears its reserved height for an overlay", async () => {
     render(
-      <AdProvider adConsent isPremium={false} currentMood="okay">
+      <AdProvider adConsent adAgeEligibility="adult" isPremium={false} currentMood="okay">
         <BannerProbe />
       </AdProvider>,
     );
@@ -103,7 +103,7 @@ describe("AdContext Android banner placement", () => {
 
   it("requests a fresh adaptive banner after an Android viewport-width change", async () => {
     render(
-      <AdProvider adConsent isPremium={false} currentMood="okay">
+      <AdProvider adConsent adAgeEligibility="adult" isPremium={false} currentMood="okay">
         <BannerProbe />
       </AdProvider>,
     );
@@ -122,7 +122,7 @@ describe("AdContext Android banner placement", () => {
 
   it("hides the native banner while a shell-level overlay is open", async () => {
     render(
-      <AdProvider adConsent isPremium={false} currentMood="okay">
+      <AdProvider adConsent adAgeEligibility="adult" isPremium={false} currentMood="okay">
         <BannerProbe />
       </AdProvider>,
     );

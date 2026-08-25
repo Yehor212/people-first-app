@@ -1,7 +1,7 @@
 import type { PrivacySettings } from "@/types";
 
 export function canInitializeAds(privacy: PrivacySettings): boolean {
-  return privacy.adConsent === true;
+  return privacy.adConsent === true && privacy.adAgeEligibility === "adult";
 }
 
 export function applyAdConsentPreference(

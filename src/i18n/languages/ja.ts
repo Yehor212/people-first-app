@@ -644,6 +644,18 @@ export const ja: Translations = {
   privacyAds: "習慣リストのバナー",
   privacyAdsHint:
     "オンにすると、習慣リストの下に小さなバナーが表示されます。気分のチェックイン、日記、集中セッション、メニューには表示されません。必要に応じて、Googleからプライバシー設定の選択を求められることがあります。",
+  adAgeCheckTitle: "年齢を確認",
+  adAgeCheckDescription: "バナーをオンにする前に、生年月日を入力してください。",
+  adAgeBirthDate: "生年月日",
+  adAgeBirthDateHint:
+    "バナーを利用できるか今ここで確認するためだけに使用します。ZenFlowはこの日付を保存しません。",
+  adAgeCheckCancel: "キャンセル",
+  adAgeCheckContinue: "続ける",
+  adAgeCheckInvalid: "この日付を確認できませんでした。内容を確認して、もう一度お試しください。",
+  adAgeMinorNotice: "この年齢ではバナーを利用できません。広告サービスは開始されていません。",
+  adAgeReview: "年齢情報を確認",
+  adAgeReviewHint:
+    "情報が変わった場合は、生年月日をもう一度入力してください。ZenFlowは日付を保存せずに確認します。",
   privacyOptionalServicesOn: "オプション機能：オン",
   privacyOptionalServicesOff: "オプション機能：オフ",
   privacyPushNotifications: "アカウントのリマインダー",

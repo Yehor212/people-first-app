@@ -19,6 +19,12 @@ import {
   BannerAdSize,
   MaxAdContentRating,
 } from '@capacitor-community/admob';
+import type { AdAgeEligibility } from '@/types';
+
+export interface AdInitializationAuthorization {
+  adConsent: boolean;
+  ageEligibility: AdAgeEligibility;
+}
 
 export interface AdControllerState {
   initialized: boolean;
@@ -75,6 +81,7 @@ let bannerSizeListener: { remove?: () => Promise<void> | void } | null = null;
 let bannerFailureListener: { remove?: () => Promise<void> | void } | null = null;
 let bannerHeightCallback: ((height: number) => void) | null = null;
 let bannerViewportWidth: number | null = null;
+let privacyAuthorizationActive = false;
 
 function isLifecycleCurrent(epoch: number): boolean {
   return epoch === adLifecycleEpoch;
@@ -103,6 +110,7 @@ function resetAdAvailability(options: DisableAdsOptions = {}): void {
 
 export function disableAds(options: DisableAdsOptions = {}): void {
   adLifecycleEpoch += 1;
+  if (options.clearPrivacyOptions) privacyAuthorizationActive = false;
   resetAdAvailability(options);
   void removeHabitsBanner();
 }
@@ -182,7 +190,17 @@ async function canRequestNativeAds(lifecycleEpoch: number): Promise<boolean> {
   }
 }
 
-export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsStatus> {
+export async function refreshAdPrivacyOptionsStatus(
+  authorization: Pick<AdInitializationAuthorization, 'ageEligibility'>,
+): Promise<AdPrivacyOptionsStatus> {
+  if (authorization.ageEligibility !== 'adult') {
+    privacyAuthorizationActive = false;
+    state.canRequestAds = false;
+    state.privacyOptionsRequired = false;
+    return { canRequestAds: false, privacyOptionsRequired: false, error: 'authorization_required' };
+  }
+  privacyAuthorizationActive = true;
+
   if (!isBannerAdsSupported()) {
     state.canRequestAds = false;
     state.privacyOptionsRequired = false;
@@ -216,7 +234,19 @@ export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsS
   }
 }
 
-export async function initializeAds(): Promise<boolean> {
+export async function initializeAds(
+  authorization: AdInitializationAuthorization,
+): Promise<boolean> {
+  if (
+    authorization.adConsent !== true ||
+    authorization.ageEligibility !== 'adult'
+  ) {
+    privacyAuthorizationActive = authorization.ageEligibility === 'adult';
+    resetAdAvailability({ clearPrivacyOptions: authorization.ageEligibility !== 'adult' });
+    return false;
+  }
+
+  privacyAuthorizationActive = true;
   if (state.initialized) return state.sdkAvailable;
   const lifecycleEpoch = adLifecycleEpoch;
 
@@ -268,6 +298,7 @@ export async function initializeAds(): Promise<boolean> {
 
 export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
   if (
+    !privacyAuthorizationActive ||
     !isBannerAdsSupported() ||
     !AdMobPlugin ||
     typeof AdMobPlugin.showPrivacyOptionsForm !== 'function'

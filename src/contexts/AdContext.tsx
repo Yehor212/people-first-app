@@ -16,8 +16,8 @@ import {
 import {
   initializeAds,
   getAdState,
-  showAdPrivacyOptions,
   refreshAdPrivacyOptionsStatus,
+  showAdPrivacyOptions,
   disableAds,
   isBannerAdsSupported,
   showHabitsBanner,
@@ -25,6 +25,7 @@ import {
   removeHabitsBanner,
 } from '@/lib/adController';
 import { logger } from '@/lib/logger';
+import type { AdAgeEligibility } from '@/types';
 
 // ============================================
 // TYPES
@@ -66,6 +67,8 @@ interface AdProviderProps {
   children: ReactNode;
   /** Whether user has ad consent (GDPR) */
   adConsent?: boolean;
+  /** Minimal local category derived without storing the date of birth */
+  adAgeEligibility?: AdAgeEligibility;
   /** Whether user is premium (no ads) */
   isPremium?: boolean;
   /** Latest mood used for mood-aware ad gating */
@@ -75,6 +78,7 @@ interface AdProviderProps {
 export function AdProvider({
   children,
   adConsent = false,
+  adAgeEligibility = 'unknown',
   isPremium = false,
   currentMood,
 }: AdProviderProps) {
@@ -98,14 +102,6 @@ export function AdProvider({
     setAdsAvailable(controllerState.sdkAvailable);
   }, []);
 
-  const syncPrivacyOptionsOnly = useCallback(() => {
-    const controllerState = getAdState();
-    setGoogleConsentReady(controllerState.canRequestAds);
-    setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
-    setAdsAvailable(false);
-    setBannerHeight(0);
-  }, []);
-
   // Initialize SDK
   useEffect(() => {
     let cancelled = false;
@@ -119,27 +115,25 @@ export function AdProvider({
       if (clearPrivacyOptions) setPrivacyOptionsRequired(false);
     };
 
-    if (isPremium) {
-      disableAdRequests(true);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (!adConsent) {
-      disableAdRequests(false);
-      void refreshAdPrivacyOptionsStatus()
-        .catch(err => logger.warn('[Ads]', 'Privacy options refresh failed:', err))
-        .finally(() => {
-          if (!cancelled) syncPrivacyOptionsOnly();
-        });
+    if (isPremium || !adConsent || adAgeEligibility !== 'adult') {
+      const clearPrivacyOptions = adAgeEligibility !== 'adult';
+      disableAdRequests(clearPrivacyOptions);
+      if (!clearPrivacyOptions) {
+        void refreshAdPrivacyOptionsStatus({ ageEligibility: adAgeEligibility })
+          .then(() => {
+            if (!cancelled) syncControllerState();
+          })
+          .catch((err) => {
+            if (!cancelled) logger.warn('[Ads]', 'Privacy options refresh failed:', err);
+          });
+      }
 
       return () => {
         cancelled = true;
       };
     }
 
-    void initializeAds().then((available) => {
+    void initializeAds({ adConsent, ageEligibility: adAgeEligibility }).then((available) => {
       if (cancelled) return;
       syncControllerState();
       if (!available) setBannerHeight(0);
@@ -150,7 +144,7 @@ export function AdProvider({
     return () => {
       cancelled = true;
     };
-  }, [adConsent, isPremium, syncControllerState, syncPrivacyOptionsOnly]);
+  }, [adAgeEligibility, adConsent, isPremium, syncControllerState]);
 
   // Native views survive above the WebView, so lifecycle visibility is part of
   // the placement gate rather than an eventual cleanup detail.
