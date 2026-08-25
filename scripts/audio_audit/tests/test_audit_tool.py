@@ -532,6 +532,51 @@ class BackendIntegrationTests(unittest.TestCase):
                 path.unlink()
             smoke_root.rmdir()
 
+    @unittest.skipUnless(
+        os.environ.get("ZENFLOW_RUN_MODEL_INTEGRATION") == "1",
+        "set ZENFLOW_RUN_MODEL_INTEGRATION=1 for pinned local model smoke",
+    )
+    def test_yamnet_runner_loads_pinned_saved_model_offline(self):
+        import numpy as np
+        import soundfile as sf
+
+        protocol = load_backend_protocol_api(self)
+        private_root = Path(
+            "/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit"
+        )
+        smoke_root = private_root / "integration-test-yamnet"
+        if smoke_root.exists():
+            self.fail(f"integration smoke root already exists: {smoke_root}")
+        smoke_root.mkdir()
+        try:
+            sample_rate = 48000
+            time = np.arange(sample_rate * 10, dtype=np.float32) / sample_rate
+            samples = 0.05 * np.sin(2 * np.pi * 220 * time)
+            audio_path = smoke_root / "protocol.wav"
+            sf.write(audio_path, samples, sample_rate, subtype="PCM_24")
+            try:
+                response = protocol.run_backend(
+                    private_root / "envs/yamnet/bin/python",
+                    "scripts.audio_audit.backends.yamnet_runner",
+                    {
+                        "schemaVersion": 1,
+                        "requestId": "integration-yamnet-1",
+                        "backend": "yamnet",
+                        "audioPath": str(audio_path),
+                    },
+                    timeout_seconds=300,
+                )
+            except protocol.BackendProtocolError as exc:
+                self.fail(f"pinned YAMNet runner did not complete: {exc}")
+            self.assertEqual(response.status, "PASS")
+            self.assertEqual(response.backend, "yamnet")
+            self.assertEqual(len(response.results["rows"]), 521)
+            self.assertGreater(response.results["scoreFrames"], 0)
+        finally:
+            for path in smoke_root.iterdir():
+                path.unlink()
+            smoke_root.rmdir()
+
 
 class OrchestratorTests(unittest.TestCase):
     def test_visible_regression_cli_rejects_caller_controlled_paths(self):
@@ -715,50 +760,25 @@ class VisibleRegressionTests(unittest.TestCase):
         self.assertEqual(result["falseNegative"], 1)
         self.assertEqual(result["criticalFalseAcceptIds"], ["rain:soft"])
 
-    @unittest.skipUnless(
-        os.environ.get("ZENFLOW_RUN_MODEL_INTEGRATION") == "1",
-        "set ZENFLOW_RUN_MODEL_INTEGRATION=1 for pinned local model smoke",
-    )
-    def test_yamnet_runner_loads_pinned_saved_model_offline(self):
-        import numpy as np
-        import soundfile as sf
 
-        protocol = load_backend_protocol_api(self)
-        private_root = Path(
-            "/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit"
-        )
-        smoke_root = private_root / "integration-test-yamnet"
-        if smoke_root.exists():
-            self.fail(f"integration smoke root already exists: {smoke_root}")
-        smoke_root.mkdir()
-        try:
-            sample_rate = 48000
-            time = np.arange(sample_rate * 10, dtype=np.float32) / sample_rate
-            samples = 0.05 * np.sin(2 * np.pi * 220 * time)
-            audio_path = smoke_root / "protocol.wav"
-            sf.write(audio_path, samples, sample_rate, subtype="PCM_24")
-            try:
-                response = protocol.run_backend(
-                    private_root / "envs/yamnet/bin/python",
-                    "scripts.audio_audit.backends.yamnet_runner",
-                    {
-                        "schemaVersion": 1,
-                        "requestId": "integration-yamnet-1",
-                        "backend": "yamnet",
-                        "audioPath": str(audio_path),
-                    },
-                    timeout_seconds=300,
-                )
-            except protocol.BackendProtocolError as exc:
-                self.fail(f"pinned YAMNet runner did not complete: {exc}")
-            self.assertEqual(response.status, "PASS")
-            self.assertEqual(response.backend, "yamnet")
-            self.assertEqual(len(response.results["rows"]), 521)
-            self.assertGreater(response.results["scoreFrames"], 0)
-        finally:
-            for path in smoke_root.iterdir():
-                path.unlink()
-            smoke_root.rmdir()
+class WorkflowTests(unittest.TestCase):
+    def test_workflow_is_read_only_hash_locked_and_does_not_download_models(self):
+        workflow = ROOT / ".github/workflows/hyperfocus-ai-audit.yml"
+        self.assertTrue(workflow.is_file(), "Hyperfocus AI audit workflow is missing")
+        text = workflow.read_text(encoding="utf-8")
+
+        self.assertIn("permissions:\n  contents: read", text)
+        self.assertIn("persist-credentials: false", text)
+        self.assertIn("--require-hashes", text)
+        self.assertIn("scripts/audio_audit/requirements-core.txt", text)
+        self.assertIn("python -m unittest discover -s scripts/audio_audit/tests -v", text)
+        self.assertNotIn("pull_request_target", text)
+        self.assertNotIn("contents: write", text)
+        self.assertNotIn("secrets.", text)
+        self.assertNotIn("acquire_models", text)
+        self.assertNotIn("clap_runner", text)
+        self.assertNotIn("yamnet_runner", text)
+        self.assertNotIn("git push", text)
 
 
 if __name__ == "__main__":
