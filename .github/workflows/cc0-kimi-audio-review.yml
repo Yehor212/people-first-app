@@ -76,7 +76,11 @@ jobs:
           name: cc0-kimi-audio-failure-${{ github.sha }}
           path: |
             output/cc0-kimi-source-cache/2679.mp3
+            output/cc0-kimi-source-cache/1019.mp3
+            output/cc0-kimi-source-cache/1294.mp3
             output/cc0-kimi-audio-review/audio/hyperfocus/hyperfocus-rain-soft.mp3
+            output/cc0-kimi-audio-review/audio/hyperfocus/hyperfocus-rain-deep.mp3
+            output/cc0-kimi-audio-review/audio/hyperfocus/hyperfocus-rain-intense.mp3
           if-no-files-found: warn
           retention-days: 1
           compression-level: 0
