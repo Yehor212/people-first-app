@@ -138,10 +138,10 @@ export function buildSourceLoop({ definition, sourceFile, outputFile, ffmpeg }) 
   const graph = [
     `[0:a]${preFilters},asplit=3[midin][tailin][headin]`,
     `[midin]atrim=start=${overlap}:end=${middleEnd},asetpts=PTS-STARTPTS[mid]`,
-    `[tailin]atrim=start=${middleEnd}:end=${tailEnd},asetpts=PTS-STARTPTS[tail]`,
-    `[headin]atrim=start=0:end=${overlap},asetpts=PTS-STARTPTS[head]`,
-    `[tail][head]acrossfade=d=${overlap}:c1=qsin:c2=qsin[seam]`,
-    `[mid][seam]concat=n=2:v=0:a=1[out]`,
+    `[tailin]atrim=start=${middleEnd}:end=${tailEnd},asetpts=PTS-STARTPTS,afade=t=out:st=0:d=${overlap}:curve=qsin[tail]`,
+    `[headin]atrim=start=0:end=${overlap},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${overlap}:curve=qsin[head]`,
+    `[tail][head]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[seam]`,
+    `[mid][seam]concat=n=2:v=0:a=1,atrim=start=0:end=${target},asetpts=PTS-STARTPTS,alimiter=limit=${(10 ** (definition.truePeakDbfs / 20)).toFixed(6)}:level=false[out]`,
   ].join(";");
 
   const metadata = {

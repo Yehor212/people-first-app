@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
+import {
+  buildSourceLoop,
+  decodeAudio,
+  probeAudio,
+} from "../cc0-kimi-audio-ffmpeg.mjs";
+import { measureDecoded } from "../cc0-kimi-audio-core.mjs";
 
 const modulePath = path.resolve(
   "scripts/audio-review/generate-cc0-kimi-review-pack.mjs"
@@ -112,5 +120,71 @@ test("generator modules are isolated from runtime audio paths", () => {
     "src/sw.ts",
   ]) {
     assert.equal(sources.includes(forbidden), false, forbidden);
+  }
+});
+
+test("source-loop mastering preserves the exact 30-second decoded contract", () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "zenflow-cc0-loop-"));
+  const source = path.join(temporary, "source.mp3");
+  const output = path.join(temporary, "output.mp3");
+  try {
+    const generated = spawnSync(
+      "ffmpeg",
+      [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "anoisesrc=color=pink:amplitude=0.2:sample_rate=48000:d=40",
+        "-filter_complex",
+        "[0:a]asplit=2[left][right];[right]adelay=7|7[delayed];[left][delayed]amerge=inputs=2[stereo]",
+        "-map",
+        "[stereo]",
+        "-codec:a",
+        "libmp3lame",
+        "-b:a",
+        "192k",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-y",
+        source,
+      ],
+      { encoding: "utf8" }
+    );
+    assert.equal(generated.status, 0, generated.stderr);
+
+    buildSourceLoop({
+      definition: {
+        id: "forest:soft",
+        fileName: "hyperfocus-forest-soft.mp3",
+        category: "hyperfocus",
+        sourceKey: "synthetic-test-source",
+        durationSeconds: 30,
+        overlapSeconds: 1,
+        sourceStartSeconds: 2,
+        targetLoudnessLufs: -34,
+        truePeakDbfs: -3.5,
+        filters: "highpass=f=70,lowpass=f=6800,equalizer=f=220:t=q:w=1.1:g=-1.5",
+        looped: true,
+      },
+      sourceFile: source,
+      outputFile: output,
+      ffmpeg: "ffmpeg",
+    });
+
+    const probe = probeAudio(output, "ffprobe");
+    const metrics = measureDecoded(decodeAudio(output, "ffmpeg"));
+    assert.equal(Number(probe.streams[0].sample_rate), 48_000);
+    assert.equal(Number(probe.streams[0].channels), 2);
+    assert.ok(
+      Math.abs(metrics.durationSeconds - 30) <= 0.16,
+      `decoded duration was ${metrics.durationSeconds}`
+    );
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
   }
 });
