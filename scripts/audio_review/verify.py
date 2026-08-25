@@ -3,9 +3,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shutil
+import stat
 import subprocess
 
 from .model import load_spec
@@ -30,26 +31,97 @@ def _sha(path: Path) -> str:
     return digest.hexdigest()
 
 
+def safe_package_member(root: Path, relative: str) -> Path:
+    if not isinstance(relative, str) or not relative or "\\" in relative or "\x00" in relative:
+        raise VerificationError(f"UNSAFE_PACKAGE_PATH:{relative}")
+    raw_parts = relative.split("/")
+    pure = PurePosixPath(relative)
+    if (
+        pure.is_absolute()
+        or not pure.parts
+        or any(part in {"", ".", ".."} for part in raw_parts)
+        or relative == "SHA256SUMS"
+    ):
+        raise VerificationError(f"UNSAFE_PACKAGE_PATH:{relative}")
+    try:
+        resolved_root = root.resolve(strict=True)
+    except OSError as exc:
+        raise VerificationError(f"MISSING_PACKAGE_ROOT:{root}") from exc
+    candidate = root.joinpath(*pure.parts)
+    cursor = root
+    for part in pure.parts[:-1]:
+        cursor = cursor / part
+        try:
+            info = cursor.lstat()
+        except OSError as exc:
+            raise VerificationError(f"MISSING_FILE:{relative}") from exc
+        if stat.S_ISLNK(info.st_mode):
+            raise VerificationError(f"SYMLINKED_PACKAGE_MEMBER:{relative}")
+        if not stat.S_ISDIR(info.st_mode):
+            raise VerificationError(f"MISSING_FILE:{relative}")
+    try:
+        resolved_parent = candidate.parent.resolve(strict=True)
+    except OSError as exc:
+        raise VerificationError(f"MISSING_FILE:{relative}") from exc
+    if resolved_root != resolved_parent and resolved_root not in resolved_parent.parents:
+        raise VerificationError(f"UNSAFE_PACKAGE_PATH:{relative}")
+    try:
+        info = candidate.lstat()
+    except OSError as exc:
+        raise VerificationError(f"MISSING_FILE:{relative}") from exc
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+        raise VerificationError(f"SYMLINKED_PACKAGE_MEMBER:{relative}")
+    return candidate
+
+
 def verify_hash_inventory(root: str | Path) -> dict[str, str]:
     root = Path(root)
     sums = root / "SHA256SUMS"
-    if not sums.is_file():
+    if sums.is_symlink():
+        raise VerificationError("SYMLINKED_PACKAGE_MEMBER:SHA256SUMS")
+    try:
+        sums_info = sums.lstat()
+    except OSError as exc:
+        raise VerificationError("MISSING_SHA256SUMS") from exc
+    if not stat.S_ISREG(sums_info.st_mode):
         raise VerificationError("MISSING_SHA256SUMS")
     expected: dict[str, str] = {}
     for line in sums.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        match = re.fullmatch(r"([0-9a-f]{64})  ([^\\]+)", line)
+        match = re.fullmatch(r"([0-9a-f]{64})  (.+)", line)
         if not match:
             raise VerificationError(f"INVALID_SHA256SUMS_LINE:{line}")
         digest, relative = match.groups()
-        path = root / relative
-        if not path.is_file():
-            raise VerificationError(f"MISSING_FILE:{relative}")
+        if relative in expected:
+            raise VerificationError(f"DUPLICATE_SHA256SUMS_PATH:{relative}")
+        path = safe_package_member(root, relative)
         actual = _sha(path)
         if actual != digest:
             raise VerificationError(f"HASH_MISMATCH:{relative}")
         expected[relative] = digest
+    actual_files: set[str] = set()
+    for path in root.rglob("*"):
+        relative = path.relative_to(root).as_posix()
+        try:
+            info = path.lstat()
+        except OSError as exc:
+            raise VerificationError(f"MISSING_FILE:{relative}") from exc
+        if stat.S_ISLNK(info.st_mode):
+            raise VerificationError(f"SYMLINKED_PACKAGE_MEMBER:{relative}")
+        if stat.S_ISDIR(info.st_mode):
+            continue
+        if not stat.S_ISREG(info.st_mode):
+            raise VerificationError(f"SYMLINKED_PACKAGE_MEMBER:{relative}")
+        if relative != "SHA256SUMS":
+            actual_files.add(relative)
+    expected_files = set(expected)
+    missing = sorted(expected_files - actual_files)
+    if missing:
+        raise VerificationError(f"PACKAGE_INVENTORY_MISMATCH:missing={missing}:extra=[]")
+    extra = sorted(actual_files - expected_files)
+    if extra:
+        raise VerificationError(f"UNLISTED_PACKAGE_FILE:{extra[0]}:extra={extra}")
     return expected
 
 

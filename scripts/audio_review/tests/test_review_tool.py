@@ -794,6 +794,116 @@ class EvidenceTests(unittest.TestCase):
                 verify_hash_inventory(root)
             self.assertTrue(str(context.exception).startswith("HASH_MISMATCH:"))
 
+    def test_rejects_unsafe_sha256sum_paths(self):
+        for case in ("parent", "absolute", "normalized-parent", "backslash", "nul"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory)
+                root = base / "package"
+                root.mkdir()
+                payload = b"outside payload"
+                if case == "parent":
+                    target = base / "outside"
+                    relative = "../outside"
+                elif case == "absolute":
+                    target = base / "absolute"
+                    relative = str(target)
+                elif case == "normalized-parent":
+                    (root / "audio").mkdir()
+                    target = root / "outside"
+                    relative = "audio/../outside"
+                elif case == "backslash":
+                    target = root / "audio\\outside"
+                    relative = "audio\\outside"
+                else:
+                    target = None
+                    relative = "audio/evil\x00.mp3"
+                if target is not None:
+                    target.write_bytes(payload)
+                digest = hashlib.sha256(payload).hexdigest()
+                (root / "SHA256SUMS").write_text(
+                    f"{digest}  {relative}\n",
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(VerificationError, "UNSAFE_PACKAGE_PATH"):
+                    verify_hash_inventory(root)
+
+    def test_rejects_duplicate_sha256sum_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            member = root / "member"
+            member.write_bytes(b"member")
+            row = f"{hashlib.sha256(member.read_bytes()).hexdigest()}  member\n"
+            (root / "SHA256SUMS").write_text(row + row, encoding="utf-8")
+            with self.assertRaisesRegex(VerificationError, "DUPLICATE_SHA256SUMS_PATH:member"):
+                verify_hash_inventory(root)
+
+    def test_rejects_listed_and_unlisted_symlinks(self):
+        for listed in (True, False):
+            with self.subTest(listed=listed), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                target = root / "target"
+                target.write_bytes(b"target")
+                link = root / "link"
+                link.symlink_to(target)
+                listed_name = "link" if listed else "target"
+                listed_path = root / listed_name
+                digest = hashlib.sha256(listed_path.read_bytes()).hexdigest()
+                (root / "SHA256SUMS").write_text(
+                    f"{digest}  {listed_name}\n",
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(VerificationError, "SYMLINKED_PACKAGE_MEMBER:link"):
+                    verify_hash_inventory(root)
+
+    def test_rejects_listed_directory_and_unlisted_duplicate_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            listed_directory = root / "listed-directory"
+            listed_directory.mkdir()
+            (root / "SHA256SUMS").write_text(
+                f"{'0' * 64}  listed-directory\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                VerificationError,
+                "SYMLINKED_PACKAGE_MEMBER:listed-directory",
+            ):
+                verify_hash_inventory(root)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            listed = root / "listed"
+            extra = root / "unexpected-copy"
+            listed.write_bytes(b"same bytes")
+            extra.write_bytes(listed.read_bytes())
+            digest = hashlib.sha256(listed.read_bytes()).hexdigest()
+            (root / "SHA256SUMS").write_text(
+                f"{digest}  listed\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                VerificationError,
+                "UNLISTED_PACKAGE_FILE:unexpected-copy",
+            ):
+                verify_hash_inventory(root)
+
+    def test_modified_audio_hash_fails_before_package_parsing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            relative = "audio/hyperfocus/hyperfocus-forest-soft.mp3"
+            audio = root / relative
+            audio.parent.mkdir(parents=True)
+            audio.write_bytes(b"ID3tampered")
+            (root / "SHA256SUMS").write_text(
+                f"{'0' * 64}  {relative}\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                VerificationError,
+                f"HASH_MISMATCH:{relative}",
+            ):
+                verify_package(root, SPEC)
+
 @unittest.skipUnless(FFMPEG, "ffmpeg required")
 class BuilderTests(unittest.TestCase):
     def test_builds_and_verifies_exact_atomic_review_package(self):
