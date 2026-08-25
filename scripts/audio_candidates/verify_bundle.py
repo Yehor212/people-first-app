@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import stat
 
 from scripts.audio_review.verify import verify_hash_inventory
 
@@ -43,6 +44,10 @@ def _json(path: Path) -> dict:
 def verify_source_audition_bundle() -> dict:
     root = OUTPUT_ROOT
     inventory = verify_hash_inventory(root)
+    for path in (root, *root.rglob("*")):
+        mode = path.lstat().st_mode
+        if stat.S_ISLNK(mode) or mode & 0o222:
+            raise BundleVerificationError("review bundle is not sealed read-only")
     expected_listen = {
         f"listen/{family}-{label}.wav"
         for family in EXACT_FAMILIES
