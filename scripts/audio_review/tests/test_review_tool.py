@@ -14,6 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
+from scripts.audio_review import rights as rights_module
 from scripts.audio_review.builder import build_review_package
 from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, render_hyperfocus
 from scripts.audio_review.evidence import build_human_review_matrix, write_sha256sums
@@ -99,6 +100,25 @@ class ModelContractTests(unittest.TestCase):
         self.assertIn("exact 26-role inventory", str(context.exception))
 
 class RightsTests(unittest.TestCase):
+    def test_accepts_comma_grouped_live_sound_number(self):
+        html = "<h1>Forest #3</h1><p>Sound number: 2,715</p><p>Author: Pierre SIBANARCO</p><p>License: CC0 1.0</p>"
+        title, author, _ = rights_module._extract_page(
+            html,
+            "https://bigsoundbank.com/forest-3-s2715.html",
+            2715,
+        )
+        self.assertEqual(title, "Forest #3")
+        self.assertEqual(author, "Pierre SIBANARCO")
+
+    def test_rejects_nearby_or_malformed_sound_number(self):
+        for body in ("Sound number: 27,150", "Sound number: 2.715", "Sound number: 12715"):
+            with self.subTest(body=body), self.assertRaises(RightsError):
+                rights_module._extract_page(
+                    f"<h1>Wrong</h1><p>{body}</p><p>Author: Wrong</p><p>CC0 1.0</p>",
+                    "https://bigsoundbank.com/forest-3-s2715.html",
+                    2715,
+                )
+
     def test_license_gate_requires_all_four_right_classes(self):
         evidence = validate_cc0_license_text(LICENSE_TEXT)
         self.assertTrue(all(evidence.values()))

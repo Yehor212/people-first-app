@@ -201,12 +201,28 @@ def resolve_sound_page(sound_number: int, provider_root: str, client: HttpClient
     return unique[0]
 
 
+def sound_number_text_pattern(sound_number: int) -> re.Pattern[str]:
+    digits = str(sound_number)
+    variants = [re.escape(digits)]
+    if len(digits) > 3:
+        variants.append(
+            re.escape(digits[:-3])
+            + r"(?:,|\u00a0|\u202f|[ ])"
+            + re.escape(digits[-3:])
+        )
+    exact_number = "(?:" + "|".join(variants) + ")"
+    return re.compile(
+        rf"(?:sound\s*(?:number|n°|no\.?)|sound\s*#)[\s:#-]*0*{exact_number}(?!\d)",
+        re.IGNORECASE,
+    )
+
+
 def _extract_page(html: str, page_url: str, sound_number: int) -> tuple[str, str, list[str]]:
     text = _plain_text(html)
     page_path = urlparse(page_url).path
     if not re.search(rf"s0*{sound_number}\.html$", page_path, re.IGNORECASE):
         raise RightsError(f"Source page URL is not bound to sound {sound_number}")
-    if not re.search(rf"(?:sound\s*(?:number|n°|no\.?)[\s:#-]*|s)0*{sound_number}\b", text, re.IGNORECASE):
+    if not sound_number_text_pattern(sound_number).search(text):
         raise RightsError(f"Source page body is not bound to sound {sound_number}")
     if not re.search(r"\bcc0\b", text, re.IGNORECASE):
         raise RightsError(f"Source page for sound {sound_number} does not identify CC0")
