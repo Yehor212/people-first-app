@@ -77,6 +77,10 @@ test("every field-recording definition is bound to an official CC0 source and a 
   assert.ok(rainSoft);
   assert.equal(rainSoft.sourceStartSeconds, 0);
   assert.equal(rainSoft.overlapSeconds, 0.5);
+  const rainDeep = generator.ASSET_DEFINITIONS.find((candidate) => candidate.id === "rain:deep");
+  assert.ok(rainDeep);
+  assert.equal(rainDeep.sourceStartSeconds, 30);
+  assert.equal(rainDeep.overlapSeconds, 1);
 
   for (const definition of generator.ASSET_DEFINITIONS.filter(
     (candidate) => candidate.sourceType === "CC0-derived-field-recording"
