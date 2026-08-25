@@ -4,8 +4,10 @@ import hashlib
 import http.server
 import json
 import math
+import re
 import shutil
 import socketserver
+import sys
 import tempfile
 import threading
 import unittest
@@ -15,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from scripts.audio_review import rights as rights_module
-from scripts.audio_review.builder import build_review_package, write_rights_receipts
+from scripts.audio_review.builder import build_environment_record, build_review_package, write_rights_receipts
 from scripts.audio_review.dsp import AudioError, encode_mp3, measure_audio, render_hyperfocus
 from scripts.audio_review.evidence import build_human_review_matrix, write_sha256sums
 from scripts.audio_review.model import SpecError, load_spec, validate_spec_dict
@@ -27,6 +29,7 @@ from scripts.audio_review.verify import VerificationError, verify_hash_inventory
 ROOT = Path(__file__).resolve().parents[3]
 SPEC = ROOT / "config/audio/cc0-kimi-audio-review-spec.json"
 QUARANTINE_CONFIG = ROOT / "config/audio/quarantine-denylist.json"
+REQUIREMENTS = ROOT / "scripts/audio_review/requirements.txt"
 WORKFLOW = ROOT / ".github/workflows/cc0-kimi-audio-review.yml"
 FFMPEG = shutil.which("ffmpeg")
 LICENSE_TEXT = "Creative Commons CC0 1.0 Universal. Share — copy and redistribute the material in any medium or format. Adapt — remix, transform, and build upon the material for any purpose, even commercially. Commercial purposes are permitted."
@@ -660,6 +663,18 @@ class AudioTests(unittest.TestCase):
         with self.assertRaises(AudioError):
             render_hyperfocus(self.source(), "cafe", "soft", 48000, seed=1, duration_seconds=1)
 
+    def test_same_recorded_toolchain_encodes_identical_mp3_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            first = Path(directory) / "first.mp3"
+            second = Path(directory) / "second.mp3"
+            samples = self.source(seconds=1)
+            encode_mp3(samples, first, 48000, 128, FFMPEG)
+            encode_mp3(samples, second, 48000, 128, FFMPEG)
+            self.assertEqual(
+                hashlib.sha256(first.read_bytes()).hexdigest(),
+                hashlib.sha256(second.read_bytes()).hexdigest(),
+            )
+
     def test_procedural_assets_are_deterministic_smooth_and_bounded(self):
         first = generate_ambience("soft-air-veil", 2.0, 48000, 123)
         second = generate_ambience("soft-air-veil", 2.0, 48000, 123)
@@ -931,6 +946,20 @@ class BuilderTests(unittest.TestCase):
                 build_environment = json.loads((output / "build-environment.json").read_text(encoding="utf-8"))
                 self.assertEqual(provenance["quarantineDenylist"], expected_denylist_attestation)
                 self.assertEqual(build_environment["quarantineDenylist"], expected_denylist_attestation)
+                for field in (
+                    "python",
+                    "numpy",
+                    "ffmpeg",
+                    "ffprobe",
+                    "libmp3lame",
+                    "osRelease",
+                    "gitSha",
+                    "requirementsSha256",
+                    "workflowSha256",
+                ):
+                    self.assertTrue(build_environment[field])
+                for field in ("python", "ffmpeg", "ffprobe", "libmp3lame", "gitSha"):
+                    self.assertFalse(str(build_environment[field]).startswith("UNAVAILABLE:"))
                 for number in NUMBERS:
                     receipt_dir = output / "evidence" / "rights" / f"s{number:04d}"
                     self.assertTrue((receipt_dir / "source-page.html").is_file())
@@ -975,6 +1004,72 @@ class BuilderTests(unittest.TestCase):
             self.assertEqual(marker.read_text(encoding="utf-8"), "preserve")
 
 class WorkflowContractTests(unittest.TestCase):
+    def test_build_environment_record_binds_toolchain_and_inputs(self):
+        environment = build_environment_record(
+            sys.executable,
+            sys.executable,
+            QUARANTINE_CONFIG,
+        )
+        for field in (
+            "python",
+            "numpy",
+            "ffmpeg",
+            "ffprobe",
+            "libmp3lame",
+            "osRelease",
+            "gitSha",
+            "requirementsSha256",
+            "workflowSha256",
+            "quarantineDenylist",
+        ):
+            self.assertIn(field, environment)
+            self.assertTrue(environment[field])
+        self.assertEqual(
+            environment["requirementsSha256"],
+            hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(
+            environment["workflowSha256"],
+            hashlib.sha256(WORKFLOW.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(
+            environment["quarantineDenylist"]["sha256"],
+            hashlib.sha256(QUARANTINE_CONFIG.read_bytes()).hexdigest(),
+        )
+
+    def test_workflow_and_python_dependency_are_immutable_pins(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        requirements = REQUIREMENTS.read_text(encoding="utf-8")
+        self.assertIn("--require-hashes", workflow)
+        self.assertNotRegex(workflow, r"uses:\s+actions/[^@\s]+@v\d")
+        self.assertRegex(
+            workflow,
+            r"actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        )
+        self.assertRegex(
+            workflow,
+            r"actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
+        )
+        self.assertRegex(
+            workflow,
+            r"actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        )
+        self.assertIn("group: cc0-audio-review-${{ github.ref }}", workflow)
+        self.assertIn("cancel-in-progress: true", workflow)
+        self.assertIn('config/audio/quarantine-denylist.json', workflow)
+        self.assertIn('docs/audio/kimi-k3-recovery-ledger-2026-07-25.md', workflow)
+        artifact_upload_block = workflow[workflow.index("actions/upload-artifact@") :]
+        self.assertNotIn("output/cc0-kimi-audio-cache", artifact_upload_block)
+        self.assertIn("path: output/cc0-kimi-audio-review", artifact_upload_block)
+        self.assertIn("numpy==2.1.3 \\", requirements)
+        self.assertEqual(
+            set(re.findall(r"--hash=sha256:([0-9a-f]{64})", requirements)),
+            {
+                "2312b2aa89e1f43ecea6da6ea9a810d06aae08321609d8dc0d0eda6d946a541b",
+                "a6b46587b14b888e95e4a24d7b13ae91fa22386c199ee7b418f449032b2fa3b8",
+            },
+        )
+
     def test_workflow_is_read_only_no_secret_no_runtime_promotion(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("contents: read", text)

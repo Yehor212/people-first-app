@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import subprocess
 import uuid
@@ -42,9 +43,16 @@ def _timestamp() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _tool_version(command: list[str]) -> str:
+def _tool_version(command: list[str], *, cwd: str | Path | None = None) -> str:
     try:
-        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        result = subprocess.run(
+            command,
+            check=True,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
         return result.stdout.splitlines()[0][:500]
     except Exception as exc:
         return f"UNAVAILABLE: {exc}"
@@ -105,6 +113,49 @@ def _atomic_promote(temp_dir: Path, output_dir: Path) -> None:
 def _write_json(path: Path, payload: dict | list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def build_environment_record(
+    ffmpeg: str,
+    ffprobe: str,
+    denylist_path: str | Path,
+    *,
+    repo_root: str | Path | None = None,
+) -> dict:
+    root = (
+        Path(repo_root).resolve()
+        if repo_root is not None
+        else Path(__file__).resolve().parents[2]
+    )
+    requirements = root / "scripts/audio_review/requirements.txt"
+    workflow = root / ".github/workflows/cc0-kimi-audio-review.yml"
+    denylist_source = Path(denylist_path)
+    denylist = load_denylist(denylist_source)
+    os_release = Path("/etc/os-release")
+    return {
+        "python": _tool_version([shutil.which("python3") or "python3", "--version"]),
+        "numpy": __import__("numpy").__version__,
+        "ffmpeg": _tool_version([ffmpeg, "-version"]),
+        "ffprobe": _tool_version([ffprobe, "-version"]),
+        "libmp3lame": _tool_version(
+            ["dpkg-query", "-W", "-f=${Version}", "libmp3lame0"]
+        ),
+        "osRelease": (
+            os_release.read_text(encoding="utf-8").strip()
+            if os_release.is_file()
+            else platform.platform()
+        ),
+        "gitSha": os.environ.get("GITHUB_SHA")
+        or _tool_version(["git", "rev-parse", "HEAD"], cwd=root),
+        "requirementsSha256": file_sha256(requirements),
+        "workflowSha256": file_sha256(workflow),
+        "sourceDateEpoch": os.environ.get("SOURCE_DATE_EPOCH"),
+        "quarantineDenylist": {
+            "path": DENYLIST_REPOSITORY_PATH,
+            "sha256": file_sha256(denylist_source),
+            "entries": len(denylist),
+        },
+    }
 
 
 def write_rights_receipts(
@@ -297,6 +348,9 @@ def build_review_package(
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise BuildError("ffmpeg is required")
+    ffprobe = shutil.which("ffprobe")
+    if not ffprobe:
+        raise BuildError("ffprobe is required")
     client = HttpClient(cache, offline=offline, allow_http_hosts=allow_http_hosts or set())
     unique_sources: dict[int, SourceRecord] = {}
     for asset in spec.hyperfocus:
@@ -378,19 +432,16 @@ def build_review_package(
         human = build_human_review_matrix(provenance_rows)
         human["generatedAt"] = generated_at
         _write_json(temp_dir / "human-review.json", human)
-        _write_json(temp_dir / "build-environment.json", {
-            "schemaVersion": 1,
-            "generatedAt": generated_at,
-            "python": _tool_version([shutil.which("python3") or "python3", "--version"]),
-            "ffmpeg": _tool_version([ffmpeg, "-version"]),
-            "numpy": __import__("numpy").__version__,
-            "sourceDateEpoch": os.environ.get("SOURCE_DATE_EPOCH"),
-            "quarantineDenylist": {
-                "path": DENYLIST_REPOSITORY_PATH,
-                "sha256": denylist_sha256,
-                "entries": len(denylist),
-            },
-        })
+        build_environment = build_environment_record(
+            ffmpeg,
+            ffprobe,
+            denylist_source,
+        )
+        if build_environment["quarantineDenylist"]["sha256"] != denylist_sha256:
+            raise BuildError("Quarantine denylist changed during build")
+        build_environment["schemaVersion"] = 1
+        build_environment["generatedAt"] = generated_at
+        _write_json(temp_dir / "build-environment.json", build_environment)
         (temp_dir / "README.md").write_text(
             "# ZenFlow CC0 Kimi audio reconstruction — review package\n\n"
             "Status: **REVIEW_ONLY**\n\n"
