@@ -30,14 +30,14 @@ The matrix is a discovery input, not artistic approval. A live mismatch in page 
 
 | Family      | Candidate IDs                                  | Live source-page identities                                                              |
 | ----------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `forest`    | `forest-c1`, `forest-c2`, `forest-c3`          | BigSoundBank `1348` Forest #2; `2749` Forest #4; `905` Forest: On the Edge               |
-| `rain`      | `rain-c1`, `rain-c2`, `rain-c3`                | `1019` Summer Rain on Terrace; `2679` Rain Under an Umbrella; `2719` Rain and Thunder #4 |
+| `forest`    | `forest-c1`, `forest-c2`, `forest-c3`          | BigSoundBank `3085` Forest #5; `2749` Forest #4; `905` Forest: On the Edge               |
+| `rain`      | `rain-c1`, `rain-c2`, `rain-c3`                | `1019` Summer Rain on Terrace; `2679` Rain Under an Umbrella; `740` Rain and Thunder #2  |
 | `ocean`     | `ocean-c1`, `ocean-c2`, `ocean-c3`             | `698` Sea Waves; `2567` Sea of Dellec Beach #4; `1446` Small Waves and Beach #1          |
 | `fireplace` | `fireplace-c1`, `fireplace-c2`, `fireplace-c3` | `2855` Fireplace #3; `2856` Fireplace #4; `2857` Fireplace #5                            |
 | `river`     | `river-c1`, `river-c2`, `river-c3`             | `1354` Small Stream #4; `3222` Mountain Stream #7; `2754` Mountain Stream #1             |
-| `wind`      | `wind-c1`, `wind-c2`, `wind-c3`                | `904` Wind in the Trees; `907` Wind in Shrub; `1451` Strong Wind and Trees #2            |
+| `wind`      | `wind-c1`, `wind-c2`, `wind-c3`                | `904` Wind in the Trees; `907` Wind in Shrub; `1450` Strong Wind and Trees #1            |
 
-Known source-description concerns are not hidden from the system: several forest candidates mention birds, `rain-c2` has umbrella/street identity, and `rain-c3` contains thunder somewhere in a long recording. They are included only as blind candidates subject to window/event screening and may be rejected by AI or owner. Their presence never lowers the exclusion criteria.
+Known source-description concerns are not hidden from the system: several forest candidates mention birds, `rain-c2` has umbrella/street identity, and `rain-c3` contains thunder. They are included only as blind candidates subject to window/event screening and may be rejected by AI or owner. Their presence never lowers the exclusion criteria. The original discovery candidates `1348`, `2719`, and `1451` were replaced before acquisition by `3085`, `740`, and `1450`: their 24-bit WAV sizes would exceed the hardened 100 MiB source-fetch boundary. This is a safety-boundary correction, not an artistic pass.
 
 ---
 
