@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -12,6 +13,12 @@ import wave
 from scripts.audio_candidates.model import CandidateSpecError, load_candidate_spec
 from scripts.audio_candidates.rights import CandidateRightsError, acquire_candidate
 from scripts.audio_candidates import build_sources
+from scripts.audio_candidates.preview import (
+    PreviewError,
+    build_raw_preview,
+    verify_operations,
+    verify_preview,
+)
 from scripts.audio_review.rights import SourceRecord
 
 
@@ -180,6 +187,96 @@ class CandidateRightsTests(unittest.TestCase):
                 with contextlib.redirect_stderr(io.StringIO()):
                     with self.assertRaises(SystemExit):
                         build_sources.main(argv)
+
+
+class PreviewTests(unittest.TestCase):
+    def _write_source(self, path: Path, *, sample_width: int = 2) -> bytes:
+        sample_rate = 48000
+        channels = 2
+        frames = 30 * sample_rate
+        with wave.open(str(path), "wb") as output:
+            output.setnchannels(channels)
+            output.setsampwidth(sample_width)
+            output.setframerate(sample_rate)
+            if sample_width == 2:
+                frame = (1234).to_bytes(2, "little", signed=True) + (
+                    -1234
+                ).to_bytes(2, "little", signed=True)
+            elif sample_width == 3:
+                frame = (123456).to_bytes(3, "little", signed=True) + (
+                    -123456
+                ).to_bytes(3, "little", signed=True)
+            else:
+                frame = (12345678).to_bytes(4, "little", signed=True) + (
+                    -12345678
+                ).to_bytes(4, "little", signed=True)
+            output.writeframes(frame * frames)
+        return path.read_bytes()
+
+    def test_preview_is_contiguous_native_pcm_without_dsp_or_level_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source.wav"
+            source_bytes = self._write_source(source, sample_width=3)
+            output = root / "previews"
+
+            record = build_raw_preview(
+                "forest-c1",
+                source,
+                hashlib.sha256(source_bytes).hexdigest(),
+                output,
+            )
+            verification = verify_preview(record, source)
+
+            self.assertEqual(record.start_frame, 5 * 48000)
+            self.assertEqual(record.frame_count, 20 * 48000)
+            self.assertEqual(
+                record.operations, ("decode-pcm", "contiguous-extract")
+            )
+            self.assertIsNone(record.product_level)
+            self.assertEqual(record.sample_width_bytes, 3)
+            self.assertEqual(verification["status"], "PASS")
+            self.assertTrue(verification["sourceFrameBytesEqual"])
+
+    def test_preview_verifier_rejects_prohibited_operations_tamper_and_symlink(self):
+        for operation in (
+            "eq",
+            "compression",
+            "crossfade",
+            "mix",
+            "synthetic-texture",
+            "normalize",
+        ):
+            with self.subTest(operation=operation):
+                with self.assertRaisesRegex(
+                    PreviewError, "prohibited preview operation"
+                ):
+                    verify_operations(("decode-pcm", operation))
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source.wav"
+            source_bytes = self._write_source(source)
+            record = build_raw_preview(
+                "forest-c1",
+                source,
+                hashlib.sha256(source_bytes).hexdigest(),
+                root / "previews",
+            )
+            preview = Path(record.preview_path)
+            preview.write_bytes(preview.read_bytes() + b"tamper")
+            with self.assertRaisesRegex(PreviewError, "preview hash mismatch"):
+                verify_preview(record, source)
+
+            link = root / "source-link.wav"
+            link.symlink_to(source)
+            with self.assertRaisesRegex(PreviewError, "regular source WAV"):
+                build_raw_preview(
+                    "forest-c2",
+                    link,
+                    hashlib.sha256(source_bytes).hexdigest(),
+                    root / "other-previews",
+                )
 
 
 if __name__ == "__main__":
