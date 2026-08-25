@@ -165,7 +165,8 @@ def build_source_audition_bundle() -> Path:
         files = tuple(
             path
             for path in staging.rglob("*")
-            if path.is_file() and path.name != "SHA256SUMS"
+            if path.is_file()
+            and path.relative_to(staging).as_posix() != "SHA256SUMS"
         )
         write_sha256sums(staging, files)
         staging.replace(OUTPUT_ROOT)
