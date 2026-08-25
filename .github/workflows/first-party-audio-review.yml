@@ -141,6 +141,10 @@ jobs:
             output/first-party-audio-review.zip
             output/first-party-audio-review.zip.sha256
             output/first-party-audio-review-build.json
+            scripts/audio-review/generate-first-party-review-pack.mjs
+            scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs
+            scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs
+            docs/audio/first-party-kimi-audio-reconstruction-spec.json
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
