@@ -119,10 +119,10 @@ Run:
 ```bash
 git diff --check origin/main...HEAD
 git status --short --untracked-files=all
-git log --oneline --reverse d74f6d5a..HEAD
+git log --oneline --reverse dd9c44c7..HEAD
 ```
 
-Expected: no tracked/untracked project changes; the 19 imported commits appear after `d74f6d5a`. The cherry-picked commits themselves satisfy this task's commit boundary.
+Expected: no tracked/untracked project changes; the 19 imported commits appear after plan commit `dd9c44c7`. The cherry-picked commits themselves satisfy this task's commit boundary.
 
 ---
 

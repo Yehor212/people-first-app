@@ -1,7 +1,7 @@
 # CC0 Kimi Audio Reconstruction Design
 
-**Date:** 2026-08-24  
-**Status:** Approved for review-package implementation  
+**Date:** 2026-08-24
+**Status:** Approved for review-package implementation
 **Runtime status:** No runtime replacement is authorized by this design.
 
 ## Problem
