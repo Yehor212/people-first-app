@@ -5,6 +5,7 @@
   "aiMaySetHumanPass": false,
   "semanticWindowSeconds": 10,
   "semanticHopSeconds": 5,
+  "analysisTargetRmsDbfs": -24,
   "scopes": ["source", "base", "delivery"],
   "universalHardNegativeEvents": [
     "speech or human voice",
@@ -105,4 +106,3 @@
     }
   ]
 }
-

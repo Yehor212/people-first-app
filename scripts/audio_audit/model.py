@@ -34,6 +34,7 @@ class AuditPolicy:
     ai_may_set_human_pass: bool
     semantic_window_seconds: float
     semantic_hop_seconds: float
+    analysis_target_rms_dbfs: float
     scopes: tuple[str, ...]
     universal_hard_negative_events: tuple[str, ...]
     families: dict[str, FamilyPolicy]
@@ -127,6 +128,14 @@ def load_audit_policy(path: str | Path) -> AuditPolicy:
         window = 0.0
         hop = 0.0
 
+    try:
+        analysis_target_rms = float(data.get("analysisTargetRmsDbfs"))
+        if not -60.0 <= analysis_target_rms <= -6.0:
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append("analysisTargetRmsDbfs must be between -60 and -6")
+        analysis_target_rms = 0.0
+
     scopes = _string_tuple(data.get("scopes"), "scopes", errors)
     if scopes != EXPECTED_SCOPES:
         errors.append(f"scopes must be exactly {EXPECTED_SCOPES}")
@@ -168,6 +177,7 @@ def load_audit_policy(path: str | Path) -> AuditPolicy:
         ai_may_set_human_pass=False,
         semantic_window_seconds=window,
         semantic_hop_seconds=hop,
+        analysis_target_rms_dbfs=analysis_target_rms,
         scopes=scopes,
         universal_hard_negative_events=events,
         families=families,

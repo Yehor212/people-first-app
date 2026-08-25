@@ -37,6 +37,13 @@ def load_acquisition_api(test_case: unittest.TestCase):
         test_case.fail(f"strict audio audit model acquisition is missing: {exc}")
 
 
+def load_preprocess_api(test_case: unittest.TestCase):
+    try:
+        return importlib.import_module("scripts.audio_audit.preprocess")
+    except ModuleNotFoundError as exc:
+        test_case.fail(f"strict audio audit preprocessing is missing: {exc}")
+
+
 class AuditPolicyTests(unittest.TestCase):
     def load_json(self, path: Path) -> dict:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -57,6 +64,7 @@ class AuditPolicyTests(unittest.TestCase):
         )
         self.assertEqual(policy.verdicts, ("PASS", "FAIL", "ABSTAIN", "UNVERIFIED"))
         self.assertFalse(policy.ai_may_set_human_pass)
+        self.assertEqual(getattr(policy, "analysis_target_rms_dbfs", None), -24.0)
 
     def test_manifest_requires_exact_revision_safe_files_and_no_pickle_weights(self):
         model = load_model_api(self)
@@ -276,6 +284,83 @@ class ModelAcquisitionTests(unittest.TestCase):
                         stream.addfile(info, io.BytesIO(body))
                 with self.assertRaisesRegex(acquisition.ModelAcquisitionError, "unsafe model archive member"):
                     acquisition.extract_yamnet_archive(archive, Path(temp) / "out")
+
+
+class PreprocessTests(unittest.TestCase):
+    def write_stereo_fixture(self, path: Path, seconds: int = 25) -> None:
+        import numpy as np
+        import soundfile as sf
+
+        sample_rate = 48000
+        frames = seconds * sample_rate
+        time = np.arange(frames, dtype=np.float32) / sample_rate
+        left = 0.1 * np.sin(2 * np.pi * 220 * time)
+        right = 0.08 * np.sin(2 * np.pi * 330 * time)
+        sf.write(path, np.column_stack((left, right)), sample_rate, subtype="PCM_24")
+
+    def test_windows_cover_start_end_and_overlap_without_changing_product_bytes(self):
+        preprocess = load_preprocess_api(self)
+        model = load_model_api(self)
+        policy = model.load_audit_policy(POLICY_PATH)
+
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "fixture.wav"
+            self.write_stereo_fixture(path)
+            original = path.read_bytes()
+
+            view = preprocess.decode_audio_view(path)
+            windows = preprocess.make_audit_windows(view, policy)
+
+            self.assertEqual(
+                [(row.start_frame, row.end_frame) for row in windows],
+                [
+                    (0, 480000),
+                    (240000, 720000),
+                    (480000, 960000),
+                    (720000, 1200000),
+                ],
+            )
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual({row.sample_rate for row in windows}, {48000})
+
+    def test_loudness_normalized_view_is_analysis_only_and_hash_bound(self):
+        preprocess = load_preprocess_api(self)
+        model = load_model_api(self)
+        policy = model.load_audit_policy(POLICY_PATH)
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / "fixture.wav"
+            self.write_stereo_fixture(path, seconds=12)
+            output = root / "analysis"
+
+            receipt = preprocess.write_analysis_views(path, output, policy)
+
+            self.assertEqual(receipt.input_sha256, preprocess.file_sha256(path))
+            self.assertNotEqual(receipt.normalized_sha256, receipt.input_sha256)
+            self.assertTrue((output / "normalized-mono-48000.wav").is_file())
+            self.assertEqual(receipt.target_rms_dbfs, -24.0)
+            self.assertEqual(receipt.operations, ("decode", "downmix-mean", "resample-polyphase", "rms-normalize"))
+
+    def test_decode_rejects_symlink_and_non_finite_samples(self):
+        preprocess = load_preprocess_api(self)
+
+        with tempfile.TemporaryDirectory() as temp:
+            import numpy as np
+            import soundfile as sf
+
+            root = Path(temp)
+            target = root / "target.wav"
+            self.write_stereo_fixture(target, seconds=12)
+            link = root / "link.wav"
+            link.symlink_to(target)
+            with self.assertRaisesRegex(preprocess.PreprocessError, "regular file"):
+                preprocess.decode_audio_view(link)
+
+            invalid = root / "invalid.wav"
+            sf.write(invalid, np.array([[float("nan"), 0.0]], dtype=np.float32), 48000, subtype="FLOAT")
+            with self.assertRaisesRegex(preprocess.PreprocessError, "non-finite"):
+                preprocess.decode_audio_view(invalid)
 
 
 if __name__ == "__main__":
