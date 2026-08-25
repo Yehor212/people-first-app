@@ -337,7 +337,7 @@ class RightsTests(unittest.TestCase):
             with self.subTest(payload=payload), self.assertRaises(RightsError):
                 rights_module._parse_sitemap(payload)
 
-        valid = b'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://bigsoundbank.com/sound-s0100.html?a=1&amp;b=2</loc></url></urlset>'
+        valid = b'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"><url><loc>https://bigsoundbank.com/sound-s0100.html?a=1&amp;b=2</loc><image:image><image:loc>https://bigsoundbank.com/image.jpg</image:loc></image:image></url></urlset>'
         self.assertEqual(
             rights_module._parse_sitemap(valid),
             ["https://bigsoundbank.com/sound-s0100.html?a=1&b=2"],

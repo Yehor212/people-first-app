@@ -179,6 +179,7 @@ class _SitemapParser(HTMLParser):
         return tag.rsplit(":", 1)[-1].lower()
 
     def handle_starttag(self, tag, attrs):
+        qualified = tag.lower()
         local = self._local_name(tag)
         if not self.stack:
             if self.root is not None or local not in self._ROOTS:
@@ -186,11 +187,12 @@ class _SitemapParser(HTMLParser):
             self.root = local
         elif self._loc_parts is not None:
             raise RightsError("Nested markup is forbidden inside sitemap loc")
-        if local == "loc":
-            if not self.stack or self.stack[-1] not in self._LOC_PARENTS:
+        if qualified == "loc":
+            parent = self._local_name(self.stack[-1]) if self.stack else ""
+            if parent not in self._LOC_PARENTS:
                 raise RightsError("Sitemap loc is outside url or sitemap")
             self._loc_parts = []
-        self.stack.append(local)
+        self.stack.append(qualified)
         if len(self.stack) > 16:
             raise RightsError("Sitemap nesting exceeds limit")
 
@@ -199,10 +201,11 @@ class _SitemapParser(HTMLParser):
         self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
+        qualified = tag.lower()
         local = self._local_name(tag)
-        if not self.stack or self.stack[-1] != local:
+        if not self.stack or self.stack[-1] != qualified:
             raise RightsError(f"Mismatched sitemap end tag: {local}")
-        if local == "loc":
+        if qualified == "loc":
             value = "".join(self._loc_parts or []).strip()
             if not value or len(value) > 8192:
                 raise RightsError("Sitemap loc is empty or exceeds limit")
