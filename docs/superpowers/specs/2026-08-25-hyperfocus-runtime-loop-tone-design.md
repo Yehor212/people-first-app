@@ -44,7 +44,7 @@ The three rows sort ascending by `(intensityScore, candidateId)`. Lowest becomes
 
 ### 2. Loop construction
 
-The exact reviewed 20-second PCM preview remains the only artistic input. A deterministic 15-second circular base is created by equal-power overlapping the final five seconds with the first five seconds, followed by the untouched middle ten seconds. The 15-second base is repeated exactly twice to form a 30-second delivery waveform.
+The exact reviewed 20-second PCM preview remains the only artistic input. A deterministic 15-second circular base is created by equal-power overlapping the final five seconds with the first five seconds, followed by the untouched middle ten seconds. The circular base is rotated, without dropping or adding frames, to the deterministic boundary with the lowest adjacent jump plus local 20 ms RMS score. The 15-second base is repeated exactly twice to form a 30-second delivery waveform.
 
 Level RMS targets are `-30 dBFS` for `soft`, `-26 dBFS` for `deep`, and `-22 dBFS` for `intense`. Gain is linked across both channels. If the requested gain would violate the peak ceiling, the output is scaled down rather than clipped; a family fails packaging when the decoded MP3 then loses the required 3 dB adjacent progression.
 
@@ -53,13 +53,14 @@ Allowed delivery operations are:
 ```text
 decode-pcm
 equal-power-loop-crossfade
+quiet-boundary-rotate
 repeat-exactly-twice
 linked-gain
-safety-peak-scale
+safety-peak-limit
 encode-mp3
 ```
 
-No second source, synthetic texture, generative repair, pitch shift, time stretch, stereo widening, source separation, denoising, or random offset is permitted. Output targets are 48 kHz stereo, 30 seconds before MP3 framing, 128 kbps MP3, decoded peak no greater than `-1 dBFS`, zero clipped samples, and decoded boundary metrics within the existing Hyperfocus QC limits. The final decoded MP3 must preserve at least a 3 dB adjacent intensity step within each family.
+No second source, synthetic texture, generative repair, pitch shift, time stretch, stereo widening, source separation, denoising, or random offset is permitted. The linked periodic safety limiter uses 5 ms lookahead, 100 ms release, and a `-6 dBFS` pre-encode ceiling; it applies one smooth gain factor to both channels per frame and processes the circular 15-second base before repeating it. The 5 dB codec headroom protects against the measured worst-case MP3 ringing around fireplace crackles. Output targets are 48 kHz stereo, 30 seconds before MP3 framing, 128 kbps MP3, decoded peak no greater than `-1 dBFS`, zero clipped samples, and decoded boundary metrics within the existing Hyperfocus QC limits. The final decoded MP3 must preserve at least a 3 dB adjacent intensity step within each family.
 
 ### 3. Tone control
 

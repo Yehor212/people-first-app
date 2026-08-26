@@ -15,8 +15,8 @@
 - Exactly six families × three approved sources become exactly eighteen runtime files.
 - Blind `A/B/C` labels never affect level assignment.
 - The reviewed 20-second PCM windows are the only artistic audio inputs.
-- Delivery is 30 seconds, 48 kHz, stereo, 128 kbps MP3, peak ≤ `-1 dBFS`, zero clipped samples, and adjacent decoded intensity ≥3 dB.
-- Allowed operations are only `decode-pcm`, `equal-power-loop-crossfade`, `repeat-exactly-twice`, `linked-gain`, `safety-peak-scale`, and `encode-mp3`.
+- Delivery is 30 seconds, 48 kHz, stereo, 128 kbps MP3, pre-encode peak ≤ `-6 dBFS`, decoded peak ≤ `-1 dBFS`, zero clipped samples, and adjacent decoded intensity ≥3 dB.
+- Allowed operations are only `decode-pcm`, `equal-power-loop-crossfade`, `quiet-boundary-rotate`, `repeat-exactly-twice`, `linked-gain`, `safety-peak-limit`, and `encode-mp3`.
 - Tone cutoff is `3–16 kHz`, defaults to `16 kHz`, steps by `0.5 kHz`, never changes pitch/playback rate, and fails open to unfiltered audio.
 - Production slider placement remains untouched until the owner selects a localhost variant.
 - No dependency, cloud write, deploy, push, PR, store upload, signing, or release claim is authorized.
@@ -92,7 +92,7 @@ Run `RuntimeLoopTests`; expect missing loop/master functions.
 
 - [ ] **Step 3: Implement periodic PCM and bounded mastering**
 
-Use equal-power curves `cos(t*pi/2)` and `sin(t*pi/2)` over exactly 240,000 frames. Build the 15-second base from the tail/head overlap plus untouched middle, repeat twice, apply linked gain to `-30/-26/-22 dBFS`, and scale down to the linear `-1 dBFS` ceiling when necessary. Refuse NaN, silence, mono, wrong rate, wrong duration, symlink input/output, overwrite, and unapproved operations.
+Use equal-power curves `cos(t*pi/2)` and `sin(t*pi/2)` over exactly 240,000 frames. Build the 15-second base from the tail/head overlap plus untouched middle, rotate the circular array to the deterministic minimum adjacent-jump plus local-20-ms-RMS boundary, repeat twice, and converge linked gain toward `-30/-26/-22 dBFS` through a periodic 5 ms lookahead/100 ms release linked limiter with a `-6 dBFS` pre-encode ceiling. Refuse NaN, silence, non-identical halves, mono, wrong rate, wrong duration, symlink input/output, overwrite, and unapproved operations.
 
 - [ ] **Step 4: Add the fixed private LAME 4.0 encoder boundary**
 

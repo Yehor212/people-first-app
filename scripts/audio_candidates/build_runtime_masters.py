@@ -27,6 +27,7 @@ from .mastering import (
     load_mastering_policy,
     measure_intensity,
     read_pcm_wav,
+    rotate_to_quiet_boundary,
     write_pcm24_wav,
 )
 from .runtime_package import validate_runtime_manifest_payload
@@ -198,10 +199,14 @@ def build_runtime_masters() -> Path:
         provenance_assets = []
         for assignment in assignments:
             samples = samples_by_id[assignment.candidate_id]
-            base = build_circular_base(
+            unrotated_base = build_circular_base(
                 samples,
                 policy.sample_rate,
                 policy.crossfade_seconds,
+            )
+            base, rotation_frames = rotate_to_quiet_boundary(
+                unrotated_base,
+                policy.sample_rate,
             )
             delivery = build_delivery_pcm(
                 base,
@@ -254,6 +259,7 @@ def build_runtime_masters() -> Path:
                         "reviewedSourceSeconds": policy.source_preview_seconds,
                         "crossfadeSeconds": policy.crossfade_seconds,
                         "baseLoopSeconds": policy.base_loop_seconds,
+                        "rotationFrames": rotation_frames,
                         "repeatCount": 2,
                         "deliverySeconds": policy.delivery_seconds,
                     },

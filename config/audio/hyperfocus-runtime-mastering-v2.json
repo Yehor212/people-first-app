@@ -8,7 +8,8 @@
   "baseLoopSeconds": 15,
   "deliverySeconds": 30,
   "bitrateKbps": 128,
-  "peakCeilingDbfs": -1,
+  "peakCeilingDbfs": -6,
+  "decodedPeakCeilingDbfs": -1,
   "minAdjacentRmsDeltaDb": 3,
   "targetRmsDbfs": {
     "soft": -30,
@@ -18,9 +19,10 @@
   "operations": [
     "decode-pcm",
     "equal-power-loop-crossfade",
+    "quiet-boundary-rotate",
     "repeat-exactly-twice",
     "linked-gain",
-    "safety-peak-scale",
+    "safety-peak-limit",
     "encode-mp3"
   ],
   "encoder": {

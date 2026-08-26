@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import importlib
 import io
 import json
 from pathlib import Path
@@ -40,6 +41,7 @@ from scripts.audio_candidates.mastering import (
     load_mastering_policy,
     measure_intensity,
     read_pcm_wav,
+    rotate_to_quiet_boundary,
     verify_mastering_operations,
     write_pcm24_wav,
 )
@@ -491,13 +493,15 @@ class RuntimeMasteringTests(unittest.TestCase):
         })
         self.assertEqual(policy.crossfade_seconds, 5.0)
         self.assertEqual(policy.delivery_seconds, 30.0)
-        self.assertEqual(policy.peak_ceiling_dbfs, -1.0)
+        self.assertEqual(policy.peak_ceiling_dbfs, -6.0)
+        self.assertEqual(policy.decoded_peak_ceiling_dbfs, -1.0)
         self.assertEqual(policy.operations, (
             "decode-pcm",
             "equal-power-loop-crossfade",
+            "quiet-boundary-rotate",
             "repeat-exactly-twice",
             "linked-gain",
-            "safety-peak-scale",
+            "safety-peak-limit",
             "encode-mp3",
         ))
 
@@ -533,12 +537,12 @@ class RuntimeLoopTests(unittest.TestCase):
         mastered, receipt = apply_linked_mastering(
             delivery,
             target_rms_dbfs=-26.0,
-            peak_ceiling_dbfs=-1.0,
+            peak_ceiling_dbfs=-6.0,
         )
 
         measured = measure_intensity(mastered, 48000)
         self.assertAlmostEqual(measured.rms_dbfs, -26.0, places=3)
-        self.assertLessEqual(float(np.max(np.abs(mastered))), 10 ** (-1 / 20) + 1e-12)
+        self.assertLessEqual(float(np.max(np.abs(mastered))), 10 ** (-6 / 20) + 1e-12)
         self.assertEqual(receipt["operations"], ["linked-gain"])
         original_ratio = np.sqrt(np.mean(np.square(delivery[:, 0]))) / np.sqrt(
             np.mean(np.square(delivery[:, 1]))
@@ -548,23 +552,50 @@ class RuntimeLoopTests(unittest.TestCase):
         )
         self.assertAlmostEqual(mastered_ratio, original_ratio, places=9)
 
-    def test_peak_scale_is_fail_closed_and_operations_reject_texture_or_pitch(self):
+    def test_peak_limiter_preserves_bed_and_operations_reject_texture_or_pitch(self):
         impulse = np.zeros((30 * 48000, 2), dtype=np.float64)
         impulse[:, :] = 0.001
         impulse[100, :] = 1.0
+        impulse[15 * 48000 + 100, :] = 1.0
 
         mastered, receipt = apply_linked_mastering(
             impulse,
             target_rms_dbfs=-22.0,
-            peak_ceiling_dbfs=-1.0,
+            peak_ceiling_dbfs=-6.0,
         )
 
-        self.assertIn("safety-peak-scale", receipt["operations"])
-        self.assertLessEqual(float(np.max(np.abs(mastered))), 10 ** (-1 / 20) + 1e-12)
+        self.assertIn("safety-peak-limit", receipt["operations"])
+        self.assertLessEqual(float(np.max(np.abs(mastered))), 10 ** (-6 / 20) + 1e-12)
+        self.assertAlmostEqual(
+            measure_intensity(mastered, 48000).rms_dbfs,
+            -22.0,
+            delta=1.0,
+        )
         for operation in ("synthetic-texture", "pitch-shift", "time-stretch", "mix"):
             with self.subTest(operation=operation):
                 with self.assertRaisesRegex(MasteringError, "prohibited mastering operation"):
                     verify_mastering_operations((*ALLOWED_OPERATIONS, operation))
+
+    def test_quiet_boundary_rotation_is_deterministic_reversible_and_reduces_jump(self):
+        base = build_circular_base(self._reviewed_samples(), 48000, 5.0)
+        base[0] = (0.9, -0.9)
+        base[-1] = (-0.9, 0.9)
+
+        rotated, rotation_frames = rotate_to_quiet_boundary(base, 48000)
+        repeated, repeated_rotation = rotate_to_quiet_boundary(base, 48000)
+
+        self.assertEqual(rotation_frames, repeated_rotation)
+        np.testing.assert_array_equal(rotated, repeated)
+        self.assertGreater(rotation_frames, 0)
+        restored = np.concatenate(
+            (rotated[-rotation_frames:], rotated[:-rotation_frames]),
+            axis=0,
+        )
+        np.testing.assert_array_equal(restored, base)
+        self.assertLess(
+            float(np.max(np.abs(rotated[0] - rotated[-1]))),
+            float(np.max(np.abs(base[0] - base[-1]))),
+        )
 
     @unittest.skipUnless(
         Path("/Users/yehor/Projects/ZenFlow/private-evidence/audio-encoder/lame-4.0-install/bin/lame").is_file(),
@@ -579,7 +610,7 @@ class RuntimeLoopTests(unittest.TestCase):
         mastered, _receipt = apply_linked_mastering(
             samples,
             target_rms_dbfs=-26.0,
-            peak_ceiling_dbfs=-1.0,
+            peak_ceiling_dbfs=-6.0,
         )
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -695,6 +726,13 @@ class RuntimePackageTests(unittest.TestCase):
         self.assertEqual(validated["assetCount"], 18)
         self.assertEqual(validated["status"], "PASS")
         self.assertFalse(validated["runtimePromotionAllowed"])
+
+    def test_runtime_builder_imports_in_minimal_review_environment(self):
+        module = importlib.import_module(
+            "scripts.audio_candidates.build_runtime_masters"
+        )
+
+        self.assertTrue(callable(module.build_runtime_masters))
 
     def test_manifest_rejects_missing_blind_authority_prohibited_operation_or_weak_progression(self):
         cases = []

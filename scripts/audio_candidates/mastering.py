@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import deque
 import hashlib
 import json
 import math
@@ -27,6 +28,7 @@ POLICY_ROOT_KEYS = {
     "deliverySeconds",
     "bitrateKbps",
     "peakCeilingDbfs",
+    "decodedPeakCeilingDbfs",
     "minAdjacentRmsDeltaDb",
     "targetRmsDbfs",
     "operations",
@@ -43,9 +45,10 @@ ENCODER_KEYS = {
 ALLOWED_OPERATIONS = (
     "decode-pcm",
     "equal-power-loop-crossfade",
+    "quiet-boundary-rotate",
     "repeat-exactly-twice",
     "linked-gain",
-    "safety-peak-scale",
+    "safety-peak-limit",
     "encode-mp3",
 )
 
@@ -135,6 +138,7 @@ class MasteringPolicy:
     delivery_seconds: float
     bitrate_kbps: int
     peak_ceiling_dbfs: float
+    decoded_peak_ceiling_dbfs: float
     min_adjacent_rms_delta_db: float
     target_rms_dbfs: Mapping[str, float]
     operations: tuple[str, ...]
@@ -280,7 +284,8 @@ def load_mastering_policy(path: str | Path) -> MasteringPolicy:
         or payload["baseLoopSeconds"] != 15
         or payload["deliverySeconds"] != 30
         or payload["bitrateKbps"] != 128
-        or payload["peakCeilingDbfs"] != -1
+        or payload["peakCeilingDbfs"] != -6
+        or payload["decodedPeakCeilingDbfs"] != -1
         or payload["minAdjacentRmsDeltaDb"] != 3
         or payload["operations"] != list(ALLOWED_OPERATIONS)
     ):
@@ -322,7 +327,8 @@ def load_mastering_policy(path: str | Path) -> MasteringPolicy:
         base_loop_seconds=15.0,
         delivery_seconds=30.0,
         bitrate_kbps=128,
-        peak_ceiling_dbfs=-1.0,
+        peak_ceiling_dbfs=-6.0,
+        decoded_peak_ceiling_dbfs=-1.0,
         min_adjacent_rms_delta_db=3.0,
         target_rms_dbfs=MappingProxyType({
             "soft": -30.0,
@@ -417,6 +423,43 @@ def build_delivery_pcm(
     return np.ascontiguousarray(delivery, dtype=np.float64)
 
 
+def rotate_to_quiet_boundary(
+    base: np.ndarray,
+    sample_rate: int,
+) -> tuple[np.ndarray, int]:
+    data = _validate_stereo_pcm(
+        base,
+        sample_rate,
+        expected_frames=15 * 48000,
+    )
+    radius = round(0.02 * sample_rate)
+    per_frame_energy = np.mean(np.square(data), axis=1, dtype=np.float64)
+    circular_energy = np.concatenate(
+        (
+            per_frame_energy[-radius:],
+            per_frame_energy,
+            per_frame_energy[:radius],
+        )
+    )
+    prefix = np.concatenate(
+        (np.zeros(1, dtype=np.float64), np.cumsum(circular_energy))
+    )
+    window_size = radius * 2 + 1
+    local_sums = prefix[window_size:] - prefix[:-window_size]
+    local_rms = np.sqrt(local_sums[: len(data)] / window_size)
+    previous = np.roll(data, 1, axis=0)
+    adjacent_jump = np.max(np.abs(data - previous), axis=1)
+    score = adjacent_jump + 0.25 * local_rms
+    rotation_frames = int(np.argmin(score))
+    if rotation_frames == 0:
+        return np.ascontiguousarray(data.copy()), 0
+    rotated = np.concatenate(
+        (data[rotation_frames:], data[:rotation_frames]),
+        axis=0,
+    )
+    return np.ascontiguousarray(rotated, dtype=np.float64), rotation_frames
+
+
 def apply_linked_mastering(
     samples: np.ndarray,
     *,
@@ -426,30 +469,98 @@ def apply_linked_mastering(
     data = _validate_stereo_pcm(samples, 48000)
     if target_rms_dbfs not in (-30.0, -26.0, -22.0):
         raise MasteringError("unapproved target RMS")
-    if peak_ceiling_dbfs != -1.0:
-        raise MasteringError("runtime peak ceiling must be -1 dBFS")
+    if peak_ceiling_dbfs != -6.0:
+        raise MasteringError("runtime pre-encode peak ceiling must be -6 dBFS")
     rms_before = float(np.sqrt(np.mean(np.square(data), dtype=np.float64)))
     if rms_before <= 1e-12:
         raise MasteringError("mastering input must not be silent")
+    period_frames = 15 * 48000
+    if data.shape[0] != period_frames * 2 or not np.array_equal(
+        data[:period_frames], data[period_frames:]
+    ):
+        raise MasteringError("linked mastering requires two exact 15-second periods")
     target_linear = 10.0 ** (target_rms_dbfs / 20.0)
-    gain = target_linear / rms_before
-    mastered = data * gain
+    mastered_base = data[:period_frames].copy()
     operations = ["linked-gain"]
     peak_ceiling_linear = 10.0 ** (peak_ceiling_dbfs / 20.0)
-    peak_after_gain = float(np.max(np.abs(mastered)))
-    safety_scale = 1.0
-    if peak_after_gain > peak_ceiling_linear:
-        safety_scale = peak_ceiling_linear / peak_after_gain
-        mastered *= safety_scale
-        operations.append("safety-peak-scale")
+    total_gain = 1.0
+    max_limiter_reduction_db = 0.0
+    limiter_used = False
+    lookahead_frames = round(0.005 * 48000)
+    release_coefficient = math.exp(-1.0 / (0.1 * 48000))
+
+    def forward_max_circular(values: np.ndarray) -> np.ndarray:
+        extended = np.concatenate((values, values[:lookahead_frames]))
+        output = np.empty(len(values), dtype=np.float64)
+        candidates: deque[int] = deque()
+        for index, value in enumerate(extended):
+            while candidates and extended[candidates[-1]] <= value:
+                candidates.pop()
+            candidates.append(index)
+            left = index - lookahead_frames
+            while candidates and candidates[0] < left:
+                candidates.popleft()
+            start = index - lookahead_frames
+            if 0 <= start < len(values):
+                output[start] = extended[candidates[0]]
+        return output
+
+    for _iteration in range(8):
+        current_rms = float(
+            np.sqrt(np.mean(np.square(mastered_base), dtype=np.float64))
+        )
+        correction = target_linear / max(current_rms, 1e-12)
+        mastered_base *= correction
+        total_gain *= correction
+        frame_peak = np.max(np.abs(mastered_base), axis=1)
+        lookahead_peak = forward_max_circular(frame_peak)
+        desired_gain = np.minimum(
+            1.0,
+            peak_ceiling_linear / np.maximum(lookahead_peak, 1e-12),
+        )
+        if np.any(desired_gain < 1.0):
+            limiter_used = True
+            gain = float(desired_gain[-1])
+            gains = np.ones(period_frames, dtype=np.float64)
+            for cycle in range(3):
+                for index, desired in enumerate(desired_gain):
+                    if desired < gain:
+                        gain = float(desired)
+                    else:
+                        gain = (
+                            release_coefficient * gain
+                            + (1.0 - release_coefficient) * float(desired)
+                        )
+                    if cycle == 2:
+                        gains[index] = gain
+            mastered_base *= gains[:, None]
+            max_limiter_reduction_db = min(
+                max_limiter_reduction_db,
+                float(20.0 * math.log10(max(float(np.min(gains)), 1e-12))),
+            )
+        actual_rms = float(
+            np.sqrt(np.mean(np.square(mastered_base), dtype=np.float64))
+        )
+        if abs(20.0 * math.log10(max(actual_rms, 1e-12)) - target_rms_dbfs) <= 0.05:
+            break
+    if limiter_used:
+        operations.append("safety-peak-limit")
+    mastered = np.concatenate((mastered_base, mastered_base), axis=0)
     rms_after = float(np.sqrt(np.mean(np.square(mastered), dtype=np.float64)))
     peak_after = float(np.max(np.abs(mastered)))
+    actual_rms_dbfs = 20.0 * math.log10(max(rms_after, 1e-12))
+    if actual_rms_dbfs > target_rms_dbfs + 0.1:
+        raise MasteringError("linked mastering exceeded target RMS")
+    if peak_after > peak_ceiling_linear + 1e-12:
+        raise MasteringError("linked safety limiter exceeded peak ceiling")
     receipt = {
         "targetRmsDbfs": target_rms_dbfs,
         "peakCeilingDbfs": peak_ceiling_dbfs,
-        "linkedGainDb": round(20.0 * math.log10(gain), 6),
-        "safetyScaleDb": round(20.0 * math.log10(safety_scale), 6),
-        "actualRmsDbfs": round(20.0 * math.log10(max(rms_after, 1e-12)), 6),
+        "linkedGainDb": round(20.0 * math.log10(total_gain), 6),
+        "maxLimiterGainReductionDb": round(max_limiter_reduction_db, 6),
+        "lookaheadFrames": lookahead_frames,
+        "releaseMs": 100.0,
+        "actualRmsDbfs": round(actual_rms_dbfs, 6),
         "actualPeakDbfs": round(20.0 * math.log10(max(peak_after, 1e-12)), 6),
         "operations": operations,
     }

@@ -8,15 +8,36 @@ import stat
 
 from scripts.audio_review.verify import verify_hash_inventory
 
-from .ai import OUTPUT_ROOT as AI_ROOT
 from .blind import BLIND_LABELS, _bundle_hash, _permutation
-from .build import OUTPUT_ROOT, REPOSITORY_ROOT, TRACKED_INPUTS
 from .build_previews import (
     OUTPUT_ROOT as RAW_PREVIEW_ROOT,
     RIGHTS_LEDGER,
     SPEC_PATH,
 )
 from .model import EXACT_FAMILIES, load_candidate_spec
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+PRIVATE_ROOT = Path(
+    "/Users/yehor/Projects/ZenFlow/private-evidence/hyperfocus-v2"
+)
+OUTPUT_ROOT = PRIVATE_ROOT / "source-audition-v1"
+AI_ROOT = PRIVATE_ROOT / "source-ai-audit-v1"
+TRACKED_INPUTS = (
+    "config/audio/hyperfocus-source-candidates-v2.json",
+    "config/audio/hyperfocus-semantic-audit-v2.json",
+    "config/audio/hyperfocus-ai-models-v2.json",
+    "config/audio/quarantine-denylist.json",
+    "scripts/audio_candidates/ai.py",
+    "scripts/audio_candidates/blind.py",
+    "scripts/audio_candidates/build.py",
+    "scripts/audio_candidates/build_previews.py",
+    "scripts/audio_candidates/evidence.py",
+    "scripts/audio_candidates/model.py",
+    "scripts/audio_candidates/preview.py",
+    "scripts/audio_candidates/rights.py",
+    "scripts/audio_candidates/verify.py",
+)
 
 
 class BundleVerificationError(RuntimeError):
