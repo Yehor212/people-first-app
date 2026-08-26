@@ -65,11 +65,11 @@ describe("useHyperfocusAudio master app sound", () => {
     };
   });
 
-  it("applies master app volume to the focus ambient generator", () => {
+  it("applies master app volume without a second hidden attenuation", () => {
     const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));
 
     expect(result.current.audioMuted).toBe(false);
-    expect(generator.setVolume).toHaveBeenCalledWith(0.3);
+    expect(generator.setVolume).toHaveBeenCalledWith(0.6);
 
     act(() => result.current.handleSoundSelect("river"));
     expect(generator.playDirect).toHaveBeenCalledWith("river:deep");

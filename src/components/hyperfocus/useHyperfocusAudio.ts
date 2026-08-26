@@ -10,6 +10,7 @@ import { useAppAudioSettings } from '@/hooks/useAppAudioSettings';
 import { clearAppAudioMediaSession, setAppAudioMediaSession } from '@/lib/audioMediaSession';
 import { setHyperfocusToneCutoffKhz } from '@/lib/audioManager';
 import { normalizeHyperfocusToneKhz } from '@/lib/hyperfocusTone';
+import { resolveHyperfocusAmbientVolume } from '@/lib/hyperfocusAudioVolume';
 
 interface UseHyperfocusAudioOptions {
   isRunning: boolean;
@@ -29,7 +30,10 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
   const [toneFilterStatus, setToneFilterStatus] = useState<ToneFilterStatus>(() =>
     soundGeneratorRef.current.getToneFilterStatus(),
   );
-  const ambientVolume = appAudioSettings.muted ? 0 : Math.max(0, Math.min(1, appAudioSettings.volume * 0.5));
+  const ambientVolume = resolveHyperfocusAmbientVolume(
+    appAudioSettings.volume,
+    appAudioSettings.muted,
+  );
 
   // Subscribe to audio status updates
   useEffect(() => {
