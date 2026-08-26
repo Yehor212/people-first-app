@@ -141,6 +141,7 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(script).toContain("hyperfocusGeneratedAudioManifest.ts");
     expect(script).toContain("MixKit");
     expect(script).toContain("BigSoundBank");
+    expect(script).toContain("Hyperfocus CC0 Nature Sound Effects");
     expect(script).toContain("Desktop/Tauri generated target files scanned");
     expect(script).toContain("docs/assets bundles scanned");
     expect(packageJson.scripts["check:app-audio"]).toBe("node scripts/check-app-audio-assets.cjs");

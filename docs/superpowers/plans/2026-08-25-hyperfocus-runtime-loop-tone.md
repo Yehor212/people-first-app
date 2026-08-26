@@ -53,7 +53,7 @@ Expected: import or attribute failure because the runtime mastering API does not
 
 - [ ] **Step 3: Implement the exact metrics and validation**
 
-Use the project intensity formula from the spec, require finite stereo 48 kHz inputs, validate the exact family/candidate inventory, sort by `(intensity_score, candidate_id)`, and return exact source/preview hash bindings. The config contains schema version `2`, the three RMS targets, 5-second crossfade, 30-second delivery duration, peak ceiling, encoder identity, and the operation allowlist.
+Use the project intensity formula from the spec, require finite stereo 48 kHz inputs, validate the exact family/candidate inventory, and create the raw `(intensity_score, candidate_id)` order. Measure each candidate in each target level slot; when raw order does not preserve a 3-point final intensity-score delta, choose among all six permutations by minimum raw-order inversions, maximum minimum delta, then candidate ID. Return exact source/preview hash bindings and both raw/delivery scores. The config contains schema version `2`, the three RMS targets, 5-second crossfade, 30-second delivery duration, peak ceiling, encoder identity, and the operation allowlist.
 
 - [ ] **Step 4: Run GREEN and all candidate tests**
 

@@ -19,6 +19,8 @@ from .evidence import _write_json
 from .mastering import (
     ALLOWED_OPERATIONS,
     RuntimeCandidateMeasurement,
+    RuntimeAssignment,
+    LEVELS,
     apply_linked_mastering,
     assign_family_levels,
     build_circular_base,
@@ -28,6 +30,7 @@ from .mastering import (
     measure_intensity,
     read_pcm_wav,
     rotate_to_quiet_boundary,
+    select_delivery_assignment,
     write_pcm24_wav,
 )
 from .runtime_package import validate_runtime_manifest_payload
@@ -178,11 +181,86 @@ def _load_inputs():
     return assignments, samples_by_id, rights_by_id
 
 
+def _refine_assignments_for_delivery(
+    raw_assignments: tuple[RuntimeAssignment, ...],
+    samples_by_id: dict[str, np.ndarray],
+    policy,
+) -> tuple[tuple[RuntimeAssignment, ...], dict[tuple[str, str], dict]]:
+    raw_by_candidate = {row.candidate_id: row for row in raw_assignments}
+    rendered: dict[tuple[str, str], dict] = {}
+    final_assignments = []
+    for family in ("forest", "rain", "ocean", "fireplace", "river", "wind"):
+        family_raw = tuple(row for row in raw_assignments if row.family == family)
+        raw_order = tuple(row.candidate_id for row in family_raw)
+        score_matrix = {}
+        for candidate_id in raw_order:
+            unrotated_base = build_circular_base(
+                samples_by_id[candidate_id],
+                policy.sample_rate,
+                policy.crossfade_seconds,
+            )
+            base, rotation_frames = rotate_to_quiet_boundary(
+                unrotated_base,
+                policy.sample_rate,
+            )
+            delivery = build_delivery_pcm(
+                base,
+                policy.sample_rate,
+                policy.delivery_seconds,
+            )
+            for level in LEVELS:
+                mastered, mastering_receipt = apply_linked_mastering(
+                    delivery,
+                    target_rms_dbfs=policy.target_rms_dbfs[level],
+                    peak_ceiling_dbfs=policy.peak_ceiling_dbfs,
+                )
+                delivery_score = measure_intensity(
+                    mastered,
+                    policy.sample_rate,
+                ).intensity_score
+                score_matrix[(candidate_id, level)] = delivery_score
+                rendered[(candidate_id, level)] = {
+                    "base": base,
+                    "rotationFrames": rotation_frames,
+                    "mastered": mastered,
+                    "masteringReceipt": mastering_receipt,
+                    "deliveryIntensityScore": delivery_score,
+                }
+        selected = select_delivery_assignment(
+            family,
+            raw_order,
+            score_matrix,
+            minimum_delta=policy.min_adjacent_rms_delta_db,
+        )
+        for rank, (level, candidate_id) in enumerate(
+            zip(LEVELS, selected),
+            start=1,
+        ):
+            raw = raw_by_candidate[candidate_id]
+            final_assignments.append(
+                RuntimeAssignment(
+                    family=family,
+                    level=level,
+                    candidate_id=candidate_id,
+                    source_sha256=raw.source_sha256,
+                    preview_sha256=raw.preview_sha256,
+                    rank=rank,
+                    metrics=raw.metrics,
+                )
+            )
+    return tuple(final_assignments), rendered
+
+
 def build_runtime_masters() -> Path:
     if OUTPUT_ROOT.exists() or OUTPUT_ROOT.is_symlink():
         raise RuntimeMasterBuildError("runtime master output already exists")
     policy = load_mastering_policy(POLICY_PATH)
-    assignments, samples_by_id, rights_by_id = _load_inputs()
+    raw_assignments, samples_by_id, rights_by_id = _load_inputs()
+    assignments, rendered = _refine_assignments_for_delivery(
+        raw_assignments,
+        samples_by_id,
+        policy,
+    )
     PRIVATE_ROOT.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
         dir=PRIVATE_ROOT,
@@ -198,26 +276,13 @@ def build_runtime_masters() -> Path:
         manifest_assets = []
         provenance_assets = []
         for assignment in assignments:
-            samples = samples_by_id[assignment.candidate_id]
-            unrotated_base = build_circular_base(
-                samples,
-                policy.sample_rate,
-                policy.crossfade_seconds,
-            )
-            base, rotation_frames = rotate_to_quiet_boundary(
-                unrotated_base,
-                policy.sample_rate,
-            )
-            delivery = build_delivery_pcm(
-                base,
-                policy.sample_rate,
-                policy.delivery_seconds,
-            )
-            mastered, mastering_receipt = apply_linked_mastering(
-                delivery,
-                target_rms_dbfs=policy.target_rms_dbfs[assignment.level],
-                peak_ceiling_dbfs=policy.peak_ceiling_dbfs,
-            )
+            selected_render = rendered[
+                (assignment.candidate_id, assignment.level)
+            ]
+            base = selected_render["base"]
+            rotation_frames = selected_render["rotationFrames"]
+            mastered = selected_render["mastered"]
+            mastering_receipt = selected_render["masteringReceipt"]
             safe_id = assignment.variant_id.replace(":", "--")
             pcm_path = pcm_root / f"{safe_id}.wav"
             mp3_path = audio_root / assignment.file_name
@@ -238,7 +303,12 @@ def build_runtime_masters() -> Path:
                 "outputSha256": _sha256_file(mp3_path),
                 "outputBytes": mp3_path.stat().st_size,
                 "operations": list(ALLOWED_OPERATIONS),
-                "assignmentMetrics": assignment.metrics.to_dict(),
+                "assignmentMetrics": {
+                    **assignment.metrics.to_dict(),
+                    "deliveryIntensityScore": selected_render[
+                        "deliveryIntensityScore"
+                    ],
+                },
                 "decodedQc": decoded_qc,
             }
             manifest_assets.append(row)
@@ -283,7 +353,15 @@ def build_runtime_masters() -> Path:
                 "schemaVersion": 1,
                 "method": "signal-intensity-ascending-candidate-id-tiebreak",
                 "blindLabelsUsed": False,
-                "assignments": [assignment.to_dict() for assignment in assignments],
+                "assignments": [
+                    {
+                        **assignment.to_dict(),
+                        "deliveryIntensityScore": rendered[
+                            (assignment.candidate_id, assignment.level)
+                        ]["deliveryIntensityScore"],
+                    }
+                    for assignment in assignments
+                ],
             },
         )
         _write_json(

@@ -278,10 +278,12 @@ function checkThirdPartyNotices() {
 
   if (hyperfocusUsesBigSoundBank) {
     for (const marker of [
-      'BigSoundBank / LaSonotheque — Hyperfocus Fireplace Sound Effects',
-      'https://bigsoundbank.com/fireplace-4-s2856.html',
+      'BigSoundBank / LaSonotheque — Hyperfocus CC0 Nature Sound Effects',
       'https://bigsoundbank.com/licenses.html',
-      'public/sounds/hyperfocus/hyperfocus-fireplace-',
+      'public/sounds/hyperfocus/',
+      'docs/audio/hyperfocus-runtime-v2-manifest.json',
+      'Forest: `3085`, `2749`, `905`',
+      'Wind: `904`, `907`, `1450`',
     ]) {
       assert(notices.includes(marker), 'THIRD_PARTY_NOTICES.md is missing Hyperfocus BigSoundBank coverage', { marker });
     }

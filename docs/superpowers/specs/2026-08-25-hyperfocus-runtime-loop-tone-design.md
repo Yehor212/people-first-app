@@ -40,7 +40,7 @@ It computes the existing project-compatible intensity score:
 (rmsDb + 60) * 1.2 + (motionDb + 70) * 0.45 + min(20, zeroCrossingsPerSecond / 400)
 ```
 
-The three rows sort ascending by `(intensityScore, candidateId)`. Lowest becomes `soft`, middle `deep`, highest `intense`. The tracked runtime promotion manifest records source, preview, output, metric, level, and rank hashes so no blind label can influence the assignment.
+The three rows first sort ascending by `(intensityScore, candidateId)`. Each candidate is then mastered in each of the three level slots and measured again. If the raw order does not preserve at least a 3-point final intensity-score delta, the selector evaluates all six permutations and chooses the passing permutation with the fewest inversions from raw order, then the largest minimum delta, then candidate-ID order. The tracked runtime promotion manifest records raw and delivery metrics, source, preview, output, level, and rank hashes so no blind label or model output can influence the assignment.
 
 ### 2. Loop construction
 

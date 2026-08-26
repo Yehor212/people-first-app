@@ -56,26 +56,17 @@ const HYPERFOCUS_LEGACY_FAMILY_ALIASES: Record<string, HyperfocusAudioFamilyId> 
 const familyIds = new Set<string>(HYPERFOCUS_AUDIO_FAMILY_IDS);
 const levelIds = new Set<string>(HYPERFOCUS_AUDIO_LEVEL_IDS);
 
-const familyLabelKeyParts: Record<HyperfocusAudioFamilyId, string> = {
-  forest: "Forest",
-  rain: "Rain",
-  ocean: "Ocean",
-  fireplace: "Fireplace",
-  river: "River",
-  wind: "Wind",
-};
-
-const levelLabelKeyParts: Record<HyperfocusAudioLevelId, string> = {
-  soft: "Soft",
-  deep: "Deep",
-  intense: "Intense",
+const levelLabelKeys: Record<HyperfocusAudioLevelId, string> = {
+  soft: "hyperfocusSoundLevelSoft",
+  deep: "hyperfocusSoundLevelDeep",
+  intense: "hyperfocusSoundLevelIntense",
 };
 
 function getHyperfocusLevelLabelKey(
-  familyId: HyperfocusAudioFamilyId,
+  _familyId: HyperfocusAudioFamilyId,
   levelId: HyperfocusAudioLevelId,
 ): string {
-  return `hyperfocusSound${familyLabelKeyParts[familyId]}${levelLabelKeyParts[levelId]}`;
+  return levelLabelKeys[levelId];
 }
 
 function makeVariantId(
@@ -121,42 +112,42 @@ export const HYPERFOCUS_AUDIO_FAMILIES = [
     legacyId: "forest",
     legacyAssetId: "focus-forest",
     labelKey: "hyperfocusSoundForest",
-    levels: makeLevels("forest", ["Canopy Breeze", "Bird Canopy", "Forest Night"]),
+    levels: makeLevels("forest", ["Soft", "Deep", "Intense"]),
   },
   {
     id: "rain",
     legacyId: "rain",
     legacyAssetId: "focus-rain",
     labelKey: "hyperfocusSoundRain",
-    levels: makeLevels("rain", ["Light Rain", "Rain Bed", "Heavy Rain"]),
+    levels: makeLevels("rain", ["Soft", "Deep", "Intense"]),
   },
   {
     id: "ocean",
     legacyId: "ocean",
     legacyAssetId: "focus-ocean",
     labelKey: "hyperfocusSoundOcean",
-    levels: makeLevels("ocean", ["Shoreline", "Rock Pools", "Heavy Surf"]),
+    levels: makeLevels("ocean", ["Soft", "Deep", "Intense"]),
   },
   {
     id: "fireplace",
     legacyId: "fireplace",
     legacyAssetId: "focus-fireplace",
     labelKey: "hyperfocusSoundFireplace",
-    levels: makeLevels("fireplace", ["Embers", "Hearth", "Full Hearth"]),
+    levels: makeLevels("fireplace", ["Soft", "Deep", "Intense"]),
   },
   {
     id: "river",
     legacyId: "river",
     legacyAssetId: "focus-river",
     labelKey: "hyperfocusSoundRiver",
-    levels: makeLevels("river", ["Brook", "Forest River", "Whitewater"]),
+    levels: makeLevels("river", ["Soft", "Deep", "Intense"]),
   },
   {
     id: "wind",
     legacyId: "wind",
     legacyAssetId: "focus-wind",
     labelKey: "hyperfocusSoundWind",
-    levels: makeLevels("wind", ["Soft Wind", "Wind Bed", "Mountain Wind"]),
+    levels: makeLevels("wind", ["Soft", "Deep", "Intense"]),
   },
 ] as const satisfies readonly HyperfocusAudioFamily[];
 

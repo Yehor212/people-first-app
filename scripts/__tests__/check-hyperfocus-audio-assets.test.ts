@@ -132,8 +132,14 @@ const qc = require("../check-hyperfocus-audio-assets.cjs") as {
     startRmsDbfs: number;
     endRmsDbfs: number;
     seamMeanAbsDiff: number;
+    boundaryJump?: number;
     fileBytes: number;
   }) => Array<{ code: string; message: string }>;
+  validateRuntimeV2Manifest: (options?: { rootDir?: string }) => {
+    ok: boolean;
+    assetCount?: number;
+    issues: Array<{ code: string; message: string }>;
+  };
 };
 
 
@@ -160,6 +166,7 @@ function passingAudioMetrics() {
     startRmsDbfs: -22.2,
     endRmsDbfs: -22.7,
     seamMeanAbsDiff: 0.015,
+    boundaryJump: 0.01,
     fileBytes: 720_000,
   };
 }
@@ -208,6 +215,61 @@ function writeAcceptedPilotGateEvidence(rootDir: string) {
 }
 
 describe("check-hyperfocus-audio-assets", () => {
+  it("binds the canonical runtime v2 manifest to all 18 BigSoundBank CC0 public bytes", () => {
+    const manifest = JSON.parse(
+      readFileSync("docs/audio/hyperfocus-runtime-v2-manifest.json", "utf8"),
+    ) as {
+      schemaVersion: number;
+      status: string;
+      runtimePromotionAllowed: boolean;
+      assetCount: number;
+      aiStatus: string;
+      humanLoopReview: string;
+      storeReleaseStatus: string;
+      assets: Array<{
+        variantId: string;
+        publicPath: string;
+        sha256: string;
+        provider: string;
+        licenseId: string;
+        operations: string[];
+      }>;
+    };
+
+    expect(manifest).toMatchObject({
+      schemaVersion: 2,
+      status: "INTEGRATED_REVIEW_PENDING",
+      runtimePromotionAllowed: false,
+      assetCount: 18,
+      aiStatus: "TRIAL_ONLY_NOT_ADMITTED",
+      humanLoopReview: "UNVERIFIED",
+      storeReleaseStatus: "STOP",
+    });
+    expect(manifest.assets).toHaveLength(18);
+    expect(qc.validateRuntimeV2Manifest()).toEqual({
+      ok: true,
+      assetCount: 18,
+      issues: [],
+    });
+    expect(new Set(manifest.assets.map((row) => row.variantId)).size).toBe(18);
+    expect(JSON.stringify(manifest)).not.toContain("Mixkit");
+    for (const row of manifest.assets) {
+      const publicBytes = readFileSync(join("public", row.publicPath));
+      expect(row.provider).toBe("BigSoundBank / LaSonotheque");
+      expect(row.licenseId).toBe("CC0-1.0");
+      expect(row.sha256).toBe(sha256Buffer(publicBytes));
+      expect(row.operations).toEqual([
+        "decode-pcm",
+        "equal-power-loop-crossfade",
+        "quiet-boundary-rotate",
+        "repeat-exactly-twice",
+        "linked-gain",
+        "safety-peak-limit",
+        "encode-mp3",
+      ]);
+    }
+  });
+
   it("builds original V1 focus source coverage report", () => {
     const report = qc.buildOriginalSourceCoverageReport({
       rootDir: process.cwd(),
@@ -512,12 +574,41 @@ describe("check-hyperfocus-audio-assets", () => {
       startRmsDbfs: -13.5,
       endRmsDbfs: -65.7,
       seamMeanAbsDiff: 0.14,
+      boundaryJump: 0.14,
       fileBytes: 700_000,
     });
 
     expect(issues.map((issue) => issue.code)).toEqual(
       expect.arrayContaining(["peak-too-hot", "clipped-samples", "end-fade", "bad-loop-seam"]),
     );
+  });
+
+  it("gates the actual boundary discontinuity instead of unrelated 50ms window equality", () => {
+    const baseMetrics = {
+      durationSeconds: 30,
+      sampleRate: 48000,
+      channels: 2,
+      rmsDbfs: -22,
+      peakDbfs: -3,
+      clippedSamples: 0,
+      startRmsDbfs: -22.1,
+      endRmsDbfs: -22.2,
+      fileBytes: 480384,
+    };
+
+    const highWindowDifference = qc.evaluateHyperfocusAudioMetrics({
+      ...baseMetrics,
+      seamMeanAbsDiff: 0.14,
+      boundaryJump: 0.01,
+    });
+    const realBoundaryDiscontinuity = qc.evaluateHyperfocusAudioMetrics({
+      ...baseMetrics,
+      seamMeanAbsDiff: 0.01,
+      boundaryJump: 0.14,
+    });
+
+    expect(highWindowDifference.map((issue) => issue.code)).not.toContain("bad-loop-seam");
+    expect(realBoundaryDiscontinuity.map((issue) => issue.code)).toContain("bad-loop-seam");
   });
 
   it("refuses to promote a candidate whose file name is not in the spec", () => {
@@ -2064,6 +2155,7 @@ describe("check-hyperfocus-audio-assets", () => {
             peakDbfs: 0,
             clippedSamples: 12,
             seamMeanAbsDiff: 0.12,
+            boundaryJump: 0.12,
           };
         }
         return passingAudioMetrics();
@@ -2776,6 +2868,7 @@ describe("check-hyperfocus-audio-assets", () => {
             peakDbfs: 0,
             clippedSamples: 12,
             seamMeanAbsDiff: 0.12,
+            boundaryJump: 0.12,
           };
         }
         return passingAudioMetrics();

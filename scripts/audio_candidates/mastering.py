@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections import deque
 import hashlib
+import itertools
 import json
 import math
 from pathlib import Path
@@ -248,6 +249,45 @@ def assign_family_levels(
             for rank, (level, record) in enumerate(zip(LEVELS, ordered), start=1)
         )
     return tuple(assignments)
+
+
+def select_delivery_assignment(
+    family: str,
+    raw_order: tuple[str, str, str],
+    score_matrix: Mapping[tuple[str, str], float],
+    *,
+    minimum_delta: float,
+) -> tuple[str, str, str]:
+    expected = {f"{family}-c{position}" for position in (1, 2, 3)}
+    if set(raw_order) != expected or len(set(raw_order)) != 3:
+        raise MasteringError(f"invalid raw assignment inventory: {family}")
+    if minimum_delta <= 0 or not math.isfinite(minimum_delta):
+        raise MasteringError("minimum delivery delta must be finite and positive")
+    expected_keys = {(candidate, level) for candidate in expected for level in LEVELS}
+    if set(score_matrix) != expected_keys or any(
+        not math.isfinite(float(value)) for value in score_matrix.values()
+    ):
+        raise MasteringError(f"invalid delivery score matrix: {family}")
+    raw_rank = {candidate: index for index, candidate in enumerate(raw_order)}
+    valid = []
+    for permutation in itertools.permutations(raw_order):
+        scores = [
+            float(score_matrix[(candidate, level)])
+            for candidate, level in zip(permutation, LEVELS)
+        ]
+        deltas = (scores[1] - scores[0], scores[2] - scores[1])
+        if min(deltas) < minimum_delta:
+            continue
+        inversions = sum(
+            raw_rank[permutation[left]] > raw_rank[permutation[right]]
+            for left in range(3)
+            for right in range(left + 1, 3)
+        )
+        valid.append((inversions, -min(deltas), tuple(permutation)))
+    if not valid:
+        raise MasteringError(f"no delivery assignment passes progression: {family}")
+    valid.sort()
+    return valid[0][2]
 
 
 def _strict_object(pairs):

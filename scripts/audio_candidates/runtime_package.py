@@ -38,6 +38,7 @@ METRIC_KEYS = {
     "zeroCrossingsPerSecond",
     "crestFactorDb",
     "intensityScore",
+    "deliveryIntensityScore",
 }
 QC_KEYS = {
     "sampleRate",
@@ -185,7 +186,7 @@ def validate_runtime_manifest_payload(payload: object) -> dict:
         score_values = [
             float(
                 rows_by_variant[f"{family}:{level}"]["assignmentMetrics"][
-                    "intensityScore"
+                    "deliveryIntensityScore"
                 ]
             )
             for level in LEVELS

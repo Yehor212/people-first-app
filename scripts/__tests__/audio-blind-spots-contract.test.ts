@@ -129,17 +129,17 @@ describe("audio blind-spot release contracts", () => {
     expect(driftWorkflow).toContain("cmd: npm run check:app-audio");
   });
 
-  it("keeps third-party notices aligned with first-party ambience and Hyperfocus MixKit provenance", () => {
+  it("keeps third-party notices aligned with the current BigSoundBank CC0 Hyperfocus runtime", () => {
     const notices = read("THIRD_PARTY_NOTICES.md");
 
     expect(notices).toContain("First-party generated audio");
     expect(notices).toContain("scripts/generate-non-hyperfocus-audio.cjs");
     expect(notices).toContain("lamejs");
-    expect(notices).toContain("MixKit — Hyperfocus Nature Sound Effects");
-    expect(notices).toContain("BigSoundBank / LaSonotheque — Hyperfocus Fireplace Sound Effects");
+    expect(notices).not.toContain("MixKit — Hyperfocus Nature Sound Effects");
+    expect(notices).toContain("BigSoundBank / LaSonotheque — Hyperfocus CC0 Nature Sound Effects");
     expect(notices).toContain("src/lib/hyperfocusGeneratedAudioManifest.ts");
     expect(notices).toContain("docs/audio/hyperfocus-generated-audio-provenance.json");
-    expect(notices).toContain("https://mixkit.co/license/");
+    expect(notices).toContain("docs/audio/hyperfocus-runtime-v2-manifest.json");
     expect(notices).toContain("https://bigsoundbank.com/licenses.html");
     expect(notices).not.toContain("mixkit-small-waves-harbor-rocks-1208.wav");
   });

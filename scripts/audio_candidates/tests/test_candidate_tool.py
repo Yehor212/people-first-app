@@ -42,6 +42,7 @@ from scripts.audio_candidates.mastering import (
     measure_intensity,
     read_pcm_wav,
     rotate_to_quiet_boundary,
+    select_delivery_assignment,
     verify_mastering_operations,
     write_pcm24_wav,
 )
@@ -487,6 +488,40 @@ class RuntimeMasteringTests(unittest.TestCase):
         with self.assertRaisesRegex(MasteringError, "exact 18-candidate inventory"):
             assign_family_levels(tuple(rows[:-1] + [rows[0]]))
 
+    def test_delivery_assignment_uses_minimum_raw_inversions_that_pass_final_progression(self):
+        raw_order = ("fireplace-c2", "fireplace-c1", "fireplace-c3")
+        score_matrix = {
+            ("fireplace-c1", "soft"): 70.31,
+            ("fireplace-c1", "deep"): 76.85,
+            ("fireplace-c1", "intense"): 83.31,
+            ("fireplace-c2", "soft"): 62.17,
+            ("fireplace-c2", "deep"): 68.47,
+            ("fireplace-c2", "intense"): 74.65,
+            ("fireplace-c3", "soft"): 65.28,
+            ("fireplace-c3", "deep"): 71.36,
+            ("fireplace-c3", "intense"): 76.90,
+        }
+
+        selected = select_delivery_assignment(
+            "fireplace",
+            raw_order,
+            score_matrix,
+            minimum_delta=3.0,
+        )
+
+        self.assertEqual(
+            selected,
+            ("fireplace-c2", "fireplace-c3", "fireplace-c1"),
+        )
+        impossible = {key: 1.0 for key in score_matrix}
+        with self.assertRaisesRegex(MasteringError, "no delivery assignment"):
+            select_delivery_assignment(
+                "fireplace",
+                raw_order,
+                impossible,
+                minimum_delta=3.0,
+            )
+
     def test_mastering_policy_has_fixed_targets_and_operation_allowlist(self):
         policy = load_mastering_policy(MASTERING_POLICY_PATH)
 
@@ -700,6 +735,7 @@ class RuntimePackageTests(unittest.TestCase):
                         "zeroCrossingsPerSecond": 100.0 * level_index,
                         "crestFactorDb": 10.0,
                         "intensityScore": float(level_index),
+                        "deliveryIntensityScore": float(level_index) * 4.0,
                     },
                     "decodedQc": {
                         "sampleRate": 48000,
