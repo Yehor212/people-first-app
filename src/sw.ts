@@ -20,46 +20,17 @@ import { ExpirationPlugin } from "workbox-expiration";
 import { RangeRequestsPlugin } from "workbox-range-requests";
 import { setCacheNameDetails } from "workbox-core";
 import { logger } from "@/lib/logger";
+import {
+  APP_AUDIO_SW_CACHE_PATHS,
+  RUNTIME_AUDIO_CACHE_NAME,
+  selectRetiredRuntimeAudioCaches,
+} from "@/lib/runtimeAudioCache";
 
 declare const self: ServiceWorkerGlobalScope;
 
 const CLIENT_MESSAGE_TYPES = ["SKIP_WAITING", "CLEAR_CACHES", "REGISTER_SYNC", "WARM_RUNTIME_AUDIO_CACHE"] as const;
 type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
 const APP_SHELL_URL = "index.html";
-const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio";
-const APP_AUDIO_SW_CACHE_PATHS = [
-  "sounds/feedback/feedback-complete.mp3",
-  "sounds/feedback/feedback-milestone.mp3",
-  "sounds/feedback/feedback-notification.mp3",
-  "sounds/feedback/feedback-streak.mp3",
-  "sounds/feedback/feedback-success.mp3",
-  "sounds/gentle-water-bed.mp3",
-  "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
-  "sounds/hyperfocus/hyperfocus-fireplace-intense.mp3",
-  "sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
-  "sounds/hyperfocus/hyperfocus-forest-deep.mp3",
-  "sounds/hyperfocus/hyperfocus-forest-intense.mp3",
-  "sounds/hyperfocus/hyperfocus-forest-soft.mp3",
-  "sounds/hyperfocus/hyperfocus-ocean-deep.mp3",
-  "sounds/hyperfocus/hyperfocus-ocean-intense.mp3",
-  "sounds/hyperfocus/hyperfocus-ocean-soft.mp3",
-  "sounds/hyperfocus/hyperfocus-rain-deep.mp3",
-  "sounds/hyperfocus/hyperfocus-rain-intense.mp3",
-  "sounds/hyperfocus/hyperfocus-rain-soft.mp3",
-  "sounds/hyperfocus/hyperfocus-river-deep.mp3",
-  "sounds/hyperfocus/hyperfocus-river-intense.mp3",
-  "sounds/hyperfocus/hyperfocus-river-soft.mp3",
-  "sounds/hyperfocus/hyperfocus-wind-deep.mp3",
-  "sounds/hyperfocus/hyperfocus-wind-intense.mp3",
-  "sounds/hyperfocus/hyperfocus-wind-soft.mp3",
-  "sounds/soft-air-veil.mp3",
-  "sounds/soft-rain-veil.mp3",
-  "sounds/feedback/feedback-complete.mp3",
-  "sounds/feedback/feedback-milestone.mp3",
-  "sounds/feedback/feedback-notification.mp3",
-  "sounds/feedback/feedback-streak.mp3",
-  "sounds/feedback/feedback-success.mp3",
-] as const;
 const SAME_ORIGIN_RUNTIME_ASSET_DESTINATIONS = new Set<RequestDestination>([
   "font",
   "image",
@@ -155,6 +126,17 @@ function warmRuntimeAudioCacheOnce(): Promise<void> {
     runtimeAudioCacheWarmPromise = null;
   });
   return runtimeAudioCacheWarmPromise;
+}
+
+async function retireStaleRuntimeAudioCaches(): Promise<void> {
+  const cacheNames = await caches.keys();
+  const retiredCacheNames = selectRetiredRuntimeAudioCaches(cacheNames);
+  await Promise.all(
+    retiredCacheNames.map((cacheName) => {
+      logger.log("[SW] Deleting retired runtime audio cache:", cacheName);
+      return caches.delete(cacheName);
+    }),
+  );
 }
 
 async function fetchNavigationWithTimeout(request: Request): Promise<Response> {
@@ -395,7 +377,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   logger.log("[SW] Activating...");
   event.waitUntil(
-    self.clients.claim().then(() => {
+    retireStaleRuntimeAudioCaches().then(() => self.clients.claim()).then(() => {
       // Notify all tabs that a new SW has activated — they should version-check
       return self.clients.matchAll().then((clients) => {
         clients.forEach((client) => {

@@ -27,16 +27,30 @@ describe("audio blind-spot release contracts", () => {
   it("caches shipped app audio for installed PWA offline reuse with bounded quota", () => {
     const serviceWorker = read("src/sw.ts");
 
-    expect(serviceWorker).toContain("zenflow-runtime-audio");
+    expect(serviceWorker).toContain("RUNTIME_AUDIO_CACHE_NAME");
     expect(serviceWorker).toContain('request.destination === "audio"');
     expect(serviceWorker).toContain('url.pathname.includes("/sounds/")');
     expect(serviceWorker).toContain("maxEntries: 32");
     expect(serviceWorker).toContain("purgeOnQuotaError: true");
   });
 
+  it("retires only the stale pre-v2 audio cache during service-worker activation", () => {
+    const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
+
+    expect(cacheContract).toContain('RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v2"');
+    expect(cacheContract).toContain('"zenflow-runtime-audio"');
+    expect(serviceWorker).toContain("selectRetiredRuntimeAudioCaches");
+    expect(serviceWorker).toContain("caches.delete(cacheName)");
+    expect(serviceWorker).not.toContain('caches.delete("zenflow-runtime-assets")');
+  });
+
 
   it("serves shipped PWA audio from a full-response-backed range-aware cache", () => {
     const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
+    const appAudioAssets = read("src/lib/appAudioAssets.ts");
+    const hyperfocusManifest = read("src/lib/hyperfocusGeneratedAudioManifest.ts");
 
     expect(serviceWorker).toContain('workbox-range-requests');
     expect(serviceWorker).toContain('new RangeRequestsPlugin()');
@@ -46,16 +60,19 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).not.toContain('statuses: [200, 206]');
     expect(serviceWorker).toContain('APP_AUDIO_SW_CACHE_PATHS');
     expect(serviceWorker).toContain('warmRuntimeAudioCache');
-    expect(serviceWorker).toContain('sounds/soft-air-veil.mp3');
-    expect(serviceWorker).toContain('sounds/gentle-water-bed.mp3');
-    expect(serviceWorker).toContain('sounds/soft-rain-veil.mp3');
-    expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-forest-soft.mp3');
-    expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-success.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-complete.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-streak.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-milestone.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-notification.mp3');
+    expect(cacheContract).toContain('APP_AUDIO_ASSETS.map');
+    expect(cacheContract).toContain('APP_AUDIO_FEEDBACK_EVENTS.map');
+    expect(cacheContract).toContain('HYPERFOCUS_GENERATED_AUDIO_MANIFEST');
+    expect(appAudioAssets).toContain('sounds/soft-air-veil.mp3');
+    expect(appAudioAssets).toContain('sounds/gentle-water-bed.mp3');
+    expect(appAudioAssets).toContain('sounds/soft-rain-veil.mp3');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("success"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("complete"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("streak"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("milestone"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("notification"');
+    expect(hyperfocusManifest).toContain('sounds/hyperfocus/hyperfocus-forest-soft.mp3');
+    expect(hyperfocusManifest).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
   });
 
   it("keeps shipped audio cache warming out of the blocking service-worker install path", () => {
