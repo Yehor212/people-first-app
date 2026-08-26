@@ -97,7 +97,7 @@ Tracked evidence maps every runtime output SHA-256 to:
 - source and reviewed-preview hashes;
 - exact source-to-level ranking metrics;
 - exact loop/mastering operations;
-- encoder command and local tool identity;
+- private LAME 4.0 executable/source/build hashes and fixed encoder argv;
 - decoded QC and AI diagnostic status;
 - owner/human, legal, platform, store, and release boundaries.
 
@@ -141,3 +141,4 @@ The existing eighteen runtime filenames stay unchanged, so stored selections and
 - Physical Android device, physical iOS device, OEM audio behavior, and Bluetooth routing.
 - Signed Android/iOS/Desktop store artifacts, store review, public deployment, and cache-busted production behavior.
 - Final artistic/craft acceptance of slider placement until the localhost choice is recorded.
+- Third-party LAME 4.0 source scan remains `FAIL_SCOPED_EXTERNAL_SOURCE`: the private build uses only fixed trusted local WAV/MP3 paths and is never shipped, but this containment is not a scanner `PASS`.

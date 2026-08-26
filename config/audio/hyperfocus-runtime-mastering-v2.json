@@ -24,9 +24,17 @@
     "encode-mp3"
   ],
   "encoder": {
-    "executable": "/usr/bin/afconvert",
-    "fileFormat": "MPG3",
-    "dataFormat": ".mp3",
+    "executable": "/Users/yehor/Projects/ZenFlow/private-evidence/audio-encoder/lame-4.0-install/bin/lame",
+    "version": "4.0",
+    "sourceUrl": "https://downloads.sourceforge.net/project/lame/lame/4.0/lame-4.0.tar.gz",
+    "sourceArchiveSha256": "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+    "buildFlags": [
+      "--disable-shared",
+      "--enable-static",
+      "--disable-decoder",
+      "--disable-gtktest",
+      "CPPFLAGS=-include locale.h"
+    ],
     "bitrateBps": 128000
   }
 }

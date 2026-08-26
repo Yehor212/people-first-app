@@ -6,7 +6,7 @@
 
 **Architecture:** Private Python tooling consumes the already hash-bound source-audition packet, measures all three sources per family, assigns levels independently of blind labels, renders exact 30-second periodic PCM masters, encodes 128 kbps MP3, and emits independently verifiable evidence before tracked promotion. The existing HTML media player remains authoritative; one optional Web Audio low-pass graph adds tone control with safe bypass. Stable runtime paths preserve stored selections, while a versioned PWA cache prevents stale bytes.
 
-**Tech Stack:** Python 3.12, NumPy 2.1.3, PCM WAV, macOS `afconvert`, React 18, TypeScript, Web Audio API, Vitest/Testing Library, Vite/Workbox, Capacitor 8, Tauri 2, Playwright.
+**Tech Stack:** Python 3.12, NumPy 2.1.3, PCM WAV, private source-built LAME 4.0 with gapless metadata, React 18, TypeScript, Web Audio API, Vitest/Testing Library, Vite/Workbox, Capacitor 8, Tauri 2, Playwright.
 
 **Spec:** `docs/superpowers/specs/2026-08-25-hyperfocus-runtime-loop-tone-design.md`
 
@@ -94,9 +94,9 @@ Run `RuntimeLoopTests`; expect missing loop/master functions.
 
 Use equal-power curves `cos(t*pi/2)` and `sin(t*pi/2)` over exactly 240,000 frames. Build the 15-second base from the tail/head overlap plus untouched middle, repeat twice, apply linked gain to `-30/-26/-22 dBFS`, and scale down to the linear `-1 dBFS` ceiling when necessary. Refuse NaN, silence, mono, wrong rate, wrong duration, symlink input/output, overwrite, and unapproved operations.
 
-- [ ] **Step 4: Add the fixed `afconvert` encoder boundary**
+- [ ] **Step 4: Add the fixed private LAME 4.0 encoder boundary**
 
-Encode through `/usr/bin/afconvert -f MPG3 -d .mp3 -b 128000`. Record executable SHA-256/version output and full argv. Encode a fixture twice and require identical bytes; if local CoreAudio is nondeterministic, bind each encode to decoded PCM/QC and mark byte reproducibility `UNVERIFIED` rather than weakening audio checks.
+Use the private LAME 4.0 executable built from SourceForge archive SHA-256 `3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb`, independently matching the current Homebrew formula checksum. The fixed argv is `--silent --noreplaygain --cbr -b 128 input.wav output.mp3`. Record executable/source/build hashes and version. Encode twice and require identical bytes; re-decode to exactly 30.000 seconds so the LAME delay/padding metadata is proven effective. The external source scan stays explicit `FAIL_SCOPED_EXTERNAL_SOURCE`; the tool receives only fixed trusted private paths and is never shipped.
 
 - [ ] **Step 5: Build the private 18-file package**
 
@@ -104,7 +104,7 @@ The builder accepts no caller-controlled paths, verifies the sealed source-audit
 
 - [ ] **Step 6: Independently verify**
 
-Hashes are verified before JSON parsing. Re-decode every MP3 with `afconvert`, verify rate/channels/duration/bitrate/peak/clipping/seam/intensity, verify all source/preview/assignment chains, forbid model/source bytes inside delivery, and require `runtimePromotionAllowed=false` pending final human placement/listening.
+Hashes are verified before JSON parsing. Re-decode every MP3 with `afconvert` (decode-only, which is available locally), verify rate/channels/duration/bitrate/peak/clipping/seam/intensity, verify all source/preview/assignment chains, forbid model/source bytes inside delivery, and require `runtimePromotionAllowed=false` pending final human placement/listening.
 
 - [ ] **Step 7: Run GREEN and commit**
 

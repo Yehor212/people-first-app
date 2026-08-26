@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -27,12 +28,24 @@ from scripts.audio_candidates.blind import (
     build_blind_bundle,
 )
 from scripts.audio_candidates.mastering import (
+    ALLOWED_OPERATIONS,
     IntensityMetrics,
     MasteringError,
     RuntimeCandidateMeasurement,
+    apply_linked_mastering,
     assign_family_levels,
+    build_circular_base,
+    build_delivery_pcm,
+    encode_mp3,
     load_mastering_policy,
     measure_intensity,
+    read_pcm_wav,
+    verify_mastering_operations,
+    write_pcm24_wav,
+)
+from scripts.audio_candidates.runtime_package import (
+    RuntimePackageError,
+    validate_runtime_manifest_payload,
 )
 from scripts.audio_review.rights import SourceRecord
 
@@ -487,6 +500,225 @@ class RuntimeMasteringTests(unittest.TestCase):
             "safety-peak-scale",
             "encode-mp3",
         ))
+
+
+class RuntimeLoopTests(unittest.TestCase):
+    def _reviewed_samples(self) -> np.ndarray:
+        sample_rate = 48000
+        time = np.arange(20 * sample_rate, dtype=np.float64) / sample_rate
+        envelope = np.linspace(0.4, 1.0, len(time), dtype=np.float64)
+        return np.column_stack((
+            0.12 * envelope * np.sin(2 * np.pi * 173 * time),
+            0.1 * envelope * np.sin(2 * np.pi * 211 * time + 0.3),
+        ))
+
+    def test_equal_power_base_uses_only_reviewed_pcm_and_repeats_exactly_twice(self):
+        samples = self._reviewed_samples()
+
+        base = build_circular_base(samples, 48000, 5.0)
+        delivery = build_delivery_pcm(base, 48000, 30.0)
+
+        self.assertEqual(base.shape, (15 * 48000, 2))
+        self.assertEqual(delivery.shape, (30 * 48000, 2))
+        np.testing.assert_array_equal(delivery[: 15 * 48000], base)
+        np.testing.assert_array_equal(delivery[15 * 48000 :], base)
+        np.testing.assert_allclose(base[0], samples[15 * 48000], atol=1e-12)
+        np.testing.assert_allclose(base[5 * 48000], samples[5 * 48000], atol=1e-12)
+
+    def test_linked_mastering_hits_target_without_clipping_or_channel_rebalance(self):
+        samples = self._reviewed_samples()
+        base = build_circular_base(samples, 48000, 5.0)
+        delivery = build_delivery_pcm(base, 48000, 30.0)
+
+        mastered, receipt = apply_linked_mastering(
+            delivery,
+            target_rms_dbfs=-26.0,
+            peak_ceiling_dbfs=-1.0,
+        )
+
+        measured = measure_intensity(mastered, 48000)
+        self.assertAlmostEqual(measured.rms_dbfs, -26.0, places=3)
+        self.assertLessEqual(float(np.max(np.abs(mastered))), 10 ** (-1 / 20) + 1e-12)
+        self.assertEqual(receipt["operations"], ["linked-gain"])
+        original_ratio = np.sqrt(np.mean(np.square(delivery[:, 0]))) / np.sqrt(
+            np.mean(np.square(delivery[:, 1]))
+        )
+        mastered_ratio = np.sqrt(np.mean(np.square(mastered[:, 0]))) / np.sqrt(
+            np.mean(np.square(mastered[:, 1]))
+        )
+        self.assertAlmostEqual(mastered_ratio, original_ratio, places=9)
+
+    def test_peak_scale_is_fail_closed_and_operations_reject_texture_or_pitch(self):
+        impulse = np.zeros((30 * 48000, 2), dtype=np.float64)
+        impulse[:, :] = 0.001
+        impulse[100, :] = 1.0
+
+        mastered, receipt = apply_linked_mastering(
+            impulse,
+            target_rms_dbfs=-22.0,
+            peak_ceiling_dbfs=-1.0,
+        )
+
+        self.assertIn("safety-peak-scale", receipt["operations"])
+        self.assertLessEqual(float(np.max(np.abs(mastered))), 10 ** (-1 / 20) + 1e-12)
+        for operation in ("synthetic-texture", "pitch-shift", "time-stretch", "mix"):
+            with self.subTest(operation=operation):
+                with self.assertRaisesRegex(MasteringError, "prohibited mastering operation"):
+                    verify_mastering_operations((*ALLOWED_OPERATIONS, operation))
+
+    @unittest.skipUnless(
+        Path("/Users/yehor/Projects/ZenFlow/private-evidence/audio-encoder/lame-4.0-install/bin/lame").is_file(),
+        "requires the hash-bound private LAME 4.0 encoder",
+    )
+    def test_pcm24_writer_and_mp3_encoder_are_fixed_and_repeatable(self):
+        samples = build_delivery_pcm(
+            build_circular_base(self._reviewed_samples(), 48000, 5.0),
+            48000,
+            30.0,
+        )
+        mastered, _receipt = apply_linked_mastering(
+            samples,
+            target_rms_dbfs=-26.0,
+            peak_ceiling_dbfs=-1.0,
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            wav_path = root / "master.wav"
+            first = root / "first.mp3"
+            second = root / "second.mp3"
+            write_pcm24_wav(mastered, 48000, wav_path)
+            decoded_pcm, decoded_rate = read_pcm_wav(wav_path)
+
+            self.assertEqual(decoded_rate, 48000)
+            self.assertEqual(decoded_pcm.shape, mastered.shape)
+            np.testing.assert_allclose(decoded_pcm, mastered, atol=1 / (1 << 22))
+
+            first_receipt = encode_mp3(wav_path, first)
+            second_receipt = encode_mp3(wav_path, second)
+
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            self.assertEqual(first_receipt["argv"][:-1], second_receipt["argv"][:-1])
+            self.assertEqual(first_receipt["argv"][-1], str(first))
+            self.assertEqual(second_receipt["argv"][-1], str(second))
+            self.assertEqual(first_receipt["bitrateBps"], 128000)
+            self.assertEqual(first_receipt["encoder"], "LAME")
+            self.assertEqual(first_receipt["encoderVersion"], "4.0")
+            self.assertEqual(
+                first_receipt["sourceArchiveSha256"],
+                "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+            )
+            self.assertEqual(
+                first_receipt["externalSourceSecurityStatus"],
+                "FAIL_SCOPED_EXTERNAL_SOURCE",
+            )
+            self.assertGreater(first.stat().st_size, 250000)
+            self.assertLess(first.stat().st_size, 2000000)
+            decoded = root / "decoded.wav"
+            subprocess.run(
+                [
+                    "/usr/bin/afconvert",
+                    str(first),
+                    str(decoded),
+                    "-f",
+                    "WAVE",
+                    "-d",
+                    "LEI16@48000",
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            with wave.open(str(decoded), "rb") as decoded_wave:
+                self.assertEqual(decoded_wave.getframerate(), 48000)
+                self.assertEqual(decoded_wave.getnchannels(), 2)
+                self.assertEqual(decoded_wave.getnframes(), 30 * 48000)
+
+
+class RuntimePackageTests(unittest.TestCase):
+    def _manifest(self) -> dict:
+        rows = []
+        targets = {"soft": -30.0, "deep": -26.0, "intense": -22.0}
+        levels = ("soft", "deep", "intense")
+
+        def digest(label: str) -> str:
+            return hashlib.sha256(label.encode("utf-8")).hexdigest()
+
+        for family in EXPECTED_FAMILIES:
+            for level_index, level in enumerate(levels, start=1):
+                candidate_id = f"{family}-c{level_index}"
+                rows.append({
+                    "variantId": f"{family}:{level}",
+                    "family": family,
+                    "level": level,
+                    "candidateId": candidate_id,
+                    "sourceSha256": digest(f"{candidate_id}:source"),
+                    "previewSha256": digest(f"{candidate_id}:preview"),
+                    "basePcmSha256": digest(f"{candidate_id}:base"),
+                    "masterPcmSha256": digest(f"{candidate_id}:master"),
+                    "fileName": f"hyperfocus-{family}-{level}.mp3",
+                    "outputSha256": digest(f"{family}:{level}:output"),
+                    "outputBytes": 480384,
+                    "operations": list(ALLOWED_OPERATIONS),
+                    "assignmentMetrics": {
+                        "rmsDbfs": -40.0 + level_index,
+                        "motionDbfs": -50.0 + level_index,
+                        "zeroCrossingsPerSecond": 100.0 * level_index,
+                        "crestFactorDb": 10.0,
+                        "intensityScore": float(level_index),
+                    },
+                    "decodedQc": {
+                        "sampleRate": 48000,
+                        "channels": 2,
+                        "frameCount": 1440000,
+                        "durationSeconds": 30.0,
+                        "bitrateBps": 128000,
+                        "rmsDbfs": targets[level],
+                        "peakDbfs": -2.0,
+                        "clippedSamples": 0,
+                        "boundaryJump": 0.001,
+                    },
+                })
+        return {
+            "schemaVersion": 2,
+            "status": "RUNTIME_MASTERS_TECHNICAL_PASS_REVIEW_PENDING",
+            "runtimePromotionAllowed": False,
+            "assetCount": 18,
+            "minAdjacentRmsDeltaDb": 3.0,
+            "assets": rows,
+        }
+
+    def test_manifest_requires_exact_hash_bound_all_18_progression(self):
+        payload = self._manifest()
+
+        validated = validate_runtime_manifest_payload(payload)
+
+        self.assertEqual(validated["assetCount"], 18)
+        self.assertEqual(validated["status"], "PASS")
+        self.assertFalse(validated["runtimePromotionAllowed"])
+
+    def test_manifest_rejects_missing_blind_authority_prohibited_operation_or_weak_progression(self):
+        cases = []
+        missing = self._manifest()
+        missing["assets"] = missing["assets"][:-1]
+        cases.append((missing, "exact 18-asset inventory"))
+
+        blind = self._manifest()
+        blind["assets"][0]["blindId"] = "A"
+        cases.append((blind, "asset keys mismatch"))
+
+        operation = self._manifest()
+        operation["assets"][0]["operations"].append("pitch-shift")
+        cases.append((operation, "prohibited mastering operation"))
+
+        weak = self._manifest()
+        rain_deep = next(row for row in weak["assets"] if row["variantId"] == "rain:deep")
+        rain_deep["decodedQc"]["rmsDbfs"] = -28.5
+        cases.append((weak, "adjacent RMS progression"))
+
+        for payload, reason in cases:
+            with self.subTest(reason=reason):
+                with self.assertRaisesRegex(RuntimePackageError, reason):
+                    validate_runtime_manifest_payload(payload)
 
 
 if __name__ == "__main__":

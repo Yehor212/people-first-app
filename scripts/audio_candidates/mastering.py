@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 import math
 from pathlib import Path
+import subprocess
 from types import MappingProxyType
 from typing import Mapping
+import wave
 
 import numpy as np
 
@@ -29,7 +32,14 @@ POLICY_ROOT_KEYS = {
     "operations",
     "encoder",
 }
-ENCODER_KEYS = {"executable", "fileFormat", "dataFormat", "bitrateBps"}
+ENCODER_KEYS = {
+    "executable",
+    "version",
+    "sourceUrl",
+    "sourceArchiveSha256",
+    "buildFlags",
+    "bitrateBps",
+}
 ALLOWED_OPERATIONS = (
     "decode-pcm",
     "equal-power-loop-crossfade",
@@ -106,8 +116,10 @@ class RuntimeAssignment:
 @dataclass(frozen=True)
 class MasteringEncoderPolicy:
     executable: str
-    file_format: str
-    data_format: str
+    version: str
+    source_url: str
+    source_archive_sha256: str
+    build_flags: tuple[str, ...]
     bitrate_bps: int
 
 
@@ -285,9 +297,17 @@ def load_mastering_policy(path: str | Path) -> MasteringPolicy:
         not isinstance(encoder, dict)
         or set(encoder) != ENCODER_KEYS
         or encoder != {
-            "executable": "/usr/bin/afconvert",
-            "fileFormat": "MPG3",
-            "dataFormat": ".mp3",
+            "executable": "/Users/yehor/Projects/ZenFlow/private-evidence/audio-encoder/lame-4.0-install/bin/lame",
+            "version": "4.0",
+            "sourceUrl": "https://downloads.sourceforge.net/project/lame/lame/4.0/lame-4.0.tar.gz",
+            "sourceArchiveSha256": "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+            "buildFlags": [
+                "--disable-shared",
+                "--enable-static",
+                "--disable-decoder",
+                "--disable-gtktest",
+                "CPPFLAGS=-include locale.h",
+            ],
             "bitrateBps": 128000,
         }
     ):
@@ -311,9 +331,285 @@ def load_mastering_policy(path: str | Path) -> MasteringPolicy:
         }),
         operations=ALLOWED_OPERATIONS,
         encoder=MasteringEncoderPolicy(
-            executable="/usr/bin/afconvert",
-            file_format="MPG3",
-            data_format=".mp3",
+            executable="/Users/yehor/Projects/ZenFlow/private-evidence/audio-encoder/lame-4.0-install/bin/lame",
+            version="4.0",
+            source_url="https://downloads.sourceforge.net/project/lame/lame/4.0/lame-4.0.tar.gz",
+            source_archive_sha256="3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+            build_flags=(
+                "--disable-shared",
+                "--enable-static",
+                "--disable-decoder",
+                "--disable-gtktest",
+                "CPPFLAGS=-include locale.h",
+            ),
             bitrate_bps=128000,
         ),
     )
+
+
+def _validate_stereo_pcm(
+    samples: np.ndarray,
+    sample_rate: int,
+    *,
+    expected_frames: int | None = None,
+) -> np.ndarray:
+    data = np.asarray(samples, dtype=np.float64)
+    if data.ndim != 2 or data.shape[1] != 2:
+        raise MasteringError("mastering input must be stereo")
+    if sample_rate != 48000:
+        raise MasteringError("mastering input must be 48 kHz")
+    if expected_frames is not None and data.shape[0] != expected_frames:
+        raise MasteringError(
+            f"mastering input requires exactly {expected_frames} frames"
+        )
+    if data.size == 0 or not np.isfinite(data).all():
+        raise MasteringError("mastering input must contain finite samples")
+    return np.ascontiguousarray(data, dtype=np.float64)
+
+
+def build_circular_base(
+    samples: np.ndarray,
+    sample_rate: int,
+    crossfade_seconds: float,
+) -> np.ndarray:
+    source_frames = 20 * 48000
+    data = _validate_stereo_pcm(
+        samples,
+        sample_rate,
+        expected_frames=source_frames,
+    )
+    if crossfade_seconds != 5.0:
+        raise MasteringError("runtime crossfade must be exactly 5 seconds")
+    crossfade_frames = round(crossfade_seconds * sample_rate)
+    base_frames = source_frames - crossfade_frames
+    tail = data[base_frames:source_frames]
+    head = data[:crossfade_frames]
+    phase = np.linspace(
+        0.0,
+        math.pi / 2.0,
+        crossfade_frames,
+        endpoint=True,
+        dtype=np.float64,
+    )[:, None]
+    overlap = tail * np.cos(phase) + head * np.sin(phase)
+    middle = data[crossfade_frames:base_frames]
+    base = np.concatenate((overlap, middle), axis=0)
+    if base.shape != (15 * sample_rate, 2):
+        raise MasteringError("circular base frame count mismatch")
+    return np.ascontiguousarray(base, dtype=np.float64)
+
+
+def build_delivery_pcm(
+    base: np.ndarray,
+    sample_rate: int,
+    delivery_seconds: float,
+) -> np.ndarray:
+    data = _validate_stereo_pcm(
+        base,
+        sample_rate,
+        expected_frames=15 * 48000,
+    )
+    if delivery_seconds != 30.0:
+        raise MasteringError("runtime delivery must be exactly 30 seconds")
+    delivery = np.concatenate((data, data), axis=0)
+    if delivery.shape != (30 * sample_rate, 2):
+        raise MasteringError("delivery frame count mismatch")
+    return np.ascontiguousarray(delivery, dtype=np.float64)
+
+
+def apply_linked_mastering(
+    samples: np.ndarray,
+    *,
+    target_rms_dbfs: float,
+    peak_ceiling_dbfs: float,
+) -> tuple[np.ndarray, dict]:
+    data = _validate_stereo_pcm(samples, 48000)
+    if target_rms_dbfs not in (-30.0, -26.0, -22.0):
+        raise MasteringError("unapproved target RMS")
+    if peak_ceiling_dbfs != -1.0:
+        raise MasteringError("runtime peak ceiling must be -1 dBFS")
+    rms_before = float(np.sqrt(np.mean(np.square(data), dtype=np.float64)))
+    if rms_before <= 1e-12:
+        raise MasteringError("mastering input must not be silent")
+    target_linear = 10.0 ** (target_rms_dbfs / 20.0)
+    gain = target_linear / rms_before
+    mastered = data * gain
+    operations = ["linked-gain"]
+    peak_ceiling_linear = 10.0 ** (peak_ceiling_dbfs / 20.0)
+    peak_after_gain = float(np.max(np.abs(mastered)))
+    safety_scale = 1.0
+    if peak_after_gain > peak_ceiling_linear:
+        safety_scale = peak_ceiling_linear / peak_after_gain
+        mastered *= safety_scale
+        operations.append("safety-peak-scale")
+    rms_after = float(np.sqrt(np.mean(np.square(mastered), dtype=np.float64)))
+    peak_after = float(np.max(np.abs(mastered)))
+    receipt = {
+        "targetRmsDbfs": target_rms_dbfs,
+        "peakCeilingDbfs": peak_ceiling_dbfs,
+        "linkedGainDb": round(20.0 * math.log10(gain), 6),
+        "safetyScaleDb": round(20.0 * math.log10(safety_scale), 6),
+        "actualRmsDbfs": round(20.0 * math.log10(max(rms_after, 1e-12)), 6),
+        "actualPeakDbfs": round(20.0 * math.log10(max(peak_after, 1e-12)), 6),
+        "operations": operations,
+    }
+    return np.ascontiguousarray(mastered, dtype=np.float64), receipt
+
+
+def verify_mastering_operations(operations: tuple[str, ...]) -> None:
+    prohibited = [operation for operation in operations if operation not in ALLOWED_OPERATIONS]
+    if prohibited:
+        raise MasteringError(f"prohibited mastering operation: {prohibited[0]}")
+
+
+def _pcm24_bytes(samples: np.ndarray) -> bytes:
+    integers = np.rint(samples.reshape(-1) * ((1 << 23) - 1)).astype(np.int32)
+    unsigned = integers & 0xFFFFFF
+    packed = np.empty((len(unsigned), 3), dtype=np.uint8)
+    packed[:, 0] = unsigned & 0xFF
+    packed[:, 1] = (unsigned >> 8) & 0xFF
+    packed[:, 2] = (unsigned >> 16) & 0xFF
+    return packed.tobytes()
+
+
+def write_pcm24_wav(samples: np.ndarray, sample_rate: int, output_path: Path) -> Path:
+    data = _validate_stereo_pcm(samples, sample_rate)
+    if float(np.max(np.abs(data))) > 1.0:
+        raise MasteringError("PCM output exceeds full scale")
+    output = Path(output_path)
+    if output.exists() or output.is_symlink():
+        raise MasteringError("PCM output must be a new regular path")
+    if output.parent.is_symlink():
+        raise MasteringError("PCM output parent may not be a symlink")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with wave.open(str(output), "wb") as destination:
+            destination.setnchannels(2)
+            destination.setsampwidth(3)
+            destination.setframerate(sample_rate)
+            destination.writeframes(_pcm24_bytes(data))
+    except (OSError, wave.Error) as exc:
+        output.unlink(missing_ok=True)
+        raise MasteringError(f"unable to write PCM24 WAV: {exc}") from exc
+    return output
+
+
+def read_pcm_wav(path: Path) -> tuple[np.ndarray, int]:
+    source = Path(path)
+    if source.is_symlink() or not source.is_file() or source.stat().st_nlink != 1:
+        raise MasteringError("PCM input must be one regular WAV")
+    try:
+        with wave.open(str(source), "rb") as input_wave:
+            params = input_wave.getparams()
+            frames = input_wave.readframes(params.nframes)
+    except (OSError, EOFError, wave.Error) as exc:
+        raise MasteringError(f"unable to read PCM WAV: {exc}") from exc
+    if (
+        params.comptype != "NONE"
+        or params.nchannels != 2
+        or params.framerate != 48000
+        or params.sampwidth not in (2, 3, 4)
+    ):
+        raise MasteringError("PCM input must be uncompressed 48 kHz stereo")
+    expected_bytes = params.nframes * params.nchannels * params.sampwidth
+    if len(frames) != expected_bytes:
+        raise MasteringError("PCM WAV frame payload is truncated")
+    if params.sampwidth == 2:
+        integers = np.frombuffer(frames, dtype="<i2").astype(np.float64)
+        scale = float(1 << 15)
+    elif params.sampwidth == 3:
+        raw = np.frombuffer(frames, dtype=np.uint8).reshape(-1, 3)
+        unsigned = (
+            raw[:, 0].astype(np.int32)
+            | (raw[:, 1].astype(np.int32) << 8)
+            | (raw[:, 2].astype(np.int32) << 16)
+        )
+        integers = np.where(
+            unsigned & 0x800000,
+            unsigned - 0x1000000,
+            unsigned,
+        ).astype(np.float64)
+        scale = float(1 << 23)
+    else:
+        integers = np.frombuffer(frames, dtype="<i4").astype(np.float64)
+        scale = float(1 << 31)
+    samples = (integers / scale).reshape(-1, 2)
+    if not np.isfinite(samples).all():
+        raise MasteringError("PCM input must contain finite samples")
+    return np.ascontiguousarray(samples, dtype=np.float64), params.framerate
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def encode_mp3(input_wav: Path, output_mp3: Path) -> dict:
+    source = Path(input_wav)
+    output = Path(output_mp3)
+    executable = Path(
+        "/Users/yehor/Projects/ZenFlow/private-evidence/audio-encoder/lame-4.0-install/bin/lame"
+    )
+    if executable.is_symlink() or not executable.is_file():
+        raise MasteringError("fixed private LAME 4.0 encoder is unavailable")
+    if source.is_symlink() or not source.is_file():
+        raise MasteringError("MP3 input must be a regular WAV")
+    if output.exists() or output.is_symlink():
+        raise MasteringError("MP3 output must be a new path")
+    if output.parent.is_symlink():
+        raise MasteringError("MP3 output parent may not be a symlink")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        str(executable),
+        "--silent",
+        "--noreplaygain",
+        "--cbr",
+        "-b",
+        "128",
+        str(source.resolve(strict=True)),
+        str(output),
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=120,
+            check=False,
+            env={"PATH": "/usr/bin:/bin"},
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise MasteringError(f"MP3 encoder failed: {exc}") from exc
+    if result.returncode != 0 or not output.is_file():
+        output.unlink(missing_ok=True)
+        detail = result.stderr[-2000:].replace("\x00", "")
+        raise MasteringError(f"MP3 encoder returned {result.returncode}: {detail}")
+    version_result = subprocess.run(
+        [str(executable), "--version"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=10,
+        check=False,
+        env={"PATH": "/usr/bin:/bin"},
+    )
+    if version_result.returncode != 0 or "version 4.0" not in version_result.stdout:
+        output.unlink(missing_ok=True)
+        raise MasteringError("private LAME version evidence mismatch")
+    return {
+        "encoder": "LAME",
+        "encoderVersion": "4.0",
+        "executable": str(executable),
+        "executableSha256": _sha256_file(executable),
+        "sourceArchiveSha256": "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+        "externalSourceSecurityStatus": "FAIL_SCOPED_EXTERNAL_SOURCE",
+        "argv": command,
+        "bitrateBps": 128000,
+        "inputSha256": _sha256_file(source),
+        "outputSha256": _sha256_file(output),
+        "outputBytes": output.stat().st_size,
+    }
