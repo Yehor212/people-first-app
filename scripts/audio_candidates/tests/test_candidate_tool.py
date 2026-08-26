@@ -49,6 +49,10 @@ from scripts.audio_candidates.runtime_package import (
     RuntimePackageError,
     validate_runtime_manifest_payload,
 )
+from scripts.audio_candidates.runtime_ai import (
+    RuntimeAiError,
+    validate_runtime_ai_report_authority,
+)
 from scripts.audio_review.rights import SourceRecord
 
 
@@ -757,6 +761,45 @@ class RuntimePackageTests(unittest.TestCase):
             with self.subTest(reason=reason):
                 with self.assertRaisesRegex(RuntimePackageError, reason):
                     validate_runtime_manifest_payload(payload)
+
+
+class RuntimeAiTests(unittest.TestCase):
+    def _report(self) -> dict:
+        return {
+            "schemaVersion": 1,
+            "status": "TRIAL_ONLY_NOT_ADMITTED",
+            "verdict": "ABSTAIN",
+            "scope": "RUNTIME_MASTER_MP3",
+            "runtimePromotionAllowed": False,
+            "assetCount": 18,
+            "assets": [
+                {
+                    "id": f"{family}:{level}",
+                    "status": "TRIAL_ONLY_NOT_ADMITTED",
+                    "verdict": "ABSTAIN",
+                }
+                for family in EXPECTED_FAMILIES
+                for level in ("soft", "deep", "intense")
+            ],
+        }
+
+    def test_runtime_ai_report_is_trial_only_and_cannot_create_authority(self):
+        result = validate_runtime_ai_report_authority(self._report())
+
+        self.assertEqual(result, {"status": "PASS", "assetCount": 18})
+
+        for forbidden in (
+            "humanSemanticPass",
+            "ownerDecision",
+            "promotionAllowed",
+            "selectedCandidate",
+            "sourceRank",
+        ):
+            payload = self._report()
+            payload["assets"][0][forbidden] = True
+            with self.subTest(forbidden=forbidden):
+                with self.assertRaisesRegex(RuntimeAiError, "forbidden authority"):
+                    validate_runtime_ai_report_authority(payload)
 
 
 if __name__ == "__main__":
