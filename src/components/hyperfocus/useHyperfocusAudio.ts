@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getAmbientSoundGenerator, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
+import {
+  getAmbientSoundGenerator,
+  AmbientSoundGenerator,
+  AudioStatus,
+  type ToneFilterStatus,
+} from '@/lib/ambientSounds';
 import { normalizeHyperfocusSoundId } from '@/lib/hyperfocusAudioCatalog';
 import { useAppAudioSettings } from '@/hooks/useAppAudioSettings';
 import { clearAppAudioMediaSession, setAppAudioMediaSession } from '@/lib/audioMediaSession';
+import { setHyperfocusToneCutoffKhz } from '@/lib/audioManager';
+import { normalizeHyperfocusToneKhz } from '@/lib/hyperfocusTone';
 
 interface UseHyperfocusAudioOptions {
   isRunning: boolean;
@@ -19,6 +26,9 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
   });
   const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
   const appAudioSettings = useAppAudioSettings();
+  const [toneFilterStatus, setToneFilterStatus] = useState<ToneFilterStatus>(() =>
+    soundGeneratorRef.current.getToneFilterStatus(),
+  );
   const ambientVolume = appAudioSettings.muted ? 0 : Math.max(0, Math.min(1, appAudioSettings.volume * 0.5));
 
   // Subscribe to audio status updates
@@ -59,6 +69,11 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     }
   }, [ambientVolume, appAudioSettings.muted]);
 
+  useEffect(() => {
+    const generator = soundGeneratorRef.current;
+    setToneFilterStatus(generator.setToneCutoffKhz(appAudioSettings.hyperfocusToneCutoffKhz));
+  }, [appAudioSettings.hyperfocusToneCutoffKhz]);
+
   // Pause/resume sync with timer state
   useEffect(() => {
     const generator = soundGeneratorRef.current;
@@ -93,8 +108,17 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     const normalizedSoundId = normalizeHyperfocusSoundId(soundId);
     if (!generator || !normalizedSoundId || appAudioSettings.muted) return;
     generator.setVolume(ambientVolume);
+    generator.setToneCutoffKhz(appAudioSettings.hyperfocusToneCutoffKhz);
     generator.playDirect(normalizedSoundId);
-  }, [ambientVolume, appAudioSettings.muted]);
+    setToneFilterStatus(generator.getToneFilterStatus());
+  }, [ambientVolume, appAudioSettings.hyperfocusToneCutoffKhz, appAudioSettings.muted]);
+
+  const updateToneCutoffKhz = useCallback((value: number): boolean => {
+    const normalizedValue = normalizeHyperfocusToneKhz(value);
+    if (!setHyperfocusToneCutoffKhz(normalizedValue)) return false;
+    setToneFilterStatus(soundGeneratorRef.current.setToneCutoffKhz(normalizedValue));
+    return true;
+  }, []);
 
   const pauseAudio = () => {
     soundGeneratorRef.current?.pause();
@@ -134,6 +158,9 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     isSoundPlaying,
     audioMuted: appAudioSettings.muted,
     audioStatus,
+    toneCutoffKhz: toneFilterStatus.cutoffKhz,
+    toneFilterStatus,
+    setToneCutoffKhz: updateToneCutoffKhz,
     playSound,
     pauseAudio,
     resumeAudioDirect,

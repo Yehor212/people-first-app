@@ -1234,6 +1234,9 @@ export interface Translations {
   hyperfocusSoundFireplace: string;
   hyperfocusSoundVariants: string;
   hyperfocusSoundIntensity: string;
+  hyperfocusSoundLevelSoft: string;
+  hyperfocusSoundLevelDeep: string;
+  hyperfocusSoundLevelIntense: string;
   hyperfocusSoundUnderwaterSoft: string;
   hyperfocusSoundUnderwaterDeep: string;
   hyperfocusSoundUnderwaterIntense: string;

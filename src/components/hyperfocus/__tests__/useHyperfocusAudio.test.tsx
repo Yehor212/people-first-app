@@ -8,6 +8,7 @@ const audioSettingsState = vi.hoisted(() => ({
     volume: 0.6,
     feedbackSoundsEnabled: true,
     canPlayFeedback: true,
+    hyperfocusToneCutoffKhz: 7,
   },
 }));
 
@@ -23,6 +24,12 @@ const generator = vi.hoisted(() => ({
   pause: vi.fn(),
   stop: vi.fn(),
   resumeDirect: vi.fn(),
+  setToneCutoffKhz: vi.fn((cutoffKhz: number) => ({ state: "active", cutoffKhz })),
+  getToneFilterStatus: vi.fn(() => ({ state: "active", cutoffKhz: 7 })),
+}));
+
+const tonePreference = vi.hoisted(() => ({
+  persist: vi.fn(() => true),
 }));
 
 const mediaSession = vi.hoisted(() => ({
@@ -41,6 +48,10 @@ vi.mock("@/lib/ambientSounds", () => ({
 
 vi.mock("@/lib/audioMediaSession", () => mediaSession);
 
+vi.mock("@/lib/audioManager", () => ({
+  setHyperfocusToneCutoffKhz: tonePreference.persist,
+}));
+
 describe("useHyperfocusAudio master app sound", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -50,6 +61,7 @@ describe("useHyperfocusAudio master app sound", () => {
       volume: 0.6,
       feedbackSoundsEnabled: true,
       canPlayFeedback: true,
+      hyperfocusToneCutoffKhz: 7,
     };
   });
 
@@ -61,6 +73,46 @@ describe("useHyperfocusAudio master app sound", () => {
 
     act(() => result.current.handleSoundSelect("river"));
     expect(generator.playDirect).toHaveBeenCalledWith("river:deep");
+  });
+
+  it("applies the persisted cutoff without changing playback speed or selected sound", () => {
+    const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));
+
+    expect(result.current.toneCutoffKhz).toBe(7);
+    expect(generator.setToneCutoffKhz).toHaveBeenCalledWith(7);
+
+    act(() => result.current.handleSoundSelect("river"));
+
+    expect(generator.setToneCutoffKhz).toHaveBeenLastCalledWith(7);
+    expect(generator.playDirect).toHaveBeenCalledWith("river:deep");
+  });
+
+  it("persists a user cutoff before applying it to the live graph", () => {
+    const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));
+    generator.setToneCutoffKhz.mockClear();
+
+    let saved = false;
+    act(() => {
+      saved = result.current.setToneCutoffKhz(5.5);
+    });
+
+    expect(saved).toBe(true);
+    expect(tonePreference.persist).toHaveBeenCalledWith(5.5);
+    expect(generator.setToneCutoffKhz).toHaveBeenCalledWith(5.5);
+  });
+
+  it("leaves the live graph unchanged when cutoff persistence fails", () => {
+    tonePreference.persist.mockReturnValueOnce(false);
+    const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));
+    generator.setToneCutoffKhz.mockClear();
+
+    let saved = true;
+    act(() => {
+      saved = result.current.setToneCutoffKhz(4);
+    });
+
+    expect(saved).toBe(false);
+    expect(generator.setToneCutoffKhz).not.toHaveBeenCalled();
   });
 
   it("normalizes legacy sound ids to deep variants before storing and playing", () => {
@@ -114,6 +166,7 @@ describe("useHyperfocusAudio master app sound", () => {
       volume: 0.8,
       feedbackSoundsEnabled: true,
       canPlayFeedback: false,
+      hyperfocusToneCutoffKhz: 7,
     };
 
     const { result } = renderHook(() => useHyperfocusAudio({ isRunning: true, isPaused: false }));

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── Mocks ──────────────────────────────────────────────────────
 vi.mock('../logger', () => ({
@@ -26,6 +26,7 @@ import {
   preloadAmbientSounds,
   setupAudioUnlock,
   AmbientSoundGenerator,
+  resetAmbientSoundsForTests,
   type AudioState,
   type AmbientSoundType,
 } from '../ambientSounds';
@@ -33,6 +34,12 @@ import {
 // ─── Setup ──────────────────────────────────────────────────────
 beforeEach(() => {
   vi.clearAllMocks();
+  resetAmbientSoundsForTests();
+});
+
+afterEach(() => {
+  resetAmbientSoundsForTests();
+  vi.unstubAllGlobals();
 });
 
 // ─── Tests ──────────────────────────────────────────────────────
@@ -104,7 +111,7 @@ describe('getSoundById', () => {
     expect(variant).toMatchObject({
       id: 'fireplace:soft',
       type: 'fireplace',
-      nameEn: expect.stringContaining('Embers'),
+      nameEn: expect.stringContaining('Soft'),
     });
     expect(variant?.file).toContain('/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3');
     expect(variant?.fallbackFile).toBe(legacy?.file);
@@ -252,6 +259,113 @@ describe('AmbientSoundGenerator', () => {
 
   it('getVolume returns default of 0.5', () => {
     expect(generator.getVolume()).toBe(0.5);
+  });
+
+  it('routes the blessed media element through one reusable low-pass graph', () => {
+    const sourceConnect = vi.fn();
+    const sourceDisconnect = vi.fn();
+    const filterConnect = vi.fn();
+    const cancelScheduledValues = vi.fn();
+    const setValueAtTime = vi.fn();
+    const linearRampToValueAtTime = vi.fn();
+    const createMediaElementSource = vi.fn(() => ({
+      connect: sourceConnect,
+      disconnect: sourceDisconnect,
+    }));
+    const filter = {
+      type: 'allpass' as BiquadFilterType,
+      connect: filterConnect,
+      frequency: {
+        value: 16000,
+        cancelScheduledValues,
+        setValueAtTime,
+        linearRampToValueAtTime,
+      },
+      Q: { value: 0 },
+    };
+
+    class MockAudioContext {
+      currentTime = 2;
+      destination = {};
+      state: AudioContextState = 'running';
+      createMediaElementSource = createMediaElementSource;
+      createBiquadFilter = vi.fn(() => filter);
+      close = vi.fn(() => Promise.resolve());
+    }
+
+    const fakeAudio = {
+      playsInline: false,
+      loop: false,
+      volume: 0,
+      preload: '',
+      src: '',
+      onerror: null,
+      onplaying: null,
+      setAttribute: vi.fn(),
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+    };
+    const AudioConstructor = vi.fn(function AudioStub() {
+      return fakeAudio;
+    });
+    vi.stubGlobal('Audio', AudioConstructor);
+    vi.stubGlobal('AudioContext', MockAudioContext);
+
+    generator.setToneCutoffKhz(6);
+    expect(generator.getToneFilterStatus()).toMatchObject({ state: 'pending', cutoffKhz: 6 });
+
+    generator.playDirect('rain:soft');
+    generator.setToneCutoffKhz(4.5);
+
+    expect(createMediaElementSource).toHaveBeenCalledTimes(1);
+    expect(sourceConnect).toHaveBeenCalledWith(filter);
+    expect(filterConnect).toHaveBeenCalledTimes(1);
+    expect(filter.type).toBe('lowpass');
+    expect(filter.Q.value).toBeCloseTo(Math.SQRT1_2);
+    expect(linearRampToValueAtTime).toHaveBeenLastCalledWith(4500, 2.08);
+    expect(generator.getToneFilterStatus()).toEqual({ state: 'active', cutoffKhz: 4.5 });
+    expect(fakeAudio.loop).toBe(true);
+    expect(fakeAudio).not.toHaveProperty('playbackRate');
+  });
+
+  it('keeps direct audio playback available when Web Audio routing cannot be created', () => {
+    class FailingAudioContext {
+      currentTime = 0;
+      destination = {};
+      state: AudioContextState = 'running';
+      createMediaElementSource = vi.fn(() => {
+        throw new DOMException('unsupported', 'NotSupportedError');
+      });
+      createBiquadFilter = vi.fn();
+      close = vi.fn(() => Promise.resolve());
+    }
+    const fakeAudio = {
+      playsInline: false,
+      loop: false,
+      volume: 0,
+      preload: '',
+      src: '',
+      onerror: null,
+      onplaying: null,
+      setAttribute: vi.fn(),
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+    };
+    const AudioConstructor = vi.fn(function AudioStub() {
+      return fakeAudio;
+    });
+    vi.stubGlobal('Audio', AudioConstructor);
+    vi.stubGlobal('AudioContext', FailingAudioContext);
+
+    generator.setToneCutoffKhz(5);
+    generator.playDirect('ocean:deep');
+
+    expect(fakeAudio.play).toHaveBeenCalledTimes(1);
+    expect(generator.getToneFilterStatus()).toMatchObject({
+      state: 'degraded',
+      cutoffKhz: 5,
+      reason: 'web-audio-routing-unavailable',
+    });
   });
 
   it('addStatusListener emits current status immediately', () => {
