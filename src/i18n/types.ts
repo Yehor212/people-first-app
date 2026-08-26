@@ -1234,6 +1234,11 @@ export interface Translations {
   hyperfocusSoundFireplace: string;
   hyperfocusSoundVariants: string;
   hyperfocusSoundIntensity: string;
+  hyperfocusToneLabel: string;
+  hyperfocusToneHelp: string;
+  hyperfocusToneSofter: string;
+  hyperfocusToneFullSpectrum: string;
+  hyperfocusToneUnavailable: string;
   hyperfocusSoundLevelSoft: string;
   hyperfocusSoundLevelDeep: string;
   hyperfocusSoundLevelIntense: string;

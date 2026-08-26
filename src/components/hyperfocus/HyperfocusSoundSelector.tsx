@@ -18,7 +18,7 @@ import {
   Wind,
   type LucideIcon,
 } from 'lucide-react';
-import { SOUNDS, AudioStatus } from '@/lib/ambientSounds';
+import { SOUNDS, AudioStatus, type ToneFilterStatus } from '@/lib/ambientSounds';
 import {
   HYPERFOCUS_AUDIO_FAMILIES,
   getHyperfocusAudioFamily,
@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import { zenTap } from '@/lib/animationUtils';
 import { useShouldAnimate } from '@/hooks/useShouldAnimate';
+import { formatHyperfocusToneKhz } from '@/lib/hyperfocusTone';
 
 const soundMeta: Record<HyperfocusAudioFamilyId, { Icon: LucideIcon }> = {
   forest: { Icon: TreePine },
@@ -46,13 +47,18 @@ interface HyperfocusSoundSelectorProps {
   onSoundSelect: (soundId: string | null) => void;
   onToggleSound: () => void;
   onPlaySound: (soundId: string) => void;
+  toneCutoffKhz: number;
+  toneFilterStatus: ToneFilterStatus;
+  onToneCutoffChange: (cutoffKhz: number) => boolean;
   audioMuted?: boolean;
   t: Record<string, string>;
 }
 
 export function HyperfocusSoundSelector({
   selectedSoundId, isSoundPlaying, audioStatus,
-  onSoundSelect, onToggleSound, onPlaySound, audioMuted = false, t,
+  onSoundSelect, onToggleSound, onPlaySound,
+  toneCutoffKhz, toneFilterStatus, onToneCutoffChange,
+  audioMuted = false, t,
 }: HyperfocusSoundSelectorProps) {
   const motionAllowed = useShouldAnimate({ respectRuntimePerformance: false });
   const selectedVariant = selectedSoundId ? parseHyperfocusVariantId(selectedSoundId) : null;
@@ -195,30 +201,76 @@ export function HyperfocusSoundSelector({
       </div>
 
       {activeFamily && (
-        <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3" role="group" aria-label={t.hyperfocusSoundIntensity || 'Sound intensity'}>
-          {activeFamily.levels.map((level) => {
-            const isSelected = activeLevelId === level.id;
-            const localizedLevelName = t[level.labelKey] || level.label;
+        <>
+          <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3" role="group" aria-label={t.hyperfocusSoundIntensity || 'Sound intensity'}>
+            {activeFamily.levels.map((level) => {
+              const isSelected = activeLevelId === level.id;
+              const localizedLevelName = t[level.labelKey] || level.label;
 
-            return (
-              <motion.button
-                key={level.id}
-                type="button"
-                onClick={() => onSoundSelect(level.variantId)}
-                aria-pressed={isSelected}
-                className={cn(
-                  'h-auto min-h-[44px] min-w-0 whitespace-normal break-words px-2 py-2 rounded-xl text-xs font-medium motion-safe:transition-all flex items-center justify-center text-center',
-                  isSelected
-                    ? 'bg-violet-500/30 border border-violet-500/50 text-violet-700 dark:text-violet-100'
-                    : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
-                )}
-                whileTap={motionAllowed ? zenTap.button : undefined}
+              return (
+                <motion.button
+                  key={level.id}
+                  type="button"
+                  onClick={() => onSoundSelect(level.variantId)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    'h-auto min-h-[44px] min-w-0 whitespace-normal break-words px-2 py-2 rounded-xl text-xs font-medium motion-safe:transition-all flex items-center justify-center text-center',
+                    isSelected
+                      ? 'bg-violet-500/30 border border-violet-500/50 text-violet-700 dark:text-violet-100'
+                      : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
+                  )}
+                  whileTap={motionAllowed ? zenTap.button : undefined}
+                >
+                  {localizedLevelName}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 rounded-xl border border-emerald-500/25 bg-slate-950/20 p-3 text-start">
+            <div className="flex items-baseline justify-between gap-3">
+              <label
+                htmlFor="hyperfocus-tone-cutoff"
+                className="text-xs font-semibold text-slate-700 dark:text-white/85"
               >
-                {localizedLevelName}
-              </motion.button>
-            );
-          })}
-        </div>
+                {t.hyperfocusToneLabel || 'Tone'}
+              </label>
+              <span
+                className="shrink-0 text-xs font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
+              >
+                {formatHyperfocusToneKhz(toneCutoffKhz)}
+              </span>
+            </div>
+            <p
+              id="hyperfocus-tone-help"
+              className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-white/55"
+            >
+              {t.hyperfocusToneHelp || 'High-frequency cutoff; pitch and speed stay unchanged.'}
+            </p>
+            <input
+              id="hyperfocus-tone-cutoff"
+              type="range"
+              min="3"
+              max="16"
+              step="0.5"
+              value={toneCutoffKhz}
+              onChange={(event) => onToneCutoffChange(Number(event.currentTarget.value))}
+              aria-label={t.hyperfocusToneLabel || 'Tone'}
+              aria-valuetext={formatHyperfocusToneKhz(toneCutoffKhz)}
+              aria-describedby="hyperfocus-tone-help"
+              className="h-11 w-full cursor-pointer accent-violet-500"
+            />
+            <div className="-mt-1 flex justify-between gap-4 text-[10px] text-slate-500 dark:text-white/50">
+              <span>{t.hyperfocusToneSofter || 'Softer'} · 3 kHz</span>
+              <span className="text-end">{t.hyperfocusToneFullSpectrum || 'Full spectrum'} · 16 kHz</span>
+            </div>
+            {toneFilterStatus.state === 'degraded' && (
+              <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-300" role="status">
+                {t.hyperfocusToneUnavailable || 'Tone control is unavailable on this device.'}
+              </p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
