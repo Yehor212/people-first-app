@@ -10,6 +10,8 @@ import unittest
 from unittest import mock
 import wave
 
+import numpy as np
+
 from scripts.audio_candidates.model import CandidateSpecError, load_candidate_spec
 from scripts.audio_candidates.rights import CandidateRightsError, acquire_candidate
 from scripts.audio_candidates import build_sources
@@ -24,11 +26,20 @@ from scripts.audio_candidates.blind import (
     apply_source_review,
     build_blind_bundle,
 )
+from scripts.audio_candidates.mastering import (
+    IntensityMetrics,
+    MasteringError,
+    RuntimeCandidateMeasurement,
+    assign_family_levels,
+    load_mastering_policy,
+    measure_intensity,
+)
 from scripts.audio_review.rights import SourceRecord
 
 
 ROOT = Path(__file__).resolve().parents[3]
 SPEC_PATH = ROOT / "config/audio/hyperfocus-source-candidates-v2.json"
+MASTERING_POLICY_PATH = ROOT / "config/audio/hyperfocus-runtime-mastering-v2.json"
 EXPECTED_FAMILIES = ("forest", "rain", "ocean", "fireplace", "river", "wind")
 
 
@@ -349,6 +360,133 @@ class BlindBundleTests(unittest.TestCase):
                 {"forest": ("A", "B", "C", "NONE")},
                 {"forest": {"decision": "AI_TOP_SCORE"}},
             )
+
+
+class RuntimeMasteringTests(unittest.TestCase):
+    def _measurement(
+        self,
+        family: str,
+        position: int,
+        score: float,
+    ) -> RuntimeCandidateMeasurement:
+        candidate_id = f"{family}-c{position}"
+        return RuntimeCandidateMeasurement(
+            candidate_id=candidate_id,
+            family=family,
+            source_sha256=(f"{position:x}" * 64)[:64],
+            preview_sha256=(f"{position + 6:x}" * 64)[:64],
+            metrics=IntensityMetrics(
+                rms_dbfs=-40.0 + score,
+                motion_dbfs=-50.0 + score,
+                zero_crossings_per_second=score * 10.0,
+                crest_factor_db=12.0,
+                intensity_score=score,
+            ),
+        )
+
+    def _exact_inventory(self) -> tuple[RuntimeCandidateMeasurement, ...]:
+        return tuple(
+            self._measurement(family, position, float(position))
+            for family in EXPECTED_FAMILIES
+            for position in (1, 2, 3)
+        )
+
+    def test_signal_metrics_are_finite_stereo_48khz_and_increase_with_energy(self):
+        sample_rate = 48000
+        time = np.arange(sample_rate, dtype=np.float64) / sample_rate
+        quiet = np.column_stack(
+            (
+                0.02 * np.sin(2 * np.pi * 180 * time),
+                0.02 * np.sin(2 * np.pi * 220 * time),
+            )
+        )
+        intense = np.column_stack(
+            (
+                0.2 * np.sin(2 * np.pi * 1800 * time),
+                0.2 * np.sin(2 * np.pi * 2200 * time),
+            )
+        )
+
+        quiet_metrics = measure_intensity(quiet, sample_rate)
+        intense_metrics = measure_intensity(intense, sample_rate)
+
+        self.assertAlmostEqual(quiet_metrics.rms_dbfs, -36.9897, places=3)
+        self.assertAlmostEqual(intense_metrics.rms_dbfs, -16.9897, places=3)
+        self.assertGreater(
+            intense_metrics.intensity_score,
+            quiet_metrics.intensity_score,
+        )
+
+        for samples, rate, reason in (
+            (quiet[:, 0], sample_rate, "stereo"),
+            (quiet, 44100, "48 kHz"),
+            (np.full((10, 2), np.nan), sample_rate, "finite"),
+        ):
+            with self.subTest(reason=reason):
+                with self.assertRaisesRegex(MasteringError, reason):
+                    measure_intensity(samples, rate)
+
+    def test_exact_all_18_assignment_ignores_input_and_blind_order(self):
+        forward = self._exact_inventory()
+        reverse = tuple(reversed(forward))
+
+        first = assign_family_levels(forward)
+        second = assign_family_levels(reverse)
+
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 18)
+        self.assertEqual(
+            [(row.family, row.level, row.candidate_id) for row in first[:3]],
+            [
+                ("forest", "soft", "forest-c1"),
+                ("forest", "deep", "forest-c2"),
+                ("forest", "intense", "forest-c3"),
+            ],
+        )
+        self.assertEqual({row.candidate_id for row in first}, {
+            f"{family}-c{position}"
+            for family in EXPECTED_FAMILIES
+            for position in (1, 2, 3)
+        })
+
+    def test_assignment_ties_resolve_by_candidate_id_and_incomplete_inventory_fails(self):
+        rows = list(self._exact_inventory())
+        rows[:3] = [
+            self._measurement("forest", 3, 1.0),
+            self._measurement("forest", 1, 1.0),
+            self._measurement("forest", 2, 1.0),
+        ]
+
+        assignments = assign_family_levels(tuple(rows))
+
+        self.assertEqual(
+            [row.candidate_id for row in assignments[:3]],
+            ["forest-c1", "forest-c2", "forest-c3"],
+        )
+        with self.assertRaisesRegex(MasteringError, "exact 18-candidate inventory"):
+            assign_family_levels(tuple(rows[:-1]))
+        with self.assertRaisesRegex(MasteringError, "exact 18-candidate inventory"):
+            assign_family_levels(tuple(rows[:-1] + [rows[0]]))
+
+    def test_mastering_policy_has_fixed_targets_and_operation_allowlist(self):
+        policy = load_mastering_policy(MASTERING_POLICY_PATH)
+
+        self.assertEqual(policy.target_rms_dbfs, {
+            "soft": -30.0,
+            "deep": -26.0,
+            "intense": -22.0,
+        })
+        self.assertEqual(policy.crossfade_seconds, 5.0)
+        self.assertEqual(policy.delivery_seconds, 30.0)
+        self.assertEqual(policy.peak_ceiling_dbfs, -1.0)
+        self.assertEqual(policy.operations, (
+            "decode-pcm",
+            "equal-power-loop-crossfade",
+            "repeat-exactly-twice",
+            "linked-gain",
+            "safety-peak-scale",
+            "encode-mp3",
+        ))
 
 
 if __name__ == "__main__":

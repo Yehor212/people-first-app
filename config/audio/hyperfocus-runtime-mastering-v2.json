@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 2,
+  "status": "REVIEW_ONLY",
+  "sampleRate": 48000,
+  "channels": 2,
+  "sourcePreviewSeconds": 20,
+  "crossfadeSeconds": 5,
+  "baseLoopSeconds": 15,
+  "deliverySeconds": 30,
+  "bitrateKbps": 128,
+  "peakCeilingDbfs": -1,
+  "minAdjacentRmsDeltaDb": 3,
+  "targetRmsDbfs": {
+    "soft": -30,
+    "deep": -26,
+    "intense": -22
+  },
+  "operations": [
+    "decode-pcm",
+    "equal-power-loop-crossfade",
+    "repeat-exactly-twice",
+    "linked-gain",
+    "safety-peak-scale",
+    "encode-mp3"
+  ],
+  "encoder": {
+    "executable": "/usr/bin/afconvert",
+    "fileFormat": "MPG3",
+    "dataFormat": ".mp3",
+    "bitrateBps": 128000
+  }
+}
