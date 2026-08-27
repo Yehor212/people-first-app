@@ -296,7 +296,7 @@ describe("attempt-scoped PKCE verifier isolation", () => {
       }
       throw new Error(`Unexpected request: ${requestUrl(input)}`);
     });
-    const client = createAuthClient(backing, fetchStub as typeof fetch);
+    const client = createAuthClient(backing, fetchStub);
     await client.auth.initialize();
     const attempt = createPkceAttemptRedirectUrl(
       "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
@@ -329,7 +329,7 @@ describe("attempt-scoped PKCE verifier isolation", () => {
       }
       throw new Error(`Unexpected request: ${requestUrl(input)}`);
     });
-    const client = createAuthClient(backing, fetchStub as typeof fetch);
+    const client = createAuthClient(backing, fetchStub);
     await client.auth.initialize();
     const attempt = createPkceAttemptRedirectUrl(
       "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
