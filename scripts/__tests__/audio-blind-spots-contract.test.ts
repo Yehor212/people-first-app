@@ -26,10 +26,14 @@ describe("audio blind-spot release contracts", () => {
 
   it("caches shipped app audio for installed PWA offline reuse with bounded quota", () => {
     const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
 
     expect(serviceWorker).toContain("RUNTIME_AUDIO_CACHE_NAME");
-    expect(serviceWorker).toContain('request.destination === "audio"');
-    expect(serviceWorker).toContain('url.pathname.includes("/sounds/")');
+    expect(serviceWorker).toContain(
+      "isRuntimeAudioPath(url.pathname, request.destination)",
+    );
+    expect(cacheContract).toContain('destination === "audio"');
+    expect(cacheContract).toContain('localPath.includes("/sounds/")');
     expect(serviceWorker).toContain("maxEntries: 32");
     expect(serviceWorker).toContain("purgeOnQuotaError: true");
   });
@@ -51,6 +55,11 @@ describe("audio blind-spot release contracts", () => {
     const cacheContract = read("src/lib/runtimeAudioCache.ts");
     const appAudioAssets = read("src/lib/appAudioAssets.ts");
     const hyperfocusManifest = read("src/lib/hyperfocusGeneratedAudioManifest.ts");
+    const cloudlightStart = appAudioAssets.indexOf('"cloudlight-evening-loop"');
+    const cloudlightEntry = appAudioAssets.slice(
+      cloudlightStart,
+      appAudioAssets.indexOf("),", cloudlightStart) + 2,
+    );
 
     expect(serviceWorker).toContain('workbox-range-requests');
     expect(serviceWorker).toContain('new RangeRequestsPlugin()');
@@ -60,10 +69,14 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).not.toContain('statuses: [200, 206]');
     expect(serviceWorker).toContain('APP_AUDIO_SW_CACHE_PATHS');
     expect(serviceWorker).toContain('warmRuntimeAudioCache');
-    expect(cacheContract).toContain('APP_AUDIO_ASSETS.map');
+    expect(cacheContract).toContain(
+      'APP_AUDIO_ASSETS.filter((asset) => asset.warmCacheOnStartup).map',
+    );
     expect(cacheContract).toContain('APP_AUDIO_FEEDBACK_EVENTS.map');
     expect(cacheContract).toContain('HYPERFOCUS_GENERATED_AUDIO_MANIFEST');
     expect(appAudioAssets).toContain('sounds/soft-air-veil.mp3');
+    expect(cloudlightStart).toBeGreaterThanOrEqual(0);
+    expect(cloudlightEntry).toContain("false");
     expect(appAudioAssets).toContain('sounds/gentle-water-bed.mp3');
     expect(appAudioAssets).toContain('sounds/soft-rain-veil.mp3');
     expect(appAudioAssets).toContain('makeFeedbackEvent("success"');

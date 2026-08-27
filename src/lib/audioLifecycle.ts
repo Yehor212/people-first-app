@@ -61,7 +61,7 @@ export function registerAudioForegroundResumeHandler(
 }
 
 function pauseRegisteredAudio(): void {
-  for (const pause of [...backgroundPauseHandlers]) {
+  for (const pause of Array.from(backgroundPauseHandlers)) {
     try {
       pause();
     } catch (error) {
@@ -71,7 +71,7 @@ function pauseRegisteredAudio(): void {
 }
 
 async function resumeRegisteredAudio(): Promise<void> {
-  for (const resume of [...foregroundResumeHandlers]) {
+  for (const resume of Array.from(foregroundResumeHandlers)) {
     try {
       await Promise.resolve(resume());
     } catch (error) {

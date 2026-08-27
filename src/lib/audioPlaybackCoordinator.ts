@@ -17,7 +17,7 @@ let activeOwner: ActiveLongAudioOwner | null = null;
 const listeners = new Set<(ownerId: LongAudioOwnerId | null) => void>();
 
 function emitOwnerChange(): void {
-  for (const listener of [...listeners]) {
+  for (const listener of Array.from(listeners)) {
     listener(activeOwner?.ownerId ?? null);
   }
 }
