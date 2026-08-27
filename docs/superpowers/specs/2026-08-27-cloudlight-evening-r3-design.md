@@ -1,7 +1,7 @@
 # Cloudlight Evening R3 Production Design
 
 - **Date:** 2026-08-27
-- **Status:** WRITTEN SPECIFICATION AWAITING OWNER REVIEW
+- **Status:** OWNER APPROVED IN CHAT ON 2026-08-27; AUDIO NOT YET PRODUCED
 - **Scope:** audio composition, rendering, rights provenance, audit, owner selection, and hash-bound runtime-asset replacement
 - **Write boundary:** this document only; no production audio, application code, native project, package, deployment, push, release, or external message is changed by this design step
 - **Execution model:** SOLO; no delegated agent evidence
@@ -668,7 +668,6 @@ Stop and request owner direction if:
 ## UNVERIFIED Ledger
 
 - No R3 MIDI, automation, GarageBand project, WAV, MP3, candidate, or new sound exists yet.
-- The written specification has not yet received owner review after being committed.
 - The AI-assisted reference timeline is not reproducible signal analysis.
 - No reference audio was retained, so exact production characteristics are intentionally unknown.
 - The existing dirty R3/v2 scripts have not been adopted, rejected, or committed by this document step.
@@ -699,5 +698,5 @@ Stop and request owner direction if:
 - Instrument, mix, reverb, stereo, mastering, encoding, and size constraints: covered.
 - Objective, AI-diagnostic, human, runtime, package, and platform gates: covered.
 - Accessibility, privacy, performance, caching, operations, rollback, and cross-platform proof: covered.
-- Blocking product decision: none before written owner review.
-- Next allowed action: owner review of this exact specification; after approval, create the implementation plan.
+- Blocking product decision: none; the owner approved the written R3 design in chat on 2026-08-27.
+- Next allowed action: create and review the implementation plan for the private R3 candidate pack.
