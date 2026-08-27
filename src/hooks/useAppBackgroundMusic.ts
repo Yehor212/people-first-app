@@ -256,7 +256,9 @@ export function useAppBackgroundMusic({
       requestIdRef.current += 1;
       activeAttemptRef.current = null;
       clearGestureRetry();
-      audio?.pause();
+      if (stateRef.current === "loading" || stateRef.current === "playing") {
+        audio?.pause();
+      }
       releaseOwnership();
       clearAppAudioMediaSession();
     };

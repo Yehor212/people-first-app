@@ -3746,6 +3746,16 @@ export interface Translations {
   navV2Theme: string;
   navV2Archive: string;
   navV2Account: string;
+  backgroundMusicTitle: string;
+  backgroundMusicStateOn: string;
+  backgroundMusicStateOff: string;
+  backgroundMusicStateLoading: string;
+  backgroundMusicStateBlocked: string;
+  backgroundMusicStateUnavailable: string;
+  backgroundMusicPlayAction: string;
+  backgroundMusicPauseAction: string;
+  backgroundMusicPausedMaster: string;
+  backgroundMusicPausedComfort: string;
   navV2PlanningHeading: string;
   navV2PlanningSubcopy: string;
   navV2PlanningEmpty: string;

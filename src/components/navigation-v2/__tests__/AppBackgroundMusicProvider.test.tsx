@@ -98,6 +98,11 @@ describe("AppBackgroundMusicProvider", () => {
   });
 
   it("throws when the controller is consumed outside its provider", () => {
-    expect(() => render(<Consumer />)).toThrow(/AppBackgroundMusicProvider/);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(() => render(<Consumer />)).toThrow(/AppBackgroundMusicProvider/);
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
