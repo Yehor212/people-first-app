@@ -109,6 +109,17 @@ describe('habitToScheduleEvents', () => {
     expect(habitToScheduleEvents(habit, ['2025-06-16'])).toEqual([]);
   });
 
+  it('returns no events for an archived habit with active reminders', () => {
+    const habit = makeHabit({
+      id: 'h-archived',
+      name: 'Archived habit',
+      isArchived: true,
+      reminders: [{ enabled: true, time: '09:00', days: [] }],
+    });
+
+    expect(habitToScheduleEvents(habit, ['2025-06-16'])).toEqual([]);
+  });
+
   it('creates one event per date per matching reminder (no day filter)', () => {
     const habit = makeHabit({
       id: 'h1',
@@ -345,6 +356,24 @@ describe('generateHabitScheduleEvents', () => {
     const events = generateHabitScheduleEvents([habit1, habit2], 0);
     // 1 date (today), 2 habits = 2 events
     expect(events).toHaveLength(2);
+  });
+
+  it('keeps active habit events while excluding archived habits', () => {
+    const activeHabit = makeHabit({
+      id: 'h-active',
+      name: 'Active habit',
+      reminders: [{ enabled: true, time: '08:00', days: [] }],
+    });
+    const archivedHabit = makeHabit({
+      id: 'h-archived',
+      name: 'Archived habit',
+      isArchived: true,
+      reminders: [{ enabled: true, time: '10:00', days: [] }],
+    });
+
+    const events = generateHabitScheduleEvents([activeHabit, archivedHabit], 0);
+
+    expect(events.map((event) => event.habitId)).toEqual(['h-active']);
   });
 
   it('filters by day-of-week across generated dates', () => {

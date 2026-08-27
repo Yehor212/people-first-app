@@ -51,7 +51,7 @@ export function habitToScheduleEvents(
 ): ScheduleEvent[] {
   const events: ScheduleEvent[] = [];
 
-  if (!habit.reminders || habit.reminders.length === 0) {
+  if (habit.isArchived || !habit.reminders || habit.reminders.length === 0) {
     return events;
   }
 
