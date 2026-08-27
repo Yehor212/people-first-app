@@ -41,6 +41,7 @@ export function DataPanel({
   const isAccountBoundaryInProgress = useAppStore(
     (state) => state.isAccountBoundaryInProgress
   );
+  const hasValidSession = useAppStore((state) => state.hasValidSession);
   const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmInput, setResetConfirmInput] = useState("");
@@ -75,9 +76,14 @@ export function DataPanel({
       ? resetTypeTemplate.slice(resetTypeMarkerIndex + resetTypeMarker.length)
       : "";
   const resetConfirmMatches = resetConfirmInput.trim() === resetConfirmWord;
-  const canResetLocalData = accountViewState === "signed-out";
+  const backendUnavailable = accountViewState === "unavailable";
+  const confirmedLocalOnlyRealm =
+    accountViewState === "signed-out" || (backendUnavailable && hasValidSession === false);
+  const canResetLocalData =
+    confirmedLocalOnlyRealm && !isAccountBoundaryInProgress;
   const canImportLocalBackup =
-    accountViewState === "signed-out" && !isAccountBoundaryInProgress;
+    (accountViewState === "signed-out" || backendUnavailable) &&
+    !isAccountBoundaryInProgress;
   const backupSectionTitle = canImportLocalBackup
     ? tx.settingsBackupRestoreTitle || "Backup & restore"
     : tx.settingsExportTitle || "Save backup";
