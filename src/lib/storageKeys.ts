@@ -102,6 +102,7 @@ export const SK = {
   AUDIO_VOLUME: "zenflow-audio-volume",
   AUDIO_COMFORT: "zenflow-audio-comfort",
   AUDIO_COMFORT_FEEDBACK: "zenflow-audio-comfort-feedback",
+  APP_BACKGROUND_MUSIC_ENABLED: "zenflow-app-background-music-enabled",
   HYPERFOCUS_TONE_CUTOFF_KHZ: "zenflow-hyperfocus-tone-cutoff-khz",
   NOTIFICATION_SOUND: "zenflow_notification_sound",
   NOTIFICATION_GENERIC_HABIT_COPY_MIGRATION: "zenflow_notification_generic_habit_copy_migration_v1",
