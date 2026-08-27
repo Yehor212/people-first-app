@@ -47,6 +47,14 @@ export function useFocusHandlers({
     const stamped = { ...session, updatedAt: session.updatedAt || Date.now() };
     setFocusSessions((prev) => [...prev, stamped]);
 
+    if (session.status === "aborted") {
+      queueFocusSessionSync(session).catch((err) => {
+        logger.warn("[Index] Failed to queue focus session sync:", err);
+      });
+      triggerSync();
+      return;
+    }
+
     const focusTreats = Math.round(session.duration * 0.5);
     if (rewardsEnabled) {
       rewardUser("focus", {
