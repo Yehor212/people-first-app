@@ -288,6 +288,73 @@ describe("attempt-scoped PKCE verifier isolation", () => {
     ).resolves.toMatchObject({ error: null });
   });
 
+  it("accepts GitHub Pages trailing-slash canonicalization for a V2 OAuth callback", async () => {
+    const backing = createMemoryStorage();
+    const fetchStub = vi.fn(async (input: RequestInfo | URL) => {
+      if (requestUrl(input).includes("/token?grant_type=pkce")) {
+        return jsonResponse(authResponse());
+      }
+      throw new Error(`Unexpected request: ${requestUrl(input)}`);
+    }) as typeof fetch;
+    const client = createAuthClient(backing, fetchStub);
+    await client.auth.initialize();
+    const attempt = createPkceAttemptRedirectUrl(
+      "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
+      "oauth",
+    );
+
+    await expect(
+      client.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: attempt.redirectUrl, skipBrowserRedirect: true },
+      }),
+    ).resolves.toMatchObject({ error: null });
+
+    const callbackUrl =
+      `https://yehor212.github.io/people-first-app/orb/` +
+      `?nav=v2&navLayout=phone&code=github-pages&${PKCE_ATTEMPT_PARAM}=${attempt.attemptId}`;
+
+    await expect(
+      runWithPkceCallbackUrl(client.auth, callbackUrl, () =>
+        client.auth.exchangeCodeForSession("github-pages"),
+      ),
+    ).resolves.toMatchObject({ error: null });
+  });
+
+  it("still rejects a different callback pathname after trailing-slash canonicalization", async () => {
+    const backing = createMemoryStorage();
+    const fetchStub = vi.fn(async (input: RequestInfo | URL) => {
+      if (requestUrl(input).includes("/token?grant_type=pkce")) {
+        return jsonResponse(authResponse());
+      }
+      throw new Error(`Unexpected request: ${requestUrl(input)}`);
+    }) as typeof fetch;
+    const client = createAuthClient(backing, fetchStub);
+    await client.auth.initialize();
+    const attempt = createPkceAttemptRedirectUrl(
+      "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone",
+      "oauth",
+    );
+    await client.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: attempt.redirectUrl, skipBrowserRedirect: true },
+    });
+    fetchStub.mockClear();
+    const callbackUrl =
+      `https://yehor212.github.io/people-first-app/settings/` +
+      `?nav=v2&navLayout=phone&code=wrong-path&${PKCE_ATTEMPT_PARAM}=${attempt.attemptId}`;
+
+    await expect(
+      runWithPkceCallbackUrl(client.auth, callbackUrl, () =>
+        client.auth.exchangeCodeForSession("wrong-path"),
+      ),
+    ).rejects.toThrow("This callback does not match the sign-in attempt");
+    expect(fetchStub).not.toHaveBeenCalled();
+    await expect(getPkceAttempts(client.auth)).resolves.toContainEqual(
+      expect.objectContaining({ attemptId: attempt.attemptId }),
+    );
+  });
+
   it("fails closed at the live-attempt cap instead of evicting a usable verifier", async () => {
     const backing = createMemoryStorage();
     const client = createAuthClient(
