@@ -14,6 +14,9 @@ Purpose: keep ZenFlow sound outside Hyperfocus calm, local, intentional, and ver
 - Android notification channels: https://developer.android.com/develop/ui/views/notifications/channels - channel sound behavior is user-controlled and immutable after creation.
 - Buxton et al., PNAS 2021 natural sounds synthesis: https://www.pnas.org/doi/10.1073/pnas.2013097118 - natural sounds, especially water, are associated with better affect, lower stress, and lower annoyance.
 - Material Design sound guidance: https://m2.material.io/design/sound/about-sound.html - UI sound should be brief, purposeful, and avoid competing with the interface.
+- YouTube license types: https://support.google.com/youtube/answer/2797468 - the Standard YouTube License is the default; a public upload is not reusable as Creative Commons material unless that license is explicitly selected.
+- U.S. Copyright Office musical works guidance: https://www.copyright.gov/engage/musicians/ - the underlying composition and its sound recording are separate protected works.
+- U.S. Copyright Office AI Part 2: https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-2-Copyrightability-Report.pdf - AI-assisted material needs sufficient human-authored expressive contribution for a U.S. copyright claim; prompts alone are not enough.
 
 ## Product Intent
 
@@ -22,6 +25,7 @@ Non-Hyperfocus sound is a quiet support layer, not a reward engine. It may confi
 ## Approved Non-Hyperfocus Inventory
 
 - `soft-air-veil`: auth entry ambience, generated local MP3, no human breath/voice/body sound, starts from user intent, respects master volume.
+- `cloudlight-evening-loop`: 150-second original app-entry background music, generated local MP3, first-run off, persistent opt-in, foreground-only, and controlled from the V2 sidebar/drawer.
 - `orb-ambience`: Orb ambience using `gentle-water-bed.mp3`, generated local MP3, no rock clacks/birds/voices, starts from user intent, respects master volume.
 - `diary-reflection-loop`: diary/settings ambience using `soft-rain-veil.mp3`, generated local MP3, no fire crackle/thunder/hard impacts, starts from user intent, respects master volume.
 
@@ -29,15 +33,17 @@ These are tracked in `APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS`. Hyperfocus files rema
 
 ## Generated Non-Hyperfocus Asset Provenance
 
-Generated ambience and the five short feedback cues are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. The provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records the seeds or fixed note sequences, synthesis parameters, encoder version, SHA-256 hashes, public/docs paths, audible exclusions, rollback path, and the statement that no third-party samples, stock recordings, voices, or AI-generated audio inputs were used.
+The four ambience/music assets and five short feedback cues are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. The provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records seeds, fixed note sequences, the original Cloudlight numeric composition, synthesis parameters, encoder version, SHA-256 hashes, public/docs/native paths, audible exclusions, rollback path, and the statement that no third-party samples, stock recordings, voices, or AI-generated audio inputs were used.
+
+`Cloudbound Evening` was used only as a high-level mood and app-entry background-music research reference. No source waveform was imported or retained, and no melody, harmony, score, stem, or recording was transcribed. Cloudlight Evening uses its own 40-bar structure, suspended/open harmony, sparse numeric melody, felt-piano partial model, timing, four-section form, stereo field, name, and 150-second duration. The asset-specific notice is `Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.` and is stored in `docs/audio/cloudlight-evening-license.md`. The repository still has no root `LICENSE`; the notice does not invent project-wide source-code terms. Formal human-authorship and jurisdiction-specific legal review remain `UNVERIFIED`.
 
 The generator uses `lamejs@1.2.1` as a dev-time MP3 encoder. Encoder code is not shipped in the runtime bundle. Formal legal review of dev-time LGPL encoder use remains `UNVERIFIED` until reviewed by project/legal ownership.
 
 ## Audibility and Loop Contract
 
-The gate decodes the shipped MP3 rather than trusting generator inputs. Each ambience file must stay inside asset-specific minimum and maximum bounds for peak, RMS, audible RMS after a 20 Hz high-pass, audible-band energy ratio, and peak/RMS after its runtime gain. It must also satisfy maximum DC offset, adjacent-sample transient, start/end RMS difference over half-second windows, loop-boundary amplitude difference, and loop-boundary slope difference, plus the approved duration, sample rate, and channel count. Stereo loop metrics enforce the worst channel rather than averaging left and right, so one-ear defects cannot be hidden by a clean opposite channel. A quiet or numerically non-zero file cannot pass when its energy is effectively subsonic.
+The gate decodes the shipped MP3 rather than trusting generator inputs. Each ambience file must stay inside asset-specific minimum and maximum bounds for peak, RMS, audible RMS after a 20 Hz high-pass, audible-band energy ratio, and peak/RMS after its runtime gain. It must also satisfy maximum DC offset, adjacent-sample transient, start/end RMS difference over half-second windows, loop-boundary amplitude difference, and loop-boundary slope difference, plus the approved duration, sample rate, and channel count. Short feedback additionally has bounded high-frequency energy, audible-band energy, DC offset, boundary amplitude/slope, transient, duration, peak, and RMS. Stereo loop metrics enforce the worst channel rather than averaging left and right, so one-ear defects cannot be hidden by a clean opposite channel. A quiet or numerically non-zero file cannot pass when its energy is effectively subsonic.
 
-The ambience generator uses seeded noise, cascaded band limiting, filter warm-up, a two-second equal-power wrap crossfade, DC-mean removal, and bounded normalization. The provenance packet records the exact synthesis profile and hashes so repeat generation can be compared byte for byte.
+The nature ambience generator uses seeded noise, cascaded band limiting, filter warm-up, a two-second equal-power wrap crossfade, DC-mean removal, and bounded normalization. Cloudlight uses a deterministic 64 BPM numeric composition with additive felt-piano, synthetic pad/bell partials, linked stereo normalization, and a correlation-compensated four-second equal-power circular overlap. Its decoded gate additionally checks high-frequency energy, stereo correlation, mono fold-down energy, silent windows, and 150-second duration. The provenance packet records the exact synthesis profile and hashes so repeat generation can be compared byte for byte.
 
 This numerical gate is not a claim of ITU-R BS.1770-5 or EBU R 128 conformance: it does not currently implement K-weighted integrated loudness or true-peak measurement. It also cannot prove that a label such as “soft air” or “gentle water” is perceptually correct, that a particular speaker is audible, or that runtime playback succeeds. Those claims require human listening and fresh playback on the exact target device and remain `UNVERIFIED` until that evidence exists.
 
@@ -49,7 +55,15 @@ The release-candidate mastered cue inventory is exactly `feedback-success.mp3`, 
 
 - Completion: mood saved, habit completed, journal saved, focus completed, gratitude saved, breathing completed.
 - Milestone: achievement unlocked, streak milestone, major progress milestone.
-- Preview: notification sound preview. Native notification channel sounds are unchanged unless a separate versioned-channel migration and rescheduling plan is implemented.
+- Preview: the clean-room fūrin cue is the in-app reminder preview and the optional Android `zenflow_furin_v5` channel sound. Existing default, vibration-only, and silent selections remain unchanged; choosing fūrin reschedules active reminders through the existing rollback-safe reconciliation flow.
+
+## Persistent Background Music Contract
+
+Cloudlight Evening is not a notification or completion cue. Its first-ever state is off. After the user enables it from the V2 navigation control, the device-local preference may request playback on later app entries. Browser or WebView autoplay rejection becomes a visible `Tap to resume` state and playback waits for the first eligible user gesture; it is never reported as successful while blocked.
+
+Only one long ZenFlow ambience owner may play at once. Cloudlight, auth ambience, Orb ambience, Diary ambience, and Hyperfocus claim the shared long-audio coordinator; the most recent explicit playback intent pauses the prior owner. Short feedback and notification sounds remain outside this exclusivity rule. Cloudlight also stops for master mute, zero volume, disabled ambient comfort, hidden/background app state, or stale playback ownership.
+
+The 150-second MP3 is not startup-preloaded or PWA-precached. It uses the same-origin runtime audio route only after playback intent. Successful first playback may make it available offline, but initial offline availability remains `UNVERIFIED` until the exact runtime cache flow is exercised.
 
 ## Forbidden Routine Sounds
 
@@ -65,8 +79,8 @@ Use visual state, haptics where appropriate, focus management, and accessible te
 
 ## Cross-Platform Rules
 
-- Web/PWA: no autoplay, no startup prefetch for long ambience, and no claim of offline PWA audio readiness unless runtime caching or precache proof exists. Short feedback MP3s may load after user intent and are included in the bounded runtime-audio cache warming inventory.
-- Android: do not introduce custom notification sounds without new channel IDs and active-reminder rescheduling; generated ambience assets must be copied by Capacitor sync before native readiness is claimed.
+- Web/PWA: no first-ever audible autoplay and no startup prefetch for Cloudlight. A saved opt-in may attempt later playback; blocked playback waits for an eligible gesture. Short feedback and existing bounded ambience may remain in the startup audio-warm inventory, while Cloudlight is request-cached only after intent.
+- Android: custom notification sounds require a new immutable channel ID, a stable packaged raw resource, native push allowlisting, active-reminder rescheduling, and installed-notification proof. The optional fūrin profile uses `zenflow_furin_v5`; Cloudlight remains a separate in-app media asset.
 - iOS/WKWebView: resume events must re-arm audio unlock listeners only; playback waits for the next user gesture.
 - Desktop/Tauri: use the same `dist` assets and keep generated bundles free of stale root sound files before claiming desktop readiness.
 - Accessibility: sound never carries the only feedback. Pair it with visible state and haptic fallback where supported.

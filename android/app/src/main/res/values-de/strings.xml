@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">Test-Benachrichtigung.</string>
     <string name="push_realm_channel_default">Standard</string>
     <string name="push_realm_channel_default_description">System-Benachrichtigungston</string>
+    <string name="push_realm_channel_furin">Japanisches Fūrin</string>
+    <string name="push_realm_channel_furin_description">Sanftes japanisches Glaswindspiel</string>
     <string name="push_realm_channel_gentle">Sanft</string>
     <string name="push_realm_channel_gentle_description">Nur Vibration</string>
     <string name="push_realm_channel_silent">Lautlos</string>

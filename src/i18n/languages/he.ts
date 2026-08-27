@@ -2366,6 +2366,8 @@ const hebrewOverrides: Partial<Translations> = {
     "ZenFlow לא הצליח להשלים את עדכון התזכורות. ייתכן שחלקן חסרות או מופיעות פעמיים.",
   soundDefault: "ברירת מחדל",
   soundDefaultDesc: "צליל התראת מערכת",
+  soundFurin: "פורין",
+  soundFurinDesc: "פעמון רוח יפני עדין מזכוכית",
   soundGentle: "עדין",
   soundGentleDesc: "רטט בלבד",
   soundSilent: "שקט",

@@ -76,12 +76,16 @@ vi.mock("../notificationSounds", () => ({
   getCurrentSoundOption: () => ({ sound: "default" }),
   NOTIFICATION_SOUNDS: [
     { channelId: "zenflow_default_v4", sound: "default" },
+    { channelId: "zenflow_furin_v5", sound: "zenflow_furin.wav" },
     { channelId: "zenflow_gentle_v4", sound: undefined },
     { channelId: "zenflow_silent_v4", sound: undefined },
   ],
   initializeNotificationChannels: vi.fn(),
   isCurrentNotificationSoundChannelId: (channelId: string | undefined) =>
-    typeof channelId === "string" && channelId.endsWith("_v4"),
+    channelId === "zenflow_default_v4" ||
+    channelId === "zenflow_furin_v5" ||
+    channelId === "zenflow_gentle_v4" ||
+    channelId === "zenflow_silent_v4",
 }));
 
 vi.mock("@capacitor/local-notifications", () => ({
@@ -139,8 +143,8 @@ const reconcileCopy = {
   quickMoodBody: "How are you?",
   channelCopy: {
     default: { name: "ZenFlow — Default", description: "System sound" },
+    furin: { name: "ZenFlow — Fūrin", description: "Soft Japanese glass wind-bell" },
     gentle: { name: "ZenFlow — Gentle", description: "Vibration only" },
-    chime: { name: "ZenFlow — Chime", description: "Short tone" },
     silent: { name: "ZenFlow — Silent", description: "No sound or vibration" },
   },
 };

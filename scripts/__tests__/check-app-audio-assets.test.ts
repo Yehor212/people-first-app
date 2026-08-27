@@ -16,8 +16,10 @@ const require = createRequire(import.meta.url);
 const {
   EXPECTED_FEEDBACK_MP3_FILES,
   inspectAmbienceMetrics,
+  inspectCloudlightLoopMetrics,
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,
+  inspectGeneratedAudioRights,
   inspectOutputArtifacts,
   parseWavMetrics,
   validateExactDirectoryInventory,
@@ -44,6 +46,25 @@ const {
       decoder: "afconvert" | "ffmpeg";
     },
   ) => string[];
+  inspectCloudlightLoopMetrics?: (measured: {
+    channels: number;
+    sampleRate: number;
+    durationSeconds: number;
+    peak: number;
+    rms: number;
+    audibleRms: number;
+    audibleBandEnergyRatio: number;
+    highFrequencyEnergyRatio: number;
+    dcOffsetAbs: number;
+    transientDelta: number;
+    stereoCorrelation: number;
+    monoFoldDownEnergyRatio: number;
+    boundaryDelta: number;
+    boundarySlopeDelta: number;
+    startEndRmsDelta: number;
+    maxSilentWindowSeconds: number;
+    decoder: "afconvert" | "ffmpeg";
+  }) => string[];
   inspectFeedbackMetrics: (
     fileName: string,
     measured: {
@@ -52,6 +73,11 @@ const {
       durationSeconds: number;
       peak: number;
       rms: number;
+      audibleBandEnergyRatio: number;
+      highFrequencyEnergyRatio: number;
+      dcOffsetAbs: number;
+      boundaryDelta: number;
+      boundarySlopeDelta: number;
       transientDelta: number;
     },
   ) => string[];
@@ -63,6 +89,9 @@ const {
     sha256: string;
     bytes: number;
     deterministicSpec?: string;
+    nativeAndroidPath?: string;
+    nativeAndroidSha256?: string;
+    nativeAndroidBytes?: number;
     parameters: {
       family: string;
       sampleRate: number;
@@ -79,6 +108,28 @@ const {
     unexpected: string[];
     mismatched: Array<{ fileName: string; fields: string[] }>;
   };
+  inspectGeneratedAudioRights?: (
+    provenance: {
+      generationPolicy?: string;
+      rights?: {
+        referenceResearch?: {
+          title?: string;
+          sourceUrl?: string;
+          useBoundary?: string;
+          sourceAudioImported?: boolean;
+          sourceAudioRetained?: boolean;
+          samplesCopied?: boolean;
+          melodyOrHarmonyTranscribed?: boolean;
+        };
+        projectLicense?: {
+          status?: string;
+          rootLicensePresent?: boolean;
+          copyrightNotice?: string;
+        };
+      };
+    },
+    environment: { rootLicensePresent: boolean },
+  ) => string[];
   inspectOutputArtifacts: (options: {
     outputDir: string;
     reportPath: string;
@@ -259,7 +310,7 @@ describe("non-Hyperfocus app audio guard", () => {
     }
   });
 
-  it("requires provenance for exactly three root ambience and five feedback assets", () => {
+  it("requires provenance for exactly four root ambience and five feedback assets", () => {
     const provenance = JSON.parse(
       readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
     ) as { assets: Parameters<typeof inspectGeneratedAudioProvenance>[0] };
@@ -270,6 +321,9 @@ describe("non-Hyperfocus app audio guard", () => {
       unexpected: [],
       mismatched: [],
     });
+    expect(provenance.assets.map((asset) => asset.fileName)).toContain(
+      "cloudlight-evening-loop.mp3",
+    );
 
     const missingFeedback = provenance.assets.filter(
       (asset) => asset.fileName !== "feedback-notification.mp3",
@@ -314,6 +368,99 @@ describe("non-Hyperfocus app audio guard", () => {
         ],
       }),
     );
+
+    const withNativeFurin = provenance.assets.map((asset) =>
+      asset.fileName === "feedback-notification.mp3"
+        ? {
+            ...asset,
+            nativeAndroidPath: "android/app/src/main/res/raw/zenflow_furin.wav",
+            nativeAndroidSha256: "a".repeat(64),
+            nativeAndroidBytes: 96_044,
+          }
+        : asset,
+    );
+    const missingNativeFurin = withNativeFurin.map((asset) => {
+      if (asset.fileName !== "feedback-notification.mp3") return asset;
+      const {
+        nativeAndroidPath: _nativeAndroidPath,
+        nativeAndroidSha256: _nativeAndroidSha256,
+        nativeAndroidBytes: _nativeAndroidBytes,
+        ...withoutNativeFurin
+      } = asset;
+      return withoutNativeFurin;
+    });
+    expect(inspectGeneratedAudioProvenance(missingNativeFurin)).toEqual(
+      expect.objectContaining({
+        exact: false,
+        mismatched: [
+          {
+            fileName: "feedback-notification.mp3",
+            fields: [
+              "nativeAndroidPath",
+              "nativeAndroidSha256",
+              "nativeAndroidBytes",
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  it("rejects false project-license claims and any retained reference expression", () => {
+    expect(inspectGeneratedAudioRights).toEqual(expect.any(Function));
+    if (!inspectGeneratedAudioRights) return;
+
+    const cleanRoomRights = {
+      generationPolicy:
+        "First-party deterministic procedural synthesis. No third-party samples are used.",
+      rights: {
+        referenceResearch: {
+          title: "Cloudbound Evening",
+          sourceUrl: "https://www.youtube.com/watch?v=cJvhJqgDbKI",
+          useBoundary: "high-level mood and app-entry background-music research only",
+          sourceAudioImported: false,
+          sourceAudioRetained: false,
+          samplesCopied: false,
+          melodyOrHarmonyTranscribed: false,
+        },
+        projectLicense: {
+          status: "ASSET_SPECIFIC_PROPRIETARY_NOTICE",
+          rootLicensePresent: false,
+          copyrightNotice: "Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.",
+        },
+      },
+    };
+
+    expect(
+      inspectGeneratedAudioRights(cleanRoomRights, { rootLicensePresent: false }),
+    ).toEqual([]);
+    expect(
+      inspectGeneratedAudioRights(
+        {
+          ...cleanRoomRights,
+          rights: {
+            ...cleanRoomRights.rights,
+            referenceResearch: {
+              ...cleanRoomRights.rights.referenceResearch,
+              sourceAudioImported: true,
+              melodyOrHarmonyTranscribed: true,
+            },
+            projectLicense: {
+              status: "UNVERIFIED_MISSING_ROOT_LICENSE",
+              rootLicensePresent: true,
+              copyrightNotice: "incorrect",
+            },
+          },
+        },
+        { rootLicensePresent: false },
+      ),
+    ).toEqual([
+      "referenceResearch.sourceAudioImported",
+      "referenceResearch.melodyOrHarmonyTranscribed",
+      "projectLicense.status",
+      "projectLicense.rootLicensePresent",
+      "projectLicense.copyrightNotice",
+    ]);
   });
 
   it("rejects feedback cue format and decoded metrics outside the bounded UI-cue contract", () => {
@@ -324,6 +471,11 @@ describe("non-Hyperfocus app audio guard", () => {
         durationSeconds: 0.52,
         peak: 0.12,
         rms: 0.038,
+        audibleBandEnergyRatio: 0.995,
+        highFrequencyEnergyRatio: 0.12,
+        dcOffsetAbs: 0.0001,
+        boundaryDelta: 0.0005,
+        boundarySlopeDelta: 0.001,
         transientDelta: 0.02,
       }),
     ).toEqual([]);
@@ -334,6 +486,11 @@ describe("non-Hyperfocus app audio guard", () => {
       durationSeconds: 1.5,
       peak: 0.3,
       rms: 0.1,
+      audibleBandEnergyRatio: 0.7,
+      highFrequencyEnergyRatio: 0.8,
+      dcOffsetAbs: 0.01,
+      boundaryDelta: 0.05,
+      boundarySlopeDelta: 0.05,
       transientDelta: 0.2,
     });
     expect(violations).toEqual([
@@ -342,7 +499,92 @@ describe("non-Hyperfocus app audio guard", () => {
       "durationSeconds",
       "peak",
       "rms",
+      "audibleBandEnergyRatio",
+      "highFrequencyEnergyRatio",
+      "dcOffsetAbs",
+      "boundaryDelta",
+      "boundarySlopeDelta",
       "transientDelta",
+    ]);
+
+    expect(
+      inspectFeedbackMetrics("feedback-notification.mp3", {
+        channels: 2,
+        sampleRate: 44_100,
+        durationSeconds: 0.95,
+        peak: 0.16,
+        rms: 0.04,
+        audibleBandEnergyRatio: 0.995,
+        highFrequencyEnergyRatio: 0.16,
+        dcOffsetAbs: 0.0001,
+        boundaryDelta: 0.0005,
+        boundarySlopeDelta: 0.001,
+        transientDelta: 0.05,
+      }),
+    ).toEqual([]);
+  });
+
+  it("rejects long-loop format, silence, phase, seam, and spectral violations", () => {
+    expect(inspectCloudlightLoopMetrics).toEqual(expect.any(Function));
+    if (!inspectCloudlightLoopMetrics) return;
+
+    const accepted = {
+      channels: 2,
+      sampleRate: 44_100,
+      durationSeconds: 150.04,
+      peak: 0.2,
+      rms: 0.045,
+      audibleRms: 0.044,
+      audibleBandEnergyRatio: 0.99,
+      highFrequencyEnergyRatio: 0.08,
+      dcOffsetAbs: 0.0001,
+      transientDelta: 0.04,
+      stereoCorrelation: 0.72,
+      monoFoldDownEnergyRatio: 0.88,
+      boundaryDelta: 0.001,
+      boundarySlopeDelta: 0.002,
+      startEndRmsDelta: 0.004,
+      maxSilentWindowSeconds: 0,
+      decoder: "afconvert" as const,
+    };
+    expect(inspectCloudlightLoopMetrics(accepted)).toEqual([]);
+    expect(
+      inspectCloudlightLoopMetrics({
+        ...accepted,
+        channels: 1,
+        sampleRate: 48_000,
+        durationSeconds: 145,
+        peak: 0.4,
+        rms: 0.005,
+        audibleRms: 0.001,
+        audibleBandEnergyRatio: 0.4,
+        highFrequencyEnergyRatio: 0.8,
+        dcOffsetAbs: 0.01,
+        transientDelta: 0.3,
+        stereoCorrelation: -0.9,
+        monoFoldDownEnergyRatio: 0.02,
+        boundaryDelta: 0.1,
+        boundarySlopeDelta: 0.1,
+        startEndRmsDelta: 0.08,
+        maxSilentWindowSeconds: 3,
+      }),
+    ).toEqual([
+      "channels",
+      "sampleRate",
+      "durationSeconds",
+      "peak",
+      "rms",
+      "audibleRms",
+      "audibleBandEnergyRatio",
+      "highFrequencyEnergyRatio",
+      "dcOffsetAbs",
+      "transientDelta",
+      "stereoCorrelation",
+      "monoFoldDownEnergyRatio",
+      "boundaryDelta",
+      "boundarySlopeDelta",
+      "startEndRmsDelta",
+      "maxSilentWindowSeconds",
     ]);
   });
 

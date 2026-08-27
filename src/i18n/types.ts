@@ -2291,6 +2291,8 @@ export interface Translations {
   reminderReconcileUncertain: string;
   soundDefault: string;
   soundDefaultDesc: string;
+  soundFurin: string;
+  soundFurinDesc: string;
   soundGentle: string;
   soundGentleDesc: string;
   soundSilent: string;

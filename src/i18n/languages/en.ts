@@ -2375,6 +2375,8 @@ export const en: Translations = {
     "ZenFlow couldn't finish updating reminders. Some reminders may be missing or duplicated.",
   soundDefault: "Default",
   soundDefaultDesc: "System notification sound",
+  soundFurin: "Fūrin",
+  soundFurinDesc: "Soft Japanese glass wind-bell",
   soundGentle: "Gentle",
   soundGentleDesc: "Vibration only",
   soundSilent: "Silent",

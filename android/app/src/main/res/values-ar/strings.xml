@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">إشعار تجريبي من ZenFlow</string>
     <string name="push_realm_channel_default">افتراضي</string>
     <string name="push_realm_channel_default_description">صوت النظام</string>
+    <string name="push_realm_channel_furin">فورين</string>
+    <string name="push_realm_channel_furin_description">جرس رياح زجاجي ياباني ناعم</string>
     <string name="push_realm_channel_gentle">لطيف</string>
     <string name="push_realm_channel_gentle_description">اهتزاز فقط</string>
     <string name="push_realm_channel_silent">صامت</string>

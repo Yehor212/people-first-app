@@ -173,15 +173,21 @@ const localNotificationsMock = vi.hoisted(() => ({
 
 const notificationSoundsMock = vi.hoisted(() => {
   const state = { currentChannelId: "zenflow_default_v4" };
+  const channels: Record<string, string> = {
+    default: "zenflow_default_v4",
+    furin: "zenflow_furin_v5",
+    gentle: "zenflow_gentle_v4",
+    silent: "zenflow_silent_v4",
+  };
   return {
     state,
     updateNotificationSound: vi.fn().mockImplementation(async (sound: string) => {
-      state.currentChannelId = sound === "gentle" ? "zenflow_gentle_v4" : "zenflow_default_v4";
+      state.currentChannelId = channels[sound] ?? channels.default;
       return state.currentChannelId;
     }),
     initializeNotificationChannels: vi.fn().mockResolvedValue(undefined),
     isCurrentNotificationSoundChannelId: (channelId: string | undefined) =>
-      typeof channelId === "string" && channelId.endsWith("_v4"),
+      typeof channelId === "string" && Object.values(channels).includes(channelId),
   };
 });
 
@@ -823,6 +829,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       notificationSoundDescription: "Choose sound for reminders",
       soundDefault: "Default",
       soundDefaultDesc: "System notification sound",
+      soundFurin: "Fūrin",
+      soundFurinDesc: "Soft Japanese glass wind-bell",
       soundGentle: "Gentle",
       soundGentleDesc: "Vibration only",
       soundSilent: "Silent",
@@ -1101,6 +1109,15 @@ vi.mock("@/lib/notificationSounds", () => ({
       importance: 3,
     },
     {
+      id: "furin",
+      labelKey: "soundFurin",
+      description: "Soft Japanese glass wind-bell",
+      channelId: "zenflow_furin_v5",
+      sound: "zenflow_furin.wav",
+      vibrate: true,
+      importance: 3,
+    },
+    {
       id: "gentle",
       labelKey: "soundGentle",
       description: "Vibration only",
@@ -1109,16 +1126,28 @@ vi.mock("@/lib/notificationSounds", () => ({
       vibrate: true,
       importance: 2,
     },
+    {
+      id: "silent",
+      labelKey: "soundSilent",
+      description: "No sound or vibration",
+      channelId: "zenflow_silent_v4",
+      sound: undefined,
+      vibrate: false,
+      importance: 1,
+    },
   ],
-  getNotificationSound: () =>
-    notificationSoundsMock.state.currentChannelId === "zenflow_gentle_v4"
-      ? "gentle"
-      : "default",
+  getNotificationSound: () => {
+    if (notificationSoundsMock.state.currentChannelId === "zenflow_furin_v5") return "furin";
+    if (notificationSoundsMock.state.currentChannelId === "zenflow_gentle_v4") return "gentle";
+    if (notificationSoundsMock.state.currentChannelId === "zenflow_silent_v4") return "silent";
+    return "default";
+  },
   getCurrentChannelId: () => notificationSoundsMock.state.currentChannelId,
   getCurrentSoundOption: () => ({
-    sound:
-      notificationSoundsMock.state.currentChannelId === "zenflow_default_v4"
-        ? "default"
+    sound: notificationSoundsMock.state.currentChannelId === "zenflow_default_v4"
+      ? "default"
+      : notificationSoundsMock.state.currentChannelId === "zenflow_furin_v5"
+        ? "zenflow_furin.wav"
         : undefined,
   }),
   getNotificationSystemSettingsCopyKey: () => {
@@ -4140,10 +4169,10 @@ describe("SettingsPage", () => {
     render(<SettingsPage controls={controls} />);
 
     fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
-    fireEvent.click(screen.getByRole("button", { name: /Gentle/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Fūrin/ }));
 
     await waitFor(() =>
-      expect(notificationSoundsMock.updateNotificationSound).toHaveBeenCalledWith("gentle")
+      expect(notificationSoundsMock.updateNotificationSound).toHaveBeenCalledWith("furin")
     );
     await waitFor(() =>
       expect(journalFeatureMock.reconcileJournalReminderAtStartup).toHaveBeenCalledWith({
@@ -4160,12 +4189,14 @@ describe("SettingsPage", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 201,
-          channelId: "zenflow_gentle_v4",
+          channelId: "zenflow_furin_v5",
+          sound: "zenflow_furin.wav",
           schedule: expect.objectContaining({ on: expect.objectContaining({ weekday: 2 }) }),
         }),
         expect.objectContaining({
           id: 9001,
-          channelId: "zenflow_gentle_v4",
+          channelId: "zenflow_furin_v5",
+          sound: "zenflow_furin.wav",
           actionTypeId: "MOOD_QUICK_LOG",
           schedule: expect.objectContaining({ on: expect.objectContaining({ weekday: 2 }) }),
         }),
@@ -4423,6 +4454,7 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByTestId("settings-module-card-notifications"));
 
     expect(screen.getByText("Notification sound")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Fūrin/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Gentle/ })).toBeInTheDocument();
   });
 

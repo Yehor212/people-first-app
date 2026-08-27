@@ -2380,6 +2380,8 @@ export const uk: Translations = {
     "ZenFlow не вдалося завершити оновлення нагадувань. Деякі нагадування можуть не з’явитися або повторюватися.",
   soundDefault: "За замовчуванням",
   soundDefaultDesc: "Системний звук сповіщення",
+  soundFurin: "Фурін",
+  soundFurinDesc: "М’який японський скляний дзвіночок",
   soundGentle: "М'який",
   soundGentleDesc: "Тільки вібрація",
   soundSilent: "Тихий",

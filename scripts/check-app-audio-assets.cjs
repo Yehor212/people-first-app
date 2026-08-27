@@ -10,6 +10,7 @@ const publicSoundsDir = path.join(rootDir, 'public', 'sounds');
 const appAudioAssetsPath = path.join(rootDir, 'src', 'lib', 'appAudioAssets.ts');
 const appAudioPolicyPath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-sound-effects-policy.md');
 const generatedProvenancePath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-generated-audio-provenance.json');
+const cloudlightLicensePath = path.join(rootDir, 'docs', 'audio', 'cloudlight-evening-license.md');
 const thirdPartyNoticesPath = path.join(rootDir, 'THIRD_PARTY_NOTICES.md');
 const hyperfocusManifestPath = path.join(rootDir, 'src', 'lib', 'hyperfocusGeneratedAudioManifest.ts');
 const docsAssetsDir = path.join(rootDir, 'docs', 'assets');
@@ -19,6 +20,7 @@ const appAudioAssetsReportPath = path.join(outputAudioQcDir, 'app-audio-assets-r
 
 const APPROVED_ROOT_MP3S = new Map([
   ['soft-air-veil.mp3', { gain: 0.18, peakMin: 0.12, peakMax: 0.32, rmsMin: 0.055, rmsMax: 0.11, audibleRmsMin: 0.05, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.02, effectivePeakMax: 0.08, effectiveRmsMin: 0.009, effectiveRmsMax: 0.022, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.012, transientDeltaMax: 0.16, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
+  ['cloudlight-evening-loop.mp3', { gain: 0.18, peakMin: 0.08, peakMax: 0.28, rmsMin: 0.032, rmsMax: 0.065, audibleRmsMin: 0.03, audibleBandEnergyRatioMin: 0.9, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.012, effectivePeakMax: 0.06, effectiveRmsMin: 0.005, effectiveRmsMax: 0.014, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.015, transientDeltaMax: 0.12, durationMin: 149.8, durationMax: 150.3, sampleRates: [44100], channels: [2] }],
   ['gentle-water-bed.mp3', { gain: 0.36, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.05, rmsMax: 0.095, audibleRmsMin: 0.045, audibleBandEnergyRatioMin: 0.7, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.04, effectivePeakMax: 0.22, effectiveRmsMin: 0.017, effectiveRmsMax: 0.04, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { startEndRmsDeltaMax: 0.0175 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
   ['soft-rain-veil.mp3', { gain: 0.32, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.045, rmsMax: 0.09, audibleRmsMin: 0.04, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.035, effectivePeakMax: 0.2, effectiveRmsMin: 0.014, effectiveRmsMax: 0.035, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
 ]);
@@ -26,7 +28,7 @@ const APPROVED_ROOT_MP3S = new Map([
 const APPROVED_FEEDBACK_MP3S = new Map([
   ['feedback-complete.mp3', { id: 'feedback-complete', gain: 0.4, durationMin: 0.5, durationMax: 0.85 }],
   ['feedback-milestone.mp3', { id: 'feedback-milestone', gain: 0.45, durationMin: 0.6, durationMax: 0.95 }],
-  ['feedback-notification.mp3', { id: 'feedback-notification', gain: 0.2, durationMin: 0.25, durationMax: 0.55 }],
+  ['feedback-notification.mp3', { id: 'feedback-notification', gain: 0.2, durationMin: 0.7, durationMax: 1.0 }],
   ['feedback-streak.mp3', { id: 'feedback-streak', gain: 0.45, durationMin: 0.7, durationMax: 1.05 }],
   ['feedback-success.mp3', { id: 'feedback-success', gain: 0.35, durationMin: 0.4, durationMax: 0.7 }],
 ]);
@@ -38,7 +40,34 @@ const FEEDBACK_METRIC_LIMITS = Object.freeze({
   peakMax: 0.22,
   rmsMin: 0.01,
   rmsMax: 0.065,
+  audibleBandEnergyRatioMin: 0.985,
+  highFrequencyEnergyRatioMax: 0.3,
+  dcOffsetAbsMax: 0.001,
+  boundaryDeltaMax: 0.01,
+  boundarySlopeDeltaMax: 0.02,
   transientDeltaMax: 0.08,
+});
+const CLOUDLIGHT_LOOP_METRIC_LIMITS = Object.freeze({
+  sampleRates: [44100],
+  channels: [2],
+  durationMin: 149.8,
+  durationMax: 150.3,
+  peakMin: 0.08,
+  peakMax: 0.28,
+  rmsMin: 0.032,
+  rmsMax: 0.065,
+  audibleRmsMin: 0.03,
+  audibleBandEnergyRatioMin: 0.9,
+  highFrequencyEnergyRatioMax: 0.25,
+  dcOffsetAbsMax: 0.001,
+  transientDeltaMax: 0.12,
+  stereoCorrelationMin: 0.15,
+  monoFoldDownEnergyRatioMin: 0.3,
+  monoFoldDownEnergyRatioMax: 1.25,
+  boundaryDeltaMax: 0.01,
+  boundarySlopeDeltaMax: 0.01,
+  startEndRmsDeltaMax: 0.015,
+  maxSilentWindowSecondsMax: 0.5,
 });
 
 const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
@@ -48,6 +77,14 @@ const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
     publicPath: 'public/sounds/soft-air-veil.mp3',
     deployDocsPath: 'docs/sounds/soft-air-veil.mp3',
     runtimeGain: 0.18,
+  }],
+  ['cloudlight-evening-loop.mp3', {
+    id: 'cloudlight-evening-loop',
+    family: 'ambience',
+    publicPath: 'public/sounds/cloudlight-evening-loop.mp3',
+    deployDocsPath: 'docs/sounds/cloudlight-evening-loop.mp3',
+    runtimeGain: 0.18,
+    deterministicSpec: 'original-four-section-felt-piano-air-pad-circular-loop',
   }],
   ['gentle-water-bed.mp3', {
     id: 'gentle-water-bed',
@@ -71,7 +108,12 @@ const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
       publicPath: 'public/sounds/feedback/' + fileName,
       deployDocsPath: 'docs/sounds/feedback/' + fileName,
       runtimeGain: thresholds.gain,
-      deterministicSpec: 'fixed-note-sequence-with-cosine-envelopes',
+      deterministicSpec: fileName === 'feedback-notification.mp3'
+        ? 'fixed-modal-glass-bell-with-cosine-attack-and-exponential-decay'
+        : 'fixed-note-sequence-with-cosine-envelopes',
+      ...(fileName === 'feedback-notification.mp3'
+        ? { nativeAndroidPath: 'android/app/src/main/res/raw/zenflow_furin.wav' }
+        : {}),
     },
   ]),
 ]);
@@ -89,6 +131,7 @@ const FORBIDDEN_ROOT_MP3S = [
 
 const EXPECTED_ASSETS = new Map([
   ['soft-air-veil', { family: 'entry', publicPath: 'sounds/soft-air-veil.mp3' }],
+  ['cloudlight-evening-loop', { family: 'entry', publicPath: 'sounds/cloudlight-evening-loop.mp3' }],
   ['orb-ambience', { family: 'orb', publicPath: 'sounds/gentle-water-bed.mp3' }],
   ['diary-reflection-loop', { family: 'diary', publicPath: 'sounds/soft-rain-veil.mp3' }],
   ['focus-forest', { family: 'focus', publicPath: 'sounds/hyperfocus/hyperfocus-forest-deep.mp3' }],
@@ -101,6 +144,7 @@ const EXPECTED_ASSETS = new Map([
 
 const EXPECTED_NON_HYPERFOCUS_ASSET_IDS = [
   'soft-air-veil',
+  'cloudlight-evening-loop',
   'orb-ambience',
   'diary-reflection-loop',
 ];
@@ -196,7 +240,7 @@ function validateCommandLine(argv = process.argv.slice(2)) {
 
 function parseAssets(source) {
   const assets = [];
-  const re = /makeAsset\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)"/g;
+  const re = /makeAsset\(\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)"/g;
   let match;
   while ((match = re.exec(source))) {
     assets.push({ id: match[1], family: match[2], publicPath: match[3] });
@@ -316,15 +360,22 @@ function inspectGeneratedAudioProvenance(assets) {
     if (!asset.parameters || asset.parameters.sampleRate !== 44100) fields.push('parameters.sampleRate');
     if (!asset.parameters || asset.parameters.channels !== 2) fields.push('parameters.channels');
     if (!asset.parameters || asset.parameters.runtimeGain !== expected.runtimeGain) fields.push('parameters.runtimeGain');
+    if (expected.deterministicSpec && asset.deterministicSpec !== expected.deterministicSpec) {
+      fields.push('deterministicSpec');
+    }
 
     if (expected.family === 'feedback') {
-      if (asset.deterministicSpec !== expected.deterministicSpec) fields.push('deterministicSpec');
       const thresholds = APPROVED_FEEDBACK_MP3S.get(fileName);
       const duration = asset.parameters && asset.parameters.durationSeconds;
       if (!thresholds || !Number.isFinite(duration) ||
           duration < thresholds.durationMin || duration > thresholds.durationMax) {
         fields.push('parameters.durationSeconds');
       }
+    }
+    if (expected.nativeAndroidPath) {
+      if (asset.nativeAndroidPath !== expected.nativeAndroidPath) fields.push('nativeAndroidPath');
+      if (!/^[a-f0-9]{64}$/.test(asset.nativeAndroidSha256 || '')) fields.push('nativeAndroidSha256');
+      if (!Number.isInteger(asset.nativeAndroidBytes) || asset.nativeAndroidBytes <= 44) fields.push('nativeAndroidBytes');
     }
 
     if (fields.length > 0) mismatched.push({ fileName, fields });
@@ -341,6 +392,50 @@ function inspectGeneratedAudioProvenance(assets) {
   };
 }
 
+function inspectGeneratedAudioRights(provenance, environment) {
+  const violations = [];
+  const reference = provenance && provenance.rights && provenance.rights.referenceResearch;
+  const projectLicense = provenance && provenance.rights && provenance.rights.projectLicense;
+
+  if (!provenance || !String(provenance.generationPolicy || '').includes('No third-party samples')) {
+    violations.push('generationPolicy');
+  }
+  if (!reference || reference.title !== 'Cloudbound Evening') {
+    violations.push('referenceResearch.title');
+  }
+  if (!reference || reference.sourceUrl !== 'https://www.youtube.com/watch?v=cJvhJqgDbKI') {
+    violations.push('referenceResearch.sourceUrl');
+  }
+  if (!reference || reference.useBoundary !== 'high-level mood and app-entry background-music research only') {
+    violations.push('referenceResearch.useBoundary');
+  }
+  if (!reference || reference.sourceAudioImported !== false) {
+    violations.push('referenceResearch.sourceAudioImported');
+  }
+  if (!reference || reference.sourceAudioRetained !== false) {
+    violations.push('referenceResearch.sourceAudioRetained');
+  }
+  if (!reference || reference.samplesCopied !== false) {
+    violations.push('referenceResearch.samplesCopied');
+  }
+  if (!reference || reference.melodyOrHarmonyTranscribed !== false) {
+    violations.push('referenceResearch.melodyOrHarmonyTranscribed');
+  }
+
+  const rootLicensePresent = Boolean(environment && environment.rootLicensePresent);
+  if (!projectLicense || projectLicense.status !== 'ASSET_SPECIFIC_PROPRIETARY_NOTICE') {
+    violations.push('projectLicense.status');
+  }
+  if (!projectLicense || projectLicense.rootLicensePresent !== rootLicensePresent) {
+    violations.push('projectLicense.rootLicensePresent');
+  }
+  if (!projectLicense || projectLicense.copyrightNotice !==
+      'Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.') {
+    violations.push('projectLicense.copyrightNotice');
+  }
+  return violations;
+}
+
 function checkGeneratedProvenance() {
   assert(fs.existsSync(generatedProvenancePath), 'generated non-Hyperfocus audio provenance is missing', {
     path: path.relative(rootDir, generatedProvenancePath),
@@ -352,10 +447,24 @@ function checkGeneratedProvenance() {
     'generated provenance must point to the local generator script', { generatorScript: provenance.generatorScript });
   assert(provenance.encoder && provenance.encoder.name === 'lamejs' && provenance.encoder.version === '1.2.1',
     'generated provenance must pin the MP3 encoder', { encoder: provenance.encoder });
+  assert(fs.existsSync(cloudlightLicensePath), 'Cloudlight asset-specific license notice is missing', {
+    path: path.relative(rootDir, cloudlightLicensePath),
+  });
+  const cloudlightLicense = fs.readFileSync(cloudlightLicensePath, 'utf8');
+  assert(cloudlightLicense.includes('Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.'),
+    'Cloudlight asset-specific license notice is incomplete');
+  const rootLicensePresent = ['LICENSE', 'LICENSE.md', 'LICENSE.txt'].some((fileName) =>
+    fs.existsSync(path.join(rootDir, fileName)));
+  const rightsViolations = inspectGeneratedAudioRights(provenance, { rootLicensePresent });
+  assert(rightsViolations.length === 0,
+    'generated provenance contains unsupported reference-use or project-license claims', {
+      rootLicensePresent,
+      rightsViolations,
+    });
 
   const provenanceInspection = inspectGeneratedAudioProvenance(provenance.assets || []);
   assert(provenanceInspection.exact,
-    'generated provenance asset list must contain exactly three root ambience and five feedback assets', {
+    'generated provenance asset list must contain exactly four root ambience and five feedback assets', {
       expectedFiles: [...EXPECTED_GENERATED_AUDIO_PROVENANCE.keys()].sort(),
       ...provenanceInspection,
   });
@@ -378,7 +487,30 @@ function checkGeneratedProvenance() {
         actual: sha256File(fullPath),
       });
     }
+    if (asset.nativeAndroidPath) {
+      const nativePath = path.join(rootDir, asset.nativeAndroidPath);
+      assert(fs.existsSync(nativePath), 'generated native notification sound is missing', {
+        relativePath: asset.nativeAndroidPath,
+      });
+      assert(fs.statSync(nativePath).size === asset.nativeAndroidBytes,
+        'generated native notification sound byte count does not match provenance', {
+          relativePath: asset.nativeAndroidPath,
+          expected: asset.nativeAndroidBytes,
+          actual: fs.statSync(nativePath).size,
+        });
+      assert(sha256File(nativePath) === asset.nativeAndroidSha256,
+        'generated native notification sound SHA-256 does not match provenance', {
+          relativePath: asset.nativeAndroidPath,
+          expected: asset.nativeAndroidSha256,
+          actual: sha256File(nativePath),
+        });
+    }
   }
+  return {
+    rootLicensePresent,
+    projectLicenseStatus: provenance.rights.projectLicense.status,
+    referenceTitle: provenance.rights.referenceResearch.title,
+  };
 }
 
 function checkPackageScript() {
@@ -775,18 +907,32 @@ function parseWavMetrics(wavPath) {
   let peak = 0;
   let sumSquares = 0;
   let audibleSquares = 0;
+  let highFrequencySquares = 0;
   let transientDelta = 0;
+  let stereoLeftSquares = 0;
+  let stereoRightSquares = 0;
+  let stereoCrossProducts = 0;
+  let monoFoldDownSquares = 0;
+  const silenceWindowFrames = Math.max(1, Math.round(fmt.sampleRate * 0.25));
+  let silenceWindowSquares = 0;
+  let silenceWindowFrameCount = 0;
+  let consecutiveSilentWindows = 0;
+  let maxConsecutiveSilentWindows = 0;
   const sampleSumsByChannel = new Array(fmt.channels).fill(0);
   const highPassStateByChannel = new Array(fmt.channels).fill(0);
   const highPassInputByChannel = new Array(fmt.channels).fill(0);
+  const highFrequencyLowPassStateByChannel = new Array(fmt.channels).fill(0);
   const highPassCutoffHz = 20;
   const highPassRc = 1 / (2 * Math.PI * highPassCutoffHz);
   const highPassAlpha = highPassRc / (highPassRc + (1 / fmt.sampleRate));
+  const highFrequencyLowPassAlpha = 1 - Math.exp((-2 * Math.PI * 4000) / fmt.sampleRate);
   let previousByChannel = new Array(fmt.channels).fill(0);
   for (let frame = 0; frame < frameCount; frame += 1) {
+    const frameValues = new Array(fmt.channels).fill(0);
     for (let ch = 0; ch < fmt.channels; ch += 1) {
       const sampleIndex = (frame * fmt.channels) + ch;
       const value = buffer.readInt16LE(dataStart + sampleIndex * bytesPerSample) / 32768;
+      frameValues[ch] = value;
       const abs = Math.abs(value);
       if (abs > peak) peak = abs;
       sumSquares += value * value;
@@ -797,8 +943,40 @@ function parseWavMetrics(wavPath) {
       highPassStateByChannel[ch] = audibleValue;
       highPassInputByChannel[ch] = value;
       audibleSquares += audibleValue * audibleValue;
+      highFrequencyLowPassStateByChannel[ch] += highFrequencyLowPassAlpha * (
+        value - highFrequencyLowPassStateByChannel[ch]
+      );
+      const highFrequencyValue = value - highFrequencyLowPassStateByChannel[ch];
+      highFrequencySquares += highFrequencyValue * highFrequencyValue;
       if (frame > 0) transientDelta = Math.max(transientDelta, Math.abs(value - previousByChannel[ch]));
       previousByChannel[ch] = value;
+    }
+    if (fmt.channels >= 2) {
+      const left = frameValues[0];
+      const right = frameValues[1];
+      stereoLeftSquares += left * left;
+      stereoRightSquares += right * right;
+      stereoCrossProducts += left * right;
+      const mono = (left + right) * 0.5;
+      monoFoldDownSquares += mono * mono;
+    }
+    silenceWindowSquares += frameValues.reduce((sum, value) => sum + value * value, 0);
+    silenceWindowFrameCount += 1;
+    if (silenceWindowFrameCount === silenceWindowFrames || frame === frameCount - 1) {
+      const windowRms = Math.sqrt(
+        silenceWindowSquares / Math.max(1, silenceWindowFrameCount * fmt.channels),
+      );
+      if (windowRms < 0.001) {
+        consecutiveSilentWindows += 1;
+        maxConsecutiveSilentWindows = Math.max(
+          maxConsecutiveSilentWindows,
+          consecutiveSilentWindows,
+        );
+      } else {
+        consecutiveSilentWindows = 0;
+      }
+      silenceWindowSquares = 0;
+      silenceWindowFrameCount = 0;
     }
   }
 
@@ -807,6 +985,19 @@ function parseWavMetrics(wavPath) {
   const dcOffsetAbs = Math.max(
     ...sampleSumsByChannel.map((sum) => Math.abs(sum / frameCount)),
   );
+  const stereoCorrelation = fmt.channels >= 2
+    ? stereoCrossProducts / Math.max(
+      1e-12,
+      Math.sqrt(stereoLeftSquares * stereoRightSquares),
+    )
+    : 1;
+  const stereoMeanSquare = sumSquares / Math.max(1, sampleCount);
+  const monoFoldDownMeanSquare = monoFoldDownSquares / Math.max(1, frameCount);
+  const monoFoldDownEnergyRatio = fmt.channels >= 2
+    ? monoFoldDownMeanSquare / Math.max(1e-12, stereoMeanSquare)
+    : 1;
+  const maxSilentWindowSeconds = maxConsecutiveSilentWindows *
+    (silenceWindowFrames / fmt.sampleRate);
 
   const windowFrames = Math.min(
     Math.round(fmt.sampleRate * 0.5),
@@ -864,7 +1055,13 @@ function parseWavMetrics(wavPath) {
     rms,
     audibleRms,
     audibleBandEnergyRatio: sumSquares > 0 ? Math.min(1, audibleSquares / sumSquares) : 0,
+    highFrequencyEnergyRatio: sumSquares > 0
+      ? Math.min(1, highFrequencySquares / sumSquares)
+      : 0,
     dcOffsetAbs,
+    stereoCorrelation,
+    monoFoldDownEnergyRatio,
+    maxSilentWindowSeconds,
     loopDelta,
     loopDeltaByChannel,
     boundaryDelta,
@@ -955,6 +1152,60 @@ function inspectAmbienceMetrics(fileName, measured) {
   return violations;
 }
 
+function inspectCloudlightLoopMetrics(measured) {
+  const thresholds = CLOUDLIGHT_LOOP_METRIC_LIMITS;
+  const violations = [];
+  if (!thresholds.channels.includes(measured.channels)) violations.push('channels');
+  if (!thresholds.sampleRates.includes(measured.sampleRate)) violations.push('sampleRate');
+  if (!Number.isFinite(measured.durationSeconds) ||
+      measured.durationSeconds < thresholds.durationMin ||
+      measured.durationSeconds > thresholds.durationMax) violations.push('durationSeconds');
+  if (!Number.isFinite(measured.peak) ||
+      measured.peak < thresholds.peakMin ||
+      measured.peak > thresholds.peakMax) violations.push('peak');
+  if (!Number.isFinite(measured.rms) ||
+      measured.rms < thresholds.rmsMin ||
+      measured.rms > thresholds.rmsMax) violations.push('rms');
+  if (!Number.isFinite(measured.audibleRms) ||
+      measured.audibleRms < thresholds.audibleRmsMin) violations.push('audibleRms');
+  if (!Number.isFinite(measured.audibleBandEnergyRatio) ||
+      measured.audibleBandEnergyRatio < thresholds.audibleBandEnergyRatioMin) {
+    violations.push('audibleBandEnergyRatio');
+  }
+  if (!Number.isFinite(measured.highFrequencyEnergyRatio) ||
+      measured.highFrequencyEnergyRatio > thresholds.highFrequencyEnergyRatioMax) {
+    violations.push('highFrequencyEnergyRatio');
+  }
+  if (!Number.isFinite(measured.dcOffsetAbs) ||
+      measured.dcOffsetAbs > thresholds.dcOffsetAbsMax) violations.push('dcOffsetAbs');
+  if (!Number.isFinite(measured.transientDelta) ||
+      measured.transientDelta > thresholds.transientDeltaMax) violations.push('transientDelta');
+  if (!Number.isFinite(measured.stereoCorrelation) ||
+      measured.stereoCorrelation < thresholds.stereoCorrelationMin) {
+    violations.push('stereoCorrelation');
+  }
+  if (!Number.isFinite(measured.monoFoldDownEnergyRatio) ||
+      measured.monoFoldDownEnergyRatio < thresholds.monoFoldDownEnergyRatioMin ||
+      measured.monoFoldDownEnergyRatio > thresholds.monoFoldDownEnergyRatioMax) {
+    violations.push('monoFoldDownEnergyRatio');
+  }
+  if (!Number.isFinite(measured.boundaryDelta) ||
+      measured.boundaryDelta > thresholds.boundaryDeltaMax) violations.push('boundaryDelta');
+  if (!Number.isFinite(measured.boundarySlopeDelta) ||
+      measured.boundarySlopeDelta > thresholds.boundarySlopeDeltaMax) {
+    violations.push('boundarySlopeDelta');
+  }
+  if (!Number.isFinite(measured.startEndRmsDelta) ||
+      measured.startEndRmsDelta > thresholds.startEndRmsDeltaMax) {
+    violations.push('startEndRmsDelta');
+  }
+  if (!Number.isFinite(measured.maxSilentWindowSeconds) ||
+      measured.maxSilentWindowSeconds > thresholds.maxSilentWindowSecondsMax) {
+    violations.push('maxSilentWindowSeconds');
+  }
+  return violations;
+}
+
 function checkMetrics(rootMp3s) {
   const metrics = [];
   for (const fileName of rootMp3s) {
@@ -962,7 +1213,11 @@ function checkMetrics(rootMp3s) {
     const measured = convertAndMeasure(fileName);
     const effectivePeak = measured.peak * thresholds.gain;
     const effectiveRms = measured.rms * thresholds.gain;
-    const violations = inspectAmbienceMetrics(fileName, measured);
+    const ambienceViolations = inspectAmbienceMetrics(fileName, measured);
+    const loopViolations = fileName === 'cloudlight-evening-loop.mp3'
+      ? inspectCloudlightLoopMetrics(measured)
+      : [];
+    const violations = [...new Set([...ambienceViolations, ...loopViolations])];
     metrics.push({
       fileName,
       gain: thresholds.gain,
@@ -1003,6 +1258,26 @@ function inspectFeedbackMetrics(fileName, measured) {
       measured.rms < FEEDBACK_METRIC_LIMITS.rmsMin ||
       measured.rms > FEEDBACK_METRIC_LIMITS.rmsMax) {
     violations.push('rms');
+  }
+  if (!Number.isFinite(measured.audibleBandEnergyRatio) ||
+      measured.audibleBandEnergyRatio < FEEDBACK_METRIC_LIMITS.audibleBandEnergyRatioMin) {
+    violations.push('audibleBandEnergyRatio');
+  }
+  if (!Number.isFinite(measured.highFrequencyEnergyRatio) ||
+      measured.highFrequencyEnergyRatio > FEEDBACK_METRIC_LIMITS.highFrequencyEnergyRatioMax) {
+    violations.push('highFrequencyEnergyRatio');
+  }
+  if (!Number.isFinite(measured.dcOffsetAbs) ||
+      measured.dcOffsetAbs > FEEDBACK_METRIC_LIMITS.dcOffsetAbsMax) {
+    violations.push('dcOffsetAbs');
+  }
+  if (!Number.isFinite(measured.boundaryDelta) ||
+      measured.boundaryDelta > FEEDBACK_METRIC_LIMITS.boundaryDeltaMax) {
+    violations.push('boundaryDelta');
+  }
+  if (!Number.isFinite(measured.boundarySlopeDelta) ||
+      measured.boundarySlopeDelta > FEEDBACK_METRIC_LIMITS.boundarySlopeDeltaMax) {
+    violations.push('boundarySlopeDelta');
   }
   if (!Number.isFinite(measured.transientDelta) ||
       measured.transientDelta > FEEDBACK_METRIC_LIMITS.transientDeltaMax) {
@@ -1056,7 +1331,7 @@ function writeReportIfRequested(report, options, reportPath = appAudioAssetsRepo
 function main(options = validateCommandLine()) {
   checkSourceBackedPolicy();
   checkThirdPartyNotices();
-  checkGeneratedProvenance();
+  const rights = checkGeneratedProvenance();
   checkPackageScript();
   const assets = checkManifest();
   scanCurrentSourceForStaleStrings();
@@ -1092,6 +1367,7 @@ function main(options = validateCommandLine()) {
     outputTextArtifactsScannedCount: outputArtifacts.textFiles.length,
     metrics,
     feedbackMetrics,
+    rights,
   };
   writeReportIfRequested(report, options);
   console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + feedbackMp3s.length + ' feedback MP3s checked across ' + feedbackInventories.length + ' inventories; generated duplicate sound artifacts are not allowed; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.files.length + ' output artifact filenames checked; ' + outputArtifacts.textFiles.length + ' text artifacts content-scanned');
@@ -1108,8 +1384,10 @@ if (require.main === module) {
 module.exports = {
   EXPECTED_FEEDBACK_MP3_FILES,
   inspectAmbienceMetrics,
+  inspectCloudlightLoopMetrics,
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,
+  inspectGeneratedAudioRights,
   inspectOutputArtifacts,
   isTextOutputArtifact,
   parseWavMetrics,

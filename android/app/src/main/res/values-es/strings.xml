@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">Notificación de prueba.</string>
     <string name="push_realm_channel_default">Predeterminado</string>
     <string name="push_realm_channel_default_description">Sonido de notificación del sistema</string>
+    <string name="push_realm_channel_furin">Fūrin japonés</string>
+    <string name="push_realm_channel_furin_description">Suave campanilla de viento japonesa de cristal</string>
     <string name="push_realm_channel_gentle">Suave</string>
     <string name="push_realm_channel_gentle_description">Solo vibración</string>
     <string name="push_realm_channel_silent">Silencioso</string>

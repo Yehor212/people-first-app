@@ -2339,6 +2339,8 @@ export const ja: Translations = {
     "リマインダーの更新を完了できませんでした。一部が表示されない、または重複する可能性があります。",
   soundDefault: "デフォルト",
   soundDefaultDesc: "システム通知音",
+  soundFurin: "風鈴",
+  soundFurinDesc: "やさしいガラスの風鈴",
   soundGentle: "優しい",
   soundGentleDesc: "振動のみ",
   soundSilent: "サイレント",

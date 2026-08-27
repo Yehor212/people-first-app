@@ -2408,6 +2408,8 @@ export const fr: Translations = {
     "ZenFlow n’a pas pu terminer la mise à jour des rappels. Certains peuvent manquer ou apparaître en double.",
   soundDefault: "Par défaut",
   soundDefaultDesc: "Son de notification système",
+  soundFurin: "Fūrin japonais",
+  soundFurinDesc: "Douce clochette japonaise en verre",
   soundGentle: "Doux",
   soundGentleDesc: "Vibration uniquement",
   soundSilent: "Silencieux",

@@ -2091,6 +2091,8 @@ const arabicOverrides: Partial<Translations> = {
     "تعذّر على ZenFlow إكمال تحديث التذكيرات. قد لا تظهر بعض التذكيرات أو قد تتكرر.",
   soundDefault: "افتراضي",
   soundDefaultDesc: "صوت النظام",
+  soundFurin: "فورين",
+  soundFurinDesc: "جرس رياح زجاجي ياباني ناعم",
   soundGentle: "لطيف",
   soundGentleDesc: "اهتزاز فقط",
   soundSilent: "صامت",

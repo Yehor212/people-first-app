@@ -2403,6 +2403,8 @@ export const de: Translations = {
     "ZenFlow konnte die Erinnerungen nicht vollständig aktualisieren. Einige könnten fehlen oder doppelt erscheinen.",
   soundDefault: "Standard",
   soundDefaultDesc: "System-Benachrichtigungston",
+  soundFurin: "Japanisches Fūrin",
+  soundFurinDesc: "Sanftes japanisches Glaswindspiel",
   soundGentle: "Sanft",
   soundGentleDesc: "Nur Vibration",
   soundSilent: "Lautlos",
