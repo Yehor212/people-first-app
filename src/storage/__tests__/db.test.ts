@@ -365,6 +365,7 @@ describe("clearLocalUserData", () => {
       analytics: false,
       consentShown: false,
       pushNotifications: false,
+      adAgeEligibility: "unknown",
     });
   });
 

@@ -41,6 +41,8 @@ view after the pending call resolves.
 
 ## Failure behavior
 
+No scarcity or guilt copy is permitted in any ad placement or failure state.
+
 - Missing consent/config/platform support: no request, zero reserved height.
 - No-fill/load error: remove the native view, clear height, allow later retry.
 - Offline/background/route exit/sign-out: remove; never synthesize success.
