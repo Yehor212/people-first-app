@@ -4,8 +4,16 @@ import { HYPERFOCUS_GENERATED_AUDIO_MANIFEST } from "@/lib/hyperfocusGeneratedAu
 export const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v2";
 export const RETIRED_RUNTIME_AUDIO_CACHE_NAMES = ["zenflow-runtime-audio"] as const;
 
+export function isRuntimeAudioPath(pathname: string, destination = ""): boolean {
+  const localPath = pathname.split(/[?#]/, 1)[0];
+  const isSoundsPath = localPath.startsWith("sounds/") || localPath.includes("/sounds/");
+  return isSoundsPath && (destination === "audio" || /\.mp3$/i.test(localPath));
+}
+
 const shippedAudioPaths = [
-  ...APP_AUDIO_ASSETS.map((asset) => asset.publicPath),
+  ...APP_AUDIO_ASSETS.filter((asset) => asset.warmCacheOnStartup).map(
+    (asset) => asset.publicPath,
+  ),
   ...APP_AUDIO_FEEDBACK_EVENTS.map((event) => event.publicPath),
   ...Object.values(HYPERFOCUS_GENERATED_AUDIO_MANIFEST).map((entry) => entry.publicPath),
 ];

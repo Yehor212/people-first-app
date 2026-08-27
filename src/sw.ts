@@ -22,6 +22,7 @@ import { setCacheNameDetails } from "workbox-core";
 import { logger } from "@/lib/logger";
 import {
   APP_AUDIO_SW_CACHE_PATHS,
+  isRuntimeAudioPath,
   RUNTIME_AUDIO_CACHE_NAME,
   selectRetiredRuntimeAudioCaches,
 } from "@/lib/runtimeAudioCache";
@@ -206,8 +207,7 @@ registerRoute(
 registerRoute(
   ({ url, request }) =>
     url.origin === self.location.origin &&
-    url.pathname.includes("/sounds/") &&
-    (request.destination === "audio" || /\.mp3$/i.test(url.pathname)),
+    isRuntimeAudioPath(url.pathname, request.destination),
   new CacheFirst({
     cacheName: RUNTIME_AUDIO_CACHE_NAME,
     plugins: [
