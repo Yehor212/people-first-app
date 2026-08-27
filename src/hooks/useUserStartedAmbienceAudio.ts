@@ -119,7 +119,10 @@ export function useUserStartedAmbienceAudio({
     void audio
       .play()
       .then(() => {
-        if (!mountedRef.current || playAttemptRef.current !== attempt) return;
+        if (!mountedRef.current || playAttemptRef.current !== attempt) {
+          audio.pause();
+          return;
+        }
         clearPendingPlaybackTimeout();
         mediaElementErroredRef.current = false;
         setPlaybackState("playing");

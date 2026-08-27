@@ -3922,6 +3922,7 @@ export const en: Translations = {
   backgroundMusicPauseAction: "Pause evening music",
   backgroundMusicPausedMaster: "Paused while app sound is off",
   backgroundMusicPausedComfort: "Paused while background sounds are off",
+  backgroundMusicPausedOtherSound: "Paused while another sound plays",
   navV2PlanningHeading: "Plan your next ritual",
   navV2PlanningSubcopy: "Your schedule and focus timer live together here.",
   navV2PlanningEmpty: "No events yet",

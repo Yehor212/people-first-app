@@ -3792,6 +3792,7 @@ const arabicOverrides: Partial<Translations> = {
   backgroundMusicPauseAction: "أوقف موسيقى المساء مؤقتًا",
   backgroundMusicPausedMaster: "متوقفة مؤقتًا لأن صوت التطبيق معطّل",
   backgroundMusicPausedComfort: "متوقفة مؤقتًا لأن أصوات الخلفية معطّلة",
+  backgroundMusicPausedOtherSound: "متوقفة مؤقتًا أثناء تشغيل صوت آخر",
   navV2PlanningHeading: "خطّط لطقسك التالي",
   navV2PlanningSubcopy: "يجتمع جدولك ومؤقت التركيز هنا.",
   navV2PlanningEmpty: "لا توجد أحداث بعد",

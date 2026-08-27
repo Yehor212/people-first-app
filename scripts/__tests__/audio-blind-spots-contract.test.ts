@@ -88,6 +88,20 @@ describe("audio blind-spot release contracts", () => {
     expect(hyperfocusManifest).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
   });
 
+  it("routes explicit Cloudlight intent through a validated full-200 service-worker fill", () => {
+    const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
+    const backgroundMusic = read("src/hooks/useAppBackgroundMusic.ts");
+
+    expect(cacheContract).toContain('APP_AUDIO_INTENT_CACHE_PATHS');
+    expect(cacheContract).toContain('response.status !== 200');
+    expect(serviceWorker).toContain('"CACHE_RUNTIME_AUDIO"');
+    expect(serviceWorker).toContain('cacheRuntimeAudioOnIntent');
+    expect(serviceWorker).toContain('event.data.publicPath');
+    expect(serviceWorker).toContain('event.waitUntil(');
+    expect(backgroundMusic).toContain('requestRuntimeAudioCacheOnIntent');
+  });
+
   it("keeps shipped audio cache warming out of the blocking service-worker install path", () => {
     const serviceWorker = read("src/sw.ts");
     const mainEntry = read("src/main.tsx");

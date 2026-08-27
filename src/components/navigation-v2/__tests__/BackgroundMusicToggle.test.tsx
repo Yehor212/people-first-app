@@ -46,6 +46,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       backgroundMusicPauseAction: "Pause evening music",
       backgroundMusicPausedMaster: "Paused while app sound is off",
       backgroundMusicPausedComfort: "Paused while background sounds are off",
+      backgroundMusicPausedOtherSound: "Paused while another sound plays",
     },
   }),
 }));
@@ -113,6 +114,22 @@ describe("BackgroundMusicToggle", () => {
     expect(music.toggle).not.toHaveBeenCalled();
   });
 
+  it.each(["blocked", "error"])(
+    "keeps the saved preference explicitly cancellable in %s state",
+    (state) => {
+      music.enabled = true;
+      music.state = state;
+      render(<BackgroundMusicToggle presentation="sidebar-expanded" />);
+
+      expect(screen.getByRole("button", { name: "Play evening music" })).toBeInTheDocument();
+      const turnOff = screen.getByRole("button", { name: "Pause evening music" });
+      fireEvent.click(turnOff);
+
+      expect(music.toggle).toHaveBeenCalledTimes(1);
+      expect(music.retry).not.toHaveBeenCalled();
+    },
+  );
+
   it("explains the master-audio gate without changing broader audio settings", () => {
     music.enabled = true;
     music.state = "paused";
@@ -133,6 +150,16 @@ describe("BackgroundMusicToggle", () => {
     expect(screen.getByRole("button")).toHaveTextContent(
       "Paused while background sounds are off",
     );
+  });
+
+  it("explains when the enabled music is yielding to another sound owner", () => {
+    music.enabled = true;
+    music.state = "paused";
+    render(<BackgroundMusicToggle presentation="sidebar-expanded" />);
+
+    const button = screen.getByRole("button", { name: "Pause evening music" });
+    expect(button).toHaveAttribute("aria-pressed", "true");
+    expect(button).toHaveTextContent("Paused while another sound plays");
   });
 
   it("keeps a localized tooltip in collapsed rail mode", () => {

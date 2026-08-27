@@ -3891,6 +3891,7 @@ export const ja: Translations = {
   backgroundMusicPauseAction: "夜の音楽を一時停止",
   backgroundMusicPausedMaster: "アプリのサウンドがオフのため一時停止中",
   backgroundMusicPausedComfort: "バックグラウンドサウンドがオフのため一時停止中",
+  backgroundMusicPausedOtherSound: "別のサウンドの再生中は一時停止",
   navV2PlanningHeading: "次のリチュアルを整える",
   navV2PlanningSubcopy: "スケジュールと集中タイマーをここで一緒に使えます。",
   navV2PlanningEmpty: "まだ予定はありません",

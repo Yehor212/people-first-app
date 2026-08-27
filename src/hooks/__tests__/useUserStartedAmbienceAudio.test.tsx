@@ -134,6 +134,27 @@ describe("useUserStartedAmbienceAudio", () => {
     expect(ownership.release).toHaveBeenCalledTimes(1);
   });
 
+  it("pauses again when a superseded play promise fulfills after owner replacement", async () => {
+    const playback = createDeferred();
+    media.play.mockReturnValueOnce(playback.promise);
+    render(<Harness />);
+
+    const toggle = screen.getByTestId("toggle");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveTextContent("pending");
+
+    act(() => ownership.pauseOwner?.());
+    expect(toggle).toHaveTextContent("idle");
+    media.pause.mockClear();
+
+    playback.resolve();
+    await act(async () => playback.promise);
+
+    expect(toggle).toHaveTextContent("idle");
+    expect(media.pause).toHaveBeenCalledTimes(1);
+    expect(setAppAudioMediaSession).not.toHaveBeenCalled();
+  });
+
   it("releases its token on playback failure and unmount", async () => {
     media.play.mockRejectedValueOnce(new Error("decode failed"));
     const view = render(<Harness />);

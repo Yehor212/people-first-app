@@ -3855,6 +3855,7 @@ const hebrewOverrides: Partial<Translations> = {
   backgroundMusicPauseAction: "השהה מוזיקת ערב",
   backgroundMusicPausedMaster: "מושהית כי צלילי האפליקציה כבויים",
   backgroundMusicPausedComfort: "מושהית כי צלילי הרקע כבויים",
+  backgroundMusicPausedOtherSound: "מושהית בזמן שמתנגן צליל אחר",
   navV2PlanningHeading: "תכנן את הטקס הבא שלך",
   navV2PlanningSubcopy: "לוח הזמנים וטיימר המיקוד נמצאים כאן יחד.",
   navV2PlanningEmpty: "אין אירועים עדיין",

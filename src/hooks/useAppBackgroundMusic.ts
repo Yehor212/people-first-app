@@ -15,6 +15,7 @@ import {
   subscribeLongAudioOwner,
 } from "@/lib/audioPlaybackCoordinator";
 import { logger } from "@/lib/logger";
+import { requestRuntimeAudioCacheOnIntent } from "@/lib/runtimeAudioCache";
 
 export type AppBackgroundMusicState =
   | "off"
@@ -40,6 +41,12 @@ export interface AppBackgroundMusicControl {
 
 const PLAYBACK_OWNER = "global-cloudlight" as const;
 const AUTOPLAY_GESTURES = ["pointerdown", "touchstart", "touchend", "keydown"] as const;
+const BACKGROUND_MUSIC_CONTROL_SELECTOR = "[data-app-background-music-control]";
+type PlaybackStartIntent = "automatic" | "explicit";
+
+function isDocumentHidden(): boolean {
+  return typeof document !== "undefined" && document.hidden;
+}
 
 function clampVolume(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -73,6 +80,7 @@ export function useAppBackgroundMusic({
   const releaseOwnershipRef = useRef<(() => void) | null>(null);
   const gestureCleanupRef = useRef<(() => void) | null>(null);
   const allowOwnerReleaseResumeRef = useRef(true);
+  const foregroundRef = useRef(!isDocumentHidden());
 
   enabledRef.current = enabled;
   canPlayRef.current = canPlay;
@@ -115,10 +123,21 @@ export function useAppBackgroundMusic({
     [audioRef, clearGestureRetry, releaseOwnership, transition]
   );
 
-  const startPlayback = useCallback(async (): Promise<void> => {
+  const startPlayback = useCallback(async (
+    intent: PlaybackStartIntent = "automatic",
+  ): Promise<void> => {
     const audio = audioRef.current;
     if (!audio || !enabledRef.current) {
       transition("off");
+      return;
+    }
+    if (intent === "explicit") {
+      void requestRuntimeAudioCacheOnIntent("sounds/cloudlight-evening-loop.mp3").catch(
+        (error) => logger.warn("[AppBackgroundMusic] Intent cache request failed:", error),
+      );
+    }
+    if (!foregroundRef.current || isDocumentHidden()) {
+      pausePlayback("paused");
       return;
     }
     if (!canPlayRef.current) {
@@ -129,7 +148,11 @@ export function useAppBackgroundMusic({
     if (stateRef.current === "playing" && releaseOwnershipRef.current) return;
 
     const activeOwner = getActiveLongAudioOwner();
-    if (activeOwner && (activeOwner !== PLAYBACK_OWNER || !releaseOwnershipRef.current)) {
+    if (
+      intent === "automatic" &&
+      activeOwner &&
+      (activeOwner !== PLAYBACK_OWNER || !releaseOwnershipRef.current)
+    ) {
       transition("paused");
       return;
     }
@@ -152,6 +175,7 @@ export function useAppBackgroundMusic({
       if (
         requestIdRef.current !== requestId ||
         !enabledRef.current ||
+        !foregroundRef.current ||
         !canPlayRef.current ||
         getActiveLongAudioOwner() !== PLAYBACK_OWNER
       ) {
@@ -165,7 +189,7 @@ export function useAppBackgroundMusic({
         title: "Cloudlight Evening",
         artist: "ZenFlow",
         onPlay: () => {
-          void startPlayback();
+          void startPlayback("explicit");
         },
         onPause: () => pausePlayback(enabledRef.current ? "paused" : "off"),
         onStop: () => pausePlayback(enabledRef.current ? "paused" : "off"),
@@ -180,10 +204,16 @@ export function useAppBackgroundMusic({
         releaseOwnership();
 
         let active = true;
-        const retryFromGesture = () => {
+        const retryFromGesture = (event: Event) => {
           if (!active) return;
+          if (
+            event.target instanceof Element &&
+            event.target.closest(BACKGROUND_MUSIC_CONTROL_SELECTOR)
+          ) {
+            return;
+          }
           clearGestureRetry();
-          void startPlayback();
+          void startPlayback("explicit");
         };
         gestureCleanupRef.current = () => {
           if (!active) return;
@@ -208,7 +238,7 @@ export function useAppBackgroundMusic({
   }, [audioRef, clearGestureRetry, pausePlayback, releaseOwnership, transition, volume]);
 
   const applyEnabled = useCallback(
-    (nextEnabled: boolean) => {
+    (nextEnabled: boolean, intent: PlaybackStartIntent = "automatic") => {
       enabledRef.current = nextEnabled;
       setEnabled(nextEnabled);
       if (!nextEnabled) {
@@ -219,7 +249,7 @@ export function useAppBackgroundMusic({
         pausePlayback("paused");
         return;
       }
-      void startPlayback();
+      void startPlayback(intent);
     },
     [pausePlayback, startPlayback]
   );
@@ -230,17 +260,19 @@ export function useAppBackgroundMusic({
       logger.warn("[AppBackgroundMusic] Failed to persist the playback preference");
       return;
     }
-    applyEnabled(result.enabled);
+    applyEnabled(result.enabled, "explicit");
   }, [applyEnabled]);
 
   const retry = useCallback(() => {
     if (!enabledRef.current) return;
-    try {
-      audioRef.current?.load();
-    } catch (error) {
-      logger.warn("[AppBackgroundMusic] Media reload failed:", error);
+    if (stateRef.current === "error" && activeAttemptRef.current === null) {
+      try {
+        audioRef.current?.load();
+      } catch (error) {
+        logger.warn("[AppBackgroundMusic] Media reload failed:", error);
+      }
     }
-    void startPlayback();
+    void startPlayback("explicit");
   }, [audioRef, startPlayback]);
 
   const handleMediaError = useCallback(() => {
@@ -282,10 +314,25 @@ export function useAppBackgroundMusic({
   }, [audioRef, canPlay, pausePlayback, startPlayback, volume]);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      foregroundRef.current = !isDocumentHidden();
+      if (isDocumentHidden()) {
+        pausePlayback(enabledRef.current ? "paused" : "off");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [pausePlayback]);
+
+  useEffect(() => {
     const unregisterPause = registerAudioBackgroundPauseHandler(() => {
+      foregroundRef.current = false;
       pausePlayback(enabledRef.current ? "paused" : "off");
     });
-    const unregisterResume = registerAudioForegroundResumeHandler(() => startPlayback());
+    const unregisterResume = registerAudioForegroundResumeHandler(() => {
+      foregroundRef.current = true;
+      return startPlayback();
+    });
     return () => {
       unregisterPause();
       unregisterResume();
@@ -299,6 +346,8 @@ export function useAppBackgroundMusic({
           ownerId !== null ||
           !allowOwnerReleaseResumeRef.current ||
           !enabledRef.current ||
+          !foregroundRef.current ||
+          isDocumentHidden() ||
           !canPlayRef.current ||
           stateRef.current !== "paused"
         ) {
@@ -309,6 +358,8 @@ export function useAppBackgroundMusic({
           if (
             mountedRef.current &&
             allowOwnerReleaseResumeRef.current &&
+            foregroundRef.current &&
+            !isDocumentHidden() &&
             getActiveLongAudioOwner() === null
           ) {
             void startPlayback();

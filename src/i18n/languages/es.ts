@@ -3960,6 +3960,7 @@ export const es: Translations = {
   backgroundMusicPauseAction: "Pausar música del atardecer",
   backgroundMusicPausedMaster: "En pausa porque el sonido de la app está desactivado",
   backgroundMusicPausedComfort: "En pausa porque los sonidos de fondo están desactivados",
+  backgroundMusicPausedOtherSound: "En pausa mientras se reproduce otro sonido",
   navV2PlanningHeading: "Planifica tu próximo ritual",
   navV2PlanningSubcopy: "Tu horario y temporizador de enfoque viven aquí juntos.",
   navV2PlanningEmpty: "Aún no hay eventos",

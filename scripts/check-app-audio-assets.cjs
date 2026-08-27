@@ -68,6 +68,14 @@ const CLOUDLIGHT_LOOP_METRIC_LIMITS = Object.freeze({
   boundarySlopeDeltaMax: 0.01,
   startEndRmsDeltaMax: 0.015,
   maxSilentWindowSecondsMax: 0.5,
+  clippedSampleCountMax: 0,
+  pinnedFullScaleSampleCountMax: 0,
+  approximateTruePeak4xMax: 0.35,
+  longWindowRmsDbSpreadMax: 9,
+  loopDeltaMax: 0.03,
+  equalPowerSeamRmsRatioMin: 0.7,
+  equalPowerSeamRmsRatioMax: 1.5,
+  equalPowerSeamTransientDeltaMax: 0.12,
 });
 
 const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
@@ -873,7 +881,7 @@ function readChunk(buffer, offset) {
   return buffer.toString('ascii', offset, offset + 4);
 }
 
-function parseWavMetrics(wavPath) {
+function parseWavMetrics(wavPath, { measureStrictLoopMetrics = false } = {}) {
   const buffer = fs.readFileSync(wavPath);
   assert(readChunk(buffer, 0) === 'RIFF' && readChunk(buffer, 8) === 'WAVE', 'converted audio is not a PCM WAV', { wavPath });
   let offset = 12;
@@ -913,12 +921,19 @@ function parseWavMetrics(wavPath) {
   let stereoRightSquares = 0;
   let stereoCrossProducts = 0;
   let monoFoldDownSquares = 0;
+  let clippedSampleCount = 0;
+  let pinnedFullScaleSampleCount = 0;
   const silenceWindowFrames = Math.max(1, Math.round(fmt.sampleRate * 0.25));
   let silenceWindowSquares = 0;
   let silenceWindowFrameCount = 0;
   let consecutiveSilentWindows = 0;
   let maxConsecutiveSilentWindows = 0;
+  const longWindowFrames = Math.max(1, Math.round(fmt.sampleRate * 3));
+  let longWindowSquares = 0;
+  let longWindowFrameCount = 0;
+  const longWindowRmsValues = [];
   const sampleSumsByChannel = new Array(fmt.channels).fill(0);
+  const previousRawByChannel = new Array(fmt.channels).fill(null);
   const highPassStateByChannel = new Array(fmt.channels).fill(0);
   const highPassInputByChannel = new Array(fmt.channels).fill(0);
   const highFrequencyLowPassStateByChannel = new Array(fmt.channels).fill(0);
@@ -927,12 +942,22 @@ function parseWavMetrics(wavPath) {
   const highPassAlpha = highPassRc / (highPassRc + (1 / fmt.sampleRate));
   const highFrequencyLowPassAlpha = 1 - Math.exp((-2 * Math.PI * 4000) / fmt.sampleRate);
   let previousByChannel = new Array(fmt.channels).fill(0);
+  const readNormalizedFrame = (frame, channel) => {
+    const sampleIndex = (frame * fmt.channels) + channel;
+    return buffer.readInt16LE(dataStart + sampleIndex * bytesPerSample) / 32768;
+  };
   for (let frame = 0; frame < frameCount; frame += 1) {
     const frameValues = new Array(fmt.channels).fill(0);
     for (let ch = 0; ch < fmt.channels; ch += 1) {
       const sampleIndex = (frame * fmt.channels) + ch;
-      const value = buffer.readInt16LE(dataStart + sampleIndex * bytesPerSample) / 32768;
+      const rawValue = buffer.readInt16LE(dataStart + sampleIndex * bytesPerSample);
+      const value = rawValue / 32768;
       frameValues[ch] = value;
+      if (Math.abs(rawValue) >= 32767) {
+        clippedSampleCount += 1;
+        if (previousRawByChannel[ch] === rawValue) pinnedFullScaleSampleCount += 1;
+      }
+      previousRawByChannel[ch] = rawValue;
       const abs = Math.abs(value);
       if (abs > peak) peak = abs;
       sumSquares += value * value;
@@ -961,6 +986,15 @@ function parseWavMetrics(wavPath) {
       monoFoldDownSquares += mono * mono;
     }
     silenceWindowSquares += frameValues.reduce((sum, value) => sum + value * value, 0);
+    longWindowSquares += frameValues.reduce((sum, value) => sum + value * value, 0);
+    longWindowFrameCount += 1;
+    if (longWindowFrameCount === longWindowFrames) {
+      longWindowRmsValues.push(
+        Math.sqrt(longWindowSquares / (longWindowFrameCount * fmt.channels)),
+      );
+      longWindowSquares = 0;
+      longWindowFrameCount = 0;
+    }
     silenceWindowFrameCount += 1;
     if (silenceWindowFrameCount === silenceWindowFrames || frame === frameCount - 1) {
       const windowRms = Math.sqrt(
@@ -998,15 +1032,55 @@ function parseWavMetrics(wavPath) {
     : 1;
   const maxSilentWindowSeconds = maxConsecutiveSilentWindows *
     (silenceWindowFrames / fmt.sampleRate);
+  const longWindowRmsDbValues = longWindowRmsValues
+    .filter((value) => value > 1e-9)
+    .map((value) => 20 * Math.log10(value));
+  const longWindowRmsDbSpread = longWindowRmsDbValues.length >= 2
+    ? Math.max(...longWindowRmsDbValues) - Math.min(...longWindowRmsDbValues)
+    : 0;
 
-  const windowFrames = Math.min(
+  let approximateTruePeak4x = peak;
+  if (measureStrictLoopMetrics && frameCount >= 4 && peak > 0) {
+    const fractions = [0.25, 0.5, 0.75];
+    for (let frame = 1; frame < frameCount - 2; frame += 1) {
+      for (let ch = 0; ch < fmt.channels; ch += 1) {
+        const p0 = readNormalizedFrame(frame - 1, ch);
+        const p1 = readNormalizedFrame(frame, ch);
+        const p2 = readNormalizedFrame(frame + 1, ch);
+        const p3 = readNormalizedFrame(frame + 2, ch);
+        if (Math.max(Math.abs(p0), Math.abs(p1), Math.abs(p2), Math.abs(p3)) < peak * 0.65) {
+          continue;
+        }
+        for (const t of fractions) {
+          const t2 = t * t;
+          const t3 = t2 * t;
+          const interpolated = 0.5 * (
+            (2 * p1) +
+            (-p0 + p2) * t +
+            (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+            (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+          );
+          approximateTruePeak4x = Math.max(approximateTruePeak4x, Math.abs(interpolated));
+        }
+      }
+    }
+  }
+
+  const windowFrames = Math.max(1, Math.min(
     Math.round(fmt.sampleRate * 0.5),
     Math.floor(frameCount / 4),
-  );
+  ));
   const loopDiffByChannel = new Array(fmt.channels).fill(0);
   const startSquaresByChannel = new Array(fmt.channels).fill(0);
   const endSquaresByChannel = new Array(fmt.channels).fill(0);
+  let equalPowerSeamSquares = 0;
+  let equalPowerReferenceSquares = 0;
+  let equalPowerSeamTransientDelta = 0;
+  const previousEqualPowerByChannel = new Array(fmt.channels).fill(0);
   for (let frame = 0; frame < windowFrames; frame += 1) {
+    const angle = ((frame + 0.5) / windowFrames) * (Math.PI / 2);
+    const endGain = Math.cos(angle);
+    const startGain = Math.sin(angle);
     for (let ch = 0; ch < fmt.channels; ch += 1) {
       const firstIndex = ((frame * fmt.channels) + ch) * bytesPerSample;
       const lastIndex = (((frameCount - windowFrames + frame) * fmt.channels) + ch) * bytesPerSample;
@@ -1015,7 +1089,25 @@ function parseWavMetrics(wavPath) {
       loopDiffByChannel[ch] += Math.abs(first - last);
       startSquaresByChannel[ch] += first * first;
       endSquaresByChannel[ch] += last * last;
+      const mixed = (last * endGain) + (first * startGain);
+      equalPowerSeamSquares += mixed * mixed;
+      equalPowerReferenceSquares += (first * first + last * last) * 0.5;
+      const previous = frame === 0
+        ? readNormalizedFrame(Math.max(0, frameCount - windowFrames - 1), ch)
+        : previousEqualPowerByChannel[ch];
+      equalPowerSeamTransientDelta = Math.max(
+        equalPowerSeamTransientDelta,
+        Math.abs(mixed - previous),
+      );
+      previousEqualPowerByChannel[ch] = mixed;
     }
+  }
+  for (let ch = 0; ch < fmt.channels; ch += 1) {
+    const next = readNormalizedFrame(Math.min(frameCount - 1, windowFrames), ch);
+    equalPowerSeamTransientDelta = Math.max(
+      equalPowerSeamTransientDelta,
+      Math.abs(next - previousEqualPowerByChannel[ch]),
+    );
   }
 
   const loopDeltaByChannel = loopDiffByChannel.map((sum) =>
@@ -1046,6 +1138,9 @@ function parseWavMetrics(wavPath) {
   const boundaryDelta = Math.max(...boundaryDeltaByChannel);
   const boundarySlopeDelta = Math.max(...boundarySlopeDeltaByChannel);
   const startEndRmsDelta = Math.max(...startEndRmsDeltaByChannel);
+  const equalPowerSeamRmsRatio = equalPowerReferenceSquares > 1e-12
+    ? Math.sqrt(equalPowerSeamSquares / equalPowerReferenceSquares)
+    : 1;
 
   return {
     channels: fmt.channels,
@@ -1062,6 +1157,15 @@ function parseWavMetrics(wavPath) {
     stereoCorrelation,
     monoFoldDownEnergyRatio,
     maxSilentWindowSeconds,
+    clippedSampleCount,
+    pinnedFullScaleSampleCount,
+    approximateTruePeak4x,
+    approximateTruePeak4xMethod: measureStrictLoopMetrics
+      ? '4x-catmull-rom-non-formal'
+      : 'not-measured',
+    formalTruePeakStatus: 'UNVERIFIED_NON_CONFORMANT_ESTIMATE',
+    longWindowRmsDbSpread,
+    formalLoudnessStatus: 'UNVERIFIED_NO_BS1770_METER',
     loopDelta,
     loopDeltaByChannel,
     boundaryDelta,
@@ -1070,6 +1174,8 @@ function parseWavMetrics(wavPath) {
     boundarySlopeDeltaByChannel,
     startEndRmsDelta,
     startEndRmsDeltaByChannel,
+    equalPowerSeamRmsRatio,
+    equalPowerSeamTransientDelta,
     transientDelta,
   };
 }
@@ -1101,7 +1207,12 @@ function convertAndMeasure(relativePath, fileName = path.basename(relativePath))
   const decoder = selectAudioDecoder();
   try {
     decodeMp3ToWav(decoder, source, wavPath, fileName);
-    return { decoder, ...parseWavMetrics(wavPath) };
+    return {
+      decoder,
+      ...parseWavMetrics(wavPath, {
+        measureStrictLoopMetrics: fileName === 'cloudlight-evening-loop.mp3',
+      }),
+    };
   } finally {
     try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (_) {}
   }
@@ -1202,6 +1313,35 @@ function inspectCloudlightLoopMetrics(measured) {
   if (!Number.isFinite(measured.maxSilentWindowSeconds) ||
       measured.maxSilentWindowSeconds > thresholds.maxSilentWindowSecondsMax) {
     violations.push('maxSilentWindowSeconds');
+  }
+  if (!Number.isFinite(measured.clippedSampleCount) ||
+      measured.clippedSampleCount > thresholds.clippedSampleCountMax) {
+    violations.push('clippedSampleCount');
+  }
+  if (!Number.isFinite(measured.pinnedFullScaleSampleCount) ||
+      measured.pinnedFullScaleSampleCount > thresholds.pinnedFullScaleSampleCountMax) {
+    violations.push('pinnedFullScaleSampleCount');
+  }
+  if (!Number.isFinite(measured.approximateTruePeak4x) ||
+      measured.approximateTruePeak4x > thresholds.approximateTruePeak4xMax) {
+    violations.push('approximateTruePeak4x');
+  }
+  if (!Number.isFinite(measured.longWindowRmsDbSpread) ||
+      measured.longWindowRmsDbSpread > thresholds.longWindowRmsDbSpreadMax) {
+    violations.push('longWindowRmsDbSpread');
+  }
+  if (!Number.isFinite(measured.loopDelta) ||
+      measured.loopDelta > thresholds.loopDeltaMax) {
+    violations.push('loopDelta');
+  }
+  if (!Number.isFinite(measured.equalPowerSeamRmsRatio) ||
+      measured.equalPowerSeamRmsRatio < thresholds.equalPowerSeamRmsRatioMin ||
+      measured.equalPowerSeamRmsRatio > thresholds.equalPowerSeamRmsRatioMax) {
+    violations.push('equalPowerSeamRmsRatio');
+  }
+  if (!Number.isFinite(measured.equalPowerSeamTransientDelta) ||
+      measured.equalPowerSeamTransientDelta > thresholds.equalPowerSeamTransientDeltaMax) {
+    violations.push('equalPowerSeamTransientDelta');
   }
   return violations;
 }

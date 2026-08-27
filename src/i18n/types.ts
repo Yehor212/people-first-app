@@ -3756,6 +3756,7 @@ export interface Translations {
   backgroundMusicPauseAction: string;
   backgroundMusicPausedMaster: string;
   backgroundMusicPausedComfort: string;
+  backgroundMusicPausedOtherSound: string;
   navV2PlanningHeading: string;
   navV2PlanningSubcopy: string;
   navV2PlanningEmpty: string;

@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRef } from "react";
 import { useAppBackgroundMusic } from "../useAppBackgroundMusic";
 import { clearAppAudioMediaSession, setAppAudioMediaSession } from "@/lib/audioMediaSession";
-import { claimLongAudio } from "@/lib/audioPlaybackCoordinator";
+import { claimLongAudio, getActiveLongAudioOwner } from "@/lib/audioPlaybackCoordinator";
 
 const lifecycle = vi.hoisted(() => ({
   pause: null as null | (() => void),
   resume: null as null | (() => void | Promise<void>),
+}));
+
+const intentCache = vi.hoisted(() => ({
+  request: vi.fn(() => Promise.resolve(true)),
 }));
 
 vi.mock("@/lib/audioLifecycle", () => ({
@@ -28,6 +32,10 @@ vi.mock("@/lib/audioLifecycle", () => ({
 vi.mock("@/lib/audioMediaSession", () => ({
   clearAppAudioMediaSession: vi.fn(),
   setAppAudioMediaSession: vi.fn(),
+}));
+
+vi.mock("@/lib/runtimeAudioCache", () => ({
+  requestRuntimeAudioCacheOnIntent: intentCache.request,
 }));
 
 const media = vi.hoisted(() => ({
@@ -69,11 +77,13 @@ function Harness({ canPlay = true, volume = 0.18 }: { canPlay?: boolean; volume?
 describe("useAppBackgroundMusic", () => {
   beforeEach(() => {
     localStorage.clear();
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
     lifecycle.pause = null;
     lifecycle.resume = null;
     media.play.mockReset().mockResolvedValue(undefined);
     media.pause.mockReset();
     media.load.mockReset();
+    intentCache.request.mockClear();
     vi.mocked(clearAppAudioMediaSession).mockClear();
     vi.mocked(setAppAudioMediaSession).mockClear();
     Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
@@ -96,6 +106,18 @@ describe("useAppBackgroundMusic", () => {
     expect(screen.getByTestId("music-enabled")).toHaveTextContent("false");
     expect(screen.getByTestId("music-state")).toHaveTextContent("off");
     expect(media.play).not.toHaveBeenCalled();
+    expect(intentCache.request).not.toHaveBeenCalled();
+  });
+
+  it("requests a full runtime cache body only when the user explicitly enables Cloudlight", async () => {
+    render(<Harness />);
+    expect(intentCache.request).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    expect(intentCache.request).toHaveBeenCalledTimes(1);
+    expect(intentCache.request).toHaveBeenCalledWith("sounds/cloudlight-evening-loop.mp3");
   });
 
   it("starts a saved opt-in on entry when the platform permits playback", async () => {
@@ -168,6 +190,56 @@ describe("useAppBackgroundMusic", () => {
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
   });
 
+  it("stays paused when another owner releases after the app enters the background", async () => {
+    localStorage.setItem("zenflow-app-background-music-enabled", "true");
+    render(<Harness />);
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    let releaseHyperfocus: () => void = () => undefined;
+    act(() => {
+      releaseHyperfocus = claimLongAudio("hyperfocus", vi.fn());
+    });
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+
+    media.play.mockClear();
+    act(() => {
+      lifecycle.pause?.();
+      releaseHyperfocus();
+    });
+    await act(async () => Promise.resolve());
+
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+    expect(media.play).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await lifecycle.resume?.();
+    });
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+  });
+
+  it("does not reclaim ownership when visibility hides before the lifecycle pause task", async () => {
+    localStorage.setItem("zenflow-app-background-music-enabled", "true");
+    render(<Harness />);
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    let releaseDiary: () => void = () => undefined;
+    act(() => {
+      releaseDiary = claimLongAudio("diary-rain", vi.fn());
+    });
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+
+    media.play.mockClear();
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      releaseDiary();
+    });
+    await act(async () => Promise.resolve());
+
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+    expect(media.play).not.toHaveBeenCalled();
+  });
+
   it("yields to explicit ambience and reclaims playback after that owner releases", async () => {
     localStorage.setItem("zenflow-app-background-music-enabled", "true");
     render(<Harness />);
@@ -187,6 +259,20 @@ describe("useAppBackgroundMusic", () => {
 
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
     expect(media.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets an explicit Cloudlight toggle replace the current ambience owner", async () => {
+    const pauseOrb = vi.fn();
+    const releaseOrb = claimLongAudio("orb-water", pauseOrb);
+    render(<Harness />);
+
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    expect(pauseOrb).toHaveBeenCalledTimes(1);
+    expect(media.play).toHaveBeenCalledTimes(1);
+    expect(getActiveLongAudioOwner()).toBe("global-cloudlight");
+    releaseOrb();
   });
 
   it("surfaces a media error and supports an explicit retry", async () => {

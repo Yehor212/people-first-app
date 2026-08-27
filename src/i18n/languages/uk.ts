@@ -3925,6 +3925,7 @@ export const uk: Translations = {
   backgroundMusicPauseAction: "Вимкнути вечірню музику",
   backgroundMusicPausedMaster: "Призупинено, бо звук застосунку вимкнено",
   backgroundMusicPausedComfort: "Призупинено, бо фонові звуки вимкнено",
+  backgroundMusicPausedOtherSound: "Призупинено, поки відтворюється інший звук",
   navV2PlanningHeading: "Сплануй наступний ритуал",
   navV2PlanningSubcopy: "Твій розклад і фокус-таймер живуть тут разом.",
   navV2PlanningEmpty: "Подій поки немає",

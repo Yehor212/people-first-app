@@ -61,9 +61,16 @@ const {
     monoFoldDownEnergyRatio: number;
     boundaryDelta: number;
     boundarySlopeDelta: number;
-    startEndRmsDelta: number;
-    maxSilentWindowSeconds: number;
-    decoder: "afconvert" | "ffmpeg";
+      startEndRmsDelta: number;
+      maxSilentWindowSeconds: number;
+      clippedSampleCount: number;
+      pinnedFullScaleSampleCount: number;
+      approximateTruePeak4x: number;
+      longWindowRmsDbSpread: number;
+      loopDelta: number;
+      equalPowerSeamRmsRatio: number;
+      equalPowerSeamTransientDelta: number;
+      decoder: "afconvert" | "ffmpeg";
   }) => string[];
   inspectFeedbackMetrics: (
     fileName: string,
@@ -136,13 +143,24 @@ const {
     forbiddenRootMp3s?: string[];
     staleRuntimeStrings?: string[];
   }) => { matches: Array<{ file: string; stale: string }>; scannedFiles: string[]; textFiles: string[] };
-  parseWavMetrics?: (wavPath: string) => {
+  parseWavMetrics?: (wavPath: string, options?: { measureStrictLoopMetrics?: boolean }) => {
+    peak: number;
     boundaryDelta: number;
     boundaryDeltaByChannel: number[];
     boundarySlopeDelta: number;
     boundarySlopeDeltaByChannel: number[];
     startEndRmsDelta: number;
     startEndRmsDeltaByChannel: number[];
+    clippedSampleCount: number;
+    pinnedFullScaleSampleCount: number;
+    approximateTruePeak4x: number;
+    approximateTruePeak4xMethod: string;
+    longWindowRmsDbSpread: number;
+    loopDelta: number;
+    equalPowerSeamRmsRatio: number;
+    equalPowerSeamTransientDelta: number;
+    formalLoudnessStatus: string;
+    formalTruePeakStatus: string;
   };
   validateExactDirectoryInventory: (
     directory: string,
@@ -545,9 +563,22 @@ describe("non-Hyperfocus app audio guard", () => {
       boundarySlopeDelta: 0.002,
       startEndRmsDelta: 0.004,
       maxSilentWindowSeconds: 0,
+      clippedSampleCount: 0,
+      pinnedFullScaleSampleCount: 0,
+      approximateTruePeak4x: 0.21,
+      longWindowRmsDbSpread: 4,
+      loopDelta: 0.019,
+      equalPowerSeamRmsRatio: 1.1,
+      equalPowerSeamTransientDelta: 0.03,
       decoder: "afconvert" as const,
     };
     expect(inspectCloudlightLoopMetrics(accepted)).toEqual([]);
+    expect(
+      inspectCloudlightLoopMetrics({ ...accepted, approximateTruePeak4x: 0.351 }),
+    ).toEqual(["approximateTruePeak4x"]);
+    expect(
+      inspectCloudlightLoopMetrics({ ...accepted, longWindowRmsDbSpread: 9.01 }),
+    ).toEqual(["longWindowRmsDbSpread"]);
     expect(
       inspectCloudlightLoopMetrics({
         ...accepted,
@@ -567,6 +598,13 @@ describe("non-Hyperfocus app audio guard", () => {
         boundarySlopeDelta: 0.1,
         startEndRmsDelta: 0.08,
         maxSilentWindowSeconds: 3,
+        clippedSampleCount: 1,
+        pinnedFullScaleSampleCount: 1,
+        approximateTruePeak4x: 1.04,
+        longWindowRmsDbSpread: 20,
+        loopDelta: 0.2,
+        equalPowerSeamRmsRatio: 0.3,
+        equalPowerSeamTransientDelta: 0.4,
       }),
     ).toEqual([
       "channels",
@@ -585,6 +623,13 @@ describe("non-Hyperfocus app audio guard", () => {
       "boundarySlopeDelta",
       "startEndRmsDelta",
       "maxSilentWindowSeconds",
+      "clippedSampleCount",
+      "pinnedFullScaleSampleCount",
+      "approximateTruePeak4x",
+      "longWindowRmsDbSpread",
+      "loopDelta",
+      "equalPowerSeamRmsRatio",
+      "equalPowerSeamTransientDelta",
     ]);
   });
 
@@ -794,6 +839,60 @@ describe("non-Hyperfocus app audio guard", () => {
       expect(windowMetrics.startEndRmsDeltaByChannel[0]).toBeGreaterThan(0.019);
       expect(windowMetrics.startEndRmsDeltaByChannel[1]).toBeGreaterThan(0.017);
       expect(windowMetrics.startEndRmsDelta).toBe(Math.max(...windowMetrics.startEndRmsDeltaByChannel));
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("measures clipped rails, pinned plateaus, and a labeled non-formal 4x peak estimate", () => {
+    expect(parseWavMetrics).toEqual(expect.any(Function));
+    if (!parseWavMetrics) return;
+
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "zenflow-audio-strict-peak-"));
+    const wavPath = join(fixtureRoot, "strict-peak.wav");
+    try {
+      writeStereoPcm16Wav(wavPath, [
+        [-0.8, -0.8],
+        [0.8, 0.8],
+        [0.8, 0.8],
+        [-0.8, -0.8],
+        [1, 1],
+        [1, 1],
+        [0, 0],
+        [0, 0],
+      ]);
+
+      const metrics = parseWavMetrics(wavPath, { measureStrictLoopMetrics: true });
+      expect(metrics.clippedSampleCount).toBe(4);
+      expect(metrics.pinnedFullScaleSampleCount).toBe(2);
+      expect(metrics.approximateTruePeak4x).toBeGreaterThan(metrics.peak);
+      expect(metrics.approximateTruePeak4xMethod).toBe("4x-catmull-rom-non-formal");
+      expect(metrics.formalTruePeakStatus).toBe("UNVERIFIED_NON_CONFORMANT_ESTIMATE");
+      expect(metrics.formalLoudnessStatus).toBe("UNVERIFIED_NO_BS1770_METER");
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("measures three-second loudness spread and an equal-power loop seam", () => {
+    expect(parseWavMetrics).toEqual(expect.any(Function));
+    if (!parseWavMetrics) return;
+
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "zenflow-audio-window-spread-"));
+    const wavPath = join(fixtureRoot, "window-spread.wav");
+    try {
+      const frames = Array.from({ length: 44_100 * 6 }, (_, frame) => {
+        const amplitude = frame < 44_100 * 3 ? 0.1 : 0.01;
+        const sample = Math.sin((2 * Math.PI * 440 * frame) / 44_100) * amplitude;
+        return [sample, sample] as [number, number];
+      });
+      writeStereoPcm16Wav(wavPath, frames);
+
+      const metrics = parseWavMetrics(wavPath, { measureStrictLoopMetrics: true });
+      expect(metrics.longWindowRmsDbSpread).toBeGreaterThan(19);
+      expect(metrics.loopDelta).toBeGreaterThan(0);
+      expect(metrics.equalPowerSeamRmsRatio).toBeGreaterThan(0);
+      expect(metrics.equalPowerSeamTransientDelta).toBeGreaterThanOrEqual(0);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

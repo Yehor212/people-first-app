@@ -1,4 +1,5 @@
 import { LoaderCircle, Volume2, VolumeX } from "lucide-react";
+import { useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
 import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
@@ -45,6 +46,9 @@ export function BackgroundMusicToggle({
         tx.backgroundMusicPausedComfort || "Paused while background sounds are off"
       );
     }
+    if (music.state === "paused" && music.enabled) {
+      return tx.backgroundMusicPausedOtherSound || "Paused while another sound plays";
+    }
     return tx.backgroundMusicStateOff || "Off";
   })();
 
@@ -56,10 +60,14 @@ export function BackgroundMusicToggle({
         : VolumeX;
   const collapsed = presentation === "sidebar-collapsed";
   const drawer = presentation === "drawer";
+  const showDisableControl = isRetry && music.enabled;
+  const primaryControlRef = useRef<HTMLButtonElement>(null);
 
-  return (
+  const primaryControl = (
     <button
+      ref={primaryControlRef}
       type="button"
+      data-app-background-music-control="true"
       data-testid="background-music-toggle"
       data-presentation={presentation}
       data-playback-state={music.state}
@@ -69,7 +77,7 @@ export function BackgroundMusicToggle({
       title={collapsed ? title : undefined}
       onClick={isRetry ? music.retry : music.toggle}
       className={cn(
-        "group flex w-full items-center rounded-[8px] border text-start",
+        "group flex items-center rounded-[8px] border text-start",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         "motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out",
         "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
@@ -77,6 +85,11 @@ export function BackgroundMusicToggle({
           ? "min-h-[48px] gap-3 border-[hsl(var(--nav-v2-drawer-border)/0.24)] bg-[hsl(var(--nav-v2-item-surface)/0.52)] px-3.5 py-2.5 text-[hsl(var(--nav-v2-drawer-muted))] shadow-[0_8px_18px_-16px_hsl(var(--nav-v2-shadow)/0.38)] hover:bg-[hsl(var(--nav-v2-item-hover)/0.82)] hover:text-[hsl(var(--nav-v2-drawer-text))]"
           : "min-h-[44px] gap-2 border-border/40 bg-muted/25 px-3 py-2 text-muted-foreground hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)] hover:text-foreground",
         collapsed && "justify-center px-2",
+        showDisableControl
+          ? collapsed
+            ? "w-full"
+            : "min-w-0 flex-1"
+          : "w-full",
         music.state === "playing" &&
           "border-primary/35 bg-primary/10 text-foreground",
       )}
@@ -111,5 +124,34 @@ export function BackgroundMusicToggle({
         </span>
       )}
     </button>
+  );
+
+  return (
+    <div className={cn("flex w-full gap-1", collapsed ? "flex-col" : "items-stretch")}>
+      {primaryControl}
+      {showDisableControl && (
+        <button
+          type="button"
+          data-app-background-music-control="true"
+          data-testid="background-music-disable"
+          aria-label={tx.backgroundMusicPauseAction || "Pause evening music"}
+          title={tx.backgroundMusicPauseAction || "Pause evening music"}
+          onClick={() => {
+            music.toggle();
+            primaryControlRef.current?.focus();
+          }}
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-[8px] border border-border/40 bg-muted/25 text-muted-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "motion-safe:transition-[transform,background-color,border-color,color] motion-safe:duration-200 motion-safe:ease-out",
+            "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] hover:bg-[hsl(var(--nav-v2-item-hover)/0.72)] hover:text-foreground",
+            drawer ? "min-h-[48px] min-w-[48px]" : "min-h-[44px] min-w-[44px]",
+            collapsed && "w-full",
+          )}
+        >
+          <VolumeX aria-hidden="true" className="h-5 w-5" />
+        </button>
+      )}
+    </div>
   );
 }
