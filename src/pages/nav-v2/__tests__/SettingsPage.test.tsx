@@ -4819,6 +4819,56 @@ describe("SettingsPage", () => {
     expect(controls.onResetData).not.toHaveBeenCalled();
   });
 
+  it("keeps backup import available without exposing reset when the backend is unavailable but a valid session remains", () => {
+    supabaseClientMock.client = null;
+    appStoreMock.hasValidSession = true;
+    accountAuthMock.hasSession = true;
+    accountAuthMock.sessionCheckState = "signed-in";
+
+    render(
+      <SettingsPage
+        controls={{ ...createSettingsControls(), initialOpenSection: "privacy" }}
+      />
+    );
+
+    const backupRegion = screen.getByRole("region", { name: "Backup & restore" });
+    const importButton = within(backupRegion).getByTestId("settings-v2-import");
+    expect(importButton).toHaveAccessibleName("Import backup");
+    expect(screen.queryByTestId("settings-v2-reset-data")).not.toBeInTheDocument();
+
+    fireEvent.click(importButton);
+    expect(dataImportMock.handleImportClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers reset for a confirmed local-only realm and closes it at an account boundary", () => {
+    supabaseClientMock.client = null;
+    appStoreMock.hasValidSession = false;
+    accountAuthMock.hasSession = false;
+    accountAuthMock.sessionCheckState = "signed-out";
+    const controls = createSettingsControls();
+    const view = render(
+      <SettingsPage controls={{ ...controls, initialOpenSection: "privacy" }} />
+    );
+
+    fireEvent.click(screen.getByTestId("settings-v2-reset-data"));
+
+    const confirmation = screen.getByLabelText("Type RESET to confirm");
+    const clearButton = screen.getByRole("button", { name: "Clear local data" });
+    expect(clearButton).toBeDisabled();
+    fireEvent.change(confirmation, { target: { value: "RESET" } });
+    expect(clearButton).toBeEnabled();
+    expect(controls.onResetData).not.toHaveBeenCalled();
+
+    appStoreMock.isAccountBoundaryInProgress = true;
+    view.rerender(
+      <SettingsPage controls={{ ...controls, initialOpenSection: "privacy" }} />
+    );
+
+    expect(screen.queryByTestId("settings-v2-reset-confirmation")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settings-v2-reset-data")).not.toBeInTheDocument();
+    expect(controls.onResetData).not.toHaveBeenCalled();
+  });
+
   it("offers a typed local-data wipe to a local-first user without an account", async () => {
     appStoreMock.hasValidSession = false;
     accountAuthMock.hasSession = false;
