@@ -15,14 +15,35 @@ const scriptPath = "scripts/check-app-audio-assets.cjs";
 const require = createRequire(import.meta.url);
 const {
   EXPECTED_FEEDBACK_MP3_FILES,
+  inspectAmbienceMetrics,
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,
   inspectOutputArtifacts,
+  parseWavMetrics,
   validateExactDirectoryInventory,
   parseCliOptions,
   writeReportIfRequested,
 } = require("../check-app-audio-assets.cjs") as {
   EXPECTED_FEEDBACK_MP3_FILES: string[];
+  inspectAmbienceMetrics?: (
+    fileName: string,
+    measured: {
+      channels: number;
+      sampleRate: number;
+      durationSeconds: number;
+      peak: number;
+      rms: number;
+      audibleRms: number;
+      audibleBandEnergyRatio: number;
+      dcOffsetAbs: number;
+      loopDelta: number;
+      boundaryDelta?: number;
+      boundarySlopeDelta?: number;
+      startEndRmsDelta: number;
+      transientDelta: number;
+      decoder: "afconvert" | "ffmpeg";
+    },
+  ) => string[];
   inspectFeedbackMetrics: (
     fileName: string,
     measured: {
@@ -64,6 +85,14 @@ const {
     forbiddenRootMp3s?: string[];
     staleRuntimeStrings?: string[];
   }) => { matches: Array<{ file: string; stale: string }>; scannedFiles: string[]; textFiles: string[] };
+  parseWavMetrics?: (wavPath: string) => {
+    boundaryDelta: number;
+    boundaryDeltaByChannel: number[];
+    boundarySlopeDelta: number;
+    boundarySlopeDeltaByChannel: number[];
+    startEndRmsDelta: number;
+    startEndRmsDeltaByChannel: number[];
+  };
   validateExactDirectoryInventory: (
     directory: string,
     expectedFiles: string[],
@@ -80,6 +109,33 @@ const {
     reportPath: string,
   ) => void;
 };
+
+function writeStereoPcm16Wav(filePath: string, frames: Array<[number, number]>): void {
+  const channels = 2;
+  const sampleRate = 44_100;
+  const bytesPerSample = 2;
+  const blockAlign = channels * bytesPerSample;
+  const dataSize = frames.length * blockAlign;
+  const wav = Buffer.alloc(44 + dataSize);
+  wav.write("RIFF", 0, "ascii");
+  wav.writeUInt32LE(36 + dataSize, 4);
+  wav.write("WAVE", 8, "ascii");
+  wav.write("fmt ", 12, "ascii");
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(channels, 22);
+  wav.writeUInt32LE(sampleRate, 24);
+  wav.writeUInt32LE(sampleRate * blockAlign, 28);
+  wav.writeUInt16LE(blockAlign, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36, "ascii");
+  wav.writeUInt32LE(dataSize, 40);
+  frames.forEach(([left, right], frame) => {
+    wav.writeInt16LE(Math.round(left * 32_767), 44 + frame * blockAlign);
+    wav.writeInt16LE(Math.round(right * 32_767), 44 + frame * blockAlign + bytesPerSample);
+  });
+  writeFileSync(filePath, wav);
+}
 
 describe("non-Hyperfocus app audio guard", () => {
   it("ships a dedicated QC contract for V2 app audio outside Hyperfocus", () => {
@@ -103,12 +159,15 @@ describe("non-Hyperfocus app audio guard", () => {
 
     for (const marker of [
       "WCAG 2.2 Audio Control",
+      "ITU-R BS.1770-5",
+      "EBU R 128",
       "MDN autoplay",
       "Apple Human Interface Guidelines",
       "Android audio focus",
       "Non-Hyperfocus",
       "Forbidden Routine Sounds",
       "Generated Non-Hyperfocus Asset Provenance",
+      "Audibility and Loop Contract",
     ]) {
       expect(policy).toContain(marker);
     }
@@ -285,6 +344,217 @@ describe("non-Hyperfocus app audio guard", () => {
       "rms",
       "transientDelta",
     ]);
+  });
+
+  it("rejects ambience whose nominal RMS is dominated by inaudible subsonic energy", () => {
+    expect(inspectAmbienceMetrics).toEqual(expect.any(Function));
+    if (!inspectAmbienceMetrics) return;
+
+    expect(
+      inspectAmbienceMetrics("soft-air-veil.mp3", {
+        channels: 2,
+        sampleRate: 44_100,
+        durationSeconds: 96,
+        peak: 0.22,
+        rms: 0.08,
+        audibleRms: 0.075,
+        audibleBandEnergyRatio: 0.88,
+        dcOffsetAbs: 0.0002,
+        loopDelta: 0.01,
+        boundaryDelta: 0.002,
+        boundarySlopeDelta: 0.004,
+        startEndRmsDelta: 0.005,
+        transientDelta: 0.08,
+        decoder: "afconvert",
+      }),
+    ).toEqual([]);
+
+    const violations = inspectAmbienceMetrics("soft-air-veil.mp3", {
+      channels: 2,
+      sampleRate: 44_100,
+      durationSeconds: 96,
+      peak: 0.0619,
+      rms: 0.0285,
+      audibleRms: 0.0000004,
+      audibleBandEnergyRatio: 0.000000277,
+      dcOffsetAbs: 0.00744,
+      loopDelta: 0.01,
+      boundaryDelta: 0.002,
+      boundarySlopeDelta: 0.004,
+      startEndRmsDelta: 0.005,
+      transientDelta: 0.02,
+      decoder: "afconvert",
+    });
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        "audibleRms",
+        "audibleBandEnergyRatio",
+        "dcOffsetAbs",
+      ]),
+    );
+  });
+
+  it("enforces every ambience metric gate and decoder override with exact violations", () => {
+    expect(inspectAmbienceMetrics).toEqual(expect.any(Function));
+    if (!inspectAmbienceMetrics) return;
+
+    const softAir = {
+      channels: 2,
+      sampleRate: 44_100,
+      durationSeconds: 96,
+      peak: 0.22,
+      rms: 0.08,
+      audibleRms: 0.075,
+      audibleBandEnergyRatio: 0.88,
+      dcOffsetAbs: 0.0002,
+      loopDelta: 0.08,
+      boundaryDelta: 0.002,
+      boundarySlopeDelta: 0.004,
+      startEndRmsDelta: 0.005,
+      transientDelta: 0.08,
+      decoder: "afconvert" as const,
+    };
+    const gentleWater = {
+      ...softAir,
+      peak: 0.24,
+      rms: 0.07,
+      audibleRms: 0.065,
+      audibleBandEnergyRatio: 0.84,
+      startEndRmsDelta: 0.01,
+    };
+    const softRain = {
+      ...softAir,
+      peak: 0.23,
+      rms: 0.065,
+      audibleRms: 0.06,
+      audibleBandEnergyRatio: 0.9,
+      startEndRmsDelta: 0.01,
+    };
+
+    expect(inspectAmbienceMetrics("soft-air-veil.mp3", softAir)).toEqual([]);
+    expect(inspectAmbienceMetrics("gentle-water-bed.mp3", gentleWater)).toEqual([]);
+    expect(inspectAmbienceMetrics("soft-rain-veil.mp3", softRain)).toEqual([]);
+    expect(inspectAmbienceMetrics("unknown.mp3", softAir)).toEqual(["fileName"]);
+
+    const cases = [
+      [{ channels: 1 }, ["channels"]],
+      [{ sampleRate: 48_000 }, ["sampleRate"]],
+      [{ durationSeconds: 59 }, ["durationSeconds"]],
+      [{ peak: 0.1 }, ["peak", "effectivePeak"]],
+      [{ peak: 0.5 }, ["peak", "effectivePeak"]],
+      [{ rms: 0.04 }, ["rms", "effectiveRms"]],
+      [{ rms: 0.13 }, ["rms", "effectiveRms"]],
+      [{ audibleRms: 0.04 }, ["audibleRms"]],
+      [{ audibleBandEnergyRatio: 0.5 }, ["audibleBandEnergyRatio"]],
+      [{ dcOffsetAbs: 0.002 }, ["dcOffsetAbs"]],
+      [{ boundaryDelta: 0.011 }, ["boundaryDelta"]],
+      [{ boundarySlopeDelta: 0.011 }, ["boundarySlopeDelta"]],
+      [{ startEndRmsDelta: 0.013 }, ["startEndRmsDelta"]],
+      [{ transientDelta: 0.17 }, ["transientDelta"]],
+    ] as const;
+
+    for (const [patch, expectedViolations] of cases) {
+      expect(
+        inspectAmbienceMetrics("soft-air-veil.mp3", { ...softAir, ...patch }),
+      ).toEqual(expectedViolations);
+    }
+
+    expect(
+      inspectAmbienceMetrics("gentle-water-bed.mp3", {
+        ...gentleWater,
+        startEndRmsDelta: 0.016,
+        decoder: "afconvert",
+      }),
+    ).toEqual(["startEndRmsDelta"]);
+    expect(
+      inspectAmbienceMetrics("gentle-water-bed.mp3", {
+        ...gentleWater,
+        startEndRmsDelta: 0.016,
+        decoder: "ffmpeg",
+      }),
+    ).toEqual([]);
+    expect(
+      inspectAmbienceMetrics("gentle-water-bed.mp3", {
+        ...gentleWater,
+        startEndRmsDelta: 0.018,
+        decoder: "ffmpeg",
+      }),
+    ).toEqual(["startEndRmsDelta"]);
+    expect(
+      inspectAmbienceMetrics("soft-rain-veil.mp3", {
+        ...softRain,
+        transientDelta: 0.21,
+      }),
+    ).toEqual(["transientDelta"]);
+  });
+
+  it("accepts loop-safe noise whose start and end windows naturally differ", () => {
+    expect(inspectAmbienceMetrics).toEqual(expect.any(Function));
+    if (!inspectAmbienceMetrics) return;
+
+    expect(
+      inspectAmbienceMetrics("soft-air-veil.mp3", {
+        channels: 2,
+        sampleRate: 44_100,
+        durationSeconds: 96,
+        peak: 0.22,
+        rms: 0.08,
+        audibleRms: 0.075,
+        audibleBandEnergyRatio: 0.88,
+        dcOffsetAbs: 0.0002,
+        loopDelta: 0.08,
+        boundaryDelta: 0.002,
+        boundarySlopeDelta: 0.004,
+        startEndRmsDelta: 0.005,
+        transientDelta: 0.08,
+        decoder: "afconvert",
+      }),
+    ).toEqual([]);
+  });
+
+  it("uses the worst stereo channel for loop-boundary and window-level metrics", () => {
+    expect(parseWavMetrics).toEqual(expect.any(Function));
+    if (!parseWavMetrics) return;
+
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "zenflow-audio-stereo-loop-"));
+    const wavPath = join(fixtureRoot, "one-channel-seam.wav");
+    try {
+      writeStereoPcm16Wav(wavPath, [
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0.018],
+      ]);
+
+      const seamMetrics = parseWavMetrics(wavPath);
+      expect(seamMetrics.boundaryDeltaByChannel[1]).toBeGreaterThan(0.017);
+      expect(seamMetrics.boundaryDelta).toBe(seamMetrics.boundaryDeltaByChannel[1]);
+      expect(seamMetrics.boundarySlopeDeltaByChannel[1]).toBeGreaterThan(0.017);
+      expect(seamMetrics.boundarySlopeDelta).toBe(Math.max(...seamMetrics.boundarySlopeDeltaByChannel));
+
+      writeStereoPcm16Wav(wavPath, [
+        [0.02, 0],
+        [0.02, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0.018],
+        [0, 0.018],
+      ]);
+
+      const windowMetrics = parseWavMetrics(wavPath);
+      expect(windowMetrics.startEndRmsDeltaByChannel[0]).toBeGreaterThan(0.019);
+      expect(windowMetrics.startEndRmsDeltaByChannel[1]).toBeGreaterThan(0.017);
+      expect(windowMetrics.startEndRmsDelta).toBe(Math.max(...windowMetrics.startEndRmsDeltaByChannel));
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
   });
 
   it("checks every output filename while reading only text-like artifact bodies", () => {

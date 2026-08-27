@@ -17,10 +17,10 @@
       "role": "Entry/auth ambience",
       "publicPath": "public/sounds/soft-air-veil.mp3",
       "deployDocsPath": "docs/sounds/soft-air-veil.mp3",
-      "sha256": "a7950002f23e33cb65398323f3bb8df22568af1091457e9bc828e304413cc517",
+      "sha256": "24977046de220f78d4412b73d38949cf4f1914c955c3e94cc9e31649d06a6577",
       "bytes": 1536417,
       "seed": "0x5a17a11",
-      "generator": "cyclic low-density value-noise air bed",
+      "generator": "deterministic band-limited air-noise bed with a loop crossfade",
       "parameters": {
         "family": "ambience",
         "sampleRate": 44100,
@@ -45,15 +45,31 @@
           "sampleRate": 44100,
           "channels": 2,
           "durationSeconds": 96,
-          "sourcePeak": 0.065205,
-          "sourceRms": 0.03,
-          "layerCounts": [
-            9,
-            57,
-            421
-          ],
-          "targetRms": 0.03,
-          "targetPeak": 0.14
+          "sourcePeak": 0.28,
+          "sourceRms": 0.063965,
+          "synthesisProfile": {
+            "bands": [
+              [
+                120,
+                900,
+                0.34
+              ],
+              [
+                900,
+                5200,
+                0.66
+              ]
+            ],
+            "commonMix": 0.78,
+            "sideMix": 0.22,
+            "modulationDepth": 0.07,
+            "modulationControls": 37,
+            "modulationCycles": 17
+          },
+          "warmupSeconds": 1,
+          "crossfadeSeconds": 2,
+          "targetRms": 0.08,
+          "targetPeak": 0.28
         }
       }
     },
@@ -63,10 +79,10 @@
       "role": "Orb ambience",
       "publicPath": "public/sounds/gentle-water-bed.mp3",
       "deployDocsPath": "docs/sounds/gentle-water-bed.mp3",
-      "sha256": "4a5ecd5087e8c24ea8145afe29a9a12029194157ffcb1a50eb0bc295b85d15e1",
+      "sha256": "b3063f286b32f638944ca3deaf55ed153b77b1f45e3904141f3a05a53df415ed",
       "bytes": 1536417,
       "seed": "0x6e71e5a7",
-      "generator": "cyclic soft-flow water bed without discrete impacts",
+      "generator": "deterministic band-limited soft-flow water bed with a loop crossfade",
       "parameters": {
         "family": "ambience",
         "sampleRate": 44100,
@@ -91,16 +107,31 @@
           "sampleRate": 44100,
           "channels": 2,
           "durationSeconds": 96,
-          "sourcePeak": 0.139545,
-          "sourceRms": 0.042,
-          "layerCounts": [
-            197,
-            719,
-            2503,
-            17
-          ],
-          "targetRms": 0.042,
-          "targetPeak": 0.18
+          "sourcePeak": 0.28,
+          "sourceRms": 0.0523,
+          "synthesisProfile": {
+            "bands": [
+              [
+                55,
+                480,
+                0.66
+              ],
+              [
+                480,
+                2600,
+                0.34
+              ]
+            ],
+            "commonMix": 0.52,
+            "sideMix": 0.48,
+            "modulationDepth": 0.13,
+            "modulationControls": 29,
+            "modulationCycles": 11
+          },
+          "warmupSeconds": 1,
+          "crossfadeSeconds": 2,
+          "targetRms": 0.07,
+          "targetPeak": 0.28
         }
       }
     },
@@ -110,10 +141,10 @@
       "role": "Diary/settings ambience",
       "publicPath": "public/sounds/soft-rain-veil.mp3",
       "deployDocsPath": "docs/sounds/soft-rain-veil.mp3",
-      "sha256": "45fa500caf66f1f0d42da5e5dfaa2656cb264e5ffe2318f7825a1f0b83d7648d",
+      "sha256": "634c82701272496bc098236ed65cb593598fc9bd0c761c3c8c0917dcb1220c78",
       "bytes": 1536417,
       "seed": "0x5017a1",
-      "generator": "cyclic soft rain sheet without thunder or impact spikes",
+      "generator": "deterministic band-limited rain-noise sheet with a loop crossfade",
       "parameters": {
         "family": "ambience",
         "sampleRate": 44100,
@@ -137,16 +168,31 @@
           "sampleRate": 44100,
           "channels": 2,
           "durationSeconds": 96,
-          "sourcePeak": 0.123724,
-          "sourceRms": 0.038,
-          "layerCounts": [
-            293,
-            1103,
-            3907,
-            19
-          ],
-          "targetRms": 0.038,
-          "targetPeak": 0.16
+          "sourcePeak": 0.26,
+          "sourceRms": 0.057914,
+          "synthesisProfile": {
+            "bands": [
+              [
+                180,
+                1600,
+                0.38
+              ],
+              [
+                1600,
+                7000,
+                0.62
+              ]
+            ],
+            "commonMix": 0.34,
+            "sideMix": 0.66,
+            "modulationDepth": 0.09,
+            "modulationControls": 43,
+            "modulationCycles": 19
+          },
+          "warmupSeconds": 1,
+          "crossfadeSeconds": 2,
+          "targetRms": 0.065,
+          "targetPeak": 0.26
         }
       }
     },

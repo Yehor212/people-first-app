@@ -18,9 +18,9 @@ const outputAudioQcDir = path.join(rootDir, 'output', 'audio-qc');
 const appAudioAssetsReportPath = path.join(outputAudioQcDir, 'app-audio-assets-report.json');
 
 const APPROVED_ROOT_MP3S = new Map([
-  ['soft-air-veil.mp3', { gain: 0.18, peakMax: 0.18, rmsMax: 0.04, effectivePeakMax: 0.08, effectiveRmsMax: 0.008, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.012, transientDeltaMax: 0.16, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
-  ['gentle-water-bed.mp3', { gain: 0.36, peakMax: 0.24, rmsMax: 0.06, effectivePeakMax: 0.22, effectiveRmsMax: 0.02, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { startEndRmsDeltaMax: 0.0175 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
-  ['soft-rain-veil.mp3', { gain: 0.32, peakMax: 0.22, rmsMax: 0.055, effectivePeakMax: 0.2, effectiveRmsMax: 0.018, loopDeltaMax: 0.035, startEndRmsDeltaMax: 0.014, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
+  ['soft-air-veil.mp3', { gain: 0.18, peakMin: 0.12, peakMax: 0.32, rmsMin: 0.055, rmsMax: 0.11, audibleRmsMin: 0.05, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.02, effectivePeakMax: 0.08, effectiveRmsMin: 0.009, effectiveRmsMax: 0.022, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.012, transientDeltaMax: 0.16, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
+  ['gentle-water-bed.mp3', { gain: 0.36, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.05, rmsMax: 0.095, audibleRmsMin: 0.045, audibleBandEnergyRatioMin: 0.7, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.04, effectivePeakMax: 0.22, effectiveRmsMin: 0.017, effectiveRmsMax: 0.04, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { startEndRmsDeltaMax: 0.0175 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
+  ['soft-rain-veil.mp3', { gain: 0.32, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.045, rmsMax: 0.09, audibleRmsMin: 0.04, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.035, effectivePeakMax: 0.2, effectiveRmsMin: 0.014, effectiveRmsMax: 0.035, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
 ]);
 
 const APPROVED_FEEDBACK_MP3S = new Map([
@@ -115,6 +115,8 @@ const EXPECTED_FORBIDDEN_ACTION_IDS = [
 
 const REQUIRED_POLICY_MARKERS = [
   'WCAG 2.2 Audio Control',
+  'ITU-R BS.1770-5',
+  'EBU R 128',
   'MDN autoplay',
   'Apple Human Interface Guidelines',
   'Android audio focus',
@@ -123,6 +125,7 @@ const REQUIRED_POLICY_MARKERS = [
   'Forbidden Routine Sounds',
   'does not introduce V2 XP behavior',
   'Generated Non-Hyperfocus Asset Provenance',
+  'Audibility and Loop Contract',
   'UNVERIFIED',
 ];
 
@@ -771,7 +774,14 @@ function parseWavMetrics(wavPath) {
   const frameCount = sampleCount / fmt.channels;
   let peak = 0;
   let sumSquares = 0;
+  let audibleSquares = 0;
   let transientDelta = 0;
+  const sampleSumsByChannel = new Array(fmt.channels).fill(0);
+  const highPassStateByChannel = new Array(fmt.channels).fill(0);
+  const highPassInputByChannel = new Array(fmt.channels).fill(0);
+  const highPassCutoffHz = 20;
+  const highPassRc = 1 / (2 * Math.PI * highPassCutoffHz);
+  const highPassAlpha = highPassRc / (highPassRc + (1 / fmt.sampleRate));
   let previousByChannel = new Array(fmt.channels).fill(0);
   for (let frame = 0; frame < frameCount; frame += 1) {
     for (let ch = 0; ch < fmt.channels; ch += 1) {
@@ -780,37 +790,89 @@ function parseWavMetrics(wavPath) {
       const abs = Math.abs(value);
       if (abs > peak) peak = abs;
       sumSquares += value * value;
+      sampleSumsByChannel[ch] += value;
+      const audibleValue = highPassAlpha * (
+        highPassStateByChannel[ch] + value - highPassInputByChannel[ch]
+      );
+      highPassStateByChannel[ch] = audibleValue;
+      highPassInputByChannel[ch] = value;
+      audibleSquares += audibleValue * audibleValue;
       if (frame > 0) transientDelta = Math.max(transientDelta, Math.abs(value - previousByChannel[ch]));
       previousByChannel[ch] = value;
     }
   }
 
-  const windowFrames = Math.min(2048, Math.floor(frameCount / 4));
-  let loopDiff = 0;
-  let loopSamples = 0;
-  let startSquares = 0;
-  let endSquares = 0;
+  const rms = Math.sqrt(sumSquares / sampleCount);
+  const audibleRms = Math.sqrt(audibleSquares / sampleCount);
+  const dcOffsetAbs = Math.max(
+    ...sampleSumsByChannel.map((sum) => Math.abs(sum / frameCount)),
+  );
+
+  const windowFrames = Math.min(
+    Math.round(fmt.sampleRate * 0.5),
+    Math.floor(frameCount / 4),
+  );
+  const loopDiffByChannel = new Array(fmt.channels).fill(0);
+  const startSquaresByChannel = new Array(fmt.channels).fill(0);
+  const endSquaresByChannel = new Array(fmt.channels).fill(0);
   for (let frame = 0; frame < windowFrames; frame += 1) {
     for (let ch = 0; ch < fmt.channels; ch += 1) {
       const firstIndex = ((frame * fmt.channels) + ch) * bytesPerSample;
       const lastIndex = (((frameCount - windowFrames + frame) * fmt.channels) + ch) * bytesPerSample;
       const first = buffer.readInt16LE(dataStart + firstIndex) / 32768;
       const last = buffer.readInt16LE(dataStart + lastIndex) / 32768;
-      loopDiff += Math.abs(first - last);
-      startSquares += first * first;
-      endSquares += last * last;
-      loopSamples += 1;
+      loopDiffByChannel[ch] += Math.abs(first - last);
+      startSquaresByChannel[ch] += first * first;
+      endSquaresByChannel[ch] += last * last;
     }
   }
+
+  const loopDeltaByChannel = loopDiffByChannel.map((sum) =>
+    windowFrames > 0 ? sum / windowFrames : 0);
+  const startEndRmsDeltaByChannel = startSquaresByChannel.map((startSquares, ch) =>
+    windowFrames > 0
+      ? Math.abs(
+        Math.sqrt(startSquares / windowFrames) -
+        Math.sqrt(endSquaresByChannel[ch] / windowFrames)
+      )
+      : 0);
+
+  const boundaryDeltaByChannel = [];
+  const boundarySlopeDeltaByChannel = [];
+  for (let ch = 0; ch < fmt.channels; ch += 1) {
+    const readFrame = (frame) => {
+      const sampleIndex = (frame * fmt.channels) + ch;
+      return buffer.readInt16LE(dataStart + sampleIndex * bytesPerSample) / 32768;
+    };
+    const first = readFrame(0);
+    const second = readFrame(1);
+    const penultimate = readFrame(frameCount - 2);
+    const last = readFrame(frameCount - 1);
+    boundaryDeltaByChannel.push(Math.abs(first - last));
+    boundarySlopeDeltaByChannel.push(Math.abs((second - first) - (last - penultimate)));
+  }
+  const loopDelta = Math.max(...loopDeltaByChannel);
+  const boundaryDelta = Math.max(...boundaryDeltaByChannel);
+  const boundarySlopeDelta = Math.max(...boundarySlopeDeltaByChannel);
+  const startEndRmsDelta = Math.max(...startEndRmsDeltaByChannel);
 
   return {
     channels: fmt.channels,
     sampleRate: fmt.sampleRate,
     durationSeconds: frameCount / fmt.sampleRate,
     peak,
-    rms: Math.sqrt(sumSquares / sampleCount),
-    loopDelta: loopSamples > 0 ? loopDiff / loopSamples : 0,
-    startEndRmsDelta: loopSamples > 0 ? Math.abs(Math.sqrt(startSquares / loopSamples) - Math.sqrt(endSquares / loopSamples)) : 0,
+    rms,
+    audibleRms,
+    audibleBandEnergyRatio: sumSquares > 0 ? Math.min(1, audibleSquares / sumSquares) : 0,
+    dcOffsetAbs,
+    loopDelta,
+    loopDeltaByChannel,
+    boundaryDelta,
+    boundaryDeltaByChannel,
+    boundarySlopeDelta,
+    boundarySlopeDeltaByChannel,
+    startEndRmsDelta,
+    startEndRmsDeltaByChannel,
     transientDelta,
   };
 }
@@ -852,6 +914,47 @@ function resolveMetricLimit(thresholds, decoder, metricName) {
   return (thresholds.decoderThresholds && thresholds.decoderThresholds[decoder] && thresholds.decoderThresholds[decoder][metricName]) || thresholds[metricName];
 }
 
+function inspectAmbienceMetrics(fileName, measured) {
+  const thresholds = APPROVED_ROOT_MP3S.get(fileName);
+  if (!thresholds) return ['fileName'];
+
+  const effectivePeak = measured.peak * thresholds.gain;
+  const effectiveRms = measured.rms * thresholds.gain;
+  const violations = [];
+  if (!thresholds.channels.includes(measured.channels)) violations.push('channels');
+  if (!thresholds.sampleRates.includes(measured.sampleRate)) violations.push('sampleRate');
+  if (!Number.isFinite(measured.durationSeconds) ||
+      measured.durationSeconds < thresholds.durationMin ||
+      measured.durationSeconds > thresholds.durationMax) violations.push('durationSeconds');
+  if (!Number.isFinite(measured.peak) ||
+      measured.peak < thresholds.peakMin ||
+      measured.peak > resolveMetricLimit(thresholds, measured.decoder, 'peakMax')) violations.push('peak');
+  if (!Number.isFinite(measured.rms) ||
+      measured.rms < thresholds.rmsMin ||
+      measured.rms > resolveMetricLimit(thresholds, measured.decoder, 'rmsMax')) violations.push('rms');
+  if (!Number.isFinite(measured.audibleRms) ||
+      measured.audibleRms < thresholds.audibleRmsMin) violations.push('audibleRms');
+  if (!Number.isFinite(measured.audibleBandEnergyRatio) ||
+      measured.audibleBandEnergyRatio < thresholds.audibleBandEnergyRatioMin) violations.push('audibleBandEnergyRatio');
+  if (!Number.isFinite(measured.dcOffsetAbs) ||
+      measured.dcOffsetAbs > thresholds.dcOffsetAbsMax) violations.push('dcOffsetAbs');
+  if (!Number.isFinite(effectivePeak) ||
+      effectivePeak < thresholds.effectivePeakMin ||
+      effectivePeak > resolveMetricLimit(thresholds, measured.decoder, 'effectivePeakMax')) violations.push('effectivePeak');
+  if (!Number.isFinite(effectiveRms) ||
+      effectiveRms < thresholds.effectiveRmsMin ||
+      effectiveRms > resolveMetricLimit(thresholds, measured.decoder, 'effectiveRmsMax')) violations.push('effectiveRms');
+  if (!Number.isFinite(measured.boundaryDelta) ||
+      measured.boundaryDelta > resolveMetricLimit(thresholds, measured.decoder, 'boundaryDeltaMax')) violations.push('boundaryDelta');
+  if (!Number.isFinite(measured.boundarySlopeDelta) ||
+      measured.boundarySlopeDelta > resolveMetricLimit(thresholds, measured.decoder, 'boundarySlopeDeltaMax')) violations.push('boundarySlopeDelta');
+  if (!Number.isFinite(measured.startEndRmsDelta) ||
+      measured.startEndRmsDelta > resolveMetricLimit(thresholds, measured.decoder, 'startEndRmsDeltaMax')) violations.push('startEndRmsDelta');
+  if (!Number.isFinite(measured.transientDelta) ||
+      measured.transientDelta > resolveMetricLimit(thresholds, measured.decoder, 'transientDeltaMax')) violations.push('transientDelta');
+  return violations;
+}
+
 function checkMetrics(rootMp3s) {
   const metrics = [];
   for (const fileName of rootMp3s) {
@@ -859,6 +962,7 @@ function checkMetrics(rootMp3s) {
     const measured = convertAndMeasure(fileName);
     const effectivePeak = measured.peak * thresholds.gain;
     const effectiveRms = measured.rms * thresholds.gain;
+    const violations = inspectAmbienceMetrics(fileName, measured);
     metrics.push({
       fileName,
       gain: thresholds.gain,
@@ -866,27 +970,14 @@ function checkMetrics(rootMp3s) {
       effectiveRms,
       ...measured,
     });
-    assert(thresholds.channels.includes(measured.channels), 'audio channel count is outside approved set', { fileName, measured, thresholds });
-    assert(thresholds.sampleRates.includes(measured.sampleRate), 'audio sample rate is outside approved set', { fileName, measured, thresholds });
-    assert(measured.durationSeconds >= thresholds.durationMin && measured.durationSeconds <= thresholds.durationMax,
-      'audio duration is outside approved range', { fileName, measured, thresholds });
-    assert(measured.peak <= resolveMetricLimit(thresholds, measured.decoder, 'peakMax'), 'audio peak is too hot', { fileName, measured, thresholds });
-    assert(measured.rms <= resolveMetricLimit(thresholds, measured.decoder, 'rmsMax'), 'audio RMS is too dense for calm V2 ambience', { fileName, measured, thresholds });
-    assert(effectivePeak <= resolveMetricLimit(thresholds, measured.decoder, 'effectivePeakMax'), 'runtime-adjusted peak is too hot for the V2 surface', {
+    assert(violations.length === 0, 'ambience format or decoded metrics are outside the audible calm-sound contract', {
       fileName,
       measured,
       effectivePeak,
-      thresholds,
-    });
-    assert(effectiveRms <= resolveMetricLimit(thresholds, measured.decoder, 'effectiveRmsMax'), 'runtime-adjusted RMS is too dense for the V2 surface', {
-      fileName,
-      measured,
       effectiveRms,
       thresholds,
+      violations,
     });
-    assert(measured.loopDelta <= resolveMetricLimit(thresholds, measured.decoder, 'loopDeltaMax'), 'loop seam is too abrupt for repeated ambience', { fileName, measured, thresholds });
-    assert(measured.startEndRmsDelta <= resolveMetricLimit(thresholds, measured.decoder, 'startEndRmsDeltaMax'), 'start/end loudness shift is too abrupt for repeated ambience', { fileName, measured, thresholds });
-    assert(measured.transientDelta <= resolveMetricLimit(thresholds, measured.decoder, 'transientDeltaMax'), 'decoded MP3 contains abrupt sample-to-sample transients', { fileName, measured, thresholds });
   }
   return metrics;
 }
@@ -1016,10 +1107,12 @@ if (require.main === module) {
 
 module.exports = {
   EXPECTED_FEEDBACK_MP3_FILES,
+  inspectAmbienceMetrics,
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,
   inspectOutputArtifacts,
   isTextOutputArtifact,
+  parseWavMetrics,
   parseCliOptions,
   validateExactDirectoryInventory,
   writeReportIfRequested,

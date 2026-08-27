@@ -34,10 +34,10 @@ const assets = [
     role: 'Entry/auth ambience',
     seed: 0x5a17a11,
     durationSeconds: 96,
-    targetRms: 0.030,
-    targetPeak: 0.14,
+    targetRms: 0.080,
+    targetPeak: 0.28,
     runtimeGain: 0.18,
-    generator: 'cyclic low-density value-noise air bed',
+    generator: 'deterministic band-limited air-noise bed with a loop crossfade',
     exclusions: ['voice', 'human breathing', 'birds', 'thunder', 'fire crackle', 'rock clacks', 'melody'],
   },
   {
@@ -46,10 +46,10 @@ const assets = [
     role: 'Orb ambience',
     seed: 0x6e71e5a7,
     durationSeconds: 96,
-    targetRms: 0.042,
-    targetPeak: 0.18,
+    targetRms: 0.070,
+    targetPeak: 0.28,
     runtimeGain: 0.36,
-    generator: 'cyclic soft-flow water bed without discrete impacts',
+    generator: 'deterministic band-limited soft-flow water bed with a loop crossfade',
     exclusions: ['voice', 'birds', 'gulls', 'rock clacks', 'splashes', 'thunder', 'melody'],
   },
   {
@@ -58,10 +58,10 @@ const assets = [
     role: 'Diary/settings ambience',
     seed: 0x5017a1,
     durationSeconds: 96,
-    targetRms: 0.038,
-    targetPeak: 0.16,
+    targetRms: 0.065,
+    targetPeak: 0.26,
     runtimeGain: 0.32,
-    generator: 'cyclic soft rain sheet without thunder or impact spikes',
+    generator: 'deterministic band-limited rain-noise sheet with a loop crossfade',
     exclusions: ['voice', 'birds', 'thunder', 'fire crackle', 'hard rain hits', 'melody'],
   },
 ];
@@ -181,58 +181,131 @@ function makeLayers(seed, counts) {
   return counts.map((count, index) => makeControls(count, (Number(seed) + (index + 1) * 0x9e3779b1) >>> 0));
 }
 
-function airSample(phase, t, layers, side) {
-  const slow = cyclicValue(layers[0], phase);
-  const body = cyclicValue(layers[1], phase + side * 0.017);
-  const veil = cyclicValue(layers[2], phase + side * 0.031);
-  const drift = Math.sin(Math.PI * 2 * (0.052 * t + side * 0.13));
-  return 0.68 * slow + 0.24 * body + 0.08 * veil + 0.04 * drift;
+const AMBIENCE_PROFILES = Object.freeze({
+  'soft-air-veil': {
+    bands: [[120, 900, 0.34], [900, 5200, 0.66]],
+    commonMix: 0.78,
+    sideMix: 0.22,
+    modulationDepth: 0.07,
+    modulationControls: 37,
+    modulationCycles: 17,
+  },
+  'gentle-water-bed': {
+    bands: [[55, 480, 0.66], [480, 2600, 0.34]],
+    commonMix: 0.52,
+    sideMix: 0.48,
+    modulationDepth: 0.13,
+    modulationControls: 29,
+    modulationCycles: 11,
+  },
+  'soft-rain-veil': {
+    bands: [[180, 1600, 0.38], [1600, 7000, 0.62]],
+    commonMix: 0.34,
+    sideMix: 0.66,
+    modulationDepth: 0.09,
+    modulationControls: 43,
+    modulationCycles: 19,
+  },
+});
+
+function createLowPass(cutoffHz) {
+  const alpha = 1 - Math.exp((-2 * Math.PI * cutoffHz) / sampleRate);
+  let state = 0;
+  return (input) => {
+    state += alpha * (input - state);
+    return state;
+  };
 }
 
-function waterSample(phase, t, layers, side) {
-  const flow = cyclicValue(layers[0], phase + side * 0.011);
-  const shimmer = cyclicValue(layers[1], phase + side * 0.037);
-  const sheet = cyclicValue(layers[2], phase + side * 0.071);
-  const swell = 0.76 + 0.18 * cyclicValue(layers[3], phase) + 0.06 * Math.sin(Math.PI * 2 * 0.041 * t);
-  return (0.56 * flow + 0.28 * shimmer + 0.16 * sheet) * swell;
+function createBandPass(lowHz, highHz) {
+  const lowPassHighA = createLowPass(highHz);
+  const lowPassHighB = createLowPass(highHz);
+  const lowPassHighC = createLowPass(highHz);
+  const lowPassLowA = createLowPass(lowHz);
+  const lowPassLowB = createLowPass(lowHz);
+  const lowPassLowC = createLowPass(lowHz);
+  return (input) => (
+    lowPassHighC(lowPassHighB(lowPassHighA(input)))
+      - lowPassLowC(lowPassLowB(lowPassLowA(input)))
+  );
 }
 
-function rainSample(phase, t, layers, side) {
-  const mist = cyclicValue(layers[0], phase + side * 0.009);
-  const sheet = cyclicValue(layers[1], phase + side * 0.021);
-  const fine = cyclicValue(layers[2], phase + side * 0.055);
-  const cloud = 0.82 + 0.14 * cyclicValue(layers[3], phase) + 0.04 * Math.sin(Math.PI * 2 * 0.033 * t);
-  return (0.34 * mist + 0.40 * sheet + 0.26 * fine) * cloud;
+function createNoiseVoice(profile) {
+  const bands = profile.bands.map(([lowHz, highHz, weight]) => ({
+    filter: createBandPass(lowHz, highHz),
+    weight,
+  }));
+  return (input) => bands.reduce(
+    (sum, band) => sum + band.filter(input) * band.weight,
+    0,
+  );
 }
 
 function renderPcm(asset) {
   const frameCount = asset.durationSeconds * sampleRate;
-  const left = new Float64Array(frameCount);
-  const right = new Float64Array(frameCount);
-  const layerCounts = asset.id === 'soft-air-veil'
-    ? [9, 57, 421]
-    : asset.id === 'gentle-water-bed'
-      ? [197, 719, 2503, 17]
-      : [293, 1103, 3907, 19];
-  const layers = makeLayers(asset.seed, layerCounts);
+  const crossfadeFrames = Math.round(sampleRate * 2);
+  const warmupFrames = sampleRate;
+  const rawFrameCount = frameCount + crossfadeFrames;
+  const left = new Float64Array(rawFrameCount);
+  const right = new Float64Array(rawFrameCount);
+  const profile = AMBIENCE_PROFILES[asset.id];
+  if (!profile) throw new Error('Missing ambience profile for ' + asset.id);
+
+  const commonRandom = mulberry32((asset.seed ^ 0x9e3779b9) >>> 0);
+  const leftRandom = mulberry32((asset.seed ^ 0x243f6a88) >>> 0);
+  const rightRandom = mulberry32((asset.seed ^ 0xb7e15162) >>> 0);
+  const leftVoice = createNoiseVoice(profile);
+  const rightVoice = createNoiseVoice(profile);
+  const modulationControls = makeControls(
+    profile.modulationControls,
+    (asset.seed ^ 0xa4093822) >>> 0,
+  );
+  const inputScale = 1 / Math.sqrt(
+    profile.commonMix ** 2 + profile.sideMix ** 2,
+  );
+
+  for (let sourceFrame = -warmupFrames; sourceFrame < rawFrameCount; sourceFrame += 1) {
+    const common = commonRandom() * 2 - 1;
+    const sideLeft = leftRandom() * 2 - 1;
+    const sideRight = rightRandom() * 2 - 1;
+    const phase = sourceFrame / frameCount;
+    const slowShape = cyclicValue(modulationControls, phase);
+    const slowDrift = Math.sin(Math.PI * 2 * profile.modulationCycles * phase + 0.31);
+    const envelope = 1 + profile.modulationDepth * (0.72 * slowShape + 0.28 * slowDrift);
+    const leftSample = leftVoice(
+      (common * profile.commonMix + sideLeft * profile.sideMix) * inputScale,
+    ) * envelope;
+    const rightSample = rightVoice(
+      (common * profile.commonMix + sideRight * profile.sideMix) * inputScale,
+    ) * envelope;
+    if (sourceFrame >= 0) {
+      left[sourceFrame] = leftSample;
+      right[sourceFrame] = rightSample;
+    }
+  }
+
+  for (let frame = 0; frame < crossfadeFrames; frame += 1) {
+    const progress = (frame + 0.5) / crossfadeFrames;
+    const fadeIn = Math.sin(progress * Math.PI * 0.5);
+    const fadeOut = Math.cos(progress * Math.PI * 0.5);
+    left[frame] = left[frame] * fadeIn + left[frameCount + frame] * fadeOut;
+    right[frame] = right[frame] * fadeIn + right[frameCount + frame] * fadeOut;
+  }
+
+  let leftMean = 0;
+  let rightMean = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    leftMean += left[frame];
+    rightMean += right[frame];
+  }
+  leftMean /= frameCount;
+  rightMean /= frameCount;
 
   let sumSquares = 0;
   let peak = 0;
   for (let i = 0; i < frameCount; i += 1) {
-    const phase = i / frameCount;
-    const t = i / sampleRate;
-    let l;
-    let r;
-    if (asset.id === 'soft-air-veil') {
-      l = airSample(phase, t, layers, 0);
-      r = airSample(phase, t, layers, 1);
-    } else if (asset.id === 'gentle-water-bed') {
-      l = waterSample(phase, t, layers, 0);
-      r = waterSample(phase, t, layers, 1);
-    } else {
-      l = rainSample(phase, t, layers, 0);
-      r = rainSample(phase, t, layers, 1);
-    }
+    const l = left[i] - leftMean;
+    const r = right[i] - rightMean;
     left[i] = l;
     right[i] = r;
     sumSquares += l * l + r * r;
@@ -263,7 +336,9 @@ function renderPcm(asset) {
       durationSeconds: asset.durationSeconds,
       sourcePeak: Number(scaledPeak.toFixed(6)),
       sourceRms: Number(Math.sqrt(scaledSquares / (frameCount * channels)).toFixed(6)),
-      layerCounts,
+      synthesisProfile: profile,
+      warmupSeconds: warmupFrames / sampleRate,
+      crossfadeSeconds: crossfadeFrames / sampleRate,
       targetRms: asset.targetRms,
       targetPeak: asset.targetPeak,
     },

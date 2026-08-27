@@ -5,6 +5,8 @@ Purpose: keep ZenFlow sound outside Hyperfocus calm, local, intentional, and ver
 ## Source Evidence
 
 - WCAG 2.2 Audio Control: https://www.w3.org/WAI/WCAG22/Understanding/audio-control.html - audio that can continue must be controllable by the user.
+- ITU-R BS.1770-5: https://www.itu.int/rec/R-REC-BS.1770-5-202311-I - the normative reference for programme loudness and true-peak measurement when those claims are required.
+- EBU R 128: https://tech.ebu.ch/publications/r128 - a broadcast loudness-normalization recommendation based on ITU-R BS.1770 measurement.
 - MDN autoplay guide: https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Autoplay - audible playback can be blocked or disruptive unless it follows user activation.
 - Apple Human Interface Guidelines, Playing Audio: https://developer.apple.com/design/human-interface-guidelines/playing-audio - audio should respect user intent, interruptions, and system controls.
 - Apple Human Interface Guidelines, Accessibility: https://developer.apple.com/design/human-interface-guidelines/accessibility - feedback must not depend on sound alone.
@@ -30,6 +32,14 @@ These are tracked in `APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS`. Hyperfocus files rema
 Generated ambience and the five short feedback cues are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. The provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records the seeds or fixed note sequences, synthesis parameters, encoder version, SHA-256 hashes, public/docs paths, audible exclusions, rollback path, and the statement that no third-party samples, stock recordings, voices, or AI-generated audio inputs were used.
 
 The generator uses `lamejs@1.2.1` as a dev-time MP3 encoder. Encoder code is not shipped in the runtime bundle. Formal legal review of dev-time LGPL encoder use remains `UNVERIFIED` until reviewed by project/legal ownership.
+
+## Audibility and Loop Contract
+
+The gate decodes the shipped MP3 rather than trusting generator inputs. Each ambience file must stay inside asset-specific minimum and maximum bounds for peak, RMS, audible RMS after a 20 Hz high-pass, audible-band energy ratio, and peak/RMS after its runtime gain. It must also satisfy maximum DC offset, adjacent-sample transient, start/end RMS difference over half-second windows, loop-boundary amplitude difference, and loop-boundary slope difference, plus the approved duration, sample rate, and channel count. Stereo loop metrics enforce the worst channel rather than averaging left and right, so one-ear defects cannot be hidden by a clean opposite channel. A quiet or numerically non-zero file cannot pass when its energy is effectively subsonic.
+
+The ambience generator uses seeded noise, cascaded band limiting, filter warm-up, a two-second equal-power wrap crossfade, DC-mean removal, and bounded normalization. The provenance packet records the exact synthesis profile and hashes so repeat generation can be compared byte for byte.
+
+This numerical gate is not a claim of ITU-R BS.1770-5 or EBU R 128 conformance: it does not currently implement K-weighted integrated loudness or true-peak measurement. It also cannot prove that a label such as “soft air” or “gentle water” is perceptually correct, that a particular speaker is audible, or that runtime playback succeeds. Those claims require human listening and fresh playback on the exact target device and remain `UNVERIFIED` until that evidence exists.
 
 ## Approved Action Sound Map
 
@@ -68,7 +78,7 @@ Run the focused guard before approval:
 
 ```bash
 npm run audio:generate-non-hyperfocus
-npm run check:app-audio
+npm run check:app-audio -- --write-report
 npm run test -- src/lib/__tests__/appAudioAssets.test.ts scripts/__tests__/check-app-audio-assets.test.ts src/lib/__tests__/audioManager.test.ts
 ```
 
