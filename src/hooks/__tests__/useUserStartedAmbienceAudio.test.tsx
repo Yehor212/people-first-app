@@ -21,6 +21,16 @@ const media = vi.hoisted(() => ({
   pause: vi.fn(),
 }));
 
+const ownership = vi.hoisted(() => ({
+  claim: vi.fn(),
+  release: vi.fn(),
+  pauseOwner: null as null | (() => void),
+}));
+
+vi.mock("@/lib/audioPlaybackCoordinator", () => ({
+  claimLongAudio: ownership.claim,
+}));
+
 function createDeferred<T = void>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
@@ -36,6 +46,7 @@ function Harness({ canPlay = true }: { canPlay?: boolean }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ambience = useUserStartedAmbienceAudio({
     audioRef,
+    ownerId: "orb-water",
     canPlay,
     volume: 0.36,
     mediaSessionTitle: "Gentle water",
@@ -70,6 +81,12 @@ describe("useUserStartedAmbienceAudio", () => {
     media.play.mockResolvedValue(undefined);
     media.pause.mockReset();
     media.load.mockReset();
+    ownership.release = vi.fn();
+    ownership.pauseOwner = null;
+    ownership.claim.mockReset().mockImplementation((_ownerId, pauseOwner) => {
+      ownership.pauseOwner = pauseOwner;
+      return ownership.release;
+    });
     vi.mocked(clearAppAudioMediaSession).mockClear();
     vi.mocked(setAppAudioMediaSession).mockClear();
     Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
@@ -84,6 +101,53 @@ describe("useUserStartedAmbienceAudio", () => {
       configurable: true,
       value: media.load,
     });
+  });
+
+  it("claims its explicit owner before starting and releases it on ordinary stop", async () => {
+    render(<Harness />);
+
+    const toggle = screen.getByTestId("toggle");
+    fireEvent.click(toggle);
+
+    expect(ownership.claim).toHaveBeenCalledWith("orb-water", expect.any(Function));
+    expect(ownership.claim.mock.invocationCallOrder[0]).toBeLessThan(
+      media.play.mock.invocationCallOrder[0],
+    );
+    await waitFor(() => expect(toggle).toHaveTextContent("playing"));
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveTextContent("idle");
+    expect(ownership.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops and releases when a newer long-audio owner replaces it", async () => {
+    render(<Harness />);
+
+    const toggle = screen.getByTestId("toggle");
+    fireEvent.click(toggle);
+    await waitFor(() => expect(toggle).toHaveTextContent("playing"));
+
+    act(() => ownership.pauseOwner?.());
+
+    expect(media.pause).toHaveBeenCalled();
+    expect(toggle).toHaveTextContent("idle");
+    expect(ownership.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases its token on playback failure and unmount", async () => {
+    media.play.mockRejectedValueOnce(new Error("decode failed"));
+    const view = render(<Harness />);
+
+    fireEvent.click(screen.getByTestId("toggle"));
+    await waitFor(() => expect(screen.getByTestId("toggle")).toHaveTextContent("error"));
+    expect(ownership.release).toHaveBeenCalledTimes(1);
+
+    media.play.mockResolvedValueOnce(undefined);
+    fireEvent.click(screen.getByTestId("toggle"));
+    await waitFor(() => expect(screen.getByTestId("toggle")).toHaveTextContent("playing"));
+    view.unmount();
+
+    expect(ownership.release).toHaveBeenCalledTimes(2);
   });
 
   it("ignores stale native play events after a pending attempt is stopped", async () => {

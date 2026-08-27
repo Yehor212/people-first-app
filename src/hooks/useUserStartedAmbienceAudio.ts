@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { PluginListenerHandle } from "@capacitor/core";
 import { clearAppAudioMediaSession, setAppAudioMediaSession } from "@/lib/audioMediaSession";
+import { claimLongAudio, type LongAudioOwnerId } from "@/lib/audioPlaybackCoordinator";
 import { logger } from "@/lib/logger";
 
 export type UserStartedAmbiencePlaybackState = "idle" | "pending" | "playing" | "error";
@@ -10,6 +11,7 @@ const PLAYBACK_START_TIMEOUT_MS = 10_000;
 
 interface UseUserStartedAmbienceAudioOptions {
   audioRef: RefObject<HTMLAudioElement | null>;
+  ownerId: LongAudioOwnerId;
   canPlay: boolean;
   volume: number;
   mediaSessionTitle: string;
@@ -18,6 +20,7 @@ interface UseUserStartedAmbienceAudioOptions {
 
 export function useUserStartedAmbienceAudio({
   audioRef,
+  ownerId,
   canPlay,
   volume,
   mediaSessionTitle,
@@ -30,6 +33,7 @@ export function useUserStartedAmbienceAudio({
   const mediaElementErroredRef = useRef(false);
   const lastAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingPlaybackTimeoutRef = useRef<number | null>(null);
+  const releaseOwnershipRef = useRef<(() => void) | null>(null);
 
   const setMountedPlaybackState = useCallback((state: UserStartedAmbiencePlaybackState) => {
     if (mountedRef.current) setPlaybackState(state);
@@ -47,6 +51,13 @@ export function useUserStartedAmbienceAudio({
     pendingPlaybackTimeoutRef.current = null;
   }, []);
 
+  const releaseOwnership = useCallback(() => {
+    const release = releaseOwnershipRef.current;
+    if (!release) return;
+    releaseOwnershipRef.current = null;
+    release();
+  }, []);
+
   const stop = useCallback(() => {
     clearPendingPlaybackTimeout();
     playAttemptRef.current += 1;
@@ -54,9 +65,10 @@ export function useUserStartedAmbienceAudio({
     if (audio && shouldPauseRef.current) audio.pause();
     shouldPauseRef.current = false;
     mediaElementErroredRef.current = false;
+    releaseOwnership();
     clearAppAudioMediaSession();
     setMountedPlaybackState("idle");
-  }, [clearPendingPlaybackTimeout, getAudio, setMountedPlaybackState]);
+  }, [clearPendingPlaybackTimeout, getAudio, releaseOwnership, setMountedPlaybackState]);
 
   const fail = useCallback(
     (error?: unknown) => {
@@ -66,11 +78,12 @@ export function useUserStartedAmbienceAudio({
       if (audio && shouldPauseRef.current) audio.pause();
       shouldPauseRef.current = false;
       mediaElementErroredRef.current = false;
+      releaseOwnership();
       clearAppAudioMediaSession();
       if (error) logger.warn(loggerScope, "Playback failed:", error);
       setMountedPlaybackState("error");
     },
-    [clearPendingPlaybackTimeout, getAudio, loggerScope, setMountedPlaybackState]
+    [clearPendingPlaybackTimeout, getAudio, loggerScope, releaseOwnership, setMountedPlaybackState]
   );
 
   const toggle = useCallback(() => {
@@ -95,6 +108,7 @@ export function useUserStartedAmbienceAudio({
       audio.load();
     }
     shouldPauseRef.current = true;
+    releaseOwnershipRef.current = claimLongAudio(ownerId, stop);
     setMountedPlaybackState("pending");
     clearPendingPlaybackTimeout();
     pendingPlaybackTimeoutRef.current = window.setTimeout(() => {
@@ -120,6 +134,7 @@ export function useUserStartedAmbienceAudio({
         clearPendingPlaybackTimeout();
         shouldPauseRef.current = false;
         mediaElementErroredRef.current = false;
+        releaseOwnership();
         clearAppAudioMediaSession();
         logger.warn(loggerScope, "Playback failed:", error);
         setPlaybackState("error");
@@ -131,7 +146,9 @@ export function useUserStartedAmbienceAudio({
     getAudio,
     loggerScope,
     mediaSessionTitle,
+    ownerId,
     playbackState,
+    releaseOwnership,
     setMountedPlaybackState,
     stop,
     volume,
@@ -157,10 +174,11 @@ export function useUserStartedAmbienceAudio({
       if (current === "playing" && audio && !audio.paused) return current;
 
       shouldPauseRef.current = false;
+      releaseOwnership();
       clearAppAudioMediaSession();
       return "idle";
     });
-  }, [getAudio]);
+  }, [getAudio, releaseOwnership]);
 
   const handleMediaError = useCallback(() => {
     if (!mountedRef.current) return;
@@ -221,9 +239,10 @@ export function useUserStartedAmbienceAudio({
       const audio = getAudio();
       if (audio && shouldPauseRef.current) audio.pause();
       shouldPauseRef.current = false;
+      releaseOwnership();
       clearAppAudioMediaSession();
     };
-  }, [clearPendingPlaybackTimeout, getAudio]);
+  }, [clearPendingPlaybackTimeout, getAudio, releaseOwnership]);
 
   return {
     playbackState,

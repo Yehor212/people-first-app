@@ -91,12 +91,15 @@ export function useAppBackgroundMusic({
     const release = releaseOwnershipRef.current;
     if (!release) return;
 
-    allowOwnerReleaseResumeRef.current = false;
+    const releasesActiveGlobalOwner = getActiveLongAudioOwner() === PLAYBACK_OWNER;
+    if (releasesActiveGlobalOwner) allowOwnerReleaseResumeRef.current = false;
     releaseOwnershipRef.current = null;
     release();
-    queueMicrotask(() => {
-      allowOwnerReleaseResumeRef.current = true;
-    });
+    if (releasesActiveGlobalOwner) {
+      queueMicrotask(() => {
+        allowOwnerReleaseResumeRef.current = true;
+      });
+    }
   }, []);
 
   const pausePlayback = useCallback(

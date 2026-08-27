@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRef } from "react";
 import { useAppBackgroundMusic } from "../useAppBackgroundMusic";
 import { clearAppAudioMediaSession, setAppAudioMediaSession } from "@/lib/audioMediaSession";
+import { claimLongAudio } from "@/lib/audioPlaybackCoordinator";
 
 const lifecycle = vi.hoisted(() => ({
   pause: null as null | (() => void),
@@ -165,6 +166,27 @@ describe("useAppBackgroundMusic", () => {
       await lifecycle.resume?.();
     });
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+  });
+
+  it("yields to explicit ambience and reclaims playback after that owner releases", async () => {
+    localStorage.setItem("zenflow-app-background-music-enabled", "true");
+    render(<Harness />);
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    media.pause.mockClear();
+    let releaseAmbience: () => void = () => undefined;
+    act(() => {
+      releaseAmbience = claimLongAudio("orb-water", vi.fn());
+    });
+
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+    expect(media.pause).toHaveBeenCalledTimes(1);
+
+    media.play.mockClear();
+    act(() => releaseAmbience());
+
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    expect(media.play).toHaveBeenCalledTimes(1);
   });
 
   it("surfaces a media error and supports an explicit retry", async () => {

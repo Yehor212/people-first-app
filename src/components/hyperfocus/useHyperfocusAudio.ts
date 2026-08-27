@@ -11,6 +11,7 @@ import { clearAppAudioMediaSession, setAppAudioMediaSession } from '@/lib/audioM
 import { setHyperfocusToneCutoffKhz } from '@/lib/audioManager';
 import { normalizeHyperfocusToneKhz } from '@/lib/hyperfocusTone';
 import { resolveHyperfocusAmbientVolume } from '@/lib/hyperfocusAudioVolume';
+import { claimLongAudio } from '@/lib/audioPlaybackCoordinator';
 
 interface UseHyperfocusAudioOptions {
   isRunning: boolean;
@@ -26,6 +27,7 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     isUnlocked: false,
   });
   const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
+  const releaseOwnershipRef = useRef<(() => void) | null>(null);
   const appAudioSettings = useAppAudioSettings();
   const [toneFilterStatus, setToneFilterStatus] = useState<ToneFilterStatus>(() =>
     soundGeneratorRef.current.getToneFilterStatus(),
@@ -35,6 +37,25 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     appAudioSettings.muted,
   );
 
+  const releaseOwnership = useCallback(() => {
+    const release = releaseOwnershipRef.current;
+    if (!release) return;
+    releaseOwnershipRef.current = null;
+    release();
+  }, []);
+
+  const pauseAndRelease = useCallback(() => {
+    soundGeneratorRef.current?.pause();
+    setIsSoundPlaying(false);
+    releaseOwnership();
+    clearAppAudioMediaSession();
+  }, [releaseOwnership]);
+
+  const claimOwnership = useCallback(() => {
+    if (releaseOwnershipRef.current) return;
+    releaseOwnershipRef.current = claimLongAudio('hyperfocus', pauseAndRelease);
+  }, [pauseAndRelease]);
+
   // Subscribe to audio status updates
   useEffect(() => {
     const generator = soundGeneratorRef.current;
@@ -43,22 +64,27 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     const unsubscribe = generator.addStatusListener((status) => {
       setAudioStatus(status);
       if (status.state === 'playing') {
+        claimOwnership();
         setIsSoundPlaying(true);
         setAppAudioMediaSession({
           title: 'ZenFlow Hyperfocus',
           artist: 'Focus ambience',
-          onPlay: () => generator.resumeDirect(),
-          onPause: () => generator.pause(),
-          onStop: () => generator.pause(),
+          onPlay: () => {
+            claimOwnership();
+            generator.resumeDirect();
+          },
+          onPause: pauseAndRelease,
+          onStop: pauseAndRelease,
         });
       } else if (status.state === 'idle' || status.state === 'paused' || status.state === 'blocked' || status.state === 'error') {
         setIsSoundPlaying(false);
+        releaseOwnership();
         clearAppAudioMediaSession();
       }
     });
 
     return unsubscribe;
-  }, []);
+  }, [claimOwnership, pauseAndRelease, releaseOwnership]);
 
   useEffect(() => {
     const generator = soundGeneratorRef.current;
@@ -67,11 +93,9 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     generator.setVolume(ambientVolume);
 
     if (appAudioSettings.muted) {
-      generator.pause();
-      setIsSoundPlaying(false);
-      clearAppAudioMediaSession();
+      pauseAndRelease();
     }
-  }, [ambientVolume, appAudioSettings.muted]);
+  }, [ambientVolume, appAudioSettings.muted, pauseAndRelease]);
 
   useEffect(() => {
     const generator = soundGeneratorRef.current;
@@ -86,14 +110,14 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     if (!selectedSoundId) {
       generator.stop();
       setIsSoundPlaying(false);
+      releaseOwnership();
       return;
     }
 
     if (!isRunning || isPaused || appAudioSettings.muted) {
-      generator.pause();
-      setIsSoundPlaying(false);
+      pauseAndRelease();
     }
-  }, [selectedSoundId, isRunning, isPaused, appAudioSettings.muted]);
+  }, [selectedSoundId, isRunning, isPaused, appAudioSettings.muted, pauseAndRelease, releaseOwnership]);
 
   // Stop sound on unmount
   useEffect(() => {
@@ -102,9 +126,10 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
         clearAppAudioMediaSession();
         // eslint-disable-next-line react-hooks/exhaustive-deps -- ref.current in cleanup is intentional
         soundGeneratorRef.current.stop();
+        releaseOwnership();
       }
     };
-  }, []);
+  }, [releaseOwnership]);
 
   // Play sound — preserves iOS gesture context
   const playSound = useCallback((soundId: string) => {
@@ -113,9 +138,15 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     if (!generator || !normalizedSoundId || appAudioSettings.muted) return;
     generator.setVolume(ambientVolume);
     generator.setToneCutoffKhz(appAudioSettings.hyperfocusToneCutoffKhz);
-    generator.playDirect(normalizedSoundId);
+    claimOwnership();
+    try {
+      generator.playDirect(normalizedSoundId);
+    } catch (error) {
+      releaseOwnership();
+      throw error;
+    }
     setToneFilterStatus(generator.getToneFilterStatus());
-  }, [ambientVolume, appAudioSettings.hyperfocusToneCutoffKhz, appAudioSettings.muted]);
+  }, [ambientVolume, appAudioSettings.hyperfocusToneCutoffKhz, appAudioSettings.muted, claimOwnership, releaseOwnership]);
 
   const updateToneCutoffKhz = useCallback((value: number): boolean => {
     const normalizedValue = normalizeHyperfocusToneKhz(value);
@@ -124,11 +155,11 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     return true;
   }, []);
 
-  const pauseAudio = () => {
-    soundGeneratorRef.current?.pause();
-  };
+  const pauseAudio = pauseAndRelease;
 
   const resumeAudioDirect = () => {
+    if (appAudioSettings.muted) return;
+    claimOwnership();
     soundGeneratorRef.current?.resumeDirect();
   };
 
@@ -137,10 +168,10 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     if (!generator) return;
 
     if (isSoundPlaying) {
-      generator.pause();
-      setIsSoundPlaying(false);
+      pauseAndRelease();
     } else if (selectedSoundId && !appAudioSettings.muted) {
       generator.setVolume(ambientVolume);
+      claimOwnership();
       generator.resumeDirect();
     }
   };
@@ -154,6 +185,7 @@ export function useHyperfocusAudio({ isRunning, isPaused }: UseHyperfocusAudioOp
     } else if (!normalizedSoundId) {
       soundGeneratorRef.current?.stop();
       setIsSoundPlaying(false);
+      releaseOwnership();
     }
   };
 

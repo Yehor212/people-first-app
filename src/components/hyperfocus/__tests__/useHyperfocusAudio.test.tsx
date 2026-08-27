@@ -37,6 +37,12 @@ const mediaSession = vi.hoisted(() => ({
   clearAppAudioMediaSession: vi.fn(),
 }));
 
+const ownership = vi.hoisted(() => ({
+  claim: vi.fn(),
+  release: vi.fn(),
+  pauseOwner: null as null | (() => void),
+}));
+
 vi.mock("@/hooks/useAppAudioSettings", () => ({
   useAppAudioSettings: () => audioSettingsState.snapshot,
 }));
@@ -48,6 +54,10 @@ vi.mock("@/lib/ambientSounds", () => ({
 
 vi.mock("@/lib/audioMediaSession", () => mediaSession);
 
+vi.mock("@/lib/audioPlaybackCoordinator", () => ({
+  claimLongAudio: ownership.claim,
+}));
+
 vi.mock("@/lib/audioManager", () => ({
   setHyperfocusToneCutoffKhz: tonePreference.persist,
 }));
@@ -56,6 +66,12 @@ describe("useHyperfocusAudio master app sound", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     generator.statusListeners.length = 0;
+    ownership.release = vi.fn();
+    ownership.pauseOwner = null;
+    ownership.claim.mockReset().mockImplementation((_ownerId, pauseOwner) => {
+      ownership.pauseOwner = pauseOwner;
+      return ownership.release;
+    });
     audioSettingsState.snapshot = {
       muted: false,
       volume: 0.6,
@@ -73,6 +89,35 @@ describe("useHyperfocusAudio master app sound", () => {
 
     act(() => result.current.handleSoundSelect("river"));
     expect(generator.playDirect).toHaveBeenCalledWith("river:deep");
+  });
+
+  it("claims Hyperfocus before direct playback and releases on pause", () => {
+    const { result } = renderHook(() =>
+      useHyperfocusAudio({ isRunning: true, isPaused: false }),
+    );
+
+    act(() => result.current.handleSoundSelect("rain"));
+
+    expect(ownership.claim).toHaveBeenCalledWith("hyperfocus", expect.any(Function));
+    expect(ownership.claim.mock.invocationCallOrder[0]).toBeLessThan(
+      generator.playDirect.mock.invocationCallOrder[0],
+    );
+
+    act(() => result.current.pauseAudio());
+    expect(ownership.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops and releases when another long-audio owner replaces Hyperfocus", () => {
+    const { result } = renderHook(() =>
+      useHyperfocusAudio({ isRunning: true, isPaused: false }),
+    );
+    act(() => result.current.handleSoundSelect("ocean"));
+    generator.pause.mockClear();
+
+    act(() => ownership.pauseOwner?.());
+
+    expect(generator.pause).toHaveBeenCalledTimes(1);
+    expect(ownership.release).toHaveBeenCalledTimes(1);
   });
 
   it("applies the persisted cutoff without changing playback speed or selected sound", () => {
