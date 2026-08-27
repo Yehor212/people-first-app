@@ -229,6 +229,24 @@ describe("LanguageSelector", () => {
     }
   });
 
+  it("uses one readable language column when the rendered labels are large", () => {
+    const originalGetComputedStyle = window.getComputedStyle;
+    const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      const styles = originalGetComputedStyle(element);
+      return element.hasAttribute("data-entry-language-label")
+        ? { ...styles, fontSize: "28px" }
+        : styles;
+    });
+
+    render(<LanguageSelector onComplete={vi.fn()} />);
+
+    const languageGroup = screen.getByRole("radiogroup", { name: "Select language" });
+    expect(languageGroup).toHaveAttribute("data-language-grid-layout", "single-column");
+    expect(languageGroup).toHaveClass("grid-cols-1");
+    expect(languageGroup.className).not.toContain("auto-fit");
+    getComputedStyleSpy.mockRestore();
+  });
+
   it("selects a language and completes without form submission side effects", () => {
     const onComplete = vi.fn();
     render(<LanguageSelector onComplete={onComplete} />);
