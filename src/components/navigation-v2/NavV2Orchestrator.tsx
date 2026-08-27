@@ -16,6 +16,7 @@ import { DrawerV2 } from "./DrawerV2";
 import { V2FocusMiniPlayer } from "./V2FocusMiniPlayer";
 import { V2MindfulMomentLayer } from "./V2MindfulMomentLayer";
 import { V2ProgressionModalLayer } from "./V2ProgressionModalLayer";
+import { AppBackgroundMusicProvider } from "./AppBackgroundMusicProvider";
 import { getNavV2RouteLabel, NavV2RouteFallback, NavV2RoutePending } from "./NavV2RouteStatus";
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
@@ -299,93 +300,95 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   );
 
   return (
-    <div
-      className={cn(
-        "v2-edge-to-edge-surface min-h-[var(--app-viewport-height)] bg-background motion-safe:transition-[padding] motion-safe:duration-300",
-        effectiveSidebarCollapsed
-          ? forceWebNavigation
-            ? "ps-[72px]"
-            : "md:ps-[72px]"
-          : forceWebNavigation
-            ? "ps-64"
-            : "md:ps-64"
-      )}
-      data-testid="nav-v2-orchestrator"
-      data-fullscreen-surface="v2"
-      data-active-page={activePage}
-      data-nav-layout={isWebNavigation ? "web" : "phone"}
-      data-nav-rail={effectiveSidebarCollapsed ? "compact" : "expanded"}
-    >
-      {isWebNavigation && (
-        <SidebarV2
-          activePage={activePage}
-          onPageChange={handlePrimaryPageChange}
-          collapsed={effectiveSidebarCollapsed}
-          onToggleCollapsed={toggleSidebar}
-          forceVisible={forceWebNavigation}
-          collapseLocked={forceCompactWebRail}
-        />
-      )}
+    <AppBackgroundMusicProvider>
+      <div
+        className={cn(
+          "v2-edge-to-edge-surface min-h-[var(--app-viewport-height)] bg-background motion-safe:transition-[padding] motion-safe:duration-300",
+          effectiveSidebarCollapsed
+            ? forceWebNavigation
+              ? "ps-[72px]"
+              : "md:ps-[72px]"
+            : forceWebNavigation
+              ? "ps-64"
+              : "md:ps-64"
+        )}
+        data-testid="nav-v2-orchestrator"
+        data-fullscreen-surface="v2"
+        data-active-page={activePage}
+        data-nav-layout={isWebNavigation ? "web" : "phone"}
+        data-nav-rail={effectiveSidebarCollapsed ? "compact" : "expanded"}
+      >
+        {isWebNavigation && (
+          <SidebarV2
+            activePage={activePage}
+            onPageChange={handlePrimaryPageChange}
+            collapsed={effectiveSidebarCollapsed}
+            onToggleCollapsed={toggleSidebar}
+            forceVisible={forceWebNavigation}
+            collapseLocked={forceCompactWebRail}
+          />
+        )}
 
-      {/*
+        {/*
         Mobile menu trigger — top-left floating control keeps the Orb surface calm on phones.
         The full drawer opens on demand and fully disappears when closed.
       */}
-      <button
-        ref={drawerTriggerRef}
-        type="button"
-        onClick={handleOpenDrawer}
-        aria-label={tx.navV2OpenMenu || "Open menu"}
-        aria-expanded={drawerOpen}
-        aria-controls={drawerOpen ? "nav-v2-drawer" : undefined}
-        data-testid="nav-v2-open-drawer"
-        className={cn(
-          shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
-          "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
-          "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
-          "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
-          "border border-border/42 shadow-[0_12px_28px_hsl(var(--foreground)/0.12)]",
-          "text-foreground/90",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
-        )}
-      >
-        <MenuIcon
-          className="pointer-events-none h-[var(--v2-phone-drawer-icon-size)] w-[var(--v2-phone-drawer-icon-size)]"
-          aria-hidden="true"
-        />
-      </button>
-
-      {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}
-
-      <DrawerV2
-        open={!isWebNavigation && drawerOpen}
-        activePage={activePage}
-        onClose={closeDrawer}
-        onPageChange={handlePrimaryPageChange}
-        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-      />
-
-      {commandPaletteOpen && (
-        <Suspense fallback={null}>
-          <CommandPalette
-            open={commandPaletteOpen}
-            onClose={() => setCommandPaletteOpen(false)}
-            onNavigate={handlePrimaryPageChange}
+        <button
+          ref={drawerTriggerRef}
+          type="button"
+          onClick={handleOpenDrawer}
+          aria-label={tx.navV2OpenMenu || "Open menu"}
+          aria-expanded={drawerOpen}
+          aria-controls={drawerOpen ? "nav-v2-drawer" : undefined}
+          data-testid="nav-v2-open-drawer"
+          className={cn(
+            shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
+            "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
+            "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
+            "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
+            "border border-border/42 shadow-[0_12px_28px_hsl(var(--foreground)/0.12)]",
+            "text-foreground/90",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
+          )}
+        >
+          <MenuIcon
+            className="pointer-events-none h-[var(--v2-phone-drawer-icon-size)] w-[var(--v2-phone-drawer-icon-size)]"
+            aria-hidden="true"
           />
+        </button>
+
+        {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}
+
+        <DrawerV2
+          open={!isWebNavigation && drawerOpen}
+          activePage={activePage}
+          onClose={closeDrawer}
+          onPageChange={handlePrimaryPageChange}
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        />
+
+        {commandPaletteOpen && (
+          <Suspense fallback={null}>
+            <CommandPalette
+              open={commandPaletteOpen}
+              onClose={() => setCommandPaletteOpen(false)}
+              onNavigate={handlePrimaryPageChange}
+            />
+          </Suspense>
+        )}
+
+        <Suspense fallback={<NavV2RouteFallback label={tx.loading || "Loading..."} />}>
+          {pageNode}
         </Suspense>
-      )}
 
-      <Suspense fallback={<NavV2RouteFallback label={tx.loading || "Loading..."} />}>
-        {pageNode}
-      </Suspense>
-
-      <V2FocusMiniPlayer
-        activePage={activePage}
-        onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
-      />
-      <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
-      <V2ProgressionModalLayer />
-    </div>
+        <V2FocusMiniPlayer
+          activePage={activePage}
+          onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
+        />
+        <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
+        <V2ProgressionModalLayer />
+      </div>
+    </AppBackgroundMusicProvider>
   );
 });

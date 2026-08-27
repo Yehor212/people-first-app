@@ -10,7 +10,11 @@
  * - Proper re-unlock of AudioContext on iOS after background
  */
 
-import { getAmbientSoundGenerator, armAudioUnlockAfterResume, type AudioStatus } from "./ambientSounds";
+import {
+  getAmbientSoundGenerator,
+  armAudioUnlockAfterResume,
+  type AudioStatus,
+} from "./ambientSounds";
 import { resumeOnInteraction, suspendContext } from "./audioManager";
 import { logger } from "./logger";
 import type { SeverityLevel } from "@sentry/core";
@@ -42,10 +46,18 @@ let lifecycleState: AudioLifecycleState = {
 
 let deferredResumeCleanup: (() => void) | null = null;
 const backgroundPauseHandlers = new Set<() => void>();
+const foregroundResumeHandlers = new Set<() => void | Promise<void>>();
 
 export function registerAudioBackgroundPauseHandler(handler: () => void): () => void {
   backgroundPauseHandlers.add(handler);
   return () => backgroundPauseHandlers.delete(handler);
+}
+
+export function registerAudioForegroundResumeHandler(
+  handler: () => void | Promise<void>
+): () => void {
+  foregroundResumeHandlers.add(handler);
+  return () => foregroundResumeHandlers.delete(handler);
 }
 
 function pauseRegisteredAudio(): void {
@@ -54,6 +66,16 @@ function pauseRegisteredAudio(): void {
       pause();
     } catch (error) {
       logger.warn("[AudioLifecycle] Registered audio pause failed:", error);
+    }
+  }
+}
+
+async function resumeRegisteredAudio(): Promise<void> {
+  for (const resume of [...foregroundResumeHandlers]) {
+    try {
+      await Promise.resolve(resume());
+    } catch (error) {
+      logger.warn("[AudioLifecycle] Registered audio resume failed:", error);
     }
   }
 }
@@ -163,12 +185,15 @@ export function pauseAllAudio(): void {
  * Call this from Capacitor 'resume' event or visibilitychange='visible'.
  */
 export async function resumeAllAudio(): Promise<void> {
-  // Resume events are not user gestures. Re-arm unlock listeners only; playback waits for the next tap/key.
+  // Resume events are not user gestures. Re-arm unlock listeners and let each
+  // opted-in HTML media owner attempt its own policy-safe recovery.
   try {
     armAudioUnlockAfterResume();
   } catch (e) {
     logger.warn("[AudioLifecycle] Failed to re-arm audio unlock on resume:", e);
   }
+
+  await resumeRegisteredAudio();
 
   if (!lifecycleState.wasPlaying || !lifecycleState.soundId) {
     resetLifecycleState();
