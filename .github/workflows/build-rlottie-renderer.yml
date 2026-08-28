@@ -1,0 +1,132 @@
+name: Build isolated rlottie renderer
+
+on:
+  push:
+    branches:
+      - tooling/rlottie-renderer-20260828
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake ninja-build g++
+
+      - name: Build upstream rlottie
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/TelegramMessenger/rlottie.git vendor/rlottie
+          cmake -S vendor/rlottie -B build/rlottie -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DLOTTIE_MODULE=OFF \
+            -DLOTTIE_THREAD=OFF \
+            -DLOTTIE_CACHE=OFF \
+            -DLOTTIE_TEST=OFF \
+            -DCMAKE_INSTALL_PREFIX="$PWD/stage" \
+            -DLIB_INSTALL_DIR=lib
+          cmake --build build/rlottie --target rlottie --parallel 2
+          cmake --install build/rlottie
+
+      - name: Build deterministic raw-frame renderer
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > render.cpp <<'CPP'
+          #include <rlottie.h>
+          #include <cstdint>
+          #include <filesystem>
+          #include <fstream>
+          #include <iomanip>
+          #include <iostream>
+          #include <sstream>
+          #include <string>
+          #include <vector>
+
+          int main(int argc, char** argv) {
+              if (argc < 5 || argc > 7) {
+                  std::cerr << "usage: rlottie-render INPUT_JSON OUTPUT_DIR WIDTH HEIGHT [START_FRAME] [END_FRAME_EXCLUSIVE]\n";
+                  return 64;
+              }
+              const std::string input = argv[1];
+              const std::filesystem::path output = argv[2];
+              const std::size_t width = std::stoul(argv[3]);
+              const std::size_t height = std::stoul(argv[4]);
+              auto animation = rlottie::Animation::loadFromFile(input);
+              if (!animation) {
+                  std::cerr << "rlottie load failed: " << input << "\n";
+                  return 2;
+              }
+              const std::size_t total = animation->totalFrame();
+              const std::size_t start = argc >= 6 ? std::stoul(argv[5]) : 0;
+              const std::size_t end = argc >= 7 ? std::stoul(argv[6]) : total;
+              if (width == 0 || height == 0 || start > end || end > total) {
+                  std::cerr << "invalid render range or dimensions\n";
+                  return 65;
+              }
+              std::filesystem::create_directories(output);
+              std::vector<std::uint32_t> buffer(width * height);
+              for (std::size_t frame = start; frame < end; ++frame) {
+                  std::fill(buffer.begin(), buffer.end(), 0u);
+                  rlottie::Surface surface(buffer.data(), width, height, width * sizeof(std::uint32_t));
+                  animation->renderSync(frame, surface);
+                  std::ostringstream name;
+                  name << "frame_" << std::setw(4) << std::setfill('0') << frame << ".bgra";
+                  std::ofstream stream(output / name.str(), std::ios::binary | std::ios::trunc);
+                  if (!stream) {
+                      std::cerr << "cannot write frame " << frame << "\n";
+                      return 3;
+                  }
+                  stream.write(reinterpret_cast<const char*>(buffer.data()), static_cast<std::streamsize>(buffer.size() * sizeof(std::uint32_t)));
+                  if (!stream) {
+                      std::cerr << "short write for frame " << frame << "\n";
+                      return 4;
+                  }
+              }
+              std::cout << "{\"renderer\":\"rlottie\",\"pixel_format\":\"premultiplied_bgra8888\",\"width\":" << width
+                        << ",\"height\":" << height << ",\"total_frames\":" << total
+                        << ",\"rendered_start\":" << start << ",\"rendered_end_exclusive\":" << end
+                        << ",\"frame_rate\":" << animation->frameRate() << ",\"duration\":" << animation->duration() << "}\n";
+              return 0;
+          }
+          CPP
+          g++ -std=c++17 -O2 -DNDEBUG render.cpp \
+            -I"$PWD/stage/include" -L"$PWD/stage/lib" -lrlottie -pthread -ldl \
+            -Wl,-rpath,'$ORIGIN/lib' -o rlottie-render
+
+      - name: Package and smoke test
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p artifact/lib
+          cp rlottie-render artifact/
+          cp -L stage/lib/librlottie.so* artifact/lib/
+          cp stage/include/rlottie*.h artifact/
+          cat > smoke.json <<'JSON'
+          {"v":"5.7.4","fr":60,"ip":0,"op":2,"w":64,"h":64,"nm":"smoke","ddd":0,"assets":[],"layers":[{"ddd":0,"ind":1,"ty":4,"nm":"square","sr":1,"ks":{"o":{"a":0,"k":100},"r":{"a":0,"k":0},"p":{"a":0,"k":[32,32,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}},"ao":0,"shapes":[{"ty":"gr","it":[{"ty":"sh","ks":{"a":0,"k":{"i":[[0,0],[0,0],[0,0],[0,0]],"o":[[0,0],[0,0],[0,0],[0,0]],"v":[[-12,-12],[12,-12],[12,12],[-12,12]],"c":true}}},{"ty":"fl","c":{"a":0,"k":[1,0,0,1]},"o":{"a":0,"k":100},"r":1},{"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100},"sk":{"a":0,"k":0},"sa":{"a":0,"k":0}}],"nm":"square"}],"ip":0,"op":2,"st":0,"bm":0}]}
+          JSON
+          LD_LIBRARY_PATH="$PWD/artifact/lib" ./artifact/rlottie-render smoke.json smoke-frames 64 64 | tee artifact/build-smoke-output.json
+          test -s smoke-frames/frame_0000.bgra
+          sha256sum artifact/rlottie-render artifact/lib/librlottie.so* > artifact/SHA256SUMS.txt
+          ldd artifact/rlottie-render > artifact/LDD.txt
+          cp vendor/rlottie/COPYING artifact/RLOTTIE_LICENSE.txt
+          cp vendor/rlottie/README.md artifact/RLOTTIE_README.md
+
+      - name: Upload renderer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rlottie-renderer-linux-x86_64
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 1
