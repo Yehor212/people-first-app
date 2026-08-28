@@ -27,6 +27,7 @@ jobs:
         run: |
           set -euxo pipefail
           git clone --depth 1 https://github.com/TelegramMessenger/rlottie.git vendor/rlottie
+          find vendor/rlottie -name CMakeLists.txt -print0 | xargs -0 sed -i 's/-Werror//g'
           cmake -S vendor/rlottie -B build/rlottie -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=ON \
@@ -45,6 +46,7 @@ jobs:
           set -euxo pipefail
           cat > render.cpp <<'CPP'
           #include <rlottie.h>
+          #include <algorithm>
           #include <cstdint>
           #include <filesystem>
           #include <fstream>
