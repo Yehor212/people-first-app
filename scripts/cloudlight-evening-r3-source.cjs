@@ -1,7 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
-const { execFileSync } = require("node:child_process");
+const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -19,6 +19,8 @@ const REVIEW_STATUSES = [
   "RUNTIME_PROMOTION_NOT_ALLOWED",
 ];
 const TEMPO_MICROSECONDS_PER_QUARTER = 1_071_429;
+const INTERNAL_PRIVATE_WRITE_FLAG = "--cloudlight-r3-internal-private-write";
+const ALLOWED_PRIVATE_TARGET_NAMES = new Set(Object.values(SOURCE_PACK_FILES));
 const CANDIDATE_MIX_KEYS = ["padDb", "droneDb", "shimmerDb", "shimmerPanPercent", "pianoDb"];
 const CANONICAL_CANDIDATE_MIXES = {
   "candidate-01": { padDb: -12, droneDb: -21, shimmerDb: -29, shimmerPanPercent: 35, pianoDb: -27 },
@@ -71,6 +73,33 @@ function hasNonEmptyString(object, key) {
 
 function sameStringArray(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function validateJsonSafe(value, seen = new Set()) {
+  try {
+    if (value === null || typeof value === "string" || typeof value === "boolean") return [];
+    if (typeof value === "number") return Number.isFinite(value) ? [] : ["source_not_json_safe"];
+    if (
+      typeof value === "undefined" ||
+      typeof value === "bigint" ||
+      typeof value === "symbol" ||
+      typeof value === "function"
+    ) {
+      return ["source_not_json_safe"];
+    }
+    if (typeof value !== "object") return ["source_not_json_safe"];
+    if (seen.has(value)) return ["source_not_json_safe"];
+    seen.add(value);
+    const children = Array.isArray(value) ? value : Object.values(value);
+    for (const child of children) {
+      const violations = validateJsonSafe(child, seen);
+      if (violations.length > 0) return violations;
+    }
+    seen.delete(value);
+    return [];
+  } catch {
+    return ["source_not_json_safe"];
+  }
 }
 
 function validateTopLevelIdentity(source) {
@@ -252,11 +281,26 @@ function validateCandidateDiffs(candidates) {
     return ["invalid_candidate_count"];
   }
 
-  const ids = candidates.map((candidate) => (isObject(candidate) ? candidate.id : undefined));
-  if (new Set(ids).size !== ids.length) {
+  const candidateKeys = ["id", "mix"];
+  const ids = [];
+  for (const candidate of candidates) {
+    if (!isObject(candidate)) {
+      violations.push("invalid_candidate_mix");
+      continue;
+    }
+    if (!sameStringArray(Object.keys(candidate).sort(), candidateKeys)) {
+      violations.push("candidate_keys_not_canonical");
+    }
+    if (typeof candidate.id !== "string") {
+      violations.push("invalid_candidate_ids");
+      continue;
+    }
+    ids.push(candidate.id);
+  }
+  if (new Set(ids).size !== ids.length || ids.length !== candidates.length) {
     violations.push("duplicate_candidate_id");
   }
-  if (JSON.stringify(ids) !== JSON.stringify(["candidate-01", "candidate-02", "candidate-03"])) {
+  if (!sameStringArray(ids, ["candidate-01", "candidate-02", "candidate-03"])) {
     violations.push("invalid_candidate_ids");
   }
 
@@ -354,22 +398,28 @@ function validateNoExternalAudioInputs(source) {
 }
 
 function validateCloudlightR3Source(source) {
-  if (!isObject(source)) {
-    return ["source_not_an_object"];
-  }
+  const jsonSafetyViolations = validateJsonSafe(source);
+  if (jsonSafetyViolations.length > 0) return jsonSafetyViolations;
+  if (!isObject(source)) return ["source_not_an_object"];
+  const violations = [];
 
-  return [
-    ...validateTopLevelIdentity(source),
-    ...validateTimeline(source),
-    ...validatePianoBoundary(source, 138),
-    ...validateLoopCompatiblePad(
-      Array.isArray(source.harmonicFields) ? source.harmonicFields[0] : undefined,
-      Array.isArray(source.harmonicFields) ? source.harmonicFields.at(-1) : undefined
-    ),
-    ...validateCandidateDiffs(source.candidates),
-    ...validateNoExternalAudioInputs(source),
-    ...validateMetadata(source),
-  ];
+  try {
+    violations.push(
+      ...validateTopLevelIdentity(source),
+      ...validateTimeline(source),
+      ...validatePianoBoundary(source, 138),
+      ...validateLoopCompatiblePad(
+        Array.isArray(source.harmonicFields) ? source.harmonicFields[0] : undefined,
+        Array.isArray(source.harmonicFields) ? source.harmonicFields.at(-1) : undefined
+      ),
+      ...validateCandidateDiffs(source.candidates),
+      ...validateNoExternalAudioInputs(source),
+      ...validateMetadata(source)
+    );
+  } catch {
+    violations.push("source_validation_failed");
+  }
+  return [...new Set(violations)];
 }
 
 function assertValidSource(source) {
@@ -594,112 +644,185 @@ function assertWritableLeaf(filePath) {
   }
 }
 
-function liveDescriptorPath(descriptor) {
-  const output = execFileSync(
-    "/usr/sbin/lsof",
-    ["-Fn", "-a", "-p", String(process.pid), "-d", String(descriptor)],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
-  );
-  const pathLine = output.split("\n").find((line) => line.startsWith("n"));
-  return pathLine ? pathLine.slice(1) : null;
+function privateWriteError(code) {
+  const error = new Error(code);
+  error.code = code;
+  return error;
 }
 
-function removeAnomalousOpenedStage(descriptor) {
+function privateWriteErrorCode(error, fallback) {
+  return error && typeof error.code === "string" ? error.code : fallback;
+}
+
+function anchorPathMatches(expectedDev, expectedIno, anchorPath) {
   try {
-    const openedPath = liveDescriptorPath(descriptor);
-    if (openedPath) fs.rmSync(openedPath, { force: true });
+    const anchor = fs.lstatSync(anchorPath);
+    return anchor.isDirectory() && !anchor.isSymbolicLink() && String(anchor.dev) === expectedDev && String(anchor.ino) === expectedIno;
   } catch {
-    // The caller still closes the descriptor and removes its local stage path.
+    return false;
   }
 }
 
-function assertOpenedStageMatchesPath(descriptor, stagePath, expectedStagePath) {
-  const descriptorStats = fs.fstatSync(descriptor);
-  let stageStats;
-  let resolvedStagePath;
+function writeAnchoredPrivateFileChild({ targetName, expectedDev, expectedIno, anchorPath, fault }) {
+  let descriptor = null;
+  let stageName = null;
+  let primaryError = null;
+  let cleanupError = null;
   try {
-    stageStats = fs.lstatSync(stagePath);
-    resolvedStagePath = fs.realpathSync.native(stagePath);
-  } catch {
-    removeAnomalousOpenedStage(descriptor);
-    throw new Error("Cloudlight R3 atomic write detected an unsafe opened descriptor path");
-  }
-
-  if (
-    !stageStats.isFile() ||
-    stageStats.isSymbolicLink() ||
-    stageStats.nlink !== 1 ||
-    !sameIdentity(descriptorStats, stageStats) ||
-    resolvedStagePath !== expectedStagePath
-  ) {
-    removeAnomalousOpenedStage(descriptor);
-    throw new Error("Cloudlight R3 atomic write detected an unsafe opened descriptor path");
-  }
-}
-
-function closeDescriptorAfterFailure(descriptor) {
-  try {
+    if (
+      !ALLOWED_PRIVATE_TARGET_NAMES.has(targetName) ||
+      path.basename(targetName) !== targetName ||
+      !path.isAbsolute(anchorPath) ||
+      !/^\d+$/.test(expectedDev) ||
+      !/^\d+$/.test(expectedIno) ||
+      !["", "write", "close", "cleanup", "handshake"].includes(fault)
+    ) {
+      throw privateWriteError("PRIVATE_WRITE_INVALID_TARGET");
+    }
+    const anchor = fs.statSync(".");
+    if (!anchor.isDirectory() || String(anchor.dev) !== expectedDev || String(anchor.ino) !== expectedIno) {
+      throw privateWriteError("PRIVATE_WRITE_ANCHOR_MISMATCH");
+    }
+    if (fault === "handshake") {
+      process.stdout.write(`${JSON.stringify({ ok: true, status: "READY" })}\n`);
+    }
+    const contents = fs.readFileSync(0);
+    stageName = `.${targetName}.${process.pid}-${crypto.randomBytes(12).toString("hex")}.stage`;
+    descriptor = fs.openSync(
+      stageName,
+      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | (fs.constants.O_NOFOLLOW ?? 0),
+      0o600
+    );
+    const stageStats = fs.fstatSync(descriptor);
+    if (!stageStats.isFile() || stageStats.nlink !== 1) {
+      throw privateWriteError("PRIVATE_WRITE_STAGE_UNSAFE");
+    }
+    if (fault === "write" || fault === "cleanup") {
+      throw privateWriteError("PRIVATE_WRITE_WRITE_FAILED");
+    }
+    fs.writeFileSync(descriptor, contents);
+    fs.fsyncSync(descriptor);
+    if (fault === "close") throw privateWriteError("PRIVATE_WRITE_CLOSE_FAILED");
     fs.closeSync(descriptor);
-    return;
-  } catch {
-    try {
-      fs.closeSync(descriptor);
-    } catch {
-      // A failed close cannot replace the original controlled write error.
+    descriptor = null;
+    fs.renameSync(stageName, targetName);
+    stageName = null;
+    const finalStats = fs.lstatSync(targetName);
+    if (!finalStats.isFile() || finalStats.isSymbolicLink() || finalStats.nlink !== 1) {
+      throw privateWriteError("PRIVATE_WRITE_FINAL_LEAF_UNSAFE");
+    }
+    if (!anchorPathMatches(expectedDev, expectedIno, anchorPath)) {
+      try {
+        fs.rmSync(targetName, { force: true });
+        if (fs.existsSync(targetName)) throw privateWriteError("PRIVATE_WRITE_CLEANUP_FAILED");
+      } catch {
+        throw privateWriteError("PRIVATE_WRITE_CLEANUP_FAILED");
+      }
+      throw privateWriteError("PRIVATE_WRITE_ANCHOR_MOVED");
+    }
+    return { ok: true, targetName };
+  } catch (error) {
+    primaryError = error;
+  } finally {
+    if (descriptor !== null) {
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        cleanupError = privateWriteError("PRIVATE_WRITE_CLOSE_FAILED");
+      }
+    }
+    if (stageName !== null) {
+      try {
+        if (fault === "cleanup") throw privateWriteError("PRIVATE_WRITE_CLEANUP_FAILED");
+        fs.rmSync(stageName, { force: true });
+        if (fs.existsSync(stageName)) throw privateWriteError("PRIVATE_WRITE_CLEANUP_FAILED");
+      } catch {
+        cleanupError = privateWriteError("PRIVATE_WRITE_CLEANUP_FAILED");
+      }
     }
   }
+  const error = cleanupError ?? primaryError ?? privateWriteError("PRIVATE_WRITE_FAILED");
+  return { ok: false, error: privateWriteErrorCode(error, "PRIVATE_WRITE_FAILED") };
 }
 
-function removeLocalStageAfterFailure(stagePath) {
+function runAnchoredPrivateWriteChild() {
+  const [, targetName, expectedDev, expectedIno, anchorPath, fault = ""] = process.argv.slice(2);
+  const receipt = writeAnchoredPrivateFileChild({ targetName, expectedDev, expectedIno, anchorPath, fault });
+  process.stdout.write(`${JSON.stringify(receipt)}\n`);
+  process.exitCode = receipt.ok ? 0 : 1;
+}
+
+function parseAnchoredPrivateWriteReceipt(result) {
+  if (result.error) {
+    throw new Error(`Cloudlight R3 anchored private write failed: ${result.error.message}`);
+  }
   try {
-    fs.rmSync(stagePath, { force: true });
+    const lines = String(result.stdout ?? "").split("\n").filter(Boolean);
+    const receipt = JSON.parse(lines.at(-1));
+    if (!isObject(receipt) || typeof receipt.ok !== "boolean") throw new Error("invalid receipt");
+    return receipt;
   } catch {
-    // The caller reports the original controlled write error after best-effort cleanup.
+    throw new Error("Cloudlight R3 anchored private write failed: invalid child receipt");
   }
 }
 
 function writePrivateFileAtomically(filePath, contents) {
   const parentPath = path.dirname(filePath);
+  const targetName = path.basename(filePath);
+  if (!ALLOWED_PRIVATE_TARGET_NAMES.has(targetName) || path.basename(targetName) !== targetName) {
+    throw new Error(`Cloudlight R3 output leaf is not allowed: ${targetName}`);
+  }
   const beforeParent = directoryIdentity(parentPath);
   assertWritableLeaf(filePath);
-  const stagePath = path.join(
-    parentPath,
-    `.${path.basename(filePath)}.${process.pid}-${crypto.randomBytes(12).toString("hex")}.stage`
+  const result = spawnSync(
+    process.execPath,
+    [
+      __filename,
+      INTERNAL_PRIVATE_WRITE_FLAG,
+      targetName,
+      String(beforeParent.dev),
+      String(beforeParent.ino),
+      parentPath,
+    ],
+    {
+      cwd: parentPath,
+      input: contents,
+      encoding: "utf8",
+      shell: false,
+      maxBuffer: 1024 * 1024,
+    }
   );
-  const expectedStagePath = path.join(fs.realpathSync.native(parentPath), path.basename(stagePath));
-  const noFollow = fs.constants.O_NOFOLLOW ?? 0;
-  let descriptor = null;
+  let parentUnchanged = false;
   try {
-    if (!sameIdentity(directoryIdentity(parentPath), beforeParent)) {
-      throw new Error(`Cloudlight R3 output parent changed before open: ${parentPath}`);
+    parentUnchanged = sameIdentity(directoryIdentity(parentPath), beforeParent);
+  } catch {
+    parentUnchanged = false;
+  }
+  if (!parentUnchanged) {
+    throw new Error(`Cloudlight R3 output parent changed during anchored write: ${parentPath}`);
+  }
+  const receipt = parseAnchoredPrivateWriteReceipt(result);
+  if (result.status !== 0 || receipt.ok !== true || receipt.targetName !== targetName) {
+    const code = typeof receipt.error === "string" ? receipt.error : "PRIVATE_WRITE_FAILED";
+    throw new Error(`Cloudlight R3 anchored private write failed: ${code}`);
+  }
+  const finalStats = fs.lstatSync(filePath);
+  if (!finalStats.isFile() || finalStats.isSymbolicLink() || finalStats.nlink !== 1) {
+    throw new Error(`Cloudlight R3 output leaf is unsafe after write: ${filePath}`);
+  }
+}
+
+function assertSourcePackInventory(outputDir) {
+  const expected = Object.values(SOURCE_PACK_FILES).sort();
+  const entries = fs.readdirSync(outputDir, { withFileTypes: true });
+  if (!sameStringArray(entries.map((entry) => entry.name).sort(), expected)) {
+    throw new Error(`Cloudlight R3 output inventory is unsafe: ${outputDir}`);
+  }
+  for (const entry of entries) {
+    const stats = fs.lstatSync(path.join(outputDir, entry.name));
+    if (!stats.isFile() || stats.isSymbolicLink() || stats.nlink !== 1) {
+      throw new Error(`Cloudlight R3 output inventory is unsafe: ${outputDir}`);
     }
-    descriptor = fs.openSync(
-      stagePath,
-      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | noFollow,
-      0o600
-    );
-    assertOpenedStageMatchesPath(descriptor, stagePath, expectedStagePath);
-    const stagedStats = fs.fstatSync(descriptor);
-    if (!stagedStats.isFile() || stagedStats.nlink !== 1) {
-      throw new Error(`Cloudlight R3 temporary output is unsafe: ${stagePath}`);
-    }
-    fs.writeFileSync(descriptor, contents);
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
-    descriptor = null;
-    if (!sameIdentity(directoryIdentity(parentPath), beforeParent)) {
-      throw new Error(`Cloudlight R3 output parent changed during write: ${parentPath}`);
-    }
-    fs.renameSync(stagePath, filePath);
-    const finalStats = fs.lstatSync(filePath);
-    if (!finalStats.isFile() || finalStats.isSymbolicLink() || finalStats.nlink !== 1) {
-      throw new Error(`Cloudlight R3 output leaf is unsafe after write: ${filePath}`);
-    }
-  } catch (error) {
-    if (descriptor !== null) closeDescriptorAfterFailure(descriptor);
-    removeLocalStageAfterFailure(stagePath);
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Cloudlight R3 atomic write failed: ${message}`);
   }
 }
 
@@ -761,6 +884,7 @@ function writeCloudlightR3SourcePack({ rootDir, outputDir }) {
   writePrivateFileAtomically(automationPath, automation);
   writePrivateFileAtomically(manifestPath, manifestBuffer);
   writePrivateFileAtomically(readmePath, readme);
+  assertSourcePackInventory(resolvedOutput);
 
   return {
     midiPath,
@@ -779,12 +903,16 @@ function writeCloudlightR3SourcePack({ rootDir, outputDir }) {
   };
 }
 
-module.exports = {
-  TRACK_NAMES,
-  REVIEW_STATUSES,
-  secondsToTicks,
-  loadCloudlightR3Source,
-  validateCloudlightR3Source,
-  encodeCloudlightR3Midi,
-  writeCloudlightR3SourcePack,
-};
+if (require.main === module && process.argv[2] === INTERNAL_PRIVATE_WRITE_FLAG) {
+  runAnchoredPrivateWriteChild();
+} else {
+  module.exports = {
+    TRACK_NAMES,
+    REVIEW_STATUSES,
+    secondsToTicks,
+    loadCloudlightR3Source,
+    validateCloudlightR3Source,
+    encodeCloudlightR3Midi,
+    writeCloudlightR3SourcePack,
+  };
+}

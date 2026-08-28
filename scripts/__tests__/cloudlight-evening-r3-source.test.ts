@@ -5,11 +5,11 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
-  openSync,
   readFileSync,
   readdirSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
@@ -17,6 +17,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
+import { spawn, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const rootDir = process.cwd();
@@ -44,7 +45,6 @@ type CloudlightR3SourceModule = {
   };
 };
 
-const nativeFs = require("node:fs") as typeof import("node:fs");
 const {
   loadCloudlightR3Source,
   validateCloudlightR3Source,
@@ -392,6 +392,83 @@ function sha256(filePath: string): string {
   return createHash("sha256").update(readFileSync(filePath)).digest("hex");
 }
 
+function runAnchoredPrivateWriter(input: {
+  cwd: string;
+  targetName: string;
+  expectedDev: number;
+  expectedIno: number;
+  anchorPath: string;
+  contents: string;
+  fault?: string;
+}) {
+  return spawnSync(
+    process.execPath,
+    [
+      join(rootDir, "scripts/cloudlight-evening-r3-source.cjs"),
+      "--cloudlight-r3-internal-private-write",
+      input.targetName,
+      String(input.expectedDev),
+      String(input.expectedIno),
+      input.anchorPath,
+      input.fault ?? "",
+    ],
+    {
+      cwd: input.cwd,
+      input: input.contents,
+      encoding: "utf8",
+      shell: false,
+    }
+  );
+}
+
+function startAnchoredPrivateWriterHandshake(input: {
+  cwd: string;
+  targetName: string;
+  expectedDev: number;
+  expectedIno: number;
+  anchorPath: string;
+}) {
+  const child = spawn(
+    process.execPath,
+    [
+      join(rootDir, "scripts/cloudlight-evening-r3-source.cjs"),
+      "--cloudlight-r3-internal-private-write",
+      input.targetName,
+      String(input.expectedDev),
+      String(input.expectedIno),
+      input.anchorPath,
+      "handshake",
+    ],
+    { cwd: input.cwd, shell: false, stdio: ["pipe", "pipe", "pipe"] }
+  );
+  let stdout = "";
+  let stderr = "";
+  let ready = false;
+  let resolveReady: () => void;
+  let rejectReady: (error: Error) => void;
+  const readyPromise = new Promise<void>((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+  const completed = new Promise<{ status: number | null; stdout: string; stderr: string }>((resolve) => {
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf8");
+      if (!ready && stdout.split("\n").some((line) => line.includes('"status":"READY"'))) {
+        ready = true;
+        resolveReady();
+      }
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("close", (status) => {
+      if (!ready) rejectReady(new Error(`anchored helper exited before READY: ${status}`));
+      resolve({ status, stdout, stderr });
+    });
+  });
+  return { child, ready: readyPromise, completed };
+}
+
 describe("Cloudlight Evening R3 source contract", () => {
   it("keeps the complete canonical composition and three constrained review mixes", () => {
     const source = JSON.parse(
@@ -659,7 +736,7 @@ describe("Cloudlight Evening R3 source contract", () => {
 
     const nanValue = cloneSource(canonical);
     nanValue.candidates[2].mix.pianoDb = Number.NaN;
-    invalidCandidates.push({ violation: "candidate_mix_values_not_canonical", source: nanValue });
+    invalidCandidates.push({ violation: "source_not_json_safe", source: nanValue });
 
     const wrongAllowedValue = cloneSource(canonical);
     wrongAllowedValue.candidates[1].mix.shimmerDb = -28;
@@ -701,6 +778,13 @@ describe("Cloudlight Evening R3 source contract", () => {
 
       const outputDir = join(fixtureRoot, "output/private/pack");
       const first = writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir });
+
+      const unexpectedLeaf = join(outputDir, "unexpected.txt");
+      writeFileSync(unexpectedLeaf, "UNEXPECTED\n");
+      expect(() => writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir })).toThrow(
+        "output inventory is unsafe"
+      );
+      unlinkSync(unexpectedLeaf);
 
       unlinkSync(first.midiPath);
       symlinkSync(outsidePath, first.midiPath);
@@ -833,79 +917,171 @@ describe("Cloudlight Evening R3 source contract", () => {
 
     for (const source of [bigintSource, cyclicSource]) {
       expect(() => validateCloudlightR3Source(source)).not.toThrow();
-      expect(validateCloudlightR3Source(source)).toContain("invalid_pad_midi");
-      expect(() => encodeCloudlightR3Midi(source)).toThrow("invalid_pad_midi");
+      expect(validateCloudlightR3Source(source)).toContain("source_not_json_safe");
+      expect(() => encodeCloudlightR3Midi(source)).toThrow("source_not_json_safe");
     }
   });
 
-  it("cleans injected write and close failures, then rejects a swapped parent before writing", () => {
-    const canonical = loadCloudlightR3Source(rootDir);
-    const fixtureRoot = sourceFixtureRoot(canonical);
-    const outsideRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-swap-outside-"));
-    const outputDir = join(fixtureRoot, "output/private/pack");
-    const originalWriteFileSync = nativeFs.writeFileSync;
-    const originalCloseSync = nativeFs.closeSync;
-    const originalOpenSync = nativeFs.openSync;
-    try {
-      let injectedDescriptor: number | null = null;
-      let closeFailuresRemaining = 1;
-      nativeFs.writeFileSync = ((target: Parameters<typeof writeFileSync>[0], ...args: unknown[]) => {
-        if (typeof target === "number") {
-          injectedDescriptor = target;
-          throw new Error("injected write failure");
-        }
-        return (originalWriteFileSync as (...arguments_: unknown[]) => unknown)(target, ...args);
-      }) as typeof nativeFs.writeFileSync;
-      nativeFs.closeSync = ((descriptor: number) => {
-        if (descriptor === injectedDescriptor && closeFailuresRemaining > 0) {
-          closeFailuresRemaining -= 1;
-          throw new Error("injected close failure");
-        }
-        return originalCloseSync(descriptor);
-      }) as typeof nativeFs.closeSync;
-      expect(() => writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir })).toThrow(
-        "injected write failure"
-      );
-      expect(readdirSync(outputDir).filter((name) => name.includes(".stage"))).toEqual([]);
-      nativeFs.writeFileSync = originalWriteFileSync;
-      nativeFs.closeSync = originalCloseSync;
-      writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir });
-      expect(readdirSync(outputDir).sort()).toEqual([
-        "README.md",
-        "automation.json",
-        "cloudlight-evening-r3.mid",
-        "source-manifest.json",
-      ]);
+  it("rejects non-JSON-safe candidate data before encoding or creating output", () => {
+    const canonical = loadCloudlightR3Source(rootDir) as {
+      candidates: Array<{ id: unknown; mix: Record<string, number>; extra?: unknown }>;
+    };
+    const bigintId = cloneSource(canonical);
+    bigintId.candidates[0].id = BigInt(1);
+    const cyclicId = cloneSource(canonical);
+    const cyclicIdentifier: { self?: unknown } = {};
+    cyclicIdentifier.self = cyclicIdentifier;
+    cyclicId.candidates[1].id = cyclicIdentifier;
+    const cyclicExtra = cloneSource(canonical);
+    const cyclicSubtree: { self?: unknown } = {};
+    cyclicSubtree.self = cyclicSubtree;
+    cyclicExtra.candidates[2].extra = cyclicSubtree;
+    const jsonSafeExtra = cloneSource(canonical);
+    jsonSafeExtra.candidates[2].extra = "unsupported";
 
-      const outputPath = join(fixtureRoot, "output");
-      const savedOutputPath = join(fixtureRoot, "saved-output");
-      mkdirSync(join(outsideRoot, "private/pack"), { recursive: true });
-      writeFileSync(join(outsideRoot, "sentinel.txt"), "OUTSIDE_SENTINEL\n");
-      renameSync(outputPath, savedOutputPath);
-      nativeFs.openSync = ((filePath: Parameters<typeof openSync>[0], ...args: unknown[]) => {
-        if (typeof filePath === "string" && filePath.endsWith(".stage")) {
-          rmSync(outputPath, { recursive: true, force: true });
-          symlinkSync(outsideRoot, outputPath, "dir");
-          const descriptor = (originalOpenSync as (...arguments_: unknown[]) => number)(filePath, ...args);
-          unlinkSync(outputPath);
-          renameSync(savedOutputPath, outputPath);
-          return descriptor;
-        }
-        return (originalOpenSync as (...arguments_: unknown[]) => number)(filePath, ...args);
-      }) as typeof nativeFs.openSync;
+    for (const source of [bigintId, cyclicId, cyclicExtra]) {
+      expect(() => validateCloudlightR3Source(source)).not.toThrow();
+      expect(validateCloudlightR3Source(source)).toContain("source_not_json_safe");
+      expect(() => encodeCloudlightR3Midi(source)).toThrow("source_not_json_safe");
+    }
+    for (const unsupportedId of [Symbol("candidate"), () => undefined, undefined, Number.POSITIVE_INFINITY]) {
+      const source = cloneSource(canonical);
+      source.candidates[0].id = unsupportedId;
+      expect(() => validateCloudlightR3Source(source)).not.toThrow();
+      expect(validateCloudlightR3Source(source)).toContain("source_not_json_safe");
+      expect(() => encodeCloudlightR3Midi(source)).toThrow("source_not_json_safe");
+    }
+    expect(validateCloudlightR3Source(jsonSafeExtra)).toContain("candidate_keys_not_canonical");
+    expect(() => encodeCloudlightR3Midi(jsonSafeExtra)).toThrow("candidate_keys_not_canonical");
+
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-json-safe-"));
+    const outputDir = join(fixtureRoot, "output/private/pack");
+    mkdirSync(join(fixtureRoot, "config/audio"), { recursive: true });
+    const nonFiniteCandidateId = JSON.stringify(canonical).replace('"candidate-01"', "1e999");
+    writeFileSync(join(fixtureRoot, "config/audio/cloudlight-evening-r3-source.json"), nonFiniteCandidateId);
+    try {
       expect(() => writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir })).toThrow(
-        "unsafe opened descriptor path"
+        "source_not_json_safe"
       );
-      nativeFs.openSync = originalOpenSync;
-      expect(readFileSync(join(outsideRoot, "sentinel.txt"), "utf8")).toBe("OUTSIDE_SENTINEL\n");
-      expect(readdirSync(join(outsideRoot, "private/pack"))).toEqual([]);
-      expect(readdirSync(outputDir).filter((name) => name.includes(".stage"))).toEqual([]);
+      expect(existsSync(join(fixtureRoot, "output"))).toBe(false);
     } finally {
-      nativeFs.writeFileSync = originalWriteFileSync;
-      nativeFs.closeSync = originalCloseSync;
-      nativeFs.openSync = originalOpenSync;
       rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("anchors internal private writes to the expected directory inode and reports child failures", async () => {
+    const anchorRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-anchor-"));
+    const outsideRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-anchor-outside-"));
+    const originalAnchor = join(anchorRoot, "original-anchor");
+    const movedAnchor = join(anchorRoot, "moved-anchor");
+    const symlinkPath = join(anchorRoot, "symlink-anchor");
+    mkdirSync(originalAnchor);
+    const expected = statSync(originalAnchor);
+    renameSync(originalAnchor, movedAnchor);
+    try {
+      const normal = runAnchoredPrivateWriter({
+        cwd: movedAnchor,
+        targetName: "README.md",
+        expectedDev: expected.dev,
+        expectedIno: expected.ino,
+        anchorPath: movedAnchor,
+        contents: "ANCHORED_BYTES\n",
+      });
+      expect(normal.status).toBe(0);
+      expect(JSON.parse(normal.stdout)).toMatchObject({ ok: true, targetName: "README.md" });
+      expect(readFileSync(join(movedAnchor, "README.md"), "utf8")).toBe("ANCHORED_BYTES\n");
+
+      const traversal = runAnchoredPrivateWriter({
+        cwd: movedAnchor,
+        targetName: "../outside.txt",
+        expectedDev: expected.dev,
+        expectedIno: expected.ino,
+        anchorPath: movedAnchor,
+        contents: "TRAVERSAL_FORBIDDEN\n",
+      });
+      expect(traversal.status).not.toBe(0);
+      expect(JSON.parse(traversal.stdout)).toMatchObject({ ok: false, error: "PRIVATE_WRITE_INVALID_TARGET" });
+      expect(existsSync(join(anchorRoot, "outside.txt"))).toBe(false);
+
+      symlinkSync(outsideRoot, symlinkPath, "dir");
+      const swappedPath = runAnchoredPrivateWriter({
+        cwd: symlinkPath,
+        targetName: "automation.json",
+        expectedDev: expected.dev,
+        expectedIno: expected.ino,
+        anchorPath: movedAnchor,
+        contents: "OUTSIDE_FORBIDDEN\n",
+      });
+      expect(swappedPath.status).not.toBe(0);
+      expect(JSON.parse(swappedPath.stdout)).toMatchObject({
+        ok: false,
+        error: "PRIVATE_WRITE_ANCHOR_MISMATCH",
+      });
+      expect(existsSync(join(outsideRoot, "automation.json"))).toBe(false);
+
+      const bound = startAnchoredPrivateWriterHandshake({
+        cwd: movedAnchor,
+        targetName: "automation.json",
+        expectedDev: expected.dev,
+        expectedIno: expected.ino,
+        anchorPath: movedAnchor,
+      });
+      try {
+        await bound.ready;
+        const relocatedAnchor = join(anchorRoot, "relocated-anchor");
+        renameSync(movedAnchor, relocatedAnchor);
+        symlinkSync(outsideRoot, movedAnchor, "dir");
+        bound.child.stdin.end("POST_BIND_BYTES\n");
+        const completed = await bound.completed;
+        expect(completed.status).not.toBe(0);
+        expect(completed.stderr).toBe("");
+        expect(completed.stdout.split("\n").filter(Boolean).map((line) => JSON.parse(line)).at(-1)).toMatchObject({
+          ok: false,
+          error: "PRIVATE_WRITE_ANCHOR_MOVED",
+        });
+        expect(existsSync(join(relocatedAnchor, "automation.json"))).toBe(false);
+        expect(readdirSync(relocatedAnchor).filter((name) => name.includes(".stage"))).toEqual([]);
+        expect(existsSync(join(outsideRoot, "automation.json"))).toBe(false);
+        unlinkSync(movedAnchor);
+        renameSync(relocatedAnchor, movedAnchor);
+      } finally {
+        if (bound.child.exitCode === null) {
+          bound.child.kill("SIGKILL");
+          await bound.completed;
+        }
+      }
+
+      for (const fault of ["write", "close"]) {
+        const result = runAnchoredPrivateWriter({
+          cwd: movedAnchor,
+          targetName: "source-manifest.json",
+          expectedDev: expected.dev,
+          expectedIno: expected.ino,
+          anchorPath: movedAnchor,
+          contents: "FAULT\n",
+          fault,
+        });
+        expect(result.status).not.toBe(0);
+        expect(JSON.parse(result.stdout)).toMatchObject({ ok: false, error: `PRIVATE_WRITE_${fault.toUpperCase()}_FAILED` });
+        expect(readdirSync(movedAnchor).filter((name) => name.includes(".stage"))).toEqual([]);
+      }
+
+      const cleanup = runAnchoredPrivateWriter({
+        cwd: movedAnchor,
+        targetName: "cloudlight-evening-r3.mid",
+        expectedDev: expected.dev,
+        expectedIno: expected.ino,
+        anchorPath: movedAnchor,
+        contents: "CLEANUP\n",
+        fault: "cleanup",
+      });
+      expect(cleanup.status).not.toBe(0);
+      expect(JSON.parse(cleanup.stdout)).toMatchObject({ ok: false, error: "PRIVATE_WRITE_CLEANUP_FAILED" });
+      expect(readdirSync(movedAnchor).filter((name) => name.includes(".stage"))).toHaveLength(1);
+    } finally {
+      rmSync(anchorRoot, { recursive: true, force: true });
       rmSync(outsideRoot, { recursive: true, force: true });
     }
   });
+
 });
