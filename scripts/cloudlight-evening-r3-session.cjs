@@ -4,14 +4,25 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { spawnSync } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 
 const SOURCE_CONFIG_RELATIVE_PATH = "config/audio/cloudlight-evening-r3-source.json";
 const SOURCE_PACK_RELATIVE_ROOT = "output/private/cloudlight-evening-r3/source";
 const GARAGEBAND_RELATIVE_ROOT = "output/private/cloudlight-evening-r3/garageband";
 const RENDERS_RELATIVE_ROOT = "output/private/cloudlight-evening-r3/renders";
 const RECEIPTS_RELATIVE_ROOT = "output/private/cloudlight-evening-r3/receipts";
+const VISUAL_EVIDENCE_RELATIVE_ROOT = "output/private/cloudlight-evening-r3/evidence/garageband";
 const INTERNAL_RECEIPT_WRITE_FLAG = "--cloudlight-r3-internal-receipt-write";
+const RECEIPT_COORDINATION_TIMEOUT_MS = 5000;
+const RECEIPT_COORDINATION_POLL_MS = 5;
+const RECEIPT_COORDINATION_PREFIX = "cloudlight-r3-receipt-";
+const RECEIPT_COORDINATION_FILES = Object.freeze({
+  input: "input.bin",
+  published: "published.json",
+  decision: "decision.json",
+  result: "result.json",
+});
+const RECEIPT_COORDINATION_SLEEP = new Int32Array(new SharedArrayBuffer(4));
 
 const EXPECTED_SOURCE_HASHES = Object.freeze({
   config: "61839d7a72a18fe7b632396db56d2b4fb70ee087a814819a77ac83d6dde1a8ff",
@@ -31,13 +42,21 @@ const PROJECT_NAMES = Object.freeze({
 });
 
 const RENDER_NAMES = Object.freeze({
-  "candidate-01": Object.freeze([
-    "candidate-01-linear.wav",
-    "candidate-01-linear-rerender.wav",
-  ]),
+  "candidate-01": Object.freeze(["candidate-01-linear.wav", "candidate-01-linear-rerender.wav"]),
   "candidate-02": Object.freeze(["candidate-02-linear.wav"]),
   "candidate-03": Object.freeze(["candidate-03-linear.wav"]),
 });
+
+const COMMON_VISUAL_EVIDENCE = Object.freeze([
+  Object.freeze(["export-settings", "export-settings.png"]),
+  Object.freeze(["project-overview-0-00", "project-overview-0-00.png"]),
+  Object.freeze(["track-inventory", "track-inventory.png"]),
+  Object.freeze(["instrument-identities", "instrument-identities.png"]),
+  Object.freeze(["reverb-controls", "reverb-controls.png"]),
+  Object.freeze(["no-audio-regions", "no-audio-regions.png"]),
+  Object.freeze(["piano-2-05", "piano-2-05.png"]),
+  Object.freeze(["fade-2-30-to-2-46", "fade-2-30-to-2-46.png"]),
+]);
 
 const ALLOWED_RECEIPT_NAMES = new Set([
   "candidate-01-linear-session-receipt.json",
@@ -53,6 +72,9 @@ const SOURCE_PACK_INVENTORY = Object.freeze([
   "source-manifest.json",
 ]);
 
+const MODULE_REPOSITORY_REAL_ROOT = fs.realpathSync.native(path.join(__dirname, ".."));
+const SYSTEM_TEMPORARY_REAL_ROOT = fs.realpathSync.native(os.tmpdir());
+
 const canonicalSource = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", SOURCE_CONFIG_RELATIVE_PATH), "utf8")
 );
@@ -65,8 +87,7 @@ function deepFreeze(value) {
 
 const DEFAULT_GARAGEBAND_PATHS = deepFreeze({
   infoPlistPath: "/Applications/GarageBand.app/Contents/Info.plist",
-  licensePath:
-    "/Applications/GarageBand.app/Contents/Resources/GarageBand License Agreement.pdf",
+  licensePath: "/Applications/GarageBand.app/Contents/Resources/GarageBand License Agreement.pdf",
   pianoInstrumentPath: canonicalSource.garageBand.pianoInstrument,
   pianoSamplesPath: canonicalSource.garageBand.pianoSamples,
   padPresetPath: canonicalSource.garageBand.padPreset,
@@ -113,6 +134,10 @@ function sameStringSet(actual, expected) {
   const left = [...actual].sort();
   const right = [...expected].sort();
   return left.every((value, index) => value === right[index]);
+}
+
+function compareUtf8Bytes(left, right) {
+  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
 }
 
 function readFileHash(filePath, prefix, options = {}) {
@@ -361,9 +386,9 @@ function isStrictDescendant(basePath, targetPath) {
   const relative = path.relative(basePath, targetPath);
   return Boolean(
     relative &&
-      relative !== ".." &&
-      !relative.startsWith(`..${path.sep}`) &&
-      !path.isAbsolute(relative)
+    relative !== ".." &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
   );
 }
 
@@ -390,10 +415,7 @@ function assertDirectoryChain(root, directoryPath, prefix = "PRIVATE_ANCESTOR") 
     if (!stats.isDirectory()) fail(`${prefix}_NOT_DIRECTORY`, current);
   }
   const realDirectory = fs.realpathSync.native(resolvedDirectory);
-  if (
-    realDirectory !== root.realRoot &&
-    !isStrictDescendant(root.realRoot, realDirectory)
-  ) {
+  if (realDirectory !== root.realRoot && !isStrictDescendant(root.realRoot, realDirectory)) {
     fail(`${prefix}_PATH_ESCAPE`, resolvedDirectory);
   }
   return { resolvedDirectory, realDirectory };
@@ -524,8 +546,14 @@ function inspectProject(root, projectPath, candidateId) {
     fail("PROJECT_PATH_ESCAPE", resolvedProject);
   }
   const expectedProjectName = PROJECT_NAMES[candidateId];
-  if (path.basename(resolvedProject) !== expectedProjectName || path.extname(resolvedProject) !== ".band") {
+  if (
+    path.basename(resolvedProject) !== expectedProjectName ||
+    path.extname(resolvedProject) !== ".band"
+  ) {
     fail("PROJECT_NAME_MISMATCH", resolvedProject);
+  }
+  if (resolvedProject !== path.join(garageBandDirectory, expectedProjectName)) {
+    fail("PROJECT_PATH_NOT_DIRECT", resolvedProject);
   }
 
   let projectStats;
@@ -556,7 +584,7 @@ function inspectProject(root, projectPath, candidateId) {
   let totalBytes = 0;
 
   function visit(directoryPath, relativeDirectory) {
-    const names = fs.readdirSync(directoryPath).sort((left, right) => left.localeCompare(right, "en"));
+    const names = fs.readdirSync(directoryPath).sort(compareUtf8Bytes);
     for (const name of names) {
       const absoluteEntry = path.join(directoryPath, name);
       const relativeEntry = relativeDirectory ? `${relativeDirectory}/${name}` : name;
@@ -583,7 +611,7 @@ function inspectProject(root, projectPath, candidateId) {
   }
 
   visit(resolvedProject, "");
-  inventory.sort((left, right) => left.path.localeCompare(right.path, "en"));
+  inventory.sort((left, right) => compareUtf8Bytes(left.path, right.path));
   if (totalBytes === 0) fail("PROJECT_EMPTY", resolvedProject);
   const treeBytes = Buffer.from(`${JSON.stringify(inventory)}\n`);
   return {
@@ -595,8 +623,16 @@ function inspectProject(root, projectPath, candidateId) {
 }
 
 function inspectRenders(root, renderPaths, candidateId) {
-  if (!Array.isArray(renderPaths) || renderPaths.length === 0) {
+  if (!Array.isArray(renderPaths) || renderPaths.length !== 1) {
     fail("RENDER_COUNT_INVALID", "exactly one render path is required");
+  }
+  if (
+    !Object.prototype.hasOwnProperty.call(renderPaths, 0) ||
+    typeof renderPaths[0] !== "string" ||
+    !renderPaths[0].trim() ||
+    !path.isAbsolute(renderPaths[0])
+  ) {
+    fail("RENDER_PATH_INVALID", "renderPaths[0]");
   }
   const allowedNames = RENDER_NAMES[candidateId];
   const rendersDirectory = path.join(root.resolvedRoot, RENDERS_RELATIVE_ROOT);
@@ -604,10 +640,6 @@ function inspectRenders(root, renderPaths, candidateId) {
   const resolvedPaths = renderPaths.map((filePath) => path.resolve(filePath));
   if (new Set(resolvedPaths).size !== resolvedPaths.length) {
     fail("RENDER_DUPLICATE", "duplicate render path");
-  }
-
-  if (renderPaths.length !== 1) {
-    fail("RENDER_COUNT_INVALID", "exactly one render path is required");
   }
 
   const names = resolvedPaths.map((filePath) => path.basename(filePath));
@@ -618,6 +650,9 @@ function inspectRenders(root, renderPaths, candidateId) {
   const records = resolvedPaths.map((resolvedPath) => {
     if (!isStrictDescendant(rendersDirectory, resolvedPath)) {
       fail("RENDER_PATH_ESCAPE", resolvedPath);
+    }
+    if (resolvedPath !== path.join(rendersDirectory, path.basename(resolvedPath))) {
+      fail("RENDER_PATH_NOT_DIRECT", resolvedPath);
     }
     const record = readFileHash(resolvedPath, "RENDER");
     const realRender = fs.realpathSync.native(resolvedPath);
@@ -633,8 +668,83 @@ function inspectRenders(root, renderPaths, candidateId) {
 
   return records.sort(
     (left, right) =>
-      allowedNames.indexOf(path.basename(left.path)) - allowedNames.indexOf(path.basename(right.path))
+      allowedNames.indexOf(path.basename(left.path)) -
+      allowedNames.indexOf(path.basename(right.path))
   );
+}
+
+function requiredVisualEvidence(candidateId) {
+  return [
+    ...COMMON_VISUAL_EVIDENCE,
+    Object.freeze(["candidate-mixer", `${candidateId}-mixer.png`]),
+  ];
+}
+
+function inspectVisualEvidence(root, visualEvidencePaths, candidateId) {
+  const requiredEvidence = requiredVisualEvidence(candidateId);
+  if (
+    !Array.isArray(visualEvidencePaths) ||
+    visualEvidencePaths.length !== requiredEvidence.length
+  ) {
+    fail(
+      "VISUAL_EVIDENCE_COUNT_INVALID",
+      `exactly ${requiredEvidence.length} evidence paths are required`
+    );
+  }
+  for (let index = 0; index < visualEvidencePaths.length; index += 1) {
+    if (
+      !Object.prototype.hasOwnProperty.call(visualEvidencePaths, index) ||
+      typeof visualEvidencePaths[index] !== "string" ||
+      !visualEvidencePaths[index].trim() ||
+      !path.isAbsolute(visualEvidencePaths[index])
+    ) {
+      fail("VISUAL_EVIDENCE_PATH_INVALID", `visualEvidencePaths[${index}]`);
+    }
+  }
+
+  const evidenceDirectory = path.join(root.resolvedRoot, VISUAL_EVIDENCE_RELATIVE_ROOT);
+  const { realDirectory: realEvidenceDirectory } = assertDirectoryChain(
+    root,
+    evidenceDirectory,
+    "VISUAL_EVIDENCE_ANCESTOR"
+  );
+  const requiredNames = requiredEvidence.map(([, name]) => name);
+  const recordsByName = new Map();
+  for (const filePath of visualEvidencePaths) {
+    const resolvedPath = path.resolve(filePath);
+    if (!isStrictDescendant(evidenceDirectory, resolvedPath)) {
+      fail("VISUAL_EVIDENCE_PATH_ESCAPE", resolvedPath);
+    }
+    const evidenceName = path.basename(resolvedPath);
+    if (!requiredNames.includes(evidenceName)) {
+      fail("VISUAL_EVIDENCE_NAME_MISMATCH", evidenceName);
+    }
+    if (resolvedPath !== path.join(evidenceDirectory, evidenceName)) {
+      fail("VISUAL_EVIDENCE_PATH_NOT_DIRECT", resolvedPath);
+    }
+    if (recordsByName.has(evidenceName)) {
+      fail("VISUAL_EVIDENCE_DUPLICATE", evidenceName);
+    }
+    const record = readFileHash(resolvedPath, "VISUAL_EVIDENCE");
+    const realEvidencePath = fs.realpathSync.native(resolvedPath);
+    if (!isStrictDescendant(realEvidenceDirectory, realEvidencePath)) {
+      fail("VISUAL_EVIDENCE_PATH_ESCAPE", resolvedPath);
+    }
+    recordsByName.set(evidenceName, record);
+  }
+
+  if (!sameStringSet([...recordsByName.keys()], requiredNames)) {
+    fail("VISUAL_EVIDENCE_NAME_MISMATCH", evidenceDirectory);
+  }
+  return requiredEvidence.map(([role, name]) => {
+    const record = recordsByName.get(name);
+    return {
+      role,
+      path: toRootRelative(root, record.path),
+      bytes: record.bytes,
+      sha256: record.sha256,
+    };
+  });
 }
 
 function directoryIdentity(directoryPath) {
@@ -685,12 +795,222 @@ function receiptAnchorPathMatches(expectedDev, expectedIno, anchorPath) {
   }
 }
 
+function assertReceiptCoordinationDirectory(directoryPath) {
+  if (typeof directoryPath !== "string" || !path.isAbsolute(directoryPath)) {
+    throw receiptWriteError("RECEIPT_COORDINATION_DIRECTORY_INVALID");
+  }
+  let stats;
+  let realDirectory;
+  try {
+    stats = fs.lstatSync(directoryPath);
+    realDirectory = fs.realpathSync.native(directoryPath);
+  } catch {
+    throw receiptWriteError("RECEIPT_COORDINATION_DIRECTORY_INVALID");
+  }
+  const currentUid = typeof process.getuid === "function" ? process.getuid() : null;
+  if (
+    stats.isSymbolicLink() ||
+    !stats.isDirectory() ||
+    currentUid === null ||
+    stats.uid !== currentUid ||
+    (stats.mode & 0o777) !== 0o700 ||
+    !isStrictDescendant(SYSTEM_TEMPORARY_REAL_ROOT, realDirectory)
+  ) {
+    throw receiptWriteError("RECEIPT_COORDINATION_DIRECTORY_INVALID");
+  }
+  return realDirectory;
+}
+
+function coordinationFilePath(directoryPath, fileName) {
+  if (!Object.values(RECEIPT_COORDINATION_FILES).includes(fileName)) {
+    throw receiptWriteError("RECEIPT_COORDINATION_FILE_INVALID");
+  }
+  return path.join(directoryPath, fileName);
+}
+
+function writePrivateCoordinationFile(directoryPath, fileName, contents) {
+  assertReceiptCoordinationDirectory(directoryPath);
+  const targetPath = coordinationFilePath(directoryPath, fileName);
+  const stagePath = path.join(
+    directoryPath,
+    `.${fileName}.${process.pid}-${crypto.randomBytes(12).toString("hex")}.stage`
+  );
+  let descriptor = null;
+  let stageExists = false;
+  try {
+    try {
+      fs.lstatSync(targetPath);
+      throw receiptWriteError("RECEIPT_COORDINATION_FILE_EXISTS");
+    } catch (error) {
+      if (!error || error.code !== "ENOENT") throw error;
+    }
+    descriptor = fs.openSync(
+      stagePath,
+      fs.constants.O_CREAT |
+        fs.constants.O_EXCL |
+        fs.constants.O_WRONLY |
+        (fs.constants.O_NOFOLLOW ?? 0),
+      0o600
+    );
+    stageExists = true;
+    fs.writeFileSync(descriptor, contents);
+    fs.fsyncSync(descriptor);
+    const stageStats = fs.fstatSync(descriptor);
+    const currentUid = typeof process.getuid === "function" ? process.getuid() : null;
+    if (
+      !stageStats.isFile() ||
+      stageStats.nlink !== 1 ||
+      currentUid === null ||
+      stageStats.uid !== currentUid ||
+      (stageStats.mode & 0o777) !== 0o600
+    ) {
+      throw receiptWriteError("RECEIPT_COORDINATION_FILE_INVALID");
+    }
+    fs.closeSync(descriptor);
+    descriptor = null;
+    fs.linkSync(stagePath, targetPath);
+    fs.unlinkSync(stagePath);
+    stageExists = false;
+  } catch (error) {
+    if (error && typeof error.code === "string" && error.code.startsWith("RECEIPT_")) {
+      throw error;
+    }
+    throw receiptWriteError("RECEIPT_COORDINATION_WRITE_FAILED");
+  } finally {
+    if (descriptor !== null) {
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        // The named write failure below remains fail-closed.
+      }
+    }
+    if (stageExists) {
+      try {
+        fs.unlinkSync(stagePath);
+      } catch {
+        // The private coordination directory is removed by the parent cleanup path.
+      }
+    }
+  }
+}
+
+function readPrivateCoordinationFile(directoryPath, fileName, { required = false } = {}) {
+  assertReceiptCoordinationDirectory(directoryPath);
+  const filePath = coordinationFilePath(directoryPath, fileName);
+  let initial;
+  try {
+    initial = fs.lstatSync(filePath);
+  } catch (error) {
+    if (error && error.code === "ENOENT" && !required) return null;
+    throw receiptWriteError("RECEIPT_COORDINATION_READ_FAILED");
+  }
+  const currentUid = typeof process.getuid === "function" ? process.getuid() : null;
+  if (
+    initial.isSymbolicLink() ||
+    !initial.isFile() ||
+    initial.nlink !== 1 ||
+    initial.size <= 0 ||
+    initial.size > 1024 * 1024 ||
+    currentUid === null ||
+    initial.uid !== currentUid ||
+    (initial.mode & 0o777) !== 0o600
+  ) {
+    throw receiptWriteError("RECEIPT_COORDINATION_FILE_INVALID");
+  }
+  let descriptor = null;
+  try {
+    descriptor = fs.openSync(filePath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    const opened = fs.fstatSync(descriptor);
+    if (
+      !opened.isFile() ||
+      opened.dev !== initial.dev ||
+      opened.ino !== initial.ino ||
+      opened.size !== initial.size ||
+      opened.nlink !== 1
+    ) {
+      throw receiptWriteError("RECEIPT_COORDINATION_FILE_CHANGED");
+    }
+    const contents = fs.readFileSync(descriptor);
+    const after = fs.fstatSync(descriptor);
+    if (
+      after.dev !== initial.dev ||
+      after.ino !== initial.ino ||
+      after.size !== initial.size ||
+      contents.length !== initial.size
+    ) {
+      throw receiptWriteError("RECEIPT_COORDINATION_FILE_CHANGED");
+    }
+    return contents;
+  } catch (error) {
+    if (error && typeof error.code === "string" && error.code.startsWith("RECEIPT_")) {
+      throw error;
+    }
+    throw receiptWriteError("RECEIPT_COORDINATION_READ_FAILED");
+  } finally {
+    if (descriptor !== null) {
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        throw receiptWriteError("RECEIPT_COORDINATION_CLOSE_FAILED");
+      }
+    }
+  }
+}
+
+function writeCoordinationJson(directoryPath, fileName, value) {
+  writePrivateCoordinationFile(
+    directoryPath,
+    fileName,
+    Buffer.from(`${JSON.stringify(value)}\n`, "utf8")
+  );
+}
+
+function readCoordinationJson(directoryPath, fileName, options) {
+  const contents = readPrivateCoordinationFile(directoryPath, fileName, options);
+  if (contents === null) return null;
+  try {
+    const value = JSON.parse(contents.toString("utf8"));
+    if (!isPlainObject(value)) throw new Error("not an object");
+    return value;
+  } catch {
+    throw receiptWriteError("RECEIPT_COORDINATION_JSON_INVALID");
+  }
+}
+
+function waitForCoordinationRecord(directoryPath, fileNames, deadline) {
+  while (Date.now() <= deadline) {
+    for (const fileName of fileNames) {
+      const value = readCoordinationJson(directoryPath, fileName);
+      if (value !== null) return { fileName, value };
+    }
+    Atomics.wait(RECEIPT_COORDINATION_SLEEP, 0, 0, RECEIPT_COORDINATION_POLL_MS);
+  }
+  return null;
+}
+
+function cleanupReceiptCoordinationDirectory(directoryPath) {
+  try {
+    assertReceiptCoordinationDirectory(directoryPath);
+    for (const entryName of fs.readdirSync(directoryPath)) {
+      const entryPath = path.join(directoryPath, entryName);
+      const stats = fs.lstatSync(entryPath);
+      if (stats.isDirectory()) throw new Error("nested directory");
+      fs.unlinkSync(entryPath);
+    }
+    fs.rmdirSync(directoryPath);
+  } catch {
+    throw receiptWriteError("RECEIPT_COORDINATION_CLEANUP_FAILED");
+  }
+}
+
 function writeAnchoredReceiptChild({
   targetName,
   expectedDev,
   expectedIno,
   anchorPath,
   fault,
+  contentsOverride,
+  afterPublish,
 }) {
   let descriptor = null;
   let stageName = null;
@@ -722,7 +1042,10 @@ function writeAnchoredReceiptChild({
     if (fault === "handshake") {
       process.stdout.write(`${JSON.stringify({ ok: true, status: "READY" })}\n`);
     }
-    const contents = fs.readFileSync(0);
+    const contents = Buffer.isBuffer(contentsOverride) ? contentsOverride : fs.readFileSync(0);
+    if (contents.length === 0 || contents.length > 1024 * 1024) {
+      throw receiptWriteError("RECEIPT_WRITE_CONTENTS_INVALID");
+    }
     stageName = `.${targetName}.${process.pid}-${crypto.randomBytes(12).toString("hex")}.stage`;
     descriptor = fs.openSync(
       stageName,
@@ -775,6 +1098,7 @@ function writeAnchoredReceiptChild({
       targetCreated = false;
       throw receiptWriteError("RECEIPT_WRITE_ANCHOR_MOVED");
     }
+    if (typeof afterPublish === "function") afterPublish();
     targetCreated = false;
     return { ok: true, targetName };
   } catch (error) {
@@ -815,32 +1139,112 @@ function writeAnchoredReceiptChild({
   return { ok: false, error: receiptWriteErrorCode(error, "RECEIPT_WRITE_FAILED") };
 }
 
+function runCoordinatedReceiptChild({
+  targetName,
+  expectedDev,
+  expectedIno,
+  anchorPath,
+  fault,
+  coordinationDirectory,
+  nonce,
+}) {
+  if (!/^[a-f0-9]{64}$/.test(nonce)) {
+    return { ok: false, error: "RECEIPT_COORDINATION_NONCE_INVALID" };
+  }
+  try {
+    assertReceiptCoordinationDirectory(coordinationDirectory);
+    const contents = readPrivateCoordinationFile(
+      coordinationDirectory,
+      RECEIPT_COORDINATION_FILES.input,
+      { required: true }
+    );
+    return writeAnchoredReceiptChild({
+      targetName,
+      expectedDev,
+      expectedIno,
+      anchorPath,
+      fault,
+      contentsOverride: contents,
+      afterPublish() {
+        writeCoordinationJson(coordinationDirectory, RECEIPT_COORDINATION_FILES.published, {
+          nonce,
+          status: "PUBLISHED",
+          targetName,
+        });
+        const decisionRecord = waitForCoordinationRecord(
+          coordinationDirectory,
+          [RECEIPT_COORDINATION_FILES.decision],
+          Date.now() + RECEIPT_COORDINATION_TIMEOUT_MS
+        );
+        if (!decisionRecord) {
+          throw receiptWriteError("RECEIPT_WRITE_DECISION_TIMEOUT");
+        }
+        const decision = decisionRecord.value;
+        if (
+          decision.nonce !== nonce ||
+          decision.targetName !== targetName ||
+          !["ACK", "NACK"].includes(decision.decision)
+        ) {
+          throw receiptWriteError("RECEIPT_COORDINATION_DECISION_INVALID");
+        }
+        if (decision.decision === "NACK") {
+          throw receiptWriteError("RECEIPT_WRITE_ANCHOR_MOVED");
+        }
+        if (!receiptAnchorPathMatches(expectedDev, expectedIno, anchorPath)) {
+          throw receiptWriteError("RECEIPT_WRITE_ANCHOR_MOVED");
+        }
+      },
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      error: receiptWriteErrorCode(error, "RECEIPT_WRITE_CHILD_FAILED"),
+    };
+  }
+}
+
 function runAnchoredReceiptChild() {
-  const [, targetName, expectedDev, expectedIno, anchorPath, fault = ""] = process.argv.slice(2);
-  const receipt = writeAnchoredReceiptChild({
+  const [
+    ,
     targetName,
     expectedDev,
     expectedIno,
     anchorPath,
-    fault,
-  });
+    fault = "",
+    coordinationDirectory = "",
+    nonce = "",
+  ] = process.argv.slice(2);
+  const coordinated = Boolean(coordinationDirectory || nonce);
+  const receipt = coordinated
+    ? runCoordinatedReceiptChild({
+        targetName,
+        expectedDev,
+        expectedIno,
+        anchorPath,
+        fault,
+        coordinationDirectory,
+        nonce,
+      })
+    : writeAnchoredReceiptChild({
+        targetName,
+        expectedDev,
+        expectedIno,
+        anchorPath,
+        fault,
+      });
+  if (coordinated) {
+    try {
+      writeCoordinationJson(coordinationDirectory, RECEIPT_COORDINATION_FILES.result, {
+        nonce,
+        ...receipt,
+      });
+    } catch (error) {
+      receipt.ok = false;
+      receipt.error = receiptWriteErrorCode(error, "RECEIPT_COORDINATION_WRITE_FAILED");
+    }
+  }
   process.stdout.write(`${JSON.stringify(receipt)}\n`);
   process.exitCode = receipt.ok ? 0 : 1;
-}
-
-function parseAnchoredReceiptChildResult(result) {
-  if (result.error) fail("RECEIPT_WRITE_CHILD_FAILED", result.error.message);
-  try {
-    const lines = String(result.stdout ?? "").split("\n").filter(Boolean);
-    const receipt = JSON.parse(lines.at(-1));
-    if (!isPlainObject(receipt) || typeof receipt.ok !== "boolean") {
-      fail("RECEIPT_WRITE_CHILD_INVALID", "invalid receipt");
-    }
-    return receipt;
-  } catch (error) {
-    if (error && typeof error.code === "string") throw error;
-    fail("RECEIPT_WRITE_CHILD_INVALID", "invalid receipt");
-  }
 }
 
 function ensureReceiptDirectory(root, targetLeafName) {
@@ -888,6 +1292,132 @@ function ensureReceiptDirectory(root, targetLeafName) {
   return receiptDirectory;
 }
 
+function createReceiptCoordination(contents) {
+  let coordinationDirectory = null;
+  try {
+    coordinationDirectory = fs.mkdtempSync(
+      path.join(SYSTEM_TEMPORARY_REAL_ROOT, RECEIPT_COORDINATION_PREFIX)
+    );
+    fs.chmodSync(coordinationDirectory, 0o700);
+    assertReceiptCoordinationDirectory(coordinationDirectory);
+    const nonce = crypto.randomBytes(32).toString("hex");
+    writePrivateCoordinationFile(coordinationDirectory, RECEIPT_COORDINATION_FILES.input, contents);
+    return { coordinationDirectory, nonce };
+  } catch (error) {
+    if (coordinationDirectory !== null) {
+      try {
+        cleanupReceiptCoordinationDirectory(coordinationDirectory);
+      } catch {
+        // Preserve the primary creation failure.
+      }
+    }
+    if (error && typeof error.code === "string" && error.code.startsWith("RECEIPT_")) {
+      throw error;
+    }
+    throw receiptWriteError("RECEIPT_COORDINATION_CREATE_FAILED");
+  }
+}
+
+function validateCoordinationMessage(value, nonce, expected) {
+  if (!isPlainObject(value) || value.nonce !== nonce) {
+    fail("RECEIPT_COORDINATION_MESSAGE_INVALID", expected);
+  }
+  return value;
+}
+
+function runCoordinatedReceiptWrite(receiptDirectory, leafName, beforeDirectory, contents) {
+  const { coordinationDirectory, nonce } = createReceiptCoordination(contents);
+  let child = null;
+  let protocolComplete = false;
+  try {
+    child = spawn(
+      process.execPath,
+      [
+        __filename,
+        INTERNAL_RECEIPT_WRITE_FLAG,
+        leafName,
+        String(beforeDirectory.dev),
+        String(beforeDirectory.ino),
+        receiptDirectory,
+        "",
+        coordinationDirectory,
+        nonce,
+      ],
+      {
+        cwd: receiptDirectory,
+        shell: false,
+        stdio: "ignore",
+      }
+    );
+    child.on("error", () => {});
+    if (!Number.isInteger(child.pid) || child.pid <= 0) {
+      fail("RECEIPT_WRITE_CHILD_FAILED", receiptDirectory);
+    }
+
+    const deadline = Date.now() + RECEIPT_COORDINATION_TIMEOUT_MS;
+    const firstRecord = waitForCoordinationRecord(
+      coordinationDirectory,
+      [RECEIPT_COORDINATION_FILES.result, RECEIPT_COORDINATION_FILES.published],
+      deadline
+    );
+    if (!firstRecord) fail("RECEIPT_WRITE_CHILD_TIMEOUT", receiptDirectory);
+
+    if (firstRecord.fileName === RECEIPT_COORDINATION_FILES.result) {
+      const earlyResult = validateCoordinationMessage(firstRecord.value, nonce, "early result");
+      protocolComplete = true;
+      const code =
+        typeof earlyResult.error === "string" ? earlyResult.error : "RECEIPT_WRITE_CHILD_FAILED";
+      fail(code, receiptDirectory);
+    }
+
+    const published = validateCoordinationMessage(firstRecord.value, nonce, "published");
+    if (published.status !== "PUBLISHED" || published.targetName !== leafName) {
+      fail("RECEIPT_COORDINATION_MESSAGE_INVALID", "published");
+    }
+
+    let directoryUnchanged = false;
+    try {
+      directoryUnchanged = sameIdentity(directoryIdentity(receiptDirectory), beforeDirectory);
+    } catch {
+      directoryUnchanged = false;
+    }
+    writeCoordinationJson(coordinationDirectory, RECEIPT_COORDINATION_FILES.decision, {
+      nonce,
+      targetName: leafName,
+      decision: directoryUnchanged ? "ACK" : "NACK",
+    });
+
+    const resultRecord = waitForCoordinationRecord(
+      coordinationDirectory,
+      [RECEIPT_COORDINATION_FILES.result],
+      Date.now() + RECEIPT_COORDINATION_TIMEOUT_MS
+    );
+    if (!resultRecord) fail("RECEIPT_WRITE_CHILD_TIMEOUT", receiptDirectory);
+    const result = validateCoordinationMessage(resultRecord.value, nonce, "result");
+    protocolComplete = true;
+    if (!directoryUnchanged) {
+      if (result.ok !== false || result.error !== "RECEIPT_WRITE_ANCHOR_MOVED") {
+        fail("RECEIPT_COORDINATION_RESULT_INVALID", receiptDirectory);
+      }
+      fail("RECEIPT_WRITE_ANCHOR_MOVED", receiptDirectory);
+    }
+    if (result.ok !== true || result.targetName !== leafName) {
+      const code = typeof result.error === "string" ? result.error : "RECEIPT_WRITE_FAILED";
+      fail(code, receiptDirectory);
+    }
+    return result;
+  } finally {
+    if (!protocolComplete && child !== null && child.exitCode === null) {
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        // Cleanup below remains mandatory and named.
+      }
+    }
+    cleanupReceiptCoordinationDirectory(coordinationDirectory);
+  }
+}
+
 function writeReceiptAtomically(root, leafName, contents) {
   if (!ALLOWED_RECEIPT_NAMES.has(leafName) || path.basename(leafName) !== leafName) {
     fail("RECEIPT_WRITE_INVALID_TARGET", leafName);
@@ -902,38 +1432,7 @@ function writeReceiptAtomically(root, leafName, contents) {
     if (!error || error.code !== "ENOENT") throw error;
   }
 
-  const result = spawnSync(
-    process.execPath,
-    [
-      __filename,
-      INTERNAL_RECEIPT_WRITE_FLAG,
-      leafName,
-      String(beforeDirectory.dev),
-      String(beforeDirectory.ino),
-      receiptDirectory,
-    ],
-    {
-      cwd: receiptDirectory,
-      input: contents,
-      encoding: "utf8",
-      shell: false,
-      maxBuffer: 1024 * 1024,
-    }
-  );
-  const childReceipt = parseAnchoredReceiptChildResult(result);
-
-  let directoryUnchanged = false;
-  try {
-    directoryUnchanged = sameIdentity(directoryIdentity(receiptDirectory), beforeDirectory);
-  } catch {
-    directoryUnchanged = false;
-  }
-  if (result.status !== 0 || childReceipt.ok !== true || childReceipt.targetName !== leafName) {
-    const code =
-      typeof childReceipt.error === "string" ? childReceipt.error : "RECEIPT_WRITE_FAILED";
-    fail(code, receiptPath);
-  }
-  if (!directoryUnchanged) fail("RECEIPT_WRITE_ANCHOR_MOVED", receiptDirectory);
+  runCoordinatedReceiptWrite(receiptDirectory, leafName, beforeDirectory, contents);
 
   const finalStats = fs.lstatSync(receiptPath);
   if (
@@ -961,12 +1460,56 @@ function receiptLeafName(renders) {
   return `${path.basename(renders[0].path, ".wav")}-session-receipt.json`;
 }
 
+function inspectAdmittedEnvironment(root, input) {
+  const hasExplicitPaths = Object.prototype.hasOwnProperty.call(input, "garageBandPaths");
+  if (!hasExplicitPaths) {
+    if (root.realRoot !== MODULE_REPOSITORY_REAL_ROOT) {
+      fail("TASK4_ROOT_NOT_CANONICAL", root.realRoot);
+    }
+    const environment = inspectGarageBandEnvironment(DEFAULT_GARAGEBAND_PATHS);
+    if (environment.identitySource !== "LOCAL_SYSTEM") {
+      fail("TASK4_ENVIRONMENT_NOT_LOCAL", environment.identitySource);
+    }
+    return {
+      environment,
+      receiptKind: "TASK4_LOCAL_EVIDENCE",
+      environmentAdmissionStatus: "LOCAL_CANONICAL_HASH_BOUND",
+    };
+  }
+
+  if (!isStrictDescendant(SYSTEM_TEMPORARY_REAL_ROOT, root.realRoot)) {
+    fail("FIXTURE_ROOT_NOT_TEMP", root.realRoot);
+  }
+  if (
+    !isPlainObject(input.garageBandPaths) ||
+    !Object.prototype.hasOwnProperty.call(input.garageBandPaths, "systemIdentity")
+  ) {
+    fail("ENVIRONMENT_OVERRIDE_NOT_TEST_FIXTURE", "systemIdentity");
+  }
+  const environment = inspectGarageBandEnvironment(input.garageBandPaths);
+  if (environment.identitySource !== "UNIT_TEST_FIXTURE") {
+    fail("ENVIRONMENT_OVERRIDE_NOT_TEST_FIXTURE", environment.identitySource);
+  }
+  for (const key of ENVIRONMENT_PATH_KEYS) {
+    const realResourcePath = fs.realpathSync.native(input.garageBandPaths[key]);
+    if (!isStrictDescendant(root.realRoot, realResourcePath)) {
+      fail("FIXTURE_RESOURCE_OUTSIDE_ROOT", input.garageBandPaths[key]);
+    }
+  }
+  return {
+    environment,
+    receiptKind: "TEST_ONLY_NOT_ADMITTED",
+    environmentAdmissionStatus: "TEST_ONLY_NOT_ADMITTED",
+  };
+}
+
 function writeGarageBandSessionReceipt(input) {
   if (!isPlainObject(input)) fail("SESSION_INPUT_INVALID", "input");
   const allowedKeys = [
     "rootDir",
     "projectPath",
     "renderPaths",
+    "visualEvidencePaths",
     "candidateId",
     "garageBandPaths",
   ];
@@ -982,16 +1525,17 @@ function writeGarageBandSessionReceipt(input) {
     fail("PROJECT_PATH_INVALID", String(input.projectPath));
   }
 
+  const admission = inspectAdmittedEnvironment(root, input);
   const sourcePack = inspectSourcePack(root);
   const candidate = selectCandidate(sourcePack.source, input.candidateId);
-  const environment = inspectGarageBandEnvironment(
-    input.garageBandPaths ?? DEFAULT_GARAGEBAND_PATHS
-  );
   const project = inspectProject(root, input.projectPath, input.candidateId);
   const renders = inspectRenders(root, input.renderPaths, input.candidateId);
+  const visualEvidence = inspectVisualEvidence(root, input.visualEvidencePaths, input.candidateId);
 
   const serializableReceipt = {
     schemaVersion: 1,
+    receiptKind: admission.receiptKind,
+    environmentAdmissionStatus: admission.environmentAdmissionStatus,
     sourceId: sourcePack.source.id,
     candidateId: input.candidateId,
     mixId: candidate.id,
@@ -1000,17 +1544,22 @@ function writeGarageBandSessionReceipt(input) {
     externalAudioRegions: [],
     runtimePromotionStatus: "NOT_ALLOWED",
     ownerArtisticStatus: "UNVERIFIED",
-    environment,
+    projectSemanticVerificationStatus: "UNVERIFIED",
+    mixApplicationVerificationStatus: "UNVERIFIED",
+    visualEvidenceStatus: "HASH_BOUND_NOT_SEMANTICALLY_VERIFIED",
+    claimBasis: {
+      declaredValues: "CANONICAL_SOURCE_DECLARATION_HASH_BOUND",
+      bundleInspection: "STRUCTURAL_INVENTORY_AND_EMPTY_MEDIA_AUDIO_FILES_ONLY",
+      garageBandUiState: "UNVERIFIED_REQUIRES_HUMAN_CONTROLLER_REVIEW",
+    },
+    environment: admission.environment,
     source: sourcePack.receipt,
     project,
     renders,
+    visualEvidence,
   };
   const receiptBytes = Buffer.from(`${JSON.stringify(serializableReceipt, null, 2)}\n`);
-  const receiptPath = writeReceiptAtomically(
-    root,
-    receiptLeafName(renders),
-    receiptBytes
-  );
+  const receiptPath = writeReceiptAtomically(root, receiptLeafName(renders), receiptBytes);
   return {
     ...serializableReceipt,
     receiptPath,

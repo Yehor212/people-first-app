@@ -46,12 +46,15 @@ type GarageBandEnvironment = {
   architecture: string;
   macOSVersion: string;
   macOSBuild: string;
+  identitySource: string;
   infoPlist: { path: string; bytes: number; sha256: string };
   files: Array<{ role: string; path: string; bytes: number; sha256: string }>;
 };
 
 type SessionReceipt = {
   schemaVersion: number;
+  receiptKind: string;
+  environmentAdmissionStatus: string;
   sourceId: string;
   candidateId: string;
   mixId: string;
@@ -60,6 +63,14 @@ type SessionReceipt = {
   externalAudioRegions: unknown[];
   runtimePromotionStatus: string;
   ownerArtisticStatus: string;
+  projectSemanticVerificationStatus: string;
+  mixApplicationVerificationStatus: string;
+  visualEvidenceStatus: string;
+  claimBasis: {
+    declaredValues: string;
+    bundleInspection: string;
+    garageBandUiState: string;
+  };
   environment: GarageBandEnvironment;
   source: {
     config: { sha256: string; bytes: number };
@@ -74,6 +85,7 @@ type SessionReceipt = {
     inventory: Array<{ path: string; type: string; bytes?: number; sha256?: string }>;
   };
   renders: Array<{ path: string; bytes: number; sha256: string }>;
+  visualEvidence: Array<{ role: string; path: string; bytes: number; sha256: string }>;
   receiptPath: string;
   receiptBytes: number;
   receiptSha256: string;
@@ -86,16 +98,14 @@ type SessionModule = {
     rootDir: string;
     projectPath: string;
     renderPaths: string[];
+    visualEvidencePaths: string[];
     candidateId: string;
     garageBandPaths?: GarageBandPaths;
   }) => SessionReceipt;
 };
 
-const {
-  DEFAULT_GARAGEBAND_PATHS,
-  inspectGarageBandEnvironment,
-  writeGarageBandSessionReceipt,
-} = require("../cloudlight-evening-r3-session.cjs") as SessionModule;
+const { DEFAULT_GARAGEBAND_PATHS, inspectGarageBandEnvironment, writeGarageBandSessionReceipt } =
+  require("../cloudlight-evening-r3-session.cjs") as SessionModule;
 const mutableNodeFs = require("node:fs") as typeof import("node:fs");
 
 const createdRoots: string[] = [];
@@ -187,6 +197,7 @@ type SessionFixture = {
   rootDir: string;
   projectPath: string;
   renderPaths: string[];
+  visualEvidencePaths: string[];
   candidateId: string;
   garageBandPaths: GarageBandPaths;
 };
@@ -196,13 +207,15 @@ function createGarageBandSessionFixture({
   candidateId = "candidate-01",
   renderName,
   reverseProjectInsertion = false,
+  rootDirOverride,
 }: {
   label?: string;
   candidateId?: string;
   renderName?: string;
   reverseProjectInsertion?: boolean;
+  rootDirOverride?: string;
 } = {}): SessionFixture {
-  const rootDir = makeTemporaryDirectory(label);
+  const rootDir = rootDirOverride ?? makeTemporaryDirectory(label);
   copyCanonicalSourcePack(rootDir);
   const suffix = candidateId.slice(-2);
   const projectPath = join(
@@ -225,14 +238,41 @@ function createGarageBandSessionFixture({
   }
 
   const resolvedRenderName = renderName ?? `${candidateId}-linear.wav`;
-  const renderPath = join(rootDir, "output/private/cloudlight-evening-r3/renders", resolvedRenderName);
+  const renderPath = join(
+    rootDir,
+    "output/private/cloudlight-evening-r3/renders",
+    resolvedRenderName
+  );
   mkdirSync(dirname(renderPath), { recursive: true });
   writeFileSync(renderPath, `RIFF-${resolvedRenderName}\n`);
+
+  const visualEvidenceDirectory = join(
+    rootDir,
+    "output/private/cloudlight-evening-r3/evidence/garageband"
+  );
+  mkdirSync(visualEvidenceDirectory, { recursive: true });
+  const visualEvidenceNames = [
+    "export-settings.png",
+    "project-overview-0-00.png",
+    "track-inventory.png",
+    "instrument-identities.png",
+    "reverb-controls.png",
+    "no-audio-regions.png",
+    "piano-2-05.png",
+    "fade-2-30-to-2-46.png",
+    `${candidateId}-mixer.png`,
+  ];
+  const visualEvidencePaths = visualEvidenceNames.map((name) => {
+    const evidencePath = join(visualEvidenceDirectory, name);
+    writeFileSync(evidencePath, `PNG-${name}\n`);
+    return evidencePath;
+  });
 
   return {
     rootDir,
     projectPath,
     renderPaths: [renderPath],
+    visualEvidencePaths,
     candidateId,
     garageBandPaths: makeGarageBandPaths(rootDir),
   };
@@ -383,6 +423,8 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
 
     expect(receipt).toMatchObject({
       schemaVersion: 1,
+      receiptKind: "TEST_ONLY_NOT_ADMITTED",
+      environmentAdmissionStatus: "TEST_ONLY_NOT_ADMITTED",
       sourceId: "cloudlight-evening-r3",
       candidateId: "candidate-01",
       mixId: "candidate-01",
@@ -397,6 +439,14 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
       externalAudioRegions: [],
       runtimePromotionStatus: "NOT_ALLOWED",
       ownerArtisticStatus: "UNVERIFIED",
+      projectSemanticVerificationStatus: "UNVERIFIED",
+      mixApplicationVerificationStatus: "UNVERIFIED",
+      visualEvidenceStatus: "HASH_BOUND_NOT_SEMANTICALLY_VERIFIED",
+      claimBasis: {
+        declaredValues: "CANONICAL_SOURCE_DECLARATION_HASH_BOUND",
+        bundleInspection: "STRUCTURAL_INVENTORY_AND_EMPTY_MEDIA_AUDIO_FILES_ONLY",
+        garageBandUiState: "UNVERIFIED_REQUIRES_HUMAN_CONTROLLER_REVIEW",
+      },
     });
     expect(receipt.source.config.sha256).toBe(EXPECTED_SOURCE_HASHES.config);
     expect(receipt.source.midi.sha256).toBe(EXPECTED_SOURCE_HASHES.midi);
@@ -420,6 +470,17 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
       path: "output/private/cloudlight-evening-r3/renders/candidate-01-linear.wav",
       sha256: sha256("RIFF-candidate-01-linear.wav\n"),
     });
+    expect(receipt.visualEvidence.map((row) => row.path)).toEqual([
+      "output/private/cloudlight-evening-r3/evidence/garageband/export-settings.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/project-overview-0-00.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/track-inventory.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/instrument-identities.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/reverb-controls.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/no-audio-regions.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/piano-2-05.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/fade-2-30-to-2-46.png",
+      "output/private/cloudlight-evening-r3/evidence/garageband/candidate-01-mixer.png",
+    ]);
     expect(receipt.receiptPath).toBe(
       join(receiptDirectory(fixture.rootDir), "candidate-01-linear-session-receipt.json")
     );
@@ -436,6 +497,126 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
       ...serializableReceipt
     } = receipt;
     expect(persistedReceipt).toEqual(serializableReceipt);
+  });
+
+  it("hash-binds the exact visual evidence set without claiming GarageBand semantics", () => {
+    const valid = createGarageBandSessionFixture({ label: "visual-evidence-valid" });
+    valid.visualEvidencePaths.reverse();
+    const receipt = writeGarageBandSessionReceipt(valid);
+    expect(receipt.visualEvidenceStatus).toBe("HASH_BOUND_NOT_SEMANTICALLY_VERIFIED");
+    expect(receipt.projectSemanticVerificationStatus).toBe("UNVERIFIED");
+    expect(receipt.mixApplicationVerificationStatus).toBe("UNVERIFIED");
+    expect(receipt.claimBasis).toEqual({
+      declaredValues: "CANONICAL_SOURCE_DECLARATION_HASH_BOUND",
+      bundleInspection: "STRUCTURAL_INVENTORY_AND_EMPTY_MEDIA_AUDIO_FILES_ONLY",
+      garageBandUiState: "UNVERIFIED_REQUIRES_HUMAN_CONTROLLER_REVIEW",
+    });
+    expect(receipt.visualEvidence).toHaveLength(9);
+    expect(receipt.visualEvidence.every((row) => row.bytes > 0)).toBe(true);
+    expect(receipt.visualEvidence.every((row) => /^[a-f0-9]{64}$/.test(row.sha256))).toBe(true);
+
+    for (const [label, malformedValue] of [
+      ["null", null],
+      ["bigint", 1n],
+      ["object", {}],
+      ["undefined", undefined],
+    ] as const) {
+      const malformed = createGarageBandSessionFixture({ label: `visual-evidence-${label}` });
+      malformed.visualEvidencePaths[0] = malformedValue as unknown as string;
+      expectNamedFailure(malformed, "VISUAL_EVIDENCE_PATH_INVALID");
+    }
+    const sparse = createGarageBandSessionFixture({ label: "visual-evidence-sparse" });
+    sparse.visualEvidencePaths = Array(9);
+    expectNamedFailure(sparse, "VISUAL_EVIDENCE_PATH_INVALID");
+
+    const missing = createGarageBandSessionFixture({ label: "visual-evidence-missing" });
+    missing.visualEvidencePaths.pop();
+    expectNamedFailure(missing, "VISUAL_EVIDENCE_COUNT_INVALID");
+
+    const wrongName = createGarageBandSessionFixture({ label: "visual-evidence-name" });
+    const renamedEvidence = join(dirname(wrongName.visualEvidencePaths[0]), "wrong-name.png");
+    renameSync(wrongName.visualEvidencePaths[0], renamedEvidence);
+    wrongName.visualEvidencePaths[0] = renamedEvidence;
+    expectNamedFailure(wrongName, "VISUAL_EVIDENCE_NAME_MISMATCH");
+
+    const nested = createGarageBandSessionFixture({ label: "visual-evidence-nested" });
+    const nestedEvidence = join(
+      dirname(nested.visualEvidencePaths[0]),
+      "nested",
+      basename(nested.visualEvidencePaths[0])
+    );
+    mkdirSync(dirname(nestedEvidence), { recursive: true });
+    renameSync(nested.visualEvidencePaths[0], nestedEvidence);
+    nested.visualEvidencePaths[0] = nestedEvidence;
+    expectNamedFailure(nested, "VISUAL_EVIDENCE_PATH_NOT_DIRECT");
+
+    const symlinked = createGarageBandSessionFixture({ label: "visual-evidence-symlink" });
+    const evidenceTarget = join(makeTemporaryDirectory("visual-evidence-outside"), "evidence.png");
+    writeFileSync(evidenceTarget, "OUTSIDE-EVIDENCE\n");
+    unlinkSync(symlinked.visualEvidencePaths[0]);
+    symlinkSync(evidenceTarget, symlinked.visualEvidencePaths[0]);
+    expectNamedFailure(symlinked, "VISUAL_EVIDENCE_SYMLINK");
+  });
+
+  it("documents the exact visual evidence and fail-closed GarageBand boundaries", () => {
+    const runbook = readFileSync(
+      join(repositoryRoot, "docs/audio/cloudlight-evening-r3-production-runbook.md"),
+      "utf8"
+    );
+    for (const evidenceName of [
+      "export-settings.png",
+      "project-overview-0-00.png",
+      "track-inventory.png",
+      "instrument-identities.png",
+      "reverb-controls.png",
+      "no-audio-regions.png",
+      "piano-2-05.png",
+      "fade-2-30-to-2-46.png",
+      "candidate-01-mixer.png",
+      "candidate-02-mixer.png",
+      "candidate-03-mixer.png",
+    ]) {
+      expect(runbook).toContain(evidenceName);
+    }
+    expect(runbook).toContain("projectSemanticVerificationStatus: UNVERIFIED");
+    expect(runbook).toContain("mixApplicationVerificationStatus: UNVERIFIED");
+    expect(runbook).toContain("visualEvidenceStatus: HASH_BOUND_NOT_SEMANTICALLY_VERIFIED");
+    expect(runbook).toContain(
+      "If GarageBand does not visibly expose any named reverb control needed for those exact values, stop"
+    );
+    expect(runbook).toContain(
+      "If 48 kHz, 24-bit output, or normalization-off is not actually available and visible, stop"
+    );
+  });
+
+  it("admits fixture receipts only under one disposable temp root and marks them non-admitted", () => {
+    const positive = createGarageBandSessionFixture({ label: "fixture-admission-positive" });
+    expect(writeGarageBandSessionReceipt(positive)).toMatchObject({
+      receiptKind: "TEST_ONLY_NOT_ADMITTED",
+      environmentAdmissionStatus: "TEST_ONLY_NOT_ADMITTED",
+      environment: { identitySource: "UNIT_TEST_FIXTURE" },
+    });
+
+    const repositoryPrivateRoot = mkdtempSync(
+      join(repositoryRoot, "output/private/cloudlight-r3-session-repository-fixture-")
+    );
+    createdRoots.push(repositoryPrivateRoot);
+    const repositoryFixture = createGarageBandSessionFixture({
+      label: "repository-fixture",
+      rootDirOverride: repositoryPrivateRoot,
+    });
+    expectNamedFailure(repositoryFixture, "FIXTURE_ROOT_NOT_TEMP");
+
+    const omittedOverride = createGarageBandSessionFixture({ label: "omitted-override" });
+    const { garageBandPaths: _omittedPaths, ...withoutOverride } = omittedOverride;
+    expect(() => writeGarageBandSessionReceipt(withoutOverride)).toThrow(
+      /TASK4_ROOT_NOT_CANONICAL/
+    );
+    expect(existsSync(receiptDirectory(omittedOverride.rootDir))).toBe(false);
+
+    const localOverride = createGarageBandSessionFixture({ label: "local-override" });
+    localOverride.garageBandPaths = { ...DEFAULT_GARAGEBAND_PATHS };
+    expectNamedFailure(localOverride, "ENVIRONMENT_OVERRIDE_NOT_TEST_FIXTURE");
   });
 
   it("binds four separate Task 4 receipts for all mixes and the candidate-01 rerender", () => {
@@ -581,13 +762,19 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
     expectNamedFailure(ancestorFixture, "PRIVATE_ANCESTOR_SYMLINK");
 
     const projectFixture = createGarageBandSessionFixture({ label: "project-symlink" });
-    const movedProject = join(makeTemporaryDirectory("project-outside"), basename(projectFixture.projectPath));
+    const movedProject = join(
+      makeTemporaryDirectory("project-outside"),
+      basename(projectFixture.projectPath)
+    );
     renameSync(projectFixture.projectPath, movedProject);
     symlinkSync(movedProject, projectFixture.projectPath);
     expectNamedFailure(projectFixture, "PROJECT_SYMLINK");
 
     const renderFixture = createGarageBandSessionFixture({ label: "render-symlink" });
-    const movedRender = join(makeTemporaryDirectory("render-outside"), basename(renderFixture.renderPaths[0]));
+    const movedRender = join(
+      makeTemporaryDirectory("render-outside"),
+      basename(renderFixture.renderPaths[0])
+    );
     renameSync(renderFixture.renderPaths[0], movedRender);
     symlinkSync(movedRender, renderFixture.renderPaths[0]);
     expectNamedFailure(renderFixture, "RENDER_SYMLINK");
@@ -595,7 +782,10 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
 
   it("rejects project escapes, hardlinks, and populated GarageBand Audio Files", () => {
     const escaped = createGarageBandSessionFixture({ label: "project-escape" });
-    const outsideProject = join(makeTemporaryDirectory("project-escape-outside"), basename(escaped.projectPath));
+    const outsideProject = join(
+      makeTemporaryDirectory("project-escape-outside"),
+      basename(escaped.projectPath)
+    );
     mkdirSync(outsideProject, { recursive: true });
     writeFileSync(join(outsideProject, "ProjectData"), "OUTSIDE\n");
     expectNamedFailure({ ...escaped, projectPath: outsideProject }, "PROJECT_PATH_ESCAPE");
@@ -608,6 +798,34 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
     const populated = createGarageBandSessionFixture({ label: "audio-files" });
     writeFileSync(join(populated.projectPath, "Media/Audio Files/imported.wav"), "AUDIO\n");
     expectNamedFailure(populated, "PROJECT_AUDIO_FILES_POPULATED");
+  });
+
+  it("accepts project and render artifacts only at their exact direct private paths", () => {
+    const nestedProject = createGarageBandSessionFixture({ label: "nested-direct-project" });
+    const nestedProjectPath = join(
+      dirname(nestedProject.projectPath),
+      "nested",
+      basename(nestedProject.projectPath)
+    );
+    mkdirSync(dirname(nestedProjectPath), { recursive: true });
+    renameSync(nestedProject.projectPath, nestedProjectPath);
+    expectNamedFailure(
+      { ...nestedProject, projectPath: nestedProjectPath },
+      "PROJECT_PATH_NOT_DIRECT"
+    );
+
+    const nestedRender = createGarageBandSessionFixture({ label: "nested-direct-render" });
+    const nestedRenderPath = join(
+      dirname(nestedRender.renderPaths[0]),
+      "nested",
+      basename(nestedRender.renderPaths[0])
+    );
+    mkdirSync(dirname(nestedRenderPath), { recursive: true });
+    renameSync(nestedRender.renderPaths[0], nestedRenderPath);
+    expectNamedFailure(
+      { ...nestedRender, renderPaths: [nestedRenderPath] },
+      "RENDER_PATH_NOT_DIRECT"
+    );
   });
 
   it("rejects nested project symlinks, non-regular leaves, and empty files", () => {
@@ -658,14 +876,17 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
     expectNamedFailure(hardlinked, "RENDER_HARDLINK");
 
     const escaped = createGarageBandSessionFixture({ label: "render-escape" });
-    const outsideRender = join(makeTemporaryDirectory("render-escape-outside"), "candidate-01-linear.wav");
+    const outsideRender = join(
+      makeTemporaryDirectory("render-escape-outside"),
+      "candidate-01-linear.wav"
+    );
     writeFileSync(outsideRender, "RIFF-OUTSIDE\n");
     expectNamedFailure({ ...escaped, renderPaths: [outsideRender] }, "RENDER_PATH_ESCAPE");
 
     const duplicated = createGarageBandSessionFixture({ label: "render-duplicate" });
     expectNamedFailure(
       { ...duplicated, renderPaths: [duplicated.renderPaths[0], duplicated.renderPaths[0]] },
-      "RENDER_DUPLICATE"
+      "RENDER_COUNT_INVALID"
     );
 
     const wrongName = createGarageBandSessionFixture({
@@ -681,10 +902,29 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
     expectNamedFailure({ ...wrongId, candidateId: "candidate-04" }, "CANDIDATE_ID_INVALID");
   });
 
+  it("totally rejects malformed and sparse render arrays with a named violation", () => {
+    const invalidValues: unknown[] = [null, BigInt(1), {}, undefined];
+    for (const [index, invalidValue] of invalidValues.entries()) {
+      const fixture = createGarageBandSessionFixture({ label: `render-invalid-${index}` });
+      expectNamedFailure(
+        { ...fixture, renderPaths: [invalidValue] as unknown as string[] },
+        "RENDER_PATH_INVALID"
+      );
+    }
+
+    const sparseFixture = createGarageBandSessionFixture({ label: "render-sparse" });
+    const sparse = Array(1) as string[];
+    expect(Object.prototype.hasOwnProperty.call(sparse, 0)).toBe(false);
+    expectNamedFailure({ ...sparseFixture, renderPaths: sparse }, "RENDER_PATH_INVALID");
+  });
+
   it("rejects corrupted source bytes and missing source hash declarations", () => {
     const corrupted = createGarageBandSessionFixture({ label: "source-corrupt" });
     writeFileSync(
-      join(corrupted.rootDir, "output/private/cloudlight-evening-r3/source/cloudlight-evening-r3.mid"),
+      join(
+        corrupted.rootDir,
+        "output/private/cloudlight-evening-r3/source/cloudlight-evening-r3.mid"
+      ),
       "CORRUPTED\n"
     );
     expectNamedFailure(corrupted, "SOURCE_FILE_HASH_MISMATCH");
@@ -700,7 +940,9 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
     expectNamedFailure(missingHash, "SOURCE_MANIFEST_MISSING_HASH");
 
     const missingFile = createGarageBandSessionFixture({ label: "source-missing-file" });
-    unlinkSync(join(missingFile.rootDir, "output/private/cloudlight-evening-r3/source/automation.json"));
+    unlinkSync(
+      join(missingFile.rootDir, "output/private/cloudlight-evening-r3/source/automation.json")
+    );
     expectNamedFailure(missingFile, "SOURCE_FILE_MISSING");
 
     const unexpectedFile = createGarageBandSessionFixture({ label: "source-extra-file" });
@@ -713,7 +955,10 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
 
   it("hashes project trees deterministically regardless of directory insertion order", () => {
     const first = createGarageBandSessionFixture({ label: "ordering-a" });
-    const second = createGarageBandSessionFixture({ label: "ordering-b", reverseProjectInsertion: true });
+    const second = createGarageBandSessionFixture({
+      label: "ordering-b",
+      reverseProjectInsertion: true,
+    });
     const firstReceipt = writeGarageBandSessionReceipt(first);
     const secondReceipt = writeGarageBandSessionReceipt(second);
 
@@ -723,6 +968,44 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
     expect(readdirSync(dirname(firstReceipt.receiptPath))).toEqual([
       "candidate-01-linear-session-receipt.json",
     ]);
+  });
+
+  it("uses total UTF-8 byte ordering when distinct project names collate equally", () => {
+    const first = createGarageBandSessionFixture({ label: "utf8-order-a" });
+    const second = createGarageBandSessionFixture({ label: "utf8-order-b" });
+    const ambiguousNames = ["a", "a\u200b"];
+    for (const fixture of [first, second]) {
+      const orderingDirectory = join(fixture.projectPath, "Ordering");
+      mkdirSync(orderingDirectory);
+      for (const name of ambiguousNames) writeFileSync(join(orderingDirectory, name), `${name}\n`);
+    }
+    expect(ambiguousNames[0].localeCompare(ambiguousNames[1], "en")).toBe(0);
+
+    const firstReceipt = writeGarageBandSessionReceipt(first);
+    const originalReaddir = mutableNodeFs.readdirSync;
+    const readdirSpy = vi.spyOn(mutableNodeFs, "readdirSync").mockImplementation(((
+      directoryPath: Parameters<typeof originalReaddir>[0],
+      options?: unknown
+    ) => {
+      const result = Reflect.apply(originalReaddir, mutableNodeFs, [directoryPath, options]);
+      if (
+        typeof directoryPath === "string" &&
+        directoryPath === join(second.projectPath, "Ordering") &&
+        Array.isArray(result)
+      ) {
+        return [...result].reverse();
+      }
+      return result;
+    }) as typeof originalReaddir);
+    let secondReceipt: SessionReceipt;
+    try {
+      secondReceipt = writeGarageBandSessionReceipt(second);
+    } finally {
+      readdirSpy.mockRestore();
+    }
+
+    expect(secondReceipt.project.inventory).toEqual(firstReceipt.project.inventory);
+    expect(secondReceipt.project.treeSha256).toBe(firstReceipt.project.treeSha256);
   });
 
   it("never follows or overwrites receipt directory, leaf symlink, or hardlink targets", () => {
@@ -736,7 +1019,10 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
 
     const leafSymlink = createGarageBandSessionFixture({ label: "receipt-leaf-symlink" });
     mkdirSync(receiptDirectory(leafSymlink.rootDir));
-    const outsideSymlinkTarget = join(makeTemporaryDirectory("receipt-leaf-outside"), "sentinel.json");
+    const outsideSymlinkTarget = join(
+      makeTemporaryDirectory("receipt-leaf-outside"),
+      "sentinel.json"
+    );
     writeFileSync(outsideSymlinkTarget, "SENTINEL-SYMLINK\n");
     symlinkSync(
       outsideSymlinkTarget,
@@ -747,7 +1033,10 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
 
     const leafHardlink = createGarageBandSessionFixture({ label: "receipt-leaf-hardlink" });
     mkdirSync(receiptDirectory(leafHardlink.rootDir));
-    const outsideHardlinkTarget = join(makeTemporaryDirectory("receipt-hardlink-outside"), "sentinel.json");
+    const outsideHardlinkTarget = join(
+      makeTemporaryDirectory("receipt-hardlink-outside"),
+      "sentinel.json"
+    );
     writeFileSync(outsideHardlinkTarget, "SENTINEL-HARDLINK\n");
     linkSync(
       outsideHardlinkTarget,
@@ -842,6 +1131,79 @@ describe("Cloudlight Evening R3 GarageBand session binding", () => {
         await bound.completed;
       }
     }
+  });
+
+  it("NACKs and removes a publicly published receipt when its directory moves before parent ACK", () => {
+    const fixture = createGarageBandSessionFixture({ label: "receipt-public-late-swap" });
+    const originalAnchor = receiptDirectory(fixture.rootDir);
+    const relocatedAnchor = join(dirname(originalAnchor), "relocated-receipts");
+    const outsideRoot = makeTemporaryDirectory("receipt-public-late-swap-outside");
+    const targetName = "candidate-01-linear-session-receipt.json";
+    mkdirSync(originalAnchor);
+
+    const originalLstat = mutableNodeFs.lstatSync;
+    let swapped = false;
+    const lstatSpy = vi.spyOn(mutableNodeFs, "lstatSync").mockImplementation(((
+      targetPath: Parameters<typeof originalLstat>[0],
+      options?: unknown
+    ) => {
+      if (
+        !swapped &&
+        targetPath === originalAnchor &&
+        existsSync(join(originalAnchor, targetName))
+      ) {
+        swapped = true;
+        renameSync(originalAnchor, relocatedAnchor);
+        symlinkSync(outsideRoot, originalAnchor);
+      }
+      return Reflect.apply(originalLstat, mutableNodeFs, [targetPath, options]);
+    }) as typeof originalLstat);
+    try {
+      expect(() => writeGarageBandSessionReceipt(fixture)).toThrow(/RECEIPT_WRITE_ANCHOR_MOVED/);
+    } finally {
+      lstatSpy.mockRestore();
+    }
+
+    expect(swapped).toBe(true);
+    expect(readdirSync(outsideRoot)).toEqual([]);
+    expect(readdirSync(relocatedAnchor)).toEqual([]);
+    expect(readdirSync(relocatedAnchor).filter((name) => name.includes(".stage"))).toEqual([]);
+    unlinkSync(originalAnchor);
+    renameSync(relocatedAnchor, originalAnchor);
+  });
+
+  it("removes the anchored receipt when its directory moves after parent ACK", () => {
+    const fixture = createGarageBandSessionFixture({ label: "receipt-public-post-ack-swap" });
+    const originalAnchor = receiptDirectory(fixture.rootDir);
+    const relocatedAnchor = join(dirname(originalAnchor), "relocated-receipts");
+    const outsideRoot = makeTemporaryDirectory("receipt-public-post-ack-swap-outside");
+    mkdirSync(originalAnchor);
+
+    const originalLink = mutableNodeFs.linkSync;
+    let swapped = false;
+    const linkSpy = vi.spyOn(mutableNodeFs, "linkSync").mockImplementation(((
+      existingPath: Parameters<typeof originalLink>[0],
+      newPath: Parameters<typeof originalLink>[1]
+    ) => {
+      const result = Reflect.apply(originalLink, mutableNodeFs, [existingPath, newPath]);
+      if (!swapped && typeof newPath === "string" && basename(newPath) === "decision.json") {
+        swapped = true;
+        renameSync(originalAnchor, relocatedAnchor);
+        symlinkSync(outsideRoot, originalAnchor);
+      }
+      return result;
+    }) as typeof originalLink);
+    try {
+      expect(() => writeGarageBandSessionReceipt(fixture)).toThrow(/RECEIPT_WRITE_ANCHOR_MOVED/);
+    } finally {
+      linkSpy.mockRestore();
+    }
+
+    expect(swapped).toBe(true);
+    expect(readdirSync(outsideRoot)).toEqual([]);
+    expect(readdirSync(relocatedAnchor)).toEqual([]);
+    unlinkSync(originalAnchor);
+    renameSync(relocatedAnchor, originalAnchor);
   });
 
   it("surfaces persistent receipt-writer cleanup failure instead of hiding it", () => {
