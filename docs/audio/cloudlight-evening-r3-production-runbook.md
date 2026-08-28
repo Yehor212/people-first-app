@@ -22,13 +22,13 @@ Render the same project three times. Only the listed candidate faders may differ
 
 | Candidate | Pad | Drone | Shimmer | Shimmer pan | Piano |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| candidate-01 | -12 dB | -21 dB | -29 dB | 35% | -27 dB |
-| candidate-02 | -12 dB | -21 dB | -27.8 dB | 45% | -27 dB |
-| candidate-03 | -12 dB | -21 dB | -29 dB | 35% | -25.8 dB |
+| candidate-01 | -12 dB | -21 dB | -29 dB | ±35% | -27 dB |
+| candidate-02 | -12 dB | -21 dB | -27.8 dB | ±45% | -27 dB |
+| candidate-03 | -12 dB | -21 dB | -29 dB | ±35% | -25.8 dB |
 
 ## Private export and receipts
 
-1. Export each candidate as a 166-second 48 kHz, 24-bit stereo WAV review master with normalization off to `output/private/cloudlight-evening-r3/session/`: `candidate-01.wav`, `candidate-02.wav`, and `candidate-03.wav`.
-2. Capture private screenshots named `project-overview.png`, `track-inventory.png`, `no-audio-regions.png`, `fade-automation.png`, `candidate-01-mixer.png`, `candidate-02-mixer.png`, and `candidate-03-mixer.png`.
+1. Export each candidate as a 166-second 48 kHz, 24-bit stereo WAV review master with normalization off: `output/private/cloudlight-evening-r3/renders/candidate-01-linear.wav`, `output/private/cloudlight-evening-r3/renders/candidate-02-linear.wav`, and `output/private/cloudlight-evening-r3/renders/candidate-03-linear.wav`. Export candidate 01 again without any project change as `output/private/cloudlight-evening-r3/renders/candidate-01-linear-rerender.wav`.
+2. Capture private screenshots under `output/private/cloudlight-evening-r3/evidence/garageband/`: `project-overview.png`, `track-inventory.png`, `no-audio-regions.png`, `fade-automation.png`, `candidate-01-mixer.png`, `candidate-02-mixer.png`, and `candidate-03-mixer.png`.
 3. Record the GarageBand/macOS version, exact instrument and preset paths, source-pack hashes, WAV SHA-256 values, and screenshots in the Task 3 session receipt.
 4. Do not select, replace, cache, package, publish, or promote a candidate until the owner listens and chooses one exact candidate hash. A choice of `NONE` ends the review without production audio change.

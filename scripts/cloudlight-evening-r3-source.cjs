@@ -18,6 +18,17 @@ const REVIEW_STATUSES = [
   "RUNTIME_PROMOTION_NOT_ALLOWED",
 ];
 const TEMPO_MICROSECONDS_PER_QUARTER = 1_071_429;
+const CANDIDATE_MIX_KEYS = ["padDb", "droneDb", "shimmerDb", "shimmerPanPercent", "pianoDb"];
+const CANONICAL_CANDIDATE_MIXES = {
+  "candidate-01": { padDb: -12, droneDb: -21, shimmerDb: -29, shimmerPanPercent: 35, pianoDb: -27 },
+  "candidate-02": { padDb: -12, droneDb: -21, shimmerDb: -27.8, shimmerPanPercent: 45, pianoDb: -27 },
+  "candidate-03": { padDb: -12, droneDb: -21, shimmerDb: -29, shimmerPanPercent: 35, pianoDb: -25.8 },
+};
+const CANDIDATE_DIFF_KEYS = {
+  "candidate-01": [],
+  "candidate-02": ["shimmerDb", "shimmerPanPercent"],
+  "candidate-03": ["pianoDb"],
+};
 const ALLOWED_SOURCE_KEYS = new Set([
   "schemaVersion",
   "id",
@@ -51,6 +62,14 @@ function hashBuffer(buffer) {
 
 function secondsToTicks(seconds, tempoBpm, ppq) {
   return Math.round(seconds * (tempoBpm / 60) * ppq);
+}
+
+function hasNonEmptyString(object, key) {
+  return isObject(object) && typeof object[key] === "string" && object[key].trim().length > 0;
+}
+
+function sameStringArray(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function validateTopLevelIdentity(source) {
@@ -90,19 +109,38 @@ function validateMidiValue(value, violation, violations) {
   }
 }
 
+function validateMidiArray(value, name, violations) {
+  if (!Array.isArray(value)) {
+    violations.push(`invalid_${name}_midi`);
+    return;
+  }
+  if (value.length === 0) {
+    violations.push(`empty_${name}_midi`);
+    return;
+  }
+  for (const note of value) {
+    validateMidiValue(note, `invalid_${name}_midi`, violations);
+  }
+}
+
 function validateTimeline(source) {
   const violations = [];
-  const duration = source.reviewDurationSeconds;
+  const duration = isFiniteNumber(source.reviewDurationSeconds) ? source.reviewDurationSeconds : 0;
   const fields = source.harmonicFields;
 
-  if (!Array.isArray(fields) || fields.length === 0) {
-    violations.push("missing_harmonic_fields");
+  if (!Array.isArray(fields)) {
+    violations.push("invalid_harmonic_fields");
+  } else if (fields.length === 0) {
+    violations.push("empty_harmonic_fields");
   } else {
     let expectedStart = 0;
     for (const field of fields) {
       if (!isObject(field) || !isFiniteNumber(field.start) || !isFiniteNumber(field.end)) {
         violations.push("invalid_harmonic_field");
         continue;
+      }
+      if (field.start < 0 || field.end < 0) {
+        violations.push("negative_event_time");
       }
       if (field.start !== expectedStart || field.end <= field.start) {
         violations.push("harmonic_timeline_not_contiguous");
@@ -111,9 +149,8 @@ function validateTimeline(source) {
         violations.push("event_after_review_duration");
       }
       expectedStart = field.end;
-      for (const note of [...(Array.isArray(field.padMidi) ? field.padMidi : []), ...(Array.isArray(field.droneMidi) ? field.droneMidi : [])]) {
-        validateMidiValue(note, "invalid_harmonic_midi", violations);
-      }
+      validateMidiArray(field.padMidi, "pad", violations);
+      validateMidiArray(field.droneMidi, "drone", violations);
     }
     if (expectedStart !== duration) {
       violations.push("harmonic_timeline_not_review_duration");
@@ -121,14 +158,17 @@ function validateTimeline(source) {
   }
 
   if (!Array.isArray(source.shimmerEvents)) {
-    violations.push("missing_shimmer_events");
+    violations.push("invalid_shimmer_events");
   } else {
     for (const event of source.shimmerEvents) {
       if (!isObject(event) || !isFiniteNumber(event.start) || !isFiniteNumber(event.duration)) {
         violations.push("invalid_shimmer_event");
         continue;
       }
-      if (event.start < 0 || event.duration <= 0 || event.start + event.duration > duration) {
+      if (event.start < 0) {
+        violations.push("negative_event_time");
+      }
+      if (event.duration <= 0 || event.start + event.duration > duration) {
         violations.push("event_after_review_duration");
       }
       validateMidiValue(event.midi, "invalid_shimmer_midi", violations);
@@ -140,7 +180,7 @@ function validateTimeline(source) {
   }
 
   if (!isObject(source.linearFade)) {
-    violations.push("missing_linear_fade");
+    violations.push("invalid_linear_fade");
   } else if (
     source.linearFade.start !== 150 ||
     source.linearFade.end !== duration ||
@@ -157,13 +197,22 @@ function validatePianoBoundary(source, dryBoundarySeconds) {
   const violations = [];
 
   if (!Array.isArray(source.pianoClusters)) {
-    return ["missing_piano_clusters"];
+    return ["invalid_piano_clusters"];
+  }
+  if (source.pianoClusters.length === 0) {
+    return ["empty_piano_clusters"];
   }
 
   for (const cluster of source.pianoClusters) {
     if (!isObject(cluster) || !isFiniteNumber(cluster.start) || !Array.isArray(cluster.notes)) {
       violations.push("invalid_piano_cluster");
       continue;
+    }
+    if (cluster.start < 0) {
+      violations.push("negative_event_time");
+    }
+    if (cluster.notes.length === 0) {
+      violations.push("empty_piano_cluster");
     }
     for (const note of cluster.notes) {
       if (!isObject(note) || !isFiniteNumber(note.offset) || !isFiniteNumber(note.duration)) {
@@ -191,14 +240,14 @@ function validateLoopCompatiblePad(firstField, lastField) {
     : ["loop_incompatible_pad"];
 }
 
-function validateCandidateDiffs(candidates, allowedDifferences) {
+function validateCandidateDiffs(candidates) {
   const violations = [];
 
   if (!Array.isArray(candidates) || candidates.length !== 3) {
     return ["invalid_candidate_count"];
   }
 
-  const ids = candidates.map((candidate) => candidate && candidate.id);
+  const ids = candidates.map((candidate) => (isObject(candidate) ? candidate.id : undefined));
   if (new Set(ids).size !== ids.length) {
     violations.push("duplicate_candidate_id");
   }
@@ -206,29 +255,83 @@ function validateCandidateDiffs(candidates, allowedDifferences) {
     violations.push("invalid_candidate_ids");
   }
 
-  const baseline = candidates[0] && candidates[0].mix;
-  if (!isObject(baseline)) {
-    return [...violations, "invalid_candidate_mix"];
-  }
-
+  const mixes = {};
   for (const candidate of candidates) {
-    if (!isObject(candidate) || !isObject(candidate.mix)) {
+    if (!isObject(candidate) || !isObject(candidate.mix) || typeof candidate.id !== "string") {
       violations.push("invalid_candidate_mix");
-    }
-  }
-
-  for (const [candidateId, allowedKeys] of Object.entries(allowedDifferences)) {
-    const candidate = candidates.find((row) => row && row.id === candidateId);
-    if (!candidate || !isObject(candidate.mix)) {
       continue;
     }
-    const keys = new Set([...Object.keys(baseline), ...Object.keys(candidate.mix)]);
-    const unexpectedDifference = [...keys].some(
-      (key) => baseline[key] !== candidate.mix[key] && !allowedKeys.includes(key)
-    );
-    if (unexpectedDifference) {
+    const expectedMix = CANONICAL_CANDIDATE_MIXES[candidate.id];
+    const actualKeys = Object.keys(candidate.mix).sort();
+    const canonicalKeys = [...CANDIDATE_MIX_KEYS].sort();
+    if (!expectedMix || !sameStringArray(actualKeys, canonicalKeys)) {
+      violations.push("candidate_mix_keys_not_canonical");
+      continue;
+    }
+    if (
+      CANDIDATE_MIX_KEYS.some(
+        (key) => !isFiniteNumber(candidate.mix[key]) || candidate.mix[key] !== expectedMix[key]
+      )
+    ) {
+      violations.push("candidate_mix_values_not_canonical");
+    }
+    mixes[candidate.id] = candidate.mix;
+  }
+
+  const baseline = mixes["candidate-01"];
+  if (!baseline) return violations;
+  for (const candidateId of Object.keys(CANDIDATE_DIFF_KEYS)) {
+    const mix = mixes[candidateId];
+    if (!mix) continue;
+    const actualDiffs = CANDIDATE_MIX_KEYS.filter((key) => mix[key] !== baseline[key]);
+    if (!sameStringArray(actualDiffs, CANDIDATE_DIFF_KEYS[candidateId])) {
       violations.push("candidate_mix_difference_not_allowed");
     }
+  }
+
+  return violations;
+}
+
+function validateMetadata(source) {
+  const violations = [];
+  const authorshipKeys = ["compositionDirection", "implementation", "aiRole"];
+  if (!authorshipKeys.every((key) => hasNonEmptyString(source.humanAuthorship, key))) {
+    violations.push("invalid_human_authorship");
+  }
+
+  const research = isObject(source.rights) ? source.rights.referenceResearch : null;
+  if (
+    !isObject(research) ||
+    !hasNonEmptyString(research, "title") ||
+    !hasNonEmptyString(research, "use") ||
+    research.audioRetained !== false ||
+    research.melodyHarmonyArrangementTranscribed !== false
+  ) {
+    violations.push("invalid_rights");
+  }
+
+  const garageBandPaths = [
+    "pianoInstrument",
+    "pianoSamples",
+    "padPreset",
+    "dronePreset",
+    "shimmerPreset",
+    "reverbPreset",
+  ];
+  const reverb = isObject(source.garageBand) ? source.garageBand.reverb : null;
+  if (
+    !garageBandPaths.every((key) => hasNonEmptyString(source.garageBand, key)) ||
+    !isObject(reverb) ||
+    !isFiniteNumber(reverb.decaySeconds) ||
+    reverb.decaySeconds <= 0 ||
+    !isFiniteNumber(reverb.preDelayMs) ||
+    reverb.preDelayMs < 0 ||
+    !isFiniteNumber(reverb.lowCutHz) ||
+    reverb.lowCutHz <= 0 ||
+    !isFiniteNumber(reverb.dampingHz) ||
+    reverb.dampingHz <= 0
+  ) {
+    violations.push("invalid_garageband");
   }
 
   return violations;
@@ -254,12 +357,13 @@ function validateCloudlightR3Source(source) {
     ...validateTopLevelIdentity(source),
     ...validateTimeline(source),
     ...validatePianoBoundary(source, 138),
-    ...validateLoopCompatiblePad(source.harmonicFields && source.harmonicFields[0], source.harmonicFields && source.harmonicFields.at(-1)),
-    ...validateCandidateDiffs(source.candidates, {
-      "candidate-02": ["shimmerDb", "shimmerPanPercent"],
-      "candidate-03": ["pianoDb"],
-    }),
+    ...validateLoopCompatiblePad(
+      Array.isArray(source.harmonicFields) ? source.harmonicFields[0] : undefined,
+      Array.isArray(source.harmonicFields) ? source.harmonicFields.at(-1) : undefined
+    ),
+    ...validateCandidateDiffs(source.candidates),
     ...validateNoExternalAudioInputs(source),
+    ...validateMetadata(source),
   ];
 }
 
@@ -425,6 +529,11 @@ function buildReadme(source) {
 }
 
 function assertPrivateOutputPath(rootDir, outputDir) {
+  const rootStats = fs.lstatSync(rootDir);
+  if (rootStats.isSymbolicLink() || !rootStats.isDirectory()) {
+    throw new Error("Cloudlight R3 root must be a non-symlink directory");
+  }
+
   const privateRoot = path.resolve(rootDir, "output", "private");
   const resolvedOutput = path.resolve(outputDir);
   const relative = path.relative(privateRoot, resolvedOutput);
@@ -432,18 +541,17 @@ function assertPrivateOutputPath(rootDir, outputDir) {
     throw new Error("Cloudlight R3 source output must stay under <root>/output/private");
   }
 
-  fs.mkdirSync(privateRoot, { recursive: true });
-  if (fs.lstatSync(privateRoot).isSymbolicLink()) {
-    throw new Error("Cloudlight R3 source output must stay under <root>/output/private");
-  }
-
-  const realPrivateRoot = fs.realpathSync.native(privateRoot);
-  let currentPath = privateRoot;
-  for (const segment of relative.split(path.sep)) {
+  const realRoot = fs.realpathSync.native(rootDir);
+  let currentPath = rootDir;
+  for (const segment of ["output", "private", ...relative.split(path.sep)]) {
     currentPath = path.join(currentPath, segment);
     if (fs.existsSync(currentPath)) {
-      if (fs.lstatSync(currentPath).isSymbolicLink()) {
+      const stats = fs.lstatSync(currentPath);
+      if (stats.isSymbolicLink()) {
         throw new Error("Cloudlight R3 source output must stay under <root>/output/private");
+      }
+      if (!stats.isDirectory()) {
+        throw new Error(`Cloudlight R3 output ancestor must be a directory: ${currentPath}`);
       }
     } else {
       fs.mkdirSync(currentPath);
@@ -451,8 +559,8 @@ function assertPrivateOutputPath(rootDir, outputDir) {
 
     const realCurrentPath = fs.realpathSync.native(currentPath);
     if (
-      realCurrentPath !== realPrivateRoot &&
-      !realCurrentPath.startsWith(`${realPrivateRoot}${path.sep}`)
+      realCurrentPath !== realRoot &&
+      !realCurrentPath.startsWith(`${realRoot}${path.sep}`)
     ) {
       throw new Error("Cloudlight R3 source output must stay under <root>/output/private");
     }
@@ -461,9 +569,69 @@ function assertPrivateOutputPath(rootDir, outputDir) {
   return resolvedOutput;
 }
 
+function directoryIdentity(directoryPath) {
+  const stats = fs.lstatSync(directoryPath);
+  if (stats.isSymbolicLink() || !stats.isDirectory()) {
+    throw new Error(`Cloudlight R3 output ancestor must be a directory: ${directoryPath}`);
+  }
+  return { dev: stats.dev, ino: stats.ino };
+}
+
+function sameIdentity(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function assertWritableLeaf(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const stats = fs.lstatSync(filePath);
+  if (stats.isDirectory()) {
+    throw new Error(`Cloudlight R3 output leaf must be a file: ${filePath}`);
+  }
+}
+
+function writePrivateFileAtomically(filePath, contents) {
+  const parentPath = path.dirname(filePath);
+  const beforeParent = directoryIdentity(parentPath);
+  assertWritableLeaf(filePath);
+  const stagePath = path.join(
+    parentPath,
+    `.${path.basename(filePath)}.${process.pid}-${crypto.randomBytes(12).toString("hex")}.stage`
+  );
+  const noFollow = fs.constants.O_NOFOLLOW ?? 0;
+  const descriptor = fs.openSync(
+    stagePath,
+    fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | noFollow,
+    0o600
+  );
+
+  try {
+    const stagedStats = fs.fstatSync(descriptor);
+    if (!stagedStats.isFile() || stagedStats.nlink !== 1) {
+      throw new Error(`Cloudlight R3 temporary output is unsafe: ${stagePath}`);
+    }
+    fs.writeFileSync(descriptor, contents);
+    fs.fsyncSync(descriptor);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+
+  try {
+    if (!sameIdentity(directoryIdentity(parentPath), beforeParent)) {
+      throw new Error(`Cloudlight R3 output parent changed during write: ${parentPath}`);
+    }
+    fs.renameSync(stagePath, filePath);
+    const finalStats = fs.lstatSync(filePath);
+    if (!finalStats.isFile() || finalStats.isSymbolicLink() || finalStats.nlink !== 1) {
+      throw new Error(`Cloudlight R3 output leaf is unsafe after write: ${filePath}`);
+    }
+  } catch (error) {
+    fs.rmSync(stagePath, { force: true });
+    throw error;
+  }
+}
+
 function writeCloudlightR3SourcePack({ rootDir, outputDir }) {
   const resolvedRoot = path.resolve(rootDir);
-  const resolvedOutput = assertPrivateOutputPath(resolvedRoot, outputDir);
   const source = loadCloudlightR3Source(resolvedRoot);
   const midi = encodeCloudlightR3Midi(source);
   const automation = Buffer.from(`${JSON.stringify(buildAutomation(source), null, 2)}\n`);
@@ -499,19 +667,27 @@ function writeCloudlightR3SourcePack({ rootDir, outputDir }) {
       shimmerPreset: source.garageBand.shimmerPreset,
       reverbPreset: source.garageBand.reverbPreset,
     },
+    outputInventory: [
+      SOURCE_PACK_FILES.midi,
+      SOURCE_PACK_FILES.automation,
+      SOURCE_PACK_FILES.manifest,
+      SOURCE_PACK_FILES.readme,
+    ],
     statuses: REVIEW_STATUSES,
   };
   const manifestBuffer = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
   const readme = Buffer.from(buildReadme(source));
 
+  const resolvedOutput = assertPrivateOutputPath(resolvedRoot, outputDir);
+
   const midiPath = path.join(resolvedOutput, SOURCE_PACK_FILES.midi);
   const automationPath = path.join(resolvedOutput, SOURCE_PACK_FILES.automation);
   const manifestPath = path.join(resolvedOutput, SOURCE_PACK_FILES.manifest);
   const readmePath = path.join(resolvedOutput, SOURCE_PACK_FILES.readme);
-  fs.writeFileSync(midiPath, midi);
-  fs.writeFileSync(automationPath, automation);
-  fs.writeFileSync(manifestPath, manifestBuffer);
-  fs.writeFileSync(readmePath, readme);
+  writePrivateFileAtomically(midiPath, midi);
+  writePrivateFileAtomically(automationPath, automation);
+  writePrivateFileAtomically(manifestPath, manifestBuffer);
+  writePrivateFileAtomically(readmePath, readme);
 
   return {
     midiPath,

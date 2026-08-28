@@ -1,4 +1,17 @@
-import { mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  existsSync,
+  linkSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
@@ -183,6 +196,100 @@ function cloneSource<T>(source: T): T {
   return JSON.parse(JSON.stringify(source)) as T;
 }
 
+type SmfEvent = {
+  tick: number;
+  kind: "meta" | "channel" | "sysex";
+  status: number;
+  data: Buffer;
+};
+
+type SmfTrack = { events: SmfEvent[] };
+
+function parseVlq(buffer: Buffer, offset: number): { value: number; next: number } {
+  let value = 0;
+  let next = offset;
+
+  for (let count = 0; count < 4; count += 1) {
+    expect(next).toBeLessThan(buffer.length);
+    const byte = buffer[next];
+    next += 1;
+    value = (value << 7) | (byte & 0x7f);
+    if ((byte & 0x80) === 0) return { value, next };
+  }
+
+  throw new Error("SMF VLQ exceeds four bytes");
+}
+
+function parseSmf(buffer: Buffer): { format: number; ppq: number; tracks: SmfTrack[] } {
+  expect(buffer.subarray(0, 4).toString("ascii")).toBe("MThd");
+  expect(buffer.readUInt32BE(4)).toBe(6);
+  const format = buffer.readUInt16BE(8);
+  const trackCount = buffer.readUInt16BE(10);
+  const ppq = buffer.readUInt16BE(12);
+  const tracks: SmfTrack[] = [];
+  let offset = 14;
+
+  while (offset < buffer.length) {
+    expect(buffer.subarray(offset, offset + 4).toString("ascii")).toBe("MTrk");
+    const length = buffer.readUInt32BE(offset + 4);
+    const end = offset + 8 + length;
+    expect(end).toBeLessThanOrEqual(buffer.length);
+    const events: SmfEvent[] = [];
+    let eventOffset = offset + 8;
+    let tick = 0;
+
+    while (eventOffset < end) {
+      const delta = parseVlq(buffer, eventOffset);
+      tick += delta.value;
+      eventOffset = delta.next;
+      const status = buffer[eventOffset];
+      eventOffset += 1;
+
+      if (status === 0xff) {
+        const type = buffer[eventOffset];
+        eventOffset += 1;
+        const lengthValue = parseVlq(buffer, eventOffset);
+        eventOffset = lengthValue.next;
+        const data = buffer.subarray(eventOffset, eventOffset + lengthValue.value);
+        eventOffset += lengthValue.value;
+        events.push({ tick, kind: "meta", status: type, data });
+      } else if (status === 0xf0 || status === 0xf7) {
+        const lengthValue = parseVlq(buffer, eventOffset);
+        eventOffset = lengthValue.next + lengthValue.value;
+        events.push({ tick, kind: "sysex", status, data: Buffer.alloc(0) });
+      } else {
+        const messageType = status & 0xf0;
+        const dataLength = messageType === 0xc0 || messageType === 0xd0 ? 1 : 2;
+        const data = buffer.subarray(eventOffset, eventOffset + dataLength);
+        eventOffset += dataLength;
+        events.push({ tick, kind: "channel", status, data });
+      }
+    }
+
+    expect(eventOffset).toBe(end);
+    tracks.push({ events });
+    offset = end;
+  }
+
+  expect(offset).toBe(buffer.length);
+  expect(tracks).toHaveLength(trackCount);
+  return { format, ppq, tracks };
+}
+
+function sourceFixtureRoot(source: unknown): string {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-fixture-"));
+  mkdirSync(join(fixtureRoot, "config/audio"), { recursive: true });
+  writeFileSync(
+    join(fixtureRoot, "config/audio/cloudlight-evening-r3-source.json"),
+    `${JSON.stringify(source, null, 2)}\n`
+  );
+  return fixtureRoot;
+}
+
+function sha256(filePath: string): string {
+  return createHash("sha256").update(readFileSync(filePath)).digest("hex");
+}
+
 describe("Cloudlight Evening R3 source contract", () => {
   it("keeps the complete canonical composition and three constrained review mixes", () => {
     const source = JSON.parse(
@@ -358,6 +465,244 @@ describe("Cloudlight Evening R3 source contract", () => {
     for (const { violation, source } of invalidSources) {
       expect(validateCloudlightR3Source(source)).toContain(violation);
       expect(() => encodeCloudlightR3Midi(source)).toThrow(violation);
+    }
+  });
+
+  it("returns named violations for malformed nested source data and refuses to create output", () => {
+    const canonical = loadCloudlightR3Source(rootDir);
+    const malformed: Array<{ violation: string; source: unknown }> = [];
+
+    const invalidFields = cloneSource(canonical) as Record<string, unknown>;
+    invalidFields.harmonicFields = { start: 0 };
+    malformed.push({ violation: "invalid_harmonic_fields", source: invalidFields });
+
+    const invalidPad = cloneSource(canonical) as {
+      harmonicFields: Array<{ padMidi: unknown; droneMidi: unknown }>;
+    };
+    invalidPad.harmonicFields[0].padMidi = "50";
+    invalidPad.harmonicFields[0].droneMidi = [];
+    malformed.push({ violation: "invalid_pad_midi", source: invalidPad });
+
+    const emptyPiano = cloneSource(canonical) as { pianoClusters: unknown[] };
+    emptyPiano.pianoClusters = [];
+    malformed.push({ violation: "empty_piano_clusters", source: emptyPiano });
+
+    const negativeTimeline = cloneSource(canonical) as {
+      shimmerEvents: Array<{ start: number }>;
+    };
+    negativeTimeline.shimmerEvents[0].start = -1;
+    malformed.push({ violation: "negative_event_time", source: negativeTimeline });
+
+    const invalidAuthorship = cloneSource(canonical) as { humanAuthorship: unknown };
+    invalidAuthorship.humanAuthorship = { compositionDirection: "", implementation: 1, aiRole: null };
+    malformed.push({ violation: "invalid_human_authorship", source: invalidAuthorship });
+
+    const invalidRights = cloneSource(canonical) as { rights: unknown };
+    invalidRights.rights = { referenceResearch: { title: 1 } };
+    malformed.push({ violation: "invalid_rights", source: invalidRights });
+
+    const retainedReferenceAudio = cloneSource(canonical) as {
+      rights: { referenceResearch: { audioRetained: boolean } };
+    };
+    retainedReferenceAudio.rights.referenceResearch.audioRetained = true;
+    malformed.push({ violation: "invalid_rights", source: retainedReferenceAudio });
+
+    const invalidGarageBand = cloneSource(canonical) as { garageBand: unknown };
+    invalidGarageBand.garageBand = { pianoInstrument: "", reverb: { decaySeconds: -1 } };
+    malformed.push({ violation: "invalid_garageband", source: invalidGarageBand });
+
+    for (const { violation, source } of malformed) {
+      expect(() => validateCloudlightR3Source(source)).not.toThrow();
+      expect(validateCloudlightR3Source(source)).toContain(violation);
+      expect(() => encodeCloudlightR3Midi(source)).toThrow(violation);
+    }
+
+    const fixtureRoot = sourceFixtureRoot(malformed[0].source);
+    const outputDir = join(fixtureRoot, "output/private/pack");
+    try {
+      expect(() => writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir })).toThrow(
+        "invalid_harmonic_fields"
+      );
+      expect(existsSync(join(fixtureRoot, "output"))).toBe(false);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects every noncanonical candidate mix shape and value before encoding", () => {
+    const canonical = loadCloudlightR3Source(rootDir) as {
+      candidates: Array<{ mix: Record<string, number> }>;
+    };
+    const invalidCandidates: Array<{ violation: string; source: unknown }> = [];
+
+    const identical = cloneSource(canonical);
+    identical.candidates[1].mix = { ...identical.candidates[0].mix };
+    invalidCandidates.push({ violation: "candidate_mix_values_not_canonical", source: identical });
+
+    const missing = cloneSource(canonical);
+    delete missing.candidates[1].mix.shimmerPanPercent;
+    invalidCandidates.push({ violation: "candidate_mix_keys_not_canonical", source: missing });
+
+    const extra = cloneSource(canonical) as typeof canonical & {
+      candidates: Array<{ mix: Record<string, number> & { extraDb?: number } }>;
+    };
+    extra.candidates[1].mix.extraDb = 0;
+    invalidCandidates.push({ violation: "candidate_mix_keys_not_canonical", source: extra });
+
+    const stringValue = cloneSource(canonical) as unknown as {
+      candidates: Array<{ mix: Record<string, number | string> }>;
+    };
+    stringValue.candidates[1].mix.shimmerDb = "-27.8";
+    invalidCandidates.push({ violation: "candidate_mix_values_not_canonical", source: stringValue });
+
+    const nanValue = cloneSource(canonical);
+    nanValue.candidates[2].mix.pianoDb = Number.NaN;
+    invalidCandidates.push({ violation: "candidate_mix_values_not_canonical", source: nanValue });
+
+    const wrongAllowedValue = cloneSource(canonical);
+    wrongAllowedValue.candidates[1].mix.shimmerDb = -28;
+    invalidCandidates.push({ violation: "candidate_mix_values_not_canonical", source: wrongAllowedValue });
+
+    for (const { violation, source } of invalidCandidates) {
+      expect(validateCloudlightR3Source(source)).toContain(violation);
+      expect(() => encodeCloudlightR3Midi(source)).toThrow(violation);
+    }
+  });
+
+  it("never writes through a non-directory ancestor or unsafe output leaf", () => {
+    const canonical = loadCloudlightR3Source(rootDir);
+    const fixtureRoot = sourceFixtureRoot(canonical);
+    const outsideRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-write-outside-"));
+    const outsidePath = join(outsideRoot, "outside.txt");
+    writeFileSync(outsidePath, "OUTSIDE_BYTES\n");
+
+    try {
+      writeFileSync(join(fixtureRoot, "output"), "not a directory\n");
+      expect(() =>
+        writeCloudlightR3SourcePack({
+          rootDir: fixtureRoot,
+          outputDir: join(fixtureRoot, "output/private/pack"),
+        })
+      ).toThrow("must be a directory");
+      expect(readFileSync(join(fixtureRoot, "output"), "utf8")).toBe("not a directory\n");
+      unlinkSync(join(fixtureRoot, "output"));
+
+      symlinkSync(outsideRoot, join(fixtureRoot, "output"), "dir");
+      expect(() =>
+        writeCloudlightR3SourcePack({
+          rootDir: fixtureRoot,
+          outputDir: join(fixtureRoot, "output/private/pack"),
+        })
+      ).toThrow("must stay under <root>/output/private");
+      expect(existsSync(join(outsideRoot, "private/pack"))).toBe(false);
+      unlinkSync(join(fixtureRoot, "output"));
+
+      const outputDir = join(fixtureRoot, "output/private/pack");
+      const first = writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir });
+
+      unlinkSync(first.midiPath);
+      symlinkSync(outsidePath, first.midiPath);
+      const symlinkRewrite = writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir });
+      expect(readFileSync(outsidePath, "utf8")).toBe("OUTSIDE_BYTES\n");
+      expect(lstatSync(symlinkRewrite.midiPath).isFile()).toBe(true);
+
+      unlinkSync(symlinkRewrite.midiPath);
+      linkSync(outsidePath, symlinkRewrite.midiPath);
+      const hardlinkRewrite = writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir });
+      expect(readFileSync(outsidePath, "utf8")).toBe("OUTSIDE_BYTES\n");
+      expect(lstatSync(hardlinkRewrite.midiPath).nlink).toBe(1);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+      rmSync(outsideRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("binds the Task 4 render, evidence, and bilateral-pan inventory in the runbook", () => {
+    const runbook = readFileSync(
+      join(rootDir, "docs/audio/cloudlight-evening-r3-production-runbook.md"),
+      "utf8"
+    );
+    expect(runbook).toContain("renders/candidate-01-linear.wav");
+    expect(runbook).toContain("renders/candidate-02-linear.wav");
+    expect(runbook).toContain("renders/candidate-03-linear.wav");
+    expect(runbook).toContain("renders/candidate-01-linear-rerender.wav");
+    expect(runbook).toContain("evidence/garageband/");
+    expect(runbook).toContain("±35%");
+    expect(runbook).toContain("±45%");
+  });
+
+  it("independently parses the exact SMF chunks, events, hashes, and source-pack inventory", () => {
+    const tempRoot = mkdtempSync(join(rootDir, "output/private/cloudlight-evening-r3-smf-test-"));
+    try {
+      const receipt = writeCloudlightR3SourcePack({
+        rootDir,
+        outputDir: join(tempRoot, "pack"),
+      });
+      const midi = readFileSync(receipt.midiPath);
+      const smf = parseSmf(midi);
+      const manifest = JSON.parse(readFileSync(receipt.manifestPath, "utf8")) as Record<string, unknown>;
+      const names = smf.tracks.map((track) =>
+        track.events.find((event) => event.kind === "meta" && event.status === 0x03)?.data.toString("ascii")
+      );
+      const endTicks = smf.tracks.map((track) => track.events.at(-1)?.tick);
+
+      expect(smf.format).toBe(1);
+      expect(smf.ppq).toBe(960);
+      expect(names).toEqual(["Pad", "Drone", "Shimmer L", "Shimmer R", "Piano", "Linear Fade"]);
+      expect(endTicks).toEqual([148736, 148736, 89510, 109222, 122304, 148736]);
+      expect(smf.tracks.every((track) => {
+        const eot = track.events.at(-1);
+        return eot?.kind === "meta" && eot.status === 0x2f && eot.data.length === 0;
+      })).toBe(true);
+      expect(smf.tracks.flatMap((track) => track.events).some((event) => event.kind === "sysex")).toBe(false);
+      expect(smf.tracks.flatMap((track) => track.events).some((event) => (event.status & 0xf0) === 0xc0)).toBe(false);
+      const tempoEvents = smf.tracks
+        .flatMap((track) => track.events)
+        .filter((event) => event.kind === "meta" && event.status === 0x51);
+      expect(tempoEvents).toHaveLength(1);
+      expect(tempoEvents[0].data.readUIntBE(0, 3)).toBe(1_071_429);
+
+      for (const track of smf.tracks) {
+        const balances = new Map<number, number>();
+        const simultaneous = new Map<number, number[]>();
+        for (const event of track.events) {
+          if (event.kind !== "channel") continue;
+          const type = event.status & 0xf0;
+          expect([0x80, 0x90, 0xb0]).toContain(type);
+          if (type === 0xb0) expect([10, 11]).toContain(event.data[0]);
+          if (type === 0x90) balances.set(event.data[0], (balances.get(event.data[0]) ?? 0) + 1);
+          if (type === 0x80) balances.set(event.data[0], (balances.get(event.data[0]) ?? 0) - 1);
+          const rank = type === 0x80 ? 0 : type === 0xb0 ? 1 : 2;
+          simultaneous.set(event.tick, [...(simultaneous.get(event.tick) ?? []), rank]);
+        }
+        expect([...balances.values()].every((balance) => balance === 0)).toBe(true);
+        expect([...simultaneous.values()].every((ranks) => ranks.every((rank, index) => index === 0 || ranks[index - 1] <= rank))).toBe(true);
+      }
+
+      const inventory = readdirSync(join(tempRoot, "pack"), { withFileTypes: true });
+      expect(inventory.map((entry) => entry.name).sort()).toEqual([
+        "README.md",
+        "automation.json",
+        "cloudlight-evening-r3.mid",
+        "source-manifest.json",
+      ]);
+      expect(inventory.every((entry) => entry.isFile())).toBe(true);
+      expect(manifest.midiSha256).toBe(sha256(receipt.midiPath));
+      expect(manifest.automationSha256).toBe(sha256(receipt.automationPath));
+      expect(manifest.midiBytes).toBe(midi.length);
+      expect(manifest.automationBytes).toBe(readFileSync(receipt.automationPath).length);
+      expect(manifest.trackNames).toEqual(names);
+      expect(manifest.eventCounts).toEqual(
+        Object.fromEntries(names.map((name, index) => [name, smf.tracks[index].events.length]))
+      );
+      expect(manifest.outputInventory).toEqual([
+        "cloudlight-evening-r3.mid",
+        "automation.json",
+        "source-manifest.json",
+        "README.md",
+      ]);
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
     }
   });
 });
