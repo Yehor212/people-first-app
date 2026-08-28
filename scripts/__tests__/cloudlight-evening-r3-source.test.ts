@@ -1,8 +1,40 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 
 const rootDir = process.cwd();
+const require = createRequire(import.meta.url);
+
+type CloudlightR3SourceModule = {
+  loadCloudlightR3Source: (rootDir: string) => Record<string, unknown>;
+  validateCloudlightR3Source: (source: unknown) => string[];
+  encodeCloudlightR3Midi: (source: unknown) => Buffer;
+  writeCloudlightR3SourcePack: (input: {
+    rootDir: string;
+    outputDir: string;
+  }) => {
+    midiPath: string;
+    automationPath: string;
+    manifestPath: string;
+    readmePath: string;
+    manifest: {
+      midiSha256: string;
+      automationSha256: string;
+      trackNames: string[];
+      statuses: string[];
+    };
+    summary: Record<string, unknown>;
+  };
+};
+
+const {
+  loadCloudlightR3Source,
+  validateCloudlightR3Source,
+  encodeCloudlightR3Midi,
+  writeCloudlightR3SourcePack,
+} = require("../cloudlight-evening-r3-source.cjs") as CloudlightR3SourceModule;
 
 const HUMAN_AUTHORSHIP = {
   compositionDirection: "Yehor212 / ZenFlow",
@@ -147,6 +179,10 @@ function cloneExpectedSource(): {
   };
 }
 
+function cloneSource<T>(source: T): T {
+  return JSON.parse(JSON.stringify(source)) as T;
+}
+
 describe("Cloudlight Evening R3 source contract", () => {
   it("keeps the complete canonical composition and three constrained review mixes", () => {
     const source = JSON.parse(
@@ -220,5 +256,108 @@ describe("Cloudlight Evening R3 source contract", () => {
     const compositionMutation = cloneExpectedSource();
     compositionMutation.harmonicFields[1].padMidi[0] = 50;
     expect(() => expectCanonicalSource(compositionMutation)).toThrow();
+  });
+
+  it("writes the same private MIDI and automation source pack twice", () => {
+    const tempRoot = mkdtempSync(
+      join(rootDir, "output/private/cloudlight-evening-r3-source-test-")
+    );
+    const outsideRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-outside-"));
+
+    try {
+      const first = writeCloudlightR3SourcePack({
+        rootDir,
+        outputDir: join(tempRoot, "output/private/r3-a"),
+      });
+      const second = writeCloudlightR3SourcePack({
+        rootDir,
+        outputDir: join(tempRoot, "output/private/r3-b"),
+      });
+
+      const midi = readFileSync(first.midiPath);
+      expect(midi.subarray(0, 4).toString("ascii")).toBe("MThd");
+      expect(midi.readUInt16BE(8)).toBe(1);
+      expect(midi.readUInt16BE(10)).toBe(6);
+      expect(midi.readUInt16BE(12)).toBe(960);
+      expect(midi.includes(Buffer.from([0xff, 0x51, 0x03, 0x10, 0x59, 0x45]))).toBe(true);
+      expect(first.manifest.midiSha256).toBe(second.manifest.midiSha256);
+      expect(first.manifest.automationSha256).toBe(second.manifest.automationSha256);
+      expect(first.manifest.trackNames).toEqual([
+        "Pad",
+        "Drone",
+        "Shimmer L",
+        "Shimmer R",
+        "Piano",
+        "Linear Fade",
+      ]);
+      expect(first.manifest.statuses).toEqual([
+        "NOT_RENDERED",
+        "OWNER_ARTISTIC_UNVERIFIED",
+        "RUNTIME_PROMOTION_NOT_ALLOWED",
+      ]);
+      expect(readFileSync(first.automationPath, "utf8")).toBe(
+        readFileSync(second.automationPath, "utf8")
+      );
+      expect(readFileSync(first.manifestPath, "utf8")).toBe(
+        readFileSync(second.manifestPath, "utf8")
+      );
+      expect(readFileSync(first.readmePath, "utf8")).toContain("GarageBand");
+      expect(() =>
+        writeCloudlightR3SourcePack({ rootDir, outputDir: join(rootDir, "public/sounds/r3") })
+      ).toThrow("must stay under <root>/output/private");
+      expect(() =>
+        writeCloudlightR3SourcePack({
+          rootDir,
+          outputDir: join(rootDir, "output/private-collision/r3"),
+        })
+      ).toThrow("must stay under <root>/output/private");
+      const symlinkEscape = join(tempRoot, "symlink-escape");
+      symlinkSync(outsideRoot, symlinkEscape, "dir");
+      expect(() =>
+        writeCloudlightR3SourcePack({ rootDir, outputDir: join(symlinkEscape, "r3") })
+      ).toThrow("must stay under <root>/output/private");
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+      rmSync(outsideRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects unsafe MIDI inputs and source-boundary violations before encoding", () => {
+    const canonical = loadCloudlightR3Source(rootDir) as {
+      harmonicFields: Array<{ start: number; end: number }>;
+      shimmerEvents: Array<{ start: number; duration: number }>;
+      pianoClusters: Array<{ start: number; notes: Array<{ offset: number; duration: number }> }>;
+      candidates: Array<{ id: string; mix: Record<string, number> }>;
+    };
+    const invalidSources: Array<{ violation: string; source: unknown }> = [];
+
+    const sysEx = cloneSource(canonical) as typeof canonical & { sysExEvents: unknown[] };
+    sysEx.sysExEvents = [{ tick: 0, data: "F0" }];
+    invalidSources.push({ violation: "sys_ex_not_allowed", source: sysEx });
+
+    const program = cloneSource(canonical) as typeof canonical & { programChanges: unknown[] };
+    program.programChanges = [{ track: "Pad", program: 89 }];
+    invalidSources.push({ violation: "undeclared_program_data", source: program });
+
+    const lateEvent = cloneSource(canonical);
+    lateEvent.shimmerEvents[0] = { start: 165, duration: 2 };
+    invalidSources.push({ violation: "event_after_review_duration", source: lateEvent });
+
+    const latePiano = cloneSource(canonical);
+    latePiano.pianoClusters[1].notes[3].duration = 4;
+    invalidSources.push({ violation: "piano_note_after_dry_boundary", source: latePiano });
+
+    const duplicateCandidate = cloneSource(canonical);
+    duplicateCandidate.candidates[2].id = "candidate-02";
+    invalidSources.push({ violation: "duplicate_candidate_id", source: duplicateCandidate });
+
+    const unexpectedMixDifference = cloneSource(canonical);
+    unexpectedMixDifference.candidates[1].mix.padDb = -11;
+    invalidSources.push({ violation: "candidate_mix_difference_not_allowed", source: unexpectedMixDifference });
+
+    for (const { violation, source } of invalidSources) {
+      expect(validateCloudlightR3Source(source)).toContain(violation);
+      expect(() => encodeCloudlightR3Midi(source)).toThrow(violation);
+    }
   });
 });
