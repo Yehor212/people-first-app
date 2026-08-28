@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -235,9 +236,13 @@ function validateLoopCompatiblePad(firstField, lastField) {
     return ["missing_loop_compatible_pad"];
   }
 
-  return JSON.stringify(firstField.padMidi) === JSON.stringify(lastField.padMidi)
-    ? []
-    : ["loop_incompatible_pad"];
+  if (firstField.padMidi.length !== lastField.padMidi.length) return ["loop_incompatible_pad"];
+  for (let index = 0; index < firstField.padMidi.length; index += 1) {
+    if (firstField.padMidi[index] !== lastField.padMidi[index]) {
+      return ["loop_incompatible_pad"];
+    }
+  }
+  return [];
 }
 
 function validateCandidateDiffs(candidates) {
@@ -589,6 +594,70 @@ function assertWritableLeaf(filePath) {
   }
 }
 
+function liveDescriptorPath(descriptor) {
+  const output = execFileSync(
+    "/usr/sbin/lsof",
+    ["-Fn", "-a", "-p", String(process.pid), "-d", String(descriptor)],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+  );
+  const pathLine = output.split("\n").find((line) => line.startsWith("n"));
+  return pathLine ? pathLine.slice(1) : null;
+}
+
+function removeAnomalousOpenedStage(descriptor) {
+  try {
+    const openedPath = liveDescriptorPath(descriptor);
+    if (openedPath) fs.rmSync(openedPath, { force: true });
+  } catch {
+    // The caller still closes the descriptor and removes its local stage path.
+  }
+}
+
+function assertOpenedStageMatchesPath(descriptor, stagePath, expectedStagePath) {
+  const descriptorStats = fs.fstatSync(descriptor);
+  let stageStats;
+  let resolvedStagePath;
+  try {
+    stageStats = fs.lstatSync(stagePath);
+    resolvedStagePath = fs.realpathSync.native(stagePath);
+  } catch {
+    removeAnomalousOpenedStage(descriptor);
+    throw new Error("Cloudlight R3 atomic write detected an unsafe opened descriptor path");
+  }
+
+  if (
+    !stageStats.isFile() ||
+    stageStats.isSymbolicLink() ||
+    stageStats.nlink !== 1 ||
+    !sameIdentity(descriptorStats, stageStats) ||
+    resolvedStagePath !== expectedStagePath
+  ) {
+    removeAnomalousOpenedStage(descriptor);
+    throw new Error("Cloudlight R3 atomic write detected an unsafe opened descriptor path");
+  }
+}
+
+function closeDescriptorAfterFailure(descriptor) {
+  try {
+    fs.closeSync(descriptor);
+    return;
+  } catch {
+    try {
+      fs.closeSync(descriptor);
+    } catch {
+      // A failed close cannot replace the original controlled write error.
+    }
+  }
+}
+
+function removeLocalStageAfterFailure(stagePath) {
+  try {
+    fs.rmSync(stagePath, { force: true });
+  } catch {
+    // The caller reports the original controlled write error after best-effort cleanup.
+  }
+}
+
 function writePrivateFileAtomically(filePath, contents) {
   const parentPath = path.dirname(filePath);
   const beforeParent = directoryIdentity(parentPath);
@@ -597,25 +666,27 @@ function writePrivateFileAtomically(filePath, contents) {
     parentPath,
     `.${path.basename(filePath)}.${process.pid}-${crypto.randomBytes(12).toString("hex")}.stage`
   );
+  const expectedStagePath = path.join(fs.realpathSync.native(parentPath), path.basename(stagePath));
   const noFollow = fs.constants.O_NOFOLLOW ?? 0;
-  const descriptor = fs.openSync(
-    stagePath,
-    fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | noFollow,
-    0o600
-  );
-
+  let descriptor = null;
   try {
+    if (!sameIdentity(directoryIdentity(parentPath), beforeParent)) {
+      throw new Error(`Cloudlight R3 output parent changed before open: ${parentPath}`);
+    }
+    descriptor = fs.openSync(
+      stagePath,
+      fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | noFollow,
+      0o600
+    );
+    assertOpenedStageMatchesPath(descriptor, stagePath, expectedStagePath);
     const stagedStats = fs.fstatSync(descriptor);
     if (!stagedStats.isFile() || stagedStats.nlink !== 1) {
       throw new Error(`Cloudlight R3 temporary output is unsafe: ${stagePath}`);
     }
     fs.writeFileSync(descriptor, contents);
     fs.fsyncSync(descriptor);
-  } finally {
     fs.closeSync(descriptor);
-  }
-
-  try {
+    descriptor = null;
     if (!sameIdentity(directoryIdentity(parentPath), beforeParent)) {
       throw new Error(`Cloudlight R3 output parent changed during write: ${parentPath}`);
     }
@@ -625,8 +696,10 @@ function writePrivateFileAtomically(filePath, contents) {
       throw new Error(`Cloudlight R3 output leaf is unsafe after write: ${filePath}`);
     }
   } catch (error) {
-    fs.rmSync(stagePath, { force: true });
-    throw error;
+    if (descriptor !== null) closeDescriptorAfterFailure(descriptor);
+    removeLocalStageAfterFailure(stagePath);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Cloudlight R3 atomic write failed: ${message}`);
   }
 }
 

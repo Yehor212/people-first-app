@@ -5,8 +5,10 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   symlinkSync,
   unlinkSync,
@@ -42,6 +44,7 @@ type CloudlightR3SourceModule = {
   };
 };
 
+const nativeFs = require("node:fs") as typeof import("node:fs");
 const {
   loadCloudlightR3Source,
   validateCloudlightR3Source,
@@ -274,6 +277,105 @@ function parseSmf(buffer: Buffer): { format: number; ppq: number; tracks: SmfTra
   expect(offset).toBe(buffer.length);
   expect(tracks).toHaveLength(trackCount);
   return { format, ppq, tracks };
+}
+
+type NormalizedSmfEvent = {
+  tick: number;
+  kind: "meta" | "channel" | "sysex";
+  status: number;
+  data: number[];
+};
+
+type LiteralMidiEvent = NormalizedSmfEvent & { order: number };
+
+const LITERAL_TICKS_PER_SECOND = 896;
+
+function literalTick(seconds: number): number {
+  return Math.round(seconds * LITERAL_TICKS_PER_SECOND);
+}
+
+function literalNoteEvents(
+  start: number,
+  duration: number,
+  midi: number,
+  velocity: number
+): LiteralMidiEvent[] {
+  return [
+    { tick: literalTick(start), kind: "channel", status: 0x90, data: [midi, velocity], order: 2 },
+    { tick: literalTick(start + duration), kind: "channel", status: 0x80, data: [midi, 0], order: 0 },
+  ];
+}
+
+function literalTrack(
+  name: string,
+  events: LiteralMidiEvent[],
+  includeTempo = false
+): NormalizedSmfEvent[] {
+  const tempoEvent: LiteralMidiEvent[] = includeTempo
+    ? [{ tick: 0, kind: "meta", status: 0x51, data: [0x10, 0x59, 0x45], order: -1 }]
+    : [];
+  const trackNameEvent: LiteralMidiEvent = {
+    tick: 0,
+    kind: "meta",
+    status: 0x03,
+    data: [...Buffer.from(name, "ascii")],
+    order: -2,
+  };
+  const named: LiteralMidiEvent[] = [
+    trackNameEvent,
+    ...tempoEvent,
+    ...events,
+  ].sort((left, right) => left.tick - right.tick || left.order - right.order);
+  const endTick = named.at(-1)?.tick ?? 0;
+  return [
+    ...named.map(({ tick, kind, status, data }) => ({ tick, kind, status, data })),
+    { tick: endTick, kind: "meta", status: 0x2f, data: [] },
+  ];
+}
+
+function canonicalSmfEventStreams(): NormalizedSmfEvent[][] {
+  const padEvents = HARMONIC_FIELDS.flatMap((field) =>
+    field.padMidi.flatMap((midi) => literalNoteEvents(field.start, field.end - field.start, midi, 42))
+  );
+  const droneEvents = HARMONIC_FIELDS.flatMap((field) =>
+    field.droneMidi.flatMap((midi) => literalNoteEvents(field.start, field.end - field.start, midi, 34))
+  );
+  const shimmerEvents = (side: "left" | "right") =>
+    SHIMMER_EVENTS.filter((event) => event.side === side).flatMap((event) =>
+      literalNoteEvents(event.start, event.duration, event.midi, event.velocity)
+    );
+  const pianoEvents = PIANO_CLUSTERS.flatMap((cluster) =>
+    cluster.notes.flatMap((note) =>
+      literalNoteEvents(cluster.start + note.offset, note.duration, note.midi, note.velocity)
+    )
+  );
+
+  return [
+    literalTrack("Pad", padEvents, true),
+    literalTrack("Drone", droneEvents),
+    literalTrack("Shimmer L", [
+      { tick: 0, kind: "channel", status: 0xb0, data: [10, 42], order: 1 },
+      ...shimmerEvents("left"),
+    ]),
+    literalTrack("Shimmer R", [
+      { tick: 0, kind: "channel", status: 0xb0, data: [10, 86], order: 1 },
+      ...shimmerEvents("right"),
+    ]),
+    literalTrack("Piano", pianoEvents),
+    literalTrack("Linear Fade", [
+      { tick: 134400, kind: "channel", status: 0xb0, data: [11, 127], order: 1 },
+      { tick: 148736, kind: "channel", status: 0xb0, data: [11, 0], order: 1 },
+    ]),
+  ];
+}
+
+function normalizeSmfTrack(track: SmfTrack): NormalizedSmfEvent[] {
+  return track.events.map((event) => ({
+    tick: event.tick,
+    kind: event.kind,
+    status: event.status,
+    data: [...event.data],
+  }));
 }
 
 function sourceFixtureRoot(source: unknown): string {
@@ -652,7 +754,12 @@ describe("Cloudlight Evening R3 source contract", () => {
       expect(endTicks).toEqual([148736, 148736, 89510, 109222, 122304, 148736]);
       expect(smf.tracks.every((track) => {
         const eot = track.events.at(-1);
-        return eot?.kind === "meta" && eot.status === 0x2f && eot.data.length === 0;
+        return (
+          eot?.kind === "meta" &&
+          eot.status === 0x2f &&
+          eot.data.length === 0 &&
+          track.events.filter((event) => event.kind === "meta" && event.status === 0x2f).length === 1
+        );
       })).toBe(true);
       expect(smf.tracks.flatMap((track) => track.events).some((event) => event.kind === "sysex")).toBe(false);
       expect(smf.tracks.flatMap((track) => track.events).some((event) => (event.status & 0xf0) === 0xc0)).toBe(false);
@@ -661,6 +768,7 @@ describe("Cloudlight Evening R3 source contract", () => {
         .filter((event) => event.kind === "meta" && event.status === 0x51);
       expect(tempoEvents).toHaveLength(1);
       expect(tempoEvents[0].data.readUIntBE(0, 3)).toBe(1_071_429);
+      expect(smf.tracks.map(normalizeSmfTrack)).toEqual(canonicalSmfEventStreams());
 
       for (const track of smf.tracks) {
         const balances = new Map<number, number>();
@@ -689,6 +797,12 @@ describe("Cloudlight Evening R3 source contract", () => {
       expect(inventory.every((entry) => entry.isFile())).toBe(true);
       expect(manifest.midiSha256).toBe(sha256(receipt.midiPath));
       expect(manifest.automationSha256).toBe(sha256(receipt.automationPath));
+      const sourceConfigPath = join(rootDir, "config/audio/cloudlight-evening-r3-source.json");
+      expect(manifest.sourceConfigSha256).toBe(sha256(sourceConfigPath));
+      expect(manifest.sourceConfigBytes).toBe(readFileSync(sourceConfigPath).length);
+      expect((receipt.summary as { sourceManifestSha256: string }).sourceManifestSha256).toBe(
+        sha256(receipt.manifestPath)
+      );
       expect(manifest.midiBytes).toBe(midi.length);
       expect(manifest.automationBytes).toBe(readFileSync(receipt.automationPath).length);
       expect(manifest.trackNames).toEqual(names);
@@ -703,6 +817,95 @@ describe("Cloudlight Evening R3 source contract", () => {
       ]);
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("returns named violations for BigInt and cyclic loop-pad input without throwing", () => {
+    const canonical = loadCloudlightR3Source(rootDir) as {
+      harmonicFields: Array<{ padMidi: unknown[]; droneMidi: unknown[] }>;
+    };
+    const bigintSource = cloneSource(canonical);
+    bigintSource.harmonicFields[0].padMidi[0] = BigInt(50);
+    const cyclicSource = cloneSource(canonical);
+    const cyclicPad: unknown[] = [];
+    cyclicPad.push(cyclicPad);
+    cyclicSource.harmonicFields[0].padMidi = cyclicPad;
+
+    for (const source of [bigintSource, cyclicSource]) {
+      expect(() => validateCloudlightR3Source(source)).not.toThrow();
+      expect(validateCloudlightR3Source(source)).toContain("invalid_pad_midi");
+      expect(() => encodeCloudlightR3Midi(source)).toThrow("invalid_pad_midi");
+    }
+  });
+
+  it("cleans injected write and close failures, then rejects a swapped parent before writing", () => {
+    const canonical = loadCloudlightR3Source(rootDir);
+    const fixtureRoot = sourceFixtureRoot(canonical);
+    const outsideRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-swap-outside-"));
+    const outputDir = join(fixtureRoot, "output/private/pack");
+    const originalWriteFileSync = nativeFs.writeFileSync;
+    const originalCloseSync = nativeFs.closeSync;
+    const originalOpenSync = nativeFs.openSync;
+    try {
+      let injectedDescriptor: number | null = null;
+      let closeFailuresRemaining = 1;
+      nativeFs.writeFileSync = ((target: Parameters<typeof writeFileSync>[0], ...args: unknown[]) => {
+        if (typeof target === "number") {
+          injectedDescriptor = target;
+          throw new Error("injected write failure");
+        }
+        return (originalWriteFileSync as (...arguments_: unknown[]) => unknown)(target, ...args);
+      }) as typeof nativeFs.writeFileSync;
+      nativeFs.closeSync = ((descriptor: number) => {
+        if (descriptor === injectedDescriptor && closeFailuresRemaining > 0) {
+          closeFailuresRemaining -= 1;
+          throw new Error("injected close failure");
+        }
+        return originalCloseSync(descriptor);
+      }) as typeof nativeFs.closeSync;
+      expect(() => writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir })).toThrow(
+        "injected write failure"
+      );
+      expect(readdirSync(outputDir).filter((name) => name.includes(".stage"))).toEqual([]);
+      nativeFs.writeFileSync = originalWriteFileSync;
+      nativeFs.closeSync = originalCloseSync;
+      writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir });
+      expect(readdirSync(outputDir).sort()).toEqual([
+        "README.md",
+        "automation.json",
+        "cloudlight-evening-r3.mid",
+        "source-manifest.json",
+      ]);
+
+      const outputPath = join(fixtureRoot, "output");
+      const savedOutputPath = join(fixtureRoot, "saved-output");
+      mkdirSync(join(outsideRoot, "private/pack"), { recursive: true });
+      writeFileSync(join(outsideRoot, "sentinel.txt"), "OUTSIDE_SENTINEL\n");
+      renameSync(outputPath, savedOutputPath);
+      nativeFs.openSync = ((filePath: Parameters<typeof openSync>[0], ...args: unknown[]) => {
+        if (typeof filePath === "string" && filePath.endsWith(".stage")) {
+          rmSync(outputPath, { recursive: true, force: true });
+          symlinkSync(outsideRoot, outputPath, "dir");
+          const descriptor = (originalOpenSync as (...arguments_: unknown[]) => number)(filePath, ...args);
+          unlinkSync(outputPath);
+          renameSync(savedOutputPath, outputPath);
+          return descriptor;
+        }
+        return (originalOpenSync as (...arguments_: unknown[]) => number)(filePath, ...args);
+      }) as typeof nativeFs.openSync;
+      expect(() => writeCloudlightR3SourcePack({ rootDir: fixtureRoot, outputDir })).toThrow(
+        "unsafe opened descriptor path"
+      );
+      nativeFs.openSync = originalOpenSync;
+      expect(readFileSync(join(outsideRoot, "sentinel.txt"), "utf8")).toBe("OUTSIDE_SENTINEL\n");
+      expect(readdirSync(join(outsideRoot, "private/pack"))).toEqual([]);
+      expect(readdirSync(outputDir).filter((name) => name.includes(".stage"))).toEqual([]);
+    } finally {
+      nativeFs.writeFileSync = originalWriteFileSync;
+      nativeFs.closeSync = originalCloseSync;
+      nativeFs.openSync = originalOpenSync;
+      rmSync(fixtureRoot, { recursive: true, force: true });
+      rmSync(outsideRoot, { recursive: true, force: true });
     }
   });
 });
