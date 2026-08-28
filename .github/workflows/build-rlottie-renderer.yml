@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
       - name: Check out branch
@@ -28,6 +28,7 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 https://github.com/TelegramMessenger/rlottie.git vendor/rlottie
           find vendor/rlottie -name CMakeLists.txt -print0 | xargs -0 sed -i 's/-Werror//g'
+          sed -i '1i#include <limits>' vendor/rlottie/src/vector/vrle.cpp
           cmake -S vendor/rlottie -B build/rlottie -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=ON \
