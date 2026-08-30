@@ -8,6 +8,7 @@ import {
   readStoredRuntimePerformanceMode,
   type RuntimePerformanceModeSnapshot,
 } from "./runtimePerformanceMode";
+import { sanitizeRuntimeRoute } from "./runtimeRouteSanitizer";
 
 const MAX_ENTRIES = 80;
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -139,7 +140,9 @@ export function shouldEnableRuntimePerformanceGuard(search: string): boolean {
 }
 
 function currentRoute(): string {
-  return `${window.location.pathname}${window.location.search}`;
+  return sanitizeRuntimeRoute(
+    `${window.location.pathname}${window.location.search}`,
+  );
 }
 
 function pushEntry(store: RuntimeFlightRecorder, entry: RuntimePerfEntry): void {
@@ -212,10 +215,11 @@ export function installRuntimeFlightRecorder(): boolean {
       };
     },
     markRoute: (route = currentRoute()) => {
-      store.route = route;
+      const sanitizedRoute = sanitizeRuntimeRoute(route);
+      store.route = sanitizedRoute;
       pushEntry(store, {
         kind: "route",
-        route,
+        route: sanitizedRoute,
         startTime: performance.now(),
         duration: 0,
       });
