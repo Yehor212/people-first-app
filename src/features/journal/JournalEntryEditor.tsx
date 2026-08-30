@@ -179,6 +179,17 @@ function withInsetRing(style: DiaryAccentStyle, ringColor: string): React.CSSPro
   return { ...style, boxShadow: `inset 0 0 0 2px ${ringColor}` };
 }
 
+function getTextColorStyle(color: string): React.CSSProperties {
+  return { color };
+}
+
+function getFontPreviewStyle(name: DiaryFontName): React.CSSProperties {
+  return {
+    fontFamily: DIARY_FONTS_LOCAL[name].family,
+    fontStyle: DIARY_FONTS_LOCAL[name].style,
+  };
+}
+
 const ATMOSPHERE_THEMES = [
   {
     name: "dark" as const,
@@ -908,21 +919,19 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const deleteDialogA11y = useModalA11y(showDeleteConfirm, closeDeleteConfirm);
   const unsavedDialogA11y = useModalA11y(showUnsavedDialog, closeUnsavedDialog);
   const settingsDialogA11y = useModalA11y(showSettingsConfirm, closeSettingsConfirm);
-  const recordingDialogA11y = useModalA11y(showRecordingOverlay, closeRecordingOverlay, mobileToolsButtonRef);
-  const audioRemovalDialogA11y = useModalA11y(
-    Boolean(audioRemovalPendingId),
-    cancelRemoveAudio,
+  const recordingDialogA11y = useModalA11y(
+    showRecordingOverlay,
+    closeRecordingOverlay,
+    mobileToolsButtonRef
   );
+  const audioRemovalDialogA11y = useModalA11y(Boolean(audioRemovalPendingId), cancelRemoveAudio);
   const voicePrivacyDialogA11y = useModalA11y(showVoicePrivacyConfirm, closeVoicePrivacyConfirm);
   const panicLockDialogA11y = useModalA11y(panicLocked, handlePanicLockCloseRequest);
 
   useEffect(() => {
     if (!audioSaveRetryAvailable) return;
     const frame = requestAnimationFrame(() => {
-      focusModalRecoveryAction(
-        recordingDialogA11y.modalRef.current,
-        recordingRetryRef.current,
-      );
+      focusModalRecoveryAction(recordingDialogA11y.modalRef.current, recordingRetryRef.current);
     });
     return () => cancelAnimationFrame(frame);
   }, [audioSaveRetryAvailable, recordingDialogA11y.modalRef]);
@@ -1175,7 +1184,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   "font-bold tracking-tight whitespace-normal break-words [overflow-wrap:anywhere] font-display",
                   desktop ? "text-sm" : "text-xs"
                 )}
-                style={{ color: diaryTheme.accentColor }}
+                style={getTextColorStyle(diaryTheme.accentColor)}
               >
                 {title || ts.diaryTimeCapsule || "TIME CAPSULE"}
               </div>
@@ -1401,10 +1410,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                               ? JOURNAL_STYLE_TOOLBAR_BUTTON_ACTIVE_CLASS
                               : JOURNAL_STYLE_TOOLBAR_BUTTON_IDLE_CLASS
                           )}
-                          style={{
-                            fontFamily: DIARY_FONTS_LOCAL[name].family,
-                            fontStyle: DIARY_FONTS_LOCAL[name].style,
-                          }}
+                          style={getFontPreviewStyle(name)}
                           aria-pressed={name === diaryTheme.font}
                         >
                           Aa <span className="text-xs">{label}</span>
@@ -1952,7 +1958,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   exit={{ opacity: 0, y: -6 }}
                   transition={zenMotion.gentle}
                   className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm leading-relaxed"
-                  style={{ color: paperColors.text }}
+                  style={getTextColorStyle(paperColors.text)}
                 >
                   <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                   <span className="min-w-0 flex-1">{selectedPrompt}</span>
@@ -2058,9 +2064,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   initial={shouldAnimate() ? { opacity: 0, height: 0 } : false}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={
-                    shouldAnimate()
-                      ? { opacity: 0, height: 0 }
-                      : { opacity: 1, height: "auto" }
+                    shouldAnimate() ? { opacity: 0, height: 0 } : { opacity: 1, height: "auto" }
                   }
                   transition={shouldAnimate() ? zenMotion.gentle : zenMotion.instant}
                   className="grid grid-cols-[minmax(0,1fr)_48px] items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2"
@@ -2394,7 +2398,12 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                   key="mobile-style-tray"
                   initial={{ opacity: 0, height: 0, y: 10 }}
                   animate={{ opacity: 1, height: "auto", y: 0 }}
-                  exit={{ opacity: 0, height: 0, y: 10, transition: { duration: 0.24, ease: easings.emphasizedAccelerate } }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                    y: 10,
+                    transition: { duration: 0.24, ease: easings.emphasizedAccelerate },
+                  }}
                   transition={{ duration: 0.24, ease: easings.emphasizedDecelerate }}
                   role="group"
                   aria-label={styleToolsLabel}
@@ -3139,116 +3148,127 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                     </div>
                   </>
                 ) : (
-                <>
-                  {/* Permission and recording state */}
-                  <div className="flex justify-center mb-4">
-                    {recorder.isRequestingPermission ? (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Mic className="h-6 w-6" aria-hidden="true" />
-                      </div>
-                    ) : (
-                      <motion.div
-                        animate={!recorder.isPaused && shouldAnimate() ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                        transition={
-                          shouldAnimate()
-                            ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-                            : zenMotion.instant
-                        }
-                        className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/15"
-                      >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/25">
-                          <div className="h-4 w-4 rounded-full bg-destructive" />
+                  <>
+                    {/* Permission and recording state */}
+                    <div className="flex justify-center mb-4">
+                      {recorder.isRequestingPermission ? (
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <Mic className="h-6 w-6" aria-hidden="true" />
                         </div>
-                      </motion.div>
-                    )}
-                  </div>
+                      ) : (
+                        <motion.div
+                          animate={
+                            !recorder.isPaused && shouldAnimate()
+                              ? { scale: [1, 1.2, 1] }
+                              : { scale: 1 }
+                          }
+                          transition={
+                            shouldAnimate()
+                              ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+                              : zenMotion.instant
+                          }
+                          className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/15"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/25">
+                            <div className="h-4 w-4 rounded-full bg-destructive" />
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
 
-                  <p
-                    id={recordingDialogTitleId}
-                    className="text-sm font-semibold mb-1 text-[var(--diary-text,hsl(var(--foreground)))]"
-                  >
-                    {recorder.isRequestingPermission
-                      ? ts.journalAudioPreparing || "Preparing microphone..."
-                      : recorder.isFinalizing
-                      ? ts.journalSaving || "Saving..."
-                      : recorder.isPaused
-                      ? ts.journalRecordingPaused || "Recording paused"
-                      : ts.journalRecording || "Recording"}
-                  </p>
-                  {!recorder.isRequestingPermission ? (
-                    <p className="text-2xl font-mono font-bold tabular-nums mb-4 text-[var(--diary-text,hsl(var(--foreground)))]">
-                      {formatRecordingTime(recorder.duration)}
+                    <p
+                      id={recordingDialogTitleId}
+                      className="text-sm font-semibold mb-1 text-[var(--diary-text,hsl(var(--foreground)))]"
+                    >
+                      {recorder.isRequestingPermission
+                        ? ts.journalAudioPreparing || "Preparing microphone..."
+                        : recorder.isFinalizing
+                          ? ts.journalSaving || "Saving..."
+                          : recorder.isPaused
+                            ? ts.journalRecordingPaused || "Recording paused"
+                            : ts.journalRecording || "Recording"}
                     </p>
-                  ) : null}
-                  <p
-                    id={recordingDialogDescriptionId}
-                    className="mb-4 text-xs text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
-                  >
-                    {recorder.isRequestingPermission
-                      ? ts.journalAudioPreparingDescription ||
-                        "Choose Allow in the system prompt. Recording starts only after permission is granted."
-                      : ts.journalAudioMaxDuration || "Max 5 minutes"}
-                  </p>
+                    {!recorder.isRequestingPermission ? (
+                      <p className="text-2xl font-mono font-bold tabular-nums mb-4 text-[var(--diary-text,hsl(var(--foreground)))]">
+                        {formatRecordingTime(recorder.duration)}
+                      </p>
+                    ) : null}
+                    <p
+                      id={recordingDialogDescriptionId}
+                      className="mb-4 text-xs text-[var(--diary-muted,hsl(var(--muted-foreground)))]"
+                    >
+                      {recorder.isRequestingPermission
+                        ? ts.journalAudioPreparingDescription ||
+                          "Choose Allow in the system prompt. Recording starts only after permission is granted."
+                        : ts.journalAudioMaxDuration || "Max 5 minutes"}
+                    </p>
 
-                  <div className="flex gap-2">
-                    {!recorder.isRequestingPermission && !recorder.isFinalizing ? (
+                    <div className="flex gap-2">
+                      {!recorder.isRequestingPermission && !recorder.isFinalizing ? (
+                        <button
+                          type="button"
+                          onClick={recorder.isPaused ? recorder.resume : recorder.pause}
+                          className={cn(
+                            "min-h-[48px] flex-1 rounded-xl border border-[var(--diary-border,hsl(var(--border)/0.3))]",
+                            "flex items-center justify-center gap-2 px-3 text-sm font-semibold",
+                            "bg-[var(--diary-bg,hsl(var(--card)))] text-[var(--diary-text,hsl(var(--foreground)))]",
+                            "active:scale-[0.98] motion-safe:transition-transform"
+                          )}
+                        >
+                          {recorder.isPaused ? (
+                            <Play className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Pause className="h-4 w-4" aria-hidden="true" />
+                          )}
+                          {recorder.isPaused ? ts.resume || "Resume" : ts.pause || "Pause"}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
-                        onClick={recorder.isPaused ? recorder.resume : recorder.pause}
+                        onClick={handleStopRecording}
+                        disabled={recorder.isFinalizing}
+                        aria-busy={recorder.isFinalizing}
                         className={cn(
-                          "min-h-[48px] flex-1 rounded-xl border border-[var(--diary-border,hsl(var(--border)/0.3))]",
-                          "flex items-center justify-center gap-2 px-3 text-sm font-semibold",
-                          "bg-[var(--diary-bg,hsl(var(--card)))] text-[var(--diary-text,hsl(var(--foreground)))]",
-                          "active:scale-[0.98] motion-safe:transition-transform"
+                          "min-h-[48px] flex-1 rounded-xl px-3 text-sm font-semibold",
+                          "bg-destructive text-destructive-foreground",
+                          "flex items-center justify-center gap-2",
+                          "active:scale-[0.98] motion-safe:transition-transform disabled:opacity-60"
                         )}
                       >
-                        {recorder.isPaused ? (
-                          <Play className="h-4 w-4" aria-hidden="true" />
+                        {recorder.isRequestingPermission ? (
+                          <X className="h-4 w-4" aria-hidden="true" />
+                        ) : recorder.isFinalizing ? (
+                          <Loader2
+                            className="h-4 w-4 motion-safe:animate-spin"
+                            aria-hidden="true"
+                          />
                         ) : (
-                          <Pause className="h-4 w-4" aria-hidden="true" />
+                          <Square className="w-4 h-4" aria-hidden="true" />
                         )}
-                        {recorder.isPaused ? ts.resume || "Resume" : ts.pause || "Pause"}
+                        {recorder.isRequestingPermission
+                          ? ts.cancel || "Cancel"
+                          : recorder.isFinalizing
+                            ? ts.journalSaving || "Saving..."
+                            : ts.journalRecordingStopKeep ||
+                              ts.journalRecordingStop ||
+                              "Stop & keep"}
+                      </button>
+                    </div>
+                    {!recorder.isRequestingPermission ? (
+                      <button
+                        onClick={requestDiscardRecording}
+                        className={cn(
+                          "mt-2 w-full py-3 rounded-xl text-sm font-semibold",
+                          "border border-[var(--diary-border,hsl(var(--border)/0.3))] bg-[var(--diary-bg,hsl(var(--card)))] text-[var(--diary-text,hsl(var(--foreground)))]",
+                          "flex items-center justify-center gap-2",
+                          "active:scale-[0.98] motion-safe:transition-transform min-h-[48px]"
+                        )}
+                      >
+                        <X className="w-4 h-4" aria-hidden="true" />
+                        {ts.journalRecordingDiscard || "Discard"}
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={handleStopRecording}
-                      disabled={recorder.isFinalizing}
-                      aria-busy={recorder.isFinalizing}
-                      className={cn(
-                        "min-h-[48px] flex-1 rounded-xl px-3 text-sm font-semibold",
-                        "bg-destructive text-destructive-foreground",
-                        "flex items-center justify-center gap-2",
-                        "active:scale-[0.98] motion-safe:transition-transform disabled:opacity-60"
-                      )}
-                    >
-                      {recorder.isRequestingPermission ? (
-                        <X className="h-4 w-4" aria-hidden="true" />
-                      ) : recorder.isFinalizing ? (
-                        <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Square className="w-4 h-4" aria-hidden="true" />
-                      )}
-                      {recorder.isRequestingPermission
-                        ? ts.cancel || "Cancel"
-                        : recorder.isFinalizing
-                        ? ts.journalSaving || "Saving..."
-                        : ts.journalRecordingStopKeep || ts.journalRecordingStop || "Stop & keep"}
-                    </button>
-                  </div>
-                  {!recorder.isRequestingPermission ? <button
-                    onClick={requestDiscardRecording}
-                    className={cn(
-                      "mt-2 w-full py-3 rounded-xl text-sm font-semibold",
-                      "border border-[var(--diary-border,hsl(var(--border)/0.3))] bg-[var(--diary-bg,hsl(var(--card)))] text-[var(--diary-text,hsl(var(--foreground)))]",
-                      "flex items-center justify-center gap-2",
-                      "active:scale-[0.98] motion-safe:transition-transform min-h-[48px]"
-                    )}
-                  >
-                    <X className="w-4 h-4" aria-hidden="true" />
-                    {ts.journalRecordingDiscard || "Discard"}
-                  </button> : null}
-                </>
+                  </>
                 )
               ) : (
                 <>

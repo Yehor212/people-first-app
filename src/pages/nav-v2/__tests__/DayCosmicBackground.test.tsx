@@ -221,6 +221,71 @@ describe("DayCosmicBackground", () => {
     expect(dayCosmicCss).toContain("box-shadow: none");
   });
 
+  it("retires every dynamic Android ambience layer only after the full-DPR renderer is ready", () => {
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__light-curtain'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__photon-field'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__light-curtain'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__sun-shower'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__prism-ribbon'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__caustics'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__sun-threads'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__photon-field'
+    );
+    expect(dayCosmicCss).toContain(
+      '.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__motes'
+    );
+    expect(dayCosmicCss).not.toContain("day-cosmic__android-animated-surface");
+    expect(dayCosmicCss).not.toContain("data-android-day-flourish-surface");
+  });
+
+  it("releases static full-screen promotion hints only after the Android renderer is ready", () => {
+    expect(dayCosmicCss).toMatch(
+      /\.day-cosmic\[data-android-day-ambience="ready"\] > \.day-cosmic__bokeh,\s*\.day-cosmic\[data-android-day-ambience="ready"\] > \.day-cosmic__horizon-glow\s*\{\s*will-change: auto;/
+    );
+    expect(dayCosmicCss).toMatch(
+      /\.day-cosmic__bokeh,[\s\S]*?\.day-cosmic__horizon-glow,[\s\S]*?will-change: transform, opacity;/
+    );
+  });
+
+  it("drops only the redundant Android caustic promotion hint", () => {
+    expect(dayCosmicCss).toMatch(
+      /:root\[data-platform="android"\] \.orb-day-flourish__caustic\s*\{\s*will-change:\s*auto\s*!important;\s*\}/
+    );
+    expect(dayCosmicCss).not.toMatch(
+      /:root\[data-platform="android"\] \.orb-day-flourish__(?:prism|veil|glint|spark)\s*\{\s*will-change:\s*auto/
+    );
+    expect(dayCosmicCss).toContain("@keyframes orb-day-caustic-drift");
+    expect(dayCosmicCss).toContain("filter: blur(0.45rem)");
+    expect(dayCosmicCss).toContain("mix-blend-mode: multiply");
+  });
+
+  it("scopes the occluded global paper-grain release to the Android day Orb surface", () => {
+    expect(dayCosmicCss).toContain(
+      ':root[data-theme="paper"] body.android-day-orb-opaque-surface::before'
+    );
+    expect(dayCosmicCss).toMatch(
+      /body\.android-day-orb-opaque-surface::before\s*\{\s*display: none;/
+    );
+    expect(dayCosmicCss).not.toContain(
+      ':root[data-theme="paper"] body.android-day-orb-opaque-surface::after'
+    );
+  });
+
   it("limits Settings motion CSS to transform and opacity allowlists with stop fallbacks", () => {
     expect(dayCosmicCss).toContain(
       '.day-cosmic[data-presentation="settings"][data-animated="true"]'

@@ -1048,6 +1048,88 @@ test.use({
 });
 
 test.describe("V2 orb long-session cadence", () => {
+  test("keeps the canonical Android orb interactive when runtime strain is only a scoped pressure signal", async ({
+    page,
+  }) => {
+    test.skip(
+      !LOCAL_PRODUCTION_PREVIEW,
+      "Android motion regression requires a local production preview of the current worktree",
+    );
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "no-preference" });
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "CapacitorCustomPlatform", {
+        configurable: true,
+        value: { name: "android" },
+      });
+    });
+    await installLongSessionProbe(page);
+    await primeZenflowV2(page, {
+      clearStorage: true,
+      language: "en",
+      theme: "paper",
+    });
+
+    const route = new URL(v2RoutePath("orb", { layout: "phone" }), "https://zenflow.test/");
+    route.searchParams.set("orbClockProbe", "true");
+    route.searchParams.set("runtimePerfGuard", "off");
+    await page.goto(`${route.pathname.slice(1)}${route.search}`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    const hero = page.getByTestId("orb-page-hero");
+    const heroCanvas = hero.locator("canvas[data-orb-renderer-tier]");
+    await expect(hero).toBeVisible({ timeout: 30_000 });
+    await expect(heroCanvas).toHaveCount(1);
+    await expect(heroCanvas).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("slider").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Next/ })).toBeVisible();
+    const updateDialog = page.getByRole("alertdialog", { name: "Update Available" });
+    if (await updateDialog.isVisible()) {
+      await updateDialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(updateDialog).toHaveCount(0);
+    }
+
+    await clearSamples(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.runtimePerf = "strained";
+      window.dispatchEvent(
+        new CustomEvent("zenflow:runtime-perf-mode", {
+          detail: { mode: "strained", reason: "android-orb-runtime-regression" },
+        }),
+      );
+    });
+    await expect(page.locator("html")).toHaveAttribute("data-platform", "android");
+    await expect(page.locator("html")).toHaveAttribute("data-runtime-perf", "strained");
+    await expect(page.locator("html")).toHaveAttribute("data-reduced-motion", "false");
+    await expect(page.locator("body")).not.toHaveClass(/\breduce-motion\b/);
+
+    const slider = page.getByRole("slider").first();
+    await setSliderEndpoint(page, slider, "End", "6", 1);
+    await page.waitForTimeout(1_000);
+    const samples = await readSamples(page);
+    const runtime = await page.evaluate(() => ({
+      canvasCount: document.querySelectorAll(
+        '[data-testid="orb-page-hero"] canvas[data-orb-renderer-tier]',
+      ).length,
+      platform: document.documentElement.dataset.platform,
+      reducedMotion: document.documentElement.dataset.reducedMotion,
+      runtimePerformance: document.documentElement.dataset.runtimePerf,
+    }));
+
+    expect(runtime).toEqual({
+      canvasCount: 1,
+      platform: "android",
+      reducedMotion: "false",
+      runtimePerformance: "strained",
+    });
+    expect(samples.length).toBeGreaterThanOrEqual(MIN_RENDERED_FRAMES_PER_SECOND);
+    expect(samples.at(-1)?.renderedValence).toBeGreaterThanOrEqual(
+      RENDERED_ENDPOINT_ABSOLUTE_MIN,
+    );
+  });
+
   for (const profile of PROFILES) {
     test(`${profile.name} keeps its initial pace after a 60+ second dwell`, async ({ page }) => {
       test.skip(

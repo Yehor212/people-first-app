@@ -35,7 +35,7 @@ describe("production advertising is Android banner-only", () => {
   it("bundles the native AdMob bridge instead of leaving a bare runtime import in WebView", () => {
     const controller = readFileSync(resolve(root, "src/lib/adController.ts"), "utf8");
 
-    expect(controller).toContain("from '@capacitor-community/admob';");
+    expect(controller).toMatch(/from ["']@capacitor-community\/admob["'];/);
     expect(controller).toContain("AdMob,");
     expect(controller).not.toContain("@vite-ignore");
     expect(controller).not.toContain("const moduleName = '@capacitor-community/admob'");

@@ -16,11 +16,81 @@
   isolation: isolate;
 }
 
+:root[data-platform="android"]
+  .day-cosmic[data-android-day-ambience="ready"]
+  + .day-cosmic__android-large-effects {
+  z-index: 2;
+}
+
 .day-cosmic,
 .day-cosmic__base,
 .day-cosmic__sun-threads,
 .orb-day-flourish {
   overflow: clip;
+}
+
+/* The Android day Orb paints an opaque full-viewport scene above the paper
+ * theme's global body grain. Keeping that occluded pseudo-element composited
+ * still consumes three full-screen tile surfaces in WebView, even though a
+ * phase-locked capture proves it contributes no visible pixels here. The body
+ * class is owned by the mounted Orb lifecycle; the visible body vignette stays. */
+:root[data-theme="paper"] body.android-day-orb-opaque-surface::before {
+  display: none;
+}
+
+/* Android keeps the canonical dynamic DOM tree as an immediate CSS fallback.
+ * Once the full-DPR WebGL frame is ready, one canvas owns the same four large
+ * effects, 78 photons, 35 motes, and 18 sun threads. The canvas stays outside
+ * the contained daylight paint tree so its full-DPR updates cannot invalidate
+ * the static CSS background subtree. This changes no pixels, timing, DPR, or
+ * motion content. */
+.day-cosmic__android-large-effects {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  contain: strict;
+  pointer-events: none;
+  max-width: none;
+  backface-visibility: visible;
+}
+
+/* Keep the already-compiled Android daylight renderer alive across an
+ * ink-theme visit while removing both retained nodes from layout and the
+ * compositor tile graph. The active attribute changes before paint; no
+ * opacity, color, blur, geometry, timing, or easing is altered. */
+.day-cosmic[data-android-day-active="false"],
+.day-cosmic__android-large-effects[data-android-day-active="false"] {
+  display: none;
+}
+
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__light-curtain,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__sun-threads,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__sun-shower,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__prism-ribbon,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__caustics,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__photon-field,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__motes,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__light-curtain,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__sun-threads,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__sun-shower,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__prism-ribbon,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__caustics,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__photon-field,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__motes {
+  display: none;
+}
+
+/* These two layers are static. Keep their promotion hints for the actual CSS
+ * fallback, but never allocate separate full-screen textures while Android is
+ * synchronously preparing or already presenting its WebGL frame.
+ * `will-change` is not a visual property. */
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__bokeh,
+.day-cosmic[data-android-day-ambience="pending"] > .day-cosmic__horizon-glow,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__bokeh,
+.day-cosmic[data-android-day-ambience="ready"] > .day-cosmic__horizon-glow {
+  will-change: auto;
 }
 
 .day-cosmic__bokeh,
@@ -39,6 +109,34 @@
 .day-cosmic__mote {
   will-change: transform, opacity;
   backface-visibility: hidden;
+}
+
+:root[data-platform="android"] .day-cosmic__bokeh,
+:root[data-platform="android"] .day-cosmic__horizon-glow,
+:root[data-platform="android"] .day-cosmic__light-curtain,
+:root[data-platform="android"] .day-cosmic__sun-shower,
+:root[data-platform="android"] .day-cosmic__prism-ribbon,
+:root[data-platform="android"] .day-cosmic__caustics,
+:root[data-platform="android"] .day-cosmic__sun-thread,
+:root[data-platform="android"] .day-cosmic__photon,
+:root[data-platform="android"] .day-cosmic__mote,
+:root[data-platform="android"] .orb-day-flourish::before,
+:root[data-platform="android"] .orb-day-flourish::after,
+:root[data-platform="android"] .orb-day-flourish__prism,
+:root[data-platform="android"] .orb-day-flourish__caustic,
+:root[data-platform="android"] .orb-day-flourish__veil,
+:root[data-platform="android"] .orb-day-flourish__glint,
+:root[data-platform="android"] .orb-day-flourish__spark {
+  -webkit-backface-visibility: visible;
+  backface-visibility: visible;
+}
+
+/* Chromium otherwise allocates two drawing layers for each filtered,
+ * multiply-blended caustic on Android. The animation itself still promotes
+ * the current transform/opacity frame; releasing only the redundant hint
+ * preserves the keyframes and pixels while avoiding the duplicate textures. */
+:root[data-platform="android"] .orb-day-flourish__caustic {
+  will-change: auto !important;
 }
 
 :root[data-runtime-perf] .day-cosmic__bokeh,

@@ -1,4 +1,13 @@
-import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
 import { MiniWeekRow } from "@/components/habit-hub/MiniWeekRow";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -26,10 +35,25 @@ import {
   type NumericalEntryAction,
 } from "@/lib/habitNumericalInteraction";
 import { isHabitDueOnDate, normalizeHabitSchedule } from "@/lib/habitScheduling";
+import { isAndroid } from "@/lib/platform";
 import type { Habit } from "@/types";
 import { formatLocalizedCount } from "@/features/journal";
 import { ChevronDown } from "lucide-react";
 import { HabitIconVisual } from "./HabitIconVisual";
+import {
+  getHabitCelebrationAsset,
+  type HabitCelebrationVariant,
+} from "@/components/habit-pictogram/habitCelebrationAssets";
+import { preloadHabitCelebrationAnimation } from "@/components/habit-pictogram/habitTgsRuntime";
+import { resolveV2HabitPictogramId } from "@/lib/v2HabitPictograms";
+
+const ICON_HOLD_DURATION_MS = 450;
+const ICON_HOLD_MOVE_TOLERANCE_PX = 10;
+
+function getCurrentCelebrationVariant(): HabitCelebrationVariant {
+  if (typeof document === "undefined") return "day";
+  return document.documentElement.dataset.theme === "paper" ? "day" : "night";
+}
 
 function getCurrentISOWeek(todayStr: string): string[] {
   const [year, month, day] = todayStr.split("-").map(Number);
@@ -141,6 +165,87 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
     [visualRole]
   );
   const isCompletedToday = isHabitCompletedOnDate(habit, today);
+  const pictogramId = resolveV2HabitPictogramId(habit.icon);
+  const hasCelebration = isAndroid && Boolean(getHabitCelebrationAsset(pictogramId));
+  const [celebration, setCelebration] = useState<{
+    token: number;
+    variant: HabitCelebrationVariant;
+  } | null>(null);
+  const completionStateRef = useRef({ habitId: habit.id, completed: isCompletedToday });
+  const holdTimerRef = useRef<number | null>(null);
+  const holdPointerRef = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const suppressNextClickRef = useRef(false);
+
+  const triggerCelebration = useCallback(() => {
+    if (!hasCelebration) return;
+    const variant = getCurrentCelebrationVariant();
+    setCelebration((current) => ({
+      token: (current?.token ?? 0) + 1,
+      variant,
+    }));
+  }, [hasCelebration]);
+
+  const cancelIconHold = useCallback(() => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    holdPointerRef.current = null;
+  }, []);
+
+  useEffect(() => cancelIconHold, [cancelIconHold]);
+
+  useEffect(() => {
+    const previous = completionStateRef.current;
+    if (previous.habitId !== habit.id) {
+      completionStateRef.current = { habitId: habit.id, completed: isCompletedToday };
+      return;
+    }
+    if (!previous.completed && isCompletedToday) triggerCelebration();
+    completionStateRef.current = { habitId: habit.id, completed: isCompletedToday };
+  }, [habit.id, isCompletedToday, triggerCelebration]);
+
+  const handleIconPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!isDueToday || !hasCelebration) return;
+    if (typeof event.button === "number" && event.button !== 0) return;
+    cancelIconHold();
+    suppressNextClickRef.current = false;
+    holdPointerRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const variant = getCurrentCelebrationVariant();
+    void preloadHabitCelebrationAnimation(pictogramId, variant);
+    holdTimerRef.current = window.setTimeout(() => {
+      holdTimerRef.current = null;
+      suppressNextClickRef.current = true;
+      triggerCelebration();
+    }, ICON_HOLD_DURATION_MS);
+  };
+
+  const handleIconPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const pointer = holdPointerRef.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) return;
+    if (
+      Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) >
+      ICON_HOLD_MOVE_TOLERANCE_PX
+    ) {
+      cancelIconHold();
+    }
+  };
+
+  const handleIconPointerEnd = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    cancelIconHold();
+  };
   const cardVisualStyle = useMemo(
     () =>
       ({
@@ -291,16 +396,35 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
       >
         <button
           type="button"
-          onClick={handleIconCheckIn}
+          onClick={(event) => {
+            if (suppressNextClickRef.current) {
+              suppressNextClickRef.current = false;
+              event.preventDefault();
+              event.stopPropagation();
+              return;
+            }
+            handleIconCheckIn();
+          }}
+          onPointerDown={handleIconPointerDown}
+          onPointerMove={handleIconPointerMove}
+          onPointerUp={handleIconPointerEnd}
+          onPointerCancel={handleIconPointerEnd}
+          onContextMenu={(event) => event.preventDefault()}
           className={
-            "flex shrink-0 items-center justify-center rounded-2xl border text-lg shadow-sm motion-safe:transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+            "flex shrink-0 items-center justify-center border text-lg shadow-sm motion-safe:transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 " +
+            (hasCelebration ? "overflow-hidden rounded-full " : "rounded-2xl ") +
             (isCollapsed ? "h-12 w-12" : "min-h-[44px] min-w-[44px]")
           }
           aria-label={`${habit.name}: ${isCompletedToday ? t.completed || "Completed" : tx.identityVotePending || "mark today"}`}
           data-testid={`hero-weekly-card-${habit.id}-icon-check`}
           data-slot="weekly-check"
         >
-          <HabitIconVisual value={habit.icon} iconClassName={isCollapsed ? "h-8 w-8" : "h-7 w-7"} />
+          <HabitIconVisual
+            value={habit.icon}
+            iconClassName={hasCelebration ? "h-full w-full" : isCollapsed ? "h-8 w-8" : "h-7 w-7"}
+            playToken={celebration?.token}
+            celebrationVariant={celebration?.variant}
+          />
         </button>
         <div className="min-w-0 self-center">
           <p

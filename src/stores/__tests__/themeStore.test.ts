@@ -5,8 +5,12 @@ const STORAGE_KEY = "zenflow:theme-v0c";
 const statusBarMock = vi.hoisted(() => ({
   setStyle: vi.fn(() => Promise.resolve()),
 }));
+const platformMock = vi.hoisted(() => ({
+  isNative: true,
+  isAndroid: true,
+}));
 
-vi.mock("@/lib/platform", () => ({ isNative: true }));
+vi.mock("@/lib/platform", () => platformMock);
 vi.mock("@/lib/statusBarStyle", () => ({
   StatusBarStyle: statusBarMock,
   Style: { Dark: "DARK", Light: "LIGHT", Default: "DEFAULT" },
@@ -35,6 +39,8 @@ describe("themeStore Variant A", () => {
     delete document.documentElement.dataset.themeContrast;
     document.documentElement.classList.remove("dark", "oled");
     statusBarMock.setStyle.mockClear();
+    platformMock.isNative = true;
+    platformMock.isAndroid = true;
     localStorage.clear();
   });
 
@@ -157,8 +163,62 @@ describe("themeStore Variant A", () => {
     expect(document.documentElement.dataset.theme).toBe("oled");
     expect(document.documentElement).toHaveClass("dark", "oled");
     expect(localStorage.getItem("zenflow-theme")).toBe("dark");
-    expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "DARK" });
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}").state.theme).toBe("oled");
+  });
+
+  it("publishes fixed-contrast native status-bar style after the updated interface crosses two frames", async () => {
+    const queuedFrames: Array<{ id: number; callback: FrameRequestCallback }> = [];
+    const cancelledFrames = new Set<number>();
+    let nextFrameId = 0;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      const id = ++nextFrameId;
+      queuedFrames.push({ id, callback });
+      return id;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      cancelledFrames.add(id);
+    });
+    const flushFrame = () => {
+      const frame = queuedFrames.shift();
+      if (!frame || cancelledFrames.delete(frame.id)) return;
+      frame.callback(performance.now());
+    };
+
+    const { mod } = await loadStore(false);
+    flushFrame();
+    flushFrame();
+    await Promise.resolve();
+    statusBarMock.setStyle.mockClear();
+
+    mod.useThemeStore.getState().setTheme("ink");
+
+    expect(document.documentElement.dataset.theme).toBe("ink");
+    expect(statusBarMock.setStyle).not.toHaveBeenCalled();
+    flushFrame();
+    expect(statusBarMock.setStyle).not.toHaveBeenCalled();
+    flushFrame();
+    expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "LIGHT" });
+
+    statusBarMock.setStyle.mockClear();
+    mod.useThemeStore.getState().setTheme("paper");
+    mod.useThemeStore.getState().setTheme("oled");
+    flushFrame();
+    flushFrame();
+    flushFrame();
+    expect(statusBarMock.setStyle).toHaveBeenCalledTimes(1);
+    expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "LIGHT" });
+  });
+
+  it("preserves theme-relative status-bar contrast on non-Android native shells", async () => {
+    platformMock.isAndroid = false;
+
+    const { mod } = await loadStore(true);
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+    });
+
+    expect(mod.useThemeStore.getState().appliedTheme).toBe("ink");
+    expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "DARK" });
   });
 
   it("keeps the previous mode and DOM when persistence is unavailable", async () => {
@@ -351,7 +411,7 @@ describe("themeStore Variant A", () => {
     expect(removeWindowListener).toHaveBeenCalledWith("storage", expect.any(Function));
   });
 
-  it("keeps legacy classes and native chrome aligned when System follows an OS change", async () => {
+  it("keeps legacy classes and fixed native chrome contrast when System follows an OS change", async () => {
     const { mod, mql } = await loadStore(false);
     const off = mod.bindThemeRuntimeListeners();
     const handleColorScheme = mql.addEventListener.mock.calls.find(
@@ -365,7 +425,10 @@ describe("themeStore Variant A", () => {
     expect(document.documentElement.dataset.theme).toBe("ink");
     expect(document.documentElement).toHaveClass("dark");
     expect(document.documentElement).not.toHaveClass("oled");
-    expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "DARK" });
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+    });
+    expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "LIGHT" });
     off();
   });
 });

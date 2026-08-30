@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, useCallback, memo, type CSSProperties } from "react";
 import { ArrowLeft, Pencil, RotateCcw, Share2, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -62,6 +62,101 @@ function getLocalizedMoodLabel(mood: MoodType | null | undefined, ts: Translatio
     terrible: ts.moodTerrible,
   };
   return moodLabels[mood] || getLocalizedEmotionLabel(mood, ts);
+}
+
+type AuraColor = (opacity: number) => string;
+
+const MOOD_HERO_SHEEN_STYLE: CSSProperties = {
+  backgroundImage:
+    "linear-gradient(115deg, hsl(var(--foreground) / 0.08), transparent 38%, hsl(var(--background) / 0.18))",
+};
+
+function getViewerHeaderStyle(themed: boolean): CSSProperties {
+  return {
+    borderColor: themed ? "var(--diary-border)" : undefined,
+    backgroundColor: themed ? "color-mix(in srgb, var(--diary-bg) 80%, transparent)" : undefined,
+  };
+}
+
+function getAuraBackgroundStyle(color: AuraColor): CSSProperties {
+  return { backgroundColor: color(0.28) };
+}
+
+function getAuraBorderStyle(color: AuraColor, opacity: number): CSSProperties {
+  return { borderColor: color(opacity) };
+}
+
+function getAuraLineStyle(color: AuraColor): CSSProperties {
+  return {
+    backgroundImage: `linear-gradient(90deg, transparent, ${color(0.42)}, transparent)`,
+  };
+}
+
+function getMoodParticleStyle(
+  particle: { x: string; y: string; size: number },
+  color?: AuraColor
+): CSSProperties {
+  return {
+    left: particle.x,
+    top: particle.y,
+    width: particle.size,
+    height: particle.size,
+    backgroundColor: color?.(0.34),
+  };
+}
+
+function getMoodOrbStyle(color?: AuraColor): CSSProperties {
+  return {
+    borderColor: color?.(0.22),
+    boxShadow: color ? `0 0 42px ${color(0.18)}, inset 0 1px 0 ${color(0.16)}` : undefined,
+  };
+}
+
+function getViewerPaperStyle(paperColors: {
+  bg: string;
+  border: string;
+  text: string;
+  muted: string;
+}): CSSProperties {
+  return {
+    backgroundColor: paperColors.bg,
+    borderColor: paperColors.border,
+    color: paperColors.text,
+    "--journal-paper-text": paperColors.text,
+    "--journal-paper-muted": paperColors.muted,
+  } as CSSProperties;
+}
+
+function getViewerTitleStyle(
+  color: string,
+  fontFamily: CSSProperties["fontFamily"],
+  fontStyle: CSSProperties["fontStyle"]
+): CSSProperties {
+  return { color, fontFamily, fontStyle };
+}
+
+function getViewerMutedStyle(color: string): CSSProperties {
+  return { color };
+}
+
+function getAudioSurfaceStyle(
+  paperColors: { text: string; border: string },
+  mixOpacity: number
+): CSSProperties {
+  return {
+    color: paperColors.text,
+    borderColor: paperColors.border,
+    backgroundColor: `color-mix(in srgb, var(--journal-paper-text) ${mixOpacity}%, transparent)`,
+  };
+}
+
+function getViewerContentStyle(
+  fontFamily: CSSProperties["fontFamily"],
+  fontStyle: CSSProperties["fontStyle"],
+  color: string,
+  fontSize: CSSProperties["fontSize"]
+): CSSProperties {
+  return { fontFamily, fontStyle, color, fontSize };
 }
 
 /** Lightweight markdown renderer: **bold**, *italic*, ## headings, - lists, > quotes, --- hr */
@@ -286,7 +381,9 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
   const fontConfig = entry.font ? DIARY_FONTS[entry.font] : undefined;
   const fontFamily = fontConfig?.family;
   const fontStyle = fontConfig?.style;
-  const paperColor = PAPER_COLORS[entry.paperColor ?? "dark"] ? (entry.paperColor ?? "dark") : "dark";
+  const paperColor = PAPER_COLORS[entry.paperColor ?? "dark"]
+    ? (entry.paperColor ?? "dark")
+    : "dark";
   const paperColors = PAPER_COLORS[paperColor];
   const viewerInkColor = resolveViewerInkColor(entry.inkColor, paperColor);
   const viewerFontSize = entry.fontSize ? getScaledJournalFontSize(entry.fontSize) : undefined;
@@ -327,12 +424,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
       {/* Header */}
       <div
         className="relative z-[1] flex items-center justify-between px-4 py-3 border-b backdrop-blur-xl"
-        style={{
-          borderColor: themeStyle ? "var(--diary-border)" : undefined,
-          backgroundColor: themeStyle
-            ? "color-mix(in srgb, var(--diary-bg) 80%, transparent)"
-            : undefined,
-        }}
+        style={getViewerHeaderStyle(Boolean(themeStyle))}
       >
         <button
           onClick={onBack}
@@ -430,29 +522,24 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 opacity-70"
-              style={{
-                backgroundImage:
-                  "linear-gradient(115deg, hsl(var(--foreground) / 0.08), transparent 38%, hsl(var(--background) / 0.18))",
-              }}
+              style={MOOD_HERO_SHEEN_STYLE}
             />
             {moodAura && (
               <>
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute -start-14 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full blur-3xl"
-                  style={{ backgroundColor: moodAura.color(0.28) }}
+                  style={getAuraBackgroundStyle(moodAura.color)}
                 />
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute end-5 top-5 h-24 w-24 rounded-full border opacity-60"
-                  style={{ borderColor: moodAura.color(0.24) }}
+                  style={getAuraBorderStyle(moodAura.color, 0.24)}
                 />
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-x-12 bottom-3 h-px"
-                  style={{
-                    backgroundImage: `linear-gradient(90deg, transparent, ${moodAura.color(0.42)}, transparent)`,
-                  }}
+                  style={getAuraLineStyle(moodAura.color)}
                 />
               </>
             )}
@@ -469,29 +556,18 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
                   "absolute rounded-full blur-[1px]",
                   `animate-particle-float-${(i % 5) + 1}`
                 )}
-                style={{
-                  left: p.x,
-                  top: p.y,
-                  width: p.size,
-                  height: p.size,
-                  backgroundColor: moodAura ? moodAura.color(0.34) : undefined,
-                }}
+                style={getMoodParticleStyle(p, moodAura?.color)}
               />
             ))}
             <div className="relative flex items-center gap-4">
               <div
                 className="relative flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-[1.45rem] border bg-background/55 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.08)]"
-                style={{
-                  borderColor: moodAura ? moodAura.color(0.22) : undefined,
-                  boxShadow: moodAura
-                    ? `0 0 42px ${moodAura.color(0.18)}, inset 0 1px 0 ${moodAura.color(0.16)}`
-                    : undefined,
-                }}
+                style={getMoodOrbStyle(moodAura?.color)}
               >
                 <span
                   aria-hidden="true"
                   className="absolute inset-2 rounded-[1.05rem] border"
-                  style={{ borderColor: moodAura ? moodAura.color(0.18) : undefined }}
+                  style={moodAura ? getAuraBorderStyle(moodAura.color, 0.18) : undefined}
                 />
                 <DiaryMiniOrb mood={entry.mood} size="hero" className="relative scale-[1.02]" />
               </div>
@@ -522,19 +598,13 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
             entry.mood ? "pt-4 pb-5" : "py-5",
             floatingPhotoIds.length > 0 && "relative min-h-[60dvh] overflow-hidden"
           )}
-          style={{
-            backgroundColor: paperColors.bg,
-            borderColor: paperColors.border,
-            color: paperColors.text,
-            "--journal-paper-text": paperColors.text,
-            "--journal-paper-muted": paperColors.muted,
-          } as React.CSSProperties}
+          style={getViewerPaperStyle(paperColors)}
         >
           {/* Title */}
           {entry.title && (
             <h1
               className="text-xl font-bold leading-snug tracking-tight [overflow-wrap:anywhere]"
-              style={{ color: paperColors.text, fontFamily, fontStyle }}
+              style={getViewerTitleStyle(paperColors.text, fontFamily, fontStyle)}
               dir="auto"
             >
               {displayTitle}
@@ -546,7 +616,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
             <div
               data-testid="journal-entry-body-meta"
               className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium"
-              style={{ color: paperColors.muted }}
+              style={getViewerMutedStyle(paperColors.muted)}
             >
               {!entry.mood && (
                 <>
@@ -587,12 +657,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
               role="alert"
               aria-live="polite"
               className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-              style={{
-                color: paperColors.text,
-                borderColor: paperColors.border,
-                backgroundColor:
-                  "color-mix(in srgb, var(--journal-paper-text) 5%, transparent)",
-              }}
+              style={getAudioSurfaceStyle(paperColors, 5)}
             >
               <p className="text-sm leading-6">
                 {ts.journalAudioLoadError || "This entry's audio could not be loaded."}
@@ -604,12 +669,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
                   "inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold",
                   "motion-safe:transition-[background-color,transform] active:scale-[0.98]"
                 )}
-                style={{
-                  color: paperColors.text,
-                  borderColor: paperColors.border,
-                  backgroundColor:
-                    "color-mix(in srgb, var(--journal-paper-text) 8%, transparent)",
-                }}
+                style={getAudioSurfaceStyle(paperColors, 8)}
               >
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 <span>{ts.journalAudioLoadRetry || "Try loading audio again"}</span>
@@ -634,7 +694,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           {displayContent && (
             <div
               className="leading-7 [unicode-bidi:plaintext] [overflow-wrap:anywhere]"
-              style={{ fontFamily, fontStyle, color: viewerInkColor, fontSize: viewerFontSize }}
+              style={getViewerContentStyle(fontFamily, fontStyle, viewerInkColor, viewerFontSize)}
               dir="auto"
             >
               {renderContent(displayContent)}
@@ -648,7 +708,6 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
               layout={entry.photoLayout}
             />
           )}
-
         </div>
       </motion.div>
 

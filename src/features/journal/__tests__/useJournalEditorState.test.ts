@@ -378,10 +378,9 @@ describe("T02: Word count milestones", () => {
   });
 
   it("crossing 100-word threshold fires milestone 100", () => {
-    const { result, rerender } = renderHook(
-      ({ wc }) => useMilestoneDetection(wc),
-      { initialProps: { wc: 90 } }
-    );
+    const { result, rerender } = renderHook(({ wc }) => useMilestoneDetection(wc), {
+      initialProps: { wc: 90 },
+    });
 
     // Initial: prevWordCountRef set to 90, no milestone
     expect(result.current.milestoneTriggered).toBeNull();
@@ -394,10 +393,9 @@ describe("T02: Word count milestones", () => {
   });
 
   it("only the lowest newly-crossed milestone fires (not all)", () => {
-    const { result, rerender } = renderHook(
-      ({ wc }) => useMilestoneDetection(wc),
-      { initialProps: { wc: 90 } }
-    );
+    const { result, rerender } = renderHook(({ wc }) => useMilestoneDetection(wc), {
+      initialProps: { wc: 90 },
+    });
 
     // Jump from 90 to 300 — crosses both 100 and 250
     rerender({ wc: 300 });
@@ -407,17 +405,18 @@ describe("T02: Word count milestones", () => {
   });
 
   it("re-crossing same threshold after going back below doesn't prevent re-fire", () => {
-    const { result, rerender } = renderHook(
-      ({ wc }) => useMilestoneDetection(wc),
-      { initialProps: { wc: 90 } }
-    );
+    const { result, rerender } = renderHook(({ wc }) => useMilestoneDetection(wc), {
+      initialProps: { wc: 90 },
+    });
 
     // Cross 100
     rerender({ wc: 105 });
     expect(result.current.milestoneTriggered).toBe(100);
 
     // Clear milestone
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(result.current.milestoneTriggered).toBeNull();
 
     // Go back below 100
@@ -430,17 +429,18 @@ describe("T02: Word count milestones", () => {
   });
 
   it("staying above threshold and incrementing doesn't re-fire", () => {
-    const { result, rerender } = renderHook(
-      ({ wc }) => useMilestoneDetection(wc),
-      { initialProps: { wc: 90 } }
-    );
+    const { result, rerender } = renderHook(({ wc }) => useMilestoneDetection(wc), {
+      initialProps: { wc: 90 },
+    });
 
     // Cross 100
     rerender({ wc: 105 });
     expect(result.current.milestoneTriggered).toBe(100);
 
     // Clear milestone
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(result.current.milestoneTriggered).toBeNull();
     result.current.hapticFired.current = false;
 
@@ -454,29 +454,31 @@ describe("T02: Word count milestones", () => {
   });
 
   it("milestone auto-clears after 300ms", () => {
-    const { result, rerender } = renderHook(
-      ({ wc }) => useMilestoneDetection(wc),
-      { initialProps: { wc: 90 } }
-    );
+    const { result, rerender } = renderHook(({ wc }) => useMilestoneDetection(wc), {
+      initialProps: { wc: 90 },
+    });
 
     // Cross 100
     rerender({ wc: 105 });
     expect(result.current.milestoneTriggered).toBe(100);
 
     // Before 300ms — still showing
-    act(() => { vi.advanceTimersByTime(200); });
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     expect(result.current.milestoneTriggered).toBe(100);
 
     // After 300ms total — auto-cleared
-    act(() => { vi.advanceTimersByTime(100); });
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
     expect(result.current.milestoneTriggered).toBeNull();
   });
 
   it("1000-word milestone triggers confetti", () => {
-    const { result, rerender } = renderHook(
-      ({ wc }) => useMilestoneDetection(wc),
-      { initialProps: { wc: 990 } }
-    );
+    const { result, rerender } = renderHook(({ wc }) => useMilestoneDetection(wc), {
+      initialProps: { wc: 990 },
+    });
 
     expect(result.current.showConfetti).toBe(false);
 
@@ -495,7 +497,8 @@ describe("T03: Dirty baseline", () => {
   it("prefill-backed editor starts clean when current state matches the prefill snapshot", () => {
     const initial = makeSnapshot({
       title: "Hopeful",
-      content: "<p><strong>Specific - 14:30</strong></p><p>Describe a moment that stood out today.</p>",
+      content:
+        "<p><strong>Specific - 14:30</strong></p><p>Describe a moment that stood out today.</p>",
       tags: JSON.stringify(["hopeful"]),
     });
 
@@ -689,9 +692,7 @@ describe("T06: Draft persistence lifecycle", () => {
     audioIds: ["audio-1"],
     mood: "happy",
     tags: ["reflection", "morning"],
-    habitSnapshot: [
-      { habitId: "habit-1", habitName: "Read", habitIcon: "book", completed: true },
-    ],
+    habitSnapshot: [{ habitId: "habit-1", habitName: "Read", habitIcon: "book", completed: true }],
     savedAt: Date.now() - 60_000,
     ...overrides,
   });
@@ -1018,13 +1019,15 @@ describe("T07: iOS editor safety contracts", () => {
 
   it("stops unfinished recordings when recording overlays are closed so Android back does not silently discard audio", () => {
     const closeRecordingBlock =
-      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(
+        editorSource
+      )?.[0] ?? "";
 
     expect(closeRecordingBlock).toContain("handleStopRecording");
     expect(closeRecordingBlock).toContain("requestDiscardRecording");
     expect(closeRecordingBlock).not.toContain("handleDiscardRecording");
-    expect(editorSource).toContain(
-      "useModalA11y(showRecordingOverlay, closeRecordingOverlay, mobileToolsButtonRef)",
+    expect(editorSource).toMatch(
+      /useModalA11y\(\s*showRecordingOverlay,\s*closeRecordingOverlay,\s*mobileToolsButtonRef\s*\)/
     );
   });
 

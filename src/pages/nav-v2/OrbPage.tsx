@@ -6,16 +6,18 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bloom, easings } from "@/lib/motion";
+import { motion, AnimatePresence, useIsPresent } from "framer-motion";
+import { Bloom, bloom, bloomStatic, easings } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeStore } from "@/stores/themeStore";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
+import { isAndroid } from "@/lib/platform";
 import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
 import { CANONICAL_ORB_ANIMATION_SPEED } from "@/components/state-of-mind/ValenceOrb";
 import { PremiumLoader } from "@/components/PremiumLoader";
@@ -33,9 +35,34 @@ import type { NavV2Page } from "@/hooks/useNavigationV2";
 import type { MoodEntry } from "@/types";
 
 const BASE_VALENCE_ORB_SIZE = 280;
+const ANDROID_VIEWPORT_SETTLE_MS = 150;
 const ORB_AMBIENCE_AUDIO_SRC = getAppAudioAssetSrc("orb-ambience");
 
 type OrbVisualStatus = "pending" | "ready" | "failed";
+
+function OrbStepScene({
+  children,
+  shouldAnimate,
+}: {
+  children: ReactNode;
+  shouldAnimate: boolean;
+}) {
+  const isPresent = useIsPresent();
+  const exitingInteractionProps = !isPresent ? ({ inert: "" } as const) : {};
+
+  return (
+    <motion.div
+      {...exitingInteractionProps}
+      aria-hidden={!isPresent ? true : undefined}
+      className="absolute inset-0 flex min-h-0 flex-col"
+      data-testid="orb-page-step-scene"
+      exit={shouldAnimate ? bloom.exit : bloomStatic.exit}
+      transition={shouldAnimate ? bloom.transition : bloomStatic.transition}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function isColdOrbNavigation(): boolean {
   if (typeof window === "undefined") return true;
@@ -117,7 +144,9 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     handleOpenDiary,
   } = useOrbMoodFlow({ navigateToPage, onAddMood });
   const shouldRunAmbientMotion = useShouldAnimate({ respectRuntimePerformance: false });
-  const shouldRunDecorativeMotion = useShouldAnimate();
+  const shouldRunDecorativeMotion = useShouldAnimate({
+    respectRuntimePerformance: !isAndroid,
+  });
   const visualReady = visualStatus === "ready";
 
   useEffect(() => {
@@ -247,12 +276,39 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const syncViewport = () =>
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    let androidSettleTimeout: number | null = null;
+    const commitViewport = () => {
+      const nextViewport = { width: window.innerWidth, height: window.innerHeight };
+      setViewport((currentViewport) =>
+        currentViewport.width === nextViewport.width &&
+        currentViewport.height === nextViewport.height
+          ? currentViewport
+          : nextViewport,
+      );
+    };
+    const syncViewport = () => {
+      if (!isAndroid) {
+        commitViewport();
+        return;
+      }
 
-    syncViewport();
+      if (androidSettleTimeout !== null) {
+        window.clearTimeout(androidSettleTimeout);
+      }
+      androidSettleTimeout = window.setTimeout(() => {
+        androidSettleTimeout = null;
+        commitViewport();
+      }, ANDROID_VIEWPORT_SETTLE_MS);
+    };
+
+    commitViewport();
     window.addEventListener("resize", syncViewport);
-    return () => window.removeEventListener("resize", syncViewport);
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+      if (androidSettleTimeout !== null) {
+        window.clearTimeout(androidSettleTimeout);
+      }
+    };
   }, []);
 
   const whisperKey = useMemo(() => pickWhisperKey(), []);
@@ -408,50 +464,56 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
               visualReady ? "opacity-100" : "pointer-events-none opacity-0"
             )}
           >
-            {step === "orb-select" ? (
-              <OrbSelectStep
-                tx={tx}
-                selectContentLayoutClass={selectContentLayoutClass}
-                contentGapClass={contentGapClass}
-                shouldAnimate={shouldRunAmbientMotion}
-                auraHue={auraHue}
-                auraRef={auraRef}
-                showOrbAura={false}
-                handleOrbTap={handleOrbTap}
-                orbValence={orbValence}
-                heroOrbSize={heroOrbSize}
-                orbAnimationSpeed={CANONICAL_ORB_ANIMATION_SPEED}
-                orbAttempt={visualAttempt}
-                onOrbVisualReady={handleOrbVisualReady}
-                onOrbVisualError={handleOrbVisualError}
-                draftScope={draftScope}
-                draftValence={draftValence}
-                isDenseSelectStep={isDenseSelectStep}
-                isUltraDenseSelectStep={isUltraDenseSelectStep}
-                isShortViewport={isShortViewport}
-                whisperKey={whisperKey}
-                whisperText={whisperText}
-                canProceedFromSelect={canProceedFromSelect}
-                handleSliderCommit={handleSliderCommit}
-                handleNextStep={handleNextStep}
-              />
-            ) : (
-              <OrbRefineStep
-                tx={tx}
-                contentGapClass={contentGapClass}
-                resolvedValence={resolvedValence}
-                scopeLabel={scopeLabel}
-                moodLabel={moodLabel}
-                draftEmotion={draftEmotion}
-                draftNote={draftNote}
-                canOpenDiary={canOpenDiary}
-                handleEmotionToggle={handleEmotionToggle}
-                handleNoteChange={handleNoteChange}
-                handleBackStep={handleBackToSelect}
-                handleSaveMood={handleSaveMood}
-                handleOpenDiary={handleOpenDiary}
-              />
-            )}
+            <div className="relative flex flex-1 min-h-0 flex-col">
+              <AnimatePresence initial={false} mode="sync">
+                <OrbStepScene key={step} shouldAnimate={shouldRunAmbientMotion}>
+                  {step === "orb-select" ? (
+                    <OrbSelectStep
+                      tx={tx}
+                      selectContentLayoutClass={selectContentLayoutClass}
+                      contentGapClass={contentGapClass}
+                      shouldAnimate={shouldRunAmbientMotion}
+                      auraHue={auraHue}
+                      auraRef={auraRef}
+                      showOrbAura={false}
+                      handleOrbTap={handleOrbTap}
+                      orbValence={orbValence}
+                      heroOrbSize={heroOrbSize}
+                      orbAnimationSpeed={CANONICAL_ORB_ANIMATION_SPEED}
+                      orbAttempt={visualAttempt}
+                      onOrbVisualReady={handleOrbVisualReady}
+                      onOrbVisualError={handleOrbVisualError}
+                      draftScope={draftScope}
+                      draftValence={draftValence}
+                      isDenseSelectStep={isDenseSelectStep}
+                      isUltraDenseSelectStep={isUltraDenseSelectStep}
+                      isShortViewport={isShortViewport}
+                      whisperKey={whisperKey}
+                      whisperText={whisperText}
+                      canProceedFromSelect={canProceedFromSelect}
+                      handleSliderCommit={handleSliderCommit}
+                      handleNextStep={handleNextStep}
+                    />
+                  ) : (
+                    <OrbRefineStep
+                      tx={tx}
+                      contentGapClass={contentGapClass}
+                      resolvedValence={resolvedValence}
+                      scopeLabel={scopeLabel}
+                      moodLabel={moodLabel}
+                      draftEmotion={draftEmotion}
+                      draftNote={draftNote}
+                      canOpenDiary={canOpenDiary}
+                      handleEmotionToggle={handleEmotionToggle}
+                      handleNoteChange={handleNoteChange}
+                      handleBackStep={handleBackToSelect}
+                      handleSaveMood={handleSaveMood}
+                      handleOpenDiary={handleOpenDiary}
+                    />
+                  )}
+                </OrbStepScene>
+              </AnimatePresence>
+            </div>
           </div>
         </main>
       </Bloom>

@@ -6,12 +6,18 @@ const useAuthSessionSource = readFileSync("src/hooks/useAuthSession.ts", "utf8")
 const journalEntryListSource = readFileSync("src/features/journal/JournalEntryList.tsx", "utf8");
 const journalAiConsentDialogSource = readFileSync(
   "src/features/journal/JournalAiConsentDialog.tsx",
-  "utf8",
+  "utf8"
 );
 const onThisDaySource = readFileSync("src/features/journal/OnThisDayCard.tsx", "utf8");
 const memoryPortalSource = readFileSync("src/features/journal/MemoryPortalCanvas.tsx", "utf8");
-const exportPickerDialogSource = readFileSync("src/features/journal/ExportPickerDialog.tsx", "utf8");
-const removePasswordDialogSource = readFileSync("src/features/journal/RemovePasswordConfirmDialog.tsx", "utf8");
+const exportPickerDialogSource = readFileSync(
+  "src/features/journal/ExportPickerDialog.tsx",
+  "utf8"
+);
+const removePasswordDialogSource = readFileSync(
+  "src/features/journal/RemovePasswordConfirmDialog.tsx",
+  "utf8"
+);
 const localeSources = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"].map((language) => ({
   language,
   source: readFileSync(`src/i18n/languages/${language}.ts`, "utf8"),
@@ -30,18 +36,20 @@ describe("web diary privacy and reset contracts", () => {
     const resetListenerBlock = sliceRequiredBlock(
       journalModuleSource,
       "// Magic link fallback",
-      "const mobileDiarySectionButtonClass",
+      "const mobileDiarySectionButtonClass"
     );
     const resetConsumerBlock = sliceRequiredBlock(
       journalModuleSource,
       "const consumeVerifiedPasswordReset = useCallback(",
-      "// --- HOOKS",
+      "// --- HOOKS"
     );
 
     expect(journalModuleSource).toContain(
-      'const JOURNAL_PASSWORD_RESET_AUTH_EVENTS = new Set(["SIGNED_IN", "TOKEN_REFRESHED", "INITIAL_SESSION"]);',
+      'const JOURNAL_PASSWORD_RESET_AUTH_EVENTS = new Set(["SIGNED_IN", "TOKEN_REFRESHED", "INITIAL_SESSION"]);'
     );
-    expect(journalModuleSource).toContain('import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";');
+    expect(journalModuleSource).toContain(
+      'import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";'
+    );
     expect(journalModuleSource).not.toContain("function hasJournalPasswordResetRedirectProof");
     expect(resetListenerBlock).toContain("JOURNAL_PASSWORD_RESET_AUTH_EVENTS.has(event)");
     expect(resetListenerBlock).toContain("window.addEventListener(AUTH_COMPLETE_EVENT");
@@ -52,30 +60,38 @@ describe("web diary privacy and reset contracts", () => {
     expect(resetConsumerBlock).toContain("hasJournalPasswordResetProof(pending)");
     expect(resetConsumerBlock).toContain("signedInEmail !== pending.email");
     expect(resetConsumerBlock).toContain("sessionUserId !== pending.userId");
-    const removePasswordIndex = resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })");
+    const removePasswordIndex = resetConsumerBlock.indexOf(
+      "security.removePassword({ allowVerifiedEmptyDiary: true })"
+    );
     expect(removePasswordIndex).toBeGreaterThanOrEqual(0);
-    expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(removePasswordIndex);
-    expect(resetConsumerBlock.indexOf("sessionUserId !== pending.userId")).toBeLessThan(removePasswordIndex);
-    expect(resetConsumerBlock.indexOf("hasJournalPasswordResetProof(pending)")).toBeLessThan(removePasswordIndex);
+    expect(resetConsumerBlock.indexOf("signedInEmail !== pending.email")).toBeLessThan(
+      removePasswordIndex
+    );
+    expect(resetConsumerBlock.indexOf("sessionUserId !== pending.userId")).toBeLessThan(
+      removePasswordIndex
+    );
+    expect(resetConsumerBlock.indexOf("hasJournalPasswordResetProof(pending)")).toBeLessThan(
+      removePasswordIndex
+    );
   });
 
   it("cleans the one-time journal reset nonce from the URL after consuming proof", () => {
     const resetConsumerBlock = sliceRequiredBlock(
       journalModuleSource,
       "const consumeVerifiedPasswordReset = useCallback(",
-      "// --- HOOKS",
+      "// --- HOOKS"
     );
 
     expect(resetConsumerBlock).toContain("clearJournalPasswordResetParamFromCurrentUrl()");
     const consumeIndex = resetConsumerBlock.indexOf("consumeJournalPasswordResetProof");
     const successCleanupIndex = resetConsumerBlock.indexOf(
       "clearJournalPasswordResetParamFromCurrentUrl()",
-      consumeIndex,
+      consumeIndex
     );
     expect(consumeIndex).toBeGreaterThanOrEqual(0);
     expect(successCleanupIndex).toBeGreaterThan(consumeIndex);
     expect(successCleanupIndex).toBeLessThan(
-      resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })"),
+      resetConsumerBlock.indexOf("security.removePassword({ allowVerifiedEmptyDiary: true })")
     );
   });
 
@@ -83,11 +99,15 @@ describe("web diary privacy and reset contracts", () => {
     const completeWebOAuthSessionBlock =
       /const completeWebOAuthSession = \([\s\S]*?\n\s{4}};/.exec(useAuthSessionSource)?.[0] ?? "";
 
-    expect(completeWebOAuthSessionBlock).toContain("persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)");
-    expect(completeWebOAuthSessionBlock).toContain("notifyAuthComplete()");
-    expect(completeWebOAuthSessionBlock.indexOf("persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)")).toBeLessThan(
-      completeWebOAuthSessionBlock.indexOf("notifyAuthComplete()"),
+    expect(completeWebOAuthSessionBlock).toContain(
+      "persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)"
     );
+    expect(completeWebOAuthSessionBlock).toContain("notifyAuthComplete()");
+    expect(
+      completeWebOAuthSessionBlock.indexOf(
+        "persistJournalPasswordResetProofFromUrl(window.location.href, session.user.id)"
+      )
+    ).toBeLessThan(completeWebOAuthSessionBlock.indexOf("notifyAuthComplete()"));
   });
 
   it("uses WebView-safe spaced calc syntax for journal security dialog safe areas", () => {
@@ -101,10 +121,10 @@ describe("web diary privacy and reset contracts", () => {
     }
 
     expect(journalModuleSource).toContain(
-      "max-h-[calc(var(--app-viewport-height)_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]",
+      "max-h-[calc(var(--app-viewport-height)_-_var(--safe-top)_-_var(--safe-bottom)_-_2rem)]"
     );
     expect(exportPickerDialogSource).toContain(
-      "max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]",
+      "max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]"
     );
     expect(removePasswordDialogSource).toContain("zf-safe-area-dialog");
   });
@@ -122,7 +142,9 @@ describe("web diary privacy and reset contracts", () => {
   });
 
   it("keeps On This Day behind the explicit memory portal instead of ordinary journal surfaces", () => {
-    const moduleBlocks = [...journalModuleSource.matchAll(/<OnThisDayCard[\s\S]*?\/>/g)].map((match) => match[0]);
+    const moduleBlocks = [...journalModuleSource.matchAll(/<OnThisDayCard[\s\S]*?\/>/g)].map(
+      (match) => match[0]
+    );
     expect(moduleBlocks).toHaveLength(0);
 
     const portalBlock = /<OnThisDayCard[\s\S]*?\/>/.exec(memoryPortalSource)?.[0] ?? "";
@@ -141,8 +163,12 @@ describe("web diary privacy and reset contracts", () => {
 
   it("keeps Memory Portal node aria labels private", () => {
     expect(memoryPortalSource).toContain('data-testid="memory-portal-node"');
-    expect(memoryPortalSource).not.toContain('aria-label={`${node.title} ${formatPortalDate(node.date)}`}');
-    expect(memoryPortalSource).toMatch(/aria-label=\{[\s\S]*?privateMode[\s\S]*?journalHubSpacePrivate[\s\S]*?formatPortalDate\(node\.date, locale\)/);
+    expect(memoryPortalSource).not.toContain(
+      "aria-label={`${node.title} ${formatPortalDate(node.date)}`}"
+    );
+    expect(memoryPortalSource).toMatch(
+      /aria-label=\{[\s\S]*?privateMode[\s\S]*?journalHubSpacePrivate[\s\S]*?formatPortalDate\(node\.date, locale\)/
+    );
   });
 
   it("hides memory portal day capsule titles and tags while private mode is active", () => {
@@ -154,28 +180,30 @@ describe("web diary privacy and reset contracts", () => {
   it("keeps the space capture board private while private mode is active", () => {
     const captureBoardBlock =
       /data-testid="journal-capture-board-card"[\s\S]*?data-testid="journal-capture-open-editor"[\s\S]*?<\/button>/.exec(
-        journalEntryListSource,
+        journalEntryListSource
       )?.[0] ?? "";
 
     expect(captureBoardBlock).toMatch(/privateMode[\s\S]*?\?[\s\S]*?journalPrivateEntry/);
-    expect(captureBoardBlock).toContain("!privateMode && focusedCapture.fields");
+    expect(captureBoardBlock).toMatch(/!privateMode\s*&&\s*focusedCapture\.fields/);
     expect(captureBoardBlock).toContain("aria-disabled={privateMode || undefined}");
     expect(captureBoardBlock).toContain("disabled={!focusedCapture || privateMode}");
     expect(captureBoardBlock).toContain("if (privateMode || !focusedCapture) return;");
-    expect(captureBoardBlock.search(/privateMode[\s\S]*?\?[\s\S]*?journalPrivateEntry/)).toBeLessThan(
-      captureBoardBlock.indexOf("getCaptureDisplayTitle(focusedCapture, ts)"),
-    );
+    expect(
+      captureBoardBlock.search(/privateMode[\s\S]*?\?[\s\S]*?journalPrivateEntry/)
+    ).toBeLessThan(captureBoardBlock.indexOf("getCaptureDisplayTitle(focusedCapture, ts)"));
   });
 
   it("keeps the capture studio compose branch private while private mode is active", () => {
     const studioComposeBlock =
       /data-testid="journal-capture-studio"[\s\S]*?data-testid="journal-capture-save"[\s\S]*?<\/button>/.exec(
-        journalEntryListSource,
+        journalEntryListSource
       )?.[0] ?? "";
 
     expect(studioComposeBlock).toContain("getSpaceDisplayName(activeStudio)");
     expect(studioComposeBlock).toContain("getSpaceDisplayDescription(activeStudio)");
-    expect(studioComposeBlock).toContain('activeStudio.id === "space-all" ? ts.all || "All" : getSpaceDisplayName(activeStudio)');
+    expect(studioComposeBlock).toMatch(
+      /activeStudio\.id\s*===\s*"space-all"\s*\?\s*ts\.all\s*\|\|\s*"All"\s*:\s*getSpaceDisplayName\(activeStudio\)/
+    );
     expect(studioComposeBlock).not.toContain("{activeStudio.name}");
     expect(studioComposeBlock).not.toContain("{activeStudio.description}");
   });
@@ -183,56 +211,72 @@ describe("web diary privacy and reset contracts", () => {
   it("keeps private space prefill payloads free of hidden folder names and ids", () => {
     const studioPrefillBlock =
       /const buildStudioPrefill = useCallback\([\s\S]*?const handleSaveStudioCapture/.exec(
-        journalEntryListSource,
+        journalEntryListSource
       )?.[0] ?? "";
     const filteredEmptyActionBlock =
       /activeFilterSpaceName && !deferredSearch && onNewEntryWithPrefill[\s\S]*?<\/button>/.exec(
-        journalEntryListSource,
+        journalEntryListSource
       )?.[0] ?? "";
 
-    expect(studioPrefillBlock).toContain('tags: privateMode || space.id === "space-all" ? [] : [space.name]');
-    expect(studioPrefillBlock).toContain(
-      'spaceId: !privateMode && space.id.startsWith("space-") && space.id !== "space-all" ? space.id : undefined',
+    expect(studioPrefillBlock).toMatch(
+      /tags:\s*privateMode\s*\|\|\s*space\.id\s*===\s*"space-all"\s*\?\s*\[\]\s*:\s*\[space\.name\]/
+    );
+    expect(studioPrefillBlock).toMatch(
+      /spaceId:\s*!privateMode\s*&&\s*space\.id\.startsWith\("space-"\)\s*&&\s*space\.id\s*!==\s*"space-all"\s*\?\s*space\.id\s*:\s*undefined/
     );
     expect(studioPrefillBlock).not.toContain('tags: space.id === "space-all" ? [] : [space.name]');
     expect(studioPrefillBlock).not.toContain(
-      'spaceId: space.id.startsWith("space-") && space.id !== "space-all" ? space.id : undefined',
+      'spaceId: space.id.startsWith("space-") && space.id !== "space-all" ? space.id : undefined'
     );
 
-    expect(filteredEmptyActionBlock).toContain("tags: privateMode ? [] : [activeFilterSpaceName]");
-    expect(filteredEmptyActionBlock).toContain("spaceId: privateMode ? undefined : selectedSpaceId ?? undefined");
+    expect(filteredEmptyActionBlock).toMatch(
+      /tags:\s*privateMode\s*\?\s*\[\]\s*:\s*\[activeFilterSpaceName\]/
+    );
+    expect(filteredEmptyActionBlock).toMatch(
+      /spaceId:\s*privateMode\s*\?\s*undefined\s*:\s*\(?\s*selectedSpaceId\s*\?\?\s*undefined\s*\)?/
+    );
     expect(filteredEmptyActionBlock).not.toContain("tags: [activeFilterSpaceName]");
     expect(filteredEmptyActionBlock).not.toContain("spaceId: selectedSpaceId ?? undefined");
   });
 
   it("guards the shared entry open handler while private mode is active", () => {
     const handleTapBlock =
-      /const handleTap = useCallback\([\s\S]*?\n\s{2}const handleDelete/.exec(journalEntryListSource)?.[0] ?? "";
+      /const handleTap = useCallback\([\s\S]*?\n\s{2}const handleDelete/.exec(
+        journalEntryListSource
+      )?.[0] ?? "";
 
     expect(handleTapBlock).toContain("privateMode");
     expect(handleTapBlock).toContain("onOpenEntry(id)");
-    expect(handleTapBlock.indexOf("privateMode")).toBeLessThan(handleTapBlock.indexOf("onOpenEntry(id)"));
+    expect(handleTapBlock.indexOf("privateMode")).toBeLessThan(
+      handleTapBlock.indexOf("onOpenEntry(id)")
+    );
   });
 
   it("keeps the desktop entry context menu from opening private entries", () => {
     const contextItemsBlock =
       /const getEntryContextItems = useCallback\([\s\S]*?return items;[\s\S]*?\n\s{2}\);/.exec(
-        journalEntryListSource,
+        journalEntryListSource
       )?.[0] ?? "";
 
     expect(contextItemsBlock).toContain('label: ts.open || "Open"');
     expect(contextItemsBlock).toContain("if (!privateMode) {");
     expect(contextItemsBlock.indexOf("if (!privateMode) {")).toBeLessThan(
-      contextItemsBlock.indexOf('label: ts.open || "Open"'),
+      contextItemsBlock.indexOf('label: ts.open || "Open"')
     );
-    expect(contextItemsBlock).not.toMatch(/const items:[\s\S]*?\[\s*\{\s*label: ts\.open \|\| "Open"/);
+    expect(contextItemsBlock).not.toMatch(
+      /const items:[\s\S]*?\[\s*\{\s*label: ts\.open \|\| "Open"/
+    );
   });
 
   it("keeps privacy copy honest about account sync in every supported locale", () => {
     for (const { language, source } of localeSources) {
       const description = /privacyDescription:\s*"([^"]+)"/.exec(source)?.[1] ?? "";
-      expect(description, `${language} privacyDescription`).not.toMatch(/stays? on (?:the )?device|remain(?:s)? on (?:the )?device|bleiben auf dem Gerät|permanecen en el dispositivo|restent sur l'appareil|デバイス上|تبقى على جهازك|נשארים במכשיר|залишаються на пристрої/i);
-      expect(description, `${language} privacyDescription`).toMatch(/sync|синх|sincron|synchron|同期|مزامنة|סנכרון/i);
+      expect(description, `${language} privacyDescription`).not.toMatch(
+        /stays? on (?:the )?device|remain(?:s)? on (?:the )?device|bleiben auf dem Gerät|permanecen en el dispositivo|restent sur l'appareil|デバイス上|تبقى على جهازك|נשארים במכשיר|залишаються на пристрої/i
+      );
+      expect(description, `${language} privacyDescription`).toMatch(
+        /sync|синх|sincron|synchron|同期|مزامنة|סנכרון/i
+      );
     }
   });
 
@@ -247,12 +291,12 @@ describe("web diary privacy and reset contracts", () => {
     const activationBlock = sliceRequiredBlock(
       journalEntryListSource,
       "const activateAiMode = useCallback(",
-      "const confirmAiConsent = useCallback(",
+      "const confirmAiConsent = useCallback("
     );
     const confirmationBlock = sliceRequiredBlock(
       journalEntryListSource,
       "const confirmAiConsent = useCallback(",
-      "// Toggle private account-backed search",
+      "// Toggle private account-backed search"
     );
     expect(journalEntryListSource).toContain("JournalAiConsentDialog");
     expect(journalAiConsentDialogSource).toContain("journalAiPrivacyConfirm");
@@ -260,19 +304,19 @@ describe("web diary privacy and reset contracts", () => {
     expect(activationBlock).not.toContain("generateAllMissingEmbeddings");
     expect(journalEntryListSource).not.toContain("generateAllMissingEmbeddingsLazy");
     expect(confirmationBlock).toContain("await withJournalRequestTimeout(grantJournalAiConsent())");
-    expect(confirmationBlock.indexOf("await withJournalRequestTimeout(grantJournalAiConsent())")).toBeLessThan(
-      confirmationBlock.indexOf("activateAiMode()"),
-    );
+    expect(
+      confirmationBlock.indexOf("await withJournalRequestTimeout(grantJournalAiConsent())")
+    ).toBeLessThan(confirmationBlock.indexOf("activateAiMode()"));
   });
 
   it("localizes the private-search provider boundary in every supported locale", () => {
     for (const { language, source } of localeSources) {
       const disclosure = /journalAiPrivacyConfirm:\s*"([^"]+)"/.exec(source)?.[1] ?? "";
       expect(disclosure, `${language} journalAiPrivacyConfirm`).toMatch(
-        /private|приват|privad|privat|privée|プライベート|الخاص|הפרטי/i,
+        /private|приват|privad|privat|privée|プライベート|الخاص|הפרטי/i
       );
       expect(disclosure, `${language} journalAiPrivacyConfirm`).toMatch(
-        /provider|провайдер|proveedor|Anbieter|fournisseur|プロバイダー|مزود|ספק/i,
+        /provider|провайдер|proveedor|Anbieter|fournisseur|プロバイダー|مزود|ספק/i
       );
       expect(disclosure, `${language} journalAiPrivacyConfirm`).toContain("Supabase");
     }
@@ -284,10 +328,10 @@ describe("web diary privacy and reset contracts", () => {
     for (const { language, source } of localeSources) {
       const warning = /journalExportPrivacyWarning:\s*"([^"]+)"/.exec(source)?.[1] ?? "";
       expect(warning, `${language} journalExportPrivacyWarning`).toMatch(
-        /encrypt|шифр|cifrad|verschl|chiffr|暗号|تشفير|מוצפן/i,
+        /encrypt|шифр|cifrad|verschl|chiffr|暗号|تشفير|מוצפן/i
       );
       expect(warning, `${language} journalExportPrivacyWarning`).toMatch(
-        /private|приват|privad|privat|privé|プライベート|خاص|פרטי/i,
+        /private|приват|privad|privat|privé|プライベート|خاص|פרטי/i
       );
     }
   });
@@ -301,16 +345,16 @@ describe("web diary privacy and reset contracts", () => {
 
       for (const { key, value } of hints) {
         expect(value, `${language} ${key} encrypted content scope`).toMatch(
-          /writing|content|текст|contenido|Tagebuchtext|textes|本文|نصوص|תוכן/i,
+          /writing|content|текст|contenido|Tagebuchtext|textes|本文|نصوص|תוכן/i
         );
         expect(value, `${language} ${key} encrypted attachment scope`).toMatch(
-          /attachment|вкладенн|archivo|Anhänge|pièces jointes|添付|مرفق|קבצים.*מצורפים/i,
+          /attachment|вкладенн|archivo|Anhänge|pièces jointes|添付|مرفق|קבצים.*מצורפים/i
         );
         expect(value, `${language} ${key} metadata exclusion`).toMatch(
-          /not encrypted|не шифр|no se cifr|nicht verschlüsselt|ne sont pas chiffr|暗号化されません|لا يتم تشفير|אינם מוצפנים/i,
+          /not encrypted|не шифр|no se cifr|nicht verschlüsselt|ne sont pas chiffr|暗号化されません|لا يتم تشفير|אינם מוצפנים/i
         );
         expect(value, `${language} ${key} title metadata`).toMatch(
-          /titles|назви|títulos|Titel|titres|タイトル|العناوين|כותרות/i,
+          /titles|назви|títulos|Titel|titres|タイトル|العناوين|כותרות/i
         );
       }
     }

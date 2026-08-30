@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useState, type Ref } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,12 @@ interface MiniValenceOrbProps {
   orbClassName?: string;
   transitionProfile?: OrbTransitionProfile;
   renderer?: OrbRendererMode;
+  externalRenderer?: ExternalMiniOrbRenderer;
+}
+
+export interface ExternalMiniOrbRenderer {
+  targetRef: Ref<HTMLDivElement>;
+  visualReady: boolean;
 }
 
 const BARE_SIZE_PRESETS: Record<
@@ -127,6 +133,7 @@ function OrbCore({
   transitionProfile,
   renderer,
   onVisualReady,
+  externalTargetRef,
 }: {
   valence: number;
   hasEntry: boolean;
@@ -135,6 +142,7 @@ function OrbCore({
   transitionProfile: OrbTransitionProfile;
   renderer: OrbRendererMode;
   onVisualReady: () => void;
+  externalTargetRef?: Ref<HTMLDivElement>;
 }) {
   const displayValence = hasEntry ? valence : MINI_VALENCE_IDLE_CANONICAL_VALENCE;
 
@@ -144,19 +152,22 @@ function OrbCore({
       className={cn("pointer-events-none relative flex-shrink-0", containerClassName)}
     >
       <div
+        ref={externalTargetRef}
         className={cn(
           "absolute left-1/2 top-1/2 h-[120px] w-[120px] -translate-x-1/2 -translate-y-1/2",
           orbClassName,
         )}
       >
-        <ValenceOrb
-          valence={displayValence}
-          size={120}
-          transitionProfile={transitionProfile}
-          renderer={renderer}
-          onFirstPaintReady={onVisualReady}
-          onVisualReady={onVisualReady}
-        />
+        {externalTargetRef ? null : (
+          <ValenceOrb
+            valence={displayValence}
+            size={120}
+            transitionProfile={transitionProfile}
+            renderer={renderer}
+            onFirstPaintReady={onVisualReady}
+            onVisualReady={onVisualReady}
+          />
+        )}
       </div>
     </div>
   );
@@ -178,12 +189,14 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
   orbClassName,
   transitionProfile = "v1-soft",
   renderer = "webgpu",
+  externalRenderer,
 }: MiniValenceOrbProps) {
   const [visualReady, setVisualReady] = useState(renderer !== "webgl" && renderer !== "webgpu");
   const handleVisualReady = useCallback(() => {
     setVisualReady(true);
   }, []);
-  const visibilityClass = visualReady ? "opacity-100" : "opacity-0";
+  const isVisualReady = externalRenderer?.visualReady ?? visualReady;
+  const visibilityClass = isVisualReady ? "opacity-100" : "opacity-0";
 
   if (chrome === "none") {
     const preset = BARE_SIZE_PRESETS[size];
@@ -201,6 +214,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         transitionProfile={transitionProfile}
         renderer={renderer}
         onVisualReady={handleVisualReady}
+        externalTargetRef={externalRenderer?.targetRef}
       />
     );
   }
@@ -228,6 +242,7 @@ export const MiniValenceOrb = memo(function MiniValenceOrb({
         transitionProfile={transitionProfile}
         renderer={renderer}
         onVisualReady={handleVisualReady}
+        externalTargetRef={externalRenderer?.targetRef}
       />
     </div>
   );

@@ -38,6 +38,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(PushRealmPlugin.class);
 
         super.onCreate(savedInstanceState);
+        // WebView 113+ automatically enables inspection for debuggable apps. Re-apply the
+        // explicit flag after Capacitor so release-like builds expose it only for benchmarks.
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.ZENFLOW_ANDROID_MOTION_BENCHMARK);
         enableNativeEdgeToEdge();
     }
 
