@@ -12,6 +12,10 @@ async function primeReleasePreview(page: Page) {
 
 test.describe("Deploy smoke", () => {
   test.beforeEach(async ({ page }) => {
+    page.on("pageerror", (error) => console.log("PAGEERROR:", error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") console.log("CONSOLEERROR:", message.text());
+    });
     await primeReleasePreview(page);
   });
 
