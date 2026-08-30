@@ -36,7 +36,7 @@
 
 - [x] T021 Detect requested debug packaging tasks without changing release-task detection.
 - [x] T022 Throw an actionable GradleException when debug packaging is requested with an empty or sample application ID.
-- [x] T023 Run the identical AdMob contract GREEN and verify an empty assembleDebug fails for the intended reason. Evidence: contract test 5/5 pass; empty-ID gradle task-graph verification result recorded in quickstart/evidence below.
+- [x] T023 Run the identical AdMob contract GREEN and verify an empty assembleDebug fails for the intended reason. Evidence: contract test 5/5 pass; with no ID env/property set, `./gradlew :app:assembleDebug --dry-run` fails at the task-graph phase with "Debug builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt." while `./gradlew help` passes (2026-08-30).
 - [ ] T024 If an authorized local real development ID exists, run debug configuration/build without printing it; otherwise mark the valid-ID runtime row UNVERIFIED. Status: UNVERIFIED — no authorized local real development ID present in this environment.
 
 ## Phase 6 — Blast radius and visual proof
