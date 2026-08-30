@@ -185,6 +185,17 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 
 vi.mock("@/lib/motion", () => ({
   Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  bloom: {
+    exit: { scale: 0.96, opacity: 0, y: 8 },
+    transition: { duration: 0.32, ease: [0.2, 0.9, 0.2, 1] },
+  },
+  bloomStatic: {
+    exit: { scale: 1, opacity: 0, y: 0 },
+    transition: { duration: 0 },
+  },
+  easings: {
+    standardAccelerate: [0.3, 0, 1, 1] as const,
+  },
 }));
 
 describe("OrbPage — sensitive emotion integrity", () => {

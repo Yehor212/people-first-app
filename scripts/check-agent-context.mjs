@@ -260,6 +260,56 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
+  if (codexHooks && !/android-visual-runtime-gate\.cjs/.test(codexHooks)) {
+    fail(
+      ".codex/hooks.json must register android-visual-runtime-gate.cjs for UserPromptSubmit and Stop"
+    );
+  }
+  const androidVisualHook = assertGovernanceFile(
+    ".codex/hooks/android-visual-runtime-gate.cjs"
+  );
+  if (androidVisualHook) {
+    for (const marker of [
+      "ANDROID VISUAL RUNTIME GATE",
+      "UserPromptSubmit",
+      "Stop",
+      "Evidence packet:",
+      "one reproduced root cause at a time",
+      "process.exit(2)",
+    ]) {
+      if (!androidVisualHook.includes(marker)) {
+        fail(`Android visual runtime hook must include ${marker}`);
+      }
+    }
+  }
+  const androidVisualCore = assertGovernanceFile(
+    "scripts/codex-governance/android-visual-runtime-core.cjs"
+  );
+  if (androidVisualCore) {
+    for (const marker of [
+      "installedBeforeSha256",
+      "installedAfterSha256",
+      "android-emulator-window",
+      "physical-device-screen",
+      "tileMemoryWarnings",
+      "deadlineMissedPercent",
+      "sha256File",
+    ]) {
+      if (!androidVisualCore.includes(marker)) {
+        fail(`Android visual runtime core must validate ${marker}`);
+      }
+    }
+  }
+  const androidVisualChecker = assertGovernanceFile(
+    "scripts/check-android-visual-runtime-gate.cjs"
+  );
+  if (
+    androidVisualChecker &&
+    !androidVisualChecker.includes("[android-visual-runtime-gate] PASS")
+  ) {
+    fail("Android visual runtime checker must emit its explicit PASS marker");
+  }
+
   const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
   if (prTemplate) {
     if (!hasHeading(prTemplate, "Agent Change Notice")) {

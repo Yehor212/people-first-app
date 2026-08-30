@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import type { AppliedTheme } from "@/stores/themeStore";
 
@@ -18,6 +18,10 @@ const orbVisualControl = vi.hoisted(() => ({
 
 const androidBackControl = vi.hoisted(() => ({
   callback: null as null | (() => boolean),
+}));
+
+const platformControl = vi.hoisted(() => ({
+  isAndroid: false,
 }));
 
 import { OrbPage } from "../OrbPage";
@@ -102,6 +106,16 @@ vi.mock("@/lib/androidBackHandler", () => ({
     };
   },
 }));
+
+vi.mock("@/lib/platform", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/platform")>();
+  return {
+    ...actual,
+    get isAndroid() {
+      return platformControl.isAndroid;
+    },
+  };
+});
 
 vi.mock("@/components/state-of-mind/ValenceOrb", async () => {
   const { useEffect } = await import("react");
@@ -311,6 +325,14 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 
 vi.mock("@/lib/motion", () => ({
   Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  bloom: {
+    exit: { scale: 0.96, opacity: 0, y: 8 },
+    transition: { duration: 0.32, ease: [0.2, 0.9, 0.2, 1] },
+  },
+  bloomStatic: {
+    exit: { scale: 1, opacity: 0, y: 0 },
+    transition: { duration: 0 },
+  },
   easings: {
     standardAccelerate: [0.3, 0, 1, 1] as const,
   },
@@ -332,6 +354,7 @@ describe("OrbPage progressive flow", () => {
     orbVisualControl.readyCallbacks = [];
     orbVisualControl.errorCallbacks = [];
     androidBackControl.callback = null;
+    platformControl.isAndroid = false;
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
       callback(performance.now());
       return 1;
@@ -417,6 +440,43 @@ describe("OrbPage progressive flow", () => {
     await waitFor(() =>
       expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
     );
+  });
+
+  it("coalesces transient Android resume heights before remounting the orb renderer", async () => {
+    vi.useFakeTimers();
+    platformControl.isAndroid = true;
+    setViewport(412, 839);
+
+    try {
+      render(<OrbPage onAddMood={onAddMoodMock} />);
+
+      expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-size", "268");
+      expect(orbVisualControl.readyCallbacks).toHaveLength(1);
+
+      act(() => setViewport(412, 915));
+      act(() => setViewport(412, 839));
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-size", "268");
+      expect(orbVisualControl.readyCallbacks).toHaveLength(1);
+      expect(screen.getByTestId("orb-page")).toHaveAttribute(
+        "data-orb-visual-status",
+        "ready",
+      );
+
+      act(() => setViewport(412, 760));
+      expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-size", "268");
+
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-size", "243");
+      expect(orbVisualControl.readyCallbacks.length).toBeGreaterThan(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("waits for a visible paint after a hidden-tab readiness signal", async () => {
@@ -595,8 +655,8 @@ describe("OrbPage progressive flow", () => {
 
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
-    const refineFooter = screen.getByTestId("orb-page-footer");
     const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
+    const refineFooter = within(refineScroller as HTMLElement).getByTestId("orb-page-footer");
 
     expect(refineFooter).toHaveClass("relative", "shrink-0", "pt-3");
     expect(refineFooter).not.toHaveClass("absolute");
@@ -757,6 +817,17 @@ describe("OrbPage progressive flow", () => {
     expect(toggle).not.toHaveAttribute("tabindex", "-1");
   });
 
+  it("keeps the hidden Android ambience control out of the fixed compositor until focus", () => {
+    const css = readFileSync("src/pages/nav-v2/OrbAmbienceControl.css", "utf8");
+
+    expect(css).toMatch(
+      /:root\[data-platform="android"\] \.orb-ambience-focus-control\s*\{[^}]*position:\s*absolute;[^}]*contain:\s*strict;/s,
+    );
+    expect(css).toMatch(
+      /:root\[data-platform="android"\] \.orb-ambience-focus-control:focus-within\s*\{[^}]*position:\s*fixed;[^}]*contain:\s*none;/s,
+    );
+  });
+
   it("does not start orb ambience while app sound is muted", () => {
     appAudioSettingsState.muted = true;
 
@@ -850,6 +921,19 @@ describe("OrbPage progressive flow", () => {
     expect(useMoodEntryDraftStore.getState().valence).toBe(0);
   });
 
+  it("retains the outgoing Orb step while the refine scene blooms in", () => {
+    const source = readFileSync("src/pages/nav-v2/OrbPage.tsx", "utf8");
+
+    expect(source).toContain('<AnimatePresence initial={false} mode="sync">');
+    expect(source).toContain('data-testid="orb-page-step-scene"');
+    expect(source).toContain('exit={shouldAnimate ? bloom.exit : bloomStatic.exit}');
+    expect(source).toContain(
+      'transition={shouldAnimate ? bloom.transition : bloomStatic.transition}',
+    );
+    expect(source).toContain('className="absolute inset-0 flex min-h-0 flex-col"');
+    expect(source).toContain('aria-hidden={!isPresent ? true : undefined}');
+  });
+
   it("keeps the V1 neutral orb baseline before the user moves the slider", () => {
     setViewport(399, 869);
     mockMoods = [{ id: "previous", date: "2026-04-30", valence: -1 }];
@@ -910,6 +994,22 @@ describe("OrbPage progressive flow", () => {
 
     expect(screen.getByTestId("orb-page-rim-glow")).toHaveAttribute("data-orb-breathing", "true");
     expect(screen.queryByTestId("shooting-star-stub")).toBeNull();
+    expect(mockUseShouldAnimate).toHaveBeenCalledWith({
+      respectRuntimePerformance: false,
+    });
+  });
+
+  it("keeps the Android day flourish mounted when runtime performance protection engages", () => {
+    platformControl.isAndroid = true;
+    themeState.appliedTheme = "paper";
+    mockUseShouldAnimate.mockImplementation(
+      (options?: { respectRuntimePerformance?: boolean }) =>
+        options?.respectRuntimePerformance === false
+    );
+
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+
+    expect(screen.getByTestId("orb-day-flourish")).toBeInTheDocument();
     expect(mockUseShouldAnimate).toHaveBeenCalledWith({
       respectRuntimePerformance: false,
     });
@@ -979,7 +1079,9 @@ describe("OrbPage progressive flow", () => {
       "px-2",
       "md:px-4",
     );
-    expect(refineScroller).toContainElement(screen.getByTestId("orb-page-footer"));
+    expect(refineScroller).toContainElement(
+      within(refineScroller).getByTestId("orb-page-footer"),
+    );
     expect(screen.getByTestId("orb-page-refine-actions")).toHaveClass(
       "flex-col",
       "items-stretch",

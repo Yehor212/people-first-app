@@ -113,9 +113,9 @@ function evaluateAdMobUmpReadiness(files) {
     issues,
     files,
     "adController",
-    /prepareRewardVideoAd\([\s\S]*npa:\s*true/,
+    /showBanner\([\s\S]*npa:\s*true/,
     "missing_non_personalized_default",
-    "Rewarded ad prepare call must default to non-personalized ad requests",
+    "Habits banner requests must default to non-personalized ads",
   );
 
   requireContains(

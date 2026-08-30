@@ -1,7 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const platformControl = vi.hoisted(() => ({ isAndroid: false }));
+
+vi.mock("@/lib/platform", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/platform")>();
+  return {
+    ...actual,
+    get isAndroid() {
+      return platformControl.isAndroid;
+    },
+  };
+});
+
 describe("canonical orb WebGL prewarm lifecycle", () => {
   beforeEach(() => {
+    platformControl.isAndroid = false;
     vi.useFakeTimers();
     vi.resetModules();
     window.sessionStorage.clear();
@@ -23,7 +36,7 @@ describe("canonical orb WebGL prewarm lifecycle", () => {
     window.sessionStorage.clear();
   });
 
-  it("terminates a prewarm worker after its bounded timeout", async () => {
+  it("preserves immediate worker termination outside Android", async () => {
     class WorkerStub {
       onmessage: ((event: MessageEvent) => void) | null = null;
       onerror: ((event: ErrorEvent) => void) | null = null;
@@ -39,7 +52,8 @@ describe("canonical orb WebGL prewarm lifecycle", () => {
       CANONICAL_ORB_PREWARM_TIMEOUT_MS,
       prewarmCanonicalOrbWebGL,
     } = await import("../canonicalOrbPrewarm");
-    const resultPromise = prewarmCanonicalOrbWebGL("test-timeout");
+    const resultPromise = prewarmCanonicalOrbWebGL("test-non-android-timeout");
+
     await vi.advanceTimersByTimeAsync(CANONICAL_ORB_PREWARM_TIMEOUT_MS + 1);
 
     await expect(resultPromise).resolves.toMatchObject({
@@ -47,6 +61,78 @@ describe("canonical orb WebGL prewarm lifecycle", () => {
       reason: "timeout",
     });
     expect(worker.postMessage).toHaveBeenCalledWith({ type: "dispose" });
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets an Android prewarm worker acknowledge disposal after its bounded timeout", async () => {
+    platformControl.isAndroid = true;
+    class WorkerStub {
+      onmessage: ((event: MessageEvent<{ type: "disposed" }>) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+      postMessage = vi.fn();
+      terminate = vi.fn();
+      acknowledgeDispose() {
+        this.onmessage?.({
+          data: { type: "disposed" },
+        } as MessageEvent<{ type: "disposed" }>);
+      }
+    }
+    const worker = new WorkerStub();
+    vi.stubGlobal("Worker", vi.fn(function WorkerMock() {
+      return worker;
+    }));
+
+    const {
+      CANONICAL_ORB_PREWARM_TIMEOUT_MS,
+      prewarmCanonicalOrbWebGL,
+    } = await import("../canonicalOrbPrewarm");
+    const resultPromise = prewarmCanonicalOrbWebGL("test-timeout");
+    const settled = vi.fn();
+    void resultPromise.then(settled);
+    await vi.advanceTimersByTimeAsync(CANONICAL_ORB_PREWARM_TIMEOUT_MS + 1);
+
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: "dispose" });
+    expect(worker.terminate).not.toHaveBeenCalled();
+    expect(settled).not.toHaveBeenCalled();
+
+    worker.acknowledgeDispose();
+
+    await expect(resultPromise).resolves.toMatchObject({
+      ok: false,
+      reason: "timeout",
+    });
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it("force-terminates a prewarm worker when the dispose acknowledgement is silent", async () => {
+    platformControl.isAndroid = true;
+    class WorkerStub {
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+      postMessage = vi.fn();
+      terminate = vi.fn();
+    }
+    const worker = new WorkerStub();
+    vi.stubGlobal("Worker", vi.fn(function WorkerMock() {
+      return worker;
+    }));
+
+    const {
+      CANONICAL_ORB_PREWARM_DISPOSE_ACK_TIMEOUT_MS,
+      CANONICAL_ORB_PREWARM_TIMEOUT_MS,
+      prewarmCanonicalOrbWebGL,
+    } = await import("../canonicalOrbPrewarm");
+    const resultPromise = prewarmCanonicalOrbWebGL("test-dispose-timeout");
+
+    await vi.advanceTimersByTimeAsync(CANONICAL_ORB_PREWARM_TIMEOUT_MS + 1);
+    expect(worker.terminate).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(CANONICAL_ORB_PREWARM_DISPOSE_ACK_TIMEOUT_MS + 1);
+
+    await expect(resultPromise).resolves.toMatchObject({
+      ok: false,
+      reason: "timeout",
+    });
     expect(worker.terminate).toHaveBeenCalledTimes(1);
   });
 

@@ -13,7 +13,7 @@ vi.mock('../validation', () => ({
 }));
 
 vi.mock('@/lib/env', () => ({
-  BASE_URL: '/',
+  BASE_URL: '.',
 }));
 
 import {
@@ -108,6 +108,13 @@ describe('getSoundById', () => {
     });
     expect(variant?.file).toContain('/sounds/hyperfocus/hyperfocus-fireplace-soft.mp3');
     expect(variant?.fallbackFile).toBe(legacy?.file);
+  });
+
+  it('normalizes generated Android WebView paths instead of producing .sounds URLs', () => {
+    const variant = getSoundById('forest:deep');
+
+    expect(variant?.file).toBe('/sounds/hyperfocus/hyperfocus-forest-deep.mp3');
+    expect(variant?.file).not.toMatch(/^\.sounds\//);
   });
 
   it('returns undefined for empty string', () => {

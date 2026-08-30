@@ -10,24 +10,29 @@ const DEFAULT_APP_ADS_FILE = path.join(ROOT, "public", "app-ads.txt");
 const SAMPLE_PUBLISHER_ID = "pub-3940256099942544";
 const GOOGLE_SELLER_ID = "f08c47fec0942fa0";
 
-const REQUIRED_ADMOB_IDS = [
+const ADMOB_IDS = [
   {
     key: "VITE_ADMOB_APP_ID_ANDROID",
     aliases: ["ZENFLOW_ADMOB_ANDROID_APP_ID"],
     kind: "android_app_id",
   },
-  {
-    key: "VITE_ADMOB_REWARDED_ID_ANDROID",
-    aliases: [],
-    kind: "ad_unit_id",
-  },
-];
-
-const OPTIONAL_ADMOB_IDS = [
-  { key: "VITE_ADMOB_BANNER_ID_ANDROID", kind: "ad_unit_id" },
+  { key: "VITE_ADMOB_REWARDED_ID_ANDROID", aliases: [], kind: "ad_unit_id" },
+  { key: "VITE_ADMOB_BANNER_ID_ANDROID", aliases: [], kind: "ad_unit_id" },
   { key: "VITE_ADMOB_REWARDED_ID_IOS", kind: "ad_unit_id" },
   { key: "VITE_ADMOB_BANNER_ID_IOS", kind: "ad_unit_id" },
 ];
+
+const REQUIRED_KEYS_BY_MODE = {
+  "android-rewarded": new Set([
+    "VITE_ADMOB_APP_ID_ANDROID",
+    "VITE_ADMOB_REWARDED_ID_ANDROID",
+  ]),
+  "android-banner": new Set([
+    "VITE_ADMOB_APP_ID_ANDROID",
+    "VITE_ADMOB_BANNER_ID_ANDROID",
+  ]),
+  full: new Set(ADMOB_IDS.map(({ key }) => key)),
+};
 
 function maskPublisherId(value) {
   const publisherId = String(value || "").match(/pub-\d{16}/)?.[0];
@@ -125,11 +130,18 @@ function warningFromOptionalIssue(issue) {
   return { ...issue, code: `optional_${issue.code}` };
 }
 
-function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds = false, requireOptionalIds = false }) {
+function evaluateAdMobProductionReadiness({
+  env,
+  appAdsText,
+  strictOptionalIds = false,
+  requireOptionalIds = false,
+  monetizationMode = requireOptionalIds ? "full" : "android-banner",
+}) {
   const issues = [];
   const warnings = [];
   const summary = {};
   const appAds = parseAppAdsText(appAdsText || "");
+  const requiredKeys = REQUIRED_KEYS_BY_MODE[monetizationMode] || REQUIRED_KEYS_BY_MODE["android-banner"];
 
   if (!appAdsText) {
     issues.push({ code: "missing_app_ads", message: "public/app-ads.txt is required before production monetization" });
@@ -137,24 +149,18 @@ function evaluateAdMobProductionReadiness({ env, appAdsText, strictOptionalIds =
     issues.push(...appAds.issues);
   }
 
-  for (const entry of REQUIRED_ADMOB_IDS) {
+  for (const entry of ADMOB_IDS) {
+    const required = requiredKeys.has(entry.key);
     const { key, value } = envValue(env, entry);
-    const result = checkAdMobValue({ key: entry.key, value, kind: entry.kind, appAdsPublisherId: appAds.publisherId, required: true });
-    summary[entry.key] = result.status;
-    issues.push(...result.issues);
-  }
-
-  for (const entry of OPTIONAL_ADMOB_IDS) {
-    const value = String(env[entry.key] || "").trim();
     const result = checkAdMobValue({
       key: entry.key,
       value,
       kind: entry.kind,
       appAdsPublisherId: appAds.publisherId,
-      required: requireOptionalIds,
+      required,
     });
     summary[entry.key] = result.status;
-    if (strictOptionalIds) issues.push(...result.issues);
+    if (required || strictOptionalIds) issues.push(...result.issues);
     else warnings.push(...result.issues.map(warningFromOptionalIssue));
   }
 
@@ -169,6 +175,7 @@ function parseArgs(argv) {
     appAdsFile: DEFAULT_APP_ADS_FILE,
     strictOptionalIds: process.env.ZENFLOW_ADMOB_STRICT_OPTIONAL_IDS === "true",
     requireOptionalIds: process.env.ZENFLOW_ADMOB_REQUIRE_OPTIONAL_IDS === "true",
+    monetizationMode: process.env.ZENFLOW_ADMOB_MODE || "android-banner",
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -178,7 +185,13 @@ function parseArgs(argv) {
     else if (arg === "--require-optional") {
       args.requireOptionalIds = true;
       args.strictOptionalIds = true;
-    }
+      args.monetizationMode = "full";
+    } else if (arg === "--mode") {
+      args.monetizationMode = argv[++i] || "";
+      if (!REQUIRED_KEYS_BY_MODE[args.monetizationMode]) {
+        throw new Error("Unsupported AdMob monetization mode: " + args.monetizationMode);
+      }
+    } else throw new Error("Unknown argument: " + arg);
   }
   return args;
 }
@@ -191,9 +204,15 @@ function main() {
     appAdsText: readAppAdsFile(args.appAdsFile),
     strictOptionalIds: args.strictOptionalIds,
     requireOptionalIds: args.requireOptionalIds,
+    monetizationMode: args.monetizationMode,
   });
   const status = report.ok ? "PASS" : "UNVERIFIED";
-  const scope = args.requireOptionalIds ? "Full cross-platform AdMob ids" : "Android production AdMob ids";
+  const scope =
+    args.monetizationMode === "android-banner"
+      ? "Android banner AdMob ids"
+      : args.monetizationMode === "full"
+        ? "Full cross-platform AdMob ids"
+        : "Android rewarded AdMob ids";
   console.log(`[admob-readiness] ${status} - ${scope} and local app-ads.txt ${report.ok ? "are ready" : "need release-owner action"}`);
   for (const [key, value] of Object.entries(report.summary)) {
     console.log(`[admob-readiness] ${key}=${value}`);

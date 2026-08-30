@@ -3,6 +3,18 @@ import { act, render } from "@testing-library/react";
 import { createElement } from "react";
 import * as ValenceOrbModule from "../ValenceOrb";
 
+const platformControl = vi.hoisted(() => ({ isAndroid: false }));
+
+vi.mock("@/lib/platform", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/platform")>();
+  return {
+    ...actual,
+    get isAndroid() {
+      return platformControl.isAndroid;
+    },
+  };
+});
+
 import {
   ORB_TRANSITION_SETTINGS,
   ORB_GPU_NOISE_PHASE_WRAP,
@@ -89,6 +101,7 @@ function createMockGLRenderer() {
 }
 
 beforeEach(() => {
+  platformControl.isAndroid = false;
   vi.mocked(drawOrbScene).mockClear();
   stubCanvasContexts();
 });
@@ -1243,6 +1256,15 @@ describe("ValenceOrb motion profile", () => {
     expect(isOrbClockProbeAllowed(new URL("http://127.0.0.1:4175/orb"), "production")).toBe(true);
     expect(isOrbClockProbeAllowed(new URL("http://localhost:5173/orb"), "development")).toBe(true);
     expect(isOrbClockProbeAllowed(new URL("http://localhost/orb"), "test")).toBe(true);
+    expect(
+      isOrbClockProbeAllowed(new URL("https://localhost/orb"), "production", true),
+    ).toBe(true);
+    expect(
+      isOrbClockProbeAllowed(new URL("https://localhost/orb"), "production", false),
+    ).toBe(false);
+    expect(
+      isOrbClockProbeAllowed(new URL("https://example.invalid/orb"), "production", true),
+    ).toBe(false);
   });
 
   it("resumes after browser lifecycle pauses without a fast-spin catch-up frame", async () => {
@@ -2143,6 +2165,135 @@ describe("ValenceOrb motion profile", () => {
       }
     }
   });
+
+  it.each(["ack", "timeout"] as const)(
+    "lets an active worker release its WebGL context before termination via %s",
+    async (completionMode) => {
+      platformControl.isAndroid = true;
+      vi.useFakeTimers();
+      stubCanvasContexts();
+      stubVisibleOrbRect();
+      const { flushNextFrame } = installQueuedRaf();
+      const originalInnerWidth = window.innerWidth;
+      const hadTransferControl =
+        "transferControlToOffscreen" in HTMLCanvasElement.prototype;
+      const originalTransferControl =
+        HTMLCanvasElement.prototype.transferControlToOffscreen;
+
+      class WorkerStub {
+        onmessage: ((event: MessageEvent<{
+          type: "ready" | "rendered" | "disposed";
+          requestId?: number;
+        }>) => void) | null = null;
+        onerror: ((event: ErrorEvent) => void) | null = null;
+        postMessage = vi.fn((message: {
+          type: "init" | "render" | "dispose";
+          requestId?: number;
+        }) => {
+          if (message.type === "init") {
+            queueMicrotask(() => {
+              this.onmessage?.({
+                data: { type: "ready" },
+              } as MessageEvent<{ type: "ready" }>);
+            });
+            return;
+          }
+          if (message.type === "render") {
+            queueMicrotask(() => {
+              this.onmessage?.({
+                data: { type: "rendered", requestId: message.requestId },
+              } as MessageEvent<{ type: "rendered"; requestId?: number }>);
+            });
+          }
+        });
+        terminate = vi.fn();
+        acknowledgeDispose() {
+          this.onmessage?.({
+            data: { type: "disposed" },
+          } as MessageEvent<{ type: "disposed" }>);
+        }
+      }
+
+      const worker = new WorkerStub();
+      const WorkerSpy = vi.fn(function WorkerMock() {
+        return worker;
+      });
+
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: 449,
+      });
+      Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+        configurable: true,
+        value: vi.fn(() => ({ width: 0, height: 0 })),
+      });
+      vi.stubGlobal("OffscreenCanvas", class OffscreenCanvasStub {});
+      vi.stubGlobal("Worker", WorkerSpy);
+
+      const view = render(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+          size: 240,
+        }),
+      );
+      let unmounted = false;
+
+      try {
+        await flushScheduledWebGLUpgrade(flushNextFrame);
+        await act(async () => {
+          await Promise.resolve();
+          await Promise.resolve();
+          await Promise.resolve();
+        });
+
+        expect(WorkerSpy).toHaveBeenCalledTimes(1);
+        expect(
+          view.container.querySelector("[data-orb-renderer-tier='webgl-worker']"),
+        ).not.toBeNull();
+
+        view.unmount();
+        unmounted = true;
+
+        expect(worker.postMessage).toHaveBeenLastCalledWith({ type: "dispose" });
+        expect(worker.terminate).not.toHaveBeenCalled();
+
+        if (completionMode === "ack") {
+          worker.acknowledgeDispose();
+        } else {
+          await act(async () => {
+            vi.advanceTimersByTime(10_000);
+            await Promise.resolve();
+          });
+        }
+
+        expect(worker.terminate).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          vi.advanceTimersByTime(10_000);
+          await Promise.resolve();
+        });
+        expect(worker.terminate).toHaveBeenCalledTimes(1);
+      } finally {
+        if (!unmounted) view.unmount();
+        Object.defineProperty(window, "innerWidth", {
+          configurable: true,
+          value: originalInnerWidth,
+        });
+        if (hadTransferControl) {
+          Object.defineProperty(HTMLCanvasElement.prototype, "transferControlToOffscreen", {
+            configurable: true,
+            value: originalTransferControl,
+          });
+        } else {
+          const canvasPrototype = HTMLCanvasElement.prototype as {
+            transferControlToOffscreen?: HTMLCanvasElement["transferControlToOffscreen"];
+          };
+          delete canvasPrototype.transferControlToOffscreen;
+        }
+      }
+    },
+  );
 
   it("recovers a visible worker WebGL runtime failure through canonical main-thread WebGL", async () => {
     vi.useFakeTimers();
@@ -3910,6 +4061,188 @@ describe("ValenceOrb motion profile", () => {
     }
   });
 
+  it("preserves one Android Worker and canvas across an opted-in size change", async () => {
+    vi.useFakeTimers();
+    platformControl.isAndroid = true;
+    stubCanvasContexts(false);
+    stubVisibleOrbRect();
+    const { flushNextFrame } = installQueuedRaf();
+    const originalInnerWidth = window.innerWidth;
+    const hadTransferControl =
+      "transferControlToOffscreen" in HTMLCanvasElement.prototype;
+    const originalTransferControl =
+      HTMLCanvasElement.prototype.transferControlToOffscreen;
+
+    type WorkerMessage = {
+      type: "init" | "render" | "dispose";
+      requestId?: number;
+      payload?: { size: number };
+    };
+
+    class WorkerStub {
+      onmessage:
+        | ((
+            event: MessageEvent<{
+              type: "ready" | "rendered" | "disposed";
+              requestId?: number;
+            }>,
+          ) => void)
+        | null = null;
+      onerror: ((event: ErrorEvent) => void) | null = null;
+      messages: WorkerMessage[] = [];
+      postMessage = vi.fn((message: WorkerMessage) => {
+        this.messages.push(message);
+        if (message.type === "init") {
+          queueMicrotask(() => {
+            this.onmessage?.({ data: { type: "ready" } } as MessageEvent<{
+              type: "ready";
+            }>);
+          });
+          return;
+        }
+        if (message.type === "render") {
+          queueMicrotask(() => {
+            this.onmessage?.({
+              data: { type: "rendered", requestId: message.requestId },
+            } as MessageEvent<{ type: "rendered"; requestId?: number }>);
+          });
+          return;
+        }
+        queueMicrotask(() => {
+          this.onmessage?.({ data: { type: "disposed" } } as MessageEvent<{
+            type: "disposed";
+          }>);
+        });
+      });
+      terminate = vi.fn();
+    }
+
+    const workerInstances: WorkerStub[] = [];
+    const WorkerSpy = vi.fn(function WorkerMock() {
+      const worker = new WorkerStub();
+      workerInstances.push(worker);
+      return worker;
+    });
+
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 449,
+    });
+    Object.defineProperty(
+      HTMLCanvasElement.prototype,
+      "transferControlToOffscreen",
+      {
+        configurable: true,
+        value: vi.fn(() => ({ width: 480, height: 480 })),
+      },
+    );
+    vi.stubGlobal("OffscreenCanvas", class OffscreenCanvasStub {});
+    vi.stubGlobal("Worker", WorkerSpy);
+
+    try {
+      const view = render(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+          size: 240,
+          resizePolicy: "preserve-worker-context",
+        }),
+      );
+
+      await flushScheduledWebGLUpgrade(flushNextFrame);
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      const canvasBefore = view.container.querySelector(
+        "canvas[data-orb-renderer-tier='webgl-worker']",
+      );
+      const wrapperBefore = view.container.querySelector(
+        "[data-orb-renderer-policy='webgl']",
+      );
+      expect(canvasBefore).not.toBeNull();
+
+      view.rerender(
+        createElement(ValenceOrb, {
+          valence: 0.25,
+          renderer: "webgl",
+          size: 120,
+          resizePolicy: "preserve-worker-context",
+        }),
+      );
+
+      await flushScheduledMiniWebGLUpgrade(flushNextFrame);
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      const canvasAfter = view.container.querySelector(
+        "canvas[data-orb-renderer-tier='webgl-worker']",
+      );
+      const wrapperAfter = view.container.querySelector(
+        "[data-orb-renderer-policy='webgl']",
+      );
+      const renderMessages = workerInstances[0]?.messages.filter(
+        (message) => message.type === "render",
+      );
+
+      expect(WorkerSpy).toHaveBeenCalledTimes(1);
+      expect(canvasAfter).toBe(canvasBefore);
+      expect(wrapperAfter).toBe(wrapperBefore);
+      expect(workerInstances[0]?.messages).not.toContainEqual({ type: "dispose" });
+      expect(renderMessages?.at(-1)?.payload?.size).toBe(120);
+      expect(wrapperAfter).toHaveStyle({ width: "120px", height: "120px" });
+      expect(canvasAfter).toHaveStyle({ width: "120px", height: "120px" });
+      expect(canvasAfter).toHaveAttribute("data-orb-visual-ready", "true");
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+      if (hadTransferControl) {
+        Object.defineProperty(
+          HTMLCanvasElement.prototype,
+          "transferControlToOffscreen",
+          {
+            configurable: true,
+            value: originalTransferControl,
+          },
+        );
+      } else {
+        const canvasPrototype = HTMLCanvasElement.prototype as {
+          transferControlToOffscreen?: HTMLCanvasElement["transferControlToOffscreen"];
+        };
+        delete canvasPrototype.transferControlToOffscreen;
+      }
+    }
+  });
+
+  it("keeps recreate-on-size as the default policy for ordinary callers", () => {
+    const view = render(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        size: 240,
+      }),
+    );
+    const canvasBefore = view.container.querySelector("canvas");
+    expect(canvasBefore).not.toBeNull();
+
+    view.rerender(
+      createElement(ValenceOrb, {
+        valence: 0.25,
+        size: 120,
+      }),
+    );
+
+    const canvasAfter = view.container.querySelector("canvas");
+    expect(canvasAfter).not.toBeNull();
+    expect(canvasAfter).not.toBe(canvasBefore);
+  });
+
   it("does not catch up hidden worker-render time after WebGL worker backpressure", async () => {
     vi.useFakeTimers();
     stubVisibleOrbRect();
@@ -4077,7 +4410,10 @@ describe("ValenceOrb motion profile", () => {
     }> = [];
 
     class WorkerStub {
-      onmessage: ((event: MessageEvent<{ type: "ready" | "rendered"; requestId?: number }>) => void) | null = null;
+      onmessage: ((event: MessageEvent<{
+        type: "ready" | "rendered";
+        requestId?: number;
+      }>) => void) | null = null;
       onerror: ((event: ErrorEvent) => void) | null = null;
       postMessage = vi.fn((message: {
         type: "init" | "render" | "dispose";
@@ -4166,6 +4502,7 @@ describe("ValenceOrb motion profile", () => {
       expect(timeBeforeRemount).toBeGreaterThan(1);
 
       firstRender.unmount();
+      expect(workerInstances[0]?.postMessage).toHaveBeenLastCalledWith({ type: "dispose" });
       expect(workerInstances[0]?.terminate).toHaveBeenCalledTimes(1);
       const messageCountBeforeRemount = renderMessages.length;
 

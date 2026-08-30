@@ -14,7 +14,6 @@
 import { logger } from "./logger";
 import { isAbortError } from "./validation";
 import type { SeverityLevel } from "@sentry/core";
-import { BASE_URL } from "@/lib/env";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -28,7 +27,7 @@ const lazyBreadcrumb = (bc: {
     .then(({ addBreadcrumb }) => addBreadcrumb(bc))
     .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
 };
-import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
+import { getAppAudioAssetSrc, resolveAppAudioAssetSrc } from "@/lib/appAudioAssets";
 import {
   HYPERFOCUS_AUDIO_FAMILIES,
   getHyperfocusAudioVariant,
@@ -446,7 +445,10 @@ export function getSoundById(id: string): SoundInfo | undefined {
   const familySound = SOUNDS.find((sound) => sound.id === variant.legacyId);
   if (!familySound) return undefined;
 
-  const generatedFile = variant.generated && variant.runtimePublicPath ? BASE_URL + variant.runtimePublicPath : null;
+  const generatedFile =
+    variant.generated && variant.runtimePublicPath
+      ? resolveAppAudioAssetSrc(variant.runtimePublicPath)
+      : null;
 
   return {
     ...familySound,

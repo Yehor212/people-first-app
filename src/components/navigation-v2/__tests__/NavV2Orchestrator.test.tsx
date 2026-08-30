@@ -7,6 +7,12 @@ import { useUIStore, useUserDataStore } from "@/stores";
 const { mockIsFeatureVisible } = vi.hoisted(() => ({
   mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(),
 }));
+const adOverlay = vi.hoisted(() => ({
+  setGlobalAdOverlayOpen: vi.fn(),
+}));
+const drawerLifecycle = vi.hoisted(() => ({
+  onExitComplete: null as null | (() => void),
+}));
 
 // --- Mocks ---
 
@@ -50,6 +56,10 @@ vi.mock("@/contexts/FeatureFlagsContext", () => ({
   useFeatureFlags: () => ({ isFeatureVisible: mockIsFeatureVisible }),
 }));
 
+vi.mock("@/contexts/AdContext", () => ({
+  useAds: () => ({ setGlobalAdOverlayOpen: adOverlay.setGlobalAdOverlayOpen }),
+}));
+
 vi.mock("@/components/FeatureUnlock", () => ({
   FeatureUnlock: ({ feature, onClose }: { feature: string; onClose: () => void }) => (
     <section aria-label="Feature unlocked" role="dialog">
@@ -90,6 +100,14 @@ vi.mock("@/components/ChallengeModal", () => ({
 vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn(), selection: vi.fn() },
 }));
+
+vi.mock("@/lib/platform", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/platform")>();
+  return {
+    ...actual,
+    isAndroid: true,
+  };
+});
 
 vi.mock("@/hooks/useDeviceTier", () => ({
   useDeviceTier: () => ({ tier: "phone" }),
@@ -165,13 +183,16 @@ vi.mock("../DrawerV2", () => ({
   DrawerV2: ({
     open,
     onClose,
+    onExitComplete,
     onPageChange,
   }: {
     open: boolean;
     onClose: () => void;
+    onExitComplete?: () => void;
     onPageChange: (page: "habits" | "planning") => void;
-  }) =>
-    open ? (
+  }) => {
+    drawerLifecycle.onExitComplete = onExitComplete ?? null;
+    return open ? (
       <div id="nav-v2-drawer" data-testid="drawer-v2-open">
         drawer open
         <button type="button" onClick={onClose} autoFocus>
@@ -184,7 +205,8 @@ vi.mock("../DrawerV2", () => ({
           Planning
         </button>
       </div>
-    ) : null,
+    ) : null;
+  },
 }));
 
 vi.mock("../V2FocusMiniPlayer", () => ({
@@ -208,12 +230,16 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     window.localStorage.clear();
     window.history.replaceState({}, "", "/");
     vi.mocked(morph).mockClear();
+    adOverlay.setGlobalAdOverlayOpen.mockClear();
+    drawerLifecycle.onExitComplete = null;
     mockIsFeatureVisible.mockReturnValue(true);
     useUIStore.setState({
       featureToUnlock: null,
       showChallengeModal: false,
       challengeInvite: undefined,
       challengeHabit: undefined,
+      focusIsRunning: false,
+      focusEndTime: null,
     });
     useUserDataStore.setState({ userName: "Friend" });
   });
@@ -237,6 +263,9 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.getByRole("dialog", { name: "Feature unlocked" })).toHaveTextContent(
       "challenges"
     );
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(true);
+    });
     await act(async () => {
       await new Promise((resolve) => window.setTimeout(resolve, 0));
     });
@@ -257,6 +286,9 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.queryByRole("dialog", { name: "Friend challenges" })).not.toBeInTheDocument();
     expect(useUIStore.getState().challengeInvite).toBeUndefined();
     expect(useUIStore.getState().challengeHabit).toBeUndefined();
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(false);
+    });
   });
 
   it("keeps V2 challenge progression hidden when challenges are disabled", () => {
@@ -279,6 +311,39 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     const trigger = screen.getByTestId("nav-v2-open-drawer");
     expect(trigger).toBeInTheDocument();
     expect(trigger.className).toContain("md:hidden");
+  });
+
+  it("blocks a native Habits banner while the phone drawer is open", async () => {
+    render(<NavV2Orchestrator />);
+
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(false);
+    });
+    fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(true);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close menu" }));
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(false);
+    });
+  });
+
+  it("blocks a native Habits banner for the complete active focus session", async () => {
+    useUIStore.setState({ focusIsRunning: true, focusEndTime: Date.now() + 60_000 });
+    render(<NavV2Orchestrator />);
+
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(true);
+    });
+
+    act(() => {
+      useUIStore.setState({ focusIsRunning: false, focusEndTime: null });
+    });
+    await waitFor(() => {
+      expect(adOverlay.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(false);
+    });
   });
 
   it("recognizes the GitHub Pages base path as a valid V2 route", () => {
@@ -346,6 +411,26 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(await screen.findByTestId("planning-page")).toBeInTheDocument();
   });
 
+  it("resets the Android document scroll before a newly selected primary route is shown", async () => {
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+
+    render(<NavV2Orchestrator />);
+
+    fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
+    fireEvent.click(screen.getByRole("button", { name: "Planning" }));
+    act(() => drawerLifecycle.onExitComplete?.());
+
+    await waitFor(() =>
+      expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+        "data-active-page",
+        "planning"
+      )
+    );
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
+
+    scrollTo.mockRestore();
+  });
+
   it("skips full-page morph and defers route mount when phone drawer navigation changes page", async () => {
     render(<NavV2Orchestrator />);
 
@@ -355,6 +440,9 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "orb");
     expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
     expect(morph).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
+
+    act(() => drawerLifecycle.onExitComplete?.());
 
     await waitFor(() =>
       expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
@@ -362,6 +450,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
         "habits"
       )
     );
+    expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
     expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "habits");
     await waitFor(() =>
       expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument()
@@ -395,17 +484,38 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(document.getElementById("nav-v2-drawer")).toBeInTheDocument();
   });
 
+  it("portals the Android phone menu trigger above global status banners", () => {
+    const { container } = render(<NavV2Orchestrator />);
+    const trigger = screen.getByTestId("nav-v2-open-drawer");
+
+    expect(trigger.parentElement).toBe(document.body);
+    expect(container).not.toContainElement(trigger);
+  });
+
   it("restores keyboard focus to the phone menu trigger after the drawer closes", async () => {
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        callback(performance.now());
+        return 1;
+      });
     render(<NavV2Orchestrator />);
     const trigger = screen.getByTestId("nav-v2-open-drawer");
 
-    trigger.focus();
-    fireEvent.click(trigger);
-    const close = screen.getByRole("button", { name: "Close menu" });
-    expect(close).toHaveFocus();
-    fireEvent.click(close);
+    try {
+      trigger.focus();
+      fireEvent.click(trigger);
+      const close = screen.getByRole("button", { name: "Close menu" });
+      expect(close).toHaveFocus();
+      fireEvent.click(close);
 
-    await waitFor(() => expect(trigger).toHaveFocus());
+      expect(trigger).not.toHaveFocus();
+      act(() => drawerLifecycle.onExitComplete?.());
+
+      await waitFor(() => expect(trigger).toHaveFocus());
+    } finally {
+      requestFrame.mockRestore();
+    }
   });
 
   it("keeps the menu glyph when Settings is the active phone page", () => {
@@ -428,9 +538,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
       "start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))]"
     );
     expect(trigger.className).not.toContain("start-3");
-    expect(trigger.className).toContain(
-      "top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))]"
-    );
+    expect(trigger.className).toContain("top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))]");
     expect(trigger.className).not.toContain("top-1/2");
     expect(trigger.className).not.toContain("rounded-e-full");
   });
@@ -463,6 +571,24 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     expect(source).toContain("NavV2RouteFallback");
     expect(source).not.toContain("<Suspense fallback={null}>{pageNode}</Suspense>");
+  });
+
+  it("shares each drawer preload promise with the matching React.lazy page", () => {
+    const source = readFileSync("src/components/navigation-v2/navV2RouteLoaders.ts", "utf8");
+
+    for (const [page, loader] of [
+      ["orb", "loadOrbPage"],
+      ["habits", "loadHabitsPage"],
+      ["diary", "loadDiaryPage"],
+      ["planning", "loadPlanningPage"],
+      ["settings", "loadSettingsPage"],
+    ]) {
+      expect(source).toMatch(
+        new RegExp(
+          `lazy\\(\\s*\\(\\) =>\\s*preloadNavV2Route\\("${page}"\\) as ReturnType<typeof ${loader}>\\s*\\)`
+        )
+      );
+    }
   });
 
   it("opens the phone drawer before scheduling route preloads", () => {

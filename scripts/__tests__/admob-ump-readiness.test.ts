@@ -52,6 +52,17 @@ describe("AdMob UMP/native privacy readiness guard", () => {
     });
   });
 
+  it("validates the banner non-personalized default without relying on rewarded code", () => {
+    const checker = loadChecker();
+    const files = checker.readFileMap();
+    files.adController = files.adController.replaceAll("prepareRewardVideoAd", "removedRewardPath");
+
+    const report = checker.evaluateAdMobUmpReadiness(files);
+
+    expect(report.ok).toBe(true);
+    expect(report.issues).toEqual([]);
+  });
+
   it("fails if UMP consent refresh is removed from the ad controller", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();

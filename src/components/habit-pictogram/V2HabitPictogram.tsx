@@ -1,10 +1,15 @@
 import { cn } from "@/lib/utils";
+import { isAndroid } from "@/lib/platform";
 import {
   getV2HabitPictogramFamily,
   resolveV2HabitPictogramId,
   type V2HabitPictogramId,
 } from "@/lib/v2HabitPictograms";
 import { HabitMotionPlayer } from "./HabitMotionPlayer";
+import {
+  getHabitCelebrationAsset,
+  type HabitCelebrationVariant,
+} from "./habitCelebrationAssets";
 import {
   HABIT_LOTTIE_RUNTIME_ENABLED,
   getHabitIconAsset,
@@ -24,6 +29,8 @@ interface V2HabitPictogramProps {
   motionState?: HabitIconMotionState;
   motionAllowed?: boolean;
   forceMotionForReview?: boolean;
+  playToken?: number;
+  celebrationVariant?: HabitCelebrationVariant;
 }
 
 function toReadableLabel(id: V2HabitPictogramId): string {
@@ -39,10 +46,13 @@ export function V2HabitPictogram({
   motionState = "idle",
   motionAllowed = true,
   forceMotionForReview = false,
+  playToken,
+  celebrationVariant,
 }: V2HabitPictogramProps) {
   const id = pictogramId ?? resolveV2HabitPictogramId(value);
   const family = getV2HabitPictogramFamily(id);
   const asset = getHabitIconAsset(id);
+  const hasAndroidTgsPoster = isAndroid && Boolean(getHabitCelebrationAsset(id));
   const hasLottieCandidate = asset.idle.renderer === "lottie" && Boolean(asset.lottie);
   const canUseLottieRuntime = HABIT_LOTTIE_RUNTIME_ENABLED && hasLottieCandidate;
   const hasAnimatedRasterCandidate =
@@ -57,7 +67,9 @@ export function V2HabitPictogram({
     isApprovedLottie || (HABIT_LOTTIE_RUNTIME_ENABLED && forceMotionForReview && hasLottieCandidate);
   const shouldExposeAnimatedRaster = isApprovedAnimatedRaster && !shouldExposeLottie;
   const shouldExposeRaster = isApprovedRaster && !shouldExposeLottie && !shouldExposeAnimatedRaster;
-  const iconSource = shouldExposeLottie
+  const iconSource = hasAndroidTgsPoster
+    ? "approved-tgs-first-frame"
+    : shouldExposeLottie
     ? isApprovedLottie
       ? "approved-lottie-json"
       : "review-candidate-lottie-json"
@@ -66,7 +78,9 @@ export function V2HabitPictogram({
       : shouldExposeRaster
         ? "approved-raster-sticker"
         : "static-reduced-svg-fallback";
-  const iconTreatment = shouldExposeLottie
+  const iconTreatment = hasAndroidTgsPoster
+    ? "exact-tgs-first-frame"
+    : shouldExposeLottie
     ? "single-lottie-icon"
     : shouldExposeAnimatedRaster
       ? "artist-grade-animated-raster"
@@ -78,6 +92,7 @@ export function V2HabitPictogram({
     <span
       className={cn(
         "v2-habit-pictogram v2hp-lottie inline-flex h-5 w-5 items-center justify-center",
+        hasAndroidTgsPoster && "overflow-hidden rounded-full",
         className
       )}
       data-habit-pictogram={id}
@@ -212,6 +227,8 @@ export function V2HabitPictogram({
         state={motionState}
         motionAllowed={motionAllowed}
         forceMotionForReview={forceMotionForReview}
+        playToken={playToken}
+        celebrationVariant={celebrationVariant}
       />
     </span>
   );

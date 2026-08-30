@@ -1,16 +1,23 @@
-/**
- * SelectedDayPanel — Premium cosmic selected day details
- * Pure component, 0 useState.
- */
+/** Premium cosmic selected day details; pure component with no local state. */
 
-import { motion } from 'framer-motion';
-import type { CSSProperties } from 'react';
-import { Calendar, Heart, Brain, Target, Sparkles } from 'lucide-react';
-import { MoodEntry, Habit, GratitudeEntry } from '@/types';
-import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
-import { MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
-import type { Language } from '@/i18n/translations';
-import { getLocale } from '@/lib/timeUtils';
+import { motion } from "framer-motion";
+import { Calendar, Heart, Brain, Target, Sparkles } from "lucide-react";
+import { MoodEntry, Habit, GratitudeEntry } from "@/types";
+import { AnimatedEmotionEmoji } from "@/components/AnimatedEmotionEmoji";
+import { MOOD_TO_EMOTION_MAP } from "@/lib/emotionConstants";
+import type { Language } from "@/i18n/translations";
+import { getLocale } from "@/lib/timeUtils";
+import {
+  EMPTY_DAY_STYLE,
+  GRATITUDE_HEADING_STYLE,
+  PRIMARY_NEBULA_STYLE,
+  SECONDARY_NEBULA_STYLE,
+  THREE_SECOND_LOOP_STYLE,
+  getGratitudeSparkleStyle,
+  getStatCardStyle,
+  getStatIconStyle,
+  getTimelineDotStyle,
+} from "./selectedDayPanelStyles";
 
 interface SelectedDayData {
   moods: MoodEntry[];
@@ -31,23 +38,28 @@ interface SelectedDayPanelProps {
 
 // Helper to get time of day label from timestamp
 function getTimeOfDay(timestamp: number | undefined, t: Record<string, string>): string {
-  if (!timestamp) return '';
+  if (!timestamp) return "";
   const hour = new Date(timestamp).getHours();
-  if (hour < 12) return t.morning || 'Morning';
-  if (hour < 18) return t.afternoon || 'Afternoon';
-  return t.evening || 'Evening';
+  if (hour < 12) return t.morning || "Morning";
+  if (hour < 18) return t.afternoon || "Afternoon";
+  return t.evening || "Evening";
 }
 
 function getTimeOfDayEmoji(timestamp: number | undefined): string {
-  if (!timestamp) return '📝';
+  if (!timestamp) return "📝";
   const hour = new Date(timestamp).getHours();
-  if (hour < 12) return '🌅';
-  if (hour < 18) return '☀️';
-  return '🌙';
+  if (hour < 12) return "🌅";
+  if (hour < 18) return "☀️";
+  return "🌙";
 }
 
 export function SelectedDayPanel({
-  selectedDate, selectedDayData, habits, emotionLabels, t, language,
+  selectedDate,
+  selectedDayData,
+  habits,
+  emotionLabels,
+  t,
+  language,
 }: SelectedDayPanelProps) {
   return (
     <motion.div
@@ -59,22 +71,11 @@ export function SelectedDayPanel({
       {/* Animated nebula background */}
       <div
         className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.15)_0%,transparent_50%)] animate-zen-loop-fade"
-        style={{
-          opacity: 0.4,
-          '--zen-loop-min-opacity': 0.3,
-          '--zen-loop-max-opacity': 0.5,
-          '--zen-loop-duration': '4s',
-        } as CSSProperties}
+        style={PRIMARY_NEBULA_STYLE}
       />
       <div
         className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,rgba(6,182,212,0.1)_0%,transparent_40%)] animate-zen-loop-fade"
-        style={{
-          opacity: 0.3,
-          '--zen-loop-min-opacity': 0.2,
-          '--zen-loop-max-opacity': 0.4,
-          '--zen-loop-duration': '5s',
-          '--zen-loop-delay': '1.5s',
-        } as CSSProperties}
+        style={SECONDARY_NEBULA_STYLE}
       />
 
       {selectedDate && selectedDayData ? (
@@ -84,24 +85,35 @@ export function SelectedDayPanel({
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <div
                 className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3),rgba(59,130,246,0.2))] shadow-[0_0_15px_rgba(139,92,246,0.4)] animate-zen-loop-scale"
-                style={{ '--zen-loop-duration': '3s' } as CSSProperties}
+                style={THREE_SECOND_LOOP_STYLE}
               >
                 <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-300" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="min-w-0 break-words font-bold text-lg text-foreground [hyphens:manual] [overflow-wrap:break-word]">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="min-w-0 break-words font-bold text-lg text-foreground [hyphens:manual] [overflow-wrap:break-word]">
+                  {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                    getLocale(language as Language),
+                    { day: "numeric", month: "long", year: "numeric" }
+                  )}
+                </p>
                 <p className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { weekday: 'long' })}
+                  {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                    getLocale(language as Language),
+                    { weekday: "long" }
+                  )}
                 </p>
               </div>
             </div>
             {selectedDayData.mood && (
               <div
                 className="shrink-0 drop-shadow-[0_0_12px_rgba(139,92,246,0.6)] animate-zen-loop-wiggle"
-                style={{ '--zen-loop-duration': '3s' } as CSSProperties}
+                style={THREE_SECOND_LOOP_STYLE}
               >
                 <AnimatedEmotionEmoji
-                  emotion={selectedDayData.mood.emotion?.primary || MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]}
+                  emotion={
+                    selectedDayData.mood.emotion?.primary ||
+                    MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]
+                  }
                   size="lg"
                 />
               </div>
@@ -115,43 +127,50 @@ export function SelectedDayPanel({
                 icon: Heart,
                 label: t.moodToday,
                 value: selectedDayData.mood
-                  ? emotionLabels[selectedDayData.mood.emotion?.primary || MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]]
-                  : '—',
-                color: '#ec4899'
+                  ? emotionLabels[
+                      selectedDayData.mood.emotion?.primary ||
+                        MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]
+                    ]
+                  : "—",
+                color: "#ec4899",
               },
               {
                 icon: Brain,
                 label: t.focusMinutes,
                 value: `${selectedDayData.focusMinutes}m`,
-                color: '#3b82f6'
+                color: "#3b82f6",
               },
               {
                 icon: Target,
                 label: t.habitsCompleted,
                 value: selectedDayData.habits.length,
-                color: '#22c55e'
+                color: "#22c55e",
               },
               {
                 icon: Sparkles,
                 label: t.gratitudes,
                 value: selectedDayData.gratitude.length,
-                color: '#f59e0b'
+                color: "#f59e0b",
               },
             ].map((stat, i) => (
               <motion.div
                 key={i}
                 className="min-w-0 p-3 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-sm border border-black/10 dark:border-white/10"
-                style={{ boxShadow: `0 0 10px ${stat.color}20` }}
+                style={getStatCardStyle(stat.color)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ scale: 1.02, borderColor: `${stat.color}40` }}
               >
                 <div className="flex min-w-0 items-start gap-2 mb-1">
-                  <stat.icon className="w-4 h-4 shrink-0" style={{ color: stat.color }} />
-                  <span className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">{stat.label}</span>
+                  <stat.icon className="w-4 h-4 shrink-0" style={getStatIconStyle(stat.color)} />
+                  <span className="min-w-0 break-words text-xs text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
+                    {stat.label}
+                  </span>
                 </div>
-                <p className="min-w-0 break-words text-lg font-bold text-foreground [hyphens:manual] [overflow-wrap:break-word]">{stat.value}</p>
+                <p className="min-w-0 break-words text-lg font-bold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
+                  {stat.value}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -161,16 +180,25 @@ export function SelectedDayPanel({
             <div className="px-4 pb-4">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full" />
-                <span className="text-sm font-medium text-foreground/80">{t.moodNotes || 'Mood Journey'}</span>
+                <span className="text-sm font-medium text-foreground/80">
+                  {t.moodNotes || "Mood Journey"}
+                </span>
               </div>
 
               <div className="space-y-3">
                 {selectedDayData.moods.map((entry, idx) => {
                   const mappedEmotion = entry.emotion?.primary || MOOD_TO_EMOTION_MAP[entry.mood];
-                  const emotionColor = {
-                    joy: '#fbbf24', trust: '#22c55e', fear: '#6366f1', surprise: '#f97316',
-                    sadness: '#3b82f6', disgust: '#a855f7', anger: '#ef4444', anticipation: '#ec4899'
-                  }[mappedEmotion] || '#9ca3af';
+                  const emotionColor =
+                    {
+                      joy: "#fbbf24",
+                      trust: "#22c55e",
+                      fear: "#6366f1",
+                      surprise: "#f97316",
+                      sadness: "#3b82f6",
+                      disgust: "#a855f7",
+                      anger: "#ef4444",
+                      anticipation: "#ec4899",
+                    }[mappedEmotion] || "#9ca3af";
 
                   return (
                     <motion.div
@@ -187,22 +215,12 @@ export function SelectedDayPanel({
                       {/* Timeline dot */}
                       <div
                         className="absolute start-0 top-3 w-5 h-5 rounded-full border-2 animate-zen-loop-scale"
-                        style={{
-                          borderColor: emotionColor,
-                          background: `radial-gradient(circle, ${emotionColor}40, transparent)`,
-                          boxShadow: `0 0 10px ${emotionColor}60`,
-                          '--zen-loop-scale': 1.2,
-                          '--zen-loop-duration': '2s',
-                          '--zen-loop-delay': `${idx * 0.2}s`,
-                        } as CSSProperties}
+                        style={getTimelineDotStyle(emotionColor, idx)}
                       />
                       {/* Entry card */}
                       <div className="ms-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          <AnimatedEmotionEmoji
-                            emotion={mappedEmotion}
-                            size="sm"
-                          />
+                          <AnimatedEmotionEmoji emotion={mappedEmotion} size="sm" />
                           <span className="min-w-0 break-words font-medium text-foreground [hyphens:manual] [overflow-wrap:break-word]">
                             {emotionLabels[mappedEmotion]}
                           </span>
@@ -211,7 +229,9 @@ export function SelectedDayPanel({
                           </span>
                         </div>
                         {entry.note && (
-                          <p className="mt-2 min-w-0 break-words text-sm text-foreground/70 italic ps-6 [overflow-wrap:anywhere]">"{entry.note}"</p>
+                          <p className="mt-2 min-w-0 break-words text-sm text-foreground/70 italic ps-6 [overflow-wrap:anywhere]">
+                            "{entry.note}"
+                          </p>
                         )}
                         {entry.tags && entry.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2 ps-6">
@@ -278,7 +298,7 @@ export function SelectedDayPanel({
               {selectedDayData.habits.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {selectedDayData.habits.map((habitId, idx) => {
-                    const habit = habits.find(h => h.id === habitId);
+                    const habit = habits.find((h) => h.id === habitId);
                     return (
                       <motion.div
                         key={habitId}
@@ -287,8 +307,10 @@ export function SelectedDayPanel({
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <span className="shrink-0 text-sm">{habit?.icon || '✓'}</span>
-                        <span className="min-w-0 break-words text-xs font-medium text-emerald-700 dark:text-emerald-300 [overflow-wrap:anywhere]">{habit?.name || habitId}</span>
+                        <span className="shrink-0 text-sm">{habit?.icon || "✓"}</span>
+                        <span className="min-w-0 break-words text-xs font-medium text-emerald-700 dark:text-emerald-300 [overflow-wrap:anywhere]">
+                          {habit?.name || habitId}
+                        </span>
                       </motion.div>
                     );
                   })}
@@ -297,7 +319,7 @@ export function SelectedDayPanel({
 
               {/* Missed habits */}
               {(() => {
-                const missedHabits = habits.filter(h => !selectedDayData.habits.includes(h.id));
+                const missedHabits = habits.filter((h) => !selectedDayData.habits.includes(h.id));
                 if (missedHabits.length === 0) return null;
                 return (
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-emerald-500/20">
@@ -310,7 +332,9 @@ export function SelectedDayPanel({
                         transition={{ delay: idx * 0.05 }}
                       >
                         <span className="shrink-0 text-sm opacity-50">{habit.icon}</span>
-                        <span className="min-w-0 break-words text-xs font-medium text-red-700 dark:text-red-300 [overflow-wrap:anywhere]">{habit.name}</span>
+                        <span className="min-w-0 break-words text-xs font-medium text-red-700 dark:text-red-300 [overflow-wrap:anywhere]">
+                          {habit.name}
+                        </span>
                       </motion.div>
                     ))}
                   </div>
@@ -323,13 +347,12 @@ export function SelectedDayPanel({
           {selectedDayData.gratitude.length > 0 && (
             <div className="px-4 pb-4 space-y-2">
               <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="animate-zen-loop-wiggle"
-                  style={{ '--zen-loop-rotate': '15deg', '--zen-loop-scale': 1.2, '--zen-loop-duration': '2s' } as CSSProperties}
-                >
+                <div className="animate-zen-loop-wiggle" style={GRATITUDE_HEADING_STYLE}>
                   <Sparkles className="w-4 h-4 text-amber-400" />
                 </div>
-                <span className="text-sm font-medium text-amber-700/80 dark:text-amber-300/80">{t.gratitude || 'Gratitude'}</span>
+                <span className="text-sm font-medium text-amber-700/80 dark:text-amber-300/80">
+                  {t.gratitude || "Gratitude"}
+                </span>
               </div>
               {selectedDayData.gratitude.map((entry, idx) => (
                 <motion.div
@@ -342,14 +365,19 @@ export function SelectedDayPanel({
                   <div className="flex items-start gap-2">
                     <span
                       className="text-base flex-shrink-0 animate-zen-loop-scale"
-                      style={{ '--zen-loop-scale': 1.2, '--zen-loop-duration': '2s', '--zen-loop-delay': `${idx * 0.3}s` } as CSSProperties}
+                      style={getGratitudeSparkleStyle(idx)}
                     >
                       ✨
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="min-w-0 break-words text-sm text-foreground [overflow-wrap:anywhere]">{entry.text}</p>
+                      <p className="min-w-0 break-words text-sm text-foreground [overflow-wrap:anywhere]">
+                        {entry.text}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(entry.timestamp).toLocaleTimeString(getLocale(language as Language), { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(entry.timestamp).toLocaleTimeString(
+                          getLocale(language as Language),
+                          { hour: "2-digit", minute: "2-digit" }
+                        )}
                       </p>
                     </div>
                   </div>
@@ -360,10 +388,7 @@ export function SelectedDayPanel({
         </div>
       ) : (
         <div className="p-8 text-center">
-          <div
-            className="inline-block mb-3 animate-zen-loop-fade-scale"
-            style={{ opacity: 0.75, '--zen-loop-min-opacity': 0.5, '--zen-loop-max-opacity': 1, '--zen-loop-duration': '2s' } as CSSProperties}
-          >
+          <div className="inline-block mb-3 animate-zen-loop-fade-scale" style={EMPTY_DAY_STYLE}>
             <Calendar className="w-8 h-8 text-violet-400/50" />
           </div>
           <p className="text-sm text-muted-foreground">{t.calendarSelectDay}</p>

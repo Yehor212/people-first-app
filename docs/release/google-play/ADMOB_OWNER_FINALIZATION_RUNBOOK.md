@@ -1,5 +1,13 @@
 # AdMob Owner Finalization Runbook
 
+> **SUPERSEDED FOR THE 2.1.1 RELEASE:** this document records the former
+> rewarded-only decision. The current Android artifact is banner-only and uses
+> one optional adaptive banner below the Habits list after consent. Do not use
+> the rewarded checks below as current release evidence. Current configuration,
+> copy, and publication gates are defined in `README.md`,
+> `GOOGLE_PLAY_CONSOLE_FIELD_PACKET.md`, and
+> `GOOGLE_PLAY_LOCALIZED_LISTING_PACKET.json`.
+
 This runbook is the public-safe handoff for the owner-only steps that cannot be
 proved from repository files alone. It is intentionally separate from
 `ADMOB_EXTERNAL_READINESS.json`: the JSON file records current evidence; this

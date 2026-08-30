@@ -10,7 +10,9 @@ describe("Journal audio failure feedback", () => {
     expect(editorStateSource).toContain("announceError");
     expect(editorStateSource).toContain("const [audioError, setAudioError]");
     expect(editorStateSource).toContain('logger.warn("[Journal]", "Audio save failed:", err)');
-    expect(editorStateSource).toContain('logger.warn("[Journal]", "Recording failed to start:", err)');
+    expect(editorStateSource).toContain(
+      'logger.warn("[Journal]", "Recording failed to start:", err)'
+    );
     expect(editorStateSource).toContain("announceError(message)");
     expect(editorStateSource).toContain("ts.journalAudioUnsupported");
     expect(editorStateSource).toContain("ts.journalAudioPermissionDenied");
@@ -29,7 +31,9 @@ describe("Journal audio failure feedback", () => {
 
   it("keeps an active recording when its modal is closed", () => {
     const closeRecordingBlock =
-      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(
+        editorSource
+      )?.[0] ?? "";
 
     expect(closeRecordingBlock).toContain("handleStopRecording");
     expect(closeRecordingBlock).not.toContain("handleDiscardRecording");
@@ -42,7 +46,9 @@ describe("Journal audio failure feedback", () => {
 
   it("offers pause and resume as stable accessible recording actions", () => {
     expect(editorSource).toContain("recorder.isPaused ? recorder.resume : recorder.pause");
-    expect(editorSource).toContain('recorder.isPaused ? ts.resume || "Resume" : ts.pause || "Pause"');
+    expect(editorSource).toContain(
+      'recorder.isPaused ? ts.resume || "Resume" : ts.pause || "Pause"'
+    );
     expect(editorSource).toContain('"min-h-[48px] flex-1 rounded-xl');
     expect(editorSource).toContain("journalRecordingPaused");
   });
@@ -73,7 +79,9 @@ describe("Journal audio failure feedback", () => {
     const editorEscapeBranch =
       /if \(showRecordingOverlay\) \{[\s\S]*?\n {8}\}/.exec(editorStateSource)?.[0] ?? "";
     const closeRecordingBlock =
-      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+      /const closeRecordingOverlay = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(
+        editorSource
+      )?.[0] ?? "";
 
     expect(editorEscapeBranch).not.toContain("recorder.stop");
     expect(editorEscapeBranch).not.toContain("setShowRecordingOverlay(false)");
@@ -83,8 +91,8 @@ describe("Journal audio failure feedback", () => {
 
   it("restores mobile recording focus to the connected Tools control", () => {
     expect(editorSource).toContain("mobileToolsButtonRef");
-    expect(editorSource).toContain(
-      "useModalA11y(showRecordingOverlay, closeRecordingOverlay, mobileToolsButtonRef)",
+    expect(editorSource).toMatch(
+      /useModalA11y\(\s*showRecordingOverlay,\s*closeRecordingOverlay,\s*mobileToolsButtonRef\s*\)/
     );
   });
 
@@ -104,7 +112,9 @@ describe("Journal audio failure feedback", () => {
 describe("Journal panic lock privacy guard", () => {
   it("requires native biometric success before clearing the panic lock", () => {
     const panicLockBlock =
-      /const handlePanicUnlock = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*setPanicLocked[^\]]*ts\.journalUnlockBiometric[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+      /const handlePanicUnlock = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*setPanicLocked[^\]]*ts\.journalUnlockBiometric[^\]]*\]\);/.exec(
+        editorSource
+      )?.[0] ?? "";
 
     expect(panicLockBlock).toContain('import("@/plugins/BiometricPlugin")');
     expect(panicLockBlock).toContain("BiometricAuth.authenticate");
@@ -113,7 +123,7 @@ describe("Journal panic lock privacy guard", () => {
 
     const panicButtonBlock =
       /<button[\s\S]*?onClick=\{\(\) => \{\s*void handlePanicUnlock\(\);\s*\}\}[\s\S]*?journalUnlockBiometric[\s\S]*?<\/button>/.exec(
-        editorSource,
+        editorSource
       )?.[0] ?? "";
 
     expect(panicButtonBlock).toContain("handlePanicUnlock");
@@ -121,14 +131,19 @@ describe("Journal panic lock privacy guard", () => {
   });
 
   it("does not start breathing or haptics before the user asks on the panic lock", () => {
-    const panicOverlay = /\{\/\* Panic Lock[\s\S]*?\{\/\* Theme transition overlay/.exec(editorSource)?.[0] ?? "";
+    const panicOverlay =
+      /\{\/\* Panic Lock[\s\S]*?\{\/\* Theme transition overlay/.exec(editorSource)?.[0] ?? "";
 
     expect(panicOverlay).toContain("<DiaryBreatheWidget initiallyPaused />");
   });
 
   it("offers a fail-closed exit when biometric unlock is unavailable", () => {
-    const panicOverlay = /\{\/\* Panic Lock[\s\S]*?\{\/\* Theme transition overlay/.exec(editorSource)?.[0] ?? "";
-    const panicExitHandler = /const handlePanicExit = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(editorSource)?.[0] ?? "";
+    const panicOverlay =
+      /\{\/\* Panic Lock[\s\S]*?\{\/\* Theme transition overlay/.exec(editorSource)?.[0] ?? "";
+    const panicExitHandler =
+      /const handlePanicExit = useCallback\([\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(
+        editorSource
+      )?.[0] ?? "";
 
     expect(editorSource).toContain("onPanicExit?: () => void");
     expect(panicExitHandler).toContain("persistDraftWithActiveRecording");
@@ -139,7 +154,7 @@ describe("Journal panic lock privacy guard", () => {
     expect(panicOverlay).toContain('journalPanicLeaveWithoutSaving || "Leave without saving"');
 
     expect(moduleSource).toContain("handlePanicExitFromEditor");
-    expect(moduleSource).toContain("storageSetRaw(SK.JOURNAL_PRIVATE_MODE, \"true\")");
+    expect(moduleSource).toContain('storageSetRaw(SK.JOURNAL_PRIVATE_MODE, "true")');
     expect(moduleSource).toContain("security.lock()");
     expect(moduleSource.match(/onPanicExit=\{handlePanicExitFromEditor\}/g)).toHaveLength(2);
   });

@@ -661,9 +661,9 @@ export const es: Translations = {
   privacyTitle: "Privacidad",
   privacyDescription:
     "Sin seguimiento oculto. La sincronización de dispositivos empieza solo después de iniciar sesión y activar la copia en línea.",
-  privacyAds: "Vídeos con recompensa",
+  privacyAds: "Banner de la lista de hábitos",
   privacyAdsHint:
-    "Solo se cargan si los activas. Google puede pedirte tus opciones de privacidad cuando sea necesario.",
+    "Al activarlo, aparece un pequeño banner debajo de la lista de hábitos. No se muestra en los registros de ánimo, el diario, las sesiones de concentración ni los menús. Google puede pedirte tus opciones de privacidad cuando sea necesario.",
   privacyOptionalServicesOn: "Servicios opcionales activos",
   privacyOptionalServicesOff: "Servicios opcionales desactivados",
   privacyPushNotifications: "Recordatorios de tu cuenta",

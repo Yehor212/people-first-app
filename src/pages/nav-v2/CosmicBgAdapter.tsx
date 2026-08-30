@@ -1,6 +1,7 @@
-import { memo, type CSSProperties } from "react";
+import { memo, useLayoutEffect, useState, type CSSProperties } from "react";
 import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { isAndroid } from "@/lib/platform";
 import { useThemeStore } from "@/stores/themeStore";
 import { DayCosmicBackground } from "./DayCosmicBackground";
 import "./CosmicBgAdapter.css";
@@ -51,6 +52,46 @@ const starrySkyStars = [
   { id: "x", x: 98, y: 91, size: 2, opacity: 0.48, delay: -4.2, duration: 5.8 },
 ] as const;
 
+const NightCosmicBackground = memo(function NightCosmicBackground({
+  shouldAnimate,
+}: {
+  shouldAnimate: boolean;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      data-testid="cosmic-orb-background"
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+    >
+      <div className="absolute inset-0 cosmic-bg-adapter__dark-radial" />
+
+      {cosmicStars.map((star) => (
+        <CosmicStar key={star.id} {...star} />
+      ))}
+
+      {shouldAnimate ? (
+        <div
+          className="absolute inset-0 pointer-events-none cosmic-bg-adapter__nebula animate-zen-loop-fade"
+          style={{
+            opacity: 0.4,
+            '--zen-loop-min-opacity': 0.3,
+            '--zen-loop-max-opacity': 0.5,
+            '--zen-loop-duration': '5s',
+          } as CSSProperties}
+          data-testid="cosmic-orb-nebula"
+          data-animated="true"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-35 cosmic-bg-adapter__nebula"
+          data-testid="cosmic-orb-nebula"
+          data-animated="false"
+        />
+      )}
+    </div>
+  );
+});
+
 /**
  * CosmicBgAdapter — Phase 3-A.4a cosmic backdrop for OrbPage.
  *
@@ -79,16 +120,21 @@ const starrySkyStars = [
 export const CosmicBgAdapter = memo(function CosmicBgAdapter({
   variant = "auto",
 }: CosmicBgAdapterProps) {
-  const shouldAnimate = useShouldAnimate();
+  const shouldAnimate = useShouldAnimate({ respectRuntimePerformance: !isAndroid });
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const resolvedVariant =
     variant === "auto" ? (appliedTheme === "paper" ? "day" : "night") : variant;
+  const dayActive = resolvedVariant === "day";
+  const persistAndroidDaySurface = isAndroid && variant === "auto";
+  const [hasMountedDaySurface, setHasMountedDaySurface] = useState(dayActive);
+
+  useLayoutEffect(() => {
+    if (persistAndroidDaySurface && dayActive && !hasMountedDaySurface) {
+      setHasMountedDaySurface(true);
+    }
+  }, [dayActive, hasMountedDaySurface, persistAndroidDaySurface]);
 
   // Paper theme → day variant (aurora WOW). Ink/oled → night cosmic (untouched).
-  if (resolvedVariant === "day") {
-    return <DayCosmicBackground motionEnabled={shouldAnimate} />;
-  }
-
   if (resolvedVariant === "starry") {
     return (
       <div
@@ -125,40 +171,18 @@ export const CosmicBgAdapter = memo(function CosmicBgAdapter({
     );
   }
 
-  return (
-    <div
-      aria-hidden="true"
-      data-testid="cosmic-orb-background"
-      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-    >
-      {/* Dark-mode cosmic radial — paper variant routed to DayCosmicBackground above */}
-      <div className="absolute inset-0 cosmic-bg-adapter__dark-radial" />
+  if (persistAndroidDaySurface && (dayActive || hasMountedDaySurface)) {
+    return (
+      <>
+        <DayCosmicBackground active={dayActive} motionEnabled={shouldAnimate} />
+        {dayActive ? null : <NightCosmicBackground shouldAnimate={shouldAnimate} />}
+      </>
+    );
+  }
 
-      {/* Star particles — reuse the proven lightweight seed */}
-      {cosmicStars.map((star) => (
-        <CosmicStar key={star.id} {...star} />
-      ))}
-
-      {/* Nebula glow — dual radial pools, pulsed when shouldAnimate */}
-      {shouldAnimate ? (
-        <div
-          className="absolute inset-0 pointer-events-none cosmic-bg-adapter__nebula animate-zen-loop-fade"
-          style={{
-            opacity: 0.4,
-            '--zen-loop-min-opacity': 0.3,
-            '--zen-loop-max-opacity': 0.5,
-            '--zen-loop-duration': '5s',
-          } as CSSProperties}
-          data-testid="cosmic-orb-nebula"
-          data-animated="true"
-        />
-      ) : (
-        <div
-          className="absolute inset-0 pointer-events-none opacity-35 cosmic-bg-adapter__nebula"
-          data-testid="cosmic-orb-nebula"
-          data-animated="false"
-        />
-      )}
-    </div>
+  return dayActive ? (
+    <DayCosmicBackground motionEnabled={shouldAnimate} />
+  ) : (
+    <NightCosmicBackground shouldAnimate={shouldAnimate} />
   );
 });

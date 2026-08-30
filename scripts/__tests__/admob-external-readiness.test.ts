@@ -334,11 +334,12 @@ describe("AdMob external monetization readiness guard", () => {
     );
   });
 
-  it("keeps the Play Console field packet from treating future full cross-platform IDs as current-pass blockers", () => {
+  it("keeps the superseded rewarded ledger out of the current Android banner-only release gate", () => {
     const packet = readFileSync("docs/release/google-play/GOOGLE_PLAY_CONSOLE_FIELD_PACKET.md", "utf8");
 
-    expect(packet).toMatch(/Use `npm run google-play:admob:external-check:pass` only for\s+the current Android rewarded-only production gate/);
-    expect(packet).toMatch(/Use `npm run google-play:admob:external-check:full-pass` only for future full\s+cross-platform\/banner\+iOS monetization readiness/);
+    expect(packet).toContain("Rewarded and iOS ad-unit IDs are outside this Android banner-only release.");
+    expect(packet).toMatch(/legacy external readiness ledger still models the superseded rewarded-only\s+decision and must not be used as current release evidence until migrated/);
+    expect(packet).not.toContain("Use `npm run google-play:admob:external-check:pass` only for");
     expect(packet).not.toContain("playback, or full cross-platform IDs are not freshly `PASS`");
   });
 

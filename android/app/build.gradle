@@ -20,11 +20,18 @@ def zenflowAdMobAndroidAppId = project.findProperty("ZENFLOW_ADMOB_ANDROID_APP_I
         ?: "ca-app-pub-3940256099942544~3347511713"
 
 gradle.taskGraph.whenReady { taskGraph ->
-    def releaseBuildRequested = taskGraph.allTasks.any { task ->
-        task.path.toLowerCase(Locale.ROOT).contains("release")
+    def publishableReleaseTaskNames = [
+            "assemblerelease",
+            "bundlerelease",
+            "packagerelease",
+    ] as Set
+    def publishableReleaseTaskRequested = gradle.startParameter.taskNames.any { requestedTask ->
+        publishableReleaseTaskNames.contains(requestedTask.tokenize(":").last().toLowerCase(Locale.ROOT))
+    } || taskGraph.getAllTasks().any { task ->
+        task.project == project && publishableReleaseTaskNames.contains(task.name.toLowerCase(Locale.ROOT))
     }
 
-    if (releaseBuildRequested && (!zenflowAdMobAndroidAppId || ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS.contains(zenflowAdMobAndroidAppId))) {
+    if (publishableReleaseTaskRequested && (!zenflowAdMobAndroidAppId || ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS.contains(zenflowAdMobAndroidAppId))) {
         throw new GradleException("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with the real Android AdMob app id; Google sample app ids are only allowed for debug/dev builds.")
     }
 }
@@ -36,11 +43,12 @@ android {
         applicationId "com.zenflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 35
-        versionName "2.0.0"
+        versionCode 38
+        versionName "2.1.1"
         manifestPlaceholders = [
                 adMobApplicationId: zenflowAdMobAndroidAppId
         ]
+        buildConfigField "boolean", "ZENFLOW_ANDROID_MOTION_BENCHMARK", "false"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -70,6 +78,16 @@ android {
                 debugSymbolLevel 'FULL'
             }
         }
+        benchmark {
+            initWith release
+            minifyEnabled true
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            buildConfigField "boolean", "ZENFLOW_ANDROID_MOTION_BENCHMARK", "true"
+        }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     packaging {
         jniLibs {

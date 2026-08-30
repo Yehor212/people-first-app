@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, type ReactNode, type Ref } from "react";
+import { useRef, useState, type ReactNode, type Ref } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
@@ -263,7 +263,6 @@ export function HabitCreationForm({
 }: HabitCreationFormProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackingPanelRef = useRef<HTMLElement | null>(null);
   const rhythmPanelRef = useRef<HTMLElement | null>(null);
   const appearancePanelRef = useRef<HTMLElement | null>(null);
@@ -274,12 +273,6 @@ export function HabitCreationForm({
   );
   const isV2Presentation = presentation === "v2";
   const isElevatedForm = isPrimaryCTA || isV2Presentation;
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
-  }, []);
 
   const {
     isAdding,
@@ -795,14 +788,7 @@ export function HabitCreationForm({
             : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
         )}
         style={isElevatedForm ? { boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.05)" } : undefined}
-        autoFocus
-        onFocus={(e) => {
-          const el = e.target;
-          scrollTimeoutRef.current = setTimeout(
-            () => el.scrollIntoView({ behavior: "smooth", block: "center" }),
-            300
-          );
-        }}
+        autoFocus={!selectedTemplateId}
       />
 
       {settingsMode === "simple" && (

@@ -23,3 +23,28 @@ export function domToPhysicalScrollLeft(
   const physicalPosition = isRTL ? Math.max(maxScroll, 0) + domPosition : domPosition;
   return clampScrollPosition(physicalPosition, maxScroll);
 }
+
+interface CenteredDomScrollLeftInput {
+  itemOffsetLeft: number;
+  itemWidth: number;
+  containerWidth: number;
+  scrollWidth: number;
+  isRTL: boolean;
+}
+
+/**
+ * Centers a real, localized item in its horizontal scroller without asking
+ * the browser to reveal it vertically. This avoids document scroll anchoring
+ * when a below-the-fold Android scroller initializes.
+ */
+export function centeredDomScrollLeft({
+  itemOffsetLeft,
+  itemWidth,
+  containerWidth,
+  scrollWidth,
+  isRTL,
+}: CenteredDomScrollLeftInput): number {
+  const physicalPosition = itemOffsetLeft + itemWidth / 2 - containerWidth / 2;
+  const maxScroll = scrollWidth - containerWidth;
+  return physicalToDomScrollLeft(physicalPosition, maxScroll, isRTL);
+}

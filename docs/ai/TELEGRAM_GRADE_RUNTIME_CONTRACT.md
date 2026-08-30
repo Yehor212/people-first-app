@@ -122,6 +122,53 @@ Use the current route budgets unless a task explicitly sets stricter ones:
 - Runtime performance guard may downgrade optional motion only from long tasks,
   severe blocking LoAF, or repeated blocking LoAF. It must not downgrade
   canonical visuals or motion because of render-only LoAF with zero blocking.
+- On the Android paper-theme Orb, runtime strain must not replace the
+  consolidated daylight compositor with the multi-layer CSS fallback. Only the
+  user/OS reduced-motion preference or the existing critical-battery gate may
+  stop that ambient motion. Keep this behavior protected by
+  `CosmicBgAdapter.androidVisualStability.test.tsx`; a day-theme change is not
+  complete if the same ADB drag/drawer flow reintroduces Chromium tile-memory
+  exhaustion or makes required controls disappear.
+- On Android, an active canonical Orb worker must process `dispose`, release its
+  WebGL resources and acknowledge `disposed` before the main thread terminates
+  it. Keep a bounded termination fallback for a silent or broken Android
+  worker; do not restore synchronous `postMessage({ type: 'dispose' })` plus
+  `terminate()` on that platform. Preserve the existing immediate termination
+  behavior outside Android until those platforms receive their own runtime
+  scope and evidence. Android theme/lifecycle verification must repeat the
+  semantic drawer flow and confirm that worker canvases and compositor layers
+  do not accumulate between paper/ink cycles.
+- For Android WebView disappearance reports, a complete UIAutomator/accessibility
+  tree proves interaction reachability, not visible raster output. The required
+  proof is one uninterrupted external-window video of the semantic interaction,
+  aligned with `logcat` tile-memory/context-loss signals and the same installed
+  APK hash. Still frames are phase locators only. Any reproducible
+  `tile memory limits exceeded, some content may not draw` signal or required
+  control missing in the video keeps Visual Runtime and Motion at `FAIL`, even
+  when React tests, DOM probes, accessibility checkpoints, and builds pass.
+  The same installed APK hash must be captured immediately before and after the
+  accepted interaction; a changed package path, version, PID, or digest rejects
+  that run instead of weakening the evidence requirement.
+- `.codex/hooks/android-visual-runtime-gate.cjs` enforces this boundary for
+  Android visual/motion success claims. Its `UserPromptSubmit` contract requires
+  semantic Android input, local and installed APK SHA-256 before and after the
+  same run, a recording of the specific Android Emulator window or physical
+  device screen, and a separate CDP-off performance pass. Its `Stop` check reads
+  a fresh packet under `output/`, recomputes every referenced artifact hash, and
+  blocks `PASS` when the APK changed, the capture target was a desktop region,
+  any referenced file is missing, motion was not reviewed, or tile-memory,
+  context-loss, ANR/crash, deadline-miss, or frame-gap gates fail. Keep honest
+  `FAIL` and `UNVERIFIED` reporting available. The hook is defense in depth:
+  tracked registration and static checks do not prove that an already-running
+  Codex client loaded a newly changed hook.
+- Fix Android disappearance and jank one reproduced cause at a time. Align the
+  semantic-action timestamp with the external video, WebView/CDP evidence, and
+  FrameTimeline/logcat signal; write the smallest RED test or characterization;
+  patch only the attributed overlay, lifecycle, main-thread, worker, surface, or
+  compositor defect; then repeat the identical route. Reject a candidate that
+  does not improve the Android runtime or that changes accepted geometry,
+  colors, blur, opacity, assets, duration, easing, motion trajectory, or visual
+  density.
 - Route budgets live in `config/chrome-performance-budgets.json`; do not bury
   new performance thresholds inside test code.
 - Chrome route smoke must report cold-boot and steady-state separately. Cold boot

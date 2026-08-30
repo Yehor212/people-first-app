@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PremiumLoader } from "@/components/PremiumLoader";
+
+const source = readFileSync("src/components/PremiumLoader.tsx", "utf8");
 
 describe("PremiumLoader", () => {
   it("uses the red-to-green ZenFlow infinity gradient by default", () => {
@@ -29,5 +32,13 @@ describe("PremiumLoader", () => {
       "var(--premium-loader-stop-5, var(--color-mood-great))",
     );
     expect(container.querySelector('[opacity="var(--premium-loader-base-line-opacity, 0)"]')).toBeTruthy();
+  });
+
+  it("does not let Android runtime strain freeze a required loading indicator", () => {
+    expect(source).toContain("import { isAndroid } from '@/lib/platform';");
+    expect(source).toContain(
+      "const animate = shouldAnimate({ respectRuntimePerformance: !isAndroid });",
+    );
+    expect(source).not.toContain("const animate = shouldAnimate();");
   });
 });

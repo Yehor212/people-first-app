@@ -641,9 +641,9 @@ export const ja: Translations = {
   privacyTitle: "プライバシー",
   privacyDescription:
     "隠れた追跡はありません。デバイス同期は、サインインしてオンラインバックアップをオンにした後だけ始まります。",
-  privacyAds: "特典付き動画",
+  privacyAds: "習慣リストのバナー",
   privacyAdsHint:
-    "オンにした場合のみ読み込まれます。必要に応じて、Googleからプライバシー設定の選択を求められることがあります。",
+    "オンにすると、習慣リストの下に小さなバナーが表示されます。気分のチェックイン、日記、集中セッション、メニューには表示されません。必要に応じて、Googleからプライバシー設定の選択を求められることがあります。",
   privacyOptionalServicesOn: "オプション機能：オン",
   privacyOptionalServicesOff: "オプション機能：オフ",
   privacyPushNotifications: "アカウントのリマインダー",

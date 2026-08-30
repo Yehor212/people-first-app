@@ -13,7 +13,9 @@ describe("Index V2 no-XP audio contract", () => {
     expect(indexSource).toMatch(/useMoodHandlers\(\{[\s\S]*rewardsEnabled: V2_REWARDS_ENABLED/);
     expect(indexSource).toMatch(/useFocusHandlers\(\{[\s\S]*rewardsEnabled: V2_REWARDS_ENABLED/);
     expect(indexSource).toMatch(/useGratitudeHandlers\(\{[\s\S]*rewardsEnabled: V2_REWARDS_ENABLED/);
-    expect(indexSource).toContain("onEarnXp={() => undefined}");
+    expect(indexSource).not.toContain("onEarnXp=");
+    expect(indexSource).not.toContain("onEarnTreats=");
+    expect(indexSource).not.toContain("Ad reward");
 
     expect(moodSource).toContain("if (rewardsEnabled)");
     expect(moodSource).toContain("playSound(\"success\")");

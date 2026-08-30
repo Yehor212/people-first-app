@@ -1,0 +1,75 @@
+.v2hp-motion-player {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  isolation: isolate;
+  contain: layout paint style;
+}
+
+.v2hp-motion-player__tgs-poster {
+  position: relative;
+  z-index: 2;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 1;
+  filter: none;
+  mix-blend-mode: normal;
+}
+
+.v2hp-motion-player[data-renderer="still"][data-tgs-poster-asset][data-tgs-poster-variant] {
+  opacity: 1;
+}
+
+.v2hp-motion-player__tgs {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateZ(0);
+  transform-origin: center;
+  contain: layout paint style;
+}
+
+.v2hp-motion-player__tgs[data-ready="true"] {
+  opacity: 1;
+}
+
+.v2hp-motion-player[data-celebration-ready="true"] {
+  opacity: 1;
+}
+
+.v2hp-motion-player[data-celebration-ready="true"]
+  > :is(
+    .v2hp-motion-player__still,
+    .v2hp-motion-player__tgs-poster,
+    .v2hp-motion-player__raster,
+    .v2hp-motion-player__animated-raster,
+    .v2hp-motion-player__animated-raster-poster,
+    .v2hp-motion-player__lottie
+  ) {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2hp-motion-player__tgs {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .v2hp-motion-player__tgs {
+    display: none;
+  }
+}

@@ -38,7 +38,7 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
     try {
       await controls.onPrivacyChange((privacy) => applyAdConsentPreference(privacy, checked));
     } catch (error) {
-      logger.error("[V2Settings] Failed to save rewarded-video preference", error);
+      logger.error("[V2Settings] Failed to save optional-ad preference", error);
       setAdConsent(previous);
       setAdConsentSaveError(
         tx.settingsPreferenceSaveError ||
@@ -77,10 +77,10 @@ export function PrivacyPanel({ controls }: { controls: V2SettingsControls }) {
     >
       <ToggleRow
         icon={Shield}
-        title={tx.privacyAds || "Rewarded videos"}
+        title={tx.privacyAds || "Habit list banner"}
         description={
           tx.privacyAdsHint ||
-          "They load only when you turn them on. Google may ask for your privacy choice when required."
+          "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required."
         }
         checked={adConsent}
         disabled={isSavingAdConsent}

@@ -1,14 +1,17 @@
-import { Suspense, lazy, memo, useCallback, useEffect, useRef } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
-import { logger } from "@/lib/logger";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { NAV_V2_PAGES, useNavigationV2 } from "@/hooks/useNavigationV2";
+import { useAds } from "@/contexts/AdContext";
+import { useUIStore } from "@/stores";
+import { useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
+import { isAndroid } from "@/lib/platform";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
@@ -17,100 +20,21 @@ import { V2FocusMiniPlayer } from "./V2FocusMiniPlayer";
 import { V2MindfulMomentLayer } from "./V2MindfulMomentLayer";
 import { V2ProgressionModalLayer } from "./V2ProgressionModalLayer";
 import { getNavV2RouteLabel, NavV2RouteFallback, NavV2RoutePending } from "./NavV2RouteStatus";
+import {
+  DiaryPage,
+  HabitsPage,
+  OrbPage,
+  PlanningPage,
+  SettingsPage,
+  preloadNavV2Route,
+  scheduleNavV2RoutePreload,
+} from "./navV2RouteLoaders";
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 
 const loadCommandPalette = () => import("@/components/desktop/CommandPalette");
-const loadOrbPage = () => import("@/pages/nav-v2/OrbPage").then((m) => ({ default: m.OrbPage }));
-const loadHabitsPage = () =>
-  import("@/pages/nav-v2/HabitsPage").then((m) => ({ default: m.HabitsPage }));
-const loadDiaryPage = () =>
-  import("@/pages/nav-v2/DiaryPage").then((m) => ({ default: m.DiaryPage }));
-const loadPlanningPage = () =>
-  import("@/pages/nav-v2/planning/PlanningPage").then((m) => ({ default: m.PlanningPage }));
-const loadSettingsPage = () =>
-  import("@/pages/nav-v2/SettingsPage").then((m) => ({ default: m.SettingsPage }));
-
 const CommandPalette = lazy(loadCommandPalette);
-const OrbPage = lazy(loadOrbPage);
-const HabitsPage = lazy(loadHabitsPage);
-const DiaryPage = lazy(loadDiaryPage);
-const PlanningPage = lazy(loadPlanningPage);
-const SettingsPage = lazy(loadSettingsPage);
-
-type RouteLoader = () => Promise<unknown>;
-const NAV_V2_ROUTE_LOADERS: Record<NavV2Page, RouteLoader> = {
-  orb: loadOrbPage,
-  habits: loadHabitsPage,
-  diary: loadDiaryPage,
-  planning: loadPlanningPage,
-  settings: loadSettingsPage,
-};
-const preloadedNavV2Routes = new Map<NavV2Page, Promise<unknown>>();
-
-function preloadNavV2Route(page: NavV2Page) {
-  if (preloadedNavV2Routes.has(page)) {
-    return;
-  }
-
-  const promise = NAV_V2_ROUTE_LOADERS[page]().catch((error) => {
-    preloadedNavV2Routes.delete(page);
-    logger.warn(`[NavV2] Route preload failed for ${page}`, error);
-  });
-  preloadedNavV2Routes.set(page, promise);
-}
-
-function scheduleNavV2RoutePreload(activePage: NavV2Page) {
-  if (typeof window === "undefined") {
-    return () => undefined;
-  }
-
-  let cancelled = false;
-  let idleId: number | null = null;
-  let timerId: number | null = null;
-  const pendingPages = Array.from(new Set<NavV2Page>(["settings", ...NAV_V2_PAGES])).filter(
-    (page) => page !== activePage
-  );
-
-  const requestIdle = window.requestIdleCallback;
-  const cancelIdle = window.cancelIdleCallback;
-  const scheduleTimeout = window.setTimeout.bind(window);
-  const cancelTimeout = window.clearTimeout.bind(window);
-
-  const scheduleNext = () => {
-    if (cancelled) {
-      return;
-    }
-
-    const page = pendingPages.shift();
-    if (!page) {
-      return;
-    }
-
-    preloadNavV2Route(page);
-    if (pendingPages.length > 0) {
-      schedule();
-    }
-  };
-
-  const schedule = () => {
-    if (typeof requestIdle === "function" && typeof cancelIdle === "function") {
-      idleId = requestIdle(scheduleNext, { timeout: 750 });
-      return;
-    }
-
-    timerId = scheduleTimeout(scheduleNext, 120);
-  };
-
-  schedule();
-
-  return () => {
-    cancelled = true;
-    if (idleId !== null) cancelIdle?.(idleId);
-    if (timerId !== null) cancelTimeout(timerId);
-  };
-}
 
 /**
  * NavV2Orchestrator — wraps the V2 navigation shell around flag-gated page shells.
@@ -156,6 +80,12 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   settingsControls,
 }: NavV2OrchestratorProps) {
   const { t } = useLanguage();
+  const { setGlobalAdOverlayOpen } = useAds();
+  const featureToUnlock = useUIStore((state) => state.featureToUnlock);
+  const showChallengeModal = useUIStore((state) => state.showChallengeModal);
+  const showMindfulMoment = useUIStore((state) => state.showMindfulMoment);
+  const focusIsRunning = useUIStore((state) => state.focusIsRunning);
+  const focusEndTime = useUIStore((state) => state.focusEndTime);
   const tx = t as unknown as Record<string, string>;
   const { tier } = useDeviceTier();
   const forceWebNavigation = shouldForceWebNavigation();
@@ -170,6 +100,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     drawerOpen,
     openDrawer,
     closeDrawer,
+    completeDrawerExit,
     handleBackButton,
     commandPaletteOpen,
     setCommandPaletteOpen,
@@ -179,11 +110,42 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
   const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
   const drawerTriggerRef = useRef<HTMLButtonElement>(null);
-  const drawerWasOpenRef = useRef(drawerOpen);
+  const previousPageRef = useRef(activePage);
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
 
+  useEffect(() => {
+    setGlobalAdOverlayOpen(
+      (!isWebNavigation && drawerOpen) ||
+        commandPaletteOpen ||
+        Boolean(featureToUnlock) ||
+        showChallengeModal ||
+        showMindfulMoment ||
+        focusIsRunning ||
+        focusEndTime !== null
+    );
+    return () => setGlobalAdOverlayOpen(false);
+  }, [
+    commandPaletteOpen,
+    drawerOpen,
+    featureToUnlock,
+    focusEndTime,
+    focusIsRunning,
+    isWebNavigation,
+    setGlobalAdOverlayOpen,
+    showChallengeModal,
+    showMindfulMoment,
+  ]);
+
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
+
+  useLayoutEffect(() => {
+    const previousPage = previousPageRef.current;
+    previousPageRef.current = activePage;
+    if (!isAndroid || previousPage === activePage) return;
+
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [activePage]);
 
   useEffect(() => {
     const cleanup = subscribeToDeepLinks((data) => {
@@ -200,16 +162,24 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const handleOpenDrawer = useCallback(() => {
     void haptics.tabChanged();
     openDrawer();
-    preloadNavV2Route("settings");
+    void preloadNavV2Route("settings");
     scheduleNavV2RoutePreload(activePage);
   }, [activePage, openDrawer]);
 
   const handlePrimaryPageChange = useCallback(
     (page: NavV2Page) => {
-      setActivePage(page, { skipTransition: tier === "phone" || !isWebNavigation });
+      const skipTransition = tier === "phone" || !isWebNavigation;
+      setActivePage(page, {
+        preload: skipTransition && drawerOpen ? preloadNavV2Route(page) : undefined,
+        skipTransition,
+      });
     },
-    [isWebNavigation, setActivePage, tier]
+    [drawerOpen, isWebNavigation, setActivePage, tier]
   );
+
+  const handlePrimaryPagePreload = useCallback((page: NavV2Page) => {
+    void preloadNavV2Route(page);
+  }, []);
 
   // Register Android back handler — drawer close > palette close > let native back
   useEffect(() => {
@@ -223,20 +193,21 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     }
   }, [closeDrawer, drawerOpen, isWebNavigation]);
 
-  useEffect(() => {
-    const wasOpen = drawerWasOpenRef.current;
-    drawerWasOpenRef.current = drawerOpen;
-    if (!wasOpen || drawerOpen || !shouldShowDrawerTrigger) return;
+  const restoreDrawerTriggerFocus = useCallback(() => {
+    if (!shouldShowDrawerTrigger) return;
+    const trigger = drawerTriggerRef.current;
+    if (!trigger || trigger.disabled) return;
+    const style = window.getComputedStyle(trigger);
+    if (style.display === "none" || style.visibility === "hidden") return;
+    trigger.focus({ preventScroll: true });
+  }, [shouldShowDrawerTrigger]);
 
-    const frame = window.requestAnimationFrame(() => {
-      const trigger = drawerTriggerRef.current;
-      if (!trigger || trigger.disabled) return;
-      const style = window.getComputedStyle(trigger);
-      if (style.display === "none" || style.visibility === "hidden") return;
-      trigger.focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [drawerOpen, shouldShowDrawerTrigger]);
+  const handleDrawerExitComplete = useCallback(() => {
+    completeDrawerExit();
+    if (routePendingPage !== "diary") {
+      restoreDrawerTriggerFocus();
+    }
+  }, [completeDrawerExit, restoreDrawerTriggerFocus, routePendingPage]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -298,6 +269,33 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     <SettingsPage controls={settingsControls} />
   );
 
+  const phoneDrawerTrigger = (
+    <button
+      ref={drawerTriggerRef}
+      type="button"
+      onClick={handleOpenDrawer}
+      aria-label={tx.navV2OpenMenu || "Open menu"}
+      aria-expanded={drawerOpen}
+      aria-controls={drawerOpen ? "nav-v2-drawer" : undefined}
+      data-testid="nav-v2-open-drawer"
+      className={cn(
+        shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
+        "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
+        "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
+        "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
+        "border border-border/42 shadow-[0_12px_28px_hsl(var(--foreground)/0.12)]",
+        "text-foreground/90",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
+      )}
+    >
+      <MenuIcon
+        className="pointer-events-none h-[var(--v2-phone-drawer-icon-size)] w-[var(--v2-phone-drawer-icon-size)]"
+        aria-hidden="true"
+      />
+    </button>
+  );
+
   return (
     <div
       className={cn(
@@ -331,30 +329,9 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         Mobile menu trigger — top-left floating control keeps the Orb surface calm on phones.
         The full drawer opens on demand and fully disappears when closed.
       */}
-      <button
-        ref={drawerTriggerRef}
-        type="button"
-        onClick={handleOpenDrawer}
-        aria-label={tx.navV2OpenMenu || "Open menu"}
-        aria-expanded={drawerOpen}
-        aria-controls={drawerOpen ? "nav-v2-drawer" : undefined}
-        data-testid="nav-v2-open-drawer"
-        className={cn(
-          shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
-          "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
-          "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
-          "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",
-          "border border-border/42 shadow-[0_12px_28px_hsl(var(--foreground)/0.12)]",
-          "text-foreground/90",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "motion-safe:transition-[transform,background-color,border-color,color,box-shadow] motion-safe:duration-200 motion-safe:ease-out hover:bg-card/85 motion-safe:active:translate-y-[1px] active:bg-muted/60"
-        )}
-      >
-        <MenuIcon
-          className="pointer-events-none h-[var(--v2-phone-drawer-icon-size)] w-[var(--v2-phone-drawer-icon-size)]"
-          aria-hidden="true"
-        />
-      </button>
+      {isAndroid && typeof document !== "undefined"
+        ? createPortal(phoneDrawerTrigger, document.body)
+        : phoneDrawerTrigger}
 
       {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}
 
@@ -362,7 +339,9 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         open={!isWebNavigation && drawerOpen}
         activePage={activePage}
         onClose={closeDrawer}
+        onExitComplete={handleDrawerExitComplete}
         onPageChange={handlePrimaryPageChange}
+        onPagePreload={handlePrimaryPagePreload}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
 

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
@@ -56,6 +63,8 @@ function nearestSnapIndex(v: number): number {
 export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const { t } = useLanguage();
   const trackRef = useRef<HTMLDivElement>(null);
+  const labelSurfaceRef = useRef<HTMLSpanElement>(null);
+  const previousLabelRef = useRef<string | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [displayValue, setDisplayValue] = useState(value);
   const prevSnapRef = useRef(nearestSnapIndex(displayValue));
@@ -309,13 +318,37 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const valenceLabel = t[SNAP_LABELS[snapIdx]] as string;
   const valenceColor = valenceToColor(displayValue);
 
+  useLayoutEffect(() => {
+    if (previousLabelRef.current === null) {
+      previousLabelRef.current = valenceLabel;
+      return;
+    }
+    if (previousLabelRef.current === valenceLabel) return;
+    previousLabelRef.current = valenceLabel;
+
+    const labelSurface = labelSurfaceRef.current;
+    const reducedMotion =
+      document.body.classList.contains('reduce-motion') ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!labelSurface || reducedMotion || typeof labelSurface.animate !== 'function') return;
+
+    // Keep the backdrop-filter surface mounted under Android tile pressure.
+    // Replaying the same opacity-only transition avoids reallocating the
+    // filtered layer while preserving the existing 200 ms label fade.
+    const animation = labelSurface.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 200,
+      easing: 'ease-out',
+    });
+    return () => animation.cancel();
+  }, [valenceLabel]);
+
   return (
     <div className="w-full px-5">
       {/* Valence label — aria-live for screen readers, color synced with valence */}
       <div className="text-center mb-4" aria-live="polite" aria-atomic="true">
         <span
+          ref={labelSurfaceRef}
           className="som-valence-chip som-label-enter"
-          key={valenceLabel}
           data-testid="valence-live-label"
           style={{ "--valence-color": valenceColor } as CSSProperties}
         >

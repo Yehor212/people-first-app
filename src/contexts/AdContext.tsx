@@ -2,7 +2,7 @@
  * AdContext — React context for the ad system
  *
  * Provides ad state and actions to the component tree.
- * Handles initialization, mood-aware gating, and reward callbacks.
+ * Handles Android banner initialization, privacy, placement, and lifecycle.
  */
 
 import {
@@ -11,39 +11,44 @@ import {
   useEffect,
   useState,
   useCallback,
-  useRef,
   type ReactNode,
 } from 'react';
 import {
   initializeAds,
-  canShowRewardedAd,
-  showRewardedAd,
-  getRemainingRewardedAds,
   getAdState,
   showAdPrivacyOptions,
   refreshAdPrivacyOptionsStatus,
   disableAds,
-  isRewardedAdsSupported,
+  isBannerAdsSupported,
+  showHabitsBanner,
+  hideHabitsBanner,
+  removeHabitsBanner,
 } from '@/lib/adController';
-import { AD_REWARDS, type AdSafeZone } from '@/lib/adConfig';
 import { logger } from '@/lib/logger';
+
+const ANDROID_MOTION_BENCHMARK_ENABLED =
+  typeof __ANDROID_MOTION_BENCHMARK__ !== 'undefined' &&
+  __ANDROID_MOTION_BENCHMARK__;
 
 // ============================================
 // TYPES
 // ============================================
 
 interface AdContextValue {
-  /** Whether this native build has a configured rewarded-ad capability */
+  /** Whether this native build has the configured Android banner capability */
   adsSupported: boolean;
 
   /** Whether the AdMob SDK is available (native only) */
   adsAvailable: boolean;
 
-  /** Whether a rewarded ad can be shown right now */
-  canShowRewarded: boolean;
+  /** Native banner height reserved by the active Habits surface */
+  bannerHeight: number;
 
-  /** Remaining rewarded ads today */
-  remainingToday: number;
+  /** Requests the one approved Habits placement; overlays pass false */
+  setHabitsBannerActive: (active: boolean) => void;
+
+  /** Blocks the native view while a shell-level drawer or modal is open */
+  setGlobalAdOverlayOpen: (open: boolean) => void;
 
   /** Whether Google UMP currently allows ad requests */
   googleConsentReady: boolean;
@@ -53,18 +58,6 @@ interface AdContextValue {
 
   /** Opens Google UMP privacy options when available */
   openAdPrivacyOptions: () => Promise<boolean>;
-
-  /** Show a rewarded ad from an approved safe zone. Returns true if user earned the reward. */
-  watchRewardedAd: (zone?: AdSafeZone) => Promise<boolean>;
-
-  /** Treats reward for watching */
-  rewardTreats: number;
-
-  /** XP reward for watching */
-  rewardXp: number;
-
-  /** Update current mood (for mood-aware gating) */
-  setCurrentMood: (mood: string) => void;
 }
 
 const AdContext = createContext<AdContextValue | null>(null);
@@ -75,10 +68,6 @@ const AdContext = createContext<AdContextValue | null>(null);
 
 interface AdProviderProps {
   children: ReactNode;
-  /** Callback when user earns treats from watching ad */
-  onEarnTreats?: (amount: number) => void;
-  /** Callback when user earns XP from watching ad */
-  onEarnXp?: (amount: number) => void;
   /** Whether user has ad consent (GDPR) */
   adConsent?: boolean;
   /** Whether user is premium (no ads) */
@@ -89,26 +78,27 @@ interface AdProviderProps {
 
 export function AdProvider({
   children,
-  onEarnTreats,
-  onEarnXp,
   adConsent = false,
   isPremium = false,
   currentMood,
 }: AdProviderProps) {
   const [adsAvailable, setAdsAvailable] = useState(false);
-  const [canShow, setCanShow] = useState(false);
-  const [remaining, setRemaining] = useState(0);
+  const [bannerHeight, setBannerHeight] = useState(0);
+  const [habitsBannerActive, setHabitsBannerActiveState] = useState(false);
+  const [globalAdOverlayOpen, setGlobalAdOverlayOpenState] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(
+    () => typeof document === 'undefined' || document.visibilityState !== 'hidden',
+  );
+  const [viewportWidth, setViewportWidth] = useState(
+    () => typeof window === 'undefined' ? 0 : Math.round(window.innerWidth),
+  );
   const [googleConsentReady, setGoogleConsentReady] = useState(false);
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false);
-  const currentMoodRef = useRef<string>('okay');
 
   const syncControllerState = useCallback(() => {
     const controllerState = getAdState();
     setGoogleConsentReady(controllerState.canRequestAds);
     setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
-    setRemaining(getRemainingRewardedAds());
-    const check = canShowRewardedAd(currentMoodRef.current);
-    setCanShow(check.allowed);
     setAdsAvailable(controllerState.sdkAvailable);
   }, []);
 
@@ -116,18 +106,9 @@ export function AdProvider({
     const controllerState = getAdState();
     setGoogleConsentReady(controllerState.canRequestAds);
     setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
-    setRemaining(0);
-    setCanShow(false);
     setAdsAvailable(false);
+    setBannerHeight(0);
   }, []);
-
-  useEffect(() => {
-    if (currentMood) {
-      currentMoodRef.current = currentMood;
-      const check = canShowRewardedAd(currentMood);
-      setCanShow(check.allowed);
-    }
-  }, [currentMood]);
 
   // Initialize SDK
   useEffect(() => {
@@ -137,10 +118,9 @@ export function AdProvider({
       if (cancelled) return;
       disableAds({ clearPrivacyOptions });
       setAdsAvailable(false);
-      setCanShow(false);
+      setBannerHeight(0);
       setGoogleConsentReady(false);
       if (clearPrivacyOptions) setPrivacyOptionsRequired(false);
-      setRemaining(0);
     };
 
     if (isPremium) {
@@ -166,10 +146,7 @@ export function AdProvider({
     void initializeAds().then((available) => {
       if (cancelled) return;
       syncControllerState();
-      if (available) {
-        const check = canShowRewardedAd(currentMoodRef.current);
-        setCanShow(check.allowed);
-      }
+      if (!available) setBannerHeight(0);
     }).catch(err => {
       if (!cancelled) logger.warn('[Ads]', 'Ad init failed:', err);
     });
@@ -179,53 +156,132 @@ export function AdProvider({
     };
   }, [adConsent, isPremium, syncControllerState, syncPrivacyOptionsOnly]);
 
-  // Refresh can-show status periodically
+  // Native views survive above the WebView, so lifecycle visibility is part of
+  // the placement gate rather than an eventual cleanup detail.
   useEffect(() => {
-    if (!adsAvailable) return;
+    const handleVisibilityChange = () => {
+      setDocumentVisible(document.visibilityState !== 'hidden');
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
-    const interval = setInterval(() => {
-      const check = canShowRewardedAd(currentMoodRef.current);
-      setCanShow(check.allowed);
-      setRemaining(getRemainingRewardedAds());
-      const controllerState = getAdState();
-      setGoogleConsentReady(controllerState.canRequestAds);
-      setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
-    }, 30_000); // every 30s
+  // Anchored adaptive banners are sized from the current Android window. A
+  // width change (rotation or split-screen resize) must run the placement
+  // effect again so the native view is rebuilt for the new window metrics.
+  useEffect(() => {
+    const handleViewportResize = () => {
+      const nextWidth = Math.round(window.innerWidth);
+      setViewportWidth((currentWidth) => currentWidth === nextWidth ? currentWidth : nextWidth);
+    };
+    window.addEventListener('resize', handleViewportResize, { passive: true });
+    return () => window.removeEventListener('resize', handleViewportResize);
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [adsAvailable]);
-
-  const setCurrentMood = useCallback((mood: string) => {
-    currentMoodRef.current = mood;
-    if (adsAvailable) {
-      const check = canShowRewardedAd(mood);
-      setCanShow(check.allowed);
-    }
-  }, [adsAvailable]);
-
-  const watchRewardedAd = useCallback(async (zone: AdSafeZone = 'optional_rewards'): Promise<boolean> => {
-    if (!adsAvailable) return false;
-
-    const check = canShowRewardedAd(currentMoodRef.current, zone);
-    if (!check.allowed) return false;
-
-    const result = await showRewardedAd({ currentMood: currentMoodRef.current, zone });
-
-    if (result.success && result.rewarded) {
-      onEarnTreats?.(AD_REWARDS.rewardedVideoTreats);
-      onEarnXp?.(AD_REWARDS.rewardedVideoXp);
-
-      // Refresh state
-      syncControllerState();
-
-      return true;
+  const emotionallyProtected = currentMood === 'bad' || currentMood === 'terrible';
+  useEffect(() => {
+    if (
+      !ANDROID_MOTION_BENCHMARK_ENABLED ||
+      typeof location === 'undefined' ||
+      location.protocol !== 'https:' ||
+      location.hostname !== 'localhost'
+    ) {
+      return;
     }
 
-    // Refresh on dismiss too
-    syncControllerState();
+    const benchmarkGlobal = globalThis as typeof globalThis & {
+      __ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__?: () => Record<
+        string,
+        boolean | number | string | null | undefined
+      >;
+    };
+    const probe = () => ({
+      adConsent,
+      isPremium,
+      currentMood: currentMood ?? null,
+      adsAvailable,
+      bannerHeight,
+      habitsBannerActive,
+      globalAdOverlayOpen,
+      documentVisible,
+      emotionallyProtected,
+      googleConsentReady,
+      privacyOptionsRequired,
+    });
+    Object.defineProperty(benchmarkGlobal, '__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__', {
+      configurable: true,
+      enumerable: false,
+      value: probe,
+    });
 
-    return false;
-  }, [adsAvailable, onEarnTreats, onEarnXp, syncControllerState]);
+    return () => {
+      if (benchmarkGlobal.__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__ === probe) {
+        delete benchmarkGlobal.__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__;
+      }
+    };
+  }, [
+    adConsent,
+    adsAvailable,
+    bannerHeight,
+    currentMood,
+    documentVisible,
+    emotionallyProtected,
+    globalAdOverlayOpen,
+    googleConsentReady,
+    habitsBannerActive,
+    isPremium,
+    privacyOptionsRequired,
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const shouldShow =
+      adsAvailable &&
+      habitsBannerActive &&
+      documentVisible &&
+      !emotionallyProtected &&
+      !globalAdOverlayOpen;
+
+    if (!shouldShow) {
+      setBannerHeight(0);
+      void hideHabitsBanner();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void showHabitsBanner((height) => {
+      if (!cancelled) setBannerHeight(Math.max(0, height));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    adsAvailable,
+    documentVisible,
+    emotionallyProtected,
+    globalAdOverlayOpen,
+    habitsBannerActive,
+    viewportWidth,
+  ]);
+
+  useEffect(
+    () => () => {
+      void removeHabitsBanner();
+    },
+    [],
+  );
+
+  const setHabitsBannerActive = useCallback((active: boolean) => {
+    if (!active) setBannerHeight(0);
+    setHabitsBannerActiveState(active);
+  }, []);
+
+  const setGlobalAdOverlayOpen = useCallback((open: boolean) => {
+    if (open) setBannerHeight(0);
+    setGlobalAdOverlayOpenState(open);
+  }, []);
 
   const openAdPrivacyOptions = useCallback(async (): Promise<boolean> => {
     const result = await showAdPrivacyOptions();
@@ -234,17 +290,14 @@ export function AdProvider({
   }, [syncControllerState]);
 
   const value: AdContextValue = {
-    adsSupported: isRewardedAdsSupported(),
+    adsSupported: isBannerAdsSupported(),
     adsAvailable,
-    canShowRewarded: canShow,
-    remainingToday: remaining,
+    bannerHeight,
+    setHabitsBannerActive,
+    setGlobalAdOverlayOpen,
     googleConsentReady,
     privacyOptionsRequired,
     openAdPrivacyOptions,
-    watchRewardedAd,
-    rewardTreats: AD_REWARDS.rewardedVideoTreats,
-    rewardXp: AD_REWARDS.rewardedVideoXp,
-    setCurrentMood,
   };
 
   return <AdContext.Provider value={value}>{children}</AdContext.Provider>;
@@ -261,15 +314,12 @@ export function useAds(): AdContextValue {
     return {
       adsSupported: false,
       adsAvailable: false,
-      canShowRewarded: false,
-      remainingToday: 0,
+      bannerHeight: 0,
+      setHabitsBannerActive: () => {},
+      setGlobalAdOverlayOpen: () => {},
       googleConsentReady: false,
       privacyOptionsRequired: false,
       openAdPrivacyOptions: async () => false,
-      watchRewardedAd: async () => false,
-      rewardTreats: 0,
-      rewardXp: 0,
-      setCurrentMood: () => {},
     };
   }
   return context;

@@ -12,6 +12,7 @@
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
 import { shouldAnimate } from '@/lib/animationUtils';
+import { isAndroid } from '@/lib/platform';
 
 interface PremiumLoaderProps {
   /** Size variant: sm (48×24), md (96×48), lg (192×96), xl (260×130) */
@@ -40,7 +41,7 @@ export function PremiumLoader({
 }: PremiumLoaderProps) {
   const uid = useId();
   const { w, h } = sizeConfig[size];
-  const animate = shouldAnimate();
+  const animate = shouldAnimate({ respectRuntimePerformance: !isAndroid });
 
   const gradId = `inf-grad${uid}`;
   const blurId = `inf-blur${uid}`;

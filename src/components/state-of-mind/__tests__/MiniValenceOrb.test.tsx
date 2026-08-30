@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render } from "@testing-library/react";
+import { createRef } from "react";
 
 import { MiniValenceOrb } from "../MiniValenceOrb";
 import { resetOrbRuntimeSnapshotsForTests } from "../ValenceOrb";
@@ -218,5 +219,51 @@ describe("MiniValenceOrb", () => {
 
     expect(container.firstChild).toHaveClass("h-20", "w-20", "rounded-full");
     expect(container.firstChild).toHaveClass("bg-background/45");
+  });
+
+  it("keeps exact refine chrome around an external canonical renderer slot", () => {
+    const targetRef = createRef<HTMLDivElement>();
+    const view = render(
+      <MiniValenceOrb
+        valence={0.5}
+        hasEntry
+        size="lg"
+        chrome="refine"
+        externalRenderer={{ targetRef, visualReady: false }}
+      />,
+    );
+
+    expect(view.container.firstChild).toHaveClass(
+      "h-20",
+      "w-20",
+      "rounded-full",
+      "bg-background/45",
+      "opacity-0",
+    );
+    expect(targetRef.current).toHaveClass(
+      "absolute",
+      "left-1/2",
+      "top-1/2",
+      "h-[120px]",
+      "w-[120px]",
+      "scale-[0.68]",
+      "brightness-[0.96]",
+    );
+    expect(
+      view.container.querySelector("[data-orb-renderer-policy]"),
+    ).toBeNull();
+
+    view.rerender(
+      <MiniValenceOrb
+        valence={0.5}
+        hasEntry
+        size="lg"
+        chrome="refine"
+        externalRenderer={{ targetRef, visualReady: true }}
+      />,
+    );
+
+    expect(view.container.firstChild).toHaveClass("opacity-100");
+    expect(targetRef.current).not.toBeNull();
   });
 });

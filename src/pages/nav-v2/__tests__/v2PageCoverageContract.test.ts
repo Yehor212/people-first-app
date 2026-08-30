@@ -45,16 +45,17 @@ describe("V2 page coverage contract", () => {
   it("keeps the canonical V2 page inventory synchronized across route owners", () => {
     const navHook = read("src/hooks/useNavigationV2.ts");
     const orchestrator = read("src/components/navigation-v2/NavV2Orchestrator.tsx");
+    const routeLoaders = read("src/components/navigation-v2/navV2RouteLoaders.ts");
     const helper = read("e2e/helpers/zenflowV2State.ts");
 
     expect(navHook).toContain(
-      "export const NAV_V2_PAGES: readonly NavV2Page[] = [\"orb\", \"habits\", \"diary\", \"planning\", \"settings\"] as const;",
+      'export const NAV_V2_PAGES: readonly NavV2Page[] = ["orb", "habits", "diary", "planning", "settings"] as const;'
     );
 
     for (const page of v2Pages) {
       expect(navHook).toContain(`"${page.id}"`);
-      expect(orchestrator).toContain(`const ${page.loader} = () =>`);
-      expect(orchestrator).toContain(`${page.id}: ${page.loader}`);
+      expect(routeLoaders).toContain(`const ${page.loader} = () =>`);
+      expect(routeLoaders).toContain(`${page.id}: ${page.loader}`);
       expect(orchestrator).toContain(`<${page.component}`);
       expect(helper).toContain(`"${page.id}"`);
     }
@@ -65,7 +66,7 @@ describe("V2 page coverage contract", () => {
 
     for (const page of v2Pages) {
       expect(deploySmoke).toContain(
-        `{ path: "${page.id}?nav=v2&navLayout=phone&dev=true", testId: "${page.testId}" }`,
+        `{ path: "${page.id}?nav=v2&navLayout=phone&dev=true", testId: "${page.testId}" }`
       );
     }
   });

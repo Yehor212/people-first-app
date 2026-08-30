@@ -19,7 +19,7 @@ const checker = require("../check-public-privacy-policy.cjs") as {
 
 const completePolicy = `
   ZenFlow Privacy Policy
-  Optional rewarded ads after consent.
+  Optional adaptive banner below the habit list after consent.
   AdMob / Google Mobile Ads.
   Google User Messaging Platform (UMP) privacy choices.
   Advertising ID and ad-services declarations.
@@ -36,17 +36,29 @@ describe("Google Play public privacy policy guard", () => {
     expect(report.signals.umpVisible).toBe(true);
     expect(report.signals.advertisingIdVisible).toBe(true);
     expect(report.signals.googleMobileAdsDataVisible).toBe(true);
-    expect(report.signals.rewardedAdsVisible).toBe(true);
+    expect(report.signals.bannerAdsVisible).toBe(true);
   });
 
   it("rejects a policy that mentions ads but omits Google Mobile Ads SDK data disclosures", () => {
     const report = checker.evaluatePublicPrivacyPolicyHtml({
-      html: "ZenFlow Privacy Policy AdMob Google Mobile Ads UMP Advertising ID optional rewarded ads",
+      html: "ZenFlow Privacy Policy AdMob Google Mobile Ads UMP Advertising ID optional adaptive banner below the habit list",
     });
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(expect.objectContaining({ code: "google_mobile_ads_data_missing" }));
     expect(report.signals.googleMobileAdsDataVisible).toBe(false);
+  });
+
+  it("rejects stale rewarded-only wording for a banner-only Android artifact", () => {
+    const report = checker.evaluatePublicPrivacyPolicyHtml({
+      html: completePolicy.replace(
+        "Optional adaptive banner below the habit list after consent.",
+        "Optional rewarded ads after consent.",
+      ),
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(expect.objectContaining({ code: "banner_ads_missing" }));
   });
 
   it("rejects the stale no-ads claim", () => {

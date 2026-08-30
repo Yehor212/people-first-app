@@ -2,11 +2,23 @@
  * HabitsPage — orchestrator tests for the Phase 3-C single-zone layout.
  * Garden + MindMap zones removed 2026-04-19; only the Hero zone is rendered.
  */
-import { render, cleanup, fireEvent, screen } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { Challenge } from "@/types";
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
+
+const adPlacement = vi.hoisted(() => ({
+  bannerHeight: 50,
+  setHabitsBannerActive: vi.fn(),
+}));
+
+vi.mock("@/contexts/AdContext", () => ({
+  useAds: () => ({
+    bannerHeight: adPlacement.bannerHeight,
+    setHabitsBannerActive: adPlacement.setHabitsBannerActive,
+  }),
+}));
 
 const syncMocks = vi.hoisted(() => {
   const logger = {
@@ -196,6 +208,8 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     syncMocks.syncHabitCompletion.mockClear();
     syncMocks.trackDeletedHabitId.mockClear();
     syncMocks.triggerSync.mockClear();
+    adPlacement.bannerHeight = 50;
+    adPlacement.setHabitsBannerActive.mockClear();
   });
 
   afterEach(() => {
@@ -249,6 +263,46 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     );
     expect(screen.getByTestId("hero-group-anytime")).toBeInTheDocument();
     expect(screen.getByTestId("hero-weekly-card-h1")).toBeInTheDocument();
+  });
+
+  it("reserves native banner space only while the unobstructed active Habits list is visible", async () => {
+    mockHabits = [
+      {
+        id: "h1",
+        name: "Hydrate",
+        isArchived: false,
+        entries: {},
+        habitType: "boolean",
+        reminders: [],
+        frequency: { numerator: 1, denominator: 1 },
+      },
+    ];
+
+    const view = render(<HabitsPage />);
+    const page = screen.getByTestId("habits-page");
+
+    await waitFor(() => {
+      expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(true);
+    });
+    expect(page).toHaveStyle({ "--android-ad-banner-height": "50px" });
+    expect(page).toHaveAttribute("data-android-banner-height", "50");
+
+    fireEvent.keyDown(screen.getByTestId("hero-habit-row-h1"), { key: "Enter" });
+    await waitFor(() => {
+      expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(false);
+    });
+    fireEvent.click(screen.getByTestId("habit-action-sheet-h1-close"));
+    await waitFor(() => {
+      expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(true);
+    });
+
+    fireEvent.click(screen.getByTestId("habits-hero-create"));
+    await waitFor(() => {
+      expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(false);
+    });
+
+    view.unmount();
+    expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(false);
   });
 
   it("tracks V2 destructive habit deletes before cloud/backups can resurrect them", () => {
@@ -311,6 +365,19 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
   it("does not render the create sheet when closed", () => {
     render(<HabitsPage />);
     expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
+  });
+
+  it("makes the Habits page content inert while a create sheet owns interaction", () => {
+    render(<HabitsPage />);
+
+    const content = screen.getByTestId("habits-page-content");
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(screen.getByTestId("habits-hero-create-empty"));
+
+    expect(content).toHaveAttribute("inert", "");
+    expect(content).toHaveAttribute("aria-hidden", "true");
   });
 
   it("focuses the main landmark after mount (not the heading — avoids outline on title)", () => {

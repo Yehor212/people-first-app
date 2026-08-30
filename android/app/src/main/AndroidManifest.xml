@@ -79,18 +79,6 @@
                     android:host="diary" />
             </intent-filter>
 
-            <!-- OWASP L22: Android App Links for verified challenge invites -->
-            <!-- Requires hosting /.well-known/assetlinks.json on zenflow.app with SHA256 fingerprint -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="zenflow.app"
-                    android:pathPrefix="/challenge" />
-            </intent-filter>
-
         </activity>
 
         <provider
@@ -172,7 +160,7 @@
     <!-- Biometric unlock for the private diary lock. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
-    <!-- Required for the opt-in rewarded ads release path. -->
+    <!-- Required for the Android banner ad release path. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
 </manifest>

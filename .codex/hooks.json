@@ -19,6 +19,13 @@
           },
           {
             "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/android-visual-runtime-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/android-visual-runtime-gate.cjs')\"",
+            "timeout": 10,
+            "statusMessage": "Routing Android visual runtime evidence"
+          },
+          {
+            "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/production-data-integrity-gate.cjs\"",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/production-data-integrity-gate.cjs')\"",
             "timeout": 5,
@@ -111,6 +118,13 @@
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/no-ai-template-gate.cjs')\"",
             "timeout": 5,
             "statusMessage": "Checking no-AI-template output"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/android-visual-runtime-gate.cjs\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel; & node (Join-Path $root '.codex/hooks/android-visual-runtime-gate.cjs')\"",
+            "timeout": 10,
+            "statusMessage": "Checking Android visual runtime evidence"
           },
           {
             "type": "command",

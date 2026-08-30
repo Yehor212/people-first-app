@@ -64,6 +64,9 @@ test.describe("V2 Orb ambience focus control", () => {
       await page.evaluate(() => document.fonts.ready);
 
       await expect(page.getByTestId("orb-page")).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId("orb-page-ambience-toggle")).toBeAttached({
+        timeout: 30_000,
+      });
       const before = await readAmbienceFocusMetrics(page);
       expect(before.controlWidth).toBeLessThanOrEqual(1);
       expect(before.controlHeight).toBeLessThanOrEqual(1);

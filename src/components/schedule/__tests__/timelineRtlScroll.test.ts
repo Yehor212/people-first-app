@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  centeredDomScrollLeft,
   domToPhysicalScrollLeft,
   physicalToDomScrollLeft,
 } from "../timelineScrollCoordinates";
@@ -41,12 +42,37 @@ describe("schedule RTL scroll coordinates", () => {
   it("centers the real localized day pill instead of assuming a fixed width", () => {
     expect(scheduleDataSource).not.toContain("buttonWidth = 68");
     expect(scheduleDataSource).toContain("children.item(index)");
+    expect(scheduleDataSource).toContain("if (isAndroid)");
+    expect(scheduleDataSource).toContain("centeredDomScrollLeft");
+    expect(scheduleDataSource).toContain("daySelector.scrollTo");
     expect(scheduleDataSource).toContain("scrollIntoView");
     expect(scheduleDataSource).toContain('block: "nearest"');
     expect(scheduleDataSource).toContain('inline: "center"');
     expect(scheduleDataSource).toContain(
       'behavior: shouldAnimate() ? "smooth" : "auto"',
     );
+  });
+
+  it("centers an Android day pill inside its horizontal scroller without moving the document", () => {
+    expect(
+      centeredDomScrollLeft({
+        itemOffsetLeft: 640,
+        itemWidth: 60,
+        containerWidth: 400,
+        scrollWidth: 1_200,
+        isRTL: false,
+      }),
+    ).toBe(470);
+
+    expect(
+      centeredDomScrollLeft({
+        itemOffsetLeft: 640,
+        itemWidth: 60,
+        containerWidth: 400,
+        scrollWidth: 1_200,
+        isRTL: true,
+      }),
+    ).toBe(-330);
   });
 
   it("exposes the selected day to assistive technology", () => {

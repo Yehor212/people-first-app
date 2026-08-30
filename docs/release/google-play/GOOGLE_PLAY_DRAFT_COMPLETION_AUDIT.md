@@ -1,5 +1,10 @@
 # Google Play V2 Draft Completion Audit
 
+> **HISTORICAL EVIDENCE ONLY:** this dated audit covers the former rewarded-only
+> release decision. It is superseded for 2.1.1 by the Android banner-only packet
+> in this directory and must not be cited as current monetization or publication
+> proof.
+
 Date: 2026-05-27 local workspace time.
 Monetization follow-up: 2026-06-30 workspace review time.
 
