@@ -416,6 +416,8 @@ class BackendProtocolTests(unittest.TestCase):
         executable = Path(
             "/Users/yehor/Projects/ZenFlow/private-evidence/audio-ai-audit/envs/clap/bin/python"
         )
+        if not executable.exists():
+            self.skipTest("private CLAP backend environment is not present on this machine")
 
         command, environment = protocol.build_backend_command(
             executable,
