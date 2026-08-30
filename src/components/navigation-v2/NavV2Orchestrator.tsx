@@ -1,5 +1,6 @@
 import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { AppBackgroundMusicProvider } from "./AppBackgroundMusicProvider";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -297,6 +298,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   );
 
   return (
+    <AppBackgroundMusicProvider>
     <div
       className={cn(
         "v2-edge-to-edge-surface min-h-[var(--app-viewport-height)] bg-background motion-safe:transition-[padding] motion-safe:duration-300",
@@ -366,5 +368,6 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
       <V2ProgressionModalLayer />
     </div>
+    </AppBackgroundMusicProvider>
   );
 });
