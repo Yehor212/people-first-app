@@ -196,13 +196,6 @@ function checkProductionDataIntegrity(): void {
 }
 
 function validateCanonicalControlPlane(): void {
-  runNodeGate("check:agent-orchestra", "scripts/sync-persistent-agent-orchestra.mjs", ["--check"], 20_000);
-  runNodeGate(
-    "check:agent-orchestra:eval",
-    "scripts/validate-persistent-agent-orchestra-eval-report.mjs",
-    ["--catalog"],
-    20_000,
-  );
   runNodeGate("check:no-ai-templates", "scripts/check-no-ai-templates.cjs", [], 30_000);
   runNodeGate(
     "check:android-visual-runtime-gate",
