@@ -18,7 +18,6 @@ scripts/ @Yehor212
 scripts/check-production-data-integrity.cjs @Yehor212
 scripts/production-data-integrity/ @Yehor212
 config/production-data-integrity*.json @Yehor212
-config/persistent-agent-orchestra*.json @Yehor212
 .codex/hooks/production-data-integrity-gate.cjs @Yehor212
 .codex/hooks/change-governance-gate.cjs @Yehor212
 .github/workflows/production-data-integrity.yml @Yehor212

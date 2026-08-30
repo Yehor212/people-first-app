@@ -38,12 +38,6 @@ describe("curated Free RAG corpus", () => {
     expect(manifest.groups.find((group) => group.id === "agent_rules")?.include).toContain(
       "AGENTS.md"
     );
-    expect(manifest.groups.find((group) => group.id === "agent_rules")?.include).toContain(
-      "config/persistent-agent-orchestra.json"
-    );
-    expect(manifest.groups.find((group) => group.id === "agent_rules")?.include).not.toContain(
-      "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md"
-    );
     expect(manifest.groups.find((group) => group.id === "telegram_control")?.include).toContain(
       ".github/workflows/telegram-control.yml"
     );

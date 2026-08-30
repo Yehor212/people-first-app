@@ -307,9 +307,7 @@ describe("GitHub Pages deploy workflow contract", () => {
 
     expect(pkg.scripts["ci:preflight"]).toContain("npm run build");
     expect(pkg.scripts["ci:preflight"]).not.toContain("vite build --configLoader runner");
-    expect(pkg.scripts["ci:preflight"]).toContain("npm run test:agent-orchestra");
-    expect(pkg.scripts["ci:preflight"]).toContain("npm run check:agent-orchestra");
-    expect(pkg.scripts["ci:preflight"]).toContain("npm run check:agent-orchestra:eval");
+    expect(pkg.scripts["ci:preflight"]).toContain("npm run test:release-contracts");
     expect(pkg.scripts["prune:release-artifacts"]).toBe(
       "node scripts/prune-duplicate-artifacts.cjs dist"
     );
@@ -322,31 +320,24 @@ describe("GitHub Pages deploy workflow contract", () => {
     expect(pkg.scripts["stage:release-artifacts"]).toBe("node scripts/stage-release-artifact.cjs");
   });
 
-  it("runs exact-ten governance checks on pull requests and direct pushes to main", () => {
+  it("keeps governance contract tests wired into release-contracts and drift CI triggers", () => {
     const workflow = readFileSync(".github/workflows/drift-checks.yml", "utf8");
     const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
       scripts: Record<string, string>;
     };
 
     expect(workflow).toMatch(/on:\s*\n\s+push:\s*\n\s+branches:\s*\[main\]/);
-    expect(workflow).toContain("name: agent-orchestra-contracts");
-    expect(workflow).toContain("cmd: npm run test:agent-orchestra");
-    expect(workflow).toContain("cmd: npm run check:agent-orchestra");
-    expect(workflow).toContain("cmd: npm run check:agent-orchestra:eval");
-    expect(pkg.scripts["test:agent-orchestra"]).toContain(
-      "scripts/__tests__/persistent-agent-orchestra-evidence.test.mjs"
-    );
-    expect(pkg.scripts["test:agent-orchestra"]).toContain(
+    expect(pkg.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/codex-change-governance-gate.test.mjs"
-    );
-    expect(pkg.scripts["test:agent-orchestra"]).toContain(
-      "scripts/__tests__/private-receipt-export.test.mjs",
     );
     expect(pkg.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/skill-routing-hook-payload.test.ts"
     );
     expect(pkg.scripts["test:release-contracts"]).toContain(
       "scripts/__tests__/private-receipt-export.test.mjs",
+    );
+    expect(pkg.scripts["test:release-contracts"]).toContain(
+      "scripts/__tests__/spec-kit-safety-hook.test.ts",
     );
   });
 

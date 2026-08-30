@@ -17,10 +17,8 @@ const UNGUARDED_EXACT = new Set([
 const L4_PREFIXES = [
   ".codex/",
   ".github/",
-  "config/persistent-agent-orchestra",
   "docs/ai/",
   "scripts/codex-governance/",
-  "scripts/persistent-agent-orchestra/",
 ];
 
 const L4_EXACT = new Set(["AGENTS.md", "ARCHITECTURE.md", "CLAUDE.md", "package.json"]);

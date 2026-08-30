@@ -22,7 +22,7 @@ ZenFlow Context MCP answers: "Which ZenFlow repo context pack should I retrieve,
 - `architecture`: app structure, state, storage, sync, Supabase boundaries, and `docs/ai/SYNC_CONTRACT.md`.
 - `ui`: visual, motion, accessibility, i18n/RTL, mobile parity.
 - `verification`: CI, quality gates, evidence rules.
-- `governance`: exact-ten roles, protected changes, source freshness, and owner escalation.
+- `governance`: protected changes, radical-change notices, source freshness, and owner escalation.
 - `external_docs`: route framework/library questions to Context7 plus repo package versions.
 
 ## How Agents Should Use It
@@ -34,10 +34,9 @@ Repository path:
 3. `npm run rag:preflight -- "<task>"` writes the focused RAG pack used by the project working agreement.
 4. The coordinator passes only the task-relevant cited context to specialists; generated packs remain routing context, never proof.
 
-The free lexical RAG corpus indexes the canonical exact-ten JSON registry. Context
-profiles may excerpt the generated operational reference only after a fresh
-registry/profile/reference parity check; drift stops the request instead of returning
-stale role instructions.
+The free lexical RAG corpus indexes the curated project knowledge declared in
+`scripts/rag/corpus-manifest.json`; retrieved excerpts are routing context, not
+proof of current command status.
 
 Manual/MCP path:
 

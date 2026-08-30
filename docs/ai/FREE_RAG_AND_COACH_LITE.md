@@ -15,13 +15,10 @@ npm run rag:search:free -- "architecture source of truth for agents"
 
 The commands index a curated project corpus from `scripts/rag/corpus-manifest.json` and return short excerpts with source citations. They do not call OpenAI, Gemini, Supabase vector search, or any embedding API.
 
-For exact-ten governance, the corpus indexes
-`config/persistent-agent-orchestra.json`, the only canonical role source. It
-intentionally excludes generated `docs/ai/PERSISTENT_AGENT_ORCHESTRA.md` to avoid a
-second or stale roster in lexical retrieval. The context server may excerpt that
-generated reference only after `checkWorkspace` proves current registry/profile/
-reference byte parity; parity failure stops context generation rather than serving
-stale role text.
+For agent governance, the corpus indexes `AGENTS.md`, `ARCHITECTURE.md`, and the
+tracked `docs/ai/**` policy files listed in the `agent_rules` group. Generated,
+ignored, or historical artifacts stay excluded so lexical retrieval never serves a
+stale second source of project rules.
 
 The curated corpus is grouped so agents can retrieve the right project memory without blindly scanning the whole repository:
 

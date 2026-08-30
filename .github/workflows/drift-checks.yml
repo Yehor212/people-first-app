@@ -30,7 +30,6 @@ on:
       - '.github/CODEOWNERS'
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - '.codex/**'
-      - 'config/persistent-agent-orchestra*.json'
       - 'tools/telegram-control/**'
       - 'tools/zenflow-context/**'
       - 'supabase/migrations/**'
@@ -58,11 +57,6 @@ on:
       - 'scripts/__tests__/check-app-audio-assets.test.ts'
       - 'scripts/__tests__/no-ai-templates-policy.test.ts'
       - 'scripts/__tests__/best-practices-gate-contract.test.ts'
-      - 'scripts/check-subagent-teamlead-governance.mjs'
-      - 'scripts/sync-persistent-agent-orchestra.mjs'
-      - 'scripts/run-persistent-agent-orchestra-evals.mjs'
-      - 'scripts/validate-persistent-agent-orchestra-eval-report.mjs'
-      - 'scripts/persistent-agent-orchestra/**'
       - 'scripts/codex-governance/**'
       - 'scripts/doc-counts.cjs'
       - 'scripts/check-types-freshness.cjs'
@@ -105,18 +99,6 @@ jobs:
           - name: free-rag
             cmd: npm run check:rag
             fix: keep scripts/rag/corpus-manifest.json curated and rerun npm run rag:preflight for task-specific context
-          - name: subagent-governance
-            cmd: npm run check:subagent-governance
-            fix: restore the exact-ten evidence, trust, routing, and independent-review contracts
-          - name: agent-orchestra
-            cmd: npm run check:agent-orchestra
-            fix: run npm run ai:agent-orchestra:sync and commit the exact generated Codex profiles and reference
-          - name: agent-orchestra-contracts
-            cmd: npm run test:agent-orchestra
-            fix: repair the exact-ten registry, evidence, RAG parity, hook-target, or integration regression; do not weaken the contract
-          - name: agent-orchestra-eval-catalog
-            cmd: npm run check:agent-orchestra:eval
-            fix: repair scenario coverage or the honest UNVERIFIED baseline; do not fabricate semantic or human PASS
           - name: enforcement-health
             cmd: npm run enforcement:check
             fix: register missing blocking hooks or document intentional advisory-only enforcement

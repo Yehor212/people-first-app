@@ -1,5 +1,5 @@
-# Generated from config/persistent-agent-orchestra.json. Do not edit by hand.
 # These bounds constrain project subagent topology; they do not prove runtime loading.
+# Maintained by hand since the persistent agent orchestra was retired on 2026-08-30.
 
 [agents]
 max_threads = 4

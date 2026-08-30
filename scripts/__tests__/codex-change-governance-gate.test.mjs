@@ -231,7 +231,7 @@ describe("Codex change governance gate", () => {
 
     const result = await evaluateGuard({
       rootDir,
-      targetPath: path.join(rootDir, "config/persistent-agent-orchestra.json"),
+      targetPath: path.join(rootDir, "docs/ai/AGENT_CHANGE_GOVERNANCE.md"),
       now: NOW,
     });
 
@@ -253,7 +253,7 @@ describe("Codex change governance gate", () => {
 
     await writeFile(
       path.join(rootDir, ".Codex-md-unlock"),
-      "authorized for exact-ten migration\n",
+      "authorized AGENTS.md edit\n",
       "utf8"
     );
     const allowed = await evaluateGuard({
@@ -345,22 +345,22 @@ async function workspace() {
 function validToken() {
   return {
     timestamp: "2026-07-13T04:55:00.000Z",
-    goal: "Install the canonical exact-ten Codex role system",
+    goal: "Install the canonical Codex change governance guard",
     depth: "L4",
     verdict: "GO",
     test_first: {
       timestamp: "2026-07-13T04:55:00.000Z",
-      behavior: "Missing or forged exact-ten evidence must fail closed.",
-      risk: "A false-green guard would approve an absent role system.",
+      behavior: "Missing or forged change-governance evidence must fail closed.",
+      risk: "A false-green guard would approve an unreviewed protected edit.",
       evidence_type: "red-test",
-      command: "npx vitest run scripts/__tests__/persistent-agent-orchestra-registry.test.mjs",
-      expected_red: "The core module and canonical registry are absent before implementation.",
+      command: "npx vitest run scripts/__tests__/codex-change-governance-gate.test.mjs",
+      expected_red: "The guard rejects protected edits before fresh evidence exists.",
       verification_plan: "Rerun the same focused test green and then run drift checks.",
       verdict: "GO",
     },
     skill_routing: {
       timestamp: "2026-07-13T04:55:00.000Z",
-      prompt_summary: "Implement an exact-ten Codex governance system.",
+      prompt_summary: "Implement the Codex change governance guard.",
       selected_skills: ["superpowers:test-driven-development"],
       skipped_obvious: [{ name: "browser", reason: "No UI runtime change" }],
       decision: "Use test-first governance implementation.",
