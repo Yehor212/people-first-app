@@ -5,6 +5,7 @@ const notificationPlugin = vi.hoisted(() => ({ createChannel: vi.fn() }));
 const nativePushRealm = vi.hoisted(() => ({
   isPushRealmChannelId: vi.fn((value: unknown) =>
     value === "zenflow_default_v4" ||
+    value === "zenflow_furin_v5" ||
     value === "zenflow_gentle_v4" ||
     value === "zenflow_silent_v4"
   ),
@@ -50,6 +51,8 @@ describe("notification sound channels", () => {
       soundDefaultDesc: "Системний звук сповіщення",
       soundGentle: "М'який",
       soundGentleDesc: "Тільки вібрація",
+      soundFurin: "Фурін",
+      soundFurinDesc: "М'який японський скляний дзвін",
       soundSilent: "Тихий",
       soundSilentDesc: "Без звуку та вібрації",
     });
@@ -58,6 +61,10 @@ describe("notification sound channels", () => {
       name: "ZenFlow — За замовчуванням",
       description: "Системний звук сповіщення",
     });
+    expect(copy.furin).toEqual({
+      name: "ZenFlow — Фурін",
+      description: "М'який японський скляний дзвін",
+    });
     expect(copy.silent.description).toBe("Без звуку та вібрації");
   });
 
@@ -65,6 +72,7 @@ describe("notification sound channels", () => {
     expect(NOTIFICATION_SOUND_CHANNEL_VERSION).toBe("v4");
     expect(NOTIFICATION_SOUNDS.map((sound) => sound.channelId)).toEqual([
       "zenflow_default_v4",
+      "zenflow_furin_v5",
       "zenflow_gentle_v4",
       "zenflow_silent_v4",
     ]);
@@ -74,6 +82,13 @@ describe("notification sound channels", () => {
   it("matches each user-facing sound option to a low-startle channel profile", () => {
     expect(NOTIFICATION_SOUNDS).toEqual([
       expect.objectContaining({ id: "default", sound: "default", vibrate: true, importance: 3 }),
+      expect.objectContaining({
+        id: "furin",
+        channelId: "zenflow_furin_v5",
+        sound: "zenflow_furin.wav",
+        vibrate: true,
+        importance: 3,
+      }),
       expect.objectContaining({ id: "gentle", sound: undefined, vibrate: true, importance: 2 }),
       expect.objectContaining({ id: "silent", sound: undefined, vibrate: false, importance: 1 }),
     ]);
@@ -96,6 +111,15 @@ describe("notification sound channels", () => {
 
     expect(nativePushRealm.updateNativePushPresentation).toHaveBeenCalledWith({
       channelId: "zenflow_gentle_v4",
+    });
+  });
+
+  it("routes the optional fūrin choice through its new immutable channel", async () => {
+    await expect(updateNotificationSound("furin")).resolves.toBe("zenflow_furin_v5");
+
+    expect(getNotificationSound()).toBe("furin");
+    expect(nativePushRealm.updateNativePushPresentation).toHaveBeenCalledWith({
+      channelId: "zenflow_furin_v5",
     });
   });
 
@@ -135,10 +159,10 @@ describe("notification sound channels", () => {
   it("creates only secret Android channels so reminder content is hidden on lock screens", async () => {
     await initializeNotificationChannels();
 
-    expect(notificationPlugin.createChannel).toHaveBeenCalledTimes(3);
+    expect(notificationPlugin.createChannel).toHaveBeenCalledTimes(4);
     for (const [channel] of notificationPlugin.createChannel.mock.calls) {
       expect(channel).toMatchObject({ visibility: -1 });
-      expect(channel.id).toMatch(/_v4$/);
+      expect(channel.id).toMatch(/_(v4|v5)$/);
     }
   });
 

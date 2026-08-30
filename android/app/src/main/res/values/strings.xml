@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">Test notification.</string>
     <string name="push_realm_channel_default">Default</string>
     <string name="push_realm_channel_default_description">System notification sound</string>
+    <string name="push_realm_channel_furin">Fūrin</string>
+    <string name="push_realm_channel_furin_description">Soft Japanese glass wind-bell</string>
     <string name="push_realm_channel_gentle">Gentle</string>
     <string name="push_realm_channel_gentle_description">Vibration only</string>
     <string name="push_realm_channel_silent">Silent</string>

@@ -19,7 +19,7 @@ import {
 // TYPES
 // ============================================
 
-export type NotificationSoundType = 'default' | 'gentle' | 'silent';
+export type NotificationSoundType = 'default' | 'furin' | 'gentle' | 'silent';
 export type NotificationSoundImportance = 1 | 2 | 3;
 export type NotificationSystemSurface = 'android' | 'ios' | 'web' | 'desktop';
 
@@ -71,6 +71,15 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
     importance: 3,
   },
   {
+    id: 'furin',
+    labelKey: 'soundFurin',
+    description: 'Soft Japanese glass wind-bell',
+    channelId: 'zenflow_furin_v5',
+    sound: 'zenflow_furin.wav',
+    vibrate: true,
+    importance: 3,
+  },
+  {
     id: 'gentle',
     labelKey: 'soundGentle',
     description: 'Soft vibration only',
@@ -106,6 +115,7 @@ export function buildNotificationChannelCopy(
 
   return {
     default: copyFor('default', 'Default', 'System default notification sound'),
+    furin: copyFor('furin', 'Fūrin', 'Soft Japanese glass wind-bell'),
     gentle: copyFor('gentle', 'Gentle', 'Soft vibration only'),
     silent: copyFor('silent', 'Silent', 'No sound or vibration'),
   };

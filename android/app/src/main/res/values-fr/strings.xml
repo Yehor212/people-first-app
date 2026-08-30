@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">Notification de test.</string>
     <string name="push_realm_channel_default">Par défaut</string>
     <string name="push_realm_channel_default_description">Son de notification système</string>
+    <string name="push_realm_channel_furin">Fūrin japonais</string>
+    <string name="push_realm_channel_furin_description">Douce clochette japonaise en verre</string>
     <string name="push_realm_channel_gentle">Doux</string>
     <string name="push_realm_channel_gentle_description">Vibration uniquement</string>
     <string name="push_realm_channel_silent">Silencieux</string>

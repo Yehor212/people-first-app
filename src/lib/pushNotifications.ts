@@ -112,7 +112,11 @@ function isValidRevocationCount(value: unknown): value is number {
 
 function getCurrentPushRealmPresentation(): {
   language: PushRealmLanguage;
-  channelId: "zenflow_default_v4" | "zenflow_gentle_v4" | "zenflow_silent_v4";
+  channelId:
+    | "zenflow_default_v4"
+    | "zenflow_furin_v5"
+    | "zenflow_gentle_v4"
+    | "zenflow_silent_v4";
 } {
   const storedLanguage = storageGetRaw(SK.LANGUAGE, "en");
   const language = isPushRealmLanguage(storedLanguage) ? storedLanguage : "en";

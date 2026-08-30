@@ -17,6 +17,7 @@ import {
 
 const expectedAssetIds = [
   "soft-air-veil",
+  "cloudlight-evening-loop",
   "orb-ambience",
   "diary-reflection-loop",
   "focus-forest",
@@ -46,6 +47,9 @@ describe("app audio asset manifest", () => {
         /air|water|rain|forest|fire|river|wind/,
       );
       expect((asset as { offlineStrategy?: string }).offlineStrategy, asset.id).toBe("runtime-cache");
+      expect(typeof (asset as { warmCacheOnStartup?: unknown }).warmCacheOnStartup, asset.id).toBe(
+        "boolean",
+      );
     }
   });
 
@@ -56,6 +60,9 @@ describe("app audio asset manifest", () => {
       "/people-first-app/sounds/soft-rain-veil.mp3",
     );
     expect(getAppAudioAssetSrc("soft-air-veil")).toContain("/sounds/soft-air-veil.mp3");
+    expect(getAppAudioAssetSrc("cloudlight-evening-loop")).toContain(
+      "/sounds/cloudlight-evening-loop.mp3",
+    );
     expect(getAppAudioAssetSrc("orb-ambience")).toContain("/sounds/gentle-water-bed.mp3");
     expect(getAppAudioAssetSrc("diary-reflection-loop")).toContain("/sounds/soft-rain-veil.mp3");
     expect(getAppAudioAsset("focus-forest")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-forest-deep.mp3");
@@ -160,6 +167,7 @@ describe("app audio asset manifest", () => {
   it("separates non-Hyperfocus ambience from the Hyperfocus focus library", () => {
     expect(APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS).toEqual([
       "soft-air-veil",
+      "cloudlight-evening-loop",
       "orb-ambience",
       "diary-reflection-loop",
     ]);
@@ -170,6 +178,19 @@ describe("app audio asset manifest", () => {
       expect(asset?.startsOnUserGesture, id).toBe(true);
       expect(asset?.respectsMasterVolume, id).toBe(true);
     }
+  });
+
+  it("keeps the long Cloudlight loop local and out of startup cache warming", () => {
+    expect(getAppAudioAsset("cloudlight-evening-loop")).toMatchObject({
+      family: "entry",
+      publicPath: "sounds/cloudlight-evening-loop.mp3",
+      startsOnUserGesture: true,
+      respectsMasterVolume: true,
+      warmCacheOnStartup: false,
+      comfortTexture: "air",
+      offlineStrategy: "runtime-cache",
+      platforms: APP_AUDIO_PLATFORMS,
+    });
   });
 
   it("keeps every approved action sound paired with non-audio feedback and a calm trigger policy", () => {

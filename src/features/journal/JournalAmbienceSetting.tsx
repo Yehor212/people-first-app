@@ -16,6 +16,7 @@ export function JournalAmbienceSetting({ tx }: { tx: Record<string, string> }) {
   const volume = canPlay ? Math.max(0, Math.min(1, audio.volume * 0.32)) : 0;
   const ambience = useUserStartedAmbienceAudio({
     audioRef,
+    ownerId: "diary-rain",
     canPlay,
     volume,
     mediaSessionTitle: tx.diaryAmbienceLabel || "Writing sound",

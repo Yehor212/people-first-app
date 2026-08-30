@@ -1,7 +1,40 @@
 {
-  "schemaVersion": 1,
-  "purpose": "ZenFlow non-Hyperfocus local ambience and feedback cues for entry/auth, orb, diary/settings, completed activities, milestones, and opt-in reminder previews.",
+  "schemaVersion": 2,
+  "purpose": "ZenFlow non-Hyperfocus local ambience, persistent opt-in app-entry music, and feedback cues for entry/auth, orb, diary/settings, completed activities, milestones, and reminder previews.",
   "generationPolicy": "First-party deterministic procedural synthesis. No third-party samples, recordings, stock loops, voices, or AI-generated audio inputs are used.",
+  "rights": {
+    "referenceResearch": {
+      "title": "Cloudbound Evening",
+      "creator": "3 Minute Escape",
+      "sourceUrl": "https://www.youtube.com/watch?v=cJvhJqgDbKI",
+      "publicMetadataObserved": {
+        "durationSeconds": 167,
+        "statedIntent": [
+          "relaxation",
+          "focus",
+          "emotional reset"
+        ]
+      },
+      "licenseBoundary": "No Creative Commons permission was identified; treat the upload as Standard YouTube License.",
+      "useBoundary": "high-level mood and app-entry background-music research only",
+      "sourceAudioImported": false,
+      "sourceAudioRetained": false,
+      "samplesCopied": false,
+      "melodyOrHarmonyTranscribed": false
+    },
+    "projectLicense": {
+      "status": "ASSET_SPECIFIC_PROPRIETARY_NOTICE",
+      "rootLicensePresent": false,
+      "copyrightNotice": "Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.",
+      "appliesTo": [
+        "cloudlight-evening-loop composition",
+        "cloudlight-evening-loop sound recording",
+        "cloudlight-evening-loop generator specification"
+      ],
+      "releaseRightsScope": "The Cloudlight Evening asset is first-party clean-room work with no external sample or recording license dependency; no repository-wide license is declared.",
+      "humanLegalReviewRequired": true
+    }
+  },
   "generatorScript": "scripts/generate-non-hyperfocus-audio.cjs",
   "encoder": {
     "name": "lamejs",
@@ -17,10 +50,10 @@
       "role": "Entry/auth ambience",
       "publicPath": "public/sounds/soft-air-veil.mp3",
       "deployDocsPath": "docs/sounds/soft-air-veil.mp3",
-      "sha256": "a7950002f23e33cb65398323f3bb8df22568af1091457e9bc828e304413cc517",
+      "sha256": "24977046de220f78d4412b73d38949cf4f1914c955c3e94cc9e31649d06a6577",
       "bytes": 1536417,
       "seed": "0x5a17a11",
-      "generator": "cyclic low-density value-noise air bed",
+      "generator": "deterministic band-limited air-noise bed with a loop crossfade",
       "parameters": {
         "family": "ambience",
         "sampleRate": 44100,
@@ -45,15 +78,234 @@
           "sampleRate": 44100,
           "channels": 2,
           "durationSeconds": 96,
-          "sourcePeak": 0.065205,
-          "sourceRms": 0.03,
-          "layerCounts": [
-            9,
-            57,
-            421
+          "sourcePeak": 0.28,
+          "sourceRms": 0.063965,
+          "synthesisProfile": {
+            "bands": [
+              [
+                120,
+                900,
+                0.34
+              ],
+              [
+                900,
+                5200,
+                0.66
+              ]
+            ],
+            "commonMix": 0.78,
+            "sideMix": 0.22,
+            "modulationDepth": 0.07,
+            "modulationControls": 37,
+            "modulationCycles": 17
+          },
+          "warmupSeconds": 1,
+          "crossfadeSeconds": 2,
+          "targetRms": 0.08,
+          "targetPeak": 0.28
+        }
+      }
+    },
+    {
+      "id": "cloudlight-evening-loop",
+      "fileName": "cloudlight-evening-loop.mp3",
+      "role": "Persistent opt-in app-entry background music",
+      "publicPath": "public/sounds/cloudlight-evening-loop.mp3",
+      "deployDocsPath": "docs/sounds/cloudlight-evening-loop.mp3",
+      "sha256": "d096c668ef6471f855b49c93bc5509ccbd63ac1fb93dc9af96ba3c7c9e65be40",
+      "bytes": 2400757,
+      "seed": "0xc10d1e57",
+      "deterministicSpec": "original-four-section-felt-piano-air-pad-circular-loop",
+      "generator": "deterministic original felt-piano, open-harmony, and air-pad circular composition",
+      "parameters": {
+        "family": "ambience",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled piano",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.041643,
+          "targetRms": 0.045,
+          "targetPeak": 0.22,
+          "tempoBpm": 64,
+          "bars": 40,
+          "sections": 4,
+          "chordSequence": [
+            "ebAdd9",
+            "cm9",
+            "abMaj7",
+            "bbSus2",
+            "ebAdd9",
+            "gm9",
+            "abMaj7",
+            "bbSus2",
+            "cm9",
+            "abMaj7",
+            "ebOverBb",
+            "bbSus2",
+            "gm9",
+            "cm9",
+            "fAdd9",
+            "bbSus2",
+            "abMaj7",
+            "bbSus2",
+            "gm9",
+            "cm9",
+            "abMaj7",
+            "fAdd9",
+            "bbSus2",
+            "bbSus2",
+            "ebAdd9",
+            "gm9",
+            "abMaj7",
+            "cm9",
+            "fAdd9",
+            "abMaj7",
+            "bbSus2",
+            "bbSus2",
+            "ebAdd9",
+            "cm9",
+            "abMaj7",
+            "bbSus2",
+            "gm9",
+            "fAdd9",
+            "abMaj7",
+            "bbSus2"
           ],
-          "targetRms": 0.03,
-          "targetPeak": 0.14
+          "melodyScaleMidi": [
+            63,
+            65,
+            67,
+            70,
+            72,
+            74,
+            75
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 0.55,
+                "degree": 2,
+                "lengthBeats": 1.35
+              },
+              {
+                "beat": 2.45,
+                "degree": 4,
+                "lengthBeats": 1.05
+              }
+            ],
+            [
+              {
+                "beat": 1.05,
+                "degree": 3,
+                "lengthBeats": 1.45
+              },
+              {
+                "beat": 3.15,
+                "degree": 1,
+                "lengthBeats": 0.65
+              }
+            ],
+            [
+              {
+                "beat": 0.35,
+                "degree": 4,
+                "lengthBeats": 1.15
+              },
+              {
+                "beat": 1.95,
+                "degree": 2,
+                "lengthBeats": 1.6
+              }
+            ],
+            [
+              {
+                "beat": 1.35,
+                "degree": 5,
+                "lengthBeats": 1.1
+              },
+              {
+                "beat": 2.95,
+                "degree": 3,
+                "lengthBeats": 0.85
+              }
+            ],
+            [
+              {
+                "beat": 0.75,
+                "degree": 1,
+                "lengthBeats": 1.7
+              },
+              {
+                "beat": 3.05,
+                "degree": 2,
+                "lengthBeats": 0.7
+              }
+            ],
+            [
+              {
+                "beat": 0.4,
+                "degree": 3,
+                "lengthBeats": 1.05
+              },
+              {
+                "beat": 1.85,
+                "degree": 6,
+                "lengthBeats": 1.55
+              }
+            ],
+            [
+              {
+                "beat": 1.1,
+                "degree": 4,
+                "lengthBeats": 1.25
+              },
+              {
+                "beat": 2.8,
+                "degree": 2,
+                "lengthBeats": 1
+              }
+            ],
+            [
+              {
+                "beat": 0.65,
+                "degree": 3,
+                "lengthBeats": 1.2
+              },
+              {
+                "beat": 2.35,
+                "degree": 0,
+                "lengthBeats": 1.4
+              }
+            ]
+          ],
+          "loopCrossfadeSeconds": 4,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
         }
       }
     },
@@ -63,10 +315,10 @@
       "role": "Orb ambience",
       "publicPath": "public/sounds/gentle-water-bed.mp3",
       "deployDocsPath": "docs/sounds/gentle-water-bed.mp3",
-      "sha256": "4a5ecd5087e8c24ea8145afe29a9a12029194157ffcb1a50eb0bc295b85d15e1",
+      "sha256": "b3063f286b32f638944ca3deaf55ed153b77b1f45e3904141f3a05a53df415ed",
       "bytes": 1536417,
       "seed": "0x6e71e5a7",
-      "generator": "cyclic soft-flow water bed without discrete impacts",
+      "generator": "deterministic band-limited soft-flow water bed with a loop crossfade",
       "parameters": {
         "family": "ambience",
         "sampleRate": 44100,
@@ -91,16 +343,31 @@
           "sampleRate": 44100,
           "channels": 2,
           "durationSeconds": 96,
-          "sourcePeak": 0.139545,
-          "sourceRms": 0.042,
-          "layerCounts": [
-            197,
-            719,
-            2503,
-            17
-          ],
-          "targetRms": 0.042,
-          "targetPeak": 0.18
+          "sourcePeak": 0.28,
+          "sourceRms": 0.0523,
+          "synthesisProfile": {
+            "bands": [
+              [
+                55,
+                480,
+                0.66
+              ],
+              [
+                480,
+                2600,
+                0.34
+              ]
+            ],
+            "commonMix": 0.52,
+            "sideMix": 0.48,
+            "modulationDepth": 0.13,
+            "modulationControls": 29,
+            "modulationCycles": 11
+          },
+          "warmupSeconds": 1,
+          "crossfadeSeconds": 2,
+          "targetRms": 0.07,
+          "targetPeak": 0.28
         }
       }
     },
@@ -110,10 +377,10 @@
       "role": "Diary/settings ambience",
       "publicPath": "public/sounds/soft-rain-veil.mp3",
       "deployDocsPath": "docs/sounds/soft-rain-veil.mp3",
-      "sha256": "45fa500caf66f1f0d42da5e5dfaa2656cb264e5ffe2318f7825a1f0b83d7648d",
+      "sha256": "634c82701272496bc098236ed65cb593598fc9bd0c761c3c8c0917dcb1220c78",
       "bytes": 1536417,
       "seed": "0x5017a1",
-      "generator": "cyclic soft rain sheet without thunder or impact spikes",
+      "generator": "deterministic band-limited rain-noise sheet with a loop crossfade",
       "parameters": {
         "family": "ambience",
         "sampleRate": 44100,
@@ -137,16 +404,31 @@
           "sampleRate": 44100,
           "channels": 2,
           "durationSeconds": 96,
-          "sourcePeak": 0.123724,
-          "sourceRms": 0.038,
-          "layerCounts": [
-            293,
-            1103,
-            3907,
-            19
-          ],
-          "targetRms": 0.038,
-          "targetPeak": 0.16
+          "sourcePeak": 0.26,
+          "sourceRms": 0.057914,
+          "synthesisProfile": {
+            "bands": [
+              [
+                180,
+                1600,
+                0.38
+              ],
+              [
+                1600,
+                7000,
+                0.62
+              ]
+            ],
+            "commonMix": 0.34,
+            "sideMix": 0.66,
+            "modulationDepth": 0.09,
+            "modulationControls": 43,
+            "modulationCycles": 19
+          },
+          "warmupSeconds": 1,
+          "crossfadeSeconds": 2,
+          "targetRms": 0.065,
+          "targetPeak": 0.26
         }
       }
     },
@@ -400,15 +682,18 @@
       "role": "Opt-in in-app reminder preview",
       "publicPath": "public/sounds/feedback/feedback-notification.mp3",
       "deployDocsPath": "docs/sounds/feedback/feedback-notification.mp3",
-      "sha256": "0bcde76f7476acaaaac9eafd34a6ac755a8fba1a45aed39827d824a0ffe5ddc0",
-      "bytes": 6269,
-      "deterministicSpec": "fixed-note-sequence-with-cosine-envelopes",
-      "generator": "deterministic single-note gentle reminder cue with cosine envelope",
+      "sha256": "abe0930d50f944cb2595752eeb87749ee6d823d144b5aadb4227c7ee9e713e69",
+      "bytes": 15464,
+      "nativeAndroidPath": "android/app/src/main/res/raw/zenflow_furin.wav",
+      "nativeAndroidSha256": "9bd35e658229fd9109088764eec9cfca18253ae520ca6e0c5e4b4a014f223c16",
+      "nativeAndroidBytes": 162332,
+      "deterministicSpec": "fixed-modal-glass-bell-with-cosine-attack-and-exponential-decay",
+      "generator": "deterministic clean-room fūrin-style modal glass-bell cue",
       "parameters": {
         "family": "feedback",
         "sampleRate": 44100,
         "channels": 2,
-        "durationSeconds": 0.34,
+        "durationSeconds": 0.92,
         "encoder": "lamejs",
         "encoderVersion": "1.2.1",
         "encoderKbps": 128,
@@ -416,28 +701,68 @@
         "exclusions": [
           "voice",
           "sampled audio",
-          "sharp ping",
+          "stock audio",
           "alarm",
           "siren",
           "bass hit",
-          "long tail"
+          "melody"
         ],
         "noThirdPartySamples": true,
         "noModelOrAiGeneratedAudioInput": true,
         "sourceSignalMetrics": {
           "sampleRate": 44100,
           "channels": 2,
-          "durationSeconds": 0.34,
-          "sourcePeak": 0.062965,
-          "sourceRms": 0.03,
-          "targetRms": 0.03,
-          "targetPeak": 0.12,
-          "notes": [
+          "durationSeconds": 0.92,
+          "sourcePeak": 0.150022,
+          "sourceRms": 0.04,
+          "targetRms": 0.04,
+          "targetPeak": 0.18,
+          "modes": [
             {
-              "frequency": 587.33,
-              "start": 0.02,
-              "length": 0.25,
-              "level": 0.82
+              "frequency": 1180,
+              "level": 0.11,
+              "decaySeconds": 0.26,
+              "pan": -0.08
+            },
+            {
+              "frequency": 2380,
+              "level": 0.2,
+              "decaySeconds": 0.38,
+              "pan": 0.06
+            },
+            {
+              "frequency": 3375,
+              "level": 1,
+              "decaySeconds": 0.72,
+              "pan": -0.03
+            },
+            {
+              "frequency": 3412,
+              "level": 0.08,
+              "decaySeconds": 0.48,
+              "pan": 0.03
+            },
+            {
+              "frequency": 5025,
+              "level": 0.16,
+              "decaySeconds": 0.28,
+              "pan": 0.1
+            },
+            {
+              "frequency": 6810,
+              "level": 0.05,
+              "decaySeconds": 0.16,
+              "pan": -0.1
+            }
+          ],
+          "strikes": [
+            {
+              "start": 0.012,
+              "level": 1
+            },
+            {
+              "start": 0.235,
+              "level": 0.22
             }
           ]
         }

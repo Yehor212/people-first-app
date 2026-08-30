@@ -37,6 +37,7 @@ vi.mock('../storageKeys', () => ({
     AUDIO_VOLUME: 'zenflow_audio_volume',
     AUDIO_COMFORT: 'zenflow_audio_comfort',
     AUDIO_COMFORT_FEEDBACK: 'zenflow_audio_comfort_feedback',
+    HYPERFOCUS_TONE_CUTOFF_KHZ: 'zenflow_hyperfocus_tone_cutoff_khz',
   },
 }));
 
@@ -63,6 +64,8 @@ import {
   playNotificationPreview,
   playFeedbackPreview,
   preloadFeedbackCues,
+  getHyperfocusToneCutoffKhz,
+  setHyperfocusToneCutoffKhz,
 } from '../audioManager';
 import * as audioManager from '../audioManager';
 
@@ -298,6 +301,49 @@ describe('Volume control', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('Hyperfocus tone cutoff', () => {
+  it('defaults to the neutral 16 kHz cutoff and exposes it in the settings snapshot', () => {
+    expect(getHyperfocusToneCutoffKhz()).toBe(16);
+    expect(audioManager.getAudioSettings().hyperfocusToneCutoffKhz).toBe(16);
+  });
+
+  it('normalizes and durably persists the cutoff before publishing the new value', () => {
+    const listener = vi.fn();
+    window.addEventListener('zenflow-audio-settings-change', listener);
+
+    const saved = setHyperfocusToneCutoffKhz(4.26);
+
+    expect(saved).toBe(true);
+    expect(storageSetRaw).toHaveBeenCalledWith('zenflow_hyperfocus_tone_cutoff_khz', '4.5');
+    expect(getHyperfocusToneCutoffKhz()).toBe(4.5);
+    expect(listener).toHaveBeenCalledTimes(1);
+    window.removeEventListener('zenflow-audio-settings-change', listener);
+  });
+
+  it('restores and normalizes the persisted cutoff during initialization', () => {
+    mockStorage.zenflow_hyperfocus_tone_cutoff_khz = '2.7';
+
+    initAudioManager();
+
+    expect(getHyperfocusToneCutoffKhz()).toBe(3);
+  });
+
+  it('keeps the previous cutoff and emits no event when persistence fails', () => {
+    mockStorage.zenflow_hyperfocus_tone_cutoff_khz = '8';
+    initAudioManager();
+    const listener = vi.fn();
+    window.addEventListener('zenflow-audio-settings-change', listener);
+    storageWritesSucceed = false;
+
+    const saved = setHyperfocusToneCutoffKhz(5);
+
+    expect(saved).toBe(false);
+    expect(getHyperfocusToneCutoffKhz()).toBe(8);
+    expect(listener).not.toHaveBeenCalled();
+    window.removeEventListener('zenflow-audio-settings-change', listener);
   });
 });
 

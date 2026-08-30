@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "status": "REVIEW_ONLY_NOT_ADMITTED",
+  "verdicts": ["PASS", "FAIL", "ABSTAIN", "UNVERIFIED"],
+  "aiMaySetHumanPass": false,
+  "semanticWindowSeconds": 10,
+  "semanticHopSeconds": 5,
+  "analysisTargetRmsDbfs": -24,
+  "scopes": ["source", "base", "delivery"],
+  "universalHardNegativeEvents": [
+    "speech or human voice",
+    "music or musical instrument",
+    "alarm or siren",
+    "vehicle or engine",
+    "machinery or tools",
+    "thunder or explosion",
+    "footsteps or crowd",
+    "hard isolated impact",
+    "notification-like cue",
+    "dominant foreground wildlife"
+  ],
+  "families": [
+    {
+      "id": "forest",
+      "positivePrompts": [
+        "a continuous natural forest ambience with trees and foliage",
+        "a wooded outdoor environment with leaves and distant natural ambience",
+        "a sustained woodland soundscape where the forest environment is audible"
+      ],
+      "siblingNegatives": ["rain", "ocean", "fireplace", "river", "wind"],
+      "hardNegatives": [
+        "isolated foreground birds without a forest ambience",
+        "a village or road with traffic",
+        "wind alone without a wooded environment"
+      ]
+    },
+    {
+      "id": "rain",
+      "positivePrompts": [
+        "continuous natural rainfall",
+        "a sustained rain soundscape with falling water droplets",
+        "steady outdoor rain without another dominant scene"
+      ],
+      "siblingNegatives": ["forest", "ocean", "fireplace", "river", "wind"],
+      "hardNegatives": [
+        "thunderstorm with thunder",
+        "isolated water drops without sustained rain",
+        "street or vehicle ambience dominating the rainfall"
+      ]
+    },
+    {
+      "id": "ocean",
+      "positivePrompts": [
+        "continuous ocean waves and surf",
+        "a sustained sea wave soundscape at a shoreline",
+        "repeating natural waves from the sea or ocean"
+      ],
+      "siblingNegatives": ["forest", "rain", "fireplace", "river", "wind"],
+      "hardNegatives": [
+        "a river or stream",
+        "a waterfall",
+        "wind without audible sea waves"
+      ]
+    },
+    {
+      "id": "fireplace",
+      "positivePrompts": [
+        "a sustained indoor fireplace burning wood",
+        "continuous fireplace embers and natural crackle",
+        "a realistic hearth fire inside a room"
+      ],
+      "siblingNegatives": ["forest", "rain", "ocean", "river", "wind"],
+      "hardNegatives": [
+        "an outdoor campfire ambience",
+        "an explosion or firework",
+        "isolated impacts without a sustained fireplace"
+      ]
+    },
+    {
+      "id": "river",
+      "positivePrompts": [
+        "a continuous natural river or stream",
+        "sustained flowing freshwater in a river channel",
+        "a steady stream or river water soundscape"
+      ],
+      "siblingNegatives": ["forest", "rain", "ocean", "fireplace", "wind"],
+      "hardNegatives": [
+        "ocean surf or sea waves",
+        "a waterfall dominating the scene",
+        "a dam or machine dominating the water"
+      ]
+    },
+    {
+      "id": "wind",
+      "positivePrompts": [
+        "continuous natural wind and moving air",
+        "a sustained outdoor wind soundscape",
+        "steady gusts of natural wind without another dominant scene"
+      ],
+      "siblingNegatives": ["forest", "rain", "ocean", "fireplace", "river"],
+      "hardNegatives": [
+        "a village or vehicle ambience",
+        "a whistle or alarm",
+        "forest wildlife dominating the wind"
+      ]
+    }
+  ]
+}

@@ -48,6 +48,7 @@ public class PushDeliveryPermitTest {
         }
         for (String channel : List.of(
             "zenflow_default_v4",
+            "zenflow_furin_v5",
             "zenflow_gentle_v4",
             "zenflow_silent_v4"
         )) {

@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
+import { BackgroundMusicToggle } from "./BackgroundMusicToggle";
 
 interface SidebarV2Props {
   activePage: NavV2Page;
@@ -174,6 +175,9 @@ export const SidebarV2 = memo(function SidebarV2({
       {/* Footer: theme toggle + settings + collapse toggle */}
       <div className="mt-auto flex flex-col gap-1 p-3 border-t border-border/40">
         <ThemeToggleV2 collapsed={collapsed} />
+        <BackgroundMusicToggle
+          presentation={collapsed ? "sidebar-collapsed" : "sidebar-expanded"}
+        />
         {renderItem(settingsItem, true)}
         {!collapseLocked && (
           <button

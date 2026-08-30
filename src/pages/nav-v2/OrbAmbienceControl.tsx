@@ -29,6 +29,7 @@ export function OrbAmbienceControl({ audioSrc, tx }: OrbAmbienceControlProps) {
 
   const ambiencePlayback = useUserStartedAmbienceAudio({
     audioRef: ambienceAudioRef,
+    ownerId: "orb-water",
     canPlay: canPlayOrbAmbience,
     volume: ambienceVolume,
     mediaSessionTitle: ambienceBaseLabel,

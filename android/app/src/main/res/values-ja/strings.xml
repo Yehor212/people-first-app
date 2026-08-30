@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">テスト通知。</string>
     <string name="push_realm_channel_default">デフォルト</string>
     <string name="push_realm_channel_default_description">システム通知音</string>
+    <string name="push_realm_channel_furin">風鈴</string>
+    <string name="push_realm_channel_furin_description">やさしいガラスの風鈴</string>
     <string name="push_realm_channel_gentle">優しい</string>
     <string name="push_realm_channel_gentle_description">振動のみ</string>
     <string name="push_realm_channel_silent">サイレント</string>

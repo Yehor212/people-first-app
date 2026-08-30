@@ -14,6 +14,7 @@ const SPEC_PATH = "docs/audio/hyperfocus-three-level-generation-spec.json";
 const PUBLIC_ASSET_DIR = "public/sounds/hyperfocus";
 const PILOT_VARIANT_ID = "fireplace:soft";
 const PROVENANCE_PATH = "docs/audio/hyperfocus-generated-audio-provenance.json";
+const RUNTIME_V2_MANIFEST_PATH = "docs/audio/hyperfocus-runtime-v2-manifest.json";
 const GENERATION_CREDITS_PATH = "output/audio-qc/hyperfocus-generation-credits-current.json";
 const GENERATION_AUTHORIZATION_PATH = "output/audio-qc/hyperfocus-generation-authorization-current.json";
 const GENERATION_DECISION_PATH = "output/audio-qc/hyperfocus-generation-decision-current.json";
@@ -74,6 +75,7 @@ const LIMITS = Object.freeze({
   maxClippedSamples: 0,
   maxStartEndRmsDeltaDb: 6,
   maxSeamMeanAbsDiff: 0.05,
+  maxBoundaryJump: 0.05,
 });
 
 function readJson(file) {
@@ -1535,6 +1537,14 @@ function readWavPcm16Metrics(file) {
   for (let index = 0; index < seamSamples; index += 1) {
     seamDiff += Math.abs(samples[index] - samples[sampleCount - seamSamples + index]);
   }
+  let boundaryJump = 0;
+  const finalFrameStart = sampleCount - channels;
+  for (let channel = 0; channel < channels; channel += 1) {
+    boundaryJump = Math.max(
+      boundaryJump,
+      Math.abs(samples[channel] - samples[finalFrameStart + channel]),
+    );
+  }
 
   return {
     sampleRate,
@@ -1545,6 +1555,7 @@ function readWavPcm16Metrics(file) {
     startRmsDbfs: dbfsFromMeanSquare(startSquares / windowSamples),
     endRmsDbfs: dbfsFromMeanSquare(endSquares / windowSamples),
     seamMeanAbsDiff: seamDiff / seamSamples,
+    boundaryJump,
   };
 }
 
@@ -1603,8 +1614,11 @@ function evaluateHyperfocusAudioMetrics(metrics) {
   if (Math.abs(metrics.startRmsDbfs - metrics.endRmsDbfs) > LIMITS.maxStartEndRmsDeltaDb) {
     issues.push(issue("end-fade", "Start/end RMS differs by " + Math.abs(metrics.startRmsDbfs - metrics.endRmsDbfs).toFixed(2) + " dB; expected <= " + LIMITS.maxStartEndRmsDeltaDb + " dB."));
   }
-  if (metrics.seamMeanAbsDiff > LIMITS.maxSeamMeanAbsDiff) {
-    issues.push(issue("bad-loop-seam", "Loop seam mean abs diff is " + metrics.seamMeanAbsDiff.toFixed(6) + "; expected <= " + LIMITS.maxSeamMeanAbsDiff + "."));
+  const boundaryJump = Number.isFinite(metrics.boundaryJump)
+    ? metrics.boundaryJump
+    : metrics.seamMeanAbsDiff;
+  if (boundaryJump > LIMITS.maxBoundaryJump) {
+    issues.push(issue("bad-loop-seam", "Loop boundary jump is " + boundaryJump.toFixed(6) + "; expected <= " + LIMITS.maxBoundaryJump + "."));
   }
 
   return issues;
@@ -1762,6 +1776,73 @@ function validateHyperfocusAssetSet({ rootDir = DEFAULT_ROOT, skipAudioProbe = f
   }
 
   return { ok: issues.length === 0, issues };
+}
+
+function validateRuntimeV2Manifest({ rootDir = DEFAULT_ROOT } = {}) {
+  const manifestFile = path.join(rootDir, RUNTIME_V2_MANIFEST_PATH);
+  const issues = [];
+  if (!fs.existsSync(manifestFile) || !fs.statSync(manifestFile).isFile()) {
+    return {
+      ok: false,
+      issues: [issue("missing-runtime-v2-manifest", "Missing " + RUNTIME_V2_MANIFEST_PATH + ".")],
+    };
+  }
+  let manifest;
+  try {
+    manifest = readJson(manifestFile);
+  } catch (error) {
+    return {
+      ok: false,
+      issues: [issue("invalid-runtime-v2-manifest", String(error))],
+    };
+  }
+  const assets = Array.isArray(manifest.assets) ? manifest.assets : [];
+  const expected = getExpectedHyperfocusAssets({ rootDir });
+  if (
+    manifest.schemaVersion !== 2 ||
+    manifest.status !== "INTEGRATED_REVIEW_PENDING" ||
+    manifest.runtimePromotionAllowed !== false ||
+    manifest.assetCount !== 18 ||
+    manifest.aiStatus !== "TRIAL_ONLY_NOT_ADMITTED" ||
+    manifest.humanLoopReview !== "UNVERIFIED" ||
+    manifest.storeReleaseStatus !== "STOP" ||
+    assets.length !== 18
+  ) {
+    issues.push(issue("runtime-v2-boundary-mismatch", "Runtime v2 manifest review/release boundary is invalid."));
+  }
+  if (JSON.stringify(manifest).includes("Mixkit")) {
+    issues.push(issue("runtime-v2-provider-drift", "Runtime v2 manifest still references Mixkit."));
+  }
+  const byVariant = new Map(assets.map((asset) => [asset.variantId, asset]));
+  for (const expectedAsset of expected) {
+    const variantId = expectedAsset.familyId + ":" + expectedAsset.levelId;
+    const asset = byVariant.get(variantId);
+    const publicFile = path.join(rootDir, expectedAsset.relativePath);
+    if (
+      !asset ||
+      asset.publicPath !== expectedAsset.publicPath ||
+      asset.provider !== "BigSoundBank / LaSonotheque" ||
+      asset.licenseId !== "CC0-1.0" ||
+      !Array.isArray(asset.operations) ||
+      asset.operations.join("|") !== [
+        "decode-pcm",
+        "equal-power-loop-crossfade",
+        "quiet-boundary-rotate",
+        "repeat-exactly-twice",
+        "linked-gain",
+        "safety-peak-limit",
+        "encode-mp3",
+      ].join("|") ||
+      !fs.existsSync(publicFile) ||
+      asset.sha256 !== sha256File(publicFile)
+    ) {
+      issues.push(issue("runtime-v2-asset-mismatch", "Runtime v2 asset mismatch for " + variantId + ".", { variantId }));
+    }
+  }
+  if (byVariant.size !== 18) {
+    issues.push(issue("runtime-v2-inventory-mismatch", "Runtime v2 manifest must contain 18 unique variants."));
+  }
+  return { ok: issues.length === 0, issues, assetCount: assets.length };
 }
 
 function buildHyperfocusAudioQcReport({ rootDir = DEFAULT_ROOT, generatedAt = new Date().toISOString(), skipAudioProbe = false, probeAudioFile: probe = probeAudioFile } = {}) {
@@ -4163,6 +4244,18 @@ async function main() {
     return;
   }
 
+  const runtimeV2Result = path.resolve(rootDir) === path.resolve(DEFAULT_ROOT)
+    ? validateRuntimeV2Manifest({ rootDir })
+    : { ok: true, issues: [] };
+  if (!runtimeV2Result.ok) {
+    console.error("[hyperfocus-audio-qc] FAIL - " + runtimeV2Result.issues.length + " runtime v2 issue(s).");
+    for (const foundIssue of runtimeV2Result.issues) {
+      console.error("- " + foundIssue.code + ": " + foundIssue.message);
+    }
+    process.exitCode = 1;
+    return;
+  }
+
   const result = validateHyperfocusAssetSet({ rootDir, skipAudioProbe });
   if (result.ok) {
     console.log("[hyperfocus-audio-qc] PASS - " + getExpectedHyperfocusAssets({ rootDir }).length + " generated assets passed.");
@@ -4183,6 +4276,7 @@ module.exports = {
   getExpectedHyperfocusAssets,
   parseAfinfo,
   validateGeminiProvenanceForAsset,
+  validateRuntimeV2Manifest,
   writeGeneratedAudioProvenanceEntry,
   promoteCandidateAudioAsset,
   promoteCandidateAudioBatch,

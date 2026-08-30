@@ -16,6 +16,7 @@ export type PushRealmLanguage = (typeof PUSH_REALM_LANGUAGES)[number];
 
 export const PUSH_REALM_CHANNEL_IDS = [
   "zenflow_default_v4",
+  "zenflow_furin_v5",
   "zenflow_gentle_v4",
   "zenflow_silent_v4",
 ] as const;

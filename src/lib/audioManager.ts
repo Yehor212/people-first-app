@@ -19,6 +19,10 @@ import {
   type AppAudioFeedbackSoundType,
 } from '@/lib/appAudioAssets';
 import { canPlayFeedbackSound, consumeAudioFeedbackBudget } from './audioComfort';
+import {
+  HYPERFOCUS_TONE_DEFAULT_KHZ,
+  normalizeHyperfocusToneKhz,
+} from './hyperfocusTone';
 
 export type SoundType = 'success' | 'complete' | 'streak' | 'milestone' | 'levelUp' | 'notification';
 
@@ -29,12 +33,14 @@ export interface AudioSettingsSnapshot {
   volume: number;
   feedbackSoundsEnabled: boolean;
   canPlayFeedback: boolean;
+  hyperfocusToneCutoffKhz: number;
 }
 
 interface AudioManagerState {
   context: AudioContext | null;
   isMuted: boolean;
   volume: number;
+  hyperfocusToneCutoffKhz: number;
   activeTimeouts: number[];
 }
 
@@ -42,6 +48,7 @@ const state: AudioManagerState = {
   context: null,
   isMuted: false,
   volume: 0.3,
+  hyperfocusToneCutoffKhz: HYPERFOCUS_TONE_DEFAULT_KHZ,
   activeTimeouts: [],
 };
 
@@ -74,6 +81,7 @@ function getAudioSettingsSnapshot(): AudioSettingsSnapshot {
     volume: state.volume,
     feedbackSoundsEnabled: canPlayFeedback,
     canPlayFeedback,
+    hyperfocusToneCutoffKhz: state.hyperfocusToneCutoffKhz,
   };
 }
 
@@ -108,7 +116,8 @@ export function subscribeAudioSettings(
   const handleStorage = (event: StorageEvent) => {
     if (
       event.key !== SK.AUDIO_MUTED &&
-      event.key !== SK.AUDIO_VOLUME
+      event.key !== SK.AUDIO_VOLUME &&
+      event.key !== SK.HYPERFOCUS_TONE_CUTOFF_KHZ
     ) {
       return;
     }
@@ -562,6 +571,18 @@ export function getVolume(): number {
   return state.volume;
 }
 
+export function setHyperfocusToneCutoffKhz(value: number): boolean {
+  const nextValue = normalizeHyperfocusToneKhz(value);
+  if (!storageSetRaw(SK.HYPERFOCUS_TONE_CUTOFF_KHZ, nextValue.toString())) return false;
+  state.hyperfocusToneCutoffKhz = nextValue;
+  emitAudioSettingsChange();
+  return true;
+}
+
+export function getHyperfocusToneCutoffKhz(): number {
+  return state.hyperfocusToneCutoffKhz;
+}
+
 // Initialize from localStorage
 export function initAudioManager(): void {
   const mutedStr = storageGetRaw(SK.AUDIO_MUTED);
@@ -571,6 +592,10 @@ export function initAudioManager(): void {
   state.volume = volumeStr
     ? safeParseFloat(volumeStr, DEFAULT_AUDIO_VOLUME, 0, 1)
     : DEFAULT_AUDIO_VOLUME;
+
+  state.hyperfocusToneCutoffKhz = normalizeHyperfocusToneKhz(
+    storageGetRaw(SK.HYPERFOCUS_TONE_CUTOFF_KHZ),
+  );
 }
 
 // Resume context on user interaction (required for mobile)

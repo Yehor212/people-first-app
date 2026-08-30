@@ -149,6 +149,10 @@ describe("Android delivery realm", () => {
       process.cwd(),
       "android/app/src/main/java/com/zenflow/app/PushRealmPlugin.java",
     );
+    const channelContractPath = resolve(
+      process.cwd(),
+      "android/app/src/main/java/com/zenflow/app/NotificationChannelContract.java",
+    );
 
     expect(manifest).toContain(
       'android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"',
@@ -157,13 +161,18 @@ describe("Android delivery realm", () => {
     expect(manifest).toContain('android:name=".ZenFlowMessagingService"');
     expect(existsSync(servicePath)).toBe(true);
     expect(existsSync(pluginPath)).toBe(true);
+    expect(existsSync(channelContractPath)).toBe(true);
 
     const service = readFileSync(servicePath, "utf8");
+    const channelContract = readFileSync(channelContractPath, "utf8");
     expect(service).toContain("PushDeliveryPermit.executeAuthorized(");
     expect(service).toContain("displayRealmBoundNotification");
     expect(service).toContain("PushNotificationsPlugin.sendRemoteMessage(remoteMessage)");
     expect(service).toContain("PushNotificationsPlugin.onNewToken(token)");
-    expect(service).toContain("NotificationManager.IMPORTANCE_MIN");
+    expect(service).toContain("NotificationChannelContract.profileFor(channelId)");
+    expect(channelContract).toContain("NotificationManager.IMPORTANCE_MIN");
+    expect(channelContract).toContain('case "zenflow_furin_v5"');
+    expect(channelContract).toContain('"zenflow_furin"');
     expect(service).toContain("channelNameResource(channelId)");
     expect(service).toContain("R.mipmap.ic_launcher_foreground");
     expect(service).toContain("NotificationCompat.VISIBILITY_SECRET");
@@ -203,6 +212,8 @@ describe("Android delivery realm", () => {
       expect(resources).toContain('name="push_realm_channel_default_description"');
       expect(resources).toContain('name="push_realm_channel_gentle"');
       expect(resources).toContain('name="push_realm_channel_gentle_description"');
+      expect(resources).toContain('name="push_realm_channel_furin"');
+      expect(resources).toContain('name="push_realm_channel_furin_description"');
       expect(resources).toContain('name="push_realm_channel_silent"');
       expect(resources).toContain('name="push_realm_channel_silent_description"');
     }

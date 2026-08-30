@@ -10,6 +10,7 @@ import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
+import { BackgroundMusicToggle } from "./BackgroundMusicToggle";
 
 interface DrawerV2Props {
   open: boolean;
@@ -407,6 +408,9 @@ export const DrawerV2 = memo(function DrawerV2({
             data-testid="drawer-v2-theme-switcher"
           >
             <ThemeToggleV2 testId="drawer-v2-theme-toggle" presentation="drawer" />
+          </div>
+          <div className="mb-2">
+            <BackgroundMusicToggle presentation="drawer" />
           </div>
           <button
             type="button"

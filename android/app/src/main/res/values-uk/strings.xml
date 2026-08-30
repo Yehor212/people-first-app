@@ -30,6 +30,8 @@
     <string name="push_realm_test_body">Тестове повідомлення.</string>
     <string name="push_realm_channel_default">За замовчуванням</string>
     <string name="push_realm_channel_default_description">Системний звук сповіщення</string>
+    <string name="push_realm_channel_furin">Фурін</string>
+    <string name="push_realm_channel_furin_description">М’який японський скляний дзвіночок</string>
     <string name="push_realm_channel_gentle">М’який</string>
     <string name="push_realm_channel_gentle_description">Тільки вібрація</string>
     <string name="push_realm_channel_silent">Тихий</string>

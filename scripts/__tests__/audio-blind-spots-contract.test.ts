@@ -26,17 +26,40 @@ describe("audio blind-spot release contracts", () => {
 
   it("caches shipped app audio for installed PWA offline reuse with bounded quota", () => {
     const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
 
-    expect(serviceWorker).toContain("zenflow-runtime-audio");
-    expect(serviceWorker).toContain('request.destination === "audio"');
-    expect(serviceWorker).toContain('url.pathname.includes("/sounds/")');
+    expect(serviceWorker).toContain("RUNTIME_AUDIO_CACHE_NAME");
+    expect(serviceWorker).toContain(
+      "isRuntimeAudioPath(url.pathname, request.destination)",
+    );
+    expect(cacheContract).toContain('destination === "audio"');
+    expect(cacheContract).toContain('localPath.includes("/sounds/")');
     expect(serviceWorker).toContain("maxEntries: 32");
     expect(serviceWorker).toContain("purgeOnQuotaError: true");
+  });
+
+  it("retires only the stale pre-v2 audio cache during service-worker activation", () => {
+    const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
+
+    expect(cacheContract).toContain('RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v2"');
+    expect(cacheContract).toContain('"zenflow-runtime-audio"');
+    expect(serviceWorker).toContain("selectRetiredRuntimeAudioCaches");
+    expect(serviceWorker).toContain("caches.delete(cacheName)");
+    expect(serviceWorker).not.toContain('caches.delete("zenflow-runtime-assets")');
   });
 
 
   it("serves shipped PWA audio from a full-response-backed range-aware cache", () => {
     const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
+    const appAudioAssets = read("src/lib/appAudioAssets.ts");
+    const hyperfocusManifest = read("src/lib/hyperfocusGeneratedAudioManifest.ts");
+    const cloudlightStart = appAudioAssets.indexOf('"cloudlight-evening-loop"');
+    const cloudlightEntry = appAudioAssets.slice(
+      cloudlightStart,
+      appAudioAssets.indexOf("),", cloudlightStart) + 2,
+    );
 
     expect(serviceWorker).toContain('workbox-range-requests');
     expect(serviceWorker).toContain('new RangeRequestsPlugin()');
@@ -46,16 +69,37 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).not.toContain('statuses: [200, 206]');
     expect(serviceWorker).toContain('APP_AUDIO_SW_CACHE_PATHS');
     expect(serviceWorker).toContain('warmRuntimeAudioCache');
-    expect(serviceWorker).toContain('sounds/soft-air-veil.mp3');
-    expect(serviceWorker).toContain('sounds/gentle-water-bed.mp3');
-    expect(serviceWorker).toContain('sounds/soft-rain-veil.mp3');
-    expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-forest-soft.mp3');
-    expect(serviceWorker).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-success.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-complete.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-streak.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-milestone.mp3');
-    expect(serviceWorker).toContain('sounds/feedback/feedback-notification.mp3');
+    expect(cacheContract).toContain(
+      'APP_AUDIO_ASSETS.filter((asset) => asset.warmCacheOnStartup).map',
+    );
+    expect(cacheContract).toContain('APP_AUDIO_FEEDBACK_EVENTS.map');
+    expect(cacheContract).toContain('HYPERFOCUS_GENERATED_AUDIO_MANIFEST');
+    expect(appAudioAssets).toContain('sounds/soft-air-veil.mp3');
+    expect(cloudlightStart).toBeGreaterThanOrEqual(0);
+    expect(cloudlightEntry).toContain("false");
+    expect(appAudioAssets).toContain('sounds/gentle-water-bed.mp3');
+    expect(appAudioAssets).toContain('sounds/soft-rain-veil.mp3');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("success"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("complete"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("streak"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("milestone"');
+    expect(appAudioAssets).toContain('makeFeedbackEvent("notification"');
+    expect(hyperfocusManifest).toContain('sounds/hyperfocus/hyperfocus-forest-soft.mp3');
+    expect(hyperfocusManifest).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
+  });
+
+  it("routes explicit Cloudlight intent through a validated full-200 service-worker fill", () => {
+    const serviceWorker = read("src/sw.ts");
+    const cacheContract = read("src/lib/runtimeAudioCache.ts");
+    const backgroundMusic = read("src/hooks/useAppBackgroundMusic.ts");
+
+    expect(cacheContract).toContain('APP_AUDIO_INTENT_CACHE_PATHS');
+    expect(cacheContract).toContain('response.status !== 200');
+    expect(serviceWorker).toContain('"CACHE_RUNTIME_AUDIO"');
+    expect(serviceWorker).toContain('cacheRuntimeAudioOnIntent');
+    expect(serviceWorker).toContain('event.data.publicPath');
+    expect(serviceWorker).toContain('event.waitUntil(');
+    expect(backgroundMusic).toContain('requestRuntimeAudioCacheOnIntent');
   });
 
   it("keeps shipped audio cache warming out of the blocking service-worker install path", () => {
@@ -129,17 +173,17 @@ describe("audio blind-spot release contracts", () => {
     expect(driftWorkflow).toContain("cmd: npm run check:app-audio");
   });
 
-  it("keeps third-party notices aligned with first-party ambience and Hyperfocus MixKit provenance", () => {
+  it("keeps third-party notices aligned with the current BigSoundBank CC0 Hyperfocus runtime", () => {
     const notices = read("THIRD_PARTY_NOTICES.md");
 
     expect(notices).toContain("First-party generated audio");
     expect(notices).toContain("scripts/generate-non-hyperfocus-audio.cjs");
     expect(notices).toContain("lamejs");
-    expect(notices).toContain("MixKit — Hyperfocus Nature Sound Effects");
-    expect(notices).toContain("BigSoundBank / LaSonotheque — Hyperfocus Fireplace Sound Effects");
+    expect(notices).not.toContain("MixKit — Hyperfocus Nature Sound Effects");
+    expect(notices).toContain("BigSoundBank / LaSonotheque — Hyperfocus CC0 Nature Sound Effects");
     expect(notices).toContain("src/lib/hyperfocusGeneratedAudioManifest.ts");
     expect(notices).toContain("docs/audio/hyperfocus-generated-audio-provenance.json");
-    expect(notices).toContain("https://mixkit.co/license/");
+    expect(notices).toContain("docs/audio/hyperfocus-runtime-v2-manifest.json");
     expect(notices).toContain("https://bigsoundbank.com/licenses.html");
     expect(notices).not.toContain("mixkit-small-waves-harbor-rocks-1208.wav");
   });

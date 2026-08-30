@@ -22,6 +22,7 @@ export interface AppAudioAsset {
   respectsMasterVolume: boolean;
   comfortTexture: AppAudioComfortTexture;
   offlineStrategy: AppAudioOfflineStrategy;
+  warmCacheOnStartup: boolean;
   platforms: readonly AppAudioPlatform[];
 }
 
@@ -82,6 +83,7 @@ function makeAsset(
   fallbackLabel: string,
   comfortTexture: AppAudioComfortTexture,
   labelKey?: string,
+  warmCacheOnStartup = true,
 ): AppAudioAsset {
   return {
     id,
@@ -94,6 +96,7 @@ function makeAsset(
     respectsMasterVolume: true,
     comfortTexture,
     offlineStrategy: "runtime-cache",
+    warmCacheOnStartup,
     platforms: allPlatforms,
   };
 }
@@ -138,6 +141,15 @@ function makeFeedbackEvent(
 
 export const APP_AUDIO_ASSETS = [
   makeAsset("soft-air-veil", "entry", "sounds/soft-air-veil.mp3", "Soft air", "air", "authMeasuredBreathLabel"),
+  makeAsset(
+    "cloudlight-evening-loop",
+    "entry",
+    "sounds/cloudlight-evening-loop.mp3",
+    "Cloudlight Evening",
+    "air",
+    undefined,
+    false,
+  ),
   makeAsset("orb-ambience", "orb", "sounds/gentle-water-bed.mp3", "Gentle water", "water", "orbAmbienceLabel"),
   makeAsset("diary-reflection-loop", "diary", "sounds/soft-rain-veil.mp3", "Soft rain", "rain", "diaryAmbienceLabel"),
   makeAsset("focus-forest", "focus", "sounds/hyperfocus/hyperfocus-forest-deep.mp3", "Forest birds ambience", "forest"),
@@ -152,6 +164,7 @@ export type AppAudioAssetId = (typeof APP_AUDIO_ASSETS)[number]["id"];
 
 export const APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS = [
   "soft-air-veil",
+  "cloudlight-evening-loop",
   "orb-ambience",
   "diary-reflection-loop",
 ] as const satisfies readonly AppAudioAssetId[];

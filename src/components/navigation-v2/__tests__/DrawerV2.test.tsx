@@ -5,6 +5,13 @@ import { DrawerV2 } from "../DrawerV2";
 import { useThemeStore } from "@/stores/themeStore";
 
 const languageMock = vi.hoisted(() => ({ isRTL: false }));
+const backgroundMusicMock = vi.hoisted(() => ({
+  enabled: false,
+  state: "off",
+  toggle: vi.fn(),
+  retry: vi.fn(),
+  handleMediaError: vi.fn(),
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -22,9 +29,16 @@ vi.mock("@/contexts/LanguageContext", () => ({
       switchToLight: "Switch to light mode",
       themeDark: "Dark",
       themeLight: "Light",
+      backgroundMusicTitle: "Evening music",
+      backgroundMusicStateOff: "Off",
+      backgroundMusicPlayAction: "Play evening music",
     },
     isRTL: languageMock.isRTL,
   }),
+}));
+
+vi.mock("../AppBackgroundMusicProvider", () => ({
+  useAppBackgroundMusicControl: () => backgroundMusicMock,
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -370,6 +384,19 @@ describe("DrawerV2", () => {
     fireEvent.click(toggle);
 
     expect(useThemeStore.getState().appliedTheme).toBe("ink");
+  });
+
+  it("places a 48px evening-music control above Settings", () => {
+    render(<DrawerV2 {...baseProps} />);
+
+    const bottomNav = screen.getByTestId("drawer-v2-bottom-nav");
+    const musicToggle = screen.getByTestId("background-music-toggle");
+    const settings = screen.getByTestId("drawer-v2-destination-settings");
+    expect(bottomNav).toContainElement(musicToggle);
+    expect(musicToggle.compareDocumentPosition(settings)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(musicToggle).toHaveClass("min-h-[48px]");
   });
 
   it("uses semantic V2 theme tokens for the drawer shell", async () => {
