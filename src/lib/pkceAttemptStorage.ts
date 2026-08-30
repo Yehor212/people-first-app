@@ -227,6 +227,13 @@ function canonicalParams(
     });
 }
 
+function canonicalAuthPathname(pathname: string): string {
+  const normalized = pathname || "/";
+  return normalized.length > 1 && normalized.endsWith("/")
+    ? normalized.slice(0, -1)
+    : normalized;
+}
+
 async function createRedirectBinding(
   rawUrl: string,
   mode: "attempt" | "legacy" = "attempt",
@@ -245,7 +252,7 @@ async function createRedirectBinding(
     protocol: url.protocol.toLowerCase(),
     hostname: url.hostname.toLowerCase(),
     port: url.port,
-    pathname: url.pathname || "/",
+    pathname: canonicalAuthPathname(url.pathname),
     search: canonicalParams(
       url.searchParams,
       mode === "legacy" ? LEGACY_AUTH_SEARCH_RESPONSE_PARAMS : AUTH_SEARCH_RESPONSE_PARAMS,
