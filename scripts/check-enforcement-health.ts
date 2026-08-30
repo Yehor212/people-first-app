@@ -25,12 +25,14 @@ const results: Result[] = [];
 const REQUIRED_REGISTRATIONS: ReadonlyArray<readonly [string, string]> = [
   ["UserPromptSubmit", "skill-router-gate.cjs"],
   ["UserPromptSubmit", "no-ai-template-gate.cjs"],
+  ["UserPromptSubmit", "android-visual-runtime-gate.cjs"],
   ["UserPromptSubmit", "production-data-integrity-gate.cjs"],
   ["PreToolUse", "change-governance-gate.cjs"],
   ["PreToolUse", "skill-router-gate.cjs"],
   ["PreToolUse", "production-data-integrity-gate.cjs"],
   ["PostToolUse", "production-data-integrity-gate.cjs"],
   ["Stop", "no-ai-template-gate.cjs"],
+  ["Stop", "android-visual-runtime-gate.cjs"],
   ["Stop", "production-data-integrity-gate.cjs"],
   ["SubagentStart", "no-ai-template-gate.cjs"],
   ["SubagentStart", "production-data-integrity-gate.cjs"],
@@ -194,14 +196,13 @@ function checkProductionDataIntegrity(): void {
 }
 
 function validateCanonicalControlPlane(): void {
-  runNodeGate("check:agent-orchestra", "scripts/sync-persistent-agent-orchestra.mjs", ["--check"], 20_000);
-  runNodeGate(
-    "check:agent-orchestra:eval",
-    "scripts/validate-persistent-agent-orchestra-eval-report.mjs",
-    ["--catalog"],
-    20_000,
-  );
   runNodeGate("check:no-ai-templates", "scripts/check-no-ai-templates.cjs", [], 30_000);
+  runNodeGate(
+    "check:android-visual-runtime-gate",
+    "scripts/check-android-visual-runtime-gate.cjs",
+    [],
+    30_000,
+  );
   checkProductionDataIntegrity();
 
   const bridge = readFileSync(path.join(ROOT, "CLAUDE.md"), "utf8");

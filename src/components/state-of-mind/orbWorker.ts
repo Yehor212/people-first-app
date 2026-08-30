@@ -188,6 +188,7 @@ function waitForParallelCompile(
 
 function buildRenderer(
   gl: GLContext,
+  canvas: OffscreenCanvas,
   vertSrc: string,
   fragSrc: string,
 ): OrbWorkerRenderer | null {
@@ -217,11 +218,12 @@ function buildRenderer(
     return null;
   }
 
-  return createRendererFromLinkedProgram(gl, program, vs, fs);
+  return createRendererFromLinkedProgram(gl, canvas, program, vs, fs);
 }
 
 function createRendererFromLinkedProgram(
   gl: GLContext,
+  canvas: OffscreenCanvas,
   program: WebGLProgram,
   vs: WebGLShader,
   fs: WebGLShader,
@@ -273,8 +275,11 @@ function createRendererFromLinkedProgram(
   return {
     render(params) {
       const { size, dpr, isDark, color, shape, particles } = params;
-      const w = size * dpr;
-      const h = size * dpr;
+      const w = Math.max(1, Math.round(size * dpr));
+      const h = w;
+
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
 
       gl.viewport(0, 0, w, h);
       gl.clearColor(0, 0, 0, 0);
@@ -377,6 +382,7 @@ function createRendererFromLinkedProgram(
 
 async function buildRendererAsync(
   gl: GLContext,
+  canvas: OffscreenCanvas,
   vertSrc: string,
   fragSrc: string,
 ): Promise<OrbWorkerRenderer | null> {
@@ -385,7 +391,7 @@ async function buildRendererAsync(
   ) as KHRParallelShaderCompile | null;
 
   if (!parallelCompile) {
-    return buildRenderer(gl, vertSrc, fragSrc);
+    return buildRenderer(gl, canvas, vertSrc, fragSrc);
   }
 
   const vs = createShaderUnchecked(gl, gl.VERTEX_SHADER, vertSrc);
@@ -422,7 +428,7 @@ async function buildRendererAsync(
     return null;
   }
 
-  return createRendererFromLinkedProgram(gl, program, vs, fs);
+  return createRendererFromLinkedProgram(gl, canvas, program, vs, fs);
 }
 
 async function createRenderer(canvas: OffscreenCanvas): Promise<OrbWorkerRenderer | null> {
@@ -431,16 +437,22 @@ async function createRenderer(canvas: OffscreenCanvas): Promise<OrbWorkerRendere
   const gl = canvas.getContext('webgl', GL_OPTIONS);
   if (!gl) return null;
   gl.getExtension('OES_standard_derivatives');
-  return buildRendererAsync(gl, VERT_SRC, FRAG_SRC);
+  return buildRendererAsync(gl, canvas, VERT_SRC, FRAG_SRC);
 }
 
 async function handleWorkerMessage(message: WorkerMessage) {
   if (message.type === 'dispose') {
     disposed = true;
+    initGeneration += 1;
     pendingRender = null;
-    renderer?.dispose();
+    const activeRenderer = renderer;
     renderer = null;
-    workerScope.close();
+    try {
+      activeRenderer?.dispose();
+    } finally {
+      workerScope.postMessage({ type: 'disposed' });
+      workerScope.close();
+    }
     return;
   }
 

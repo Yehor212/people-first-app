@@ -1,0 +1,49 @@
+buffers {
+  size_kb: 196608
+  fill_policy: RING_BUFFER
+}
+duration_ms: 65000
+data_sources {
+  config {
+    name: "linux.ftrace"
+    target_buffer: 0
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/suspend_resume"
+      atrace_apps: "com.zenflow.app"
+      atrace_categories: "am"
+      atrace_categories: "dalvik"
+      atrace_categories: "freq"
+      atrace_categories: "gfx"
+      atrace_categories: "input"
+      atrace_categories: "res"
+      atrace_categories: "sched"
+      atrace_categories: "view"
+      atrace_categories: "webview"
+    }
+  }
+}
+data_sources {
+  config {
+    name: "android.surfaceflinger.frametimeline"
+    target_buffer: 0
+  }
+}
+data_sources {
+  config {
+    name: "linux.process_stats"
+    target_buffer: 0
+    process_stats_config {
+      scan_all_processes_on_start: true
+      proc_stats_poll_ms: 1000
+    }
+  }
+}
+data_sources {
+  config {
+    name: "android.packages_list"
+    target_buffer: 0
+  }
+}

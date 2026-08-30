@@ -37,6 +37,21 @@ describe("hyperfocus three-level audio catalog", () => {
     }
   });
 
+  it("uses truthful generic intensity labels instead of obsolete scene claims", () => {
+    for (const family of HYPERFOCUS_AUDIO_FAMILIES) {
+      expect(family.levels.map((level) => level.label), family.id).toEqual([
+        "Soft",
+        "Deep",
+        "Intense",
+      ]);
+      expect(family.levels.map((level) => level.labelKey), family.id).toEqual([
+        "hyperfocusSoundLevelSoft",
+        "hyperfocusSoundLevelDeep",
+        "hyperfocusSoundLevelIntense",
+      ]);
+    }
+  });
+
   it("keeps variant ids stable and parseable while preserving legacy ids", () => {
     expect(getHyperfocusVariantId("fireplace", "soft")).toBe("fireplace:soft");
     expect(parseHyperfocusVariantId("fireplace:soft")).toEqual({

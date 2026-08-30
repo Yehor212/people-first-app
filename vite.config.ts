@@ -96,6 +96,8 @@ export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
+  const androidMotionBenchmark =
+    isCapacitor && process.env.ZENFLOW_ANDROID_MOTION_BENCHMARK === "true";
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
   const base = isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
@@ -147,6 +149,9 @@ export default defineConfig(({ mode }) => {
       __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: JSON.stringify(
         journalSaveCeremonyBuildEnabled,
       ),
+      // Local profileable Android builds expose motion probes without changing
+      // production release assets or WebView debugging policy.
+      __ANDROID_MOTION_BENCHMARK__: JSON.stringify(androidMotionBenchmark),
       // Sentry tree-shaking (docs: getsentry/sentry-javascript CONTRIBUTING.md)
       // Replaces __DEBUG_BUILD__ → false in Sentry's bundles, strips all logger.* calls.
       __SENTRY_DEBUG__: false,
@@ -420,9 +425,27 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
 
     resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
+      alias: [
+        ...(mode === "production" && !isCapacitor
+          ? [
+              {
+                find: "./AndroidDayLargeEffects",
+                replacement: path.resolve(
+                  __dirname,
+                  "./src/pages/nav-v2/AndroidDayLargeEffects.web.tsx"
+                ),
+              },
+              {
+                find: /^.*habitTgsRuntime$/,
+                replacement: path.resolve(
+                  __dirname,
+                  "./src/components/habit-pictogram/habitTgsRuntime.web.ts"
+                ),
+              },
+            ]
+          : []),
+        { find: "@", replacement: path.resolve(__dirname, "./src") },
+      ],
     },
 
     // LightningCSS transformer DISABLED — bypasses PostCSS pipeline which means

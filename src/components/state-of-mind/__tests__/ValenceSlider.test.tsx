@@ -38,6 +38,16 @@ describe("ValenceSlider", () => {
     expect(label.querySelectorAll(".som-valence-chip__orb")).toHaveLength(0);
   });
 
+  it("keeps the filtered label surface mounted while the valence label changes", () => {
+    const { rerender } = render(<ValenceSlider value={0} onChange={vi.fn()} />);
+    const filteredSurface = screen.getByTestId("valence-live-label");
+
+    rerender(<ValenceSlider value={0.67} onChange={vi.fn()} />);
+
+    expect(screen.getByTestId("valence-live-label")).toBe(filteredSurface);
+    expect(filteredSurface).toHaveTextContent("Pleasant");
+  });
+
   it("keeps enough inline padding for endpoint thumb overflow", () => {
     render(<ValenceSlider value={1} onChange={vi.fn()} />);
 

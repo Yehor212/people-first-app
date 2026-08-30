@@ -1322,6 +1322,21 @@
     min-height: 48px;
   }
 
+  /* The offline status floats above V2 headers. On Android, only its actions
+     own touch input so the visually covered menu/sidebar controls do not
+     become dead zones. This does not change the banner's pixels or stacking. */
+  :root[data-platform="android"] [data-testid="offline-banner"] {
+    pointer-events: none;
+  }
+
+  :root[data-platform="android"] [data-testid="offline-banner"] :where(
+    button,
+    [role="button"],
+    a[href]
+  ) {
+    pointer-events: auto;
+  }
+
   /* ===== LAYOUT SYSTEM UTILITIES ===== */
 
   /* Main app container - accounts for nav height + safe area */
@@ -7519,9 +7534,107 @@ button.press-stable:active:not(:disabled),
   }
 }
 
+/* Android day Orb compositor budget:
+ *
+ * The opaque full-DPR WebGL surface reconstructs the canonical readable veil
+ * and its exact saturation/contrast matrix before presenting the frame. The
+ * legacy DOM veil is therefore fully occluded on this one lifecycle, but still
+ * creates another full-screen composited surface in WebView. Release only that
+ * hidden copy while the renderer-owned body marker is present; CSS fallback,
+ * Settings, reduced motion, and every non-Android platform stay unchanged. */
+:root[data-platform="android"][data-theme="paper"]
+  body.android-day-orb-opaque-surface
+  .v2-readable-page--ambient::before {
+  display: none !important;
+}
+
+/* The first-run hint's base styles already match the final keyframes
+ * (opacity: 1 and transform: none). Android can therefore discard its finished
+ * full-screen animation surfaces without changing the 300/340ms entry motion
+ * or the settled pixels. Other platforms retain the established `both` fill. */
+:root[data-platform="android"] .mood-first-run-backdrop,
+:root[data-platform="android"] .mood-first-run-card {
+  animation-fill-mode: backwards !important;
+}
+
+/* Android drawer blur partition:
+ *
+ * The accepted drawer has two backdrop filters: 4px on the modal backdrop,
+ * then 24px (18px for the prefixed WebKit path) on the panel. Applying both
+ * filters across the moving panel makes Android WebView allocate overlapping
+ * full-screen intermediates over the full-DPR day WebGL scene. Keep the exact
+ * filter sequence, but sample the 4px backdrop only outside the panel and fold
+ * the same 4px pass into the bounded panel filter chain. Other platforms keep
+ * the original utility classes unchanged. */
+:root[data-platform="android"] .drawer-v2-backdrop-partitioned {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+:root[data-platform="android"] .drawer-v2-backdrop-partitioned::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  clip-path: inset(0 0 0 min(88vw, 24rem));
+}
+
+:root[data-platform="android"][dir="rtl"] .drawer-v2-backdrop-partitioned::before {
+  clip-path: inset(0 min(88vw, 24rem) 0 0);
+}
+
+:root[data-platform="android"] .drawer-v2-panel-partitioned {
+  -webkit-backdrop-filter: blur(4px) blur(18px) !important;
+  backdrop-filter: blur(4px) blur(24px) !important;
+}
+
+/* Let the compositor own the accepted entry trajectory from the element's
+ * first rendered frame. A JavaScript rAF gate can leave the complete drawer
+ * off-screen while a busy Android WebView main thread is already exposing its
+ * controls to accessibility. These starting values are exactly the existing
+ * closed transform/opacity values; duration and easing still come from the
+ * component's established transition utilities. */
+@starting-style {
+  :root[data-platform="android"] .drawer-v2-backdrop-partitioned.opacity-100 {
+    opacity: 0;
+  }
+
+  :root[data-platform="android"] .drawer-v2-panel-partitioned.translate-x-0 {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+
+  :root[data-platform="android"][dir="rtl"]
+    .drawer-v2-panel-partitioned.translate-x-0 {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-platform="android"] .drawer-v2-backdrop-partitioned::before,
+  :root[data-platform="android"] .drawer-v2-panel-partitioned {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+/* End Android drawer blur partition. */
+
 /* Drawer theme switches must not interpolate text and surface colors across
  * incompatible palettes. The panel still changes immediately; this only
  * prevents a short low-contrast cross-fade while a modal drawer is open. */
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] body,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] body > div,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .card,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .bg-card,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .bg-background,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .bg-muted,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] nav,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] header,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] main,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] aside,
+html[data-platform="android"][data-theme-swap-mode="drawer-instant"] footer,
 html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"],
 html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"] * {
   transition: none !important;

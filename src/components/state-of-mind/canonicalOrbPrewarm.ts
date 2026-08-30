@@ -1,12 +1,14 @@
 import { safeSessionStorageGet, safeSessionStorageSet } from "@/lib/safeJson";
 import { SSK } from "@/lib/storageKeys";
 import { recordError } from "@/lib/crashReporting";
+import { isAndroid } from "@/lib/platform";
 import { valenceToHSL } from "./colorUtils";
 import { getShapeParams } from "./orbRenderer";
 
 const PREWARM_VERSION = 1;
 const PREWARM_SIZE = 96;
 export const CANONICAL_ORB_PREWARM_TIMEOUT_MS = 12000;
+export const CANONICAL_ORB_PREWARM_DISPOSE_ACK_TIMEOUT_MS = 250;
 
 function recordCanonicalOrbPrewarmFailure(action: string) {
   recordError(
@@ -29,7 +31,8 @@ type PrewarmResult =
 type WorkerStatusMessage =
   | { type: "ready" }
   | { type: "failed"; reason?: string }
-  | { type: "rendered"; requestId: number };
+  | { type: "rendered"; requestId: number }
+  | { type: "disposed" };
 
 let inFlight: Promise<PrewarmResult> | null = null;
 
@@ -102,19 +105,7 @@ export function prewarmCanonicalOrbWebGL(reason = "idle"): Promise<PrewarmResult
     let settled = false;
     let timeoutId = 0;
     let worker: Worker | null = null;
-    const finish = (result: PrewarmResult) => {
-      if (settled) return;
-      settled = true;
-      if (timeoutId !== 0) window.clearTimeout(timeoutId);
-      if (worker) {
-        try {
-          worker.postMessage({ type: "dispose" });
-        } catch {
-          recordCanonicalOrbPrewarmFailure("canonical-orb-prewarm-dispose");
-        } finally {
-          worker.terminate();
-        }
-      }
+    const complete = (result: PrewarmResult) => {
       if (result.ok) {
         safeSessionStorageSet(SSK.ORB_WEBGL_PREWARMED, {
           version: PREWARM_VERSION,
@@ -125,6 +116,59 @@ export function prewarmCanonicalOrbWebGL(reason = "idle"): Promise<PrewarmResult
       }
       inFlight = null;
       resolve(result);
+    };
+    const finish = (result: PrewarmResult) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutId !== 0) window.clearTimeout(timeoutId);
+      const activeWorker = worker;
+      worker = null;
+      if (!activeWorker) {
+        complete(result);
+        return;
+      }
+
+      if (!isAndroid) {
+        try {
+          activeWorker.postMessage({ type: "dispose" });
+        } catch {
+          recordCanonicalOrbPrewarmFailure("canonical-orb-prewarm-dispose");
+        } finally {
+          activeWorker.terminate();
+          complete(result);
+        }
+        return;
+      }
+
+      let disposalFinished = false;
+      let disposeAckTimeoutId = 0;
+      const terminateAfterDispose = () => {
+        if (disposalFinished) return;
+        disposalFinished = true;
+        if (disposeAckTimeoutId !== 0) {
+          window.clearTimeout(disposeAckTimeoutId);
+          disposeAckTimeoutId = 0;
+        }
+        activeWorker.onmessage = null;
+        activeWorker.onerror = null;
+        activeWorker.terminate();
+        complete(result);
+      };
+      disposeAckTimeoutId = window.setTimeout(() => {
+        disposeAckTimeoutId = 0;
+        terminateAfterDispose();
+      }, CANONICAL_ORB_PREWARM_DISPOSE_ACK_TIMEOUT_MS);
+
+      activeWorker.onmessage = (event: MessageEvent<WorkerStatusMessage>) => {
+        if (event.data.type === "disposed") terminateAfterDispose();
+      };
+      activeWorker.onerror = terminateAfterDispose;
+      try {
+        activeWorker.postMessage({ type: "dispose" });
+      } catch {
+        recordCanonicalOrbPrewarmFailure("canonical-orb-prewarm-dispose");
+        terminateAfterDispose();
+      }
     };
 
     queueMicrotask(() => {

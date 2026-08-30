@@ -74,6 +74,7 @@ export function AuthScreen({
   const breathAudioDisabledStatusLabel = appAudioSettings.muted ? mutedAudioLabel : t.soundOff;
   const breathAudioPlayback = useUserStartedAmbienceAudio({
     audioRef: breathAudioRef,
+    ownerId: "auth-soft-air",
     canPlay: canPlayBreathAudio,
     volume: breathAudioVolume,
     mediaSessionTitle: t.authMeasuredBreathLabel,

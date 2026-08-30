@@ -137,33 +137,6 @@ function assertNoSecrets(relativePath, text) {
   }
 }
 
-function assertAgentOrchestra() {
-  for (const relativePath of [
-    "config/persistent-agent-orchestra.json",
-    "config/persistent-agent-orchestra.evals.json",
-    "config/persistent-agent-orchestra.eval-baseline.json",
-    "config/persistent-agent-orchestra.source-waivers.json",
-    "scripts/sync-persistent-agent-orchestra.mjs",
-    ".codex/config.toml",
-    "docs/ai/PERSISTENT_AGENT_ORCHESTRA.md",
-    "docs/ai/PERSISTENT_AGENT_ORCHESTRA_EVAL_PROTOCOL.md",
-  ]) {
-    assertGovernanceFile(relativePath);
-  }
-
-  try {
-    execFileSync(process.execPath, ["scripts/sync-persistent-agent-orchestra.mjs", "--check"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      timeout: 15_000,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch (error) {
-    const output = [error?.stdout, error?.stderr].filter(Boolean).join("\n").trim();
-    fail(`check:agent-orchestra failed closed${output ? `: ${output}` : ""}`);
-  }
-}
-
 function assertAgentWorkspaceProtocol() {
   assertGovernanceFile("docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md");
   assertGovernanceFile("scripts/check-agent-workspace-protocol.cjs");
@@ -211,22 +184,6 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
-  const subagentAudit = assertGovernanceFile("docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md");
-  if (subagentAudit) {
-    for (const required of [
-      "Source Evidence",
-      "Teamlead Operating Conclusions",
-      "Repo Findings Fixed In This Pass",
-      "Verification Contract",
-    ]) {
-      if (!hasHeading(subagentAudit, required)) {
-        fail(
-          `docs/ai/SUBAGENT_TEAMLEAD_RESEARCH_AUDIT.md is missing required heading "${required}"`
-        );
-      }
-    }
-  }
-
   const codexHooks = assertGovernanceFile(".codex/hooks.json");
   if (codexHooks) {
     for (const marker of [
@@ -260,6 +217,56 @@ function assertAgentChangeGovernance(agents) {
     }
   }
 
+  if (codexHooks && !/android-visual-runtime-gate\.cjs/.test(codexHooks)) {
+    fail(
+      ".codex/hooks.json must register android-visual-runtime-gate.cjs for UserPromptSubmit and Stop"
+    );
+  }
+  const androidVisualHook = assertGovernanceFile(
+    ".codex/hooks/android-visual-runtime-gate.cjs"
+  );
+  if (androidVisualHook) {
+    for (const marker of [
+      "ANDROID VISUAL RUNTIME GATE",
+      "UserPromptSubmit",
+      "Stop",
+      "Evidence packet:",
+      "one reproduced root cause at a time",
+      "process.exit(2)",
+    ]) {
+      if (!androidVisualHook.includes(marker)) {
+        fail(`Android visual runtime hook must include ${marker}`);
+      }
+    }
+  }
+  const androidVisualCore = assertGovernanceFile(
+    "scripts/codex-governance/android-visual-runtime-core.cjs"
+  );
+  if (androidVisualCore) {
+    for (const marker of [
+      "installedBeforeSha256",
+      "installedAfterSha256",
+      "android-emulator-window",
+      "physical-device-screen",
+      "tileMemoryWarnings",
+      "deadlineMissedPercent",
+      "sha256File",
+    ]) {
+      if (!androidVisualCore.includes(marker)) {
+        fail(`Android visual runtime core must validate ${marker}`);
+      }
+    }
+  }
+  const androidVisualChecker = assertGovernanceFile(
+    "scripts/check-android-visual-runtime-gate.cjs"
+  );
+  if (
+    androidVisualChecker &&
+    !androidVisualChecker.includes("[android-visual-runtime-gate] PASS")
+  ) {
+    fail("Android visual runtime checker must emit its explicit PASS marker");
+  }
+
   const prTemplate = assertGovernanceFile(".github/PULL_REQUEST_TEMPLATE.md");
   if (prTemplate) {
     if (!hasHeading(prTemplate, "Agent Change Notice")) {
@@ -277,17 +284,8 @@ function assertAgentChangeGovernance(agents) {
 
   const driftWorkflow = assertGovernanceFile(".github/workflows/drift-checks.yml");
   if (driftWorkflow) {
-    if (!/npm run check:agent-orchestra/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run check:agent-orchestra");
-    }
-    if (!/npm run check:agent-orchestra:eval/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run check:agent-orchestra:eval");
-    }
     if (!/npm run enforcement:check/.test(driftWorkflow)) {
       fail("drift-checks.yml must run npm run enforcement:check");
-    }
-    if (!/npm run check:subagent-governance/.test(driftWorkflow)) {
-      fail("drift-checks.yml must run npm run check:subagent-governance");
     }
   }
 
@@ -316,23 +314,6 @@ function assertAgentChangeGovernance(agents) {
   const pkg = assertGovernanceFile("package.json");
   if (pkg && !/"security:scan"\s*:/.test(pkg)) {
     fail('package.json must define "security:scan" for Snyk/audit fallback');
-  }
-  if (pkg && !/"check:subagent-governance"\s*:/.test(pkg)) {
-    fail('package.json must define "check:subagent-governance"');
-  }
-
-  const subagentCheck = assertGovernanceFile("scripts/check-subagent-teamlead-governance.mjs");
-  if (subagentCheck) {
-    for (const marker of [
-      "canonical exact-ten structure",
-      "READ_ONLY_INTENT",
-      "counter_hypotheses",
-      "runCanonicalCheck",
-    ]) {
-      if (!subagentCheck.includes(marker)) {
-        fail(`scripts/check-subagent-teamlead-governance.mjs must enforce ${marker}`);
-      }
-    }
   }
 
   const telegramWorkflow = assertGovernanceFile(".github/workflows/telegram-control.yml");
@@ -878,7 +859,6 @@ async function main() {
       "Architecture",
       "Agent Entry Points",
       "Codex And Kimi Workspace Isolation",
-      "Persistent Codex Agent Orchestra",
       "Agent Change Governance",
       "Snyk And Security Fallback",
     ]) {
@@ -903,7 +883,6 @@ async function main() {
   assertLocalMcpBoundary();
   assertAgentChangeGovernance(agents);
   assertAgentWorkspaceProtocol();
-  assertAgentOrchestra();
 
   for (const example of ["tools/zenflow-context/mcp-server.example.json"]) {
     if (existsSync(path.join(repoRoot, example))) {

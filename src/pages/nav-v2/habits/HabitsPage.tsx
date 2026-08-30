@@ -510,13 +510,19 @@ export const HabitsPage = memo(function HabitsPage() {
   );
 
   const isEmpty = hasNoActiveHabits;
-  const bannerPlacementActive =
-    !isEmpty &&
-    !createOpen &&
-    !libraryOpen &&
-    !actionSheetOpen &&
-    detailHabit === null &&
-    pendingDetailEditHabit === null;
+  const hasOpenInteractionOwner =
+    createOpen ||
+    libraryOpen ||
+    actionSheetOpen ||
+    detailHabit !== null ||
+    pendingDetailEditHabit !== null;
+  const bannerPlacementActive = !isEmpty && !hasOpenInteractionOwner;
+  // Vaul blocks pointer input on the app shell, but Android WebView can still
+  // expose background buttons through UIAutomator unless the owned page
+  // content is also inert. Keep the portal-rendered sheets outside this node.
+  const backgroundInteractionProps = hasOpenInteractionOwner
+    ? ({ inert: "", "aria-hidden": true } as const)
+    : {};
 
   useEffect(() => {
     setHabitsBannerActive(bannerPlacementActive);
@@ -546,7 +552,11 @@ export const HabitsPage = memo(function HabitsPage() {
         data-android-banner-height={bannerHeight}
       >
         <HabitFieldBackdrop isEmpty={isEmpty} animate={animateBackdrop} />
-        <div className="relative z-[2] mx-auto min-h-[var(--app-viewport-height)] w-full max-w-3xl lg:max-w-none">
+        <div
+          className="relative z-[2] mx-auto min-h-[var(--app-viewport-height)] w-full max-w-3xl lg:max-w-none"
+          data-testid="habits-page-content"
+          {...backgroundInteractionProps}
+        >
           <header className="mx-auto min-h-[5.75rem] w-full max-w-[88rem] px-4 ps-[4.5rem] pt-[calc(var(--safe-top)+1.75rem)] min-[360px]:ps-20 md:min-h-0 md:px-6 md:ps-6 md:pt-12 lg:px-10 lg:pt-14 xl:px-14">
             <h1
               id="habits-page-heading"

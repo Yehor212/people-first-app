@@ -5,14 +5,7 @@
  * Handles Android banner initialization, privacy, placement, and lifecycle.
  */
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import {
   initializeAds,
   getAdState,
@@ -23,9 +16,12 @@ import {
   showHabitsBanner,
   hideHabitsBanner,
   removeHabitsBanner,
-} from '@/lib/adController';
-import { logger } from '@/lib/logger';
-import type { AdAgeEligibility } from '@/types';
+} from "@/lib/adController";
+import { logger } from "@/lib/logger";
+import type { AdAgeEligibility } from "@/types";
+
+const ANDROID_MOTION_BENCHMARK_ENABLED =
+  typeof __ANDROID_MOTION_BENCHMARK__ !== "undefined" && __ANDROID_MOTION_BENCHMARK__;
 
 // ============================================
 // TYPES
@@ -78,7 +74,7 @@ interface AdProviderProps {
 export function AdProvider({
   children,
   adConsent = false,
-  adAgeEligibility = 'unknown',
+  adAgeEligibility = "unknown",
   isPremium = false,
   currentMood,
 }: AdProviderProps) {
@@ -87,10 +83,10 @@ export function AdProvider({
   const [habitsBannerActive, setHabitsBannerActiveState] = useState(false);
   const [globalAdOverlayOpen, setGlobalAdOverlayOpenState] = useState(false);
   const [documentVisible, setDocumentVisible] = useState(
-    () => typeof document === 'undefined' || document.visibilityState !== 'hidden',
+    () => typeof document === "undefined" || document.visibilityState !== "hidden"
   );
-  const [viewportWidth, setViewportWidth] = useState(
-    () => typeof window === 'undefined' ? 0 : Math.round(window.innerWidth),
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 0 : Math.round(window.innerWidth)
   );
   const [googleConsentReady, setGoogleConsentReady] = useState(false);
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false);
@@ -115,8 +111,8 @@ export function AdProvider({
       if (clearPrivacyOptions) setPrivacyOptionsRequired(false);
     };
 
-    if (isPremium || !adConsent || adAgeEligibility !== 'adult') {
-      const clearPrivacyOptions = adAgeEligibility !== 'adult';
+    if (isPremium || !adConsent || adAgeEligibility !== "adult") {
+      const clearPrivacyOptions = adAgeEligibility !== "adult";
       disableAdRequests(clearPrivacyOptions);
       if (!clearPrivacyOptions) {
         void refreshAdPrivacyOptionsStatus({ ageEligibility: adAgeEligibility })
@@ -124,7 +120,7 @@ export function AdProvider({
             if (!cancelled) syncControllerState();
           })
           .catch((err) => {
-            if (!cancelled) logger.warn('[Ads]', 'Privacy options refresh failed:', err);
+            if (!cancelled) logger.warn("[Ads]", "Privacy options refresh failed:", err);
           });
       }
 
@@ -133,13 +129,15 @@ export function AdProvider({
       };
     }
 
-    void initializeAds({ adConsent, ageEligibility: adAgeEligibility }).then((available) => {
-      if (cancelled) return;
-      syncControllerState();
-      if (!available) setBannerHeight(0);
-    }).catch(err => {
-      if (!cancelled) logger.warn('[Ads]', 'Ad init failed:', err);
-    });
+    void initializeAds({ adConsent, ageEligibility: adAgeEligibility })
+      .then((available) => {
+        if (cancelled) return;
+        syncControllerState();
+        if (!available) setBannerHeight(0);
+      })
+      .catch((err) => {
+        if (!cancelled) logger.warn("[Ads]", "Ad init failed:", err);
+      });
 
     return () => {
       cancelled = true;
@@ -150,10 +148,10 @@ export function AdProvider({
   // the placement gate rather than an eventual cleanup detail.
   useEffect(() => {
     const handleVisibilityChange = () => {
-      setDocumentVisible(document.visibilityState !== 'hidden');
+      setDocumentVisible(document.visibilityState !== "hidden");
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
   // Anchored adaptive banners are sized from the current Android window. A
@@ -162,13 +160,69 @@ export function AdProvider({
   useEffect(() => {
     const handleViewportResize = () => {
       const nextWidth = Math.round(window.innerWidth);
-      setViewportWidth((currentWidth) => currentWidth === nextWidth ? currentWidth : nextWidth);
+      setViewportWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
     };
-    window.addEventListener('resize', handleViewportResize, { passive: true });
-    return () => window.removeEventListener('resize', handleViewportResize);
+    window.addEventListener("resize", handleViewportResize, { passive: true });
+    return () => window.removeEventListener("resize", handleViewportResize);
   }, []);
 
-  const emotionallyProtected = currentMood === 'bad' || currentMood === 'terrible';
+  const emotionallyProtected = currentMood === "bad" || currentMood === "terrible";
+  useEffect(() => {
+    if (
+      !ANDROID_MOTION_BENCHMARK_ENABLED ||
+      typeof location === "undefined" ||
+      location.protocol !== "https:" ||
+      location.hostname !== "localhost"
+    ) {
+      return;
+    }
+
+    const benchmarkGlobal = globalThis as typeof globalThis & {
+      __ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__?: () => Record<
+        string,
+        boolean | number | string | null | undefined
+      >;
+    };
+    const probe = () => ({
+      adConsent,
+      adAgeEligibility,
+      isPremium,
+      currentMood: currentMood ?? null,
+      adsAvailable,
+      bannerHeight,
+      habitsBannerActive,
+      globalAdOverlayOpen,
+      documentVisible,
+      emotionallyProtected,
+      googleConsentReady,
+      privacyOptionsRequired,
+    });
+    Object.defineProperty(benchmarkGlobal, "__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__", {
+      configurable: true,
+      enumerable: false,
+      value: probe,
+    });
+
+    return () => {
+      if (benchmarkGlobal.__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__ === probe) {
+        delete benchmarkGlobal.__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__;
+      }
+    };
+  }, [
+    adAgeEligibility,
+    adConsent,
+    adsAvailable,
+    bannerHeight,
+    currentMood,
+    documentVisible,
+    emotionallyProtected,
+    globalAdOverlayOpen,
+    googleConsentReady,
+    habitsBannerActive,
+    isPremium,
+    privacyOptionsRequired,
+  ]);
+
   useEffect(() => {
     let cancelled = false;
     const shouldShow =
@@ -206,7 +260,7 @@ export function AdProvider({
     () => () => {
       void removeHabitsBanner();
     },
-    [],
+    []
   );
 
   const setHabitsBannerActive = useCallback((active: boolean) => {

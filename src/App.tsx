@@ -12,18 +12,45 @@ import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary, RootErrorBoundary } from "@/components/ErrorBoundary";
 
 import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
+import { SplashScreen } from "@/components/SplashScreen";
 import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
 import { JournalMagicLinkConfirmGate } from "@/components/auth/JournalMagicLinkConfirmGate";
 import Index from "./pages/Index";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { preloadShareCardAssets } from "@/lib/shareCards";
 import { useFontScaleInit } from "@/hooks/useFontScale";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { useBatteryState } from "@/hooks/useBatteryState";
 import { setLowBatteryMirror } from "@/lib/animationUtils";
+import { isAndroid } from "@/lib/platform";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
 import { scheduleIdle } from "@/lib/scheduleIdle";
 
 const LOW_BATTERY_THRESHOLD = 0.15;
+
+const ANDROID_MOTION_BENCHMARK_ENABLED =
+  typeof __ANDROID_MOTION_BENCHMARK__ !== "undefined" &&
+  __ANDROID_MOTION_BENCHMARK__;
+
+function isAndroidMotionLoaderProbeAllowed(location: Location): boolean {
+  const searchParams = new URLSearchParams(location.search);
+  return (
+    ANDROID_MOTION_BENCHMARK_ENABLED &&
+    location.protocol === "https:" &&
+    location.hostname === "localhost" &&
+    searchParams.get("androidMotionProbe") === "loader"
+  );
+}
+
+function AndroidMotionLoaderProbe() {
+  const { t } = useLanguage();
+  return (
+    <SplashScreen
+      loadingFadeOut={false}
+      subtitle={t.initializingApp || "Preparing your zen space..."}
+    />
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,12 +74,16 @@ scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 5000, 3500);
 /**
  * AnimationGate — single point of control for ALL animation layers.
  *
- * Uses the shared effective-motion source of truth, which combines four inputs
+ * Uses the shared accessibility/power motion source of truth, which combines three inputs
  * with AND-logic (WCAG 2.3.3 compliant, Law 9):
  *   1. In-app Reduce motion preference.
  *   2. OS `prefers-reduced-motion` (system accessibility kill-switch).
  *   3. Low battery (<15% AND not charging) — power-aware downgrade.
- *   4. Runtime performance guard — temporary downgrade during startup/strain.
+ *
+ * On native Android, runtime strain is intentionally excluded from this global
+ * accessibility gate. It remains available through `data-runtime-perf` for
+ * scoped decorative downgrades; it must not stop loaders, navigation, or
+ * interaction feedback. Other platforms retain their existing behavior.
  *
  * Effects when "animate=false":
  *   - `body.reduce-motion` class toggled (CSS kill-switch in index.css).
@@ -69,7 +100,7 @@ scheduleIdle(() => void useDesignFlagStore.getState().fetchFlags(), 5000, 3500);
  */
 function AnimationGate({ children }: { children: ReactNode }) {
   const battery = useBatteryState();
-  const animate = useShouldAnimate();
+  const animate = useShouldAnimate({ respectRuntimePerformance: !isAndroid });
 
   // Apply stored font scale on mount (sets --font-scale CSS custom property)
   useFontScaleInit();
@@ -102,34 +133,43 @@ function AnimationGate({ children }: { children: ReactNode }) {
   );
 }
 
-const App = () => (
-  <RootErrorBoundary>
-    <AnimationGate>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <FeatureFlagsProvider>
-            <EmotionThemeProvider>
-              <AICoachProvider>
-                <XpPopupProvider>
-                  <FlyingEmojiProvider>
-                    <ErrorBoundary>
-                      <TooltipProvider>
-                        <DatabaseRecoveryDialog />
-                        <UpdateRequiredDialog />
-                        <JournalMagicLinkConfirmGate>
-                          <Index />
-                        </JournalMagicLinkConfirmGate>
-                      </TooltipProvider>
-                    </ErrorBoundary>
-                  </FlyingEmojiProvider>
-                </XpPopupProvider>
-              </AICoachProvider>
-            </EmotionThemeProvider>
-          </FeatureFlagsProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
-    </AnimationGate>
-  </RootErrorBoundary>
-);
+const App = () => {
+  const showAndroidMotionLoaderProbe =
+    typeof window !== "undefined" && isAndroidMotionLoaderProbeAllowed(window.location);
+
+  return (
+    <RootErrorBoundary>
+      <AnimationGate>
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            {showAndroidMotionLoaderProbe ? (
+              <AndroidMotionLoaderProbe />
+            ) : (
+              <FeatureFlagsProvider>
+                <EmotionThemeProvider>
+                  <AICoachProvider>
+                    <XpPopupProvider>
+                      <FlyingEmojiProvider>
+                        <ErrorBoundary>
+                          <TooltipProvider>
+                            <DatabaseRecoveryDialog />
+                            <UpdateRequiredDialog />
+                            <JournalMagicLinkConfirmGate>
+                              <Index />
+                            </JournalMagicLinkConfirmGate>
+                          </TooltipProvider>
+                        </ErrorBoundary>
+                      </FlyingEmojiProvider>
+                    </XpPopupProvider>
+                  </AICoachProvider>
+                </EmotionThemeProvider>
+              </FeatureFlagsProvider>
+            )}
+          </LanguageProvider>
+        </QueryClientProvider>
+      </AnimationGate>
+    </RootErrorBoundary>
+  );
+};
 
 export default App;

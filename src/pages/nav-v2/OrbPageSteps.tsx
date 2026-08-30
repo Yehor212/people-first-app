@@ -1,4 +1,9 @@
-import { useLayoutEffect, useRef, type CSSProperties, type RefObject } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type RefObject,
+} from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";

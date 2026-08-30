@@ -1,0 +1,53 @@
+name: CC0 Kimi audio review package
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audio_review/**"
+      - "config/audio/cc0-kimi-audio-review-spec.json"
+      - "config/audio/quarantine-denylist.json"
+      - "docs/audio/kimi-k3-recovery-ledger-2026-07-25.md"
+      - ".github/workflows/cc0-kimi-audio-review.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cc0-audio-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-review-package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/audio_review/requirements.txt
+      - name: Install pinned Python dependency and ffmpeg
+        run: |
+          python -m pip install --disable-pip-version-check --only-binary=:all: --require-hashes -r scripts/audio_review/requirements.txt
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+      - name: Run review-tool tests
+        run: python -m unittest discover -s scripts/audio_review/tests -v
+      - name: Build review-only package
+        env:
+          SOURCE_DATE_EPOCH: "1787630400"
+          ZENFLOW_REVIEW_SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python -m scripts.audio_review.build --spec config/audio/cc0-kimi-audio-review-spec.json --output output/cc0-kimi-audio-review --cache output/cc0-kimi-audio-cache
+      - name: Independently verify package
+        run: python -m scripts.audio_review.verify --spec config/audio/cc0-kimi-audio-review-spec.json --package output/cc0-kimi-audio-review
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cc0-kimi-audio-review
+          path: output/cc0-kimi-audio-review
+          if-no-files-found: error
+          retention-days: 14

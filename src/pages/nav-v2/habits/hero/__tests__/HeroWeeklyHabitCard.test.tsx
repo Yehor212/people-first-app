@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HeroWeeklyHabitCard } from "../HeroWeeklyHabitCard";
 import { toStoredValue } from "@/lib/habits";
@@ -16,6 +16,19 @@ const scheduleIdleCallbacks = vi.hoisted(() => [] as Array<() => void>);
 
 vi.mock("@/lib/habitScore", () => ({
   getCurrentStreak: getCurrentStreakSpy,
+}));
+
+vi.mock("@/lib/platform", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/platform")>()),
+  isAndroid: true,
+}));
+
+vi.mock("@/components/habit-pictogram/habitTgsRuntime", () => ({
+  preloadHabitCelebrationAnimation: vi.fn(async () => undefined),
+  startHabitCelebrationAnimation: vi.fn(async ({ onReady }) => {
+    onReady();
+    return { destroy: vi.fn(), ready: Promise.resolve() };
+  }),
 }));
 
 vi.mock("@/lib/scheduleIdle", () => ({
@@ -213,6 +226,79 @@ describe("HeroWeeklyHabitCard", () => {
     expect(onToggle).toHaveBeenCalledWith("walk", getToday());
   });
 
+  it("previews the mapped celebration on a deliberate icon hold without completing the habit", async () => {
+    const onToggle = vi.fn();
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit({
+          id: "walk-hold",
+          name: "Morning walk",
+          icon: "🚶",
+          habitType: "boolean",
+          targetValue: 0,
+          unit: "",
+        })}
+        onToggle={onToggle}
+      />
+    );
+
+    const iconButton = screen.getByTestId("hero-weekly-card-walk-hold-icon-check");
+    expect(iconButton.className).toContain("overflow-hidden");
+    expect(iconButton.className).toContain("rounded-full");
+    const pictogram = iconButton.querySelector("[data-habit-pictogram]");
+    expect(pictogram).toHaveClass("h-full", "w-full");
+    fireEvent.pointerDown(iconButton, { pointerId: 1, clientX: 20, clientY: 20 });
+    await act(async () => vi.advanceTimersByTime(449));
+    expect(within(iconButton).getByTestId("habit-motion-player")).not.toHaveAttribute(
+      "data-celebration-token"
+    );
+
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(within(iconButton).getByTestId("habit-motion-player")).toHaveAttribute(
+      "data-celebration-token",
+      "1"
+    );
+
+    fireEvent.pointerUp(iconButton, { pointerId: 1, clientX: 20, clientY: 20 });
+    fireEvent.click(iconButton);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("plays once only when today's state crosses from incomplete to complete", () => {
+    const today = getToday();
+    const baseHabit = habit({
+      id: "water-completion",
+      icon: "💧",
+      habitType: "boolean",
+      targetValue: 0,
+      unit: "",
+    });
+    const { rerender } = render(
+      <HeroWeeklyHabitCard habit={baseHabit} onToggle={vi.fn()} />
+    );
+    const player = () =>
+      within(screen.getByTestId("hero-weekly-card-water-completion-icon-check")).getByTestId(
+        "habit-motion-player"
+      );
+
+    expect(player()).not.toHaveAttribute("data-celebration-token");
+    rerender(
+      <HeroWeeklyHabitCard
+        habit={{ ...baseHabit, entries: { [today]: { value: 1 } } }}
+        onToggle={vi.fn()}
+      />
+    );
+    expect(player()).toHaveAttribute("data-celebration-token", "1");
+
+    rerender(
+      <HeroWeeklyHabitCard
+        habit={{ ...baseHabit, entries: { [today]: { value: 1 } } }}
+        onToggle={vi.fn()}
+      />
+    );
+    expect(player()).toHaveAttribute("data-celebration-token", "1");
+  });
+
   it.each(["Leaf", "Water", "Focus", "Book"])(
     "renders stored habit icon %s as a safe pictogram instead of raw text",
     (icon) => {
@@ -236,6 +322,7 @@ describe("HeroWeeklyHabitCard", () => {
       expect(iconButton).not.toHaveTextContent(icon);
       expect(
         iconButton.querySelector("svg") ??
+          iconButton.querySelector("[data-habit-tgs-poster]") ??
           iconButton.querySelector("[data-habit-motion-still]") ??
           iconButton.querySelector("[data-habit-lottie-player]")
       ).toBeInTheDocument();
@@ -270,17 +357,19 @@ describe("HeroWeeklyHabitCard", () => {
     expect(iconButton).not.toHaveTextContent(storedIcon);
     const pictogram = iconButton.querySelector(`[data-habit-pictogram="${pictogramId}"]`);
     expect(pictogram).toBeInTheDocument();
-    const isApprovedAnimatedRaster = false;
+    const isApprovedTgsPoster = ["drink-water", "walk-distance", "meditate"].includes(
+      pictogramId
+    );
     expect(pictogram).toHaveAttribute(
       "data-icon-source",
-      isApprovedAnimatedRaster
-        ? "approved-animated-raster"
+      isApprovedTgsPoster
+        ? "approved-tgs-first-frame"
         : "static-reduced-svg-fallback"
     );
     expect(
       pictogram?.querySelector(
-        isApprovedAnimatedRaster
-          ? "[data-habit-animated-raster]"
+        isApprovedTgsPoster
+          ? "[data-habit-tgs-poster]"
           : "[data-habit-motion-still]"
       )
     ).toBeInTheDocument();

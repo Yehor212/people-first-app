@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "cloudlight-evening-r3",
+  "tempoBpm": 56,
+  "ppq": 960,
+  "reviewDurationSeconds": 166,
+  "runtimeLoopDurationSeconds": 150,
+  "sourceAudioInputs": [],
+  "appleLoopsUsed": false,
+  "humanAuthorship": {
+    "compositionDirection": "Yehor212 / ZenFlow",
+    "implementation": "deterministic first-party MIDI and automation",
+    "aiRole": "planning, code assistance, and diagnostic audit only"
+  },
+  "rights": {
+    "referenceResearch": {
+      "title": "Cloudbound Evening",
+      "use": "high-level mood and functional production grammar only",
+      "audioRetained": false,
+      "melodyHarmonyArrangementTranscribed": false
+    }
+  },
+  "harmonicFields": [
+    { "start": 0, "end": 30, "padMidi": [50, 57, 64, 71], "droneMidi": [45, 52] },
+    { "start": 30, "end": 55, "padMidi": [49, 57, 64, 71], "droneMidi": [45, 52] },
+    { "start": 55, "end": 80, "padMidi": [43, 50, 57, 64], "droneMidi": [43, 50] },
+    { "start": 80, "end": 105, "padMidi": [47, 54, 61, 69], "droneMidi": [47, 54] },
+    { "start": 105, "end": 126, "padMidi": [40, 47, 50, 57], "droneMidi": [47, 52] },
+    { "start": 126, "end": 138, "padMidi": [45, 52, 59, 66], "droneMidi": [45, 52] },
+    { "start": 138, "end": 166, "padMidi": [50, 57, 64, 71], "droneMidi": [45, 52] }
+  ],
+  "shimmerEvents": [
+    { "start": 58.4, "duration": 8.2, "midi": 86, "velocity": 19, "side": "left" },
+    { "start": 73.6, "duration": 9.4, "midi": 81, "velocity": 22, "side": "right" },
+    { "start": 92.1, "duration": 7.8, "midi": 88, "velocity": 18, "side": "left" },
+    { "start": 111.8, "duration": 10.1, "midi": 83, "velocity": 20, "side": "right" }
+  ],
+  "pianoClusters": [
+    {
+      "start": 125.2,
+      "notes": [
+        { "offset": 0, "duration": 3.6, "midi": 69, "velocity": 24 },
+        { "offset": 0.42, "duration": 3.1, "midi": 76, "velocity": 20 },
+        { "offset": 0.96, "duration": 2.8, "midi": 74, "velocity": 18 }
+      ]
+    },
+    {
+      "start": 133.1,
+      "notes": [
+        { "offset": 0, "duration": 3.4, "midi": 71, "velocity": 22 },
+        { "offset": 0.38, "duration": 3, "midi": 78, "velocity": 18 },
+        { "offset": 0.84, "duration": 2.5, "midi": 73, "velocity": 19 },
+        { "offset": 1.28, "duration": 2.1, "midi": 69, "velocity": 17 }
+      ]
+    }
+  ],
+  "linearFade": { "start": 150, "end": 166, "fromCc11": 127, "toCc11": 0 },
+  "garageBand": {
+    "pianoInstrument": "/Library/Application Support/Logic/Sampler Instruments/01 Acoustic Pianos/Steinway Grand Piano 2.exs",
+    "pianoSamples": "/Library/Application Support/Logic/EXS Factory Samples/01 Acoustic Pianos/Steinway Piano_consolidated.caf",
+    "padPreset": "/Applications/GarageBand.app/Contents/Resources/Plug-In Settings/Sculpture/02 Modeled Pads/Ambient Pad.pst",
+    "dronePreset": "/Applications/GarageBand.app/Contents/Resources/Plug-In Settings/Retro Synth/02 Synth Pads/Dark Swell Pad.pst",
+    "shimmerPreset": "/Applications/GarageBand.app/Contents/Resources/Plug-In Settings/Sculpture/02 Modeled Pads/Ambient Overtones.pst",
+    "reverbPreset": "/Applications/GarageBand.app/Contents/Resources/Plug-In Settings/ChromaVerb/Synth Reverbs/Clean Ambient Tail .pst",
+    "reverb": { "decaySeconds": 7.5, "preDelayMs": 12, "lowCutHz": 120, "dampingHz": 4800 }
+  },
+  "candidates": [
+    {
+      "id": "candidate-01",
+      "mix": {
+        "padDb": -12,
+        "droneDb": -21,
+        "shimmerDb": -29,
+        "shimmerPanPercent": 35,
+        "pianoDb": -27
+      }
+    },
+    {
+      "id": "candidate-02",
+      "mix": {
+        "padDb": -12,
+        "droneDb": -21,
+        "shimmerDb": -27.8,
+        "shimmerPanPercent": 45,
+        "pianoDb": -27
+      }
+    },
+    {
+      "id": "candidate-03",
+      "mix": {
+        "padDb": -12,
+        "droneDb": -21,
+        "shimmerDb": -29,
+        "shimmerPanPercent": 35,
+        "pianoDb": -25.8
+      }
+    }
+  ]
+}

@@ -29,6 +29,19 @@
   white-space: normal;
 }
 
+/* A clipped 1px fixed element becomes a full-viewport composited layer in
+ * Android WebView. Keep the hidden state local; restore fixed safe-area
+ * placement only while the keyboard-accessible control is actually visible. */
+:root[data-platform="android"] .orb-ambience-focus-control {
+  position: absolute;
+  contain: strict;
+}
+
+:root[data-platform="android"] .orb-ambience-focus-control:focus-within {
+  position: fixed;
+  contain: none;
+}
+
 @media (min-width: 768px) {
   .orb-ambience-focus-control {
     inset-inline-end: max(1.5rem, var(--safe-right));

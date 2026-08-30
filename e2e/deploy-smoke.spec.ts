@@ -12,7 +12,19 @@ async function primeReleasePreview(page: Page) {
 
 test.describe("Deploy smoke", () => {
   test.beforeEach(async ({ page }) => {
+    page.on("pageerror", (error) => console.log("PAGEERROR:", error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") console.log("CONSOLEERROR:", message.text());
+    });
     await primeReleasePreview(page);
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === "passed") return;
+    const errorLog = await page
+      .evaluate(() => localStorage.getItem("zenflow-error-log"))
+      .catch(() => null);
+    console.log("ZENFLOW-ERROR-LOG:", errorLog);
   });
 
   test("root boots the V2 shell without the legacy portal", async ({ page }) => {

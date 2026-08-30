@@ -57,6 +57,7 @@ android {
         manifestPlaceholders = [
                 adMobApplicationId: zenflowAdMobAndroidAppId
         ]
+        buildConfigField "boolean", "ZENFLOW_ANDROID_MOTION_BENCHMARK", "false"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -86,6 +87,16 @@ android {
                 debugSymbolLevel 'FULL'
             }
         }
+        benchmark {
+            initWith release
+            minifyEnabled true
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            buildConfigField "boolean", "ZENFLOW_ANDROID_MOTION_BENCHMARK", "true"
+        }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     packaging {
         jniLibs {

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "packageId": "zenflow-cc0-kimi-audio-reconstruction-v1",
+  "status": "REVIEW_ONLY",
+  "purpose": "Clean-room reconstruction of 26 quarantined Kimi audio roles without using any Kimi binary or derivative input.",
+  "outputRoot": "output/cc0-kimi-audio-review",
+  "runtimePromotionAllowed": false,
+  "audioContract": {
+    "sampleRate": 48000,
+    "channels": 2,
+    "format": "mp3",
+    "encoder": "libmp3lame",
+    "bitrateKbps": 128,
+    "hyperfocusDurationSeconds": 30,
+    "ambienceDurationSeconds": 96
+  },
+  "rightsPolicy": {
+    "requiredLicense": "CC0-1.0",
+    "providerHost": "bigsoundbank.com",
+    "canonicalLicenseUrl": "https://bigsoundbank.com/licenses.html",
+    "requireDistributionRight": true,
+    "requireAdaptationRight": true,
+    "requireCommercialRight": true
+  },
+  "hyperfocus": [
+    {"id":"forest:soft","family":"forest","level":"soft","label":"Canopy Breeze","fileName":"hyperfocus-forest-soft.mp3","relativePath":"audio/hyperfocus/hyperfocus-forest-soft.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":100,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"forest_soft"},
+    {"id":"forest:deep","family":"forest","level":"deep","label":"Bird Canopy","fileName":"hyperfocus-forest-deep.mp3","relativePath":"audio/hyperfocus/hyperfocus-forest-deep.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":2715,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"forest_deep"},
+    {"id":"forest:intense","family":"forest","level":"intense","label":"Forest Night","fileName":"hyperfocus-forest-intense.mp3","relativePath":"audio/hyperfocus/hyperfocus-forest-intense.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":699,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"forest_intense"},
+    {"id":"rain:soft","family":"rain","level":"soft","label":"Light Rain","fileName":"hyperfocus-rain-soft.mp3","relativePath":"audio/hyperfocus/hyperfocus-rain-soft.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":2679,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"rain_soft"},
+    {"id":"rain:deep","family":"rain","level":"deep","label":"Rain Bed","fileName":"hyperfocus-rain-deep.mp3","relativePath":"audio/hyperfocus/hyperfocus-rain-deep.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":1019,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"rain_deep"},
+    {"id":"rain:intense","family":"rain","level":"intense","label":"Heavy Rain","fileName":"hyperfocus-rain-intense.mp3","relativePath":"audio/hyperfocus/hyperfocus-rain-intense.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":1019,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"rain_intense"},
+    {"id":"ocean:soft","family":"ocean","level":"soft","label":"Shoreline","fileName":"hyperfocus-ocean-soft.mp3","relativePath":"audio/hyperfocus/hyperfocus-ocean-soft.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":1047,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"ocean_soft"},
+    {"id":"ocean:deep","family":"ocean","level":"deep","label":"Rock Pools","fileName":"hyperfocus-ocean-deep.mp3","relativePath":"audio/hyperfocus/hyperfocus-ocean-deep.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":698,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"ocean_deep"},
+    {"id":"ocean:intense","family":"ocean","level":"intense","label":"Heavy Surf","fileName":"hyperfocus-ocean-intense.mp3","relativePath":"audio/hyperfocus/hyperfocus-ocean-intense.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":2570,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"ocean_intense"},
+    {"id":"fireplace:soft","family":"fireplace","level":"soft","label":"Embers","fileName":"hyperfocus-fireplace-soft.mp3","relativePath":"audio/hyperfocus/hyperfocus-fireplace-soft.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":2856,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"fireplace_soft"},
+    {"id":"fireplace:deep","family":"fireplace","level":"deep","label":"Hearth","fileName":"hyperfocus-fireplace-deep.mp3","relativePath":"audio/hyperfocus/hyperfocus-fireplace-deep.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":2856,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"fireplace_deep"},
+    {"id":"fireplace:intense","family":"fireplace","level":"intense","label":"Full Hearth","fileName":"hyperfocus-fireplace-intense.mp3","relativePath":"audio/hyperfocus/hyperfocus-fireplace-intense.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":2856,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"fireplace_intense"},
+    {"id":"river:soft","family":"river","level":"soft","label":"Brook","fileName":"hyperfocus-river-soft.mp3","relativePath":"audio/hyperfocus/hyperfocus-river-soft.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":823,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"river_soft"},
+    {"id":"river:deep","family":"river","level":"deep","label":"Forest River","fileName":"hyperfocus-river-deep.mp3","relativePath":"audio/hyperfocus/hyperfocus-river-deep.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":3218,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"river_deep"},
+    {"id":"river:intense","family":"river","level":"intense","label":"Whitewater","fileName":"hyperfocus-river-intense.mp3","relativePath":"audio/hyperfocus/hyperfocus-river-intense.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":871,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"river_intense"},
+    {"id":"wind:soft","family":"wind","level":"soft","label":"Soft Wind","fileName":"hyperfocus-wind-soft.mp3","relativePath":"audio/hyperfocus/hyperfocus-wind-soft.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":908,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"wind_soft"},
+    {"id":"wind:deep","family":"wind","level":"deep","label":"Wind Bed","fileName":"hyperfocus-wind-deep.mp3","relativePath":"audio/hyperfocus/hyperfocus-wind-deep.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":904,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"wind_deep"},
+    {"id":"wind:intense","family":"wind","level":"intense","label":"Mountain Wind","fileName":"hyperfocus-wind-intense.mp3","relativePath":"audio/hyperfocus/hyperfocus-wind-intense.mp3","durationSeconds":30,"source":{"provider":"BigSoundBank / LaSonotheque","providerRoot":"https://bigsoundbank.com/","soundNumber":625,"licenseId":"CC0-1.0","licenseUrl":"https://bigsoundbank.com/licenses.html"},"processingProfile":"wind_intense"}
+  ],
+  "ambience": [
+    {"id":"soft-air-veil","fileName":"soft-air-veil.mp3","relativePath":"audio/ambience/soft-air-veil.mp3","durationSeconds":96,"seed":94468625,"role":"Entry/auth ambience"},
+    {"id":"gentle-water-bed","fileName":"gentle-water-bed.mp3","relativePath":"audio/ambience/gentle-water-bed.mp3","durationSeconds":96,"seed":1852958119,"role":"Orb ambience"},
+    {"id":"soft-rain-veil","fileName":"soft-rain-veil.mp3","relativePath":"audio/ambience/soft-rain-veil.mp3","durationSeconds":96,"seed":5248929,"role":"Diary/settings ambience"}
+  ],
+  "feedback": [
+    {"id":"feedback-success","fileName":"feedback-success.mp3","relativePath":"audio/feedback/feedback-success.mp3","durationSeconds":0.48,"runtimeGain":0.35,"notes":[{"frequency":392.0,"start":0.02,"length":0.20,"level":0.72},{"frequency":493.88,"start":0.13,"length":0.28,"level":0.88}]},
+    {"id":"feedback-complete","fileName":"feedback-complete.mp3","relativePath":"audio/feedback/feedback-complete.mp3","durationSeconds":0.62,"runtimeGain":0.40,"notes":[{"frequency":329.63,"start":0.02,"length":0.22,"level":0.64},{"frequency":392.0,"start":0.13,"length":0.25,"level":0.76},{"frequency":493.88,"start":0.27,"length":0.28,"level":0.90}]},
+    {"id":"feedback-streak","fileName":"feedback-streak.mp3","relativePath":"audio/feedback/feedback-streak.mp3","durationSeconds":0.78,"runtimeGain":0.45,"notes":[{"frequency":349.23,"start":0.02,"length":0.23,"level":0.60},{"frequency":440.0,"start":0.14,"length":0.25,"level":0.70},{"frequency":523.25,"start":0.28,"length":0.27,"level":0.80},{"frequency":587.33,"start":0.43,"length":0.28,"level":0.88}]},
+    {"id":"feedback-milestone","fileName":"feedback-milestone.mp3","relativePath":"audio/feedback/feedback-milestone.mp3","durationSeconds":0.70,"runtimeGain":0.45,"notes":[{"frequency":392.0,"start":0.02,"length":0.25,"level":0.66},{"frequency":493.88,"start":0.17,"length":0.27,"level":0.78},{"frequency":587.33,"start":0.34,"length":0.29,"level":0.90}]},
+    {"id":"feedback-notification","fileName":"feedback-notification.mp3","relativePath":"audio/feedback/feedback-notification.mp3","durationSeconds":0.34,"runtimeGain":0.20,"notes":[{"frequency":587.33,"start":0.02,"length":0.25,"level":0.82}]}
+  ]
+}

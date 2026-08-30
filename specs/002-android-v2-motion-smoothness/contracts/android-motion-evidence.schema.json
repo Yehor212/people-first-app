@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.zenflow.invalid/contracts/android-motion-evidence-v2.schema.json",
+  "title": "ZenFlow Android V2 motion evidence ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "source", "candidate", "runs", "completion"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gitHead",
+        "stagedDiffSha256",
+        "unstagedDiffSha256",
+        "dirtyPaths",
+        "buildInputs",
+        "untrackedInputs"
+      ],
+      "properties": {
+        "gitHead": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "stagedDiffSha256": { "$ref": "#/$defs/sha256" },
+        "unstagedDiffSha256": { "$ref": "#/$defs/sha256" },
+        "dirtyPaths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "status"],
+            "properties": {
+              "path": { "$ref": "#/$defs/relativePath" },
+              "status": { "type": "string", "minLength": 1, "maxLength": 4 },
+              "sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        },
+        "buildInputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact" }
+        },
+        "untrackedInputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact" }
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "apk"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(?:candidate(?:2[4-9]|[3-9][0-9]|[1-9][0-9]{2,})|prechange-baseline-0*[1-9][0-9]*)$"
+        },
+        "status": { "enum": ["FIXED", "FAIL", "REJECTED", "UNVERIFIED"] },
+        "apk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "bytes",
+            "sha256",
+            "installedBeforeSha256",
+            "installedAfterSha256",
+            "packageName",
+            "versionName",
+            "versionCode",
+            "signingCertificateSha256",
+            "lastUpdateTime"
+          ],
+          "properties": {
+            "path": { "$ref": "#/$defs/relativePath" },
+            "bytes": { "type": "integer", "minimum": 0 },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "installedBeforeSha256": { "$ref": "#/$defs/sha256" },
+            "installedAfterSha256": { "$ref": "#/$defs/sha256" },
+            "packageName": { "const": "com.zenflow.app" },
+            "versionName": { "const": "2.1.1" },
+            "versionCode": { "const": 38 },
+            "signingCertificateSha256": { "$ref": "#/$defs/sha256" },
+            "lastUpdateTime": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "runId",
+          "scenario",
+          "pass",
+          "status",
+          "startedAt",
+          "endedAt",
+          "environment",
+          "installedBeforeSha256",
+          "installedAfterSha256",
+          "artifacts"
+        ],
+        "properties": {
+          "runId": { "type": "string", "minLength": 1 },
+          "scenario": { "type": "string", "minLength": 1 },
+          "pass": {
+            "enum": ["javascript", "perfetto", "visual", "correlation", "compatibility"]
+          },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "endedAt": { "type": "string", "format": "date-time" },
+          "status": {
+            "enum": ["FIXED", "FAIL", "REJECTED", "NOT_REPRODUCIBLE", "UNVERIFIED"]
+          },
+          "environment": { "$ref": "#/$defs/environment" },
+          "installedBeforeSha256": { "$ref": "#/$defs/sha256" },
+          "installedAfterSha256": { "$ref": "#/$defs/sha256" },
+          "actions": { "$ref": "#/$defs/artifact" },
+          "symptom": { "type": ["string", "null"] },
+          "attribution": { "type": ["string", "null"] },
+          "rootCause": { "type": ["string", "null"] },
+          "fix": { "type": ["string", "null"] },
+          "metrics": { "type": ["object", "null"] },
+          "artifacts": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/artifact" }
+          }
+        }
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "emulatorApi36",
+        "emulatorApi26",
+        "physical60Hz",
+        "physicalHighRefresh",
+        "visualCritic",
+        "userReview"
+      ],
+      "properties": {
+        "emulatorApi36": { "$ref": "#/$defs/gateStatus" },
+        "emulatorApi26": { "$ref": "#/$defs/gateStatus" },
+        "physical60Hz": { "$ref": "#/$defs/gateStatus" },
+        "physicalHighRefresh": { "$ref": "#/$defs/gateStatus" },
+        "visualCritic": { "$ref": "#/$defs/gateStatus" },
+        "userReview": { "enum": ["ACCEPTED", "REJECTED", "UNVERIFIED"] }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "gateStatus": { "enum": ["PASS", "FAIL", "UNVERIFIED"] },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deviceAlias",
+        "kind",
+        "api",
+        "abi",
+        "model",
+        "gpu",
+        "webViewPackage",
+        "webViewVersion",
+        "resolutionPx",
+        "densityDpi",
+        "refreshHz",
+        "orientation",
+        "locale",
+        "theme",
+        "motion",
+        "animationScales",
+        "thermalStatus",
+        "batterySaver",
+        "charging",
+        "availableMemoryBytes",
+        "collectedAt"
+      ],
+      "properties": {
+        "deviceAlias": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["emulator", "physical"] },
+        "api": { "type": "integer", "minimum": 26 },
+        "abi": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "gpu": { "type": "string", "minLength": 1 },
+        "webViewPackage": { "type": "string", "minLength": 1 },
+        "webViewVersion": { "type": "string", "minLength": 1 },
+        "resolutionPx": { "type": "string", "minLength": 1 },
+        "densityDpi": { "type": "integer", "minimum": 1 },
+        "refreshHz": { "type": "number", "exclusiveMinimum": 0 },
+        "orientation": { "type": "string", "minLength": 1 },
+        "locale": { "type": "string", "minLength": 1 },
+        "theme": { "type": "string", "minLength": 1 },
+        "motion": { "type": "string", "minLength": 1 },
+        "animationScales": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["window", "transition", "animator"],
+          "properties": {
+            "window": { "const": 1 },
+            "transition": { "const": 1 },
+            "animator": { "const": 1 }
+          }
+        },
+        "thermalStatus": { "type": ["integer", "null"], "minimum": 0 },
+        "batterySaver": { "type": "boolean" },
+        "charging": { "type": "boolean" },
+        "availableMemoryBytes": { "type": "integer", "minimum": 1 },
+        "collectedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -8,6 +8,7 @@ import { fetchCalendarEventsWithCache, isCalendarEnabled, CalendarEvent } from '
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { shouldAnimate } from '@/lib/animationUtils';
+import { isAndroid } from '@/lib/platform';
 import {
   EVENT_COLORS,
   getEventColor,
@@ -15,7 +16,10 @@ import {
   HOUR_WIDTH_PX,
   DAY_WIDTH_PX,
 } from './constants';
-import { physicalToDomScrollLeft } from './timelineScrollCoordinates';
+import {
+  centeredDomScrollLeft,
+  physicalToDomScrollLeft,
+} from './timelineScrollCoordinates';
 
 export interface UseScheduleDataReturn {
   currentTime: Date;
@@ -221,12 +225,26 @@ export function useScheduleData(
     const target = daySelector.children.item(index);
     if (!(target instanceof HTMLElement)) return;
 
+    if (isAndroid) {
+      daySelector.scrollTo({
+        left: centeredDomScrollLeft({
+          itemOffsetLeft: target.offsetLeft,
+          itemWidth: target.offsetWidth,
+          containerWidth: daySelector.clientWidth,
+          scrollWidth: daySelector.scrollWidth,
+          isRTL,
+        }),
+        behavior: shouldAnimate() ? "smooth" : "auto",
+      });
+      return;
+    }
+
     target.scrollIntoView({
       block: "nearest",
       inline: "center",
       behavior: shouldAnimate() ? "smooth" : "auto",
     });
-  }, [daySelectorRef, getDateIndex]);
+  }, [daySelectorRef, getDateIndex, isRTL]);
 
   const scrollTimelineToDate = useCallback((date: string, centerOnCurrentHour = false) => {
     if (!timelineRef.current) return;

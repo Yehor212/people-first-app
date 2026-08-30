@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { HTMLAttributes, ReactNode } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -567,6 +568,17 @@ describe("OfflineBanner", () => {
     } finally {
       modal.remove();
     }
+  });
+
+  it("lets Android page controls receive touches through non-action banner pixels", () => {
+    const css = readFileSync("src/index.css", "utf8");
+
+    expect(css).toMatch(
+      /:root\[data-platform="android"\] \[data-testid="offline-banner"\]\s*\{[^}]*pointer-events:\s*none;/s,
+    );
+    expect(css).toMatch(
+      /:root\[data-platform="android"\] \[data-testid="offline-banner"\] :where\([^)]*button[^)]*\)\s*\{[^}]*pointer-events:\s*auto;/s,
+    );
   });
 
 });

@@ -107,4 +107,22 @@ describe("MoodFirstRunHint", () => {
     expect(match).not.toBeNull();
     expect(Number(match?.[1])).toBeLessThan(59);
   });
+
+  it("releases completed first-run animation layers only on Android", () => {
+    const hintCss = readFileSync(
+      resolve(process.cwd(), "src/pages/nav-v2/MoodFirstRunHint.css"),
+      "utf8",
+    );
+    const indexCss = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
+
+    expect(hintCss).toMatch(
+      /\.mood-first-run-backdrop\s*\{[^}]*animation:\s*mood-first-run-fade 300ms ease-out both/s,
+    );
+    expect(hintCss).toMatch(
+      /\.mood-first-run-card\s*\{[^}]*animation:\s*mood-first-run-pop 340ms cubic-bezier\(0\.2, 0\.8, 0\.2, 1\) both/s,
+    );
+    expect(indexCss).toMatch(
+      /:root\[data-platform="android"\] \.mood-first-run-backdrop,\s*:root\[data-platform="android"\] \.mood-first-run-card\s*\{\s*animation-fill-mode:\s*backwards\s*!important;/s,
+    );
+  });
 });

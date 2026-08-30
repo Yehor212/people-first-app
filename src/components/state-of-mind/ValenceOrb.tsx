@@ -25,9 +25,11 @@ import { useRef, useEffect, useLayoutEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { MOTION_PREFERENCE_CHANGE_EVENT } from '@/lib/motionPreference';
 import { recordError } from '@/lib/crashReporting';
+import { isAndroid } from '@/lib/platform';
 import { safeSessionStorageGet, safeSessionStorageSet } from '@/lib/safeJson';
 import { SSK } from '@/lib/storageKeys';
 import { createParticlePool, updateParticles } from './particleSystem';
+import { reprojectOrbParticles } from './orbGeometry';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
 import { createOrbGL2Async, createOrbGLAsync } from './orbShader';
@@ -62,6 +64,28 @@ interface ValenceOrbProps {
   onVisualReady?: () => void;
   /** Fires once when no canonical renderer can produce a real frame. */
   onVisualError?: () => void;
+  /** Controls whether a size change recreates the renderer or resizes the active Worker context. */
+  resizePolicy?: OrbResizePolicy;
+}
+
+export type OrbResizePolicy = 'recreate' | 'preserve-worker-context';
+
+type OrbGeometry = {
+  size: number;
+  cx: number;
+  cy: number;
+  innerR: number;
+  outerR: number;
+};
+
+function createOrbGeometry(size: number): OrbGeometry {
+  return {
+    size,
+    cx: size / 2,
+    cy: size / 2,
+    innerR: size * 0.28,
+    outerR: size * 0.42,
+  };
 }
 
 type OrbWorkerPayload = {
@@ -122,10 +146,22 @@ declare global {
 
 type OrbClockProbeLocation = Pick<Location | URL, "hostname" | "port" | "protocol">;
 
+const ANDROID_MOTION_BENCHMARK_ENABLED =
+  typeof __ANDROID_MOTION_BENCHMARK__ !== "undefined" &&
+  __ANDROID_MOTION_BENCHMARK__;
+
 export function isOrbClockProbeAllowed(
   location: OrbClockProbeLocation,
   mode = import.meta.env.MODE,
+  androidMotionBenchmark = ANDROID_MOTION_BENCHMARK_ENABLED,
 ): boolean {
+  if (
+    androidMotionBenchmark &&
+    location.protocol === "https:" &&
+    location.hostname === "localhost"
+  ) {
+    return true;
+  }
   if (location.protocol !== "http:") return false;
   if (
     location.hostname === "127.0.0.1" ||
@@ -280,6 +316,7 @@ export const WEBGL_FORCED_FIRST_FRAME_TIMEOUT_MS = 30000;
 export const ORB_WORKER_STARTUP_TIMEOUT_MS = 12000;
 export const ORB_WORKER_RENDER_ACK_TIMEOUT_MS = 1500;
 export const ORB_WORKER_FIRST_PRESENTATION_ACK_TIMEOUT_MS = 12000;
+export const ORB_WORKER_DISPOSE_ACK_TIMEOUT_MS = 250;
 const ORB_WORKER_RENDER_ACK_TIMEOUT_MAX_MS = 4000;
 const ORB_WORKER_RENDER_ACK_LATENCY_MULTIPLIER = 4;
 export const ORB_WORKER_STATIC_HEALTHCHECK_MS = 5000;
@@ -956,6 +993,7 @@ export const ValenceOrb = memo(function ValenceOrb({
   onFirstPaintReady,
   onVisualReady,
   onVisualError,
+  resizePolicy = 'recreate',
 }: ValenceOrbProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -981,6 +1019,10 @@ export const ValenceOrb = memo(function ValenceOrb({
   animationSpeedRef.current = animationSpeed;
   const transitionProfileRef = useRef<OrbTransitionProfile>(transitionProfile);
   transitionProfileRef.current = transitionProfile;
+  const requestedSizeRef = useRef(size);
+  requestedSizeRef.current = size;
+  const geometryRef = useRef<OrbGeometry>(createOrbGeometry(size));
+  const resizeRendererRef = useRef<(nextSize: number) => void>(() => {});
 
   // Mutable animation state — avoids React re-renders during animation
   const stateRef = useRef<OrbRuntimeState | null>(null);
@@ -1105,9 +1147,15 @@ export const ValenceOrb = memo(function ValenceOrb({
   }, []);
 
   // Main canvas + animation setup
+  const rendererLifecycleSize =
+    resizePolicy === 'preserve-worker-context' ? null : size;
+
   useLayoutEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
+
+    const initialGeometry = createOrbGeometry(requestedSizeRef.current);
+    geometryRef.current = initialGeometry;
 
     firstPaintReadyRef.current = false;
     visualReadyRef.current = false;
@@ -1123,13 +1171,9 @@ export const ValenceOrb = memo(function ValenceOrb({
     isVisibleRef.current = true;
 
     // Initialize animation state
-    const cx = size / 2;
-    const cy = size / 2;
-    const innerR = size * 0.28;
-    const outerR = size * 0.42;
     const runtimeSnapshot = readOrbRuntimeSnapshot(
       renderer,
-      size,
+      initialGeometry.size,
       valenceRef.current,
       performance.now(),
     );
@@ -1176,7 +1220,13 @@ export const ValenceOrb = memo(function ValenceOrb({
       noisePhase: initialNoisePhase,
       pulsePhase: initialPulsePhase,
       breathPhase: initialBreathPhase,
-      particles: createParticlePool(PARTICLE_COUNT, cx, cy, innerR, outerR),
+      particles: createParticlePool(
+        PARTICLE_COUNT,
+        initialGeometry.cx,
+        initialGeometry.cy,
+        initialGeometry.innerR,
+        initialGeometry.outerR,
+      ),
       lastFrame: 0,
       lastWallFrame: 0,
     };
@@ -1217,7 +1267,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       !debugCanvasFallbackAllowed &&
       (renderer === 'webgl' || renderer === 'webgpu' || rendererOverride === 'webgl' || rendererOverride === 'webgpu');
     const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed;
-    let activeCanvas = createCanvas(size, canvasDpr);
+    let activeCanvas = createCanvas(initialGeometry.size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
     let workerRenderer: OrbWorkerController | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
@@ -1284,7 +1334,7 @@ export const ValenceOrb = memo(function ValenceOrb({
           source,
           rendererPolicy: renderer,
           rendererTier: canvasElRef.current?.getAttribute("data-orb-renderer-tier") ?? null,
-          size,
+          size: geometryRef.current.size,
           renderedValence: payload.valence,
           time: payload.time,
           motionPhase: payload.motionPhase,
@@ -1369,7 +1419,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         noisePhase: resolveOrbGpuNoisePhase(noisePhase),
         pulsePhase: stateRef.current?.pulsePhase ?? 0,
         breathPhase: stateRef.current?.breathPhase ?? 0,
-        size,
+        size: geometryRef.current.size,
         dpr,
         isDark: isDarkRead(),
         color,
@@ -1434,7 +1484,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         noisePhase: resolveOrbGpuNoisePhase(noisePhase),
         pulsePhase: stateRef.current?.pulsePhase ?? 0,
         breathPhase: stateRef.current?.breathPhase ?? 0,
-        size,
+        size: geometryRef.current.size,
         dpr,
         isDark: isDarkRead(),
         color,
@@ -1466,7 +1516,11 @@ export const ValenceOrb = memo(function ValenceOrb({
       _timestamp?: number,
     ) => {
       if (!ctx2d) return;
-      const effectiveDpr = Math.max(1, (canvasElRef.current?.width ?? size) / size);
+      const currentSize = geometryRef.current.size;
+      const effectiveDpr = Math.max(
+        1,
+        (canvasElRef.current?.width ?? currentSize) / currentSize,
+      );
       drawOrbScene(ctx2d, {
         valence: v,
         time: t,
@@ -1474,7 +1528,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         noisePhase,
         breathPhase: stateRef.current?.breathPhase ?? 0,
         particles,
-        size,
+        size: currentSize,
         dpr: effectiveDpr,
         isDark: isDarkRead(),
         shimmer: shimmerRef.current,
@@ -1512,6 +1566,48 @@ export const ValenceOrb = memo(function ValenceOrb({
       renderPendingCanonicalFrame?.(...args);
     };
     let render = glRenderer ? renderGL : (ctx2d ? renderCanvas2D : renderPendingWebGL);
+    const resizeRenderer = (nextSize: number) => {
+      if (resizePolicy !== 'preserve-worker-context') return;
+
+      const previousGeometry = geometryRef.current;
+      if (previousGeometry.size === nextSize) return;
+      const state = stateRef.current;
+      if (
+        !state ||
+        !reprojectOrbParticles(state.particles, previousGeometry.size, nextSize)
+      ) {
+        return;
+      }
+
+      const ratio = nextSize / previousGeometry.size;
+      if (touchRef.current) {
+        touchRef.current.x *= ratio;
+        touchRef.current.y *= ratio;
+      }
+      geometryRef.current = createOrbGeometry(nextSize);
+
+      wrapper.querySelectorAll('canvas').forEach((canvas) => {
+        canvas.style.width = `${nextSize}px`;
+        canvas.style.height = `${nextSize}px`;
+        if (canvas.dataset.orbRendererTier !== 'webgl-worker') {
+          const bitmapSize = Math.max(1, Math.round(nextSize * dpr));
+          canvas.width = bitmapSize;
+          canvas.height = bitmapSize;
+        }
+      });
+
+      const renderTime = shouldAnimateCanonicalOrb()
+        ? state.time
+        : resolveReducedMotionOrbStillTime(state.time);
+      render(
+        smoothValenceRef.current,
+        renderTime,
+        state.motionPhase,
+        state.noisePhase,
+        state.particles,
+      );
+    };
+    resizeRendererRef.current = resizeRenderer;
     let disposed = false;
     let rafScheduled = false;
 
@@ -1548,7 +1644,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       }
 
       const previousCanvas = activeCanvas;
-      fallbackCanvas = createCanvas(size, canvasDpr);
+      fallbackCanvas = createCanvas(geometryRef.current.size, canvasDpr);
       markRendererTier(fallbackCanvas, 'canvas2d');
       try {
         ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
@@ -1927,11 +2023,14 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       // Update particles (skip when off-screen to save CPU)
       if (isVisibleRef.current) {
+        const geometry = geometryRef.current;
         updateParticles(
           state.particles,
           state.currentValence,
-          cx, cy,
-          innerR, outerR,
+          geometry.cx,
+          geometry.cy,
+          geometry.innerR,
+          geometry.outerR,
           idleFactor, // P4: calm factor
           dt,
         );
@@ -2241,7 +2340,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         const readinessTimeoutMs = forceCanonicalWebGL
           ? FORCED_WEBGL_READINESS_TIMEOUT_MS
           : WEBGL_READINESS_TIMEOUT_MS;
-        let upgradeCanvas = createCanvas(size, dpr);
+        let upgradeCanvas = createCanvas(geometryRef.current.size, dpr);
         let result: OrbGLBuildResult | null = null;
         let webGpuCandidateRenderer: OrbGLRenderer | null = null;
         let webGpuCandidateLost = false;
@@ -2266,7 +2365,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         if (!result && !forceCanonicalWebGL && !probeWebGLWorks()) return false;
 
         if (!result && !signal.aborted) {
-          const gl1Canvas = createCanvas(size, dpr);
+          const gl1Canvas = createCanvas(geometryRef.current.size, dpr);
           result = await createOrbGLAsync(gl1Canvas, {
             signal,
             timeoutMs: readinessTimeoutMs,
@@ -2275,7 +2374,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         }
 
         if (!result && !signal.aborted) {
-          const gl2Canvas = createCanvas(size, dpr);
+          const gl2Canvas = createCanvas(geometryRef.current.size, dpr);
           result = await createOrbGL2Async(gl2Canvas, {
             signal,
             timeoutMs: readinessTimeoutMs,
@@ -2515,7 +2614,7 @@ export const ValenceOrb = memo(function ValenceOrb({
 
       const preferWorkerWebGLFirst = shouldPreferWorkerWebGLBeforeMainThreadWebGPU(
         forceCanonicalWebGL,
-        size,
+        geometryRef.current.size,
       );
       const recoveredWithWebGPU = preferWorkerWebGLFirst
         ? false
@@ -2544,10 +2643,14 @@ export const ValenceOrb = memo(function ValenceOrb({
         }
       };
 
-      if ((renderer === 'auto' || renderer === 'webgpu' || renderer === 'webgl') && shouldUseWorkerWebGL(forceCanonicalWebGL, size)) {
-        publishOrbLifecycleProbe("worker-upgrade-start", { size, skipWebGPU });
+      if (
+        (renderer === 'auto' || renderer === 'webgpu' || renderer === 'webgl') &&
+        shouldUseWorkerWebGL(forceCanonicalWebGL, geometryRef.current.size)
+      ) {
+        const workerSize = geometryRef.current.size;
+        publishOrbLifecycleProbe("worker-upgrade-start", { size: workerSize, skipWebGPU });
         const workerStartedAt = performance.now();
-        const workerCanvas = createCanvas(size, dpr);
+        const workerCanvas = createCanvas(workerSize, dpr);
         if (forceCanonicalWebGL) {
           workerCanvas.style.opacity = '0';
           workerCanvas.style.transition = 'opacity 160ms ease-out';
@@ -2577,6 +2680,9 @@ export const ValenceOrb = memo(function ValenceOrb({
         let workerStartupTimeoutId = 0;
         let workerRenderAckTimeoutId = 0;
         let workerStaticHealthcheckTimeoutId = 0;
+        let workerDisposeAckTimeoutId = 0;
+        let workerDisposeRequested = false;
+        let workerTerminated = false;
         let currentWorkerRequestId = 0;
         let currentWorkerRequestPostedAt = 0;
         let lastWorkerAckLatencyMs: number | null = null;
@@ -2606,6 +2712,23 @@ export const ValenceOrb = memo(function ValenceOrb({
           }
         };
 
+        const clearWorkerDisposeAckTimeout = () => {
+          if (workerDisposeAckTimeoutId !== 0) {
+            window.clearTimeout(workerDisposeAckTimeoutId);
+            workerDisposeAckTimeoutId = 0;
+          }
+        };
+
+        const terminateCurrentWorker = () => {
+          if (workerTerminated) return;
+          workerTerminated = true;
+          clearWorkerDisposeAckTimeout();
+          worker.onmessage = null;
+          worker.onerror = null;
+          worker.terminate();
+          if (webglWorker === worker) webglWorker = null;
+        };
+
         const clearCurrentWorkerWatchdogs = () => {
           clearWorkerStartupTimeout();
           clearWorkerRenderAckTimeout();
@@ -2618,10 +2741,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         const clearFailedWorkerState = () => {
           const failedController = workerRenderer;
           clearCurrentWorkerWatchdogs();
-          worker.onmessage = null;
-          worker.onerror = null;
-          worker.terminate();
-          if (webglWorker === worker) webglWorker = null;
+          terminateCurrentWorker();
           if (workerRendererRef.current === failedController) {
             workerRendererRef.current = null;
           }
@@ -2917,9 +3037,33 @@ export const ValenceOrb = memo(function ValenceOrb({
           scheduleWorkerStaticHealthcheck();
         };
 
+        const requestWorkerDispose = () => {
+          if (workerDisposeRequested || workerTerminated) return;
+          workerDisposeRequested = true;
+          clearCurrentWorkerWatchdogs();
+          workerRenderInFlight = false;
+          latestWorkerPayload = null;
+          lastWorkerPayload = null;
+          workerProbePayloads.clear();
+          if (isAndroid) {
+            workerDisposeAckTimeoutId = window.setTimeout(() => {
+              workerDisposeAckTimeoutId = 0;
+              terminateCurrentWorker();
+            }, ORB_WORKER_DISPOSE_ACK_TIMEOUT_MS);
+          }
+          try {
+            worker.postMessage({ type: 'dispose' });
+          } catch {
+            recordCanonicalOrbFailure('worker-webgl-dispose-send');
+            terminateCurrentWorker();
+            return;
+          }
+          if (!isAndroid) terminateCurrentWorker();
+        };
+
         worker.onmessage = (
           event: MessageEvent<{
-            type: 'ready' | 'failed' | 'rendered' | 'unpresented';
+            type: 'ready' | 'failed' | 'rendered' | 'unpresented' | 'disposed';
             code?:
               | 'first-presentation-context-lost'
               | 'first-presentation-readback-error'
@@ -2929,7 +3073,12 @@ export const ValenceOrb = memo(function ValenceOrb({
             requestId?: number;
           }>,
         ) => {
-          if (signal.aborted || !mountedRef.current) return;
+          if (event.data.type === 'disposed') {
+            if (workerDisposeRequested) terminateCurrentWorker();
+            return;
+          }
+
+          if (workerDisposeRequested || signal.aborted || !mountedRef.current) return;
 
           if (event.data.type === 'rendered' || event.data.type === 'unpresented') {
             const renderedAt = performance.now();
@@ -3035,7 +3184,7 @@ export const ValenceOrb = memo(function ValenceOrb({
               publishOrbLifecycleProbe("worker-upgrade-applied", {
                 initial: initialWorkerPaint,
                 recovery: recoveredWorkerPaint,
-                size,
+                size: geometryRef.current.size,
               });
             }
             markVisualReadyRef.current();
@@ -3081,14 +3230,7 @@ export const ValenceOrb = memo(function ValenceOrb({
               postWorkerRender(payload);
             },
             dispose() {
-              clearCurrentWorkerWatchdogs();
-              try {
-                worker.postMessage({ type: 'dispose' });
-              } catch {
-                recordCanonicalOrbFailure('worker-webgl-dispose-send');
-              } finally {
-                worker.terminate();
-              }
+              requestWorkerDispose();
             },
           };
 
@@ -3128,6 +3270,10 @@ export const ValenceOrb = memo(function ValenceOrb({
         };
 
         worker.onerror = () => {
+          if (workerDisposeRequested) {
+            terminateCurrentWorker();
+            return;
+          }
           handleWorkerFailure(
             activeCanvas === workerCanvas
               ? 'Worker WebGL renderer errored after first paint'
@@ -3144,7 +3290,7 @@ export const ValenceOrb = memo(function ValenceOrb({
         }
 
         try {
-          worker.postMessage({ type: 'init', canvas: offscreen, size, dpr }, [offscreen]);
+          worker.postMessage({ type: 'init', canvas: offscreen, size: workerSize, dpr }, [offscreen]);
         } catch (error) {
           clearFailedWorkerState();
           await recoverFromSynchronousWorkerSetupFailure(
@@ -3322,7 +3468,7 @@ export const ValenceOrb = memo(function ValenceOrb({
       disposed = true;
       rememberOrbRuntimeSnapshot(
         renderer,
-        size,
+        geometryRef.current.size,
         stateRef.current,
         smoothValenceRef.current,
         performance.now(),
@@ -3366,6 +3512,9 @@ export const ValenceOrb = memo(function ValenceOrb({
       if (recoverCanonicalGpuLossRef.current === recoverCanonicalGpuLoss) {
         recoverCanonicalGpuLossRef.current = () => {};
       }
+      if (resizeRendererRef.current === resizeRenderer) {
+        resizeRendererRef.current = () => {};
+      }
       canvasElRef.current = null;
 
       // Remove canvas elements from DOM
@@ -3401,7 +3550,7 @@ export const ValenceOrb = memo(function ValenceOrb({
     if (!glRenderer) {
       const webglUpgradeScheduling = reserveCanonicalWebGLUpgradeScheduling(
         forceCanonicalWebGL,
-        size,
+        geometryRef.current.size,
       );
       cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
         startWebGLUpgradeWhenVisible();
@@ -3418,7 +3567,12 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
 
     return cleanup;
-  }, [renderer, size]);
+  }, [renderer, rendererLifecycleSize, resizePolicy]);
+
+  useLayoutEffect(() => {
+    if (resizePolicy !== 'preserve-worker-context') return;
+    resizeRendererRef.current(size);
+  }, [resizePolicy, size]);
 
   // Update static frame when valence changes and animations are off
   useEffect(() => {

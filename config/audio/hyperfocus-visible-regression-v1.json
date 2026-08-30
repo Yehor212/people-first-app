@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "evidenceClass": "VISIBLE_REGRESSION",
+  "ownerEvidenceStatus": "CHAT_REPORTED_HASH_BOUND_RECEIPT_PENDING",
+  "packageId": "zenflow-cc0-kimi-audio-reconstruction-v1",
+  "sourceHeadSha": "e74a6b93b54afec99737ee54252dab92c34ba56c",
+  "workflowRunId": "32816404725",
+  "artifactId": "9551607003",
+  "archiveSha256": "48931c2f8723e246112303604dd5a070107733850c2ea9d53e23b5c8a66eeb6b",
+  "semanticPositiveIds": ["fireplace:deep"],
+  "semanticNegativeIds": [
+    "fireplace:intense",
+    "fireplace:soft",
+    "forest:deep",
+    "forest:intense",
+    "forest:soft",
+    "ocean:deep",
+    "ocean:intense",
+    "ocean:soft",
+    "rain:deep",
+    "rain:intense",
+    "rain:soft",
+    "river:deep",
+    "river:intense",
+    "river:soft",
+    "wind:deep",
+    "wind:intense",
+    "wind:soft"
+  ],
+  "overallExpectedVerdict": "FAIL",
+  "generalizationStatus": "UNVERIFIED_VISIBLE_FIXTURE_ONLY"
+}
+

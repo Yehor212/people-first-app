@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "provider": "BigSoundBank / LaSonotheque",
+  "providerRoot": "https://bigsoundbank.com/",
+  "licenseId": "CC0-1.0",
+  "licenseUrl": "https://bigsoundbank.com/licenses.html",
+  "previewStartSeconds": 5,
+  "previewDurationSeconds": 20,
+  "families": [
+    {
+      "family": "forest",
+      "noneAllowed": true,
+      "candidates": [
+        {"id": "forest-c1", "soundNumber": 3085, "expectedTitle": "Forest #5", "pageUrl": "https://bigsoundbank.com/forest-5-s3085.html"},
+        {"id": "forest-c2", "soundNumber": 2749, "expectedTitle": "Forest #4", "pageUrl": "https://bigsoundbank.com/forest-4-s2749.html"},
+        {"id": "forest-c3", "soundNumber": 905, "expectedTitle": "Forest: On the Edge", "pageUrl": "https://bigsoundbank.com/forest-on-the-edge-s0905.html"}
+      ]
+    },
+    {
+      "family": "rain",
+      "noneAllowed": true,
+      "candidates": [
+        {"id": "rain-c1", "soundNumber": 1019, "expectedTitle": "Summer Rain on Terrace", "pageUrl": "https://bigsoundbank.com/summer-rain-on-terrace-s1019.html"},
+        {"id": "rain-c2", "soundNumber": 2679, "expectedTitle": "Rain Under an Umbrella", "pageUrl": "https://bigsoundbank.com/rain-under-an-umbrella-s2679.html"},
+        {"id": "rain-c3", "soundNumber": 740, "expectedTitle": "Rain and Thunder #2", "pageUrl": "https://bigsoundbank.com/rain-and-storm-2-s0740.html"}
+      ]
+    },
+    {
+      "family": "ocean",
+      "noneAllowed": true,
+      "candidates": [
+        {"id": "ocean-c1", "soundNumber": 698, "expectedTitle": "Sea Waves", "pageUrl": "https://bigsoundbank.com/sea-waves-s0698.html"},
+        {"id": "ocean-c2", "soundNumber": 2567, "expectedTitle": "Sea of the beach of Dellec #4", "pageUrl": "https://bigsoundbank.com/sea-of-the-beach-of-dellec-4-s2567.html"},
+        {"id": "ocean-c3", "soundNumber": 1446, "expectedTitle": "Small waves and beach #1", "pageUrl": "https://bigsoundbank.com/small-waves-and-beach-1-s1446.html"}
+      ]
+    },
+    {
+      "family": "fireplace",
+      "noneAllowed": true,
+      "candidates": [
+        {"id": "fireplace-c1", "soundNumber": 2855, "expectedTitle": "Fireplace #3", "pageUrl": "https://bigsoundbank.com/fireplace-3-s2855.html"},
+        {"id": "fireplace-c2", "soundNumber": 2856, "expectedTitle": "Fireplace #4", "pageUrl": "https://bigsoundbank.com/fireplace-4-s2856.html"},
+        {"id": "fireplace-c3", "soundNumber": 2857, "expectedTitle": "Fireplace #5", "pageUrl": "https://bigsoundbank.com/fireplace-5-s2857.html"}
+      ]
+    },
+    {
+      "family": "river",
+      "noneAllowed": true,
+      "candidates": [
+        {"id": "river-c1", "soundNumber": 1354, "expectedTitle": "Small Stream #4", "pageUrl": "https://bigsoundbank.com/small-stream-4-s1354.html"},
+        {"id": "river-c2", "soundNumber": 3222, "expectedTitle": "Mountain Stream #7", "pageUrl": "https://bigsoundbank.com/mountain-stream-7-s3222.html"},
+        {"id": "river-c3", "soundNumber": 2754, "expectedTitle": "Mountain stream #1", "pageUrl": "https://bigsoundbank.com/mountain-stream-1-s2754.html"}
+      ]
+    },
+    {
+      "family": "wind",
+      "noneAllowed": true,
+      "candidates": [
+        {"id": "wind-c1", "soundNumber": 904, "expectedTitle": "Wind in the Trees", "pageUrl": "https://bigsoundbank.com/forest-wind-in-the-trees-s0904.html"},
+        {"id": "wind-c2", "soundNumber": 907, "expectedTitle": "Wind in shrub", "pageUrl": "https://bigsoundbank.com/wind-in-shrub-s0907.html"},
+        {"id": "wind-c3", "soundNumber": 1450, "expectedTitle": "Strong wind and trees #1", "pageUrl": "https://bigsoundbank.com/strong-wind-and-trees-1-s1450.html"}
+      ]
+    }
+  ]
+}

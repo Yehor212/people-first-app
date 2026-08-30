@@ -1407,6 +1407,50 @@ test.afterAll(() => validateStrictProductionPreview());
 test.describe("Settings Variant A final visual and runtime evidence", () => {
   test.describe.configure({ mode: "serial" });
 
+  test("keeps Android navigation motion enabled while runtime strain pauses only decorative Settings motion", async ({
+    page,
+  }) => {
+    test.setTimeout(30_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "CapacitorCustomPlatform", {
+        configurable: true,
+        value: { name: "android" },
+      });
+    });
+    await openSettings(page, {
+      reducedMotion: "no-preference",
+      runtimePerformanceGuard: "off",
+      section: "appearance",
+    });
+    const updateDialog = page.getByRole("alertdialog", { name: "Update Available" });
+    if (await updateDialog.isVisible()) {
+      await updateDialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(updateDialog).toHaveCount(0);
+    }
+
+    await expect(page.locator("html")).toHaveAttribute("data-platform", "android");
+    await setRuntimePerformanceLimit(page, true);
+    await expect(page.locator("html")).toHaveAttribute("data-runtime-perf", "strained");
+    await expect(page.locator("html")).toHaveAttribute("data-reduced-motion", "false");
+    await expect(page.locator("body")).not.toHaveClass(/\breduce-motion\b/);
+    await expect
+      .poll(() => page.getByTestId("day-cosmic-background").getAttribute("data-animated"))
+      .toBe("false");
+
+    await page.getByTestId("settings-mobile-back").click();
+    await expect(page.getByTestId("settings-module-list")).toBeVisible();
+    await page.getByTestId("settings-module-card-appearance").click();
+    await expect(page.getByTestId("settings-module-panel-appearance")).toBeVisible();
+    await expect(page.locator("body")).not.toHaveClass(/\breduce-motion\b/);
+
+    await setRuntimePerformanceLimit(page, false);
+    await expect(page.locator("html")).not.toHaveAttribute("data-runtime-perf", /.+/);
+    await expect
+      .poll(() => page.getByTestId("day-cosmic-background").getAttribute("data-animated"))
+      .toBe("true");
+  });
+
   test("keeps ambient motion active on the ordinary Settings URL when the runtime guard has no strain evidence", async ({
     page,
   }) => {

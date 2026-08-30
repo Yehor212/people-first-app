@@ -1,4 +1,5 @@
-import { memo, useMemo, type CSSProperties } from "react";
+import { memo, useMemo, useRef, useState, type CSSProperties } from "react";
+import { isAndroid } from "@/lib/platform";
 import {
   SETTINGS_MOTE_MOTION,
   SETTINGS_PHOTON_MOTION,
@@ -7,9 +8,15 @@ import {
   type PhotonStyle,
   type SunThreadStyle,
 } from "./dayCosmicMotionConfig";
+import { AndroidDayLargeEffects, useAndroidDayLargeEffects } from "./AndroidDayLargeEffects";
+import {
+  DAY_COSMIC_MOTES,
+  DAY_COSMIC_PHOTONS,
+  DAY_COSMIC_SUN_THREADS,
+} from "./dayCosmicMotionModel";
+import { useAndroidDayOrbOpaqueSurface } from "./useAndroidDayOrbOpaqueSurface";
 import "./DayCosmicBackground.css";
 
-type PhotonTone = "aqua" | "gold" | "mint" | "iris" | "rose";
 type DayMode = "dawn" | "morning" | "afternoon" | "golden" | "dusk";
 
 type DayPaletteStyle = CSSProperties & {
@@ -17,6 +24,7 @@ type DayPaletteStyle = CSSProperties & {
 };
 
 interface DayCosmicBackgroundProps {
+  active?: boolean;
   presentation?: "orb" | "settings";
   motionEnabled: boolean;
 }
@@ -131,10 +139,24 @@ const DAY_PALETTES: Record<DayMode, DayPaletteStyle> = {
  * and limited to transform/opacity animation with a static paper-grain layer.
  */
 export const DayCosmicBackground = memo(function DayCosmicBackground({
+  active = true,
   presentation = "orb",
   motionEnabled,
 }: DayCosmicBackgroundProps) {
   const animated = motionEnabled;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const androidLargeEffectsCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [androidDynamicFallbackRequired, setAndroidDynamicFallbackRequired] = useState(false);
+  const shouldUseAndroidLargeEffects = isAndroid && presentation === "orb" && animated;
+  const shouldRenderDynamicDom = !shouldUseAndroidLargeEffects || androidDynamicFallbackRequired;
+  useAndroidDayOrbOpaqueSurface(isAndroid && presentation === "orb" && active);
+  useAndroidDayLargeEffects(
+    shouldUseAndroidLargeEffects,
+    active,
+    rootRef,
+    androidLargeEffectsCanvasRef,
+    setAndroidDynamicFallbackRequired
+  );
 
   // Sample local time once per mount so Mood and Settings keep one stable
   // atmosphere during the current visit. A route remount samples the new time;
@@ -148,246 +170,224 @@ export const DayCosmicBackground = memo(function DayCosmicBackground({
     return "dusk";
   }, []);
 
-  // 35 dust motes — deterministic positions + delays so baselines are stable.
-  // Seed: index-derived sin/cos so tests match screenshots frame-for-frame.
-  const motes = useMemo(() => {
-    return Array.from({ length: 35 }, (_, i) => {
-      const x = (Math.sin(i * 1.9) * 0.5 + 0.5) * 100;
-      const y = (Math.cos(i * 2.3) * 0.5 + 0.5) * 100;
-      const size = 2 + (i % 3);
-      const duration = 12 + (i % 8) * 1.25;
-      const delay = -(i * 0.55);
-      const opacity = 0.45 + (i % 5) * 0.1;
-      return { id: i, x, y, size, duration, delay, opacity };
-    });
-  }, []);
-
-  const photons = useMemo(() => {
-    const tones: PhotonTone[] = ["aqua", "gold", "mint", "iris", "rose"];
-    return Array.from({ length: 78 }, (_, i) => {
-      const x = (Math.sin(i * 2.17 + 0.4) * 0.5 + 0.5) * 104 - 2;
-      const y = (Math.cos(i * 2.71 + 1.2) * 0.5 + 0.5) * 104 - 2;
-      const size = 2.6 + (i % 6) * 0.92;
-      const duration = 5.4 + (i % 9) * 0.72;
-      const delay = -(i * 0.19);
-      const opacity = 0.66 + (i % 7) * 0.045;
-      const drift = 10 + (i % 5) * 4;
-      return {
-        id: i,
-        x,
-        y,
-        size,
-        duration,
-        delay,
-        opacity,
-        drift,
-        tone: tones[i % tones.length],
-      };
-    });
-  }, []);
-
-  const sunThreads = useMemo(() => {
-    return Array.from({ length: 18 }, (_, i) => {
-      const x = 3 + (Math.sin(i * 1.57 + 0.8) * 0.5 + 0.5) * 94;
-      const y = -18 + (Math.cos(i * 1.83 + 0.5) * 0.5 + 0.5) * 38;
-      const length = 42 + (i % 5) * 10;
-      const width = 1.4 + (i % 4) * 0.42;
-      const opacity = 0.22 + (i % 6) * 0.045;
-      const duration = 10.5 + (i % 7) * 1.2;
-      const delay = -(i * 0.47);
-      const tilt = -18 + (i % 6) * 4.4;
-      return { id: i, x, y, length, width, opacity, duration, delay, tilt };
-    });
-  }, []);
-
   // Settings keeps the canonical palette/layers but uses a quieter deterministic
   // field. Selecting every third point preserves the established distribution
   // without maintaining a second set of visual coordinates.
   const visibleMotes =
-    presentation === "settings" ? motes.filter((_, index) => index % 3 === 0) : motes;
+    presentation === "settings"
+      ? DAY_COSMIC_MOTES.filter((_, index) => index % 3 === 0)
+      : DAY_COSMIC_MOTES;
   const visiblePhotons =
-    presentation === "settings" ? photons.filter((_, index) => index % 3 === 0) : photons;
+    presentation === "settings"
+      ? DAY_COSMIC_PHOTONS.filter((_, index) => index % 3 === 0)
+      : DAY_COSMIC_PHOTONS;
   const visibleSunThreads =
-    presentation === "settings" ? sunThreads.filter((_, index) => index % 3 === 0) : sunThreads;
+    presentation === "settings"
+      ? DAY_COSMIC_SUN_THREADS.filter((_, index) => index % 3 === 0)
+      : DAY_COSMIC_SUN_THREADS;
 
   return (
-    <div
-      aria-hidden="true"
-      data-animated={animated ? "true" : "false"}
-      data-presentation={presentation}
-      data-testid="day-cosmic-background"
-      data-daymode={daymode}
-      className="day-cosmic pointer-events-none absolute inset-0 z-0"
-      style={DAY_PALETTES[daymode]}
-    >
-      {/* Layer 1 — base aurora radial mesh */}
-      <div className="day-cosmic__base" data-testid="day-cosmic-base" />
-
-      <div className="day-cosmic__solar-portal" data-testid="day-cosmic-solar-portal">
-        <span className="day-cosmic__solar-portal-core" />
-        <span className="day-cosmic__solar-portal-orbit day-cosmic__solar-portal-orbit--one" />
-        <span className="day-cosmic__solar-portal-orbit day-cosmic__solar-portal-orbit--two" />
-      </div>
-
-      {/* Layer 2 — aurora bokeh pools (violet top-left, seafoam bottom-right) */}
-      <div className="day-cosmic__bokeh" data-testid="day-cosmic-bokeh" />
-
-      {/* Layer 3 — soft-light atmosphere sheet (trace tint, mix-blend soft-light) */}
-      <div className="day-cosmic__atmosphere" data-testid="day-cosmic-atmosphere" />
-
-      <div className="day-cosmic__horizon-glow" data-testid="day-cosmic-horizon-glow" />
+    <>
       <div
-        className="day-cosmic__light-curtain"
-        data-motion-active={presentation === "settings" && animated ? "true" : undefined}
-        data-motion-emphasis={presentation === "settings" ? "primary" : undefined}
-        data-motion-id={presentation === "settings" ? "ambient-curtain" : undefined}
-        data-testid="day-cosmic-light-curtain"
-      />
-
-      <div
-        className="day-cosmic__sun-threads"
-        data-testid="day-cosmic-sun-threads"
-        data-animated={animated ? "true" : "false"}
-      >
-        {visibleSunThreads.map((thread) => {
-          const settingsMotion =
-            presentation === "settings" && animated
-              ? SETTINGS_THREAD_MOTION.get(thread.id)
-              : undefined;
-          return (
-            <span
-              key={thread.id}
-              className="day-cosmic__sun-thread"
-              data-motion-active={settingsMotion ? "true" : "false"}
-              data-motion-id={thread.id}
-              style={
-                {
-                  "--thread-x": `${thread.x}%`,
-                  "--thread-y": `${thread.y}%`,
-                  "--thread-length": `${thread.length}svh`,
-                  "--thread-opacity": thread.opacity,
-                  "--thread-delay": `${thread.delay}s`,
-                  "--thread-duration": `${thread.duration}s`,
-                  "--thread-tilt": `${thread.tilt}deg`,
-                  "--thread-width": `${thread.width}px`,
-                  "--settings-motion-delay": settingsMotion
-                    ? `${settingsMotion.delay}s`
-                    : undefined,
-                  "--settings-motion-duration": settingsMotion
-                    ? `${settingsMotion.duration}s`
-                    : undefined,
-                } as SunThreadStyle
-              }
-            />
-          );
-        })}
-      </div>
-
-      {/* Layer 4 — god-ray masque (diagonal rays from window corner) */}
-      <div className="day-cosmic__god-rays" data-testid="day-cosmic-god-rays" />
-
-      <div className="day-cosmic__sun-shower" data-testid="day-cosmic-sun-shower" />
-      <div className="day-cosmic__prism-ribbon" data-testid="day-cosmic-prism-ribbon" />
-      <div className="day-cosmic__caustics" data-testid="day-cosmic-caustics" />
-      <div className="day-cosmic__glass-depth" data-testid="day-cosmic-glass-depth" />
-
-      <div
-        className="day-cosmic__photon-field"
-        data-testid="day-cosmic-photon-field"
-        data-animated={animated ? "true" : "false"}
-      >
-        {visiblePhotons.map((photon) => {
-          const settingsMotion =
-            presentation === "settings" && animated
-              ? SETTINGS_PHOTON_MOTION.get(photon.id)
-              : undefined;
-          return (
-            <span
-              key={photon.id}
-              className={`day-cosmic__photon day-cosmic__photon--${photon.tone}`}
-              data-motion-active={settingsMotion ? "true" : "false"}
-              data-motion-id={photon.id}
-              style={
-                {
-                  "--photon-x": `${photon.x}%`,
-                  "--photon-y": `${photon.y}%`,
-                  "--photon-size": `${photon.size}px`,
-                  "--photon-opacity": photon.opacity,
-                  "--photon-delay": `${photon.delay}s`,
-                  "--photon-duration": `${photon.duration}s`,
-                  "--photon-drift": `${photon.drift}px`,
-                  "--settings-motion-delay": settingsMotion
-                    ? `${settingsMotion.delay}s`
-                    : undefined,
-                  "--settings-motion-duration": settingsMotion
-                    ? `${settingsMotion.duration}s`
-                    : undefined,
-                } as PhotonStyle
-              }
-            />
-          );
-        })}
-      </div>
-
-      {/* Layer 5 — 35 dust motes (animated drift, gated by reduced-motion) */}
-      <div
-        className="day-cosmic__motes"
-        data-testid="day-cosmic-motes"
-        data-animated={animated ? "true" : "false"}
-      >
-        {visibleMotes.map((m) => {
-          const settingsMotion =
-            presentation === "settings" && animated ? SETTINGS_MOTE_MOTION.get(m.id) : undefined;
-          return (
-            <span
-              key={m.id}
-              className="day-cosmic__mote"
-              data-motion-active={settingsMotion ? "true" : "false"}
-              data-motion-id={m.id}
-              style={
-                {
-                  left: `${m.x}%`,
-                  top: `${m.y}%`,
-                  width: `${m.size}px`,
-                  height: `${m.size}px`,
-                  opacity: m.opacity,
-                  "--mote-opacity": m.opacity,
-                  animationDuration: `${m.duration}s`,
-                  animationDelay: `${m.delay}s`,
-                  "--settings-motion-delay": settingsMotion
-                    ? `${settingsMotion.delay}s`
-                    : undefined,
-                  "--settings-motion-duration": settingsMotion
-                    ? `${settingsMotion.duration}s`
-                    : undefined,
-                } as MoteStyle
-              }
-            />
-          );
-        })}
-      </div>
-
-      {/* Layer 6 — paper grain SVG (STATIC, 4% opacity, multiply blend) */}
-      <svg
-        className="day-cosmic__paper-grain"
-        data-testid="day-cosmic-paper-grain"
-        xmlns="http://www.w3.org/2000/svg"
-        width="100%"
-        height="100%"
+        ref={rootRef}
         aria-hidden="true"
+        data-animated={animated ? "true" : "false"}
+        data-android-day-active={active ? "true" : "false"}
+        data-android-day-ambience={shouldUseAndroidLargeEffects ? "pending" : undefined}
+        data-presentation={presentation}
+        data-testid="day-cosmic-background"
+        data-daymode={daymode}
+        className="day-cosmic pointer-events-none absolute inset-0 z-0"
+        style={DAY_PALETTES[daymode]}
       >
-        <filter id="day-cosmic-turbulence">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" />
-          <feColorMatrix
-            type="matrix"
-            values="0 0 0 0 0.35  0 0 0 0 0.22  0 0 0 0 0.10  0 0 0 0.6 0"
-          />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#day-cosmic-turbulence)" />
-      </svg>
+        {/* Layer 1 — base aurora radial mesh */}
+        <div className="day-cosmic__base" data-testid="day-cosmic-base" />
 
-      {/* Layer 7 — edge vignette (quiet corner darkening) */}
-      <div className="day-cosmic__vignette" data-testid="day-cosmic-vignette" />
-    </div>
+        <div className="day-cosmic__solar-portal" data-testid="day-cosmic-solar-portal">
+          <span className="day-cosmic__solar-portal-core" />
+          <span className="day-cosmic__solar-portal-orbit day-cosmic__solar-portal-orbit--one" />
+          <span className="day-cosmic__solar-portal-orbit day-cosmic__solar-portal-orbit--two" />
+        </div>
+
+        {/* Layer 2 — aurora bokeh pools (violet top-left, seafoam bottom-right) */}
+        <div className="day-cosmic__bokeh" data-testid="day-cosmic-bokeh" />
+
+        {/* Layer 3 — soft-light atmosphere sheet (trace tint, mix-blend soft-light) */}
+        <div className="day-cosmic__atmosphere" data-testid="day-cosmic-atmosphere" />
+
+        <div className="day-cosmic__horizon-glow" data-testid="day-cosmic-horizon-glow" />
+        {shouldRenderDynamicDom ? (
+          <>
+            <div
+              className="day-cosmic__light-curtain"
+              data-motion-active={presentation === "settings" && animated ? "true" : undefined}
+              data-motion-emphasis={presentation === "settings" ? "primary" : undefined}
+              data-motion-id={presentation === "settings" ? "ambient-curtain" : undefined}
+              data-testid="day-cosmic-light-curtain"
+            />
+
+            <div
+              className="day-cosmic__sun-threads"
+              data-testid="day-cosmic-sun-threads"
+              data-animated={animated ? "true" : "false"}
+            >
+              {visibleSunThreads.map((thread) => {
+                const settingsMotion =
+                  presentation === "settings" && animated
+                    ? SETTINGS_THREAD_MOTION.get(thread.id)
+                    : undefined;
+                return (
+                  <span
+                    key={thread.id}
+                    className="day-cosmic__sun-thread"
+                    data-motion-active={settingsMotion ? "true" : "false"}
+                    data-motion-id={thread.id}
+                    style={
+                      {
+                        "--thread-x": `${thread.x}%`,
+                        "--thread-y": `${thread.y}%`,
+                        "--thread-length": `${thread.length}svh`,
+                        "--thread-opacity": thread.opacity,
+                        "--thread-delay": `${thread.delay}s`,
+                        "--thread-duration": `${thread.duration}s`,
+                        "--thread-tilt": `${thread.tilt}deg`,
+                        "--thread-width": `${thread.width}px`,
+                        "--settings-motion-delay": settingsMotion
+                          ? `${settingsMotion.delay}s`
+                          : undefined,
+                        "--settings-motion-duration": settingsMotion
+                          ? `${settingsMotion.duration}s`
+                          : undefined,
+                      } as SunThreadStyle
+                    }
+                  />
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+
+        {/* Layer 4 — god-ray masque (diagonal rays from window corner) */}
+        <div className="day-cosmic__god-rays" data-testid="day-cosmic-god-rays" />
+
+        {shouldRenderDynamicDom ? (
+          <>
+            <div className="day-cosmic__sun-shower" data-testid="day-cosmic-sun-shower" />
+            <div className="day-cosmic__prism-ribbon" data-testid="day-cosmic-prism-ribbon" />
+            <div className="day-cosmic__caustics" data-testid="day-cosmic-caustics" />
+          </>
+        ) : null}
+        <div className="day-cosmic__glass-depth" data-testid="day-cosmic-glass-depth" />
+
+        {shouldRenderDynamicDom ? (
+          <div
+            className="day-cosmic__photon-field"
+            data-testid="day-cosmic-photon-field"
+            data-animated={animated ? "true" : "false"}
+          >
+            {visiblePhotons.map((photon) => {
+              const settingsMotion =
+                presentation === "settings" && animated
+                  ? SETTINGS_PHOTON_MOTION.get(photon.id)
+                  : undefined;
+              return (
+                <span
+                  key={photon.id}
+                  className={`day-cosmic__photon day-cosmic__photon--${photon.tone}`}
+                  data-motion-active={settingsMotion ? "true" : "false"}
+                  data-motion-id={photon.id}
+                  style={
+                    {
+                      "--photon-x": `${photon.x}%`,
+                      "--photon-y": `${photon.y}%`,
+                      "--photon-size": `${photon.size}px`,
+                      "--photon-opacity": photon.opacity,
+                      "--photon-delay": `${photon.delay}s`,
+                      "--photon-duration": `${photon.duration}s`,
+                      "--photon-drift": `${photon.drift}px`,
+                      "--settings-motion-delay": settingsMotion
+                        ? `${settingsMotion.delay}s`
+                        : undefined,
+                      "--settings-motion-duration": settingsMotion
+                        ? `${settingsMotion.duration}s`
+                        : undefined,
+                    } as PhotonStyle
+                  }
+                />
+              );
+            })}
+          </div>
+        ) : null}
+
+        {/* Layer 5 — 35 dust motes (animated drift, gated by reduced-motion) */}
+        {shouldRenderDynamicDom ? (
+          <div
+            className="day-cosmic__motes"
+            data-testid="day-cosmic-motes"
+            data-animated={animated ? "true" : "false"}
+          >
+            {visibleMotes.map((m) => {
+              const settingsMotion =
+                presentation === "settings" && animated
+                  ? SETTINGS_MOTE_MOTION.get(m.id)
+                  : undefined;
+              return (
+                <span
+                  key={m.id}
+                  className="day-cosmic__mote"
+                  data-motion-active={settingsMotion ? "true" : "false"}
+                  data-motion-id={m.id}
+                  style={
+                    {
+                      left: `${m.x}%`,
+                      top: `${m.y}%`,
+                      width: `${m.size}px`,
+                      height: `${m.size}px`,
+                      opacity: m.opacity,
+                      "--mote-opacity": m.opacity,
+                      animationDuration: `${m.duration}s`,
+                      animationDelay: `${m.delay}s`,
+                      "--settings-motion-delay": settingsMotion
+                        ? `${settingsMotion.delay}s`
+                        : undefined,
+                      "--settings-motion-duration": settingsMotion
+                        ? `${settingsMotion.duration}s`
+                        : undefined,
+                    } as MoteStyle
+                  }
+                />
+              );
+            })}
+          </div>
+        ) : null}
+
+        {/* Layer 6 — paper grain SVG (STATIC, 4% opacity, multiply blend) */}
+        <svg
+          className="day-cosmic__paper-grain"
+          data-testid="day-cosmic-paper-grain"
+          xmlns="http://www.w3.org/2000/svg"
+          width="100%"
+          height="100%"
+          aria-hidden="true"
+        >
+          <filter id="day-cosmic-turbulence">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" />
+            <feColorMatrix
+              type="matrix"
+              values="0 0 0 0 0.35  0 0 0 0 0.22  0 0 0 0 0.10  0 0 0 0.6 0"
+            />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#day-cosmic-turbulence)" />
+        </svg>
+
+        {/* Layer 7 — edge vignette (quiet corner darkening) */}
+        <div className="day-cosmic__vignette" data-testid="day-cosmic-vignette" />
+      </div>
+      <AndroidDayLargeEffects
+        active={active}
+        canvasRef={androidLargeEffectsCanvasRef}
+        enabled={shouldUseAndroidLargeEffects}
+      />
+    </>
   );
 });

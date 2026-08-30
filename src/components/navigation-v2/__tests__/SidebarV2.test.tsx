@@ -3,6 +3,13 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { SidebarV2 } from "../SidebarV2";
 
 const languageMock = vi.hoisted(() => ({ isRTL: false }));
+const backgroundMusicMock = vi.hoisted(() => ({
+  enabled: false,
+  state: "off",
+  toggle: vi.fn(),
+  retry: vi.fn(),
+  handleMediaError: vi.fn(),
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -19,9 +26,16 @@ vi.mock("@/contexts/LanguageContext", () => ({
       diary: "Diary",
       settings: "Settings",
       skipToContent: "Skip to main content",
+      backgroundMusicTitle: "Evening music",
+      backgroundMusicStateOff: "Off",
+      backgroundMusicPlayAction: "Play evening music",
     },
     isRTL: languageMock.isRTL,
   }),
+}));
+
+vi.mock("../AppBackgroundMusicProvider", () => ({
+  useAppBackgroundMusicControl: () => backgroundMusicMock,
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -140,5 +154,25 @@ describe("SidebarV2", () => {
     const skip = screen.getByTestId("sidebar-v2-skip-link");
     expect(skip.getAttribute("href")).toBe("#main-content-v2");
     expect(skip.className).toContain("focus:min-h-[44px]");
+  });
+
+  it("places the evening-music control above Settings in the footer", () => {
+    render(<SidebarV2 {...defaultProps} />);
+
+    const musicToggle = screen.getByTestId("background-music-toggle");
+    const settings = screen.getByRole("button", { name: "Settings" });
+    expect(musicToggle.compareDocumentPosition(settings)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(musicToggle).toHaveClass("min-h-[44px]");
+  });
+
+  it("keeps the localized music tooltip in collapsed mode", () => {
+    render(<SidebarV2 {...defaultProps} collapsed />);
+
+    expect(screen.getByTestId("background-music-toggle")).toHaveAttribute(
+      "title",
+      "Evening music",
+    );
   });
 });

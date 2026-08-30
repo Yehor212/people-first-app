@@ -54,7 +54,7 @@ Verdict: GO, ASK, or STOP
 
 Protected surfaces need fresh evidence and the narrowest possible patch:
 
-- `AGENTS.md`, `CLAUDE.md`, `.codex/**`, `config/persistent-agent-orchestra*.json`, and `tools/zenflow-context/**`.
+- `AGENTS.md`, `CLAUDE.md`, `.codex/**`, and `tools/zenflow-context/**`.
 - `.github/**`, `package.json`, `package-lock.json`, `scripts/**`, `SECURITY.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `docs/ai/**`, `docs/adr/**`.
 - `src/pages/Index.tsx`, `src/pages/IndexV1Impl.tsx`, `src/pages/nav-v2/**`, modal/overlay owners, service worker/PWA files, theme and design-token files.
 - `src/components/state-of-mind/ValenceOrb.tsx`, `MiniValenceOrb`, canonical orb tests, WebGL/canvas helpers, and performance smoke budgets.
@@ -69,7 +69,7 @@ For any radical/protected change, collect the applicable proof before claiming P
 
 - Current repo state: `git status --short --branch`.
 - Architecture/context: `AGENTS.md`, `ARCHITECTURE.md`, and this file read this session.
-- Agent context: `npm run check:agent-context`, `npm run check:agent-orchestra`, and `npm run check:agent-orchestra:eval`.
+- Agent context: `npm run check:agent-context`.
 - Best-practices implied requirements: use `docs/ai/BEST_PRACTICES_IMPLIED_REQUIREMENTS_GATE.md` and run `npm run check:best-practices` when the change affects agent rules, completion docs, release docs, CI/drift gates, logo/icon policy, or cross-platform quality claims.
 - Drift/hook health: `npm run enforcement:check` when hooks, prompts, tools, CI, or workflow docs are involved.
 - Architecture freshness: `npm run doc-counts` and `npm run constitution:check` for architecture/refactor claims. If stale, mark STOP/UNVERIFIED before broad refactors.
@@ -96,7 +96,7 @@ If direct user approval is already present, quote the relevant user instruction 
 
 - `.github/PULL_REQUEST_TEMPLATE.md` must include an `AGENT_CHANGE_NOTICE` section so reviewers can see whether the change is radical, protected, or explicitly N/A.
 - `.github/CODEOWNERS` is a notification backstop. It requests the owner for protected surfaces, but it only blocks merges if GitHub branch protection or rulesets require CODEOWNER review.
-- Drift CI must keep `check:agent-context`, `check:agent-orchestra`, `check:agent-orchestra:eval`, and `enforcement:check` wired for docs/workflow changes.
+- Drift CI must keep `check:agent-context` and `enforcement:check` wired for docs/workflow changes.
 - A green deploy workflow is not complete release evidence unless the relevant test scope, visual scope, mobile/native scope, and public deploy proof are explicitly covered or marked `UNVERIFIED`.
 
 ## Subagent Audit Rules

@@ -26,24 +26,27 @@ Current generated non-Hyperfocus files:
 | `feedback-milestone.mp3` | First-party deterministic synthesis | Rare milestone |
 | `feedback-notification.mp3` | First-party deterministic synthesis | In-app reminder preview |
 
-### MixKit — Hyperfocus Nature Sound Effects
-Location: `public/sounds/hyperfocus/` and generated native asset bundles.
+### BigSoundBank / LaSonotheque — Hyperfocus CC0 Nature Sound Effects
+Location: `public/sounds/hyperfocus/` and generated native/desktop asset bundles.
 
-The current Hyperfocus nature pack uses MixKit free sound effects as source material for the forest, rain, ocean/sea, river, and wind V2 families. Fireplace was moved to a separate indoor-hearth source listed below so the product no longer ships outdoor fire cues as the fireplace focus option. Provenance is tracked in `src/lib/hyperfocusGeneratedAudioManifest.ts` and `docs/audio/hyperfocus-generated-audio-provenance.json`, including source category URLs, generated file names, SHA-256 hashes, and packaged public paths.
+All current Hyperfocus families use source-specific BigSoundBank / LaSonotheque recordings released as CC0/public-domain-equivalent sound effects. The reviewed source windows were converted into deterministic 30-second, 48 kHz stereo, 128 kbps MP3 loops; no second source, synthetic layer, generative repair, pitch shift, or time stretch is present.
 
-License reference: MixKit Sound Effects Free License, `https://mixkit.co/license/`. The official free sound effects catalog states the clips are royalty-free, usable without attribution, and available for commercial and personal projects; this notice records provenance for audit even where attribution is not required.
+Current source items:
 
-### BigSoundBank / LaSonotheque — Hyperfocus Fireplace Sound Effects
-Location: `public/sounds/hyperfocus/hyperfocus-fireplace-*.mp3` and generated native asset bundles.
+- Forest: `3085`, `2749`, `905`.
+- Rain: `1019`, `2679`, `740`.
+- Ocean: `698`, `2567`, `1446`.
+- Fireplace: `2855`, `2856`, `2857`.
+- River: `1354`, `3222`, `2754`.
+- Wind: `904`, `907`, `1450`.
 
-The Hyperfocus fireplace family uses BigSoundBank Fireplace #4 / item 2856 as the real-source indoor hearth recording for `Embers`, `Hearth`, and `Full Hearth`. The source was trimmed, loop-tail-normalized, warmed, and transient-softened into 30-second 48 kHz stereo MP3 loops. Provenance, hashes, metrics, and processing notes are tracked in `docs/audio/hyperfocus-generated-audio-provenance.json` and the runtime manifest.
+Per-file item page, title, author, source hash, reviewed-window hash, runtime hash, assignment metric, processing operations, decoded QC, and review boundaries are recorded in `docs/audio/hyperfocus-runtime-v2-manifest.json`, `docs/audio/hyperfocus-generated-audio-provenance.json`, and `src/lib/hyperfocusGeneratedAudioManifest.ts`.
 
-Source reference: `https://bigsoundbank.com/fireplace-4-s2856.html`.
-License reference: `https://bigsoundbank.com/licenses.html`. The source page/license records CC0/public-domain-equivalent free sound-effects use; this notice records provenance for audit even where attribution is not required.
+License reference: `https://bigsoundbank.com/licenses.html`. The captured source pages and license evidence allow copying, adaptation, redistribution, and commercial use under CC0. Source-specific technical evidence is not a warranty against every possible third-party claim; formal legal review remains a release gate.
 
 ### Dev-time audio encoder
 
-`lamejs@1.2.1` is used as a development dependency to encode generated MP3 files. It is not part of the production runtime dependency list. Formal legal review of dev-time LGPL obligations remains a release checklist item before public store submission.
+`lamejs@1.2.1` remains a development dependency for first-party non-Hyperfocus procedural audio. Hyperfocus runtime v2 masters were encoded offline with a private source-built LAME 4.0 executable from SourceForge archive SHA-256 `3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb`. Neither encoder is shipped in the application runtime. LAME 4.0 source scanning retained scoped external-source findings, so its security status is not represented as `PASS`; encoder containment and LGPL obligations remain release-review items.
 
 ---
 
@@ -119,14 +122,14 @@ Full machine-readable list: run `npx license-checker --production --json` in CI 
 ## Compliance Checklist
 
 - [x] First-party generated audio provenance recorded (this file + docs/audio)
-- [x] MixKit and BigSoundBank Hyperfocus nature source provenance recorded (manifest + docs/audio)
+- [x] BigSoundBank CC0 Hyperfocus source provenance recorded (manifest + docs/audio)
 - [x] SIL OFL fonts attributed (this file)
 - [x] Lucide ISC copyright preserved (this file)
 - [x] Phosphor MIT copyright preserved (this file)
 - [ ] In-app "Acknowledgements" screen surfacing this document (iOS App Store requirement — TODO for v2.0)
 - [ ] `LICENSE` file at repo root (proprietary or MIT — pending user decision; tech-debt P1-10)
 - [x] CI-style audio asset guard: `npm run check:app-audio`
-- [ ] Formal legal review of dev-time `lamejs@1.2.1` LGPL obligations before store submission
+- [ ] Formal legal review of dev-time `lamejs@1.2.1` and private LAME 4.0 LGPL obligations before store submission
 - [x] `SECURITY.md` published (responsible disclosure policy)
 
 ---
@@ -142,4 +145,4 @@ When adding a new runtime dependency:
 
 When removing: sweep this file and delete the stale attribution.
 
-*Last updated: 2026-07-01 (Hyperfocus fireplace indoor-hearth replacement, BigSoundBank provenance, and audio guard wiring)*
+*Last updated: 2026-08-25 (all-family BigSoundBank CC0 Hyperfocus runtime v2 loops and provenance)*

@@ -14,7 +14,6 @@
 import { logger } from "./logger";
 import { isAbortError } from "./validation";
 import type { SeverityLevel } from "@sentry/core";
-import { BASE_URL } from "@/lib/env";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -28,12 +27,17 @@ const lazyBreadcrumb = (bc: {
     .then(({ addBreadcrumb }) => addBreadcrumb(bc))
     .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
 };
-import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
+import { getAppAudioAssetSrc, resolveAppAudioAssetSrc } from "@/lib/appAudioAssets";
 import {
   HYPERFOCUS_AUDIO_FAMILIES,
   getHyperfocusAudioVariant,
   type HyperfocusAudioFamilyId,
 } from "@/lib/hyperfocusAudioCatalog";
+import {
+  HYPERFOCUS_TONE_DEFAULT_KHZ,
+  normalizeHyperfocusToneKhz,
+  toHyperfocusToneHz,
+} from "@/lib/hyperfocusTone";
 
 // ============================================
 // AUDIO STATUS TRACKING
@@ -52,6 +56,14 @@ export interface AudioStatus {
   soundId: string | null;
   error?: AudioError;
   isUnlocked: boolean;
+}
+
+export type ToneFilterState = "pending" | "active" | "degraded";
+
+export interface ToneFilterStatus {
+  state: ToneFilterState;
+  cutoffKhz: number;
+  reason?: "web-audio-routing-unavailable";
 }
 
 export type AudioStatusListener = (status: AudioStatus) => void;
@@ -91,6 +103,16 @@ let audioUnlockSetup = false;
 // Creating new Audio() each time loses the gesture blessing. Reusing the same element preserves it.
 let blessedAudioElement: HTMLAudioElement | null = null;
 
+interface AmbientToneGraph {
+  context: AudioContext;
+  source: MediaElementAudioSourceNode;
+  filter: BiquadFilterNode;
+  element: HTMLAudioElement;
+}
+
+let ambientToneGraph: AmbientToneGraph | null = null;
+const TONE_RAMP_SECONDS = 0.08;
+
 function getOrCreateBlessedElement(): HTMLAudioElement {
   if (!blessedAudioElement) {
     blessedAudioElement = new Audio();
@@ -127,6 +149,79 @@ function getAudioContext(): AudioContext | null {
     }
   }
   return globalAudioContext;
+}
+
+function applyToneCutoff(graph: AmbientToneGraph, cutoffKhz: number): void {
+  const now = graph.context.currentTime;
+  const targetHz = toHyperfocusToneHz(cutoffKhz);
+  const frequency = graph.filter.frequency;
+  frequency.cancelScheduledValues(now);
+  frequency.setValueAtTime(frequency.value, now);
+  frequency.linearRampToValueAtTime(targetHz, now + TONE_RAMP_SECONDS);
+}
+
+function ensureAmbientToneRouting(
+  element: HTMLAudioElement,
+  cutoffKhz: number,
+): ToneFilterStatus {
+  const normalizedCutoffKhz = normalizeHyperfocusToneKhz(cutoffKhz);
+
+  if (ambientToneGraph?.element === element) {
+    applyToneCutoff(ambientToneGraph, normalizedCutoffKhz);
+    return { state: "active", cutoffKhz: normalizedCutoffKhz };
+  }
+
+  const context = getAudioContext();
+  if (
+    !context ||
+    typeof context.createMediaElementSource !== "function" ||
+    typeof context.createBiquadFilter !== "function"
+  ) {
+    return {
+      state: "degraded",
+      cutoffKhz: normalizedCutoffKhz,
+      reason: "web-audio-routing-unavailable",
+    };
+  }
+
+  let source: MediaElementAudioSourceNode | null = null;
+  try {
+    source = context.createMediaElementSource(element);
+    const filter = context.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.Q.value = Math.SQRT1_2;
+    source.connect(filter);
+    filter.connect(context.destination);
+
+    ambientToneGraph = { context, source, filter, element };
+    applyToneCutoff(ambientToneGraph, normalizedCutoffKhz);
+
+    if (needsResume(context)) {
+      void context.resume().catch((error) => {
+        logger.warn("[AmbientSounds] Tone filter context resume failed:", error);
+      });
+    }
+
+    return { state: "active", cutoffKhz: normalizedCutoffKhz };
+  } catch (error) {
+    // createMediaElementSource reroutes the element away from its direct output.
+    // If a later graph step fails, reconnect that source straight to destination
+    // so an optional tone control can never make ambient playback silent.
+    if (source) {
+      try {
+        source.disconnect();
+        source.connect(context.destination);
+      } catch (fallbackError) {
+        logger.warn("[AmbientSounds] Direct Web Audio fallback failed:", fallbackError);
+      }
+    }
+    logger.warn("[AmbientSounds] Tone filter unavailable; direct playback retained:", error);
+    return {
+      state: "degraded",
+      cutoffKhz: normalizedCutoffKhz,
+      reason: "web-audio-routing-unavailable",
+    };
+  }
 }
 
 /**
@@ -446,7 +541,10 @@ export function getSoundById(id: string): SoundInfo | undefined {
   const familySound = SOUNDS.find((sound) => sound.id === variant.legacyId);
   if (!familySound) return undefined;
 
-  const generatedFile = variant.generated && variant.runtimePublicPath ? BASE_URL + variant.runtimePublicPath : null;
+  const generatedFile =
+    variant.generated && variant.runtimePublicPath
+      ? resolveAppAudioAssetSrc(variant.runtimePublicPath)
+      : null;
 
   return {
     ...familySound,
@@ -479,6 +577,11 @@ export class AmbientSoundGenerator {
   private isPlaying = false;
   private currentSoundId: string | null = null;
   private volume = 0.5; // 50% default volume
+  private toneCutoffKhz = HYPERFOCUS_TONE_DEFAULT_KHZ;
+  private toneFilterStatus: ToneFilterStatus = {
+    state: "pending",
+    cutoffKhz: HYPERFOCUS_TONE_DEFAULT_KHZ,
+  };
 
   // Race condition prevention
   private isTransitioning = false;
@@ -561,6 +664,7 @@ export class AmbientSoundGenerator {
       isPlaying: this.isPlaying,
       isTransitioning: this.isTransitioning,
       volume: this.volume,
+      toneFilterStatus: this.toneFilterStatus,
       usedFallback: this.usedFallback,
       audioElementState: this.audioElement
         ? {
@@ -782,6 +886,7 @@ export class AmbientSoundGenerator {
     this.audioElement.preload = "auto";
     // Set src — browser auto-loads. Do NOT call .load() (resets iOS blessing)
     this.audioElement.src = sound.file;
+    this.toneFilterStatus = ensureAmbientToneRouting(this.audioElement, this.toneCutoffKhz);
 
     // Mark as unlocked — we're in gesture context
     audioUnlocked = true;
@@ -1011,6 +1116,7 @@ export class AmbientSoundGenerator {
     this.audioElement.preload = "auto";
     this.audioElement.webkitPreservesPitch = true; // Safari
     this.audioElement.src = url;
+    this.toneFilterStatus = ensureAmbientToneRouting(this.audioElement, this.toneCutoffKhz);
 
     logger.log("[AmbientSounds] Reusing blessed audio element, volume:", this.volume, "url:", url);
 
@@ -1159,6 +1265,23 @@ export class AmbientSoundGenerator {
     return this.volume;
   }
 
+  setToneCutoffKhz(value: number): ToneFilterStatus {
+    this.toneCutoffKhz = normalizeHyperfocusToneKhz(value);
+    if (this.audioElement) {
+      this.toneFilterStatus = ensureAmbientToneRouting(this.audioElement, this.toneCutoffKhz);
+    } else if (ambientToneGraph) {
+      applyToneCutoff(ambientToneGraph, this.toneCutoffKhz);
+      this.toneFilterStatus = { state: "active", cutoffKhz: this.toneCutoffKhz };
+    } else {
+      this.toneFilterStatus = { state: "pending", cutoffKhz: this.toneCutoffKhz };
+    }
+    return { ...this.toneFilterStatus };
+  }
+
+  getToneFilterStatus(): ToneFilterStatus {
+    return { ...this.toneFilterStatus };
+  }
+
   pause(): void {
     if (this.audioElement) {
       this.audioElement.pause();
@@ -1277,6 +1400,22 @@ export function getAmbientSoundGenerator(): AmbientSoundGenerator {
     globalSoundGenerator = new AmbientSoundGenerator();
   }
   return globalSoundGenerator;
+}
+
+/** @internal Test isolation for module-level iOS audio resources. */
+export function resetAmbientSoundsForTests(): void {
+  if (globalSoundGenerator) {
+    globalSoundGenerator.destroy();
+    globalSoundGenerator = null;
+  }
+  resetAudioUnlockState();
+  ambientToneGraph = null;
+  blessedAudioElement = null;
+  const context = globalAudioContext;
+  globalAudioContext = null;
+  if (context && context.state !== "closed" && typeof context.close === "function") {
+    void context.close().catch(() => undefined);
+  }
 }
 
 /**

@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight, LoaderCircle, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,16 +10,33 @@ import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
+import { BackgroundMusicToggle } from "./BackgroundMusicToggle";
 
 interface DrawerV2Props {
   open: boolean;
   activePage: NavV2Page;
   onClose: () => void;
+  onExitComplete?: () => void;
   onPageChange: (page: NavV2Page) => void;
+  onPagePreload?: (page: NavV2Page) => void;
   onOpenCommandPalette?: () => void;
   onOpenThemeSwitcher?: () => void;
   onOpenArchive?: () => void;
   onOpenAccount?: () => void;
+}
+
+// This is a watchdog, not the visual duration. Android WebView can deliver the
+// compositor transitionend after a busy main-thread turn; racing the 300ms CSS
+// transition with a 350ms unmount timer cut off the retained exit surface.
+const DRAWER_EXIT_FALLBACK_MS = 1000;
+const DRAWER_ENTER_FALLBACK_MS = 350;
+
+function isDrawerMotionReduced(): boolean {
+  if (typeof window === "undefined") return true;
+  return (
+    document.body.classList.contains("reduce-motion") ||
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
 }
 
 /**
@@ -38,56 +55,108 @@ export const DrawerV2 = memo(function DrawerV2({
   open,
   activePage,
   onClose,
+  onExitComplete,
   onPageChange,
+  onPagePreload,
 }: DrawerV2Props) {
   const { t, isRTL } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const drawerRef = useRef<HTMLElement>(null);
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusTrapCleanupRef = useRef<(() => void) | null>(null);
   const [shouldRender, setShouldRender] = useState(open);
+  const renderedDrawerRef = useRef(shouldRender);
   const [navigatingPage, setNavigatingPage] = useState<NavV2Page | null>(null);
+
+  const activateFocusTrap = useCallback(() => {
+    if (focusTrapCleanupRef.current || !drawerRef.current) return;
+    if (focusTimerRef.current) {
+      clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = null;
+    }
+    focusTrapCleanupRef.current = createFocusTrap(drawerRef.current, {
+      initialFocus: firstFocusRef.current,
+    });
+  }, []);
 
   useEffect(() => {
     if (open) {
       setNavigatingPage(null);
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
       }
       setShouldRender(true);
       return;
     }
 
     closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
       setShouldRender(false);
-    }, 220);
+    }, DRAWER_EXIT_FALLBACK_MS);
 
     return () => {
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
       }
     };
   }, [open]);
 
-  // Lock body scroll + autofocus first action when open
+  // Retain scroll and focus ownership until the retained exit frame unmounts.
   useEffect(() => {
-    if (!open) return;
+    if (!shouldRender) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    let cleanupTrap: (() => void) | undefined;
-    const focusTimer = setTimeout(() => {
-      if (drawerRef.current) {
-        cleanupTrap = createFocusTrap(drawerRef.current, {
-          initialFocus: firstFocusRef.current,
-        });
-      }
-    }, 120);
+
     return () => {
       document.body.style.overflow = prev;
-      clearTimeout(focusTimer);
-      cleanupTrap?.();
+      if (focusTimerRef.current) {
+        clearTimeout(focusTimerRef.current);
+        focusTimerRef.current = null;
+      }
+      focusTrapCleanupRef.current?.();
+      focusTrapCleanupRef.current = null;
     };
-  }, [open]);
+  }, [shouldRender]);
+
+  // Restore trigger ownership only after the retained exit surface is gone.
+  // This avoids moving focus through the still-animating backdrop/drawer tree.
+  useEffect(() => {
+    if (shouldRender) {
+      renderedDrawerRef.current = true;
+      return;
+    }
+    if (!renderedDrawerRef.current) return;
+
+    renderedDrawerRef.current = false;
+    onExitComplete?.();
+  }, [onExitComplete, shouldRender]);
+
+  // transitionend is authoritative. The bounded fallback covers cancelled CSS
+  // transitions; reduced motion focuses on the next frame instead of waiting.
+  useEffect(() => {
+    if (!open || !shouldRender || focusTrapCleanupRef.current) return;
+
+    if (isDrawerMotionReduced()) {
+      const frame = window.requestAnimationFrame(activateFocusTrap);
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    focusTimerRef.current = setTimeout(() => {
+      focusTimerRef.current = null;
+      activateFocusTrap();
+    }, DRAWER_ENTER_FALLBACK_MS);
+
+    return () => {
+      if (focusTimerRef.current) {
+        clearTimeout(focusTimerRef.current);
+        focusTimerRef.current = null;
+      }
+    };
+  }, [activateFocusTrap, open, shouldRender]);
 
   useEffect(() => {
     if (navigatingPage === activePage) {
@@ -133,6 +202,7 @@ export const DrawerV2 = memo(function DrawerV2({
   const isSettingsNavigating = navigatingPage === "settings";
   const isSettingsSelected = isSettingsActive || isSettingsNavigating;
   const SettingsIcon = V2_NAV_ICONS.settings;
+  const isEntered = open;
   // React 18's HTML attribute types predate the now-baseline inert attribute.
   // Spreading the native attribute preserves the real browser behavior without
   // teaching every JSX element a project-wide type extension.
@@ -143,9 +213,10 @@ export const DrawerV2 = memo(function DrawerV2({
       {/* Backdrop */}
       <div
         className={cn(
-          "fixed inset-0 z-[59] bg-[hsl(var(--nav-v2-backdrop)/0.38)] backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]",
+          "drawer-v2-backdrop-partitioned fixed inset-0 z-[59] bg-[hsl(var(--nav-v2-backdrop)/0.38)] backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]",
           "motion-safe:transition-opacity motion-safe:duration-200",
-          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          open ? "pointer-events-auto" : "pointer-events-none",
+          isEntered ? "opacity-100" : "opacity-0"
         )}
         onClick={onClose}
         aria-hidden="true"
@@ -163,8 +234,21 @@ export const DrawerV2 = memo(function DrawerV2({
         aria-label={tx.navV2Menu || "Menu"}
         data-theme-region="drawer-v2"
         data-testid="drawer-v2"
+        onTransitionEnd={(event) => {
+          if (event.currentTarget !== event.target) return;
+          if (event.propertyName && event.propertyName !== "transform") return;
+          if (open) {
+            activateFocusTrap();
+            return;
+          }
+          if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+          }
+          setShouldRender(false);
+        }}
         className={cn(
-          "fixed inset-y-0 start-0 z-[60] flex w-[min(88vw,24rem)] flex-col",
+          "drawer-v2-panel-partitioned fixed inset-y-0 start-0 z-[60] flex w-[min(88vw,24rem)] flex-col",
           "border-e border-[hsl(var(--nav-v2-drawer-border)/0.42)]",
           "bg-gradient-to-b from-[hsl(var(--nav-v2-drawer-start)/0.96)] via-[hsl(var(--nav-v2-drawer-mid)/0.96)] to-[hsl(var(--nav-v2-drawer-end)/0.97)]",
           "text-[hsl(var(--nav-v2-drawer-text))]",
@@ -172,7 +256,7 @@ export const DrawerV2 = memo(function DrawerV2({
           "overflow-hidden shadow-[0_28px_90px_-54px_hsl(var(--nav-v2-shadow)/0.55)]",
           "motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-safe:ease-out",
           "will-change-transform",
-          open
+          isEntered
             ? "translate-x-0 opacity-100"
             : isRTL
               ? "translate-x-full opacity-0"
@@ -231,7 +315,10 @@ export const DrawerV2 = memo(function DrawerV2({
                   data-navigating={isNavigating ? "true" : "false"}
                   data-nav-button="drawer"
                   data-visual-role={visualRole}
-                  onPointerDown={() => beginNavigationFeedback(item.id, isActive)}
+                  onPointerDown={() => {
+                    beginNavigationFeedback(item.id, isActive);
+                    if (!isActive) onPagePreload?.(item.id);
+                  }}
                   onPointerCancel={clearNavigatingPage}
                   onPointerLeave={clearNavigatingPage}
                   onClick={() => {
@@ -322,6 +409,9 @@ export const DrawerV2 = memo(function DrawerV2({
           >
             <ThemeToggleV2 testId="drawer-v2-theme-toggle" presentation="drawer" />
           </div>
+          <div className="mb-2">
+            <BackgroundMusicToggle presentation="drawer" />
+          </div>
           <button
             type="button"
             aria-current={isSettingsActive ? "page" : undefined}
@@ -331,7 +421,10 @@ export const DrawerV2 = memo(function DrawerV2({
             data-navigating={isSettingsNavigating ? "true" : "false"}
             data-nav-button="drawer"
             data-visual-role="settings"
-            onPointerDown={() => beginNavigationFeedback("settings", isSettingsActive)}
+            onPointerDown={() => {
+              beginNavigationFeedback("settings", isSettingsActive);
+              if (!isSettingsActive) onPagePreload?.("settings");
+            }}
             onPointerCancel={clearNavigatingPage}
             onPointerLeave={clearNavigatingPage}
             onClick={() => {

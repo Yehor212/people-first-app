@@ -1,10 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { DrawerV2 } from "../DrawerV2";
 import { useThemeStore } from "@/stores/themeStore";
 
 const languageMock = vi.hoisted(() => ({ isRTL: false }));
+const backgroundMusicMock = vi.hoisted(() => ({
+  enabled: false,
+  state: "off",
+  toggle: vi.fn(),
+  retry: vi.fn(),
+  handleMediaError: vi.fn(),
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -22,9 +29,16 @@ vi.mock("@/contexts/LanguageContext", () => ({
       switchToLight: "Switch to light mode",
       themeDark: "Dark",
       themeLight: "Light",
+      backgroundMusicTitle: "Evening music",
+      backgroundMusicStateOff: "Off",
+      backgroundMusicPlayAction: "Play evening music",
     },
     isRTL: languageMock.isRTL,
   }),
+}));
+
+vi.mock("../AppBackgroundMusicProvider", () => ({
+  useAppBackgroundMusicControl: () => backgroundMusicMock,
 }));
 
 vi.mock("@/lib/haptics", () => ({
@@ -72,6 +86,106 @@ describe("DrawerV2", () => {
     expect(screen.queryByTestId("drawer-v2-classic-portal-orb")).not.toBeInTheDocument();
   });
 
+  it("partitions Android drawer blur surfaces without changing either blur chain", () => {
+    render(<DrawerV2 {...baseProps} />);
+
+    expect(screen.getByTestId("drawer-v2-backdrop").className).toContain(
+      "drawer-v2-backdrop-partitioned",
+    );
+    expect(screen.getByTestId("drawer-v2").className).toContain(
+      "drawer-v2-panel-partitioned",
+    );
+
+    const styles = readFileSync("src/index.css", "utf8");
+    const start = styles.indexOf("/* Android drawer blur partition:");
+    const end = styles.indexOf("/* End Android drawer blur partition. */", start);
+    const partition = styles.slice(start, end);
+
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    expect(partition).toContain(
+      ':root[data-platform="android"] .drawer-v2-backdrop-partitioned::before',
+    );
+    expect(partition).toContain("backdrop-filter: blur(4px)");
+    expect(partition).toContain("clip-path: inset(0 0 0 min(88vw, 24rem))");
+    expect(partition).toContain(
+      ':root[data-platform="android"][dir="rtl"] .drawer-v2-backdrop-partitioned::before',
+    );
+    expect(partition).toContain("-webkit-backdrop-filter: blur(4px) blur(18px)");
+    expect(partition).toContain("backdrop-filter: blur(4px) blur(24px)");
+    expect(partition).toContain("prefers-reduced-transparency: reduce");
+    expect(partition).toContain("backdrop-filter: none !important");
+  });
+
+  it("does not hold visible drawer pixels behind a requestAnimationFrame gate", async () => {
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation(() => 1);
+
+    try {
+      const { rerender } = render(<DrawerV2 {...baseProps} open={false} />);
+
+      rerender(<DrawerV2 {...baseProps} open={true} />);
+
+      const drawer = await screen.findByTestId("drawer-v2");
+      expect(drawer.className).toContain("translate-x-0");
+      expect(drawer.className).toContain("opacity-100");
+      expect(requestFrame).not.toHaveBeenCalled();
+
+      const styles = readFileSync("src/index.css", "utf8");
+      expect(styles).toContain("@starting-style");
+      expect(styles).toContain(
+        ':root[data-platform="android"] .drawer-v2-panel-partitioned.translate-x-0',
+      );
+    } finally {
+      requestFrame.mockRestore();
+    }
+  });
+
+  it("moves focus only after the enter transform transition completes", async () => {
+    vi.useFakeTimers();
+    const trigger = document.createElement("button");
+    trigger.textContent = "Open menu";
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    try {
+      const { rerender } = render(<DrawerV2 {...baseProps} open={false} />);
+      rerender(<DrawerV2 {...baseProps} open={true} />);
+      const drawer = screen.getByTestId("drawer-v2");
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+
+      expect(trigger).toHaveFocus();
+      fireEvent.transitionEnd(drawer, { propertyName: "transform" });
+      expect(screen.getByLabelText("Close menu")).toHaveFocus();
+    } finally {
+      trigger.remove();
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps body scroll locked until the exit transform transition completes", () => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "clip";
+
+    try {
+      const { rerender } = render(<DrawerV2 {...baseProps} open={true} />);
+      expect(document.body.style.overflow).toBe("hidden");
+
+      rerender(<DrawerV2 {...baseProps} open={false} />);
+      const drawer = screen.getByTestId("drawer-v2");
+      expect(document.body.style.overflow).toBe("hidden");
+
+      fireEvent.transitionEnd(drawer, { propertyName: "transform" });
+      expect(document.body.style.overflow).toBe("clip");
+    } finally {
+      document.body.style.overflow = previousOverflow;
+    }
+  });
+
   it("calls onClose when backdrop is clicked", () => {
     const onClose = vi.fn();
     render(<DrawerV2 {...baseProps} onClose={onClose} />);
@@ -99,6 +213,64 @@ describe("DrawerV2", () => {
     expect(drawer).toHaveAttribute("inert", "");
     expect(drawer).not.toHaveAttribute("aria-modal");
     expect(screen.getByLabelText("Close menu")).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("keeps the drawer mounted until its 300ms exit transition completes", async () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(<DrawerV2 {...baseProps} open={true} />);
+
+      rerender(<DrawerV2 {...baseProps} open={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(220);
+      });
+
+      const drawer = screen.getByTestId("drawer-v2");
+      expect(drawer).toBeInTheDocument();
+
+      fireEvent.transitionEnd(drawer, { propertyName: "transform" });
+      expect(screen.queryByTestId("drawer-v2")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("waits for delayed Android compositor completion instead of racing the exit fallback", async () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(<DrawerV2 {...baseProps} open={true} />);
+
+      rerender(<DrawerV2 {...baseProps} open={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(450);
+      });
+
+      const drawer = screen.getByTestId("drawer-v2");
+      expect(drawer).toBeInTheDocument();
+      expect(drawer).toHaveAttribute("aria-hidden", "true");
+
+      fireEvent.transitionEnd(drawer, { propertyName: "transform" });
+      expect(screen.queryByTestId("drawer-v2")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports exit completion only after the retained drawer surface unmounts", () => {
+    const onExitComplete = vi.fn();
+    const { rerender } = render(
+      <DrawerV2 {...baseProps} open={true} onExitComplete={onExitComplete} />
+    );
+
+    rerender(<DrawerV2 {...baseProps} open={false} onExitComplete={onExitComplete} />);
+    expect(onExitComplete).not.toHaveBeenCalled();
+
+    fireEvent.transitionEnd(screen.getByTestId("drawer-v2"), {
+      propertyName: "transform",
+    });
+
+    expect(screen.queryByTestId("drawer-v2")).not.toBeInTheDocument();
+    expect(onExitComplete).toHaveBeenCalledTimes(1);
   });
 
   it("calls onClose when close button is clicked", () => {
@@ -212,6 +384,19 @@ describe("DrawerV2", () => {
     fireEvent.click(toggle);
 
     expect(useThemeStore.getState().appliedTheme).toBe("ink");
+  });
+
+  it("places a 48px evening-music control above Settings", () => {
+    render(<DrawerV2 {...baseProps} />);
+
+    const bottomNav = screen.getByTestId("drawer-v2-bottom-nav");
+    const musicToggle = screen.getByTestId("background-music-toggle");
+    const settings = screen.getByTestId("drawer-v2-destination-settings");
+    expect(bottomNav).toContainElement(musicToggle);
+    expect(musicToggle.compareDocumentPosition(settings)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(musicToggle).toHaveClass("min-h-[48px]");
   });
 
   it("uses semantic V2 theme tokens for the drawer shell", async () => {

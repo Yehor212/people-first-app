@@ -4,10 +4,13 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.media.AudioAttributes;
 import android.media.RingtoneManager;
+import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.text.BidiFormatter;
@@ -88,30 +91,37 @@ public class ZenFlowMessagingService extends FirebaseMessagingService {
         Context localizedContext,
         String channelId
     ) {
-        int importance = NotificationManager.IMPORTANCE_DEFAULT;
-        boolean vibration = true;
-        if ("zenflow_gentle_v4".equals(channelId)) {
-            importance = NotificationManager.IMPORTANCE_LOW;
-        } else if ("zenflow_silent_v4".equals(channelId)) {
-            importance = NotificationManager.IMPORTANCE_MIN;
-            vibration = false;
-        }
+        NotificationChannelContract.Profile profile =
+            NotificationChannelContract.profileFor(channelId);
 
         NotificationChannel channel = new NotificationChannel(
             channelId,
             localizedContext.getString(channelNameResource(channelId)),
-            importance
+            profile.importance()
         );
         channel.setDescription(
             localizedContext.getString(channelDescriptionResource(channelId))
         );
         channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-        channel.enableVibration(vibration);
-        if ("zenflow_default_v4".equals(channelId)) {
+        channel.enableVibration(profile.vibration());
+        if ("default".equals(profile.soundResourceName())) {
             channel.setSound(
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
                 null
             );
+        } else if (profile.soundResourceName() != null) {
+            Uri soundUri = Uri.parse(
+                ContentResolver.SCHEME_ANDROID_RESOURCE +
+                "://" +
+                getPackageName() +
+                "/raw/" +
+                profile.soundResourceName()
+            );
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+            channel.setSound(soundUri, audioAttributes);
         } else {
             channel.setSound(null, null);
         }
@@ -121,6 +131,7 @@ public class ZenFlowMessagingService extends FirebaseMessagingService {
     private int channelNameResource(String channelId) {
         return switch (channelId) {
             case "zenflow_default_v4" -> R.string.push_realm_channel_default;
+            case "zenflow_furin_v5" -> R.string.push_realm_channel_furin;
             case "zenflow_gentle_v4" -> R.string.push_realm_channel_gentle;
             case "zenflow_silent_v4" -> R.string.push_realm_channel_silent;
             default -> throw new IllegalArgumentException("Unknown notification channel");
@@ -130,6 +141,7 @@ public class ZenFlowMessagingService extends FirebaseMessagingService {
     private int channelDescriptionResource(String channelId) {
         return switch (channelId) {
             case "zenflow_default_v4" -> R.string.push_realm_channel_default_description;
+            case "zenflow_furin_v5" -> R.string.push_realm_channel_furin_description;
             case "zenflow_gentle_v4" -> R.string.push_realm_channel_gentle_description;
             case "zenflow_silent_v4" -> R.string.push_realm_channel_silent_description;
             default -> throw new IllegalArgumentException("Unknown notification channel");

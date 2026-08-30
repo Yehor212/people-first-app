@@ -367,6 +367,19 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
   });
 
+  it("makes the Habits page content inert while a create sheet owns interaction", () => {
+    render(<HabitsPage />);
+
+    const content = screen.getByTestId("habits-page-content");
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(screen.getByTestId("habits-hero-create-empty"));
+
+    expect(content).toHaveAttribute("inert", "");
+    expect(content).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("focuses the main landmark after mount (not the heading — avoids outline on title)", () => {
     render(<HabitsPage />);
     const main = screen.getByRole("main");

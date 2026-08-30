@@ -39,6 +39,9 @@ view can render above the WebView, so CSS z-index is not a safety boundary.
 Opening a protected surface invalidates a pending show and removes the native
 view after the pending call resolves.
 
+No scarcity or guilt copy is permitted. Banner eligibility never depends on
+care, streak, mood recovery, earned rewards, or time pressure.
+
 ## Failure behavior
 
 - Missing consent/config/platform support: no request, zero reserved height.
@@ -49,14 +52,14 @@ view after the pending call resolves.
 
 ## Verification matrix
 
-| Claim | Required evidence |
-| --- | --- |
-| No production mock/sample ads | Source, generated bundle, dependency, APK/AAB, and manifest scans |
-| Protected surfaces stay ad-free | Deferred-show regression plus installed Android checks |
-| Correct layout | Native height, safe-area, bottom navigation, rotation and split-screen checks |
-| Consent | UMP form/status, `canRequestAds`, privacy-options, revocation checks |
-| Live serving | Exact Play artifact plus AdMob request and impression |
-| Store compliance | Contains ads, Advertising ID, Data safety, privacy policy, app-ads.txt, Policy Center |
+| Claim                           | Required evidence                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| No production mock/sample ads   | Source, generated bundle, dependency, APK/AAB, and manifest scans                     |
+| Protected surfaces stay ad-free | Deferred-show regression plus installed Android checks                                |
+| Correct layout                  | Native height, safe-area, bottom navigation, rotation and split-screen checks         |
+| Consent                         | UMP form/status, `canRequestAds`, privacy-options, revocation checks                  |
+| Live serving                    | Exact Play artifact plus AdMob request and impression                                 |
+| Store compliance                | Contains ads, Advertising ID, Data safety, privacy policy, app-ads.txt, Policy Center |
 
 Web/Vite, installed PWA, iOS/WKWebView, and Desktop/Tauri have no ad SDK or ad
 request in the current release and must degrade to a normal ad-free experience.

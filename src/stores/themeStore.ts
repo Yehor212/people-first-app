@@ -6,7 +6,7 @@ import {
   storageSetRaw,
 } from "@/lib/safeJson";
 import { logger } from "@/lib/logger";
-import { isNative } from "@/lib/platform";
+import { isAndroid, isNative } from "@/lib/platform";
 import { StatusBarStyle, Style } from "@/lib/statusBarStyle";
 import { SK } from "@/lib/storageKeys";
 import {
@@ -93,6 +93,49 @@ function toLegacyThemePreference(theme: ThemePreference): "light" | "dark" | "sy
   return "dark";
 }
 
+let statusBarFrameId: number | null = null;
+let statusBarRequestId = 0;
+
+function scheduleStatusBarStyleAfterInterfaceFrames(
+  effectiveTheme: "light" | "dark",
+): void {
+  if (!isNative) return;
+
+  const applyStyle = () => {
+    void StatusBarStyle.setStyle({
+      style: isAndroid
+        ? Style.Light
+        : effectiveTheme === "dark"
+          ? Style.Dark
+          : Style.Light,
+    }).catch((error: unknown) => {
+      logger.warn("[Theme]", "StatusBar style failed:", error);
+    });
+  };
+  if (!isAndroid) {
+    applyStyle();
+    return;
+  }
+  if (
+    typeof window === "undefined" ||
+    typeof window.requestAnimationFrame !== "function" ||
+    typeof window.cancelAnimationFrame !== "function"
+  ) {
+    applyStyle();
+    return;
+  }
+
+  const requestId = ++statusBarRequestId;
+  if (statusBarFrameId !== null) window.cancelAnimationFrame(statusBarFrameId);
+  statusBarFrameId = window.requestAnimationFrame(() => {
+    statusBarFrameId = window.requestAnimationFrame(() => {
+      statusBarFrameId = null;
+      if (requestId !== statusBarRequestId) return;
+      applyStyle();
+    });
+  });
+}
+
 function applyToDOM(
   theme: ThemePreference,
   appliedTheme: AppliedTheme,
@@ -105,14 +148,7 @@ function applyToDOM(
   root.classList.toggle("dark", effectiveTheme === "dark");
   root.classList.toggle("oled", appliedTheme === "oled");
   applyThemeCustomizationToDOM(appliedTheme, customization);
-
-  if (isNative) {
-    void StatusBarStyle.setStyle({
-      style: effectiveTheme === "dark" ? Style.Dark : Style.Light,
-    }).catch((error: unknown) => {
-      logger.warn("[Theme]", "StatusBar style failed:", error);
-    });
-  }
+  scheduleStatusBarStyleAfterInterfaceFrames(effectiveTheme);
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(

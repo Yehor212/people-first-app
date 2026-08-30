@@ -34,9 +34,14 @@ const t = {
   hyperfocusSoundForest: "Forest",
   hyperfocusSoundFireplace: "Fireplace",
   hyperfocusSoundIntensity: "Sound intensity",
-  hyperfocusSoundFireplaceSoft: "Embers",
-  hyperfocusSoundFireplaceDeep: "Hearth",
-  hyperfocusSoundFireplaceIntense: "Full Hearth",
+  hyperfocusSoundLevelSoft: "Soft",
+  hyperfocusSoundLevelDeep: "Deep",
+  hyperfocusSoundLevelIntense: "Intense",
+  hyperfocusToneLabel: "Tone",
+  hyperfocusToneHelp: "High-frequency cutoff; pitch and speed stay unchanged.",
+  hyperfocusToneSofter: "Softer",
+  hyperfocusToneFullSpectrum: "Full spectrum",
+  hyperfocusToneUnavailable: "Tone control is unavailable on this device.",
   muteSound: "Mute sound",
   unmuteSound: "Unmute sound",
 };
@@ -45,6 +50,7 @@ function renderSelector(props: Partial<React.ComponentProps<typeof HyperfocusSou
   const onSoundSelect = vi.fn();
   const onToggleSound = vi.fn();
   const onPlaySound = vi.fn();
+  const onToneCutoffChange = vi.fn(() => true);
 
   render(
     <HyperfocusSoundSelector
@@ -54,12 +60,15 @@ function renderSelector(props: Partial<React.ComponentProps<typeof HyperfocusSou
       onSoundSelect={onSoundSelect}
       onToggleSound={onToggleSound}
       onPlaySound={onPlaySound}
+      toneCutoffKhz={16}
+      toneFilterStatus={{ state: "pending", cutoffKhz: 16 }}
+      onToneCutoffChange={onToneCutoffChange}
       t={t}
       {...props}
     />,
   );
 
-  return { onSoundSelect, onToggleSound, onPlaySound };
+  return { onSoundSelect, onToggleSound, onPlaySound, onToneCutoffChange };
 }
 
 describe("HyperfocusSoundSelector three-level audio", () => {
@@ -79,12 +88,12 @@ describe("HyperfocusSoundSelector three-level audio", () => {
   it("shows three intensity levels for the selected sound family", () => {
     const { onSoundSelect } = renderSelector({ selectedSoundId: "fireplace:deep" });
 
-    const embersButton = screen.getByRole("button", { name: "Embers" });
-    expect(embersButton.className).toContain("min-h-[44px]");
-    expect(screen.getByRole("button", { name: "Hearth" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Full Hearth" })).toBeInTheDocument();
+    const softButton = screen.getByRole("button", { name: "Soft" });
+    expect(softButton.className).toContain("min-h-[44px]");
+    expect(screen.getByRole("button", { name: "Deep" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Intense" })).toBeInTheDocument();
 
-    fireEvent.click(embersButton);
+    fireEvent.click(softButton);
 
     expect(onSoundSelect).toHaveBeenCalledWith("fireplace:soft");
   });
@@ -103,15 +112,55 @@ describe("HyperfocusSoundSelector three-level audio", () => {
       t: {
         ...t,
         hyperfocusSoundIntensity: "Intensidad del sonido",
-        hyperfocusSoundFireplaceSoft: "Brasas",
-        hyperfocusSoundFireplaceDeep: "Hogar",
-        hyperfocusSoundFireplaceIntense: "Chimenea intensa",
+        hyperfocusSoundLevelSoft: "Suave",
+        hyperfocusSoundLevelDeep: "Profundo",
+        hyperfocusSoundLevelIntense: "Intenso",
       },
     });
 
     expect(screen.getByRole("group", { name: "Intensidad del sonido" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Brasas" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Hogar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Chimenea intensa" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suave" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Profundo" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Intenso" })).toBeInTheDocument();
+  });
+
+  it("places the selected tone slider immediately after the intensity group", () => {
+    renderSelector({ selectedSoundId: "fireplace:deep", toneCutoffKhz: 8.5 });
+
+    const intensity = screen.getByRole("group", { name: "Sound intensity" });
+    const slider = screen.getByRole("slider", { name: "Tone" });
+
+    expect(intensity.nextElementSibling).toContainElement(slider);
+    expect(slider).toHaveAttribute("min", "3");
+    expect(slider).toHaveAttribute("max", "16");
+    expect(slider).toHaveAttribute("step", "0.5");
+    expect(slider).toHaveValue("8.5");
+    expect(slider).toHaveAttribute("aria-valuetext", "8.5 kHz");
+  });
+
+  it("keeps tone hidden until a sound family is selected", () => {
+    renderSelector();
+
+    expect(screen.queryByRole("slider", { name: "Tone" })).toBeNull();
+  });
+
+  it("applies live slider changes and exposes a degraded filter state", () => {
+    const { onToneCutoffChange } = renderSelector({
+      selectedSoundId: "fireplace:deep",
+      toneFilterStatus: {
+        state: "degraded",
+        cutoffKhz: 16,
+        reason: "web-audio-routing-unavailable",
+      },
+    });
+
+    fireEvent.change(screen.getByRole("slider", { name: "Tone" }), {
+      target: { value: "5.5" },
+    });
+
+    expect(onToneCutoffChange).toHaveBeenCalledWith(5.5);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Tone control is unavailable on this device.",
+    );
   });
 });
