@@ -66,11 +66,13 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private void applyNativeEdgeBackdrop() {
         // Launches always start dark to match the splash; the web theme
         // (StatusBarStyle.setStyle) may switch gutters during the session.
-        int backdrop = edgeBackdropDark
-                ? R.drawable.zenflow_edge_bleed_backdrop_night
-                : R.drawable.zenflow_edge_bleed_backdrop;
-        getWindow().setBackgroundDrawableResource(backdrop);
-        getWindow().getDecorView().setBackgroundResource(backdrop);
+        if (edgeBackdropDark) {
+            getWindow().setBackgroundDrawableResource(R.drawable.zenflow_edge_bleed_backdrop_night);
+            getWindow().getDecorView().setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop_night);
+        } else {
+            getWindow().setBackgroundDrawableResource(R.drawable.zenflow_edge_bleed_backdrop);
+            getWindow().getDecorView().setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop);
+        }
     }
 
     /** Called by StatusBarStylePlugin so gutters track the web theme within a session. */

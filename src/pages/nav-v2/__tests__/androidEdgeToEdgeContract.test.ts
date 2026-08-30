@@ -49,6 +49,10 @@ describe("Android edge-to-edge native contract", () => {
     const packageJson = read("package.json");
 
     expect(packageJson).toContain('"@capacitor-community/safe-area"');
+    expect(capacitorConfig).toContain("SystemBars");
+    expect(capacitorConfig).toContain('insetsHandling: "disable"');
+    expect(capacitorConfig).not.toContain('insetsHandling: "css"');
+    expect(capacitorConfig).not.toContain("hidden: true");
     expect(capacitorConfig).toContain("SafeArea");
     expect(capacitorConfig).toContain("initialViewportFitCover: true");
   });
