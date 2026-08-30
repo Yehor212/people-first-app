@@ -25,6 +25,8 @@ interface ParticleBackgroundProps {
   className?: string;
   /** Whether to show particles */
   active?: boolean;
+  /** Whether particles animate; false preserves the static visual layer. */
+  animated?: boolean;
 }
 
 const COLOR_CLASSES = {
@@ -40,6 +42,7 @@ export function ParticleBackground({
   color = 'primary',
   className,
   active = true,
+  animated = true,
 }: ParticleBackgroundProps) {
   // Generate random particles
   const particles = useMemo<Particle[]>(() => {
@@ -70,11 +73,11 @@ export function ParticleBackground({
           className={cn(
             'absolute rounded-full blur-[1px]',
             COLOR_CLASSES[color],
-            particle.id % 5 === 0 && 'motion-safe:animate-particle-float-1',
-            particle.id % 5 === 1 && 'motion-safe:animate-particle-float-2',
-            particle.id % 5 === 2 && 'motion-safe:animate-particle-float-3',
-            particle.id % 5 === 3 && 'motion-safe:animate-particle-float-4',
-            particle.id % 5 === 4 && 'motion-safe:animate-particle-float-5'
+            animated && particle.id % 5 === 0 && 'motion-safe:animate-particle-float-1',
+            animated && particle.id % 5 === 1 && 'motion-safe:animate-particle-float-2',
+            animated && particle.id % 5 === 2 && 'motion-safe:animate-particle-float-3',
+            animated && particle.id % 5 === 3 && 'motion-safe:animate-particle-float-4',
+            animated && particle.id % 5 === 4 && 'motion-safe:animate-particle-float-5'
           )}
           style={{
             left: `${particle.x}%`,
@@ -82,8 +85,8 @@ export function ParticleBackground({
             width: `${particle.size}px`,
             height: `${particle.size}px`,
             opacity: particle.opacity,
-            animationDelay: `${particle.delay}s`,
-            animationDuration: `${particle.duration}s`,
+            animationDelay: animated ? `${particle.delay}s` : undefined,
+            animationDuration: animated ? `${particle.duration}s` : undefined,
           }}
         />
       ))}
