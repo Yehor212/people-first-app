@@ -47,7 +47,7 @@ Why people use ZenFlow:
 - Continue across supported web and app surfaces
 - Use a calm interface built for daily repetition
 
-On supported Android builds, ZenFlow can show an optional banner below the Habits list after consent. It stays out of mood check-ins, focus, journal, planning, settings, menus, sheets, and dialogs.
+After consent and the first three onboarding days, ZenFlow may show one optional adaptive banner below the Habits list. It is not shown during mood check-ins, focus sessions, journaling, habit creation or editing, settings, or overlays.
 ```
 
 Product feature bullets:
@@ -56,14 +56,14 @@ Product feature bullets:
 Fast mood check-ins for the moment you are in
 Habit tracking that keeps routines visible
 Private journaling without social pressure
-Optional habit-list banner after consent
+Optional Habits-list banner after consent
 A calm daily interface built for return use
 ```
 
 What's new:
 
 ```text
-Habit animations, nature sounds, smoother day-theme interactions, and an optional banner below the Habits list.
+Android release with ZenFlow V2, mood, habits, private journal, refreshed brand assets, and an optional adaptive Habits-list banner.
 ```
 
 ## Graphics Upload Map
@@ -121,7 +121,7 @@ Yes
 Reason:
 
 ```text
-The current Android release path installs the official Capacitor AdMob plugin and supports one optional adaptive banner below the active Habits list after consent. ZenFlow does not use rewarded, interstitial, rewarded-interstitial, app-open, or native ads, and it does not show ads during mood check-ins, focus, journaling, planning, settings, menus, sheets, or dialogs.
+The current Android release path installs the official Capacitor AdMob plugin and supports one optional adaptive banner below a non-empty Habits list after user consent and the first three onboarding days. ZenFlow must not show ads during mood check-ins, focus sessions, journaling, habit creation or editing, settings, overlays, or on any non-Android platform.
 ```
 
 Advertising ID:
@@ -213,6 +213,7 @@ npm run google-play:privacy:artifact-check
 # After GitHub Pages deploy, the post-deploy public privacy smoke must pass.
 npm run google-play:privacy:public-check
 npm run google-play:admob:check
+npm run google-play:admob:aab-check
 npm run google-play:admob:ump-check
 ```
 
@@ -221,12 +222,15 @@ Deploy it and verify the live `app-ads.txt` at the root of the developer
 website configured in Play Console/AdMob. A GitHub Pages project subpath is not
 enough proof by itself if AdMob crawls the host root.
 The AdMob production readiness script must pass with the real Android app ID
-and real adaptive banner ad unit ID before production monetization can be called ready.
+and real Android banner ad-unit ID before the Android banner-only release can be built.
 Android release Gradle builds must also fail fast when `ZENFLOW_ADMOB_ANDROID_APP_ID`
-/ `VITE_ADMOB_APP_ID_ANDROID` is missing or still points at a Google sample app ID.
-Rewarded and iOS ad-unit IDs are outside this Android banner-only release. The
-legacy external readiness ledger still models the superseded rewarded-only
-decision and must not be used as current release evidence until migrated.
+/ `VITE_ADMOB_APP_ID_ANDROID` is missing or does not match the publisher in
+`public/app-ads.txt`. The release must contain no Google sample IDs. The
+external readiness ledger now models the current Android banner-only release
+and keeps public listing, privacy, account, and device rows non-PASS until fresh
+Habits banner evidence is recorded. Live ad
+serving remains `UNVERIFIED` until a real device request and AdMob reporting are
+freshly observed.
 
 Current public root proof for this app:
 
@@ -239,5 +243,4 @@ npm run google-play:app-ads:public-check:zenflow
    the public Play listing ads label with `npm run google-play:public-listing:check`,
    and the public privacy policy with `npm run google-play:privacy:public-check`.
    The 2026-06-30 public listing proof shows the developer website, Google Play
-   `Contains ads` signal, Habits-list banner copy, no rewarded-ad copy, and no
-   stale `No ads` claim.
+   `Contains ads` signal, banner ads copy, and no stale `No ads` claim.

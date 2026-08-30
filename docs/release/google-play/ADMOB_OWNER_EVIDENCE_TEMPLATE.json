@@ -166,44 +166,28 @@
       "id": "live_ad_playback_device",
       "status": "UNVERIFIED",
       "checkedAt": "",
-      "evidence": "Owner device evidence not recorded yet. Replace with a public-safe release-device rewarded-ad smoke summary after consent and readiness checks are clear.",
+      "evidence": "Owner device evidence not recorded yet. Replace with a public-safe release-device Habits banner smoke summary after consent and readiness checks are clear.",
       "facts": {
         "releaseEquivalentAndroid": false,
         "consentPathCompleted": false,
-        "clearRewardAndActionDisclosureConfirmed": false,
-        "affirmativeOptInBeforeEachRewardedAd": false,
-        "rewardedVideoOpened": false,
-        "dismissWithoutRewardChecked": false,
-        "dismissOrSkipDoesNotBlockNormalUse": false,
-        "noPressureOrMisleadingChoiceCopy": false,
-        "rewardCallbackGrantedAfterCompletion": false,
+        "habitsBannerRendered": false,
+        "adMobRequestObserved": false,
+        "adMobImpressionObserved": false,
+        "bannerDoesNotOverlapAppContent": false,
+        "rotationRecreatesAdaptiveBanner": false,
+        "backgroundRemovesBanner": false,
         "revocationStopsNewAdRequests": false,
-        "noMoodCheckInPromptOrRequest": false,
-        "noActiveFocusPromptOrRequest": false,
-        "noFocusReflectionPromptOrRequest": false,
-        "noJournalEditorPromptOrRequest": false,
-        "noOnboardingPromptOrRequest": false,
-        "noBadOrTerribleMoodPromptOrRequest": false
+        "noMoodCheckInBannerOrRequest": false,
+        "noActiveFocusBannerOrRequest": false,
+        "noFocusReflectionBannerOrRequest": false,
+        "noJournalEditorBannerOrRequest": false,
+        "noOnboardingBannerOrRequest": false,
+        "noBadOrTerribleMoodBannerOrRequest": false,
+        "noDrawerSheetModalBanner": false
       },
       "sourceUrls": [
         "https://support.google.com/admob/answer/7313578",
-        "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/"
-      ]
-    },
-    {
-      "id": "full_cross_platform_ad_units",
-      "status": "UNVERIFIED",
-      "checkedAt": "",
-      "evidence": "Owner console evidence not recorded yet. Replace with a public-safe summary only when every iOS and banner ad unit is owner-controlled and non-sample.",
-      "facts": {
-        "androidOwnerControlledNonSample": false,
-        "iosOwnerControlledNonSample": false,
-        "bannerOwnerControlledNonSample": false,
-        "rewardedOwnerControlledNonSample": false,
-        "samePublisherFamily": false
-      },
-      "sourceUrls": [
-        "https://support.google.com/admob/answer/7356431"
+        "https://developers.google.com/admob/android/banner"
       ]
     }
   ]

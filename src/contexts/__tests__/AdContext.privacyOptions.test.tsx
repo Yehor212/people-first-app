@@ -22,11 +22,12 @@ const adController = vi.hoisted(() => ({
     };
   }),
   disableAds: vi.fn(),
+  initializeAds: vi.fn(async () => false),
 }));
 
 vi.mock('@/lib/adController', () => ({
   isBannerAdsSupported: vi.fn(() => false),
-  initializeAds: vi.fn(async () => false),
+  initializeAds: adController.initializeAds,
   getAdState: vi.fn(() => adController.state),
   showAdPrivacyOptions: vi.fn(async () => ({
     opened: false,
@@ -53,17 +54,37 @@ function Probe() {
 }
 
 describe('AdContext UMP privacy options', () => {
-  it('keeps the UMP privacy-options entry available when local ad consent is off', async () => {
+  it('does not contact UMP when age eligibility is unknown', async () => {
     render(
-      <AdProvider adConsent={false} isPremium={false}>
+      <AdProvider adConsent adAgeEligibility="unknown" isPremium={false}>
+        <Probe />
+      </AdProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adController.disableAds).toHaveBeenCalledWith({ clearPrivacyOptions: true });
+    });
+    expect(adController.initializeAds).not.toHaveBeenCalled();
+    expect(adController.refreshAdPrivacyOptionsStatus).not.toHaveBeenCalled();
+    expect(screen.getByTestId('privacy-required')).toHaveTextContent('false');
+  });
+
+  it('refreshes UMP privacy choices for an adult even when the optional banner is off', async () => {
+    render(
+      <AdProvider adConsent={false} adAgeEligibility="adult" isPremium={false}>
         <Probe />
       </AdProvider>,
     );
 
     await waitFor(() => {
       expect(adController.disableAds).toHaveBeenCalledWith({ clearPrivacyOptions: false });
-      expect(adController.refreshAdPrivacyOptionsStatus).toHaveBeenCalledTimes(1);
     });
-    expect(screen.getByTestId('privacy-required')).toHaveTextContent('true');
+    expect(adController.initializeAds).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(adController.refreshAdPrivacyOptionsStatus).toHaveBeenCalledWith({
+        ageEligibility: 'adult',
+      });
+      expect(screen.getByTestId('privacy-required')).toHaveTextContent('true');
+    });
   });
 });

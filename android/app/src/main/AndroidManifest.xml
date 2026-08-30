@@ -160,7 +160,7 @@
     <!-- Biometric unlock for the private diary lock. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
-    <!-- Required for the Android banner ad release path. -->
+    <!-- Required for the consent-gated banner ads release path. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
 </manifest>

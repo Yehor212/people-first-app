@@ -6,17 +6,15 @@ verified files, not from ad hoc exports.
 
 ## Current Release Decision
 
-ZenFlow's current Android path is an **ads-enabled draft** built around one
-optional adaptive banner below the active Habits list. Play Console must match
-the artifact:
+ZenFlow's current Android path is an **ads-enabled banner release**. Play Console
+must match the artifact:
 
 - Ads declaration: `Yes`.
 - Advertising ID declaration: `Yes`.
-- Ad format: one optional adaptive banner below the active Habits list after
-  consent.
-- No rewarded, interstitial, rewarded-interstitial, app-open, or native ads.
-- No ads during mood checks, active focus, journaling, planning, settings,
-  menus, sheets, or dialogs.
+- Ad format: one optional adaptive banner below a non-empty Habits list, after
+  consent and the first three onboarding days.
+- No rewarded ads, pop-ups, or interstitials. No ads during mood checks, focus,
+  journaling, habit creation or editing, settings, or overlays.
 - User-facing ad initialization stays behind ZenFlow privacy consent and the
   native Google UMP consent flow.
 
@@ -48,19 +46,47 @@ npm run google-play:app-ads:public-check:zenflow
 npm run google-play:public-listing:check
 npm run google-play:privacy:public-check
 npm run google-play:admob:check
+npm run google-play:admob:aab-check
 npm run google-play:admob:ump-check
+npm run google-play:admob:owner-runbook:check
+npm run google-play:admob:owner-next-steps
+npm run google-play:admob:owner-evidence:check
+npm run google-play:admob:owner-evidence:prepare
+npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json
+npm run google-play:admob:external-check
+npm run google-play:admob:external-check:pass
 ```
 
 The script refuses Google's sample publisher id and writes the official AdMob
 seller line format only. The production readiness check rejects Google sample
 app/ad-unit IDs and masks publisher fragments in logs. Android release Gradle
 builds fail fast if `ZENFLOW_ADMOB_ANDROID_APP_ID` / `VITE_ADMOB_APP_ID_ANDROID`
-is missing or still points at a Google sample app ID. The current banner gate
-also requires `VITE_ADMOB_BANNER_ID_ANDROID`; rewarded and iOS IDs are not part
-of this Android-only release. `ADMOB_OWNER_FINALIZATION_RUNBOOK.md` and the
-external readiness ledger describe the superseded rewarded-only decision and
-must not be used as current banner-release evidence until their schemas are
-migrated.
+is missing or does not match `public/app-ads.txt`. Set
+`VITE_ADMOB_BANNER_ID_ANDROID` to the real Android banner unit. Do not configure
+rewarded IDs for this release. Google sample IDs are forbidden in production
+source, generated bundles, and Android release artifacts.
+Run `npm run google-play:admob:external-check` to keep the public-safe ledger for
+the current Android banner-only release: public disclosure, AdMob app readiness,
+Policy Center, Privacy & messages/CMP, payments/tax, live device request and
+impression, protected surfaces, and future iOS banner status remain independent.
+The ledger is structurally valid evidence tracking, not production-serving PASS. Run
+`npm run google-play:admob:owner-runbook:check` to keep the owner-only CMP,
+payments/tax/holds, live-device banner smoke, and future iOS expansion in
+`ADMOB_OWNER_FINALIZATION_RUNBOOK.md` linked and
+public-safe. Run `npm run google-play:admob:owner-evidence:check` before asking
+the owner to fill private evidence, then run `npm run google-play:admob:owner-evidence:prepare`
+to create `output/private/admob-owner-evidence.json` from the public-safe template.
+That private file must stay untracked and may contain only public-safe
+PASS/PARTIAL/UNVERIFIED/FAIL summaries. Run `npm run google-play:admob:owner-evidence:apply -- --file output/private/admob-owner-evidence.json`
+as a dry-run to promote only owner-owned rows into the public-safe external
+ledger, then rerun with `--write` only after reviewing the row changes. Run
+`npm run google-play:admob:owner-next-steps` to generate
+`output/private/admob-owner-next-steps.md`, a public-safe owner handoff that
+lists only current non-PASS rows and refuses support-ready mode while owner
+blockers remain. Run
+`npm run google-play:admob:external-check:pass` only before claiming production
+ad monetization is ready; it must fail while any Google-owned or owner-only item
+is still `UNVERIFIED`.
 
 Current GitHub Pages root proof for this app uses:
 
@@ -75,16 +101,14 @@ value as
 `https://yehor212.github.io/people-first-app/`, which fixes the previous
 `appstore:developer_url=about:invalid#navigation` blocker. `npm run google-play:public-listing:check`
 now verifies the public listing has the Google Play `Contains ads` signal,
-privacy policy URL, Habits-list banner copy, no rewarded-ad copy, and no stale
-`No ads` claim. If AdMob still shows the
+privacy policy URL, banner ads copy, and no stale `No ads` claim. If AdMob still shows the
 app-ads.txt mismatch warning after these checks pass, retry AdMob `Verify app`
 after Google's crawler has time to refresh.
 
 Run `npm run google-play:privacy:artifact-check` after staging the Pages artifact, then rely on the GitHub Pages post-deploy public privacy smoke, and run `npm run google-play:privacy:public-check` before Play Data safety or
 AdMob production-readiness claims. It verifies that the public privacy policy
 URL discloses the current Google Mobile Ads / AdMob surface, UMP privacy choices,
-Advertising ID, the optional Habits-list banner, and Google Mobile Ads SDK data
-categories.
+Advertising ID, the optional Habits-list banner, and Google Mobile Ads SDK data categories.
 It does not replace the post-deploy public privacy smoke or owner-only Play Console Data safety proof.
 
 ## Generated Assets

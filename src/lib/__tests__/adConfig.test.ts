@@ -6,11 +6,8 @@ import {
   AD_UNIT_IDS,
   getBannerAdUnitId,
   hasBannerAdUnitId,
-  isGoogleTestAdUnit,
+  isValidProductionBannerAdUnitId,
 } from '../adConfig';
-
-const googleAndroidBannerTestId = 'ca-app-pub-3940256099942544/6300978111';
-const googleIosBannerTestId = 'ca-app-pub-3940256099942544/2934735716';
 
 describe('banner-only AdMob configuration', () => {
   it('exposes only a banner slot on Android and iOS', () => {
@@ -20,14 +17,20 @@ describe('banner-only AdMob configuration', () => {
     expect(getBannerAdUnitId('ios')).toBe(AD_UNIT_IDS.ios.banner);
   });
 
-  it('recognizes Google sample publisher IDs without bundling exact test-unit fallbacks', () => {
+  it('contains no sample-id detector or fallback path in production configuration', () => {
     const configSource = readFileSync('src/lib/adConfig.ts', 'utf8');
 
-    expect(isGoogleTestAdUnit(googleAndroidBannerTestId)).toBe(true);
-    expect(isGoogleTestAdUnit(googleIosBannerTestId)).toBe(true);
-    expect(isGoogleTestAdUnit('ca-app-pub-9501460293702808/9876543210')).toBe(false);
-    expect(configSource).not.toContain(googleAndroidBannerTestId);
-    expect(configSource).not.toContain(googleIosBannerTestId);
+    expect(configSource).not.toContain('GOOGLE_ADMOB_TEST_IDS');
+    expect(configSource).not.toContain('isGoogleTestAdUnit');
+    expect(configSource).not.toContain('3940256099942544');
+  });
+
+  it('rejects blank, malformed, and Google sample banner IDs at the runtime boundary', () => {
+    expect(isValidProductionBannerAdUnitId('')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('banner-123')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('ca-app-pub-3940256099942544/6300978111')).toBe(false);
+    expect(isValidProductionBannerAdUnitId('ca-app-pub-9501460293702808/9876543210')).toBe(true);
+    expect(hasBannerAdUnitId('ios')).toBe(false);
   });
 
   it('reports configured banner slots without inventing a production fallback', () => {

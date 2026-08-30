@@ -5,30 +5,23 @@
  * Handles Android banner initialization, privacy, placement, and lifecycle.
  */
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import {
   initializeAds,
   getAdState,
-  showAdPrivacyOptions,
   refreshAdPrivacyOptionsStatus,
+  showAdPrivacyOptions,
   disableAds,
   isBannerAdsSupported,
   showHabitsBanner,
   hideHabitsBanner,
   removeHabitsBanner,
-} from '@/lib/adController';
-import { logger } from '@/lib/logger';
+} from "@/lib/adController";
+import { logger } from "@/lib/logger";
+import type { AdAgeEligibility } from "@/types";
 
 const ANDROID_MOTION_BENCHMARK_ENABLED =
-  typeof __ANDROID_MOTION_BENCHMARK__ !== 'undefined' &&
-  __ANDROID_MOTION_BENCHMARK__;
+  typeof __ANDROID_MOTION_BENCHMARK__ !== "undefined" && __ANDROID_MOTION_BENCHMARK__;
 
 // ============================================
 // TYPES
@@ -70,6 +63,8 @@ interface AdProviderProps {
   children: ReactNode;
   /** Whether user has ad consent (GDPR) */
   adConsent?: boolean;
+  /** Minimal local category derived without storing the date of birth */
+  adAgeEligibility?: AdAgeEligibility;
   /** Whether user is premium (no ads) */
   isPremium?: boolean;
   /** Latest mood used for mood-aware ad gating */
@@ -79,6 +74,7 @@ interface AdProviderProps {
 export function AdProvider({
   children,
   adConsent = false,
+  adAgeEligibility = "unknown",
   isPremium = false,
   currentMood,
 }: AdProviderProps) {
@@ -87,10 +83,10 @@ export function AdProvider({
   const [habitsBannerActive, setHabitsBannerActiveState] = useState(false);
   const [globalAdOverlayOpen, setGlobalAdOverlayOpenState] = useState(false);
   const [documentVisible, setDocumentVisible] = useState(
-    () => typeof document === 'undefined' || document.visibilityState !== 'hidden',
+    () => typeof document === "undefined" || document.visibilityState !== "hidden"
   );
-  const [viewportWidth, setViewportWidth] = useState(
-    () => typeof window === 'undefined' ? 0 : Math.round(window.innerWidth),
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 0 : Math.round(window.innerWidth)
   );
   const [googleConsentReady, setGoogleConsentReady] = useState(false);
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false);
@@ -100,14 +96,6 @@ export function AdProvider({
     setGoogleConsentReady(controllerState.canRequestAds);
     setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
     setAdsAvailable(controllerState.sdkAvailable);
-  }, []);
-
-  const syncPrivacyOptionsOnly = useCallback(() => {
-    const controllerState = getAdState();
-    setGoogleConsentReady(controllerState.canRequestAds);
-    setPrivacyOptionsRequired(controllerState.privacyOptionsRequired);
-    setAdsAvailable(false);
-    setBannerHeight(0);
   }, []);
 
   // Initialize SDK
@@ -123,47 +111,47 @@ export function AdProvider({
       if (clearPrivacyOptions) setPrivacyOptionsRequired(false);
     };
 
-    if (isPremium) {
-      disableAdRequests(true);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (!adConsent) {
-      disableAdRequests(false);
-      void refreshAdPrivacyOptionsStatus()
-        .catch(err => logger.warn('[Ads]', 'Privacy options refresh failed:', err))
-        .finally(() => {
-          if (!cancelled) syncPrivacyOptionsOnly();
-        });
+    if (isPremium || !adConsent || adAgeEligibility !== "adult") {
+      const clearPrivacyOptions = adAgeEligibility !== "adult";
+      disableAdRequests(clearPrivacyOptions);
+      if (!clearPrivacyOptions) {
+        void refreshAdPrivacyOptionsStatus({ ageEligibility: adAgeEligibility })
+          .then(() => {
+            if (!cancelled) syncControllerState();
+          })
+          .catch((err) => {
+            if (!cancelled) logger.warn("[Ads]", "Privacy options refresh failed:", err);
+          });
+      }
 
       return () => {
         cancelled = true;
       };
     }
 
-    void initializeAds().then((available) => {
-      if (cancelled) return;
-      syncControllerState();
-      if (!available) setBannerHeight(0);
-    }).catch(err => {
-      if (!cancelled) logger.warn('[Ads]', 'Ad init failed:', err);
-    });
+    void initializeAds({ adConsent, ageEligibility: adAgeEligibility })
+      .then((available) => {
+        if (cancelled) return;
+        syncControllerState();
+        if (!available) setBannerHeight(0);
+      })
+      .catch((err) => {
+        if (!cancelled) logger.warn("[Ads]", "Ad init failed:", err);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [adConsent, isPremium, syncControllerState, syncPrivacyOptionsOnly]);
+  }, [adAgeEligibility, adConsent, isPremium, syncControllerState]);
 
   // Native views survive above the WebView, so lifecycle visibility is part of
   // the placement gate rather than an eventual cleanup detail.
   useEffect(() => {
     const handleVisibilityChange = () => {
-      setDocumentVisible(document.visibilityState !== 'hidden');
+      setDocumentVisible(document.visibilityState !== "hidden");
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
   // Anchored adaptive banners are sized from the current Android window. A
@@ -172,19 +160,19 @@ export function AdProvider({
   useEffect(() => {
     const handleViewportResize = () => {
       const nextWidth = Math.round(window.innerWidth);
-      setViewportWidth((currentWidth) => currentWidth === nextWidth ? currentWidth : nextWidth);
+      setViewportWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
     };
-    window.addEventListener('resize', handleViewportResize, { passive: true });
-    return () => window.removeEventListener('resize', handleViewportResize);
+    window.addEventListener("resize", handleViewportResize, { passive: true });
+    return () => window.removeEventListener("resize", handleViewportResize);
   }, []);
 
-  const emotionallyProtected = currentMood === 'bad' || currentMood === 'terrible';
+  const emotionallyProtected = currentMood === "bad" || currentMood === "terrible";
   useEffect(() => {
     if (
       !ANDROID_MOTION_BENCHMARK_ENABLED ||
-      typeof location === 'undefined' ||
-      location.protocol !== 'https:' ||
-      location.hostname !== 'localhost'
+      typeof location === "undefined" ||
+      location.protocol !== "https:" ||
+      location.hostname !== "localhost"
     ) {
       return;
     }
@@ -197,6 +185,7 @@ export function AdProvider({
     };
     const probe = () => ({
       adConsent,
+      adAgeEligibility,
       isPremium,
       currentMood: currentMood ?? null,
       adsAvailable,
@@ -208,7 +197,7 @@ export function AdProvider({
       googleConsentReady,
       privacyOptionsRequired,
     });
-    Object.defineProperty(benchmarkGlobal, '__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__', {
+    Object.defineProperty(benchmarkGlobal, "__ZENFLOW_ANDROID_BANNER_CONTEXT_BENCHMARK__", {
       configurable: true,
       enumerable: false,
       value: probe,
@@ -220,6 +209,7 @@ export function AdProvider({
       }
     };
   }, [
+    adAgeEligibility,
     adConsent,
     adsAvailable,
     bannerHeight,
@@ -270,7 +260,7 @@ export function AdProvider({
     () => () => {
       void removeHabitsBanner();
     },
-    [],
+    []
   );
 
   const setHabitsBannerActive = useCallback((active: boolean) => {

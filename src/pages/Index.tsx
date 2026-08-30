@@ -37,7 +37,6 @@ import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
-import { canInitializeAds } from "@/lib/privacyConsent";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
@@ -255,7 +254,8 @@ function IndexV2Impl() {
       <StorageErrorBanner />
       <AuthGate isLoading={isLoading} splashTheme={appliedTheme}>
         <AdProvider
-          adConsent={canInitializeAds(privacy)}
+          adConsent={privacy.adConsent === true}
+          adAgeEligibility={privacy.adAgeEligibility ?? "unknown"}
           isPremium={false}
           currentMood={currentMoodForAds}
         >

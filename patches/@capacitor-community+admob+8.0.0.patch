@@ -214,3 +214,241 @@ index c629139..32ca0b3 100644
              });
      }
  }
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java
+index 02531cd..9538744 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java
+@@ -11,16 +11,7 @@ public final class AdViewIdHelper {
+     private AdViewIdHelper() {}
+
+     public static String getFinalAdId(AdOptions adOptions, AdRequest adRequest, String logTag, Context context) {
+-        if (!adOptions.isTesting) {
+-            return adOptions.adId;
+-        }
+-
+-        if (adRequest.isTestDevice(context)) {
+-            Log.w(logTag, "This device is registered as Testing Device. The real Ad Id will be used");
+-            return adOptions.adId;
+-        }
+-
+-        return adOptions.getTestingId();
++        return adOptions.adId;
+     }
+
+     public static void assignIdToAdView(AdView adView, AdOptions adOptions, AdRequest adRequest, String logTag, Context context) {
+diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java
+index 9fdaf8b..5e3f722 100644
+--- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java
++++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java
+@@ -1,6 +1,5 @@
+ package com.getcapacitor.community.admob.models;
+
+-import androidx.annotation.VisibleForTesting;
+ import com.getcapacitor.PluginCall;
+ import com.getcapacitor.community.admob.banner.BannerAdSizeEnum;
+ import com.getcapacitor.community.admob.rewarded.models.SsvInfo;
+@@ -9,7 +8,7 @@ import com.getcapacitor.community.admob.rewarded.models.SsvInfo;
+  * Holds the options for an Ad Request
+  * TODO: automatically create type definitions https://github.com/vojtechhabarta/typescript-generator ?
+  */
+-public abstract class AdOptions {
++public final class AdOptions {
+
+     /**
+      * The ad unit ID that you want to request
+@@ -24,11 +23,6 @@ public abstract class AdOptions {
+      */
+     public final BannerAdSizeEnum adSize;
+
+-    public static final String BANNER_TESTER_ID = "ca-app-pub-3940256099942544/6300978111";
+-    public static final String INTERSTITIAL_TESTER_ID = "ca-app-pub-3940256099942544/1033173712";
+-    public static final String REWARD_VIDEO_TESTER_ID = "ca-app-pub-3940256099942544/5224354917";
+-    public static final String REWARD_INTERSTITIAL_TESTER_ID = "ca-app-pub-3940256099942544/5354046379";
+-
+     /**
+      * The position of the ad, it can be TOP_CENTER,
+      * CENTER or BOTTOM
+@@ -37,11 +31,7 @@ public abstract class AdOptions {
+      */
+     public final String position;
+
+-    /**
+-     * If set to true, an test app will be requested using the official sample ads unit ids
+-     *
+-     * @see <a href="https://developers.google.com/admob/android/test-ads#sample_ad_units">Sample ad units</a>
+-     */
++    /** Test requests are rejected for ZenFlow production builds. */
+     public final boolean isTesting;
+
+     /**
+@@ -67,15 +57,16 @@ public abstract class AdOptions {
+     public final SsvInfo ssvInfo;
+
+     private AdOptions(PluginCall call) {
+-        /*
+-         * TODO: Since the Id in the Typescript AdOptions interface is not optional
+-         *  the default value here should never be used. In case it is used it means this is an error.
+-         *  Would not be better to print an error (call.reject()) and do not create any Ad?
+-         *  Why? Because an distracted dev could think that everything is working when it is not.
+-         */
+-
+-        this.adId = call.getString("adId", getTestingId());
+-        this.isTesting = call.getBoolean("isTesting", false);
++        String configuredAdId = call.getString("adId");
++        if (configuredAdId == null || configuredAdId.trim().isEmpty()) {
++            throw new IllegalArgumentException("A real adId is required in ZenFlow production builds");
++        }
++        if (Boolean.TRUE.equals(call.getBoolean("isTesting", false))) {
++            throw new IllegalArgumentException("Test ad requests are disabled in ZenFlow production builds");
++        }
++
++        this.adId = configuredAdId;
++        this.isTesting = false;
+         this.position = call.getString("position", "BOTTOM_CENTER");
+         this.margin = call.getInt("margin", 0);
+         this.npa = call.getBoolean("npa", false);
+@@ -85,21 +76,6 @@ public abstract class AdOptions {
+         this.adSize = AdOptions.adSizeStringToAdSizeEnum(sizeString);
+     }
+
+-    private AdOptions(String id, boolean isTesting, String position, int margin, boolean npa, BannerAdSizeEnum adSize, SsvInfo ssvInfo) {
+-        this.adId = id;
+-        this.isTesting = isTesting;
+-        this.position = position;
+-        this.margin = margin;
+-        this.npa = npa;
+-        this.adSize = adSize;
+-        this.ssvInfo = ssvInfo;
+-    }
+-
+-    /**
+-     * @return the id used for this type of test ads.
+-     */
+-    public abstract String getTestingId();
+-
+     private static BannerAdSizeEnum adSizeStringToAdSizeEnum(String sizeString) {
+         try {
+             return BannerAdSizeEnum.valueOf(sizeString);
+@@ -113,48 +89,23 @@ public abstract class AdOptions {
+         private AdOptionsFactory() {}
+
+         public AdOptions createBannerOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.BANNER_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createInterstitialOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.INTERSTITIAL_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createRewardVideoOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.REWARD_VIDEO_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createRewardInterstitialOptions(PluginCall call) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return AdOptions.REWARD_INTERSTITIAL_TESTER_ID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+
+         public AdOptions createGenericOptions(PluginCall call, final String testingID) {
+-            return new AdOptions(call) {
+-                @Override
+-                public String getTestingId() {
+-                    return testingID;
+-                }
+-            };
++            return new AdOptions(call);
+         }
+     }
+
+@@ -168,68 +119,4 @@ public abstract class AdOptions {
+         return AdOptions.factory;
+     }
+
+-    /**
+-     * Just for testing
+-     */
+-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+-    public static class TesterAdOptionsBuilder {
+-
+-        private String id = "TesterAdOptionsBuilder__defaultID";
+-        private String testingID = "TesterAdOptionsBuilder__testingID";
+-        private boolean isTesting = true;
+-        private String position = "TesterAdOptionsBuilder__position";
+-        private int margin = 1;
+-        private boolean npa = false;
+-        private BannerAdSizeEnum adSize = BannerAdSizeEnum.ADAPTIVE_BANNER;
+-        private SsvInfo ssvInfo = new SsvInfo();
+-
+-        public TesterAdOptionsBuilder setSsvInfo(SsvInfo info) {
+-            ssvInfo = info;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setIsTesting(boolean value) {
+-            isTesting = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setNpa(boolean value) {
+-            npa = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setPosition(String value) {
+-            position = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setTestingID(String value) {
+-            testingID = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setID(String value) {
+-            id = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setMargin(int value) {
+-            margin = value;
+-            return this;
+-        }
+-
+-        public TesterAdOptionsBuilder setAdSize(BannerAdSizeEnum value) {
+-            adSize = value;
+-            return this;
+-        }
+-
+-        public AdOptions build() {
+-            return new AdOptions(id, isTesting, position, margin, npa, adSize, ssvInfo) {
+-                @Override
+-                public String getTestingId() {
+-                    return testingID;
+-                }
+-            };
+-        }
+-    }
+ }

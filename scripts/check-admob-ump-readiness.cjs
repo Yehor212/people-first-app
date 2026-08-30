@@ -187,9 +187,17 @@ function evaluateAdMobUmpReadiness(files) {
     issues,
     files,
     "androidBuildGradle",
-    "ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS",
-    "missing_android_sample_id_release_guard",
-    "Android release builds must reject Google sample AdMob app ids",
+    "zenflowExpectedAdMobPublisher",
+    "missing_android_publisher_release_guard",
+    "Android release builds must bind the AdMob application id to public/app-ads.txt",
+  );
+  requireContains(
+    issues,
+    files,
+    "androidBuildGradle",
+    "zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher",
+    "missing_android_publisher_match_guard",
+    "Android release builds must reject missing, sample, or mismatched AdMob application ids",
   );
 
   requireContains(

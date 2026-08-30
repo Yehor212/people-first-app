@@ -1,7 +1,7 @@
 import type React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Habit } from "@/types";
+import type { Habit, PrivacySettings } from "@/types";
 import { SettingsPage } from "../SettingsPage";
 
 function createDeferred<T = void>() {
@@ -747,6 +747,18 @@ vi.mock("@/contexts/LanguageContext", () => ({
       privacyAds: "Habit list banner",
       privacyAdsHint:
         "Shows a small banner below your habit list after you turn it on. It stays out of mood check-ins, journal, focus, and menus. Google may ask for your privacy choice when required.",
+      adAgeCheckTitle: "Check your age",
+      adAgeCheckDescription: "Enter your date of birth before turning on the banner.",
+      adAgeBirthDate: "Date of birth",
+      adAgeBirthDateHint:
+        "Used only now to determine whether the banner is available. ZenFlow does not save this date.",
+      adAgeCheckCancel: "Cancel",
+      adAgeCheckContinue: "Continue",
+      adAgeCheckInvalid: "We couldn’t verify that date. Check it and try again.",
+      adAgeMinorNotice: "The banner isn’t available for this age. No ad service was started.",
+      adAgeReview: "Review age information",
+      adAgeReviewHint:
+        "Enter your date of birth again if it has changed. ZenFlow checks it without saving the date.",
       privacyPushNotifications: "Account reminders",
       privacyPushNotificationsHint:
         "Receive reminders from your account on this device. Reminders you set on this device still work when this is off.",
@@ -1191,7 +1203,8 @@ function createSettingsControls() {
       consentShown: true,
       adConsent: false,
       pushNotifications: false,
-    },
+      adAgeEligibility: "unknown",
+    } as PrivacySettings,
     onPrivacyChange: vi.fn(),
     onOpenWidgetSettings: vi.fn(),
   };
@@ -2867,6 +2880,10 @@ describe("SettingsPage", () => {
     const deferred = createDeferred<void>();
     void deferred.promise.catch(() => undefined);
     const controls = createSettingsControls();
+    controls.privacy = {
+      ...controls.privacy,
+      adAgeEligibility: "adult",
+    };
     controls.onPrivacyChange.mockReturnValue(deferred.promise);
 
     render(<SettingsPage controls={controls} />);
@@ -4515,6 +4532,57 @@ describe("SettingsPage", () => {
     expect(screen.getByTestId("settings-v2-ad-consent")).toBeInTheDocument();
   });
 
+  it("stores only adult eligibility after a neutral age check before enabling the banner", async () => {
+    adContextMock.adsSupported = true;
+    const controls = createSettingsControls();
+    render(<SettingsPage controls={controls} />);
+
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+    fireEvent.click(
+      within(screen.getByTestId("settings-v2-ad-consent")).getByRole("switch", {
+        name: "Habit list banner",
+      }),
+    );
+
+    expect(screen.getByRole("dialog", { name: "Check your age" })).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Date of birth"), {
+      target: { value: "2000-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(controls.onPrivacyChange).toHaveBeenCalledTimes(1));
+    const updater = controls.onPrivacyChange.mock.calls[0]?.[0];
+    expect(typeof updater).toBe("function");
+    const next = updater(controls.privacy);
+    expect(next).toMatchObject({ adAgeEligibility: "adult", adConsent: true });
+    expect(next).not.toHaveProperty("birthDate");
+    expect(next).not.toHaveProperty("dateOfBirth");
+  });
+
+  it("shows a legacy consent without age eligibility as off and opens the age check on enable", () => {
+    adContextMock.adsSupported = true;
+    const controls = createSettingsControls();
+    controls.privacy = {
+      ...controls.privacy,
+      adConsent: true,
+      adAgeEligibility: "unknown",
+    };
+    render(<SettingsPage controls={controls} />);
+
+    expect(screen.getByTestId("settings-module-card-privacy")).toHaveTextContent(
+      "Optional services off"
+    );
+    fireEvent.click(screen.getByTestId("settings-module-card-privacy"));
+    const toggle = within(screen.getByTestId("settings-v2-ad-consent")).getByRole("switch", {
+      name: "Habit list banner",
+    });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(toggle);
+    expect(screen.getByRole("dialog", { name: "Check your age" })).toBeVisible();
+    expect(controls.onPrivacyChange).not.toHaveBeenCalled();
+  });
+
   it("shows a retryable error when Google ad privacy choices do not open", async () => {
     adContextMock.adsSupported = true;
     adContextMock.privacyOptionsRequired = true;
@@ -4934,10 +5002,14 @@ describe("SettingsPage", () => {
     ).toHaveAttribute("aria-checked", "true");
   });
 
-  it("summarizes rewarded-video consent only when that Privacy control is available", () => {
+  it("summarizes an enabled adult banner only when that Privacy control is available", () => {
     adContextMock.adsSupported = true;
     const controls = createSettingsControls();
-    controls.privacy = { ...controls.privacy, adConsent: true };
+    controls.privacy = {
+      ...controls.privacy,
+      adConsent: true,
+      adAgeEligibility: "adult",
+    };
 
     render(<SettingsPage controls={controls} />);
 

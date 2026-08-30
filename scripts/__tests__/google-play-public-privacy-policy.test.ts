@@ -19,15 +19,15 @@ const checker = require("../check-public-privacy-policy.cjs") as {
 
 const completePolicy = `
   ZenFlow Privacy Policy
-  Optional adaptive banner below the habit list after consent.
+  A bottom banner ad after Google consent in supported Android builds.
   AdMob / Google Mobile Ads.
   Google User Messaging Platform (UMP) privacy choices.
   Advertising ID and ad-services declarations.
-  Google Mobile Ads SDK may collect and share IP address, user product interactions, diagnostic information, and device/account identifiers for advertising, analytics, and fraud prevention.
+  Google Mobile Ads SDK may collect and share IP address, user product interactions such as ad views and taps, diagnostic information, and device/account identifiers for advertising, analytics, and fraud prevention.
 `;
 
 describe("Google Play public privacy policy guard", () => {
-  it("passes when the policy discloses the current Google Mobile Ads and UMP surface", () => {
+  it("passes when the policy discloses the current banner-only Google Mobile Ads and UMP surface", () => {
     const report = checker.evaluatePublicPrivacyPolicyHtml({ html: completePolicy });
 
     expect(report.ok).toBe(true);
@@ -37,11 +37,12 @@ describe("Google Play public privacy policy guard", () => {
     expect(report.signals.advertisingIdVisible).toBe(true);
     expect(report.signals.googleMobileAdsDataVisible).toBe(true);
     expect(report.signals.bannerAdsVisible).toBe(true);
+    expect(report.signals.staleRewardedAdsVisible).toBe(false);
   });
 
   it("rejects a policy that mentions ads but omits Google Mobile Ads SDK data disclosures", () => {
     const report = checker.evaluatePublicPrivacyPolicyHtml({
-      html: "ZenFlow Privacy Policy AdMob Google Mobile Ads UMP Advertising ID optional adaptive banner below the habit list",
+      html: "ZenFlow Privacy Policy AdMob Google Mobile Ads UMP Advertising ID bottom banner ad",
     });
 
     expect(report.ok).toBe(false);
@@ -49,12 +50,19 @@ describe("Google Play public privacy policy guard", () => {
     expect(report.signals.googleMobileAdsDataVisible).toBe(false);
   });
 
-  it("rejects stale rewarded-only wording for a banner-only Android artifact", () => {
+  it("rejects stale rewarded-ad copy for the banner-only release path", () => {
     const report = checker.evaluatePublicPrivacyPolicyHtml({
-      html: completePolicy.replace(
-        "Optional adaptive banner below the habit list after consent.",
-        "Optional rewarded ads after consent.",
-      ),
+      html: completePolicy + " Optional rewarded ads are available in Settings.",
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(expect.objectContaining({ code: "stale_rewarded_ads_visible" }));
+    expect(report.signals.staleRewardedAdsVisible).toBe(true);
+  });
+
+  it("rejects an ads disclosure that does not identify the banner format", () => {
+    const report = checker.evaluatePublicPrivacyPolicyHtml({
+      html: completePolicy.replace("A bottom banner ad", "Ads"),
     });
 
     expect(report.ok).toBe(false);

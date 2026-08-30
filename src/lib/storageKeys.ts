@@ -56,14 +56,6 @@ export const SK = {
   DAILY_SURPRISE_SEEN: "zenflow-daily-surprise-seen",
   LAST_SHOWN_STREAK: "zenflow-last-shown-streak",
 
-  // ─── Ads ───
-  AD_DAILY_REWARDED: "zenflow-ad-rewarded-count",
-  AD_COUNT_DATE: "zenflow-ad-count-date",
-  AD_SESSION_COUNT: "zenflow-ad-session-count",
-  AD_LAST_SHOWN: "zenflow-ad-last-shown",
-  AD_LAST_DISMISS: "zenflow-ad-last-dismiss",
-  AD_CONSENT_SHOWN: "zenflow-ad-consent-shown",
-
   // ─── Timer ───
   TIMER_STATE: "zenflow-timer-state",
 

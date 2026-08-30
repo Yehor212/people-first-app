@@ -48,6 +48,9 @@ function BannerProbe() {
   const placementSetter = (
     ads as typeof ads & { setHabitsBannerActive?: (active: boolean) => void }
   ).setHabitsBannerActive;
+  const overlaySetter = (
+    ads as typeof ads & { setGlobalAdOverlayOpen?: (open: boolean) => void }
+  ).setGlobalAdOverlayOpen;
   const bannerHeight = (ads as typeof ads & { bannerHeight?: number }).bannerHeight;
 
   return (
@@ -59,6 +62,9 @@ function BannerProbe() {
       </button>
       <button type="button" onClick={() => placementSetter?.(false)}>
         open sheet
+      </button>
+      <button type="button" onClick={() => overlaySetter?.(true)}>
+        open global overlay
       </button>
     </>
   );
@@ -75,7 +81,7 @@ describe("AdContext Android banner placement", () => {
 
   it("shows the Habits banner on request and clears its reserved height for an overlay", async () => {
     render(
-      <AdProvider adConsent isPremium={false} currentMood="okay">
+      <AdProvider adConsent adAgeEligibility="adult" isPremium={false} currentMood="okay">
         <BannerProbe />
       </AdProvider>,
     );
@@ -97,7 +103,7 @@ describe("AdContext Android banner placement", () => {
 
   it("requests a fresh adaptive banner after an Android viewport-width change", async () => {
     render(
-      <AdProvider adConsent isPremium={false} currentMood="okay">
+      <AdProvider adConsent adAgeEligibility="adult" isPremium={false} currentMood="okay">
         <BannerProbe />
       </AdProvider>,
     );
@@ -112,5 +118,22 @@ describe("AdContext Android banner placement", () => {
     fireEvent(window, new Event("resize"));
 
     await waitFor(() => expect(bannerController.showHabitsBanner).toHaveBeenCalledTimes(2));
+  });
+
+  it("hides the native banner while a shell-level overlay is open", async () => {
+    render(
+      <AdProvider adConsent adAgeEligibility="adult" isPremium={false} currentMood="okay">
+        <BannerProbe />
+      </AdProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "enter habits" }));
+    await waitFor(() => expect(bannerController.showHabitsBanner).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "open global overlay" }));
+    await waitFor(() => {
+      expect(bannerController.hideHabitsBanner).toHaveBeenCalled();
+      expect(screen.getByTestId("banner-height")).toHaveTextContent("0");
+    });
   });
 });

@@ -9,12 +9,16 @@ import {
 
 describe("Telegram OIDC compatibility proxy", () => {
   it("keeps Telegram as issuer while routing JWKS through the project proxy", () => {
-    const discovery = buildTelegramOidcDiscovery("https://api.zenflowapp.online/functions/v1/telegram-oidc");
+    const discovery = buildTelegramOidcDiscovery(
+      "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc"
+    );
 
     expect(discovery.issuer).toBe(TELEGRAM_OIDC_ISSUER);
     expect(discovery.authorization_endpoint).toBe("https://oauth.telegram.org/auth");
     expect(discovery.token_endpoint).toBe("https://oauth.telegram.org/token");
-    expect(discovery.jwks_uri).toBe("https://api.zenflowapp.online/functions/v1/telegram-oidc/jwks");
+    expect(discovery.jwks_uri).toBe(
+      "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/jwks"
+    );
     expect(discovery.id_token_signing_alg_values_supported).not.toContain("ES256K");
   });
 
@@ -22,8 +26,12 @@ describe("Telegram OIDC compatibility proxy", () => {
     const baseUrl = buildTelegramOidcFunctionBaseUrl("http://api.zenflowapp.online/telegram-oidc/.well-known/openid-configuration");
     const edgeRuntimeBaseUrl = buildTelegramOidcFunctionBaseUrl("https://edge-runtime.supabase.com/telegram-oidc/.well-known/openid-configuration");
 
-    expect(baseUrl).toBe("https://api.zenflowapp.online/functions/v1/telegram-oidc");
-    expect(edgeRuntimeBaseUrl).toBe("https://api.zenflowapp.online/functions/v1/telegram-oidc");
+    expect(baseUrl).toBe(
+      "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc"
+    );
+    expect(edgeRuntimeBaseUrl).toBe(
+      "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc"
+    );
   });
 
   it("removes Telegram secp256k1 keys before Supabase Auth reads the JWKS", () => {

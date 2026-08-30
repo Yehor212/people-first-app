@@ -5,12 +5,12 @@
  * missing configuration, and the first three onboarding days.
  */
 
-import { getBannerAdUnitId, hasBannerAdUnitId, isGoogleTestAdUnit } from '@/lib/adConfig';
-import { IS_DEV } from '@/lib/env';
-import { logger } from '@/lib/logger';
-import { isNative, platform } from '@/lib/platform';
-import { safeJsonParse, storageGetRaw } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
+import { getBannerAdUnitId, hasBannerAdUnitId } from "@/lib/adConfig";
+import { IS_DEV } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { isNative, platform } from "@/lib/platform";
+import { safeJsonParse, storageGetRaw } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 import {
   AdMob,
   AdmobConsentStatus,
@@ -18,7 +18,13 @@ import {
   BannerAdPosition,
   BannerAdSize,
   MaxAdContentRating,
-} from '@capacitor-community/admob';
+} from "@capacitor-community/admob";
+import type { AdAgeEligibility } from "@/types";
+
+export interface AdInitializationAuthorization {
+  adConsent: boolean;
+  ageEligibility: AdAgeEligibility;
+}
 
 export interface AdControllerState {
   initialized: boolean;
@@ -66,6 +72,8 @@ const AD_ONBOARDING_GRACE_DAYS = 3;
 
 const AdMobPlugin: any = AdMob;
 let adLifecycleEpoch = 0;
+let bannerPlacementEpoch = 0;
+let bannerCommandQueue: Promise<void> = Promise.resolve();
 let bannerCreated = false;
 let bannerVisible = false;
 let bannerHeight = 0;
@@ -73,13 +81,26 @@ let bannerSizeListener: { remove?: () => Promise<void> | void } | null = null;
 let bannerFailureListener: { remove?: () => Promise<void> | void } | null = null;
 let bannerHeightCallback: ((height: number) => void) | null = null;
 let bannerViewportWidth: number | null = null;
+let privacyAuthorizationActive = false;
 
 const ANDROID_MOTION_BENCHMARK_ENABLED =
-  typeof __ANDROID_MOTION_BENCHMARK__ !== 'undefined' &&
-  __ANDROID_MOTION_BENCHMARK__;
+  typeof __ANDROID_MOTION_BENCHMARK__ !== "undefined" && __ANDROID_MOTION_BENCHMARK__;
 
 function isLifecycleCurrent(epoch: number): boolean {
   return epoch === adLifecycleEpoch;
+}
+
+function isBannerPlacementCurrent(epoch: number): boolean {
+  return epoch === bannerPlacementEpoch;
+}
+
+function enqueueBannerCommand<T>(command: () => Promise<T>): Promise<T> {
+  const result = bannerCommandQueue.then(command, command);
+  bannerCommandQueue = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
 }
 
 function resetAdAvailability(options: DisableAdsOptions = {}): void {
@@ -92,16 +113,17 @@ function resetAdAvailability(options: DisableAdsOptions = {}): void {
 
 export function disableAds(options: DisableAdsOptions = {}): void {
   adLifecycleEpoch += 1;
+  if (options.clearPrivacyOptions) privacyAuthorizationActive = false;
   resetAdAvailability(options);
   void removeHabitsBanner();
 }
 
 export function isBannerAdsSupported(): boolean {
-  return Boolean(isNative && platform === 'android' && hasBannerAdUnitId('android'));
+  return Boolean(!IS_DEV && isNative && platform === "android" && hasBannerAdUnitId("android"));
 }
 
 function isWithinOnboardingAdGracePeriod(): boolean {
-  const raw = storageGetRaw(SK.ONBOARDING_STATE, '');
+  const raw = storageGetRaw(SK.ONBOARDING_STATE, "");
   const onboarding = safeJsonParse<StoredOnboardingAdState | null>(raw, null);
   if (onboarding?.isNewUser === false) return false;
 
@@ -113,17 +135,20 @@ function isWithinOnboardingAdGracePeriod(): boolean {
 function installAndroidBannerBenchmarkProbe(): void {
   if (
     !ANDROID_MOTION_BENCHMARK_ENABLED ||
-    typeof location === 'undefined' ||
-    location.protocol !== 'https:' ||
-    location.hostname !== 'localhost'
+    typeof location === "undefined" ||
+    location.protocol !== "https:" ||
+    location.hostname !== "localhost"
   ) {
     return;
   }
 
   const benchmarkGlobal = globalThis as typeof globalThis & {
-    __ZENFLOW_ANDROID_BANNER_BENCHMARK__?: () => Record<string, boolean | number | string | undefined>;
+    __ZENFLOW_ANDROID_BANNER_BENCHMARK__?: () => Record<
+      string,
+      boolean | number | string | undefined
+    >;
   };
-  Object.defineProperty(benchmarkGlobal, '__ZENFLOW_ANDROID_BANNER_BENCHMARK__', {
+  Object.defineProperty(benchmarkGlobal, "__ZENFLOW_ANDROID_BANNER_BENCHMARK__", {
     configurable: true,
     enumerable: false,
     value: () => ({
@@ -131,6 +156,8 @@ function installAndroidBannerBenchmarkProbe(): void {
       supported: isBannerAdsSupported(),
       onboardingGracePeriod: isWithinOnboardingAdGracePeriod(),
       lifecycleEpoch: adLifecycleEpoch,
+      placementEpoch: bannerPlacementEpoch,
+      privacyAuthorizationActive,
       pluginLoaded: true,
       bannerCreated,
       bannerVisible,
@@ -145,20 +172,21 @@ function installAndroidBannerBenchmarkProbe(): void {
 installAndroidBannerBenchmarkProbe();
 
 function updateConsentState(consentInfo: any): boolean {
-  const privacyRequiredStatus = 'REQUIRED';
+  const privacyRequiredStatus = "REQUIRED";
   const canRequestAds = consentInfo?.canRequestAds === true;
 
   state.canRequestAds = canRequestAds;
-  state.consentStatus = typeof consentInfo?.status === 'string' ? consentInfo.status : undefined;
+  state.consentStatus = typeof consentInfo?.status === "string" ? consentInfo.status : undefined;
   state.privacyOptionsRequired =
     consentInfo?.privacyOptionsRequirementStatus === privacyRequiredStatus;
 
   return canRequestAds;
 }
 
-async function requestNativeConsentInfo(
-  options: { showFormIfRequired: boolean; lifecycleEpoch?: number },
-): Promise<boolean> {
+async function requestNativeConsentInfo(options: {
+  showFormIfRequired: boolean;
+  lifecycleEpoch?: number;
+}): Promise<boolean> {
   const requiredStatus = AdmobConsentStatus.REQUIRED;
   let consentInfo = await AdMobPlugin.requestConsentInfo({
     tagForUnderAgeOfConsent: false,
@@ -174,7 +202,7 @@ async function requestNativeConsentInfo(
     options.showFormIfRequired &&
     consentInfo?.isConsentFormAvailable &&
     consentInfo.status === requiredStatus &&
-    typeof AdMobPlugin.showConsentForm === 'function'
+    typeof AdMobPlugin.showConsentForm === "function"
   ) {
     consentInfo = await AdMobPlugin.showConsentForm();
     if (options.lifecycleEpoch !== undefined && !isLifecycleCurrent(options.lifecycleEpoch)) {
@@ -187,7 +215,7 @@ async function requestNativeConsentInfo(
 }
 
 async function canRequestNativeAds(lifecycleEpoch: number): Promise<boolean> {
-  if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== 'function') {
+  if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== "function") {
     state.canRequestAds = false;
     state.privacyOptionsRequired = false;
     return false;
@@ -200,26 +228,36 @@ async function canRequestNativeAds(lifecycleEpoch: number): Promise<boolean> {
     });
   } catch (err) {
     state.canRequestAds = false;
-    logger.warn('[Ads] Consent check failed; ads disabled for this session:', err);
+    logger.warn("[Ads] Consent check failed; ads disabled for this session:", err);
     return false;
   }
 }
 
-export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsStatus> {
+export async function refreshAdPrivacyOptionsStatus(
+  authorization: Pick<AdInitializationAuthorization, "ageEligibility">
+): Promise<AdPrivacyOptionsStatus> {
+  if (authorization.ageEligibility !== "adult") {
+    privacyAuthorizationActive = false;
+    state.canRequestAds = false;
+    state.privacyOptionsRequired = false;
+    return { canRequestAds: false, privacyOptionsRequired: false, error: "authorization_required" };
+  }
+  privacyAuthorizationActive = true;
+
   if (!isBannerAdsSupported()) {
     state.canRequestAds = false;
     state.privacyOptionsRequired = false;
-    return { canRequestAds: false, privacyOptionsRequired: false, error: 'banner_unavailable' };
+    return { canRequestAds: false, privacyOptionsRequired: false, error: "banner_unavailable" };
   }
 
   try {
-    if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== 'function') {
+    if (!AdMobPlugin || typeof AdMobPlugin.requestConsentInfo !== "function") {
       state.canRequestAds = false;
       state.privacyOptionsRequired = false;
       return {
         canRequestAds: false,
         privacyOptionsRequired: false,
-        error: 'consent_api_unavailable',
+        error: "consent_api_unavailable",
       };
     }
 
@@ -230,23 +268,32 @@ export async function refreshAdPrivacyOptionsStatus(): Promise<AdPrivacyOptionsS
     };
   } catch (err) {
     state.canRequestAds = false;
-    logger.warn('[Ads] Privacy options status refresh failed:', err);
+    logger.warn("[Ads] Privacy options status refresh failed:", err);
     return {
       canRequestAds: false,
       privacyOptionsRequired: state.privacyOptionsRequired,
-      error: 'privacy_options_status_failed',
+      error: "privacy_options_status_failed",
     };
   }
 }
 
-export async function initializeAds(): Promise<boolean> {
+export async function initializeAds(
+  authorization: AdInitializationAuthorization
+): Promise<boolean> {
+  if (authorization.adConsent !== true || authorization.ageEligibility !== "adult") {
+    privacyAuthorizationActive = authorization.ageEligibility === "adult";
+    resetAdAvailability({ clearPrivacyOptions: authorization.ageEligibility !== "adult" });
+    return false;
+  }
+
+  privacyAuthorizationActive = true;
   if (state.initialized) return state.sdkAvailable;
   const lifecycleEpoch = adLifecycleEpoch;
 
   if (!isBannerAdsSupported()) {
     state.initialized = true;
     state.sdkAvailable = false;
-    logger.log('[Ads] Android banner unavailable — ads disabled');
+    logger.log("[Ads] Android banner unavailable — ads disabled");
     return false;
   }
 
@@ -254,7 +301,7 @@ export async function initializeAds(): Promise<boolean> {
     if (!isLifecycleCurrent(lifecycleEpoch)) return false;
 
     await AdMobPlugin.initialize({
-      initializeForTesting: IS_DEV,
+      initializeForTesting: false,
       tagForChildDirectedTreatment: false,
       tagForUnderAgeOfConsent: false,
       maxAdContentRating: MaxAdContentRating.General,
@@ -265,7 +312,7 @@ export async function initializeAds(): Promise<boolean> {
       if (!isLifecycleCurrent(lifecycleEpoch)) return false;
       state.initialized = true;
       state.sdkAvailable = false;
-      logger.log('[Ads] Consent not available — ads disabled');
+      logger.log("[Ads] Consent not available — ads disabled");
       return false;
     }
     if (!isLifecycleCurrent(lifecycleEpoch)) return false;
@@ -273,39 +320,40 @@ export async function initializeAds(): Promise<boolean> {
     if (isWithinOnboardingAdGracePeriod()) {
       state.initialized = true;
       state.sdkAvailable = false;
-      logger.log('[Ads] Onboarding grace period — ads disabled');
+      logger.log("[Ads] Onboarding grace period — ads disabled");
       return false;
     }
 
     state.initialized = true;
     state.sdkAvailable = true;
-    logger.log('[Ads] Android banner SDK initialized');
+    logger.log("[Ads] Android banner SDK initialized");
     return true;
   } catch (err) {
     state.initialized = true;
     state.sdkAvailable = false;
-    logger.warn('[Ads] AdMob SDK unavailable; ads disabled:', err);
+    logger.warn("[Ads] AdMob SDK unavailable; ads disabled:", err);
     return false;
   }
 }
 
 export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
   if (
+    !privacyAuthorizationActive ||
     !isBannerAdsSupported() ||
     !AdMobPlugin ||
-    typeof AdMobPlugin.showPrivacyOptionsForm !== 'function'
+    typeof AdMobPlugin.showPrivacyOptionsForm !== "function"
   ) {
     return {
       opened: false,
       canRequestAds: state.canRequestAds,
       privacyOptionsRequired: state.privacyOptionsRequired,
-      error: 'privacy_options_unavailable',
+      error: "privacy_options_unavailable",
     };
   }
 
   try {
     await AdMobPlugin.showPrivacyOptionsForm();
-    if (typeof AdMobPlugin.requestConsentInfo === 'function') {
+    if (typeof AdMobPlugin.requestConsentInfo === "function") {
       await requestNativeConsentInfo({ showFormIfRequired: false });
     }
 
@@ -316,12 +364,12 @@ export async function showAdPrivacyOptions(): Promise<PrivacyOptionsResult> {
       privacyOptionsRequired: state.privacyOptionsRequired,
     };
   } catch (err) {
-    logger.warn('[Ads] Privacy options form failed:', err);
+    logger.warn("[Ads] Privacy options form failed:", err);
     return {
       opened: false,
       canRequestAds: state.canRequestAds,
       privacyOptionsRequired: state.privacyOptionsRequired,
-      error: 'privacy_options_failed',
+      error: "privacy_options_failed",
     };
   }
 }
@@ -334,170 +382,188 @@ function reportBannerHeight(nextHeight: number): void {
 }
 
 function readViewportWidth(): number | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   const width = Math.round(window.innerWidth);
   return Number.isFinite(width) && width > 0 ? width : null;
 }
 
-export async function showHabitsBanner(
-  onHeightChange: (height: number) => void,
+export function showHabitsBanner(
+  onHeightChange: (height: number) => void
 ): Promise<BannerAdCommandResult> {
-  if (!state.sdkAvailable || !state.canRequestAds || !isBannerAdsSupported()) {
-    onHeightChange(0);
-    return { shown: false, error: 'banner_unavailable' };
-  }
-
-  const lifecycleEpoch = adLifecycleEpoch;
-  try {
-    if (!AdMobPlugin || !isLifecycleCurrent(lifecycleEpoch)) {
+  const placementEpoch = ++bannerPlacementEpoch;
+  return enqueueBannerCommand(async () => {
+    if (!state.sdkAvailable || !state.canRequestAds || !isBannerAdsSupported()) {
       onHeightChange(0);
-      return { shown: false, error: 'sdk_unavailable' };
+      return { shown: false, error: "banner_unavailable" };
     }
 
-    bannerHeightCallback = onHeightChange;
-    const currentViewportWidth = readViewportWidth();
-    if (
-      bannerCreated &&
-      bannerViewportWidth !== null &&
-      currentViewportWidth !== null &&
-      bannerViewportWidth !== currentViewportWidth
-    ) {
-      await AdMobPlugin.removeBanner?.();
-      if (!isLifecycleCurrent(lifecycleEpoch)) {
+    const lifecycleEpoch = adLifecycleEpoch;
+    try {
+      if (
+        !AdMobPlugin ||
+        !isLifecycleCurrent(lifecycleEpoch) ||
+        !isBannerPlacementCurrent(placementEpoch)
+      ) {
         onHeightChange(0);
-        return { shown: false, error: 'lifecycle_changed' };
+        return { shown: false, error: "placement_changed" };
       }
+
+      bannerHeightCallback = onHeightChange;
+      const currentViewportWidth = readViewportWidth();
+      if (
+        bannerCreated &&
+        bannerViewportWidth !== null &&
+        currentViewportWidth !== null &&
+        bannerViewportWidth !== currentViewportWidth
+      ) {
+        await AdMobPlugin.removeBanner?.();
+        if (!isLifecycleCurrent(lifecycleEpoch) || !isBannerPlacementCurrent(placementEpoch)) {
+          onHeightChange(0);
+          return { shown: false, error: "placement_changed" };
+        }
+        bannerCreated = false;
+        bannerVisible = false;
+        bannerViewportWidth = null;
+        reportBannerHeight(0);
+      }
+
+      if (bannerCreated) {
+        if (!bannerVisible) {
+          await AdMobPlugin.resumeBanner();
+          if (!isLifecycleCurrent(lifecycleEpoch) || !isBannerPlacementCurrent(placementEpoch)) {
+            await AdMobPlugin.removeBanner?.();
+            bannerCreated = false;
+            bannerVisible = false;
+            bannerViewportWidth = null;
+            onHeightChange(0);
+            return { shown: false, error: "placement_changed" };
+          }
+          bannerVisible = true;
+        } else if (bannerHeight > 0) {
+          onHeightChange(bannerHeight);
+        }
+        return { shown: true };
+      }
+
+      if (!bannerSizeListener && typeof AdMobPlugin.addListener === "function") {
+        const sizeChangedEvent = BannerAdPluginEvents.SizeChanged;
+        bannerSizeListener = await AdMobPlugin.addListener(
+          sizeChangedEvent,
+          (info: { height?: number }) => {
+            if (!isLifecycleCurrent(lifecycleEpoch) || !bannerCreated || !bannerVisible) return;
+            const height = Number(info?.height);
+            reportBannerHeight(Number.isFinite(height) && height > 0 ? height : 0);
+          }
+        );
+      }
+
+      if (!bannerFailureListener && typeof AdMobPlugin.addListener === "function") {
+        const failedEvent = BannerAdPluginEvents.FailedToLoad;
+        bannerFailureListener = await AdMobPlugin.addListener(
+          failedEvent,
+          (failure: { code?: number; message?: string }) => {
+            if (!isLifecycleCurrent(lifecycleEpoch)) return;
+            bannerPlacementEpoch += 1;
+            bannerCreated = false;
+            bannerVisible = false;
+            bannerViewportWidth = null;
+            reportBannerHeight(0);
+            logger.warn("[Ads] Android habits banner failed to load:", failure);
+            void Promise.resolve(AdMobPlugin?.removeBanner?.()).catch((error) => {
+              logger.warn("[Ads] Failed to remove unloaded Android habits banner:", error);
+            });
+          }
+        );
+      }
+
+      if (!isLifecycleCurrent(lifecycleEpoch) || !isBannerPlacementCurrent(placementEpoch)) {
+        onHeightChange(0);
+        return { shown: false, error: "placement_changed" };
+      }
+
+      const adId = getBannerAdUnitId("android");
+      await AdMobPlugin.showBanner({
+        adId,
+        adSize: BannerAdSize.ADAPTIVE_BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
+        margin: 0,
+        isTesting: false,
+        npa: true,
+      });
+
+      if (!isLifecycleCurrent(lifecycleEpoch) || !isBannerPlacementCurrent(placementEpoch)) {
+        await AdMobPlugin.removeBanner?.();
+        bannerCreated = false;
+        bannerVisible = false;
+        bannerViewportWidth = null;
+        onHeightChange(0);
+        return { shown: false, error: "placement_changed" };
+      }
+
+      bannerCreated = true;
+      bannerVisible = true;
+      bannerViewportWidth = currentViewportWidth;
+      return { shown: true };
+    } catch (err) {
       bannerCreated = false;
       bannerVisible = false;
       bannerViewportWidth = null;
       reportBannerHeight(0);
-    }
-
-    if (bannerCreated) {
-      if (!bannerVisible) {
-        await AdMobPlugin.resumeBanner();
-        if (!isLifecycleCurrent(lifecycleEpoch)) {
-          await AdMobPlugin.removeBanner?.();
-          onHeightChange(0);
-          return { shown: false, error: 'lifecycle_changed' };
-        }
-        bannerVisible = true;
-      } else if (bannerHeight > 0) {
-        onHeightChange(bannerHeight);
-      }
-      return { shown: true };
-    }
-
-    if (!bannerSizeListener && typeof AdMobPlugin.addListener === 'function') {
-      const sizeChangedEvent = BannerAdPluginEvents.SizeChanged;
-      bannerSizeListener = await AdMobPlugin.addListener(
-        sizeChangedEvent,
-        (info: { height?: number }) => {
-          if (!isLifecycleCurrent(lifecycleEpoch)) return;
-          const height = Number(info?.height);
-          reportBannerHeight(Number.isFinite(height) && height > 0 ? height : 0);
-        },
-      );
-    }
-
-    if (!bannerFailureListener && typeof AdMobPlugin.addListener === 'function') {
-      const failedEvent = BannerAdPluginEvents.FailedToLoad;
-      bannerFailureListener = await AdMobPlugin.addListener(
-        failedEvent,
-        (failure: { code?: number; message?: string }) => {
-          if (!isLifecycleCurrent(lifecycleEpoch)) return;
-          bannerCreated = false;
-          bannerVisible = false;
-          bannerViewportWidth = null;
-          reportBannerHeight(0);
-          logger.warn('[Ads] Android habits banner failed to load:', failure);
-          void Promise.resolve(AdMobPlugin?.removeBanner?.()).catch((error) => {
-            logger.warn('[Ads] Failed to remove unloaded Android habits banner:', error);
-          });
-        },
-      );
-    }
-
-    const adId = getBannerAdUnitId('android');
-    bannerCreated = true;
-    bannerVisible = true;
-    bannerViewportWidth = currentViewportWidth;
-    await AdMobPlugin.showBanner({
-      adId,
-      adSize: BannerAdSize.ADAPTIVE_BANNER,
-      position: BannerAdPosition.BOTTOM_CENTER,
-      margin: 0,
-      isTesting: IS_DEV || isGoogleTestAdUnit(adId),
-      npa: true,
-    });
-
-    if (!isLifecycleCurrent(lifecycleEpoch)) {
-      await AdMobPlugin.removeBanner?.();
-      bannerCreated = false;
-      bannerVisible = false;
-      bannerViewportWidth = null;
+      bannerHeightCallback = null;
       onHeightChange(0);
-      return { shown: false, error: 'lifecycle_changed' };
+      logger.warn("[Ads] Android habits banner failed:", err);
+      return { shown: false, error: "banner_failed" };
     }
-
-    return { shown: true };
-  } catch (err) {
-    bannerCreated = false;
-    bannerVisible = false;
-    bannerViewportWidth = null;
-    reportBannerHeight(0);
-    bannerHeightCallback = null;
-    onHeightChange(0);
-    logger.warn('[Ads] Android habits banner failed:', err);
-    return { shown: false, error: 'banner_failed' };
-  }
+  });
 }
 
-export async function hideHabitsBanner(): Promise<void> {
-  if (!bannerCreated || !AdMobPlugin) {
-    reportBannerHeight(0);
-    return;
-  }
+export function hideHabitsBanner(): Promise<void> {
+  bannerPlacementEpoch += 1;
+  bannerVisible = false;
+  reportBannerHeight(0);
+  return enqueueBannerCommand(async () => {
+    if (!bannerCreated || !AdMobPlugin) return;
 
-  try {
-    if (bannerVisible) await AdMobPlugin.hideBanner();
-  } catch (err) {
-    logger.warn('[Ads] Failed to hide Android habits banner:', err);
-  } finally {
-    bannerVisible = false;
-    reportBannerHeight(0);
-  }
+    try {
+      await AdMobPlugin.hideBanner();
+    } catch (err) {
+      logger.warn("[Ads] Failed to hide Android habits banner:", err);
+    }
+  });
 }
 
-export async function removeHabitsBanner(): Promise<void> {
+export function removeHabitsBanner(): Promise<void> {
+  bannerPlacementEpoch += 1;
   bannerCreated = false;
   bannerVisible = false;
   bannerViewportWidth = null;
-
-  try {
-    if (AdMobPlugin && typeof AdMobPlugin.removeBanner === 'function') {
-      await AdMobPlugin.removeBanner();
-    }
-  } catch (err) {
-    logger.warn('[Ads] Failed to remove Android habits banner:', err);
-  }
-
-  try {
-    await bannerSizeListener?.remove?.();
-  } catch (err) {
-    logger.warn('[Ads] Failed to remove Android banner size listener:', err);
-  }
-
-  try {
-    await bannerFailureListener?.remove?.();
-  } catch (err) {
-    logger.warn('[Ads] Failed to remove Android banner failure listener:', err);
-  }
-
   reportBannerHeight(0);
-  bannerSizeListener = null;
-  bannerFailureListener = null;
-  bannerHeightCallback = null;
+
+  return enqueueBannerCommand(async () => {
+    try {
+      if (AdMobPlugin && typeof AdMobPlugin.removeBanner === "function") {
+        await AdMobPlugin.removeBanner();
+      }
+    } catch (err) {
+      logger.warn("[Ads] Failed to remove Android habits banner:", err);
+    }
+
+    try {
+      await bannerSizeListener?.remove?.();
+    } catch (err) {
+      logger.warn("[Ads] Failed to remove Android banner size listener:", err);
+    }
+
+    try {
+      await bannerFailureListener?.remove?.();
+    } catch (err) {
+      logger.warn("[Ads] Failed to remove Android banner failure listener:", err);
+    }
+
+    bannerSizeListener = null;
+    bannerFailureListener = null;
+    bannerHeightCallback = null;
+  });
 }
 
 export function getAdState(): AdControllerState {

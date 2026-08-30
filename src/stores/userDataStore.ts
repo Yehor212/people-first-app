@@ -21,6 +21,7 @@ export const defaultPrivacySettings: PrivacySettings = {
   noTracking: false,
   analytics: false,
   consentShown: false,
+  adAgeEligibility: "unknown",
   pushNotifications: false,
 };
 

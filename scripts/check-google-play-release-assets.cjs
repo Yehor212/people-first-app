@@ -369,9 +369,6 @@ function assertAdDeclarationMatchesArtifact(packet) {
     fail("package.json must expose google-play:admob:check for real non-sample AdMob app/ad-unit ids");
   }
 
-  if (packageJson.scripts?.["google-play:admob:check:full"] !== "node scripts/check-admob-production-readiness.cjs --strict-optional --require-optional") {
-    fail("package.json must expose google-play:admob:check:full for full cross-platform/banner+iOS AdMob readiness proof");
-  }
 
   if (packageJson.scripts?.["google-play:admob:external-check"] !== "node scripts/check-admob-external-readiness.cjs") {
     fail("package.json must expose google-play:admob:external-check for public-safe external AdMob readiness evidence");
@@ -406,7 +403,7 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "VITE_ADMOB_BANNER_ID_ANDROID",
     "Do not configure rewarded IDs for this release",
     "Android banner-only release",
-    "legacy external readiness ledger still models the superseded rewarded-only",
+    "external readiness ledger now models the current Android banner-only release",
     "Do not hand-write the file",
     "do not use Google's sample publisher id",
     "Play Console/AdMob",
@@ -430,7 +427,6 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "post-deploy public privacy smoke",
     "npm run google-play:privacy:public-check",
     "npm run google-play:admob:check",
-    "npm run google-play:admob:check:full",
     "npm run google-play:admob:external-check",
     "npm run google-play:admob:external-check:pass",
     "Do not invent this value",
@@ -457,7 +453,7 @@ function assertAdDeclarationMatchesArtifact(packet) {
     "google-play:admob:check",
     "google-play:admob:ump-check",
     "VITE_ADMOB_BANNER_ID_ANDROID",
-    "superseded rewarded-only decision",
+    "current Android banner-only release",
     "Verify app",
   ]);
 
@@ -467,7 +463,8 @@ function assertAdDeclarationMatchesArtifact(packet) {
   }
 
   assertIncludes(ANDROID_BUILD_GRADLE, [
-    "ZENFLOW_ADMOB_ANDROID_SAMPLE_APP_IDS",
+    "zenflowExpectedAdMobPublisher",
+    "zenflowConfiguredAdMobPublisher",
     "gradle.taskGraph.whenReady",
     "throw new GradleException",
     "Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID",

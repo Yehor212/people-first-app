@@ -8,6 +8,14 @@ const bannerExecutorPath = resolve(
   root,
   "node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java",
 );
+const adOptionsPath = resolve(
+  root,
+  "node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/models/AdOptions.java",
+);
+const adViewIdHelperPath = resolve(
+  root,
+  "node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/helpers/AdViewIdHelper.java",
+);
 const patchPath = resolve(root, "patches/@capacitor-community+admob+8.0.0.patch");
 
 describe("Android AdMob banner edge-to-edge patch", () => {
@@ -65,5 +73,18 @@ describe("Android AdMob banner edge-to-edge patch", () => {
     expect(patch).toContain("RelativeLayout.LayoutParams.MATCH_PARENT");
     expect(patch).toContain("availableWidthPixels = mViewGroup.getWidth()");
     expect(patch).toContain("mAdViewLayout.addView(mAdView, adViewLayoutParams)");
+    expect(patch).toContain("Test ad requests are disabled in ZenFlow production builds");
+    expect(patch).toContain("A real adId is required in ZenFlow production builds");
+  });
+
+  it("fails closed instead of embedding or selecting sample ad unit ids", () => {
+    const options = readFileSync(adOptionsPath, "utf8");
+    const helper = readFileSync(adViewIdHelperPath, "utf8");
+
+    expect(options).not.toContain("ca-app-pub-3940256099942544");
+    expect(options).toContain("Test ad requests are disabled in ZenFlow production builds");
+    expect(options).toContain("A real adId is required in ZenFlow production builds");
+    expect(helper).not.toContain("getTestingId");
+    expect(helper).toContain("return adOptions.adId;");
   });
 });

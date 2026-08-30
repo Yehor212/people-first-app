@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "OBSERVED_UNVERIFIED",
+  "observedAt": "2026-08-25T01:59:26.000Z",
+  "googleCloudProjectId": "vibemeter",
+  "packageName": "com.zenflow.app",
+  "webClientId": "830119095963-krjibmbag0tuastn4sk0sf58m1c4v4qa.apps.googleusercontent.com",
+  "androidOAuthClients": [
+    {
+      "name": "ZenFlow Android (Release)",
+      "clientId": "830119095963-su0i64bdemaf8tqv2pq1qvhljipjagiv.apps.googleusercontent.com",
+      "signingRole": "upload",
+      "sha1": "2D:76:82:17:D0:39:43:8B:68:27:A1:F2:00:2F:0D:58:E8:EA:10:8F",
+      "status": "OBSERVED_UNVERIFIED"
+    },
+    {
+      "name": "ZenFlow Android (Google Play)",
+      "clientId": "830119095963-s0ao3nhjcp9vire3annqgbr4dghnctv3.apps.googleusercontent.com",
+      "signingRole": "play-app-signing",
+      "sha1": "93:F9:95:0E:A3:31:0F:B4:B7:81:FC:E1:BD:70:61:8B:C7:7C:BA:A0",
+      "status": "OBSERVED_UNVERIFIED"
+    }
+  ],
+  "proofBoundary": "This tracked file records owner-observed identifiers for structural comparison only. It cannot independently authenticate current Google Cloud or Play Console state and must never produce a console PASS. Completed sign-in with the exact Play-installed artifact is a separate runtime gate."
+}

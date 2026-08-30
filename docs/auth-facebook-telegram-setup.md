@@ -162,7 +162,7 @@ client_secret: <BotFather Client Secret>
 scopes: openid profile
 pkce_enabled: true
 email_optional: true
-discovery_url: https://api.zenflowapp.online/functions/v1/telegram-oidc/.well-known/openid-configuration
+discovery_url: https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/.well-known/openid-configuration
 ```
 
 Keep `phone` out of the default scopes. Telegram can return a verified phone

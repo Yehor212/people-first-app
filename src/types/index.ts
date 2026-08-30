@@ -260,11 +260,14 @@ export interface ReminderSettings {
   habitIds: string[];
 }
 
+export type AdAgeEligibility = 'unknown' | 'adult' | 'minor';
+
 export interface PrivacySettings {
   noTracking: boolean;
   analytics: boolean;
   consentShown?: boolean; // GDPR: track if user has been asked for consent
   adConsent?: boolean;    // GDPR: explicit banner-ad SDK consent
+  adAgeEligibility?: AdAgeEligibility; // Local minimal category; exact birth date is never stored
   pushNotifications?: boolean; // Explicit consent for remote push token registration
 }
 

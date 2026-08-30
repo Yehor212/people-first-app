@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -18,6 +19,21 @@ const {
 } = require("../smoke-public-auth-providers.cjs");
 
 describe("public auth smoke URL parsing", () => {
+  it("keeps the Netlify Permissions-Policy free of directives rejected by Chromium", () => {
+    const netlifyConfig = readFileSync("netlify.toml", "utf8");
+
+    for (const unsupportedDirective of [
+      "ambient-light-sensor",
+      "battery",
+      "document-domain",
+      "web-share",
+    ]) {
+      expect(netlifyConfig, unsupportedDirective).not.toMatch(
+        new RegExp(`(?:^|[,\\s])${unsupportedDirective}=`, "m")
+      );
+    }
+  });
+
   it("defaults to the canonical public root URL", () => {
     expect(parsePublicAuthUrls(undefined).map((url: URL) => url.toString())).toEqual([
       "https://yehor212.github.io/people-first-app/",

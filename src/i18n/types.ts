@@ -889,6 +889,16 @@ export interface Translations {
   privacyDescription: string;
   privacyAds: string;
   privacyAdsHint: string;
+  adAgeCheckTitle: string;
+  adAgeCheckDescription: string;
+  adAgeBirthDate: string;
+  adAgeBirthDateHint: string;
+  adAgeCheckCancel: string;
+  adAgeCheckContinue: string;
+  adAgeCheckInvalid: string;
+  adAgeMinorNotice: string;
+  adAgeReview: string;
+  adAgeReviewHint: string;
   privacyOptionalServicesOn: string;
   privacyOptionalServicesOff: string;
   privacyPushNotifications: string;

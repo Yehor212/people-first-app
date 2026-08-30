@@ -3,7 +3,6 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { spawnSync } = require("node:child_process");
 
 const {
   evaluateOwnerEvidence,
@@ -137,16 +136,6 @@ function ownerItemsById(ownerEvidence) {
   return new Map((ownerEvidence.items || []).map((item) => [item.id, item]));
 }
 
-function ownerItemStatus(ownerEvidence, itemId) {
-  return ownerItemsById(ownerEvidence).get(itemId)?.status;
-}
-
-function runFullCrossPlatformGate() {
-  return spawnSync("npm", ["run", "google-play:admob:check:full"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  });
-}
 
 function applyOwnerEvidenceToLedger(ledger, ownerEvidence, updatedAt) {
   const ownerIds = new Set(OWNER_EVIDENCE_ITEM_IDS);
@@ -243,15 +232,6 @@ function main() {
     printIssues("owner", ownerReport.issues);
     printIssues("owner", staleIssues);
     process.exit(2);
-  }
-
-  if (ownerItemStatus(ownerEvidence, "full_cross_platform_ad_units") === "PASS") {
-    const fullGate = runFullCrossPlatformGate();
-    if (fullGate.status !== 0) {
-      console.log("[admob-owner-evidence-apply] UNVERIFIED - full cross-platform monetization PASS requires google-play:admob:check:full to pass in this run");
-      printIssues("owner", [issue("full_cross_platform_gate_not_pass", "full_cross_platform_ad_units cannot be promoted to PASS until npm run google-play:admob:check:full exits 0", "full_cross_platform_ad_units")]);
-      process.exit(2);
-    }
   }
 
   const currentLedgerReport = evaluateExternalReadiness(ledger, {

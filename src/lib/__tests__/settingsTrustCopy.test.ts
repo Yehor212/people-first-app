@@ -52,7 +52,7 @@ describe("Settings trust copy", () => {
     expect(form).not.toContain("logger.log(\"[Feedback] Submitting:\"");
   });
 
-  it("keeps public privacy copy aligned with the retired analytics controls", () => {
+  it("keeps public privacy copy aligned with retired analytics and banner-only ads", () => {
     const privacy = read("public/privacy.html");
     const privacyAlias = read("public/privacy-policy.html");
 
@@ -65,6 +65,7 @@ describe("Settings trust copy", () => {
     expect(privacy).toContain(
       "The optional Habits-list banner is controlled separately through the Optional ads setting",
     );
+    expect(privacy).toContain("optional adaptive banner below the active Habits list");
     expect(privacy).not.toMatch(/rewarded ads|rewarded video/i);
   });
 

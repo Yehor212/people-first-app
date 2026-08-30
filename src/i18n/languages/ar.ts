@@ -648,6 +648,18 @@ const arabicOverrides: Partial<Translations> = {
   privacyAds: "لافتة قائمة العادات",
   privacyAdsHint:
     "بعد تفعيلها، تظهر لافتة صغيرة أسفل قائمة العادات. ولا تظهر أثناء تسجيل المزاج أو في اليوميات أو جلسات التركيز أو القوائم. قد تطلب Google اختيار إعدادات الخصوصية عند الحاجة.",
+  adAgeCheckTitle: "تحقّق من عمرك",
+  adAgeCheckDescription: "أدخل تاريخ ميلادك قبل تفعيل اللافتة.",
+  adAgeBirthDate: "تاريخ الميلاد",
+  adAgeBirthDateHint:
+    "يُستخدم الآن فقط للتحقق من توفر اللافتة. لا يحفظ ZenFlow هذا التاريخ.",
+  adAgeCheckCancel: "إلغاء",
+  adAgeCheckContinue: "متابعة",
+  adAgeCheckInvalid: "تعذّر التحقق من هذا التاريخ. راجعه وحاول مرة أخرى.",
+  adAgeMinorNotice: "اللافتة غير متاحة لهذا العمر. لم يتم تشغيل أي خدمة إعلانية.",
+  adAgeReview: "مراجعة معلومات العمر",
+  adAgeReviewHint:
+    "أدخل تاريخ ميلادك مرة أخرى إذا تغيّرت المعلومات. يتحقق ZenFlow منه من دون حفظ التاريخ.",
   privacyOptionalServicesOn: "الخدمات الاختيارية مفعّلة",
   privacyOptionalServicesOff: "الخدمات الاختيارية متوقفة",
   privacyPushNotifications: "تذكيرات الحساب",

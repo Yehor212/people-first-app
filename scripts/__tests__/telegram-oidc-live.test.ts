@@ -63,7 +63,7 @@ describe("check-telegram-oidc-live", () => {
 
     expect(failures).toContain("Discovery issuer is not https://oauth.telegram.org");
     expect(failures).toContain(
-      "Discovery JWKS URI is not https://api.zenflowapp.online/functions/v1/telegram-oidc/jwks",
+      "Discovery JWKS URI is not https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/jwks",
     );
     expect(failures).toContain("Discovery does not advertise authorization code flow");
     expect(failures).toContain("Discovery does not advertise PKCE S256");
@@ -85,23 +85,33 @@ describe("check-telegram-oidc-live", () => {
     expect(failures).toContain("JWKS contains unsupported Telegram key: unsupported-crv");
   });
 
-  it("passes with valid discovery and filtered JWKS responses", async () => {
+  it("passes only after Supabase redirects custom:telegram to Telegram OAuth", async () => {
     expect(typeof checkTelegramOidcLive).toBe("function");
     const requests: string[] = [];
 
     const result = await checkTelegramOidcLive?.({
       env: {
         ZENFLOW_TELEGRAM_OIDC_LIVE_URL:
-          "https://api.zenflowapp.online/functions/v1/telegram-oidc",
+          "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc",
       },
       fetchImpl: (async (url: URL | RequestInfo) => {
         requests.push(String(url));
+        if (String(url).includes("/auth/v1/authorize?provider=custom%3Atelegram")) {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              location:
+                "https://oauth.telegram.org/auth?client_id=fixture&code_challenge=fixture&code_challenge_method=S256&state=fixture",
+            },
+          });
+        }
         if (String(url).endsWith("/.well-known/openid-configuration")) {
           return new Response(JSON.stringify({
             issuer: "https://oauth.telegram.org",
             authorization_endpoint: "https://oauth.telegram.org/auth",
             token_endpoint: "https://oauth.telegram.org/token",
-            jwks_uri: "https://api.zenflowapp.online/functions/v1/telegram-oidc/jwks",
+            jwks_uri:
+              "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/jwks",
             response_types_supported: ["code"],
             code_challenge_methods_supported: ["S256"],
             token_endpoint_auth_methods_supported: ["client_secret_basic"],
@@ -126,8 +136,45 @@ describe("check-telegram-oidc-live", () => {
 
     expect(result).toMatchObject({ status: "PASS", exitCode: 0 });
     expect(requests).toEqual([
-      "https://api.zenflowapp.online/functions/v1/telegram-oidc/.well-known/openid-configuration",
-      "https://api.zenflowapp.online/functions/v1/telegram-oidc/jwks",
+      "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/.well-known/openid-configuration",
+      "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/jwks",
+      "https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/authorize?provider=custom%3Atelegram&redirect_to=https%3A%2F%2Fyehor212.github.io%2Fpeople-first-app%2F",
     ]);
+  });
+
+  it("fails when hosted Supabase Auth returns the original Unsupported provider error", async () => {
+    expect(typeof checkTelegramOidcLive).toBe("function");
+
+    const result = await checkTelegramOidcLive?.({
+      fetchImpl: (async (url: URL | RequestInfo) => {
+        const value = String(url);
+        if (value.endsWith("/.well-known/openid-configuration")) {
+          return new Response(JSON.stringify({
+            issuer: "https://oauth.telegram.org",
+            authorization_endpoint: "https://oauth.telegram.org/auth",
+            token_endpoint: "https://oauth.telegram.org/token",
+            jwks_uri:
+              "https://bwgfslmxmueyglpumkbf.supabase.co/functions/v1/telegram-oidc/jwks",
+            response_types_supported: ["code"],
+            code_challenge_methods_supported: ["S256"],
+            token_endpoint_auth_methods_supported: ["client_secret_basic"],
+          }), { status: 200 });
+        }
+        if (value.endsWith("/jwks")) {
+          return new Response(JSON.stringify({ keys: [{ kid: "rsa", alg: "RS256" }] }), {
+            status: 200,
+          });
+        }
+
+        return new Response(JSON.stringify({
+          code: 400,
+          error_code: "validation_failed",
+          msg: "Unsupported provider",
+        }), { status: 400 });
+      }) as typeof fetch,
+    });
+
+    expect(result).toMatchObject({ status: "FAIL", exitCode: 1 });
+    expect(result?.message).toContain("Unsupported provider");
   });
 });

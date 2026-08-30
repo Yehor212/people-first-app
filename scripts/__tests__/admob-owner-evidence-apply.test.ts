@@ -45,9 +45,8 @@ const sourceByItem: Record<string, string[]> = {
   ],
   live_ad_playback_device: [
     "https://support.google.com/admob/answer/7313578",
-    "https://admob.google.com/home/resources/best-practices-for-in-app-rewarded-video-ads/",
+    "https://developers.google.com/admob/android/banner",
   ],
-  full_cross_platform_ad_units: ["https://support.google.com/admob/answer/7356431"],
 };
 
 const passEvidenceByItem: Record<string, string> = {
@@ -60,8 +59,7 @@ const passEvidenceByItem: Record<string, string> = {
   payments_payment_method: "Payments settings showed payment method eligible for payouts.",
   payments_holds: "Payments page showed no payment hold, no tax hold, no identity hold, no compliance hold, and no self-hold.",
   play_console_ads_data_safety: "Play Console App content showed Ads=Yes, Advertising ID=Yes, Data safety includes Google Mobile Ads SDK data, privacy policy URL matches listing, IP address, user product interactions, diagnostics, device or other identifiers, and Advertising ID matches the release manifest.",
-  live_ad_playback_device: "Release-equivalent Android rewarded ad smoke completed after consent; clear reward and action disclosure appeared before the ad, affirmative opt-in was required before each rewarded ad, video opened, dismissal or skip did not block normal use, reward callback granted reward only after completion, revocation stopped new ad requests, no pressure or misleading choice copy appeared, and no prompt appeared in mood logging, active focus, focus reflection, journal editor, onboarding, or bad/terrible mood states.",
-  full_cross_platform_ad_units: "Full cross-platform ad units check showed Android, iOS, banner, and rewarded IDs are owner-controlled non-sample units from the same publisher family.",
+  live_ad_playback_device: "Release-equivalent Android Habits banner smoke completed after consent. The Habits banner rendered, an ad request was observed, and an ad impression was observed. The banner does not overlap app content or bottom navigation. Rotation recreated the adaptive banner, backgrounding removed the banner, and revocation stopped new ad requests. No banner appeared in mood logging. No banner appeared in active focus. No banner appeared in focus reflection. No banner appeared in the journal editor. No banner appeared during onboarding. No banner appeared in bad/terrible mood states. No banner survived a drawer, sheet, or modal.",
 };
 
 const passFactsByItem: Record<string, Record<string, boolean>> = {
@@ -108,27 +106,20 @@ const passFactsByItem: Record<string, Record<string, boolean>> = {
   live_ad_playback_device: {
     releaseEquivalentAndroid: true,
     consentPathCompleted: true,
-    clearRewardAndActionDisclosureConfirmed: true,
-    affirmativeOptInBeforeEachRewardedAd: true,
-    rewardedVideoOpened: true,
-    dismissWithoutRewardChecked: true,
-    dismissOrSkipDoesNotBlockNormalUse: true,
-    noPressureOrMisleadingChoiceCopy: true,
-    rewardCallbackGrantedAfterCompletion: true,
+    habitsBannerRendered: true,
+    adMobRequestObserved: true,
+    adMobImpressionObserved: true,
+    bannerDoesNotOverlapAppContent: true,
+    rotationRecreatesAdaptiveBanner: true,
+    backgroundRemovesBanner: true,
     revocationStopsNewAdRequests: true,
-    noMoodCheckInPromptOrRequest: true,
-    noActiveFocusPromptOrRequest: true,
-    noFocusReflectionPromptOrRequest: true,
-    noJournalEditorPromptOrRequest: true,
-    noOnboardingPromptOrRequest: true,
-    noBadOrTerribleMoodPromptOrRequest: true,
-  },
-  full_cross_platform_ad_units: {
-    androidOwnerControlledNonSample: true,
-    iosOwnerControlledNonSample: true,
-    bannerOwnerControlledNonSample: true,
-    rewardedOwnerControlledNonSample: true,
-    samePublisherFamily: true,
+    noMoodCheckInBannerOrRequest: true,
+    noActiveFocusBannerOrRequest: true,
+    noFocusReflectionBannerOrRequest: true,
+    noJournalEditorBannerOrRequest: true,
+    noOnboardingBannerOrRequest: true,
+    noBadOrTerribleMoodBannerOrRequest: true,
+    noDrawerSheetModalBanner: true,
   },
 };
 
@@ -136,7 +127,7 @@ function loadOwnerIds(): string[] {
   return (require(ownerCheckerPath) as { OWNER_EVIDENCE_ITEM_IDS: string[] }).OWNER_EVIDENCE_ITEM_IDS;
 }
 
-function buildOwnerEvidence(statusById: Record<string, string> = {}, checkedAt = "2026-07-04") {
+function buildOwnerEvidence(statusById: Record<string, string> = {}, checkedAt = "2026-08-25") {
   return {
     schemaVersion: "zenflow-admob-owner-evidence/v1",
     packageName: "com.zenflow.app",
@@ -211,7 +202,7 @@ describe("AdMob owner evidence apply workflow", () => {
     const before = readFileSync(ledgerFile, "utf8");
     writeFileSync(evidenceFile, JSON.stringify(buildOwnerEvidence({ admob_app_ads_txt_status: "PASS" }), null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04"]);
+    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-08-25"]);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("DRY-RUN");
@@ -228,9 +219,9 @@ describe("AdMob owner evidence apply workflow", () => {
     });
     writeFileSync(evidenceFile, JSON.stringify(ownerEvidence, null, 2));
 
-    const after = loadApplyScript().applyOwnerEvidenceToLedger(before, ownerEvidence, "2026-07-04");
+    const after = loadApplyScript().applyOwnerEvidenceToLedger(before, ownerEvidence, "2026-08-25");
 
-    expect(after.updatedAt).toBe("2026-07-04");
+    expect(after.updatedAt).toBe("2026-08-25");
     expect(after.items.find((item: { id: string }) => item.id === "public_app_ads_root")).toEqual(
       before.items.find((item: { id: string }) => item.id === "public_app_ads_root"),
     );
@@ -238,7 +229,7 @@ describe("AdMob owner evidence apply workflow", () => {
     const afterAppAds = after.items.find((item: { id: string }) => item.id === "admob_app_ads_txt_status");
     if (!beforeAppAds || !afterAppAds) throw new Error("admob_app_ads_txt_status fixture row is missing");
     expect(afterAppAds.status).toBe("PASS");
-    expect(afterAppAds.checkedAt).toBe("2026-07-04");
+    expect(afterAppAds.checkedAt).toBe("2026-08-25");
     expect(afterAppAds.ownerAction).toBe(beforeAppAds.ownerAction);
     expect(afterAppAds).not.toHaveProperty("facts");
     expect(readFileSync(ledgerFile, "utf8")).toBe(beforeText);
@@ -249,7 +240,7 @@ describe("AdMob owner evidence apply workflow", () => {
     const before = readFileSync(ledgerFile, "utf8");
     writeFileSync(evidenceFile, JSON.stringify(buildOwnerEvidence({ admob_app_ads_txt_status: "PASS" }), null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04", "--write"]);
+    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-08-25", "--write"]);
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("canonical ADMOB_EXTERNAL_READINESS.json");
@@ -281,7 +272,7 @@ describe("AdMob owner evidence apply workflow", () => {
       "--ledger",
       ledgerFile,
       "--date",
-      "2026-07-04",
+      "2026-08-25",
       "--write",
     ]);
 
@@ -331,29 +322,16 @@ describe("AdMob owner evidence apply workflow", () => {
     expect(fakeFiles[canonicalLedgerPath]).toBe("existing-ledger");
   });
 
-  it("refuses live rewarded playback PASS when owner prerequisites are not PASS and leaves the ledger unchanged", () => {
+  it("refuses live banner playback PASS when owner prerequisites are not PASS and leaves the ledger unchanged", () => {
     const { ledgerFile, evidenceFile } = tempFixture();
     const before = readFileSync(ledgerFile, "utf8");
-    const evidence = buildOwnerEvidence({ live_ad_playback_device: "PASS" }, "2026-07-04");
+    const evidence = buildOwnerEvidence({ live_ad_playback_device: "PASS" }, "2026-08-25");
     writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04", "--write"]);
+    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-08-25", "--write"]);
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("live_playback_prerequisite_not_pass");
-    expect(readFileSync(ledgerFile, "utf8")).toBe(before);
-  });
-
-  it("refuses full cross-platform monetization PASS unless the strict full AdMob ID gate passes", () => {
-    const { ledgerFile, evidenceFile } = tempFixture();
-    const before = readFileSync(ledgerFile, "utf8");
-    const evidence = buildOwnerEvidence({ full_cross_platform_ad_units: "PASS" }, "2026-07-04");
-    writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2));
-
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04", "--write"]);
-
-    expect(result.status).toBe(2);
-    expect(result.stdout).toContain("full_cross_platform_gate_not_pass");
     expect(readFileSync(ledgerFile, "utf8")).toBe(before);
   });
 
@@ -362,11 +340,11 @@ describe("AdMob owner evidence apply workflow", () => {
     const ownerEvidence = buildOwnerEvidence({ admob_app_ads_txt_status: "PASS" });
     writeFileSync(evidenceFile, JSON.stringify(ownerEvidence, null, 2));
 
-    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-07-04"]);
+    const result = runApply(["--file", evidenceFile, "--ledger", ledgerFile, "--date", "2026-08-25"]);
     const finalLedger = loadApplyScript().applyOwnerEvidenceToLedger(
       JSON.parse(readFileSync(ledgerFile, "utf8")),
       ownerEvidence,
-      "2026-07-04",
+      "2026-08-25",
     );
     const external = require(externalCheckerPath) as {
       evaluateExternalReadiness: (
@@ -375,7 +353,7 @@ describe("AdMob owner evidence apply workflow", () => {
       ) => { ok: boolean; issues: Array<{ code: string }> };
     };
     const report = external.evaluateExternalReadiness(finalLedger, {
-      now: new Date("2026-07-04T12:00:00.000Z"),
+      now: new Date("2026-08-25T12:00:00.000Z"),
     });
 
     expect(result.status).toBe(0);
