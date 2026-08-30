@@ -376,7 +376,9 @@ afterEach(() => {
   for (const root of createdRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-describe("Cloudlight Evening R3 GarageBand session binding", () => {
+describe.skipIf(!existsSync(join(repositoryRoot, "output/private/cloudlight-evening-r3/source/cloudlight-evening-r3.mid")))(
+  "Cloudlight Evening R3 GarageBand session binding (requires local private source pack)",
+  () => {
   it("inspects the exact seven resource roles and exposes deeply immutable canonical defaults", () => {
     const fixtureRoot = makeTemporaryDirectory("environment");
     const paths = makeGarageBandPaths(fixtureRoot);
