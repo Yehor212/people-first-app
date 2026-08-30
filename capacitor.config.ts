@@ -33,6 +33,7 @@ const config: CapacitorConfig = {
     scheme: "zenflow",
     contentInset: "never",
   },
+  backgroundColor: "#071614",
   server: {
     androidScheme: "https",
     iosScheme: "https",
@@ -69,12 +70,6 @@ const config: CapacitorConfig = {
        *
        * See: https://developer.android.com/develop/ui/views/notifications/channels
        */
-    },
-    SystemBars: {
-      insetsHandling: "disable",
-      style: "DEFAULT",
-      hidden: false,
-      animation: "NONE",
     },
     SafeArea: {
       initialViewportFitCover: true,

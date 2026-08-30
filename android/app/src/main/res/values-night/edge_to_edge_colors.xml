@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zenflow_edge_bleed_status">#0A1B18</color>
+    <color name="zenflow_edge_bleed_mid">#071614</color>
+    <color name="zenflow_edge_bleed_navigation">#061411</color>
+    <color name="zenflow_edge_bleed_window">#071614</color>
+</resources>
