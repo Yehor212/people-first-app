@@ -672,6 +672,7 @@ export const de: Translations = {
   adAgeCheckCancel: "Abbrechen",
   adAgeCheckContinue: "Weiter",
   adAgeCheckInvalid: "Dieses Datum konnte nicht geprüft werden. Kontrolliere es und versuche es erneut.",
+  adProtectedSurfaceUnavailable: "Dieser Bereich konnte nicht sicher geöffnet werden. Versuche es erneut.",
   adAgeMinorNotice: "Das Banner ist für dieses Alter nicht verfügbar. Es wurde kein Werbedienst gestartet.",
   adAgeReview: "Altersangabe prüfen",
   adAgeReviewHint:

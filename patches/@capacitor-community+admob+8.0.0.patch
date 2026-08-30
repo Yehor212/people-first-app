@@ -1,5 +1,5 @@
 diff --git a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
-index c629139..32ca0b3 100644
+index c629139..ff0f552 100644
 --- a/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
 +++ b/node_modules/@capacitor-community/admob/android/src/main/java/com/getcapacitor/community/admob/banner/BannerExecutor.java
 @@ -52,6 +52,7 @@ public class BannerExecutor extends Executor {
@@ -10,6 +10,15 @@ index c629139..32ca0b3 100644
 
          DisplayMetrics metrics = new DisplayMetrics();
          activitySupplier.get().getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
+@@ -63,7 +64,7 @@ public class BannerExecutor extends Executor {
+         }
+
+         if (mAdView != null) {
+-            updateExistingAdView(adOptions);
++            updateExistingAdView(adOptions, call);
+             return;
+         }
+
 @@ -76,7 +77,7 @@ public class BannerExecutor extends Executor {
              } else {
                  // ADAPTIVE BANNER
@@ -115,7 +124,7 @@ index c629139..32ca0b3 100644
          } catch (Exception ex) {
              call.reject(ex.getLocalizedMessage(), ex);
          }
-@@ -200,23 +207,36 @@ public class BannerExecutor extends Executor {
+@@ -200,34 +207,53 @@ public class BannerExecutor extends Executor {
 
      public void removeBanner(final PluginCall call) {
          try {
@@ -165,12 +174,47 @@ index c629139..32ca0b3 100644
          } catch (Exception ex) {
              call.reject(ex.getLocalizedMessage(), ex);
          }
-@@ -243,8 +263,14 @@ public class BannerExecutor extends Executor {
+     }
+
+-    private void updateExistingAdView(AdOptions adOptions) {
++    private void updateExistingAdView(AdOptions adOptions, PluginCall call) {
++        final AdView adViewForRequest = mAdView;
+         activitySupplier
+             .get()
+             .runOnUiThread(() -> {
++                if (mAdView != adViewForRequest || adViewForRequest == null) {
++                    call.reject("Banner was removed before it could be reloaded");
++                    return;
++                }
+                 final AdRequest adRequest = RequestHelper.createRequest(adOptions);
+-                mAdView.loadAd(adRequest);
++                adViewForRequest.loadAd(adRequest);
++                call.resolve();
+             });
+     }
+
+@@ -236,22 +262,38 @@ public class BannerExecutor extends Executor {
+      * https://developers.google.com/admob/ios/banner?hl=ja
+      */
+     private void createNewAdView(AdOptions adOptions) {
++        final AdView adViewForRequest = mAdView;
++        final RelativeLayout adViewLayoutForRequest = mAdViewLayout;
+         // Run AdMob In Main UI Thread
+         activitySupplier
+             .get()
+             .runOnUiThread(() -> {
++                if (mAdView != adViewForRequest || mAdViewLayout != adViewLayoutForRequest) {
++                    return;
++                }
                  final AdRequest adRequest = RequestHelper.createRequest(adOptions);
                  // Assign the correct id needed
-                 AdViewIdHelper.assignIdToAdView(mAdView, adOptions, adRequest, logTag, contextSupplier.get());
+-                AdViewIdHelper.assignIdToAdView(mAdView, adOptions, adRequest, logTag, contextSupplier.get());
 -                // Add the AdView to the view hierarchy.
 -                mAdViewLayout.addView(mAdView);
+-                // Start loading the ad.
+-                mAdView.loadAd(adRequest);
+-                mAdView.setAdListener(
++                AdViewIdHelper.assignIdToAdView(adViewForRequest, adOptions, adRequest, logTag, contextSupplier.get());
 +                // The CoordinatorLayout container already has the measured
 +                // creative size, so the AdView can safely fill it without a
 +                // wrap-content/centering measurement cycle.
@@ -178,39 +222,86 @@ index c629139..32ca0b3 100644
 +                    RelativeLayout.LayoutParams.MATCH_PARENT,
 +                    RelativeLayout.LayoutParams.MATCH_PARENT
 +                );
-+                mAdViewLayout.addView(mAdView, adViewLayoutParams);
-                 // Start loading the ad.
-                 mAdView.loadAd(adRequest);
-                 mAdView.setAdListener(
-@@ -260,12 +286,18 @@ public class BannerExecutor extends Executor {
++                adViewLayoutForRequest.addView(adViewForRequest, adViewLayoutParams);
++                // Keep the native view non-interactive until the WebView has
++                // reserved this exact adaptive height and explicitly resumes it.
++                adViewLayoutForRequest.setVisibility(View.INVISIBLE);
++                adViewForRequest.setAdListener(
+                     new AdListener() {
+                         @Override
+                         public void onAdLoaded() {
+-                            final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(mAdView);
++                            if (mAdView != adViewForRequest) {
++                                super.onAdLoaded();
++                                return;
++                            }
++                            final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(adViewForRequest);
+
+                             notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
+                             notifyListeners(BannerAdPluginEvents.Loaded.getWebEventName(), emptyObject);
+@@ -260,12 +302,18 @@ public class BannerExecutor extends Executor {
 
                          @Override
                          public void onAdFailedToLoad(@NonNull LoadAdError adError) {
 -                            if (mAdView != null) {
-+                            if (mAdViewLayout != null) {
-+                                mAdViewLayout.setOnApplyWindowInsetsListener(null);
-+                                if (mAdView != null) {
-+                                    mAdViewLayout.removeView(mAdView);
-+                                }
-                                 mViewGroup.removeView(mAdViewLayout);
+-                                mViewGroup.removeView(mAdViewLayout);
 -                                mAdViewLayout.removeView(mAdView);
-+                            }
-+                            if (mAdView != null) {
-                                 mAdView.destroy();
+-                                mAdView.destroy();
 -                                mAdView = null;
++                            if (mAdView != adViewForRequest) {
++                                super.onAdFailedToLoad(adError);
++                                return;
                              }
++                            if (mAdViewLayout == adViewLayoutForRequest) {
++                                adViewLayoutForRequest.setOnApplyWindowInsetsListener(null);
++                                adViewLayoutForRequest.removeView(adViewForRequest);
++                                mViewGroup.removeView(adViewLayoutForRequest);
++                            }
++                            adViewForRequest.destroy();
 +                            mAdView = null;
 +                            mAdViewLayout = null;
 
                              final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(0, 0);
                              notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
-@@ -298,6 +330,9 @@ public class BannerExecutor extends Executor {
+@@ -278,18 +326,21 @@ public class BannerExecutor extends Executor {
+
+                         @Override
+                         public void onAdOpened() {
++                            if (mAdView != adViewForRequest) return;
+                             notifyListeners(BannerAdPluginEvents.Opened.getWebEventName(), emptyObject);
+                             super.onAdOpened();
+                         }
+
+                         @Override
+                         public void onAdClosed() {
++                            if (mAdView != adViewForRequest) return;
+                             notifyListeners(BannerAdPluginEvents.Closed.getWebEventName(), emptyObject);
+                             super.onAdClosed();
+                         }
+
+                         @Override
+                         public void onAdImpression() {
++                            if (mAdView != adViewForRequest) return;
+                             notifyListeners(BannerAdPluginEvents.AdImpression.getWebEventName(), emptyObject);
+                             super.onAdImpression();
+                         }
+@@ -297,7 +348,18 @@ public class BannerExecutor extends Executor {
+                 );
 
                  // Add AdViewLayout top of the WebView
-                 mViewGroup.addView(mAdViewLayout);
+-                mViewGroup.addView(mAdViewLayout);
++                mViewGroup.addView(adViewLayoutForRequest);
 +                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-+                    mAdViewLayout.requestApplyInsets();
++                    adViewLayoutForRequest.requestApplyInsets();
 +                }
++
++                // Publish measured geometry before loading/visibility so React
++                // can reserve the dock without a visible content shift.
++                final BannerAdSizeInfo sizeInfo = new BannerAdSizeInfo(adViewForRequest);
++                notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo);
++
++                // Start loading only after listeners and hidden geometry exist.
++                adViewForRequest.loadAd(adRequest);
              });
      }
  }

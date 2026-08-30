@@ -54,6 +54,8 @@ describe("TemplatePicker V2 ritual presentation", () => {
     expect(grid).not.toBeNull();
     if (!grid) throw new Error("Expected the template picker grid");
     expect(grid.className).toContain("auto-fit");
+    expect(grid.className).toContain("calc(12rem*var(--font-scale,1))");
+    expect(grid.className).not.toContain("calc(10rem*var(--font-scale,1))");
     expect(grid.className).toContain("var(--font-scale");
     cards.forEach((card) => {
       expect(card.className).toContain("h-auto");

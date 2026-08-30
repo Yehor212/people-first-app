@@ -656,6 +656,7 @@ const arabicOverrides: Partial<Translations> = {
   adAgeCheckCancel: "إلغاء",
   adAgeCheckContinue: "متابعة",
   adAgeCheckInvalid: "تعذّر التحقق من هذا التاريخ. راجعه وحاول مرة أخرى.",
+  adProtectedSurfaceUnavailable: "تعذّر فتح هذه اللوحة بأمان. حاول مرة أخرى.",
   adAgeMinorNotice: "اللافتة غير متاحة لهذا العمر. لم يتم تشغيل أي خدمة إعلانية.",
   adAgeReview: "مراجعة معلومات العمر",
   adAgeReviewHint:

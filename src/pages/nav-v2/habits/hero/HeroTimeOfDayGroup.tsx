@@ -30,6 +30,7 @@ interface HeroTimeOfDayGroupProps {
   onArchiveHabit?: (habitId: string) => void;
   onUnarchiveHabit?: (habitId: string) => void;
   onOpenDetail?: (habit: Habit) => void;
+  onBeforeActionSheetOpen?: () => Promise<boolean>;
   onActionSheetOpenChange?: (open: boolean) => void;
 }
 
@@ -63,6 +64,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   onArchiveHabit,
   onUnarchiveHabit,
   onOpenDetail,
+  onBeforeActionSheetOpen,
   onActionSheetOpenChange,
 }: HeroTimeOfDayGroupProps) {
   const { t } = useLanguage();
@@ -171,6 +173,7 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 onArchive={onArchiveHabit}
                 onUnarchive={onUnarchiveHabit}
                 onOpenDetail={onOpenDetail}
+                onBeforeActionSheetOpen={onBeforeActionSheetOpen}
                 onActionSheetOpenChange={onActionSheetOpenChange}
                 initiallyCollapsed={tier === "phone"}
               />

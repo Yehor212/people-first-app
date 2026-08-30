@@ -77,6 +77,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Google Mobile Ads initializes from a ContentProvider before the
+            // WebView starts. A valid sample application id keeps owner-less
+            // debug APKs launchable; ad requests remain disabled in JS unless
+            // the explicit admob-qa Vite mode is built.
+            manifestPlaceholders = [
+                    adMobApplicationId: "@string/zenflow_debug_admob_application_id"
+            ]
+        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

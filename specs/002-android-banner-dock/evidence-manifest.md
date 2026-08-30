@@ -1,0 +1,83 @@
+# Hash-Bound Evidence Manifest
+
+- Branch: `codex/banner-only-reserved-dock-20260830`
+- Base and current Git HEAD: `c779c1171157a563a6bef1bc773528c78eaeb117`
+- Raw request SHA-256: `b348636d5c1d7e2c82c2d01f0e1ec0ce65da013f7c8f4d4b73a24a2f25be5bfa`
+- Scope: Android Habits banner only; the animation worktree is excluded.
+- Generated: 2026-08-30 after exact v10 APK emulator verification.
+
+The list binds every tracked modification, every non-ignored untracked source
+or specification file, the installed v10 QA artifact, the pre-reboot ANR
+negative control, and the final settled v10 visual/log evidence used by the
+closure packet. The manifest file itself is bound by the closure packet hash to
+avoid a self-referential digest.
+
+```text
+b1a1e5e0c933cfbca166af549644e92e18db6a8c7b6e4960f76d484fb3bbb3a4  .specify/feature.json
+ff9d003956487bf680572037ef4eed4fe944b0eb14d21c36a73904183abb37d2  android/app/build.gradle
+5694c97d63602a901ce14b73bc5d39aa018d711ff75c7fbb4e6d6c339e2f7615  android/app/src/debug/res/values/admob.xml
+a7b61d46f43f4be557ed03debb5206caaa3aab66314b93649a5c03fb3c6dbcd6  docs/AD_SYSTEM_JOURNEY.md
+e57be8c025b5ae722ac76b89eae833a3a905d1b74c5238190013eb74d1d936bb  patches/@capacitor-community+admob+8.0.0.patch
+2d7c68bc9b4696275dc2170a83cf8bbf391d9eeded1733402956c37181ce6e43  scripts/__tests__/android-admob-banner-native-patch.test.ts
+df4a590b400118bad610acf3e7880b7c7f5109a47f3d677f3f49c5f5a3ee0d35  scripts/__tests__/android-admob-debug-startup.test.ts
+b30cf1db3b6c410345495692537909c793ccb9c8f5782ea856c6f8d04d15e455  specs/002-android-banner-dock/analysis.md
+0161ff6227e6e6d0360e6f701ca49b30677374d8543ffa9d5ceb09de753f34e2  specs/002-android-banner-dock/checklists/requirements.md
+868bdc53692608c7e32e6e9f37205095ca9cf300d3c2345153fa86dd2850fef4  specs/002-android-banner-dock/checklists/ux-privacy.md
+35b2255a3bf0ce05892d6d4207260a7f0077f10bc8c270149e205917ad0318f3  specs/002-android-banner-dock/contracts/android-banner-dock.md
+0a22dcd8a749713ff5a392ded773f2030dd14690b09d3f300776e4721c6cff0d  specs/002-android-banner-dock/data-model.md
+d6ca0e069f5e0927b7a2a4aedfceda045c97a7bbc978195fc3fa09eed721f79a  specs/002-android-banner-dock/plan.md
+dbf8865e14553484e0dec62b3a205e1d66e2d71b683100f997434e8f916fbc3c  specs/002-android-banner-dock/quickstart.md
+8d687d4272b4353570272ca7bded6a4d4eedabad270de39faff06768bd03341e  specs/002-android-banner-dock/research.md
+f8f1726b807ab011b68cac0ded15a423867fedaf641649ae914f982a99b1c75e  specs/002-android-banner-dock/spec.md
+e1dc94f902981c2175176c223aa8e298ae9ca10b559e3bc81d0f2d71d11f134c  specs/002-android-banner-dock/tasks.md
+f55b682bbea1737e8cb63f9c861b862cdf70924c56c9867c06700e173604c2f6  specs/002-android-banner-dock/verification.md
+5a2b8a83a4297548f140c10605c8f50bd9009fc65388b3c8f15f8419e24a2f22  src/components/navigation-v2/NavV2Orchestrator.tsx
+d18c7d99efc19e366243ebef11b11a2d798d1b6ced4bbc5eb0c063fe88d56340  src/components/navigation-v2/__tests__/NavV2Orchestrator.test.tsx
+32c23ea9f25508474a79dc8930cb816035fb0fd9be57e55ea81bb7f0c69b756e  src/contexts/AdContext.tsx
+5cde679caf07bc9e6befe89eea043da5f819165ecf536d17592d9f402b9a8634  src/contexts/__tests__/AdContext.bannerPlacement.test.tsx
+bda5483cab5fb8c51ca2808cf8d586641d6fd53d304abe64c59e5c66be338507  src/contexts/__tests__/AdContext.privacyOptions.test.tsx
+d2e97962779b2494df87530249c4131cfa684a6f9d3a21e0b83a3b8bfd7a584e  src/hooks/useAdGracePeriod.ts
+56a08cb5d59c7537c5f633006c7bf50f84391acc3525782a7490bcbc1f112efe  src/i18n/languages/ar.ts
+263d651ceb8d32f573c428ff650b6090a049c8cd6cad3b53d380e048dd46119e  src/i18n/languages/de.ts
+e3eec1a032150845112c4ffcae58bdf164268ce42f055405e080e981c2fa23df  src/i18n/languages/en.ts
+885a7b16da0c11b2de3e169af5106dc2602bf33015c75d568e783bd190241431  src/i18n/languages/es.ts
+b984458fc4617d0418e4ed75f312317738ded7b79437541a9602803c399c851c  src/i18n/languages/fr.ts
+a112f92c19717dc6e59119a39256b576902e57ef6cf7235801462c21770d5108  src/i18n/languages/he.ts
+8061910f55eaa41a7c8c5612d3448af185ebaa4091f6f950e220ddf82c6bf5e5  src/i18n/languages/ja.ts
+4f296ea3935501975c00adb3754578cca12b5a136655b5014fd0a7c0c7c83408  src/i18n/languages/uk.ts
+d5498250f1a2ce1c06db0ad25ad76a613b538f77933640b425ffe5217a2f7e71  src/i18n/types.ts
+3f24feeb80f3c10e510f681efa1a84ecaac228511da8d86a23c3098825fed1d9  src/lib/__tests__/adController.androidBanner.test.ts
+7d576377223bc908594aa8f908142e6d396315dbe311c15dee1e9b98d69d48bb  src/lib/__tests__/adEligibility.test.ts
+5a1596c80529ae7e3b4e095f13480dbbbb2f64b36c3b86ede18b7ef2e6388752  src/lib/__tests__/adGracePeriod.test.ts
+612a77edbe2171d78c0c847f95b7ff9f18fd069c9ad880fe36c4300e3d4107b7  src/lib/adConfig.ts
+47583d2f9b628513b284f3ad06f0679431a93962df989942b803233fe5fac355  src/lib/adController.ts
+5be3671af7be9caa8707c10afe94f3316251665e34811f8d6f51df45fea4104c  src/lib/adEligibility.ts
+9e8452e298a7d778e8f36ca5a963cf24a11cf5d478513f4a2dc2dd245f830755  src/lib/adGracePeriod.ts
+85ac149968b6e85e17d04a62ea4968b06563a425d0826f6099c1b457fb178b85  src/lib/env.ts
+49588a1223f4898d6d03a93f2e908cf9515a906841417d7ac12b83b1bde84ef3  src/lib/storageKeys.ts
+1ab78b0d87c6c7a941041837b1b982ec379364dd9d06c0eeacc9f84f4872bbc5  src/pages/Index.tsx
+a6fd6a14118cb3ffc922cdbb5fffabbfab7dc3b0f86dec23afcda69e24d54393  src/pages/nav-v2/habits/HabitsHeroZone.tsx
+e4988914a3cb1c26e9c629f72903854a2196479de5a1f70cd7334399aec3503a  src/pages/nav-v2/habits/HabitsPage.tsx
+5587bf9a555b6955c18bd4ac1e5db548a3c01345a429a47b4f4fd13c86025aaf  src/pages/nav-v2/habits/__tests__/HabitsPage.test.tsx
+8fe688150b9efea745c11e7d50e9f9698f44060d109299271d6d07558dea89e0  src/pages/nav-v2/habits/__tests__/metrics-wiring.test.tsx
+74a23451f5a4897879034ecee1cd8d25c059e91427fdfa78d38f81b08f761300  src/pages/nav-v2/habits/hero/HeroHabitRow.tsx
+61c493c2bf0249fbc142a2f09111289e19bac895e82a400f084ba7faac1438e5  src/pages/nav-v2/habits/hero/HeroTimeOfDayGroup.tsx
+c96604c50513ea6154509d4bb997fa96132fc1807b73ae80c7c0958aac51f835  src/pages/nav-v2/habits/hero/__tests__/HeroHabitRow.test.tsx
+abd4be16f4fec2e7f78d40558d7424a52e8a760f205681aad0a16318d19c8c9f  src/storage/__tests__/db.test.ts
+ce0364bb1de9dff82b4be106f18e0a02b8c64e55778bc177fc8d95e07c0a1310  src/storage/db.ts
+bbfcc766f1fd6815a869ef61577cde0081a2f992927b7c8407ad505a0a0f73cf  output/banner-qa/apk/zenflow-admob-qa-debug-v10.apk
+1cd286ee2681ceedb0e7277671b9b383c1e1f553603aec6b3027e40cedc1fb0f  output/banner-qa/runtime-qa/final-v10-after-anr-wait-2.png
+fde2ad82532dec7fd4861d4110efc71e62ebc723f66c956d88310edcaa3b5e0c  output/banner-qa/runtime-qa/final-v10-lastanr.txt
+d9a6f40b71994ed2292f2ea165cd30d458c9efeacc2425b7f62248ad57b1faed  output/banner-qa/runtime-qa/final-v10-startup-logcat.txt
+d06c98268b3f61c12a99d766ca8479867ec4f594687aa90a54394cbf957e167d  output/banner-qa/runtime-qa/final-v10-clean-cold-start-settled.png
+ed49b229870efadf0210f52d5b793decf5f9284fe494c475b7e46821be2a83e7  output/banner-qa/runtime-qa/final-v10-clean-portrait-loaded.png
+fafebc09b9ed0c01fb5a50197b79dddfa666facbadcb67a1aa8ca3acf5117f2b  output/banner-qa/runtime-qa/final-v10-clean-portrait-create-sheet-settled.png
+dd28f4375540622b3b5d5a699456816224157bf54a2280ec95321fb941b1905a  output/banner-qa/runtime-qa/final-v10-clean-portrait-create-sheet-logcat.txt
+5c05740cfd7ba14edf6299eb9096d5447f9a0bbacce57530e67af3e5b15f8663  output/banner-qa/runtime-qa/final-v10-clean-portrait-banner-restored-settled.png
+c232a55eba448e8725d9d6f562109bcfa1aa9dd0654ed2c07ca122c0b9df43a7  output/banner-qa/runtime-qa/final-v10-clean-portrait-banner-restored-settled-logcat.txt
+760efaf048af9d3426df44d77b2158db57f717d9b4a40913e3eeb483a3a160f1  output/banner-qa/runtime-qa/final-v10-clean-landscape-scrolled.png
+1dfa2fc3bffdb4580b19a2853242a89ccac62bac712a91e62589e6a2f5524550  output/banner-qa/runtime-qa/final-v10-clean-landscape-scrolled-logcat.txt
+3f02b2ede728b4307e8eee9f6c716d62649e256667cd1dcb5942f99d243a170b  output/banner-qa/runtime-qa/final-v10-clean-landscape-create-reachable.png
+f90e56178e7bebabe46e6e10634020b9cff3fbb7d2ad7ef0b18cd4fadf5d83d9  output/banner-qa/runtime-qa/final-v10-clean-landscape-create-sheet-settled.png
+332eba68bdd67763a0c2e27605ea37ade71f01098126494ff1f4b34394aa95a4  output/banner-qa/runtime-qa/final-v10-clean-landscape-create-sheet-settled-logcat.txt
+```

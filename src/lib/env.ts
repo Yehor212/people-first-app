@@ -48,3 +48,9 @@ export const ADMOB_APP_ID_ANDROID = (import.meta.env.VITE_ADMOB_APP_ID_ANDROID a
 export const ADMOB_BANNER_ID_ANDROID =
   (import.meta.env.VITE_ADMOB_BANNER_ID_ANDROID as string) || "";
 export const ADMOB_BANNER_ID_IOS = (import.meta.env.VITE_ADMOB_BANNER_ID_IOS as string) || "";
+/**
+ * Isolated emulator QA mode. Both conditions are required so a stray env
+ * variable cannot enable test-ad behavior in a normal or publishable build.
+ */
+export const IS_ADMOB_QA_TEST_MODE =
+  MODE === "admob-qa" && import.meta.env.VITE_ADMOB_QA_TEST_MODE === "true";

@@ -29,6 +29,7 @@ interface HeroHabitRowProps {
   onUnskip?: (habitId: string, date: string) => void;
   onArchive?: (habitId: string) => void;
   onUnarchive?: (habitId: string) => void;
+  onBeforeActionSheetOpen?: () => Promise<boolean>;
   onActionSheetOpenChange?: (open: boolean) => void;
   initiallyCollapsed?: boolean;
 }
@@ -48,6 +49,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   onUnskip,
   onArchive,
   onUnarchive,
+  onBeforeActionSheetOpen,
   onActionSheetOpenChange,
   initiallyCollapsed = false,
 }: HeroHabitRowProps) {
@@ -61,6 +63,18 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const closeActionSheet = useCallback(() => setActionSheetOpen(false), []);
+  const openActionSheet = useCallback(() => {
+    const suppression = onBeforeActionSheetOpen?.();
+    if (!suppression) {
+      setActionSheetOpen(true);
+      return;
+    }
+    void suppression.then((acknowledged) => {
+      if (!acknowledged) return;
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      setActionSheetOpen(true);
+    });
+  }, [onBeforeActionSheetOpen]);
 
   useEffect(() => {
     if (!actionSheetOpen) return;
@@ -91,13 +105,13 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         longPressFiredRef.current = true;
         void hapticTap();
         if (hasActions) {
-          setActionSheetOpen(true);
+          void openActionSheet();
         } else if (onOpenDetail) {
           onOpenDetail(habit);
         }
       }, LONG_PRESS_MS);
     },
-    [cancelLongPress, habit, hasActions, onOpenDetail],
+    [cancelLongPress, habit, hasActions, onOpenDetail, openActionSheet],
   );
 
   const handlePointerMove = useCallback(
@@ -125,13 +139,13 @@ export const HeroHabitRow = memo(function HeroHabitRow({
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         if (hasActions) {
-          setActionSheetOpen(true);
+          void openActionSheet();
         } else if (onOpenDetail) {
           onOpenDetail(habit);
         }
       }
     },
-    [habit, hasActions, onOpenDetail],
+    [habit, hasActions, onOpenDetail, openActionSheet],
   );
 
   const reminderTime = habit.reminders?.find((r) => r.enabled !== false)?.time;

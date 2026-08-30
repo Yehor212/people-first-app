@@ -74,12 +74,12 @@ vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 
 // ─── Prop-capturing stubs for the Hero zone + sheets ─────────────
 type HeroZoneProps = {
-  onOpenDetail: (h: Habit) => void;
+  onOpenDetail: (h: Habit) => Promise<void>;
   onPickTemplate: (t: { id: string; names: Record<string, string>; icon: string; color: number; habitType: string }) => void;
   onCreateHabit: () => void;
   onToggleHabit: (habitId: string, date: string) => void;
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
-  onEditHabit?: (h: Habit) => void;
+  onEditHabit?: (h: Habit) => Promise<void>;
   onSkipHabit?: (habitId: string, date: string) => void;
   onUnskipHabit?: (habitId: string, date: string) => void;
   onArchiveHabit?: (habitId: string) => void;
@@ -182,24 +182,28 @@ afterEach(() => cleanup());
 // ─── HabitsPage wiring ──────────────────────────────────────────
 
 describe("HabitsPage → analytics wiring (§15)", () => {
-  it("openDetail prop calls analytics.habitDetailOpened with current count", () => {
+  it("openDetail prop calls analytics.habitDetailOpened with current count", async () => {
     mockHabits = [makeHabit("a"), makeHabit("b"), makeHabit("c")];
     render(<HabitsPage />);
     expect(capturedHeroProps).not.toBeNull();
-    capturedHeroProps!.onOpenDetail(mockHabits[0]);
+    await act(async () => {
+      await capturedHeroProps!.onOpenDetail(mockHabits[0]);
+    });
     expect(analyticsSpy.habitDetailOpened).toHaveBeenCalledTimes(1);
     expect(analyticsSpy.habitDetailOpened).toHaveBeenCalledWith(3);
   });
 
-  it("onPickTemplate opens the create sheet in template setup mode without emitting analytics yet", () => {
+  it("onPickTemplate opens the create sheet in template setup mode without emitting analytics yet", async () => {
     mockHabits = [makeHabit("a")]; // one existing habit — post-add count is 2
     render(<HabitsPage />);
     act(() => {
       capturedHeroProps!.onPickTemplate(makeTemplate("meditate"));
     });
     expect(analyticsSpy.habitCreated).not.toHaveBeenCalled();
-    expect(capturedCreateProps!.template).toEqual(
-      expect.objectContaining({ id: "meditate" }),
+    await waitFor(() =>
+      expect(capturedCreateProps!.template).toEqual(
+        expect.objectContaining({ id: "meditate" }),
+      ),
     );
   });
 
@@ -293,7 +297,7 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     expect(analyticsSpy.habitCompleted).not.toHaveBeenCalled();
   });
 
-  it("onEditHabit routes to HabitCreateSheet with editHabit prefilled (not detail sheet)", () => {
+  it("onEditHabit routes to HabitCreateSheet with editHabit prefilled (not detail sheet)", async () => {
     const habit = makeHabit("read");
     mockHabits = [habit];
     render(<HabitsPage />);
@@ -302,8 +306,8 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     // Trigger: pencil button path (onEditHabit) — distinct from onOpenDetail.
     // Wrap in act() so React commits the setEditingHabit state update before
     // we re-read the captured props on the next render.
-    act(() => {
-      capturedHeroProps!.onEditHabit!(habit);
+    await act(async () => {
+      await capturedHeroProps!.onEditHabit!(habit);
     });
     // The sheet now carries editHabit === the clicked habit → HabitCreationForm
     // will call onUpdateHabit, not onAddHabit.
@@ -315,8 +319,8 @@ describe("HabitsPage → analytics wiring (§15)", () => {
     mockHabits = [habit];
     render(<HabitsPage />);
 
-    act(() => {
-      capturedHeroProps!.onOpenDetail(habit);
+    await act(async () => {
+      await capturedHeroProps!.onOpenDetail(habit);
     });
     await waitFor(() => expect(capturedDetailProps?.habit).toEqual(habit));
 

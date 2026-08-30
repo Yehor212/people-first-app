@@ -28,7 +28,8 @@ The placement generation and serialized native-command queue prevent an older
 - `src/lib/adController.ts` owns initialization, UMP gating, adaptive banner
   show/hide/remove, lifecycle invalidation, and native height events.
 - `src/contexts/AdContext.tsx` owns current eligibility: Habits route, viewport,
-  document visibility, mood, premium state, consent, and global overlays.
+  document visibility, mood, fail-closed product entitlement, consent, and
+  protected local/global surfaces.
 - Native plugin teardown destroys and detaches the `AdView` before resolving.
 
 ## Protected transitions
@@ -36,8 +37,12 @@ The placement generation and serialized native-command queue prevent an older
 Every modal, drawer, sheet, auth screen, Settings/Privacy screen, journal flow,
 focus flow, onboarding step, and bad/terrible mood state is ad-free. A native
 view can render above the WebView, so CSS z-index is not a safety boundary.
-Opening a protected surface invalidates a pending show and removes the native
-view after the pending call resolves.
+Opening a protected surface starts a synchronous suppression handshake, waits
+for native hide/remove acknowledgement, and only then mounts the protected UI.
+A zero-size native callback during that handshake cannot start banner recovery.
+
+No scarcity or guilt copy is permitted around banner visibility, consent,
+privacy choices, onboarding grace, or the ad-free protected states.
 
 No scarcity or guilt copy is permitted. Banner eligibility never depends on
 care, streak, mood recovery, earned rewards, or time pressure.
@@ -46,6 +51,8 @@ care, streak, mood recovery, earned rewards, or time pressure.
 
 - Missing consent/config/platform support: no request, zero reserved height.
 - No-fill/load error: remove the native view, clear height, allow later retry.
+- Size without `Loaded`: keep the native view hidden and remove it on the
+  bounded load watchdog; never reveal a blank reserved dock.
 - Offline/background/route exit/sign-out: remove; never synthesize success.
 - Rotation/split-screen: remove and recreate for the new width.
 - Duplicate show intents are serialized; stale intent never becomes visible.

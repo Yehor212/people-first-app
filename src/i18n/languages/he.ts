@@ -610,6 +610,7 @@ const hebrewOverrides: Partial<Translations> = {
   adAgeCheckCancel: "ביטול",
   adAgeCheckContinue: "המשך",
   adAgeCheckInvalid: "לא הצלחנו לבדוק את התאריך. יש לבדוק אותו ולנסות שוב.",
+  adProtectedSurfaceUnavailable: "לא ניתן היה לפתוח את החלונית בבטחה. נסו שוב.",
   adAgeMinorNotice: "הבאנר אינו זמין לגיל הזה. אף שירות פרסום לא הופעל.",
   adAgeReview: "בדיקת פרטי הגיל",
   adAgeReviewHint: "אם הפרטים השתנו, יש להזין שוב את תאריך הלידה. ZenFlow בודקת אותו בלי לשמור את התאריך.",

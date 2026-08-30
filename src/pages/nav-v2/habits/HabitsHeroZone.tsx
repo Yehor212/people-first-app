@@ -46,6 +46,7 @@ interface HabitsHeroZoneProps {
   onPickTemplate?: (template: HabitTemplate) => void;
   onOpenLibrary?: () => void;
   onOpenDetail?: (habit: Habit) => void;
+  onBeforeActionSheetOpen?: () => Promise<boolean>;
   onActionSheetOpenChange?: (open: boolean) => void;
 }
 
@@ -66,6 +67,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onPickTemplate,
   onOpenLibrary,
   onOpenDetail,
+  onBeforeActionSheetOpen,
   onActionSheetOpenChange,
 }: HabitsHeroZoneProps) {
   const { t } = useLanguage();
@@ -218,6 +220,7 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
                 onArchiveHabit={onArchiveHabit}
                 onUnarchiveHabit={onUnarchiveHabit}
                 onOpenDetail={onOpenDetail}
+                onBeforeActionSheetOpen={onBeforeActionSheetOpen}
                 onActionSheetOpenChange={onActionSheetOpenChange}
               />
             ))}

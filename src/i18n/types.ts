@@ -896,6 +896,7 @@ export interface Translations {
   adAgeCheckCancel: string;
   adAgeCheckContinue: string;
   adAgeCheckInvalid: string;
+  adProtectedSurfaceUnavailable: string;
   adAgeMinorNotice: string;
   adAgeReview: string;
   adAgeReviewHint: string;
