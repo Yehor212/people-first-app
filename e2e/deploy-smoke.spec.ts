@@ -19,6 +19,14 @@ test.describe("Deploy smoke", () => {
     await primeReleasePreview(page);
   });
 
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === "passed") return;
+    const errorLog = await page
+      .evaluate(() => localStorage.getItem("zenflow-error-log"))
+      .catch(() => null);
+    console.log("ZENFLOW-ERROR-LOG:", errorLog);
+  });
+
   test("root boots the V2 shell without the legacy portal", async ({ page }) => {
     await page.goto("?navLayout=desktop&dev=true", { waitUntil: "domcontentloaded" });
 
