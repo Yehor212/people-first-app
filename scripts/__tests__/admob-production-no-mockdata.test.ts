@@ -27,6 +27,14 @@ describe("production AdMob no-mockdata contract", () => {
     const androidBuild = read("android/app/build.gradle");
 
     expect(androidBuild).not.toMatch(/VITE_ADMOB_APP_ID_ANDROID[\s\S]*\?:\s*["']ca-app-pub-/);
+    expect(androidBuild).toContain("debugPackagingTaskNames");
+    expect(androidBuild).toContain("debugPackagingTaskRequested");
+    expect(androidBuild).toContain(
+      "debugPackagingTaskRequested && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)",
+    );
+    expect(androidBuild).toContain(
+      "Debug builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt.",
+    );
     expect(androidBuild).toContain("Release builds require ZENFLOW_ADMOB_ANDROID_APP_ID");
     expect(androidBuild).toContain("throw new GradleException");
   });
