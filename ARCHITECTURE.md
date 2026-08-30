@@ -13,7 +13,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 <!-- BEGIN:counts -->
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Hooks (src/hooks, non-test) | **77** | `ls src/hooks/*.ts` |
+| Hooks (src/hooks, non-test) | **78** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
 | Index.tsx LOC | **293** | `wc -l src/pages/Index.tsx` |

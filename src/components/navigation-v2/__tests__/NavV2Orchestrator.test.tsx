@@ -501,7 +501,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     render(<NavV2Orchestrator />);
 
     fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
-    fireEvent.click(screen.getByRole("button", { name: "Planning" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Planning" }));
     act(() => drawerLifecycle.onExitComplete?.());
 
     await waitFor(() =>

@@ -414,7 +414,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
   });
 
-  it("makes the Habits page content inert while a create sheet owns interaction", () => {
+  it("makes the Habits page content inert while a create sheet owns interaction", async () => {
     render(<HabitsPage />);
 
     const content = screen.getByTestId("habits-page-content");
@@ -423,7 +423,9 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
 
     fireEvent.click(screen.getByTestId("habits-hero-create-empty"));
 
-    expect(content).toHaveAttribute("inert", "");
+    // Opening waits for the protected-surface suppression handshake to be
+    // acknowledged before the sheet (and its inert backdrop) mounts.
+    await waitFor(() => expect(content).toHaveAttribute("inert", ""));
     expect(content).toHaveAttribute("aria-hidden", "true");
   });
 
