@@ -75,16 +75,29 @@ describe("journal final review contracts", () => {
     expect(compactShell).not.toContain("<button");
     expect(compactShell).not.toContain("getJournalQuote");
     expect(compactShell).not.toContain("currentJournalQuote");
-    expect(moduleSource).toContain("journal.entries.length === 0 ? (");
+    expect(moduleSource).toMatch(
+      /journal\.entries\.length === 0\s*&&\s*journal\.entryPageState !== "unavailable"\s*\? \(/,
+    );
     expect(moduleSource).toContain("<LazyDiaryEmptyCanvas");
   });
 
   it("keeps settings mutations mounted and routes nested close actions back first", () => {
     expect(settingsSource).toContain("onBusyChange?: (busy: boolean) => void;");
     expect(settingsSource).toContain("onBusyChange?.(isBusy)");
+    expect(settingsSource).toContain('testId="journal-protection-removal-retry-action"');
     expect(moduleSource).toContain("const settingsDismissBlocked = settingsBusy || importing || removePasswordSubmitting;");
     expect(moduleSource).toContain("if (settingsDismissBlocked) return false;");
     expect(moduleSource).toContain('if (settingsSection !== "overview")');
+    expect(moduleSource).toContain('[data-testid="journal-protection-removal-retry-action"]');
+    expect(moduleSource).toMatch(
+      /className="[^"]*min-h-\[48px\][^"]*min-w-\[48px\][^"]*"\s+aria-label=\{ts\.close \|\| "Close"\}\s+data-testid="journal-desktop-settings-close"/,
+    );
+    expect(
+      moduleSource.match(/\.\.\.\(showRemovePasswordConfirm \? \{ inert: "" \} : \{\}\)/g),
+    ).toHaveLength(2);
+    expect(
+      moduleSource.match(/aria-hidden=\{showRemovePasswordConfirm \|\| undefined\}/g),
+    ).toHaveLength(2);
   });
 
   it("shares one import path across desktop and phone and exposes blocked dismissal state", () => {

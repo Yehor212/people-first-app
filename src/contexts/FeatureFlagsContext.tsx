@@ -9,8 +9,18 @@
  * Other features can be toggled by the user after being unlocked.
  */
 
-import { createContext, useContext, ReactNode, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { runWithSettledDataRead, subscribeDataRefresh } from "@/hooks/useIndexedDB";
 import {
   isFeatureUnlocked,
   FeatureId,
@@ -20,18 +30,22 @@ import {
 import { SK } from "@/lib/storageKeys";
 import { useUserDataStore } from "@/stores";
 import { getToday } from "@/lib/utils";
+import { getEntryCount } from "@/features/journal";
+import { logger } from "@/lib/logger";
+import {
+  getFeatureAvailability as evaluateFeatureAvailability,
+  type FeatureAvailability,
+  type FeatureUnlockAuthorityState,
+  type ToggleableFeature as AvailabilityToggleableFeature,
+} from "@/lib/featureAvailability";
+import {
+  registerAccountBoundaryRuntimeReset,
+  subscribeOriginAccountBoundaryGeneration,
+  waitForAccountBoundaryDataSettlement,
+} from "@/storage/accountBoundaryRuntime";
 
 // All toggleable features
-export type ToggleableFeature =
-  | "focusTimer"
-  | "breathingExercise"
-  | "gratitudeJournal"
-  | "quests"
-  | "tasks"
-  | "challenges"
-  | "aiCoach"
-  | "innerWorld"
-  | "deltaSync";
+export type ToggleableFeature = AvailabilityToggleableFeature;
 
 // Feature flags state
 export interface FeatureFlags {
@@ -63,6 +77,7 @@ interface FeatureFlagsContextType {
   flags: FeatureFlags;
   setFlag: (feature: ToggleableFeature, enabled: boolean) => void;
   isFeatureEnabled: (feature: ToggleableFeature) => boolean;
+  getFeatureAvailability: (feature: ToggleableFeature) => FeatureAvailability;
   isFeatureVisible: (feature: ToggleableFeature) => boolean;
   resetFlags: () => void;
 }
@@ -77,16 +92,94 @@ const FEATURE_TO_ONBOARDING: Partial<Record<ToggleableFeature, FeatureId>> = {
   challenges: "challenges",
 };
 
+type JournalEntryCountState =
+  | { status: "loading" }
+  | { status: "ready"; count: number }
+  | { status: "unavailable" };
+
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   const [flags, setFlags] = useLocalStorage<FeatureFlags>(SK.FEATURE_FLAGS, DEFAULT_FLAGS);
+  const [journalEntryCount, setJournalEntryCount] = useState<JournalEntryCountState>({
+    status: "loading",
+  });
+  const journalCountReadGenerationRef = useRef(0);
 
   // Garden Gate stats from user data (IA Blueprint Phase 5)
   const habits = useUserDataStore((s) => s.habits);
   const focusSessions = useUserDataStore((s) => s.focusSessions);
   const moods = useUserDataStore((s) => s.moods);
 
-  // Compute garden gate features from behavioral stats
+  const loadJournalEntryCount = useCallback(
+    async (options: { settled: boolean; signal?: AbortSignal }): Promise<void> => {
+      const readGeneration = journalCountReadGenerationRef.current + 1;
+      journalCountReadGenerationRef.current = readGeneration;
+      if (options.signal?.aborted) return;
+
+      try {
+        const count = options.settled
+          ? await runWithSettledDataRead(getEntryCount)
+          : await getEntryCount();
+        if (options.signal?.aborted || journalCountReadGenerationRef.current !== readGeneration) {
+          return;
+        }
+        if (!Number.isSafeInteger(count) || count < 0) {
+          throw new Error("Journal entry count was not a valid non-negative integer");
+        }
+        setJournalEntryCount({ status: "ready", count });
+      } catch {
+        if (options.signal?.aborted || journalCountReadGenerationRef.current !== readGeneration) {
+          return;
+        }
+        logger.warn("[FeatureFlags] Journal entry count is unavailable");
+        setJournalEntryCount({ status: "unavailable" });
+      }
+    },
+    []
+  );
+
+  const resetJournalEntryCountForAccountBoundary = useCallback(() => {
+    journalCountReadGenerationRef.current += 1;
+    setJournalEntryCount({ status: "loading" });
+  }, []);
+
+  useEffect(() => {
+    void loadJournalEntryCount({ settled: true });
+    const unsubscribeRefresh = subscribeDataRefresh((signal) =>
+      loadJournalEntryCount({ settled: false, signal })
+    );
+    return () => {
+      journalCountReadGenerationRef.current += 1;
+      unsubscribeRefresh();
+    };
+  }, [loadJournalEntryCount]);
+
+  useEffect(() => {
+    const unregisterRuntimeReset = registerAccountBoundaryRuntimeReset(
+      resetJournalEntryCountForAccountBoundary
+    );
+    const unsubscribeGeneration = subscribeOriginAccountBoundaryGeneration(() => {
+      resetJournalEntryCountForAccountBoundary();
+      const boundaryReadGeneration = journalCountReadGenerationRef.current;
+      void waitForAccountBoundaryDataSettlement()
+        .then(() => {
+          if (journalCountReadGenerationRef.current !== boundaryReadGeneration) return;
+          return loadJournalEntryCount({ settled: true });
+        })
+        .catch(() => {
+          if (journalCountReadGenerationRef.current !== boundaryReadGeneration) return;
+          logger.warn("[FeatureFlags] Account-boundary journal count refresh failed");
+          setJournalEntryCount({ status: "unavailable" });
+        });
+    });
+    return () => {
+      unsubscribeGeneration();
+      unregisterRuntimeReset();
+    };
+  }, [loadJournalEntryCount, resetJournalEntryCountForAccountBoundary]);
+
+  // Compute garden gate features only after the authoritative count is available.
   const gardenGateFeatures = useMemo(() => {
+    if (journalEntryCount.status !== "ready") return null;
     const today = getToday();
     const habitsCompleted = habits.reduce(
       (sum, h) => sum + Object.values(h.entries || {}).filter((e) => e.value === 2).length,
@@ -100,12 +193,12 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
     const stage = computeGardenGateStage({
       habitsCompleted,
       focusSessionsCompleted,
-      journalEntries: 0, // Journal entries not in store — blooming requires calendar-based unlock
+      journalEntries: journalEntryCount.count,
       daysActive,
     });
 
     return getFeaturesForGardenStage(stage);
-  }, [habits, focusSessions, moods]);
+  }, [habits, focusSessions, journalEntryCount, moods]);
 
   // Set a single feature flag
   const setFlag = useCallback(
@@ -121,32 +214,42 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   // Check if feature is enabled by user
   const isFeatureEnabled = useCallback(
     (feature: ToggleableFeature): boolean => {
-      return flags[feature] ?? true;
+      return flags[feature] === true;
     },
     [flags]
   );
 
-  // Check if feature should be visible (unlocked by onboarding OR garden gate, AND enabled by user)
-  const isFeatureVisible = useCallback(
-    (feature: ToggleableFeature): boolean => {
-      // Check user toggle first
-      if (!isFeatureEnabled(feature)) {
-        return false;
-      }
-
-      // Check if feature has onboarding unlock requirement
+  const getFeatureAvailability = useCallback(
+    (feature: ToggleableFeature): FeatureAvailability => {
       const onboardingFeature = FEATURE_TO_ONBOARDING[feature];
-      if (onboardingFeature) {
-        // Calendar-based unlock OR behavioral garden gate unlock
-        if (isFeatureUnlocked(onboardingFeature)) return true;
-        if (gardenGateFeatures.includes(onboardingFeature)) return true;
-        return false;
-      }
+      const onboarding: FeatureUnlockAuthorityState = !onboardingFeature
+        ? "not-required"
+        : isFeatureUnlocked(onboardingFeature)
+          ? "unlocked"
+          : "locked";
+      const localTruth: FeatureUnlockAuthorityState = !onboardingFeature
+        ? "not-required"
+        : journalEntryCount.status === "loading"
+          ? "loading"
+          : journalEntryCount.status === "unavailable"
+            ? "unavailable"
+            : gardenGateFeatures?.includes(onboardingFeature)
+              ? "unlocked"
+              : "locked";
 
-      // Features without onboarding requirements are always unlocked
-      return true;
+      return evaluateFeatureAvailability(feature, {
+        userEnabled: flags[feature],
+        onboarding,
+        localTruth,
+      });
     },
-    [isFeatureEnabled, gardenGateFeatures]
+    [flags, gardenGateFeatures, journalEntryCount.status]
+  );
+
+  // Compatibility adapter: structured availability remains the single decision owner.
+  const isFeatureVisible = useCallback(
+    (feature: ToggleableFeature): boolean => getFeatureAvailability(feature).visible,
+    [getFeatureAvailability]
   );
 
   // Reset all flags to defaults
@@ -159,10 +262,11 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
       flags,
       setFlag,
       isFeatureEnabled,
+      getFeatureAvailability,
       isFeatureVisible,
       resetFlags,
     }),
-    [flags, setFlag, isFeatureEnabled, isFeatureVisible, resetFlags]
+    [flags, setFlag, isFeatureEnabled, getFeatureAvailability, isFeatureVisible, resetFlags]
   );
 
   return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;

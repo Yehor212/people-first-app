@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   isEntityTombstonedOnServer: vi.fn(),
   isAbortError: vi.fn(),
   journalEntryGet: vi.fn(),
+  settingsGet: vi.fn(),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -46,6 +47,9 @@ vi.mock("@/storage/sync/manualSyncAcceptance", () => ({
 
 vi.mock("@/storage/db", () => ({
   db: {
+    settings: {
+      get: mocks.settingsGet,
+    },
     journalEntries: {
       get: mocks.journalEntryGet,
     },
@@ -85,6 +89,16 @@ import {
   syncJournalPhoto,
 } from "../syncJournal";
 
+function mockJournalEntryDeleteResponses(errors: Partial<Record<string, unknown>> = {}): void {
+  mocks.from.mockImplementation((table: string) => ({
+    delete: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: errors[table] ?? null })),
+      })),
+    })),
+  }));
+}
+
 describe("journal sync tombstones", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -99,9 +113,9 @@ describe("journal sync tombstones", () => {
     mocks.generateEmbeddings.mockResolvedValue(undefined);
     mocks.isEntityTombstonedOnServer.mockResolvedValue(false);
     mocks.isAbortError.mockReturnValue(false);
-    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    mocks.rpc.mockResolvedValue({ data: "complete", error: null });
     mocks.journalEntryGet.mockResolvedValue(undefined);
-    mocks.commitManualSyncEvent.mockResolvedValue({ seq: 1 });
+    mocks.settingsGet.mockResolvedValue(undefined);
   });
 
   it("does not publish a sync event when the server rejects a stale journal write", async () => {
@@ -111,17 +125,20 @@ describe("journal sync tombstones", () => {
     const upsert = vi.fn(() => ({ select }));
     mocks.from.mockReturnValue({ upsert });
 
-    await syncJournalEntry({
-      id: "entry-stale",
-      date: "2026-07-14",
-      title: "Older title",
-      content: "Older private diary content",
-      stickers: [],
-      tags: [],
-      photoIds: [],
-      createdAt: 1,
-      updatedAt: 2,
-    }, "user-1");
+    await syncJournalEntry(
+      {
+        id: "entry-stale",
+        date: "2026-07-14",
+        title: "Older title",
+        content: "Older private diary content",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        createdAt: 1,
+        updatedAt: 2,
+      },
+      "user-1"
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -131,16 +148,13 @@ describe("journal sync tombstones", () => {
       }),
       { onConflict: "id" }
     );
-    expect(mocks.rpc).toHaveBeenCalledWith(
-      "is_journal_entry_payload_current",
-      {
-        p_entry: expect.objectContaining({
-          id: "entry-stale",
-          user_id: "user-1",
-          updated_at: 2,
-        }),
-      }
-    );
+    expect(mocks.rpc).toHaveBeenCalledWith("is_journal_entry_payload_current", {
+      p_entry: expect.objectContaining({
+        id: "entry-stale",
+        user_id: "user-1",
+        updated_at: 2,
+      }),
+    });
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
@@ -186,17 +200,20 @@ describe("journal sync tombstones", () => {
     const upsert = vi.fn(() => ({ select }));
     mocks.from.mockReturnValue({ upsert });
 
-    await syncJournalEntry({
-      id: "entry-1",
-      date: "2026-05-25",
-      title: "Private",
-      content: "Private diary content",
-      stickers: [],
-      tags: [],
-      photoIds: [],
-      createdAt: 1,
-      updatedAt: 2,
-    }, "user-1");
+    await syncJournalEntry(
+      {
+        id: "entry-1",
+        date: "2026-05-25",
+        title: "Private",
+        content: "Private diary content",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        createdAt: 1,
+        updatedAt: 2,
+      },
+      "user-1"
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({ id: "entry-1", user_id: "user-1" }),
@@ -247,15 +264,15 @@ describe("journal sync tombstones", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-          theme: "ocean",
-          font: "cormorant",
-          ink_color: "#34d399",
-          paper_texture: "linen",
-          bg_pattern: "aurora",
-          paper_color: "milky",
-          bg_intensity: "dim",
-          particle_speed: "drift",
-          font_size: "large",
+        theme: "ocean",
+        font: "cormorant",
+        ink_color: "#34d399",
+        paper_texture: "linen",
+        bg_pattern: "aurora",
+        paper_color: "milky",
+        bg_intensity: "dim",
+        particle_speed: "drift",
+        font_size: "large",
       }),
       { onConflict: "id" }
     );
@@ -268,55 +285,66 @@ describe("journal sync tombstones", () => {
     mocks.from.mockReturnValue({ upsert });
     mocks.rpc.mockResolvedValue({ data: true, error: null });
 
-    await syncJournalEntry({
-      id: "entry-replay",
-      date: "2026-07-14",
-      title: "Current title",
-      content: "Current private diary content",
-      stickers: [],
-      tags: [],
-      photoIds: [],
-      createdAt: 1,
-      updatedAt: 4,
-    }, "user-1");
-
-    expect(mocks.rpc).toHaveBeenCalledWith(
-      "is_journal_entry_payload_current",
-      { p_entry: expect.objectContaining({ id: "entry-replay", updated_at: 4 }) }
+    await syncJournalEntry(
+      {
+        id: "entry-replay",
+        date: "2026-07-14",
+        title: "Current title",
+        content: "Current private diary content",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        createdAt: 1,
+        updatedAt: 4,
+      },
+      "user-1"
     );
+
+    expect(mocks.rpc).toHaveBeenCalledWith("is_journal_entry_payload_current", {
+      p_entry: expect.objectContaining({ id: "entry-replay", updated_at: 4 }),
+    });
     expect(mocks.writeEventAndBroadcast).toHaveBeenCalled();
   });
 
   it("does not write or queue private journal data when cloud sync is disabled", async () => {
     mocks.isCloudSyncEnabled.mockReturnValue(false);
 
-    await syncJournalEntry({
-      id: "entry-local",
-      date: "2026-05-25",
-      title: "Local only",
-      content: "Private diary content",
-      stickers: [],
-      tags: [],
-      photoIds: [],
-      createdAt: 1,
-      updatedAt: 2,
-    }, "user-1");
-    await syncJournalPhoto({
-      id: "photo-local",
-      entryId: "entry-local",
-      width: 640,
-      height: 480,
-      createdAt: 1,
-      storagePath: "user/photo.jpg",
-    }, "user-1");
-    await syncJournalAudio({
-      id: "audio-local",
-      entryId: "entry-local",
-      duration: 9,
-      mimeType: "audio/mp4",
-      createdAt: 1,
-      storagePath: "user/audio.m4a",
-    }, "user-1");
+    await syncJournalEntry(
+      {
+        id: "entry-local",
+        date: "2026-05-25",
+        title: "Local only",
+        content: "Private diary content",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        createdAt: 1,
+        updatedAt: 2,
+      },
+      "user-1"
+    );
+    await syncJournalPhoto(
+      {
+        id: "photo-local",
+        entryId: "entry-local",
+        width: 640,
+        height: 480,
+        createdAt: 1,
+        storagePath: "user/photo.jpg",
+      },
+      "user-1"
+    );
+    await syncJournalAudio(
+      {
+        id: "audio-local",
+        entryId: "entry-local",
+        duration: 9,
+        mimeType: "audio/mp4",
+        createdAt: 1,
+        storagePath: "user/audio.m4a",
+      },
+      "user-1"
+    );
     await deleteJournalEntryFromCloud("entry-local", "user-1");
     await deleteJournalPhotoFromCloud("photo-local", "user-1");
     await deleteJournalAudioFromCloud("audio-local", "user-1");
@@ -331,17 +359,20 @@ describe("journal sync tombstones", () => {
   it("does not upsert a journal entry that already has a local tombstone", async () => {
     mocks.getDeletedJournalEntryIds.mockResolvedValue(new Set(["entry-1"]));
 
-    await syncJournalEntry({
-      id: "entry-1",
-      date: "2026-05-25",
-      title: "Deleted",
-      content: "stale",
-      stickers: [],
-      tags: [],
-      photoIds: [],
-      createdAt: 1,
-      updatedAt: 2,
-    }, "user-1");
+    await syncJournalEntry(
+      {
+        id: "entry-1",
+        date: "2026-05-25",
+        title: "Deleted",
+        content: "stale",
+        stickers: [],
+        tags: [],
+        photoIds: [],
+        createdAt: 1,
+        updatedAt: 2,
+      },
+      "user-1"
+    );
 
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
@@ -388,14 +419,17 @@ describe("journal sync tombstones", () => {
     const upsert = vi.fn(() => Promise.resolve({ error: null }));
     mocks.from.mockReturnValue({ upsert });
 
-    await syncJournalPhoto({
-      id: "photo-1",
-      entryId: "entry-1",
-      width: 640,
-      height: 480,
-      createdAt: 1,
-      storagePath: "user-1/photo-1.jpg",
-    }, "user-1");
+    await syncJournalPhoto(
+      {
+        id: "photo-1",
+        entryId: "entry-1",
+        width: 640,
+        height: 480,
+        createdAt: 1,
+        storagePath: "user-1/photo-1.jpg",
+      },
+      "user-1"
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -461,14 +495,17 @@ describe("journal sync tombstones", () => {
     const upsert = vi.fn(() => Promise.resolve({ error: null }));
     mocks.from.mockReturnValue({ upsert });
 
-    await syncJournalAudio({
-      id: "audio-1",
-      entryId: "entry-1",
-      duration: 15,
-      mimeType: "audio/mp4",
-      createdAt: 1,
-      storagePath: "user-1/audio-1.m4a",
-    }, "user-1");
+    await syncJournalAudio(
+      {
+        id: "audio-1",
+        entryId: "entry-1",
+        duration: 15,
+        mimeType: "audio/mp4",
+        createdAt: 1,
+        storagePath: "user-1/audio-1.m4a",
+      },
+      "user-1"
+    );
 
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -495,14 +532,17 @@ describe("journal sync tombstones", () => {
       updatedAt: 2,
     });
 
-    await syncJournalAudio({
-      id: "audio-1",
-      entryId: "entry-1",
-      duration: 15,
-      mimeType: "audio/webm",
-      createdAt: 1,
-      storagePath: "user-1/entry-1/audio-1.webm",
-    }, "user-1");
+    await syncJournalAudio(
+      {
+        id: "audio-1",
+        entryId: "entry-1",
+        duration: 15,
+        mimeType: "audio/webm",
+        createdAt: 1,
+        storagePath: "user-1/entry-1/audio-1.webm",
+      },
+      "user-1"
+    );
 
     expect(mocks.journalEntryGet).toHaveBeenCalledWith("entry-1");
     expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
@@ -514,11 +554,9 @@ describe("journal sync tombstones", () => {
         audioIds: ["audio-1"],
       }),
       "device-1",
-      { expectedOwnerUserId: "user-1" },
+      { expectedOwnerUserId: "user-1" }
     );
-    expect(JSON.stringify(mocks.writeEventAndBroadcast.mock.calls)).not.toContain(
-      "data:audio",
-    );
+    expect(JSON.stringify(mocks.writeEventAndBroadcast.mock.calls)).not.toContain("data:audio");
   });
 
   it("queues audio delete through an id-only durable media action while offline", async () => {
@@ -538,11 +576,9 @@ describe("journal sync tombstones", () => {
   });
 
   it("queues journal entry delete after a network error keeps the local tombstone durable", async () => {
-    const deleteResult = { error: new TypeError("Failed to fetch") };
-    const eqTwice = vi.fn(() => Promise.resolve(deleteResult));
-    const eqOnce = vi.fn(() => ({ eq: eqTwice }));
-    const deleteQuery = vi.fn(() => ({ eq: eqOnce }));
-    mocks.from.mockReturnValue({ delete: deleteQuery });
+    mockJournalEntryDeleteResponses({
+      journal_entries: new TypeError("Failed to fetch"),
+    });
 
     await deleteJournalEntryFromCloud("entry-1", "user-1");
 
@@ -583,26 +619,20 @@ describe("journal sync tombstones", () => {
   });
 
   it("deletes semantic embeddings with the journal entry", async () => {
-    const deletedTables: string[] = [];
-    mocks.from.mockImplementation((table: string) => ({
-      delete: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => {
-            deletedTables.push(table);
-            return Promise.resolve({ error: null });
-          }),
-        })),
-      })),
-    }));
+    mockJournalEntryDeleteResponses();
 
     await deleteJournalEntryFromCloud("entry-private", "user-1");
 
-    expect(deletedTables).toEqual(expect.arrayContaining([
+    expect(mocks.from.mock.calls.map(([table]) => table)).toEqual([
       "journal_entries",
       "journal_photos",
       "journal_audio",
       "journal_embeddings",
-    ]));
+    ]);
+    expect(mocks.rpc).not.toHaveBeenCalledWith(
+      "delete_journal_entry_permanently",
+      expect.anything()
+    );
     expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
       "journal",
       "entry-private",
@@ -613,42 +643,40 @@ describe("journal sync tombstones", () => {
     );
   });
 
-  it("rejects the entry delete when photo metadata cleanup fails", async () => {
-    const photoDeleteError = new Error("journal photo metadata delete failed");
-    mocks.from.mockImplementation((table: string) => ({
-      delete: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() =>
-            Promise.resolve({
-              error: table === "journal_photos" ? photoDeleteError : null,
-            }),
-          ),
-        })),
-      })),
-    }));
+  it("rejects the entry delete when a table mutation fails", async () => {
+    const deleteError = new Error("journal entry transaction failed");
+    mockJournalEntryDeleteResponses({ journal_photos: deleteError });
 
     await expect(deleteJournalEntryFromCloud("entry-photo-failure", "user-1")).rejects.toBe(
-      photoDeleteError,
+      deleteError
     );
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
-  it("rejects the entry delete when audio metadata cleanup fails", async () => {
-    const audioDeleteError = new Error("journal audio metadata delete failed");
-    mocks.from.mockImplementation((table: string) => ({
-      delete: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() =>
-            Promise.resolve({
-              error: table === "journal_audio" ? audioDeleteError : null,
-            }),
-          ),
-        })),
-      })),
-    }));
+  it("defers the entry delete while the password-removal fence is paused", async () => {
+    mockJournalEntryDeleteResponses({
+      journal_entries: {
+        code: "55000",
+        message: "Journal deletion is paused for removal",
+      },
+    });
 
-    await expect(deleteJournalEntryFromCloud("entry-audio-failure", "user-1")).rejects.toBe(
-      audioDeleteError,
+    await expect(deleteJournalEntryFromCloud("entry-audio-failure", "user-1")).resolves.toEqual({
+      status: "deferred",
+      reason: "password-removal-paused",
+    });
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("does not defer an unrelated PostgreSQL 55000 failure", async () => {
+    const unrelatedFenceError = {
+      code: "55000",
+      message: "Object is not in prerequisite state",
+    };
+    mockJournalEntryDeleteResponses({ journal_entries: unrelatedFenceError });
+
+    await expect(deleteJournalEntryFromCloud("entry-unrelated-fence", "user-1")).rejects.toBe(
+      unrelatedFenceError
     );
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
@@ -700,7 +728,7 @@ describe("journal sync tombstones", () => {
         updatedAt: 2,
       },
       "user-1",
-      controller.signal,
+      controller.signal
     );
 
     expect(abortSignal).toHaveBeenCalledWith(controller.signal);
@@ -712,22 +740,28 @@ describe("journal sync tombstones", () => {
     mocks.from.mockReturnValue({ upsert: vi.fn(() => Promise.reject(abortError)) });
 
     await expect(
-      syncJournalPhoto({
-        id: "photo-aborted",
-        entryId: "entry-1",
-        width: 640,
-        height: 480,
-        createdAt: 1,
-      }, "user-1")
+      syncJournalPhoto(
+        {
+          id: "photo-aborted",
+          entryId: "entry-1",
+          width: 640,
+          height: 480,
+          createdAt: 1,
+        },
+        "user-1"
+      )
     ).rejects.toBe(abortError);
     await expect(
-      syncJournalAudio({
-        id: "audio-aborted",
-        entryId: "entry-1",
-        duration: 10,
-        mimeType: "audio/webm",
-        createdAt: 1,
-      }, "user-1")
+      syncJournalAudio(
+        {
+          id: "audio-aborted",
+          entryId: "entry-1",
+          duration: 10,
+          mimeType: "audio/webm",
+          createdAt: 1,
+        },
+        "user-1"
+      )
     ).rejects.toBe(abortError);
   });
 
@@ -744,5 +778,268 @@ describe("journal sync tombstones", () => {
     await expect(deleteJournalEntryFromCloud("entry-aborted", "user-1")).rejects.toBe(abortError);
     await expect(deleteJournalPhotoFromCloud("photo-aborted", "user-1")).rejects.toBe(abortError);
     await expect(deleteJournalAudioFromCloud("audio-aborted", "user-1")).rejects.toBe(abortError);
+  });
+
+  it("returns an explicit acknowledgement for required entry, photo, and audio commits", async () => {
+    const maybeSingle = vi.fn(() => Promise.resolve({ data: { id: "remote-row" }, error: null }));
+    const select = vi.fn(() => ({ maybeSingle }));
+    mocks.from.mockReturnValue({ upsert: vi.fn(() => ({ select })) });
+
+    await expect(
+      syncJournalEntry(
+        {
+          id: "entry-required",
+          date: "2026-08-03",
+          title: "Required",
+          content: "Local fixture content",
+          stickers: [],
+          tags: [],
+          photoIds: [],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        { expectedOwnerUserId: "user-1", requireRemoteCommit: true }
+      )
+    ).resolves.toEqual({ status: "committed" });
+
+    await expect(
+      syncJournalPhoto(
+        {
+          id: "photo-required",
+          entryId: "entry-required",
+          width: 640,
+          height: 480,
+          createdAt: 1,
+        },
+        { expectedOwnerUserId: "user-1", requireRemoteCommit: true }
+      )
+    ).resolves.toEqual({ status: "committed" });
+
+    await expect(
+      syncJournalAudio(
+        {
+          id: "audio-required",
+          entryId: "entry-required",
+          duration: 10,
+          mimeType: "audio/webm",
+          createdAt: 1,
+        },
+        { expectedOwnerUserId: "user-1", requireRemoteCommit: true }
+      )
+    ).resolves.toEqual({ status: "committed" });
+  });
+
+  it("rejects queued delivery when a remote commit is required", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+
+    const required = { expectedOwnerUserId: "user-1", requireRemoteCommit: true } as const;
+    const entry = {
+      id: "entry-offline-required",
+      date: "2026-08-03",
+      title: "Offline",
+      content: "Local fixture content",
+      stickers: [],
+      tags: [],
+      photoIds: [],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+
+    await expect(syncJournalEntry(entry, required)).rejects.toMatchObject({
+      name: "RequiredRemoteCommitError",
+      outcome: "queued",
+    });
+    await expect(
+      syncJournalPhoto(
+        {
+          id: "photo-offline-required",
+          entryId: entry.id,
+          width: 640,
+          height: 480,
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "queued" });
+    await expect(
+      syncJournalAudio(
+        {
+          id: "audio-offline-required",
+          entryId: entry.id,
+          duration: 10,
+          mimeType: "audio/webm",
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "queued" });
+
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects no-op delivery when cloud sync is disabled", async () => {
+    mocks.isCloudSyncEnabled.mockReturnValue(false);
+    const required = { expectedOwnerUserId: "user-1", requireRemoteCommit: true } as const;
+
+    await expect(
+      syncJournalEntry(
+        {
+          id: "entry-disabled-required",
+          date: "2026-08-03",
+          title: "Disabled",
+          content: "Local fixture content",
+          stickers: [],
+          tags: [],
+          photoIds: [],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "no-op" });
+    await expect(
+      syncJournalPhoto(
+        {
+          id: "photo-disabled-required",
+          entryId: "entry-disabled-required",
+          width: 640,
+          height: 480,
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "no-op" });
+    await expect(
+      syncJournalAudio(
+        {
+          id: "audio-disabled-required",
+          entryId: "entry-disabled-required",
+          duration: 10,
+          mimeType: "audio/webm",
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "no-op" });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("rejects stale and zero-row required commits", async () => {
+    const staleEntryMaybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }));
+    const zeroRowMediaMaybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }));
+    mocks.from.mockImplementation((table: string) => ({
+      upsert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          maybeSingle:
+            table === "journal_entries" ? staleEntryMaybeSingle : zeroRowMediaMaybeSingle,
+        })),
+      })),
+    }));
+    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    const required = { expectedOwnerUserId: "user-1", requireRemoteCommit: true } as const;
+
+    await expect(
+      syncJournalEntry(
+        {
+          id: "entry-stale-required",
+          date: "2026-08-03",
+          title: "Stale",
+          content: "Local fixture content",
+          stickers: [],
+          tags: [],
+          photoIds: [],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "stale" });
+    await expect(
+      syncJournalPhoto(
+        {
+          id: "photo-zero-row",
+          entryId: "entry-required",
+          width: 640,
+          height: 480,
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "no-op" });
+    await expect(
+      syncJournalAudio(
+        {
+          id: "audio-zero-row",
+          entryId: "entry-required",
+          duration: 10,
+          mimeType: "audio/webm",
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "no-op" });
+
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("rejects aborted required entry and media commits", async () => {
+    const abortError = new DOMException("The operation was aborted", "AbortError");
+    const controller = new AbortController();
+    controller.abort(abortError);
+    const required = {
+      expectedOwnerUserId: "user-1",
+      requireRemoteCommit: true,
+      signal: controller.signal,
+    } as const;
+
+    await expect(
+      syncJournalEntry(
+        {
+          id: "entry-required-abort",
+          date: "2026-08-03",
+          title: "Abort",
+          content: "Local fixture content",
+          stickers: [],
+          tags: [],
+          photoIds: [],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "aborted" });
+    await expect(
+      syncJournalPhoto(
+        {
+          id: "photo-required-abort",
+          entryId: "entry-required-abort",
+          width: 640,
+          height: 480,
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "aborted" });
+    await expect(
+      syncJournalAudio(
+        {
+          id: "audio-required-abort",
+          entryId: "entry-required-abort",
+          duration: 10,
+          mimeType: "audio/webm",
+          createdAt: 1,
+        },
+        required
+      )
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "aborted" });
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
   });
 });

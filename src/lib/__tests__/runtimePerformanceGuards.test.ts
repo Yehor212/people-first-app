@@ -147,19 +147,17 @@ describe("runtime performance guards", () => {
     );
   });
 
-  it("applies native cleanup and platform config normalization after all-platform Capacitor sync", () => {
+  it("builds and syncs each native platform with its own target-bound receipt", () => {
     const scripts = JSON.parse(readSource("package.json")).scripts as Record<string, string>;
 
-    expect(scripts["cap:sync"]).toContain("npx cap sync &&");
-    expect(scripts["cap:sync"]).toContain(
-      "cross-env CAPACITOR_BUILD=true node scripts/capacitor-prune-assets.cjs"
+    expect(scripts["cap:sync"]).toBe(
+      "npm run cap:sync:android && npm run cap:sync:ios"
     );
-    expect(scripts["cap:sync"]).toContain("node scripts/normalize-android-config.cjs");
-    expect(scripts["cap:sync"]).toContain("node scripts/normalize-ios-config.cjs");
-    expect(scripts["cap:sync"]).toContain("node scripts/normalize-ios-spm.cjs");
-    expect(scripts["cap:sync"]).toMatch(
-      /npx cap sync && cross-env CAPACITOR_BUILD=true node scripts\/capacitor-prune-assets\.cjs && node scripts\/normalize-android-config\.cjs && node scripts\/normalize-ios-config\.cjs && node scripts\/normalize-ios-spm\.cjs/
-    );
+    expect(scripts["cap:sync"]).not.toContain("npx cap sync &&");
+    expect(scripts["cap:sync:android"]).toContain("npm run build:android");
+    expect(scripts["cap:sync:android"]).toContain("npx cap sync android &&");
+    expect(scripts["cap:sync:ios"]).toContain("npm run build:ios");
+    expect(scripts["cap:sync:ios"]).toContain("npx cap sync ios &&");
   });
 
   it("cleans duplicate native artifacts and normalizes iOS config after Capacitor sync", () => {

@@ -2210,6 +2210,68 @@ describe("offline queue account boundary", () => {
     }
   });
 
+  it("backs off a server-paused journal delete without changing its durable identity", async () => {
+    vi.useFakeTimers();
+    try {
+      const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
+      const { offlineQueue } = await loadFreshQueue();
+      const handler = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: "deferred" as const,
+          reason: "password-removal-paused" as const,
+        })
+        .mockResolvedValueOnce({
+          status: "deferred" as const,
+          reason: "password-removal-paused" as const,
+        })
+        .mockResolvedValue(COMMITTED);
+      offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", handler);
+      await offlineQueue.enqueue(
+        "DELETE_JOURNAL_ENTRY",
+        "journal-entry-paused-delete",
+        { id: "journal-entry-paused-delete" },
+        { expectedOwnerUserId: "account-a", maxRetries: 1, priority: "critical" },
+      );
+
+      setOnline(true);
+      await offlineQueue.processQueue();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(timeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 15_000);
+      const pausedAction = offlineQueue.getState().actions[0];
+      expect(offlineQueue.getState().actions).toEqual([
+        expect.objectContaining({
+          entityId: "journal-entry-paused-delete",
+          retries: 0,
+          operationId: expect.any(String),
+        }),
+      ]);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(14_000);
+      await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(2));
+      expect(offlineQueue.getState().actions).toEqual([
+        expect.objectContaining({
+          id: pausedAction.id,
+          operationId: pausedAction.operationId,
+          entityId: "journal-entry-paused-delete",
+          retries: 0,
+        }),
+      ]);
+
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(handler).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(3));
+      await vi.waitFor(() => expect(offlineQueue.getState().actions).toEqual([]));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("keeps any critical privacy cleanup blocked and exposes a lossless manual retry", async () => {
     const dispatchSpy = vi.spyOn(window, "dispatchEvent");
     const { offlineQueue } = await loadFreshQueue();

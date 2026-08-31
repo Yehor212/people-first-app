@@ -42,6 +42,7 @@ const { mocks } = vi.hoisted(() => ({
     discardSuspendedActionsForAccountBoundary: vi.fn(),
     resumeAfterAccountBoundary: vi.fn(),
     hasPendingJournalSecurityMigrationForOwner: vi.fn(),
+    hasPendingJournalSecurityRemovalForOwner: vi.fn(),
     getPendingJournalSecurityMigrationRevisionForOwner: vi.fn(),
     clearNativeJournalBiometricCredential: vi.fn(),
     clearAccountDeviceSurfaces: vi.fn(),
@@ -146,6 +147,8 @@ vi.mock("@/lib/presenceService", () => ({
 vi.mock("@/features/journal", () => ({
   hasPendingJournalSecurityMigrationForOwner:
     mocks.hasPendingJournalSecurityMigrationForOwner,
+  hasPendingJournalSecurityRemovalForOwner:
+    mocks.hasPendingJournalSecurityRemovalForOwner,
   getPendingJournalSecurityMigrationRevisionForOwner:
     mocks.getPendingJournalSecurityMigrationRevisionForOwner,
 }));
@@ -365,6 +368,7 @@ describe("useAccountAuth native OAuth", () => {
       status: "discarded",
     });
     mocks.hasPendingJournalSecurityMigrationForOwner.mockResolvedValue(false);
+    mocks.hasPendingJournalSecurityRemovalForOwner.mockResolvedValue(false);
     mocks.getPendingJournalSecurityMigrationRevisionForOwner.mockResolvedValue(null);
     mocks.clearNativeJournalBiometricCredential.mockResolvedValue("removed");
     mocks.clearAccountDeviceSurfaces.mockResolvedValue(undefined);

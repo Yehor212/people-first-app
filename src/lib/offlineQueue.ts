@@ -34,11 +34,7 @@ declare global {
 
 import { logger } from "./logger";
 import { generateSecureRandom } from "./validation";
-import {
-  safeLocalStorageSet,
-  storageReadRaw,
-  storageRemove,
-} from "./safeJson";
+import { safeLocalStorageSet, storageReadRaw, storageRemove } from "./safeJson";
 import { SK } from "./storageKeys";
 import { db, getLocalDataOwnerId, OfflineQueueItem } from "@/storage/db";
 import {
@@ -180,9 +176,15 @@ function generateOperationId(): string {
     .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
+type OfflineQueueDeferredReason = "password-removal-paused" | "connectivity";
+
 export type OfflineQueueHandlerResult =
   | { status: "committed" }
-  | { status: "obsolete"; reason: string };
+  | { status: "obsolete"; reason: string }
+  | {
+      status: "deferred";
+      reason: OfflineQueueDeferredReason;
+    };
 
 export interface OfflineQueueHandlerContext {
   /** Owner persisted on the queue row and re-verified by the queue. */
@@ -267,11 +269,11 @@ export interface OfflineAction {
 
 function nextOfflineQueueTimestamp(
   existing: readonly Pick<OfflineAction, "timestamp">[],
-  now = Date.now(),
+  now = Date.now()
 ): number {
   const latestTimestamp = existing.reduce(
     (latest, action) => Math.max(latest, action.timestamp),
-    0,
+    0
   );
   return Math.max(now, latestTimestamp + 1);
 }
@@ -297,9 +299,7 @@ export interface CriticalOfflineActionIdentity {
   operationId?: string;
 }
 
-function isCompleteRemovalTombstone(
-  value: unknown
-): value is OfflineQueueRemovalTombstone {
+function isCompleteRemovalTombstone(value: unknown): value is OfflineQueueRemovalTombstone {
   if (!value || typeof value !== "object") return false;
   const tombstone = value as Partial<OfflineQueueRemovalTombstone>;
   return (
@@ -323,7 +323,7 @@ export async function persistCriticalOfflineActionInCurrentTransaction(
   entityId: string,
   payload: unknown,
   expectedOwnerUserId: string,
-  identity: CriticalOfflineActionIdentity = {},
+  identity: CriticalOfflineActionIdentity = {}
 ): Promise<OfflineQueueItem> {
   const transaction = Dexie.currentTransaction;
   if (!transaction || transaction.mode !== "readwrite") {
@@ -373,7 +373,7 @@ const PRIORITY_ORDER: Record<OfflineActionPriority, number> = {
 const MAX_CONSECUTIVE_CRITICAL_ACTIONS = 8;
 
 export function orderOfflineQueueActionsForProcessing(
-  actions: readonly OfflineAction[],
+  actions: readonly OfflineAction[]
 ): OfflineAction[] {
   const sorted = [...actions].sort((left, right) => {
     const leftPriority = isCriticalAction(left)
@@ -396,7 +396,7 @@ export function orderOfflineQueueActionsForProcessing(
   while (criticalIndex < critical.length || nonCriticalIndex < nonCritical.length) {
     const criticalBurstEnd = Math.min(
       criticalIndex + MAX_CONSECUTIVE_CRITICAL_ACTIONS,
-      critical.length,
+      critical.length
     );
     while (criticalIndex < criticalBurstEnd) {
       ordered.push(critical[criticalIndex]);
@@ -480,13 +480,15 @@ interface QueueState {
   isProcessing: boolean;
 }
 
-type QueueProcessingOutcome = "completed" | "paused";
+type QueueProcessingOutcome =
+  | "completed"
+  | { status: "paused"; reason: OfflineQueueDeferredReason };
 type OfflineQueueLifecycleTrigger =
   | "visibility"
   | "service-worker"
   | "handler-registration"
   | "enqueue"
-  | "abort-retry"
+  | "non-failure-retry"
   | "account-boundary-resume"
   | "manual-retry"
   | "online"
@@ -497,7 +499,8 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 const DEFAULT_MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 1000; // 1 second
 const RETRY_MAX_DELAY = 60000; // 1 minute
-const ABORT_RETRY_DELAY = 1000;
+const CONNECTIVITY_NON_FAILURE_RETRY_DELAY = 1_000;
+const PASSWORD_REMOVAL_RETRY_DELAYS_MS = [15_000, 60_000, 300_000, 900_000] as const;
 const LIFECYCLE_PROCESS_RETRY_DELAYS_MS = [1_000, 5_000, 15_000] as const;
 const HANDLER_ATTEMPT_TIMEOUT_MS = 30_000;
 const DATA_WRITE_BARRIER_LOCK = "zenflow:data-write-barrier";
@@ -513,12 +516,12 @@ function jitterOfflineQueueDelay(baseDelayMs: number, randomValue: number): numb
 
 export function computeOfflineQueueRetryDelay(
   retries: number,
-  randomValue = Math.random(),
+  randomValue = Math.random()
 ): number {
   const boundedRetries = Math.max(0, Math.floor(retries));
   const exponentialDelay = Math.min(
     RETRY_BASE_DELAY * Math.pow(2, boundedRetries),
-    RETRY_MAX_DELAY,
+    RETRY_MAX_DELAY
   );
   return jitterOfflineQueueDelay(exponentialDelay, randomValue);
 }
@@ -545,7 +548,9 @@ class OfflineQueue {
   private requeuedDuringProcessing = new Set<string>();
   private observedAuthOwnerUserId: string | null | undefined;
   private authOwnerGeneration = 0;
-  private abortRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private nonFailureRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private nonFailureRetryReason: OfflineQueueDeferredReason | null = null;
+  private passwordRemovalDeferredRetryCount = 0;
   private lifecycleProcessRetryTimer: ReturnType<typeof setTimeout> | null = null;
   private lifecycleProcessFailureCount = 0;
   private destroyed = false;
@@ -615,10 +620,12 @@ class OfflineQueue {
         navigator.serviceWorker.removeEventListener("message", this.boundHandleSWMessage);
       }
     }
-    if (this.abortRetryTimer !== null) {
-      clearTimeout(this.abortRetryTimer);
-      this.abortRetryTimer = null;
+    if (this.nonFailureRetryTimer !== null) {
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
     }
+    this.nonFailureRetryReason = null;
+    this.passwordRemovalDeferredRetryCount = 0;
     if (this.lifecycleProcessRetryTimer !== null) {
       clearTimeout(this.lifecycleProcessRetryTimer);
       this.lifecycleProcessRetryTimer = null;
@@ -682,10 +689,7 @@ class OfflineQueue {
       await this.initPromise;
     }
 
-    if (
-      this.accountBoundarySuspended ||
-      readPendingLocalBackupAccountClaim().status !== "none"
-    ) {
+    if (this.accountBoundarySuspended || readPendingLocalBackupAccountClaim().status !== "none") {
       throw new OfflineQueueOwnerBoundaryError(
         "Offline queue is suspended for an account boundary"
       );
@@ -699,10 +703,7 @@ class OfflineQueue {
       await this.enqueueLock;
     }
 
-    if (
-      this.accountBoundarySuspended ||
-      readPendingLocalBackupAccountClaim().status !== "none"
-    ) {
+    if (this.accountBoundarySuspended || readPendingLocalBackupAccountClaim().status !== "none") {
       throw new OfflineQueueOwnerBoundaryError(
         "Offline queue is suspended for an account boundary"
       );
@@ -1095,10 +1096,13 @@ class OfflineQueue {
       this.processingPromise = null;
     }
 
-    if (outcome === "paused") {
-      this.scheduleAbortRetry();
+    if (outcome !== "completed") {
+      this.scheduleNonFailureRetry(outcome.reason);
       return;
     }
+
+    this.clearNonFailureRetry();
+    this.passwordRemovalDeferredRetryCount = 0;
 
     const currentOwnerUserId = await getCurrentSessionUserId();
     this.observeAuthStateOwner(currentOwnerUserId);
@@ -1113,17 +1117,48 @@ class OfflineQueue {
     }
   }
 
-  private scheduleAbortRetry(): void {
-    if (this.abortRetryTimer !== null || this.accountBoundarySuspended) return;
+  private clearNonFailureRetry(): void {
+    if (this.nonFailureRetryTimer !== null) {
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
+    }
+    this.nonFailureRetryReason = null;
+  }
+
+  private scheduleNonFailureRetry(reason: OfflineQueueDeferredReason): void {
+    if (this.accountBoundarySuspended) return;
     if (!navigator.onLine) return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
 
-    this.abortRetryTimer = setTimeout(() => {
-      this.abortRetryTimer = null;
+    if (this.nonFailureRetryTimer !== null) {
+      if (this.nonFailureRetryReason === reason) return;
+      clearTimeout(this.nonFailureRetryTimer);
+      this.nonFailureRetryTimer = null;
+    }
+
+    const delay =
+      reason === "password-removal-paused"
+        ? PASSWORD_REMOVAL_RETRY_DELAYS_MS[
+            Math.min(
+              this.passwordRemovalDeferredRetryCount,
+              PASSWORD_REMOVAL_RETRY_DELAYS_MS.length - 1
+            )
+          ]
+        : CONNECTIVITY_NON_FAILURE_RETRY_DELAY;
+    if (reason === "password-removal-paused") {
+      this.passwordRemovalDeferredRetryCount = Math.min(
+        this.passwordRemovalDeferredRetryCount + 1,
+        PASSWORD_REMOVAL_RETRY_DELAYS_MS.length - 1
+      );
+    }
+    this.nonFailureRetryReason = reason;
+    this.nonFailureRetryTimer = setTimeout(() => {
+      this.nonFailureRetryTimer = null;
+      this.nonFailureRetryReason = null;
       if (!this.accountBoundarySuspended && navigator.onLine) {
-        this.launchLifecycleProcessing("abort-retry");
+        this.launchLifecycleProcessing("non-failure-retry");
       }
-    }, ABORT_RETRY_DELAY);
+    }, delay);
   }
 
   private launchLifecycleProcessing(trigger: OfflineQueueLifecycleTrigger): void {
@@ -1148,8 +1183,7 @@ class OfflineQueue {
           !this.accountBoundarySuspended &&
           navigator.onLine &&
           (typeof document === "undefined" || document.visibilityState === "visible");
-        const retryScheduled =
-          this.lifecycleProcessRetryTimer !== null || canRetry;
+        const retryScheduled = this.lifecycleProcessRetryTimer !== null || canRetry;
 
         // Do not attach the rejection: storage or handler errors can contain
         // user-entered content. The receipt deliberately records only a stable
@@ -1172,14 +1206,13 @@ class OfflineQueue {
             this.destroyed ||
             this.accountBoundarySuspended ||
             !navigator.onLine ||
-            (typeof document !== "undefined" &&
-              document.visibilityState !== "visible")
+            (typeof document !== "undefined" && document.visibilityState !== "visible")
           ) {
             return;
           }
           this.launchLifecycleProcessing("bounded-retry");
         }, retryDelay);
-      },
+      }
     );
   }
 
@@ -1188,7 +1221,9 @@ class OfflineQueue {
     ownerGeneration: number,
     options?: OfflineQueueProcessOptions
   ): Promise<QueueProcessingOutcome> {
-    if (this.state.isProcessing) return "paused";
+    if (this.state.isProcessing) {
+      return { status: "paused", reason: "connectivity" };
+    }
 
     this.state.isProcessing = true;
     this.notifyListeners();
@@ -1198,7 +1233,7 @@ class OfflineQueue {
     // Critical revocation, event and atomic commit rows drain first. FIFO is
     // retained within each priority, including after cold-start rehydration.
     const actionsToProcess = orderOfflineQueueActionsForProcessing(this.state.actions);
-    let pausedByAbort = false;
+    let pausedReason: OfflineQueueDeferredReason | null = null;
     const blockedCriticalCausalKeys = new Set<string>();
     let automationTargetDeliveryBlocked = false;
     const markCriticalBarrier = (action: OfflineAction, causalDeliveryKey: string | null) => {
@@ -1214,7 +1249,7 @@ class OfflineQueue {
       }
       if (!this.canAttemptNetwork(options)) {
         logger.log("[OfflineQueue] Went offline during processing, pausing");
-        pausedByAbort = true;
+        pausedReason = "connectivity";
         break;
       }
 
@@ -1285,6 +1320,18 @@ class OfflineQueue {
           Promise.resolve().then(() => handler(attemptAction, handlerContext)),
           attemptController
         );
+        if (result?.status === "deferred") {
+          // A known server or connectivity fence is neither a successful
+          // acknowledgement nor a failed mutation. Keep the durable row and
+          // retry it later without spending its finite failure budget.
+          logger.log(
+            "[OfflineQueue] Action deferred without consuming retry budget:",
+            action.type,
+            result.reason
+          );
+          pausedReason = result.reason;
+          break;
+        }
         if (result?.status !== "committed" && result?.status !== "obsolete") {
           throw new Error("Offline queue handler returned without an explicit acknowledgement");
         }
@@ -1298,10 +1345,9 @@ class OfflineQueue {
         await this.assertActiveOwner(action.ownerUserId, actionOwnerGeneration);
         const removed = await this.removeAction(action.id, operationId);
         if (!removed) {
-          logger.log(
-            "[OfflineQueue] Newer operation retained after an older delivery",
-            { actionType: action.type },
-          );
+          logger.log("[OfflineQueue] Newer operation retained after an older delivery", {
+            actionType: action.type,
+          });
           markCriticalBarrier(action, causalDeliveryKey);
           continue;
         }
@@ -1327,20 +1373,18 @@ class OfflineQueue {
           await runWithOriginExclusiveLock(OFFLINE_QUEUE_STORAGE_LOCK, async () => {
             await this.refreshActionsFromIndexedDB();
           });
-          logger.log(
-            "[OfflineQueue] Newer payload kept for the next processing pass",
-            { actionType: action.type },
-          );
+          logger.log("[OfflineQueue] Newer payload kept for the next processing pass", {
+            actionType: action.type,
+          });
           markCriticalBarrier(action, causalDeliveryKey);
           continue;
         }
 
         if (isAbortError(error)) {
-          logger.warn(
-            "[OfflineQueue] Processing paused without consuming retry budget",
-            { actionType: action.type },
-          );
-          pausedByAbort = true;
+          logger.warn("[OfflineQueue] Processing paused without consuming retry budget", {
+            actionType: action.type,
+          });
+          pausedReason = "connectivity";
           break;
         }
 
@@ -1368,12 +1412,12 @@ class OfflineQueue {
           action.id,
           operationId,
           retries,
-          failureCode,
+          failureCode
         );
         if (!persistedFailure) {
           logger.log(
             "[OfflineQueue] Failure belonged to an older operation; newer payload retained",
-            { actionType: action.type },
+            { actionType: action.type }
           );
           markCriticalBarrier(action, causalDeliveryKey);
           continue;
@@ -1383,10 +1427,10 @@ class OfflineQueue {
 
         if (persistedFailure.retries >= persistedFailure.maxRetries) {
           if (isCriticalAction(persistedFailure)) {
-            logger.error(
-              "[OfflineQueue] Critical action blocked after max retries",
-              { actionType: persistedFailure.type, failureCode },
-            );
+            logger.error("[OfflineQueue] Critical action blocked after max retries", {
+              actionType: persistedFailure.type,
+              failureCode,
+            });
             recordSyncHealthReceipt({
               kind: "queue-blocked",
               source: "queue",
@@ -1420,11 +1464,11 @@ class OfflineQueue {
     }
 
     this.state.isProcessing = false;
-    if (!pausedByAbort) this.state.lastProcessedAt = Date.now();
+    if (pausedReason === null) this.state.lastProcessedAt = Date.now();
     this.notifyListeners();
 
     logger.log("[OfflineQueue] Queue processing complete, remaining:", this.state.actions.length);
-    return pausedByAbort ? "paused" : "completed";
+    return pausedReason === null ? "completed" : { status: "paused", reason: pausedReason };
   }
 
   private hasProcessableActionsForOwner(ownerUserId: string | null): boolean {
@@ -1782,9 +1826,7 @@ class OfflineQueue {
     );
   }
 
-  async replayBlockedCriticalActionsForActiveOwner(
-    expectedOwnerUserId?: string
-  ): Promise<number> {
+  async replayBlockedCriticalActionsForActiveOwner(expectedOwnerUserId?: string): Promise<number> {
     if (this.initPromise) await this.initPromise;
     if (this.accountBoundarySuspended) return 0;
 
@@ -1988,7 +2030,7 @@ class OfflineQueue {
   async discardAutomationHistoryActions(
     ownerUserId: string,
     transactionIds: readonly string[] | null,
-    options: { dataWriteLockHeld?: boolean } = {},
+    options: { dataWriteLockHeld?: boolean } = {}
   ): Promise<number> {
     await this.waitForInit();
     const requestedIds = transactionIds === null ? null : new Set(transactionIds);
@@ -2001,7 +2043,7 @@ class OfflineQueue {
             action.ownerUserId === ownerUserId &&
             (action.type === "COMMIT_AUTOMATION_TRANSACTION" ||
               action.type === "UNDO_AUTOMATION_TRANSACTION") &&
-            (requestedIds === null || requestedIds.has(action.entityId)),
+            (requestedIds === null || requestedIds.has(action.entityId))
         );
         if (removable.length === 0) return;
         await db.offlineQueue.bulkDelete(removable.map((action) => action.id));
@@ -2107,10 +2149,7 @@ class OfflineQueue {
       if (!parsed || !Array.isArray(parsed.actions)) {
         throw new Error("invalid snapshot shape");
       }
-      if (
-        parsed.storageVersion === 3 ||
-        parsed.mode === "merge-with-tombstones"
-      ) {
+      if (parsed.storageVersion === 3 || parsed.mode === "merge-with-tombstones") {
         if (
           parsed.storageVersion !== 3 ||
           parsed.mode !== "merge-with-tombstones" ||
@@ -2254,9 +2293,7 @@ class OfflineQueue {
     await this.reconcileStoredActions();
   }
 
-  private persistToLocalStorage(
-    removedOperations: OfflineQueueRemovalTombstone[] = []
-  ): boolean {
+  private persistToLocalStorage(removedOperations: OfflineQueueRemovalTombstone[] = []): boolean {
     let existingRemovedOperations: OfflineQueueRemovalTombstone[] = [];
     try {
       const { exists, snapshot } = this.readLocalStorageSnapshot();

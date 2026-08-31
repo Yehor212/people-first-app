@@ -34,6 +34,11 @@ vi.mock("@/storage/sync/syncOwner", () => ({
 
 import { offlineQueue } from "@/lib/offlineQueue";
 import { triggerSync } from "@/storage/cloudSync";
+import {
+  deleteAudioFromStorage,
+  deleteJournalMediaStoragePath,
+  deletePhotoFromStorage,
+} from "@/storage/journalStorageService";
 import { SK } from "@/lib/storageKeys";
 import { db } from "@/storage/db";
 import {
@@ -41,6 +46,8 @@ import {
   deleteAudio,
   deleteEntry,
   deletePhoto,
+  retryJournalAudioDelete,
+  retryJournalPhotoDelete,
   saveEntry,
   storeAudio,
   updateEntry,
@@ -224,6 +231,8 @@ describe("journal core writes use a durable outbox", () => {
       width: 800,
       height: 600,
       createdAt: 1,
+      storagePath: "owner-1/photo-remove-atomically.v41.bin",
+      vaultRevision: 41,
     });
     await db.journalAudio.add({
       id: "audio-remove-atomically",
@@ -325,6 +334,8 @@ describe("journal core writes use a durable outbox", () => {
       width: 800,
       height: 600,
       createdAt: 1,
+      storagePath: "owner-1/photo-delete.v41.bin",
+      vaultRevision: 41,
     });
 
     await deletePhoto("photo-delete", "entry-photo-delete");
@@ -337,6 +348,10 @@ describe("journal core writes use a durable outbox", () => {
         type: "DELETE_JOURNAL_PHOTO_STORAGE",
         ownerUserId: "owner-1",
         priority: "critical",
+        payload: {
+          id: "photo-delete",
+          storagePath: "owner-1/photo-delete.v41.bin",
+        },
       }),
     ]);
   });
@@ -350,6 +365,8 @@ describe("journal core writes use a durable outbox", () => {
       width: 800,
       height: 600,
       createdAt: 1,
+      storagePath: "owner-1/draft-photo.v41.bin",
+      vaultRevision: 41,
     });
     await db.journalAudio.add({
       id: "draft-audio",
@@ -358,6 +375,8 @@ describe("journal core writes use a durable outbox", () => {
       duration: 1,
       mimeType: "audio/webm",
       createdAt: 1,
+      storagePath: "owner-1/draft-audio.v41.bin",
+      vaultRevision: 41,
     });
 
     await deleteDraftMedia();
@@ -401,6 +420,8 @@ describe("journal core writes use a durable outbox", () => {
       duration: 1,
       mimeType: "audio/webm",
       createdAt: 1,
+      storagePath: "owner-1/audio-delete.v41.bin",
+      vaultRevision: 41,
     });
 
     await deleteAudio("audio-delete", "entry-audio-delete");
@@ -413,8 +434,39 @@ describe("journal core writes use a durable outbox", () => {
         type: "DELETE_JOURNAL_AUDIO_STORAGE",
         ownerUserId: "owner-1",
         priority: "critical",
+        payload: {
+          id: "audio-delete",
+          storagePath: "owner-1/audio-delete.v41.bin",
+        },
       }),
     ]);
+  });
+
+  it("retries versioned media deletion by its exact owner-bound storage path", async () => {
+    vi.clearAllMocks();
+    await retryJournalPhotoDelete(
+      { id: "photo-versioned", storagePath: "owner-1/photo-versioned.v41.bin" },
+      "owner-1",
+    );
+    await retryJournalAudioDelete(
+      { id: "audio-versioned", storagePath: "owner-1/audio-versioned.v41.bin" },
+      "owner-1",
+    );
+
+    expect(deleteJournalMediaStoragePath).toHaveBeenNthCalledWith(
+      1,
+      "journal-photos",
+      "owner-1/photo-versioned.v41.bin",
+      "owner-1",
+    );
+    expect(deleteJournalMediaStoragePath).toHaveBeenNthCalledWith(
+      2,
+      "journal-audio",
+      "owner-1/audio-versioned.v41.bin",
+      "owner-1",
+    );
+    expect(deletePhotoFromStorage).not.toHaveBeenCalled();
+    expect(deleteAudioFromStorage).not.toHaveBeenCalled();
   });
 
   it("keeps a committed create successful when the queue wake is deferred", async () => {

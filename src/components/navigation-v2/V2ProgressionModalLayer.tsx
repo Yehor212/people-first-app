@@ -2,6 +2,7 @@ import { memo, Suspense } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { FeatureUnlock } from "@/components/FeatureUnlock";
 import { LazyErrorBoundary } from "@/components/ErrorBoundary";
+import { FeatureAvailabilityDialog } from "@/components/FeatureAvailabilityDialog";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { getModalToggle, useUIStore, useUserDataStore } from "@/stores";
@@ -14,7 +15,7 @@ const ChallengeModal = lazyWithRetry(
 const setShowChallengeModal = getModalToggle("showChallengeModal");
 
 export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
-  const { isFeatureVisible } = useFeatureFlags();
+  const { getFeatureAvailability } = useFeatureFlags();
   const {
     featureToUnlock,
     setFeatureToUnlock,
@@ -35,6 +36,7 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
     }))
   );
   const userName = useUserDataStore((s) => s.userName);
+  const challengeAvailability = getFeatureAvailability("challenges");
 
   return (
     <>
@@ -42,7 +44,7 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
         <FeatureUnlock feature={featureToUnlock} onClose={() => setFeatureToUnlock(null)} />
       )}
 
-      {!featureToUnlock && isFeatureVisible("challenges") && (
+      {!featureToUnlock && challengeAvailability.visible && (
         <LazyErrorBoundary componentName="Challenge">
           <Suspense fallback={null}>
             <ChallengeModal
@@ -61,6 +63,16 @@ export const V2ProgressionModalLayer = memo(function V2ProgressionModalLayer() {
           </Suspense>
         </LazyErrorBoundary>
       )}
+      {!featureToUnlock && showChallengeModal && !challengeAvailability.visible ? (
+        <FeatureAvailabilityDialog
+          availability={challengeAvailability}
+          onClose={() => {
+            setShowChallengeModal(false);
+            setChallengeInvite(undefined);
+            setChallengeHabit(undefined);
+          }}
+        />
+      ) : null}
     </>
   );
 });

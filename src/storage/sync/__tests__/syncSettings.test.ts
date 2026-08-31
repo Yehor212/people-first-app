@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
   delete: vi.fn(),
   match: vi.fn(),
+  rpc: vi.fn(),
   enqueue: vi.fn(),
   getPersistentDeviceId: vi.fn(),
   writeEventAndBroadcast: vi.fn(),
@@ -13,7 +14,10 @@ const mocks = vi.hoisted(() => ({
   loggerWarn: vi.fn(),
   loggerError: vi.fn(),
   loggerLog: vi.fn(),
-  supabase: null as { from: ReturnType<typeof vi.fn> } | null,
+  supabase: null as {
+    from: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
+  } | null,
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -48,7 +52,7 @@ vi.mock("../syncUtils", () => ({
   detectNetworkError: vi.fn(() => false),
 }));
 
-import { deleteSettingFromCloud, syncSetting } from "../syncSettings";
+import { deleteRemoteJournalVault, deleteSettingFromCloud, syncSetting } from "../syncSettings";
 import { db } from "@/storage/db";
 import { SK } from "@/lib/storageKeys";
 import { AUTOMATION_LOCAL_REFRESH_SETTING_KEY } from "@/features/automation/types";
@@ -64,8 +68,9 @@ describe("syncSettings", () => {
     mocks.upsert.mockResolvedValue({ error: null });
     mocks.match.mockResolvedValue({ error: null });
     mocks.delete.mockReturnValue({ match: mocks.match });
+    mocks.rpc.mockResolvedValue({ data: "complete", error: null });
     mocks.from.mockReturnValue({ upsert: mocks.upsert, delete: mocks.delete });
-    mocks.supabase = { from: mocks.from };
+    mocks.supabase = { from: mocks.from, rpc: mocks.rpc };
     mocks.getPersistentDeviceId.mockResolvedValue("device-1");
     mocks.commitManualSyncEvent.mockResolvedValue({ seq: 1 });
     await db.settings.clear();
@@ -369,6 +374,43 @@ describe("syncSettings", () => {
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
   });
 
+  it("commits a password wrapper through the server CAS instead of a generic upsert", async () => {
+    const expectedVault = {
+      wrappedKey: "wrapped:old-password:vault-key",
+      createdAt: 100,
+      updatedAt: 101,
+    };
+    const nextVault = {
+      ...expectedVault,
+      wrappedKey: "wrapped:new-password:vault-key",
+      wrapperRevision: 1,
+    };
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_KEY, value: nextVault },
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+    ]);
+    mocks.rpc.mockResolvedValueOnce({ data: "committed", error: null });
+
+    await syncSetting(SK.JOURNAL_VAULT_KEY, nextVault, "user-1", {
+      requireRemoteCommit: true,
+      journalVaultExpectedValue: expectedVault,
+    });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("compare_and_swap_journal_vault_wrapper", {
+      p_expected_value: expectedVault,
+      p_next_value: nextVault,
+    });
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "setting",
+      SK.JOURNAL_VAULT_KEY,
+      "upsert",
+      expect.objectContaining({ key: SK.JOURNAL_VAULT_KEY, value: nextVault }),
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
+    );
+  });
+
   it("rechecks the active owner after validating the local vault state", async () => {
     const vaultSetting = {
       wrappedKey: "owner-a-wrapped-key",
@@ -620,5 +662,136 @@ describe("syncSettings", () => {
     expect(mocks.delete).not.toHaveBeenCalled();
     expect(mocks.enqueue).not.toHaveBeenCalled();
     expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("atomically finalizes the exact owner-bound remote vault revision", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "remove-cas-101",
+          ownerUserId: "user-1",
+          createdAt: 102,
+          status: "queued",
+        },
+      },
+    ]);
+    await expect(
+      deleteRemoteJournalVault({
+        expectedOwnerUserId: "user-1",
+        expectedVaultRevision: 101,
+        operationRevision: "remove-cas-101",
+      })
+    ).resolves.toEqual({ status: "committed" });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("finalize_journal_password_removal", {
+      p_expected_vault_revision: 101,
+      p_operation_revision: "remove-cas-101",
+    });
+    expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).toHaveBeenCalledWith(
+      "setting",
+      SK.JOURNAL_VAULT_KEY,
+      "delete",
+      expect.objectContaining({ key: SK.JOURNAL_VAULT_KEY }),
+      "device-1",
+      { expectedOwnerUserId: "user-1" }
+    );
+  });
+
+  it("rejects a stale local vault revision before issuing the remote delete", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_REVISION, value: 102 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "remove-stale-101",
+          ownerUserId: "user-1",
+          createdAt: 103,
+          status: "queued",
+        },
+      },
+    ]);
+
+    await expect(
+      deleteRemoteJournalVault({
+        expectedOwnerUserId: "user-1",
+        expectedVaultRevision: 101,
+        operationRevision: "remove-stale-101",
+      })
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "stale" });
+
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.delete).not.toHaveBeenCalled();
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+    await expect(db.settings.get(SK.JOURNAL_SECURITY_REMOVAL)).resolves.toBeDefined();
+  });
+
+  it("rejects a stale atomic finalization without acknowledging deletion", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "remove-zero-row-101",
+          ownerUserId: "user-1",
+          createdAt: 102,
+          status: "queued",
+        },
+      },
+    ]);
+    mocks.rpc.mockResolvedValueOnce({ data: "stale", error: null });
+
+    await expect(
+      deleteRemoteJournalVault({
+        expectedOwnerUserId: "user-1",
+        expectedVaultRevision: 101,
+        operationRevision: "remove-zero-row-101",
+      })
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "stale" });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("finalize_journal_password_removal", {
+      p_expected_vault_revision: 101,
+      p_operation_revision: "remove-zero-row-101",
+    });
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+    await expect(db.settings.get(SK.JOURNAL_SECURITY_REMOVAL)).resolves.toBeDefined();
+  });
+
+  it("rejects an aborted atomic finalization without acknowledging deletion", async () => {
+    await db.settings.bulkPut([
+      { key: SK.JOURNAL_VAULT_REVISION, value: 101 },
+      {
+        key: SK.JOURNAL_SECURITY_REMOVAL,
+        value: {
+          version: 1,
+          revision: "remove-aborted-101",
+          ownerUserId: "user-1",
+          createdAt: 102,
+          status: "queued",
+        },
+      },
+    ]);
+    const abortError = new DOMException("The operation was aborted", "AbortError");
+    const abortSignal = vi.fn(() => Promise.reject(abortError));
+    mocks.rpc.mockReturnValueOnce({ abortSignal });
+    const controller = new AbortController();
+
+    await expect(
+      deleteRemoteJournalVault({
+        expectedOwnerUserId: "user-1",
+        expectedVaultRevision: 101,
+        operationRevision: "remove-aborted-101",
+        signal: controller.signal,
+      })
+    ).rejects.toMatchObject({ name: "RequiredRemoteCommitError", outcome: "aborted" });
+
+    expect(abortSignal).toHaveBeenCalledWith(controller.signal);
+    expect(mocks.writeEventAndBroadcast).not.toHaveBeenCalled();
+    await expect(db.settings.get(SK.JOURNAL_SECURITY_REMOVAL)).resolves.toBeDefined();
   });
 });

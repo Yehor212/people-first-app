@@ -2743,6 +2743,23 @@ export const en: Translations = {
   journalSubtitle: "Your personal space",
   journalEmpty: "No diary entries yet",
   journalEmptyHint: "When you want, start with one detail from today.",
+  journalEntriesUnavailableCount:
+    "Temporarily unavailable diary entries: {count}. Your other entries are still shown.",
+  journalEntriesUnavailableCountZero: "{count} diary entries are temporarily unavailable. Your other entries are still shown.",
+  journalEntriesUnavailableCountOne: "{count} diary entry is temporarily unavailable. Your other entries are still shown.",
+  journalEntriesUnavailableCountTwo: "{count} diary entries are temporarily unavailable. Your other entries are still shown.",
+  journalEntriesUnavailableCountFew: "{count} diary entries are temporarily unavailable. Your other entries are still shown.",
+  journalEntriesUnavailableCountMany: "{count} diary entries are temporarily unavailable. Your other entries are still shown.",
+  journalEntriesUnavailableCountOther: "{count} diary entries are temporarily unavailable. Your other entries are still shown.",
+  journalEntriesUnavailableAll:
+    "No diary entries can be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableAllCountZero: "{count} diary entries cannot be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableAllCountOne: "{count} diary entry cannot be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableAllCountTwo: "{count} diary entries cannot be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableAllCountFew: "{count} diary entries cannot be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableAllCountMany: "{count} diary entries cannot be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableAllCountOther: "{count} diary entries cannot be shown right now. Your saved data was not deleted.",
+  journalEntriesUnavailableRetry: "Try loading again",
   journalEmptyQuote: "Start with one detail from this moment.",
   diaryStartFirstEntry: "Begin with one small detail.",
   diaryPrompt1: "What made you smile today?",
@@ -3249,15 +3266,41 @@ export const en: Translations = {
   journalPasswordActiveHint: "Diary lock is active. Change or remove it here.",
   journalProtectionCloudPending:
     "Protected on this device. ZenFlow is still replacing an older online copy; keep the app open and connect to the internet.",
+  journalProtectionPasswordSyncPending:
+    "Your new diary password works on this device. ZenFlow is still updating the encrypted key online; keep the app open and connect to the internet.",
   journalProtectionRemovalCloudPending:
     "The diary lock is off on this device. ZenFlow is still finishing this change online; keep the app open and connect to the internet.",
+  journalProtectionRemovalPreflightPending:
+    "The diary lock is still on. ZenFlow paused before changing your entries. Unlock the diary, stay online, and continue removal.",
+  journalPasswordRemovalResume: "Continue removing diary lock",
+  journalProtectionRemovalRetry: "Retry online cleanup",
+  journalProtectionRemovalRetryPending: "Trying again...",
   journalPasswordRemoveConfirm: "Are you sure? Your diary will be accessible without a password.",
   journalLockRemoveDetail:
     "Your entries stay saved, but the diary lock and biometric diary unlock will be turned off. You can set a new lock later.",
-  journalLockRemoveFailed: "Unlock your diary first, then try removing the lock again.",
+  journalLockRemoveFailed:
+    "Unlock your diary, then try removing protection again. Nothing was changed.",
   journalLockRemoveUnexpected: "The diary lock could not be removed. Nothing changed. Try again.",
   journalLockRemovePartial:
-    "The diary lock is still on, but biometric unlock was turned off. Unlock the diary with your password and try again.",
+    "Diary protection is off on this device, but additional cleanup is still pending. Keep the app open, stay signed in, and try again when online.",
+  journalLockRemoveActivationPending:
+    "Finish setting up diary protection first, then try again. Nothing was changed.",
+  journalLockRemoveRemovalPending:
+    "A previous removal is still being finished. Keep this account signed in and try again shortly.",
+  journalLockRemoveRevisionMismatch:
+    "Your diary changed while it was being checked. Reload it, unlock it, and try again. Nothing was changed.",
+  journalLockRemoveContentUnavailable:
+    "Some protected diary content could not be opened. Stay online, unlock the diary, and try again. Nothing was removed.",
+  journalLockRemoveOwnerChanged:
+    "The signed-in account changed. Return to the account that owns this diary and try again. Nothing was changed.",
+  journalLockRemoveStorageFailed:
+    "This device could not read the complete diary. Keep the app open, reload, and try again. Nothing was changed.",
+  journalLockRemovePartialBiometric:
+    "Diary protection is off on this device. Biometric cleanup is still pending. Keep the app open and try again.",
+  journalLockRemovePartialCloud:
+    "Diary protection is off on this device. Cleanup for your other signed-in devices is still pending. Stay signed in and try again when online.",
+  journalLockRemovePartialBoth:
+    "Diary protection is off on this device. Cleanup for biometric unlock and your other signed-in devices is still pending. Keep the app open, stay signed in, and try again when online.",
   journalPasswordRemovePending: "Removing lock...",
   journalPasswordRemoveSuccess: "Diary lock removed.",
   journalPasswordSetupFailed: "We could not turn on the diary lock. Try again.",
@@ -4050,4 +4093,15 @@ export const en: Translations = {
   orbFirstRunStep3:
     "Add an emotion or note if you want, then save your mood and start today's entry",
   orbFirstRunGotIt: "Got it",
+  featureUnavailableTitle: "Feature temporarily unavailable",
+  featureUnavailableChecking:
+    "ZenFlow is checking your saved diary progress. Keep this screen open and try again in a moment.",
+  featureUnavailableProgress:
+    "ZenFlow could not check your saved diary progress on this device. Reload the app and try again. Nothing was deleted.",
+  featureUnavailableDisabled:
+    "This feature is turned off for this profile. Enable it in feature settings and try again.",
+  featureUnavailableUnlock:
+    "This feature is not available for this profile yet. Your existing data is unchanged.",
+  featureUnavailableGeneric:
+    "This feature is temporarily unavailable. Close this message and try again later.",
 };

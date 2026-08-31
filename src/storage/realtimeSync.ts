@@ -35,6 +35,11 @@ import { normalizeJournalPhotoLayout } from "@/features/journal/photoLayout";
 import { normalizeJournalStyleFieldsFromCloud } from "@/features/journal/journalStyleFields";
 import { getJournalContentVaultKey } from "@/features/journal/journalContentSession";
 import { isEncryptedJournalContent } from "@/features/journal/journalCrypto";
+import {
+  canApplyJournalEntryForVaultEpoch,
+  canApplyJournalMediaForVaultEpoch,
+  readDurableJournalVaultEpochForIngress,
+} from "@/features/journal/journalVaultEpoch";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
 import { runWithOriginExclusiveLock } from "@/lib/originExclusiveLock";
 import {
@@ -87,6 +92,7 @@ export {
   // Settings
   syncSetting,
   deleteSettingFromCloud,
+  deleteRemoteJournalVault,
   // Journal
   syncJournalEntry,
   deleteJournalEntryFromCloud,
@@ -96,6 +102,13 @@ export {
   deleteJournalAudioFromCloud,
   // User stats
   fetchUserStats,
+} from "./sync";
+
+export type {
+  RemoteVaultDeleteInput,
+  RequiredRemoteCommitFailureOutcome,
+  RequiredRemoteCommitOptions,
+  RequiredRemoteCommitResult,
 } from "./sync";
 
 // Import functions used by pushToCloud
@@ -446,6 +459,7 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
       ...normalizeJournalStyleFieldsFromCloud(e),
       createdAt: e.created_at,
       updatedAt: e.updated_at,
+      vaultRevision: e.vault_revision ?? undefined,
     }));
 
     let journalPhotos: JournalPhoto[] = pullableJournalPhotosData.map((p) => ({
@@ -457,6 +471,7 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
       height: p.height,
       createdAt: p.created_at,
       storagePath: p.storage_path || undefined,
+      vaultRevision: p.vault_revision ?? undefined,
     }));
 
     let journalAudioItems: JournalAudio[] = pullableJournalAudioData.map((a) => ({
@@ -467,6 +482,7 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
       mimeType: a.mime_type,
       createdAt: a.created_at,
       storagePath: a.storage_path || undefined,
+      vaultRevision: a.vault_revision ?? undefined,
     }));
 
     // P2-4 Fix: Save to local DB with explicit transaction error handling
@@ -480,19 +496,21 @@ export const pullFromCloud = async (expectedOwnerUserId?: string): Promise<boole
           // account owner and diary-protection epoch must be checked again at the
           // local commit boundary.
           await assertSnapshotOwnerCurrent();
-          const protectedJournalAtCommit = Boolean(await db.settings.get(SK.JOURNAL_PASSWORD));
-          if (protectedJournalAtCommit) {
+          const durableVaultAtCommit = await readDurableJournalVaultEpochForIngress();
+          if (durableVaultAtCommit.protected) {
             const snapshotContainedEntries = journalEntries.length > 0;
-            journalEntries = journalEntries.filter(canPullJournalEntryWhileLocked);
+            journalEntries = journalEntries.filter((entry) =>
+              canApplyJournalEntryForVaultEpoch(entry, durableVaultAtCommit)
+            );
             const protectedEntryIds = new Set(journalEntries.map((entry) => entry.id));
             journalPhotos = journalPhotos.filter(
               (photo) =>
-                isEncryptedJournalMediaStoragePath(photo.storagePath) &&
+                canApplyJournalMediaForVaultEpoch(photo, durableVaultAtCommit, userId) &&
                 (!snapshotContainedEntries || protectedEntryIds.has(photo.entryId))
             );
             journalAudioItems = journalAudioItems.filter(
               (audio) =>
-                isEncryptedJournalMediaStoragePath(audio.storagePath) &&
+                canApplyJournalMediaForVaultEpoch(audio, durableVaultAtCommit, userId) &&
                 (!snapshotContainedEntries || protectedEntryIds.has(audio.entryId))
             );
           }

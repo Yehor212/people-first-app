@@ -1326,27 +1326,121 @@ describe("production data integrity checker", () => {
     expectRule(run(root), "PDI008");
   });
 
-  it("allows owner-bound operational DML inside a stored function", () => {
-    const root = fixture({
+  it("distinguishes inert stored-routine DDL from migration-time user-data writes", () => {
+    const inertRoutineRoot = fixture({
       "src/main.ts": "export {};",
-      "supabase/migrations/20260709000020_commit_mood_rpc.sql": [
-        "CREATE OR REPLACE FUNCTION public.commit_mood(p_mood text)",
-        "RETURNS void",
-        "LANGUAGE plpgsql",
-        "SECURITY DEFINER",
-        "SET search_path = ''",
-        "AS $commit_mood$",
+      "supabase/migrations/20260709000011_runtime_event_writer.sql": [
+        "CREATE OR REPLACE FUNCTION private.record_real_sync_event(p_user_id uuid, p_entity_id text)",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.sync_events (user_id, entity_type, entity_id, op, payload, device_id)",
+        "  VALUES (p_user_id, 'journal', p_entity_id, 'delete', NULL, 'server');",
+        "END;",
+        "$$;",
+      ].join("\n"),
+    });
+    const inertRoutine = run(inertRoutineRoot);
+    expect(inertRoutine.status, JSON.stringify(inertRoutine.report, null, 2)).toBe(0);
+    expect(inertRoutine.report.status).toBe("PASS");
+
+    const immediateCases = [
+      [
+        "DO $$",
         "BEGIN",
         "  INSERT INTO public.moods (id, user_id, mood)",
-        "  VALUES (extensions.gen_random_uuid(), auth.uid(), p_mood);",
+        "  VALUES ('seed-1', 'user-1', 'good');",
         "END;",
-        "$commit_mood$;",
+        "$$;",
+      ].join("\n"),
+      [
+        "CREATE OR REPLACE FUNCTION public.seed_moods()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-1', 'user-1', 'good');",
+        "END;",
+        "$$;",
+        "SELECT public.seed_moods();",
+      ].join("\n"),
+      [
+        "CREATE OR REPLACE FUNCTION public.seed_moods_nested()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-2', 'user-2', 'good');",
+        "END;",
+        "$$;",
+        "CREATE OR REPLACE FUNCTION public.invoke_seed_moods_nested()",
+        "RETURNS void LANGUAGE plpgsql AS $$",
+        "BEGIN",
+        "  PERFORM public.seed_moods_nested();",
+        "END;",
+        "$$;",
+        "SELECT public.invoke_seed_moods_nested();",
+      ].join("\n"),
+    ];
+    for (const sql of immediateCases) {
+      const root = fixture({
+        "src/main.ts": "export {};",
+        "supabase/migrations/20260709000012_immediate_seed.sql": sql,
+      });
+      expectRule(run(root), "PDI008");
+    }
+  });
+
+  it.each([
+    "SELECT coalesce(public.seed_moods_wrapped(), 0);",
+    "VALUES(public.seed_moods_wrapped());",
+    [
+      "DO $invoke$",
+      "DECLARE",
+      "  v_result bigint;",
+      "BEGIN",
+      "  v_result := public.seed_moods_wrapped();",
+      "END;",
+      "$invoke$;",
+    ].join("\n"),
+  ])("blocks a migration-time user-data writer wrapped as %s", (invocation) => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000013_wrapped_seed.sql": [
+        "CREATE OR REPLACE FUNCTION public.seed_moods_wrapped()",
+        "RETURNS bigint LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES ('seed-wrapped', 'user-wrapped', 'good');",
+        "  RETURN 1;",
+        "END;",
+        "$body$;",
+        invocation,
+      ].join("\n"),
+    });
+
+    expectRule(run(root), "PDI008");
+  });
+
+  it("keeps routine grants and trigger installation inert until runtime", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000014_runtime_trigger.sql": [
+        "CREATE OR REPLACE FUNCTION private.record_runtime_mood()",
+        "RETURNS trigger LANGUAGE plpgsql AS $body$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES (NEW.id, NEW.user_id, 'good');",
+        "  RETURN NEW;",
+        "END;",
+        "$body$;",
+        "REVOKE ALL ON FUNCTION private.record_runtime_mood() FROM PUBLIC;",
+        "CREATE TRIGGER record_runtime_mood",
+        "  AFTER INSERT ON public.profiles",
+        "  FOR EACH ROW EXECUTE FUNCTION private.record_runtime_mood();",
       ].join("\n"),
     });
 
     const result = run(root);
     expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
-    expect(result.report.findings.some((finding) => finding.ruleId === "PDI008")).toBe(false);
+    expect(result.report.status).toBe("PASS");
   });
 
   it("rejects semantic config weakening and broad exclusions", () => {

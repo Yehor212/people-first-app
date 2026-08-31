@@ -123,7 +123,9 @@ export function parseChallengeInviteUrl(url: string) {
     if (!isLegacyCustomScheme && !isCanonicalWebFallback && !isLegacyHttpsAppLink) return null;
 
     const fragment = new URLSearchParams(parsedUrl.hash.replace(/^#/, ""));
-    const data = fragment.get("challenge") ?? fragment.get("data") ??
+    const data =
+      fragment.get("challenge") ??
+      fragment.get("data") ??
       (isLegacyCustomScheme ? parsedUrl.searchParams.get("data") : null);
     return data ? decodeInviteData(data) : null;
   } catch {
@@ -144,7 +146,7 @@ interface UseDeepLinkHandlerOptions {
  */
 export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): void {
   const { handleDiaryDeepLinks = true } = options;
-  const { isFeatureVisible } = useFeatureFlags();
+  const { getFeatureAvailability } = useFeatureFlags();
   const setAuthBypassFlag = useAppStore((s) => s.setAuthBypassFlag);
   const setHasValidSession = useAppStore((s) => s.setHasValidSession);
   const setWebOAuthError = useAppStore((s) => s.setWebOAuthError);
@@ -168,14 +170,18 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
     window.history.replaceState(
       window.history.state,
       "",
-      `${window.location.pathname}${window.location.search}`,
+      `${window.location.pathname}${window.location.search}`
     );
-    if (isFeatureVisible("challenges")) {
-      setChallengeInvite(invite);
-      setShowChallengeModal(true);
+    const availability = getFeatureAvailability("challenges");
+    if (!availability.visible) {
+      logger.log("[Index] Challenge invite deferred by feature availability", {
+        reason: availability.reason,
+      });
     }
+    setChallengeInvite(invite);
+    setShowChallengeModal(true);
     return undefined;
-  }, [isFeatureVisible, setChallengeInvite]);
+  }, [getFeatureAvailability, setChallengeInvite]);
 
   useEffect(() => {
     if (!isNative) return;
@@ -329,14 +335,15 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
     const handleChallengeUrl = (url: string): boolean => {
       const invite = parseChallengeInviteUrl(url);
       if (invite) {
-        logger.log("[Index] Challenge invite received:", invite.code);
-        if (isFeatureVisible("challenges")) {
-          setChallengeInvite(invite);
-          setShowChallengeModal(true);
-          return true;
-        } else {
-          logger.log("[Index] Challenges feature disabled, ignoring invite");
+        const availability = getFeatureAvailability("challenges");
+        if (!availability.visible) {
+          logger.log("[Index] Challenge invite deferred by feature availability", {
+            reason: availability.reason,
+          });
         }
+        setChallengeInvite(invite);
+        setShowChallengeModal(true);
+        return true;
       }
       return false;
     };

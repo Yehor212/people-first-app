@@ -49,7 +49,17 @@ vi.mock("@/lib/androidBackHandler", () => ({
 }));
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
-  useFeatureFlags: () => ({ isFeatureVisible: () => false }),
+  useFeatureFlags: () => ({
+    getFeatureAvailability: (feature: string) => ({
+      manifestVersion: 1,
+      key: feature,
+      visible: false,
+      state: "temporarily-unavailable",
+      reason: "disabled-by-user",
+      source: "user-setting",
+      disclosure: "user-safe-reason",
+    }),
+  }),
 }));
 
 // morph() uses View Transitions API which jsdom doesn't support. Stub it to

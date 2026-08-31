@@ -44,7 +44,7 @@ vi.mock("@/storage/realtimeSync", () => ({
   syncGratitude: vi.fn(() => Promise.resolve()),
   deleteGratitudeFromCloud: vi.fn(() => Promise.resolve()),
   syncJournalEntry: vi.fn(() => Promise.resolve()),
-  deleteJournalEntryFromCloud: vi.fn(() => Promise.resolve()),
+  deleteJournalEntryFromCloud: vi.fn(() => Promise.resolve({ status: "committed" })),
   syncSetting: vi.fn(() => Promise.resolve()),
   deleteSettingFromCloud: vi.fn(() => Promise.resolve()),
 }));
@@ -496,7 +496,7 @@ describe("offlineQueueHandlers", () => {
 
     it("DELETE_JOURNAL_ENTRY handler calls deleteJournalEntryFromCloud", async () => {
       const handler = getHandler("DELETE_JOURNAL_ENTRY");
-      await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
+      const result = await handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-del"));
 
       expect(deleteJournalEntryFromCloud).toHaveBeenCalledWith(
         "journal-del",
@@ -504,6 +504,22 @@ describe("offlineQueueHandlers", () => {
         expect.any(AbortSignal),
         "11111111-1111-4111-8111-111111111111",
       );
+      expect(result).toEqual({ status: "committed" });
+    });
+
+    it("DELETE_JOURNAL_ENTRY handler preserves the server-paused intent", async () => {
+      vi.mocked(deleteJournalEntryFromCloud).mockResolvedValueOnce({
+        status: "deferred",
+        reason: "password-removal-paused",
+      });
+      const handler = getHandler("DELETE_JOURNAL_ENTRY");
+
+      await expect(
+        handler(makeAction("DELETE_JOURNAL_ENTRY", null, "journal-paused")),
+      ).resolves.toEqual({
+        status: "deferred",
+        reason: "password-removal-paused",
+      });
     });
 
     it("UPLOAD_JOURNAL_PHOTO_STORAGE handler retries photo upload from an id-only payload", async () => {

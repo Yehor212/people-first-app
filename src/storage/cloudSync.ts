@@ -12,6 +12,10 @@ import type { ErrorCategory } from "@/lib/sentry";
 import { getJournalReplaceAuthorization } from "@/lib/journalContentSession";
 import { getLocalDataOwnerId } from "@/storage/db";
 import { readPendingLocalBackupAccountClaim } from "@/storage/accountBoundaryRuntime";
+import {
+  readDurableJournalVaultRevision,
+  validateJournalBackupVaultEpoch,
+} from "@/features/journal/journalVaultEpoch";
 
 // Lazy-load sentry to keep @sentry/* (~250 KB) off the critical rendering path.
 // Breadcrumbs are fire-and-forget telemetry — async import is safe.
@@ -193,7 +197,7 @@ const doSyncWithCloud = async (
 
     const { data: remote, error: fetchError } = await supabase!
       .from(BACKUP_TABLE)
-      .select("payload, updated_at")
+      .select("payload, updated_at, vault_revision")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -216,6 +220,19 @@ const doSyncWithCloud = async (
       (localData.gratitudeEntries?.length || 0) +
       (localData.journalEntries?.length || 0);
     const remotePayload = remote?.payload ? (remote.payload as unknown as BackupPayload) : null;
+    const durableVault = await readDurableJournalVaultRevision();
+    const expectedVaultRevision = durableVault.protected
+      ? durableVault.vaultRevision
+      : null;
+    validateJournalBackupVaultEpoch(localBackup.data, expectedVaultRevision);
+    if (remotePayload && remote) {
+      const remoteVaultRevision =
+        typeof remote.vault_revision === "number" ? remote.vault_revision : null;
+      if (remoteVaultRevision !== expectedVaultRevision) {
+        throw new Error("Cloud diary backup belongs to a different vault epoch");
+      }
+      validateJournalBackupVaultEpoch(remotePayload.data, expectedVaultRevision);
+    }
     const remoteData = (remotePayload?.data || {}) as Record<string, unknown[]>;
     const remoteItemCount =
       (remoteData.moods?.length || 0) +
@@ -294,6 +311,9 @@ const doSyncWithCloud = async (
     // Only re-export if we actually merged remote data into local
     // For single-device users (most common), this saves a full IndexedDB scan
     const finalBackup = appliedRemoteData ? await exportBackup() : localBackup;
+    const finalVault = await readDurableJournalVaultRevision();
+    const finalVaultRevision = finalVault.protected ? finalVault.vaultRevision : null;
+    validateJournalBackupVaultEpoch(finalBackup.data, finalVaultRevision);
     await assertLocalOwner();
     await assertAuthenticatedOwner(syncOwnerUserId);
 
@@ -307,6 +327,7 @@ const doSyncWithCloud = async (
         user_id: user.id,
         payload: finalBackup as unknown as Json,
         updated_at: new Date().toISOString(),
+        vault_revision: finalVaultRevision,
       },
       { onConflict: "user_id" }
     );
@@ -521,9 +542,11 @@ export const resumeCloudSync = (): void => {
   logger.sync("CloudSync resumed after account-boundary cleanup");
 };
 
+export type CloudSyncTriggerOutcome = "scheduled" | "unavailable";
+
 // Trigger debounced sync (call after data changes)
-export const triggerSync = () => {
-  if (!supabase) return;
+export const triggerSync = (): CloudSyncTriggerOutcome => {
+  if (!supabase) return "unavailable";
 
   // Clear existing timeout
   if (syncTimeout) {
@@ -533,6 +556,7 @@ export const triggerSync = () => {
   // Debounce: wait 30s after last change before syncing
   // The orchestrator will handle queue management
   syncTimeout = setTimeout(silentSync, SYNC_DEBOUNCE);
+  return "scheduled";
 };
 
 // Flush sync immediately (bypasses debounce). Use on app pause to prevent data loss.

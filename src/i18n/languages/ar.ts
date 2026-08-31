@@ -2625,6 +2625,23 @@ const arabicOverrides: Partial<Translations> = {
   journalSubtitle: "مساحتك الشخصية",
   journalEmpty: "لا توجد إدخالات في اليوميات بعد",
   journalEmptyHint: "عندما ترغب، ابدأ بتفصيل واحد من اليوم.",
+  journalEntriesUnavailableCount:
+    "إدخالات اليوميات غير المتاحة مؤقتًا: {count}. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableCountZero: "يتعذر مؤقتًا عرض \u2068{count}\u2069 من إدخالات اليوميات. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableCountOne: "يتعذر مؤقتًا عرض \u2068{count}\u2069 من إدخالات اليوميات. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableCountTwo: "يتعذر مؤقتًا عرض \u2068{count}\u2069 من إدخالات اليوميات. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableCountFew: "يتعذر مؤقتًا عرض \u2068{count}\u2069 من إدخالات اليوميات. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableCountMany: "يتعذر مؤقتًا عرض \u2068{count}\u2069 من إدخالات اليوميات. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableCountOther: "يتعذر مؤقتًا عرض \u2068{count}\u2069 من إدخالات اليوميات. ما زالت بقية الإدخالات ظاهرة.",
+  journalEntriesUnavailableAll:
+    "لا يمكن عرض أي إدخال من اليوميات الآن. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableAllCountZero: "يتعذر الآن عرض \u2068{count}\u2069 من إدخالات اليوميات. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableAllCountOne: "يتعذر الآن عرض \u2068{count}\u2069 من إدخالات اليوميات. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableAllCountTwo: "يتعذر الآن عرض \u2068{count}\u2069 من إدخالات اليوميات. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableAllCountFew: "يتعذر الآن عرض \u2068{count}\u2069 من إدخالات اليوميات. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableAllCountMany: "يتعذر الآن عرض \u2068{count}\u2069 من إدخالات اليوميات. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableAllCountOther: "يتعذر الآن عرض \u2068{count}\u2069 من إدخالات اليوميات. لم يتم حذف بياناتك المحفوظة.",
+  journalEntriesUnavailableRetry: "محاولة التحميل مرة أخرى",
   journalEmptyQuote: "ابدأ بتفصيل واحد من هذه اللحظة.",
   diaryStartFirstEntry: "ابدأ بتفصيل صغير واحد.",
   diaryPrompt1: "ما الذي جعلك تبتسم اليوم؟",
@@ -3124,15 +3141,41 @@ const arabicOverrides: Partial<Translations> = {
   journalPasswordActiveHint: "قفل اليوميات مفعّل. يمكنك تغييره أو إزالته من هنا.",
   journalProtectionCloudPending:
     "يومياتك محمية على هذا الجهاز. ما زال ZenFlow يستبدل نسخة أقدم على الإنترنت؛ أبقِ التطبيق مفتوحًا واتصل بالإنترنت.",
+  journalProtectionPasswordSyncPending:
+    "كلمة مرور اليوميات الجديدة تعمل الآن على هذا الجهاز. لا يزال ZenFlow يحدّث مفتاح التشفير عبر الإنترنت؛ أبقِ التطبيق مفتوحًا ومتصلًا بالإنترنت.",
   journalProtectionRemovalCloudPending:
     "قفل اليوميات متوقف على هذا الجهاز. ما زال ZenFlow يُكمل هذا التغيير عبر الإنترنت؛ أبقِ التطبيق مفتوحًا واتصل بالإنترنت.",
+  journalProtectionRemovalPreflightPending:
+    "لا تزال حماية اليوميات مفعّلة. توقّف ZenFlow قبل تغيير تدويناتك. افتح قفل اليوميات، وابقَ متصلاً بالإنترنت، ثم تابع إزالة الحماية.",
+  journalPasswordRemovalResume: "متابعة إزالة قفل اليوميات",
+  journalProtectionRemovalRetry: "إعادة محاولة التنظيف عبر الإنترنت",
+  journalProtectionRemovalRetryPending: "جارٍ إعادة المحاولة...",
   journalPasswordRemoveConfirm: "هل أنت متأكد؟ ستكون يومياتك متاحة بدون كلمة مرور.",
   journalLockRemoveDetail:
     "ستبقى إدخالاتك محفوظة، لكن قفل اليوميات والفتح بالبصمة الحيوية لليوميات سيتم إيقافهما. يمكنك إعداد قفل جديد لاحقًا.",
-  journalLockRemoveFailed: "افتح اليوميات أولًا، ثم حاول إزالة القفل مرة أخرى.",
+  journalLockRemoveFailed:
+    "افتح اليوميات، ثم حاول إزالة الحماية مرة أخرى. لم يتغير شيء.",
   journalLockRemoveUnexpected: "تعذرت إزالة قفل اليوميات. لم يتغير شيء. حاول مرة أخرى.",
   journalLockRemovePartial:
-    "لا يزال قفل اليوميات مفعّلًا، لكن تم إيقاف الفتح بالمقاييس الحيوية. افتح يومياتك بكلمة المرور ثم حاول مرة أخرى.",
+    "تم إيقاف حماية اليوميات على هذا الجهاز، لكن ما زالت هناك خطوات تنظيف إضافية. أبقِ التطبيق مفتوحًا وحسابك مسجّلًا، ثم حاول مجددًا عند الاتصال بالإنترنت.",
+  journalLockRemoveActivationPending:
+    "أكمل إعداد حماية اليوميات أولًا، ثم حاول مرة أخرى. لم يتغير شيء.",
+  journalLockRemoveRemovalPending:
+    "ما زالت عملية إزالة سابقة قيد الإكمال. أبقِ هذا الحساب مسجّلًا وحاول مرة أخرى بعد قليل.",
+  journalLockRemoveRevisionMismatch:
+    "تغيّرت اليوميات أثناء التحقق. أعد تحميلها وافتحها ثم حاول مرة أخرى. لم يتغير شيء.",
+  journalLockRemoveContentUnavailable:
+    "تعذر فتح جزء من محتوى اليوميات المحمي. اتصل بالإنترنت وافتح اليوميات ثم حاول مرة أخرى. لم يتم حذف أي شيء.",
+  journalLockRemoveOwnerChanged:
+    "تغيّر الحساب المسجّل. عد إلى الحساب الذي يملك هذه اليوميات وحاول مرة أخرى. لم يتغير شيء.",
+  journalLockRemoveStorageFailed:
+    "تعذر على هذا الجهاز قراءة اليوميات كاملة. أبقِ التطبيق مفتوحًا وأعد تحميله ثم حاول مرة أخرى. لم يتغير شيء.",
+  journalLockRemovePartialBiometric:
+    "تم إيقاف حماية اليوميات على هذا الجهاز. ما زال تنظيف الفتح بالمقاييس الحيوية معلقًا. أبقِ التطبيق مفتوحًا وحاول مرة أخرى.",
+  journalLockRemovePartialCloud:
+    "تم إيقاف حماية اليوميات على هذا الجهاز. ما زال تطبيق التغيير على أجهزتك الأخرى معلقًا. أبقِ حسابك مسجّلًا وحاول مجددًا عند الاتصال بالإنترنت.",
+  journalLockRemovePartialBoth:
+    "تم إيقاف حماية اليوميات على هذا الجهاز. ما زال تنظيف الفتح بالمقاييس الحيوية وتطبيق التغيير على أجهزتك الأخرى معلقين. أبقِ التطبيق مفتوحًا وحسابك مسجّلًا، ثم حاول مجددًا عند الاتصال بالإنترنت.",
   journalPasswordRemovePending: "جارٍ إزالة القفل...",
   journalPasswordRemoveSuccess: "تمت إزالة قفل اليوميات.",
   journalPasswordSetupFailed: "تعذر تفعيل قفل اليوميات. حاول مرة أخرى.",
@@ -4043,6 +4086,17 @@ const arabicOverrides: Partial<Translations> = {
   orbFirstRunStep2: "اختر متى شعرت بهذا: الآن، في وقت محدد، أو طوال اليوم",
   orbFirstRunStep3: "أضف شعورًا أو ملاحظة إن شئت، ثم احفظ مزاجك وابدأ مدخل اليوم",
   orbFirstRunGotIt: "فهمت",
+  featureUnavailableTitle: "الميزة غير متاحة مؤقتًا",
+  featureUnavailableChecking:
+    "يتحقق ZenFlow من تقدم اليوميات المحفوظ. أبقِ هذه الشاشة مفتوحة وحاول مرة أخرى بعد قليل.",
+  featureUnavailableProgress:
+    "تعذر على ZenFlow التحقق من تقدم اليوميات المحفوظ على هذا الجهاز. أعد تحميل التطبيق وحاول مرة أخرى. لم يتم حذف أي شيء.",
+  featureUnavailableDisabled:
+    "هذه الميزة متوقفة لهذا الملف الشخصي. فعّلها من إعدادات الميزات ثم حاول مرة أخرى.",
+  featureUnavailableUnlock:
+    "هذه الميزة غير متاحة لهذا الملف الشخصي بعد. لم تتغير بياناتك الحالية.",
+  featureUnavailableGeneric:
+    "هذه الميزة غير متاحة مؤقتًا. أغلق هذه الرسالة وحاول مرة أخرى لاحقًا.",
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

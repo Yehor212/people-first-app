@@ -8,6 +8,8 @@ import {
 } from "./journalCrypto";
 import { runWithJournalSecurityWriteLock } from "./journalSecurityWriteLock";
 import { getJournalVaultKeyForWrite, JournalWriteLockedError } from "./journalWriteSecurity";
+import { getJournalContentVaultRevision } from "./journalContentSession";
+import { requireSafeJournalVaultRevision } from "./journalVaultEpoch";
 import type { GratitudeEntry } from "@/types";
 import type {
   JournalEntryLink,
@@ -78,19 +80,44 @@ async function decryptHubStringForStorage(
 
 export async function encryptJournalSpaceForStorage(
   space: JournalSpace,
-  vaultKey: string
+  vaultKey: string,
+  vaultRevision?: number,
 ): Promise<JournalSpace> {
+  const revision = requireSafeJournalVaultRevision(
+    vaultRevision ?? getJournalContentVaultRevision(),
+    "space",
+  );
+  if (space.name && isEncryptedJournalContent(space.name)) {
+    await decryptJournalContentIfNeeded(space.name, vaultKey);
+  }
+  if (space.description && isEncryptedJournalContent(space.description)) {
+    await decryptJournalContentIfNeeded(space.description, vaultKey);
+  }
   return {
     ...space,
     name: await protectHubString(space.name, vaultKey),
     description: await protectHubString(space.description, vaultKey),
+    vaultRevision: revision,
   };
 }
 
 export async function encryptJournalSpaceCaptureForStorage(
   capture: JournalSpaceCapture,
-  vaultKey: string
+  vaultKey: string,
+  vaultRevision?: number,
 ): Promise<JournalSpaceCapture> {
+  const revision = requireSafeJournalVaultRevision(
+    vaultRevision ?? getJournalContentVaultRevision(),
+    "capture",
+  );
+  const protectedValues = [
+    capture.spaceName,
+    capture.title,
+    ...capture.fields.flatMap((field) => [field.prompt, field.value]),
+  ].filter((value) => value && isEncryptedJournalContent(value));
+  await Promise.all(
+    protectedValues.map((value) => decryptJournalContentIfNeeded(value, vaultKey)),
+  );
   return {
     ...capture,
     spaceName: (await protectHubString(capture.spaceName, vaultKey)) ?? "",
@@ -101,6 +128,7 @@ export async function encryptJournalSpaceCaptureForStorage(
         value: (await protectHubString(field.value, vaultKey)) ?? "",
       }))
     ),
+    vaultRevision: revision,
   };
 }
 
@@ -180,6 +208,7 @@ export async function decryptJournalSpaceForStorage(
     ...space,
     name: await decryptHubStringForStorage(space.name, vaultKey),
     description: await decryptHubStringForStorage(space.description, vaultKey),
+    vaultRevision: undefined,
   };
 }
 
@@ -197,6 +226,7 @@ export async function decryptJournalSpaceCaptureForStorage(
         value: (await decryptHubStringForStorage(field.value, vaultKey)) ?? "",
       }))
     ),
+    vaultRevision: undefined,
   };
 }
 

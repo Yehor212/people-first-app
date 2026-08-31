@@ -135,9 +135,13 @@ describe("pullFromCloud diary privacy", () => {
     mocks.writeEventAndBroadcast.mockResolvedValue(undefined);
     mocks.settingsGet.mockImplementation((key: string) =>
       Promise.resolve(
-        key === "journal_password" && protectedDiary
+        protectedDiary && key === "journal_password"
           ? { key, value: { hash: "local-lock" } }
-          : undefined
+          : protectedDiary && key === "journal_vault_key"
+            ? { key, value: { wrappedKey: "local-vault", createdAt: 100, updatedAt: 101 } }
+            : protectedDiary && key === "journal_vault_revision_v1"
+              ? { key, value: 101 }
+              : undefined
       )
     );
     mocks.settingsPut.mockResolvedValue(undefined);
@@ -272,6 +276,7 @@ describe("pullFromCloud diary privacy", () => {
           habit_snapshot: null,
           photo_ids: ["photo-encrypted"],
           audio_ids: ["audio-encrypted"],
+          vault_revision: 101,
           created_at: 3,
           updated_at: 4,
         },
@@ -291,7 +296,8 @@ describe("pullFromCloud diary privacy", () => {
           width: 100,
           height: 80,
           created_at: 1,
-          storage_path: "user-1/photo-encrypted.bin",
+          storage_path: "user-1/photo-encrypted.v101.bin",
+          vault_revision: 101,
         },
       ],
       journal_audio: [
@@ -309,7 +315,8 @@ describe("pullFromCloud diary privacy", () => {
           duration: 1,
           mime_type: "audio/webm",
           created_at: 1,
-          storage_path: "user-1/audio-encrypted.bin",
+          storage_path: "user-1/audio-encrypted.v101.bin",
+          vault_revision: 101,
         },
       ],
       sync_tombstones: [],
@@ -322,25 +329,94 @@ describe("pullFromCloud diary privacy", () => {
       expect.objectContaining({
         id: "entry-encrypted",
         content: "encrypted-entry:ciphertext",
+        vaultRevision: 101,
       }),
     ]);
     expect(mocks.journalPhotosBulkPut).toHaveBeenCalledWith([
       expect.objectContaining({
         id: "photo-encrypted",
         entryId: "entry-encrypted",
-        storagePath: "user-1/photo-encrypted.bin",
+        storagePath: "user-1/photo-encrypted.v101.bin",
+        vaultRevision: 101,
       }),
     ]);
     expect(mocks.journalAudioBulkPut).toHaveBeenCalledWith([
       expect.objectContaining({
         id: "audio-encrypted",
         entryId: "entry-encrypted",
-        storagePath: "user-1/audio-encrypted.bin",
+        storagePath: "user-1/audio-encrypted.v101.bin",
+        vaultRevision: 101,
       }),
     ]);
     expect(JSON.stringify(mocks.journalEntriesBulkPut.mock.calls)).not.toContain("entry-plain");
     expect(JSON.stringify(mocks.journalPhotosBulkPut.mock.calls)).not.toContain("photo-plain");
     expect(JSON.stringify(mocks.journalAudioBulkPut.mock.calls)).not.toContain("audio-plain");
+  });
+
+  it("rejects stale, missing, and path-mismatched vault epochs at the snapshot commit boundary", async () => {
+    const encryptedEntry = (id: string, vaultRevision?: number) => ({
+      id,
+      date: "2026-08-03",
+      title: "Protected",
+      content: "encrypted-entry:ciphertext",
+      stickers: [],
+      mood: null,
+      tags: [],
+      template_id: null,
+      habit_snapshot: null,
+      photo_ids: [`photo-${id}`],
+      audio_ids: [`audio-${id}`],
+      vault_revision: vaultRevision,
+      created_at: 1,
+      updated_at: 2,
+    });
+    const dataByTable: Record<string, unknown[]> = {
+      moods: [], habits: [], habit_completions: [], habit_reminders: [], focus_sessions: [],
+      gratitude_entries: [], user_settings: [],
+      journal_entries: [
+        encryptedEntry("current", 101),
+        encryptedEntry("stale", 100),
+        encryptedEntry("missing"),
+        encryptedEntry("path-mismatch", 101),
+      ],
+      journal_photos: [
+        { id: "photo-current", entry_id: "current", width: 1, height: 1, created_at: 1, storage_path: "user-1/photo-current.v101.bin", vault_revision: 101 },
+        { id: "photo-stale", entry_id: "stale", width: 1, height: 1, created_at: 1, storage_path: "user-1/photo-stale.v100.bin", vault_revision: 100 },
+        { id: "photo-missing", entry_id: "missing", width: 1, height: 1, created_at: 1, storage_path: "user-1/photo-missing.v101.bin", vault_revision: null },
+        { id: "photo-path-mismatch", entry_id: "path-mismatch", width: 1, height: 1, created_at: 1, storage_path: "user-1/photo-path-mismatch.v100.bin", vault_revision: 101 },
+      ],
+      journal_audio: [
+        { id: "audio-current", entry_id: "current", duration: 1, mime_type: "audio/webm", created_at: 1, storage_path: "user-1/audio-current.v101.bin", vault_revision: 101 },
+        { id: "audio-stale", entry_id: "stale", duration: 1, mime_type: "audio/webm", created_at: 1, storage_path: "user-1/audio-stale.v100.bin", vault_revision: 100 },
+        { id: "audio-missing", entry_id: "missing", duration: 1, mime_type: "audio/webm", created_at: 1, storage_path: "user-1/audio-missing.v101.bin", vault_revision: null },
+        { id: "audio-path-mismatch", entry_id: "path-mismatch", duration: 1, mime_type: "audio/webm", created_at: 1, storage_path: "user-1/audio-path-mismatch.v100.bin", vault_revision: 101 },
+      ],
+      sync_tombstones: [],
+    };
+    mocks.from.mockImplementation((table: string) => queryResult(dataByTable[table] ?? []));
+
+    await expect(pullFromCloud("user-1")).resolves.toBe(true);
+
+    expect(mocks.journalEntriesBulkPut).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "current", vaultRevision: 101 }),
+      expect.objectContaining({ id: "path-mismatch", vaultRevision: 101 }),
+    ]);
+    expect(mocks.journalPhotosBulkPut).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "photo-current", vaultRevision: 101 }),
+    ]);
+    expect(mocks.journalAudioBulkPut).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "audio-current", vaultRevision: 101 }),
+    ]);
+    const committedEntries = JSON.stringify(mocks.journalEntriesBulkPut.mock.calls);
+    const committedMedia = JSON.stringify([
+      mocks.journalPhotosBulkPut.mock.calls,
+      mocks.journalAudioBulkPut.mock.calls,
+    ]);
+    expect(committedEntries).not.toContain("stale");
+    expect(committedEntries).not.toContain("missing");
+    expect(committedMedia).not.toContain("stale");
+    expect(committedMedia).not.toContain("missing");
+    expect(committedMedia).not.toContain("path-mismatch");
   });
 
   it("discards an account A snapshot response when account B is active before local writes", async () => {

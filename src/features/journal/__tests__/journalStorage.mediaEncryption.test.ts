@@ -23,7 +23,9 @@ const mocks = vi.hoisted(() => ({
   syncJournalPhoto: vi.fn(() => Promise.resolve()),
   triggerSync: vi.fn(),
   uploadAudio: vi.fn(() => Promise.resolve(null)),
-  uploadEncryptedAudio: vi.fn(() => Promise.resolve({ path: "user-1/audio-1.bin", signedUrl: "" })),
+  uploadEncryptedAudio: vi.fn(() =>
+    Promise.resolve({ path: "user-1/audio-1.v2.bin", signedUrl: "" })
+  ),
   settingsGet: vi.fn<() => Promise<{ value: unknown } | undefined>>(() =>
     Promise.resolve(undefined)
   ),
@@ -164,6 +166,7 @@ describe("journalStorage media encryption", () => {
       "audio-1",
       expect.any(Blob),
       "user-1",
+      2,
     );
   });
 

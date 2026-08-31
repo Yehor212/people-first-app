@@ -269,7 +269,7 @@ async function encryptImportedEntryContent(
   content: string,
   vaultKey: string | null
 ): Promise<string> {
-  if (!vaultKey || !content || isEncryptedJournalContent(content)) return content;
+  if (!vaultKey || isEncryptedJournalContent(content)) return content;
   return encryptJournalContent(content, vaultKey);
 }
 
@@ -646,7 +646,9 @@ export async function importJournalBackup(
                 await persistCriticalOfflineActionInCurrentTransaction(
                   "DELETE_JOURNAL_PHOTO_STORAGE",
                   `journal-photo-delete:${photo.id}`,
-                  { id: photo.id },
+                  photo.storagePath
+                    ? { id: photo.id, storagePath: photo.storagePath }
+                    : { id: photo.id },
                   syncOwnerUserId,
                 );
               }
@@ -654,7 +656,9 @@ export async function importJournalBackup(
                 await persistCriticalOfflineActionInCurrentTransaction(
                   "DELETE_JOURNAL_AUDIO_STORAGE",
                   `journal-audio-delete:${audio.id}`,
-                  { id: audio.id },
+                  audio.storagePath
+                    ? { id: audio.id, storagePath: audio.storagePath }
+                    : { id: audio.id },
                   syncOwnerUserId,
                 );
               }

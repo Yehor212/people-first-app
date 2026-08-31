@@ -32,10 +32,10 @@ const mocks = vi.hoisted(() => {
     uploadPhoto: vi.fn(() => Promise.resolve({ path: "user-1/photo-draft.jpg", signedUrl: "" })),
     uploadAudio: vi.fn(() => Promise.resolve({ path: "user-1/audio-draft.webm", signedUrl: "" })),
     uploadEncryptedPhoto: vi.fn(() =>
-      Promise.resolve({ path: "user-1/photo-draft.bin", signedUrl: "" })
+      Promise.resolve({ path: "user-1/photo-draft.v2.bin", signedUrl: "" })
     ),
     uploadEncryptedAudio: vi.fn(() =>
-      Promise.resolve({ path: "user-1/audio-draft.bin", signedUrl: "" })
+      Promise.resolve({ path: "user-1/audio-draft.v2.bin", signedUrl: "" })
     ),
     deleteStoragePath: vi.fn(() => Promise.resolve()),
     validateSyncOwner: vi.fn((expectedOwnerUserId?: string) =>
@@ -106,6 +106,7 @@ vi.mock("@/lib/logger", () => ({
 vi.mock("@/lib/utils", () => ({ generateId: vi.fn(() => "generated-id") }));
 vi.mock("../journalContentSession", () => ({
   getJournalContentVaultKey: () => null,
+  getJournalContentVaultRevision: () => 2,
 }));
 vi.mock("../journalCrypto", () => ({
   encryptJournalContent: vi.fn((value: string) => Promise.resolve(value)),
@@ -145,7 +146,10 @@ async function flushAsyncTurns(turns = 30): Promise<void> {
   }
 }
 
-function seedDraftPhoto(data = "data:image/jpeg;base64,plain"): void {
+function seedDraftPhoto(
+  data = "data:image/jpeg;base64,plain",
+  vaultRevision?: number,
+): void {
   mocks.photos.set("photo-draft", {
     id: "photo-draft",
     entryId: getJournalDraftMediaOwnerId("entry-1"),
@@ -154,10 +158,14 @@ function seedDraftPhoto(data = "data:image/jpeg;base64,plain"): void {
     width: 100,
     height: 80,
     createdAt: 1,
+    ...(vaultRevision === undefined ? {} : { vaultRevision }),
   });
 }
 
-function seedDraftAudio(data = "data:audio/webm;base64,plain"): void {
+function seedDraftAudio(
+  data = "data:audio/webm;base64,plain",
+  vaultRevision?: number,
+): void {
   mocks.audios.set("audio-draft", {
     id: "audio-draft",
     entryId: getJournalDraftMediaOwnerId("entry-1"),
@@ -165,6 +173,7 @@ function seedDraftAudio(data = "data:audio/webm;base64,plain"): void {
     duration: 10,
     mimeType: "audio/webm",
     createdAt: 1,
+    ...(vaultRevision === undefined ? {} : { vaultRevision }),
   });
 }
 
@@ -176,11 +185,11 @@ describe("journal media security ingress races", () => {
     mocks.uploadPhoto.mockResolvedValue({ path: "user-1/photo-draft.jpg", signedUrl: "" });
     mocks.uploadAudio.mockResolvedValue({ path: "user-1/audio-draft.webm", signedUrl: "" });
     mocks.uploadEncryptedPhoto.mockResolvedValue({
-      path: "user-1/photo-draft.bin",
+      path: "user-1/photo-draft.v2.bin",
       signedUrl: "",
     });
     mocks.uploadEncryptedAudio.mockResolvedValue({
-      path: "user-1/audio-draft.bin",
+      path: "user-1/audio-draft.v2.bin",
       signedUrl: "",
     });
   });
@@ -200,8 +209,8 @@ describe("journal media security ingress races", () => {
     const activation = runWithJournalSecurityWriteLock(async () => {
       activationEntered();
       await activationReleasePromise;
-      seedDraftPhoto("enc-media:photo-ciphertext");
-      seedDraftAudio("enc-media:audio-ciphertext");
+      seedDraftPhoto("enc-media:photo-ciphertext", 2);
+      seedDraftAudio("enc-media:audio-ciphertext", 2);
     });
     await activationEnteredPromise;
 
