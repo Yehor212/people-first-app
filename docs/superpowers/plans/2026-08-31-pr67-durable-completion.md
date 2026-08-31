@@ -38,5 +38,6 @@
 - [x] Run focused storage/account-boundary and hook suites.
 - [x] Run full Vitest, lint, typecheck, production-data-integrity, build, and release-artifact checks.
 - [x] Run the narrow security/secrets profile and inspect the final diff.
-- [ ] Commit and push only the scoped paths, open a replacement PR, and wait for required CI.
+- [x] Commit and push only the scoped paths.
+- [ ] Open a replacement PR and wait for required CI.
 - [ ] Merge and verify main release before adjudicating/closing PR #67.
