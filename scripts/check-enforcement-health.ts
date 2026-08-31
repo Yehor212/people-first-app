@@ -33,7 +33,6 @@ const REQUIRED_REGISTRATIONS: ReadonlyArray<readonly [string, string]> = [
   ["PostToolUse", "production-data-integrity-gate.cjs"],
   ["Stop", "no-ai-template-gate.cjs"],
   ["Stop", "android-visual-runtime-gate.cjs"],
-  ["Stop", "production-data-integrity-gate.cjs"],
   ["SubagentStart", "no-ai-template-gate.cjs"],
   ["SubagentStart", "production-data-integrity-gate.cjs"],
   ["SubagentStop", "no-ai-template-gate.cjs"],

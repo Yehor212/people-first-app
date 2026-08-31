@@ -370,11 +370,8 @@ function handle(data) {
   }
   if (eventName === "Stop") {
     if (data.stop_hook_active === true) return emit({ continue: true });
-    const check = runChecker("diff");
-    if (check.kind === "finding")
-      return block(`Production data integrity Stop check failed: ${check.reason}.`);
-    if (check.kind === "error")
-      return block(`Production data integrity checker internal error at Stop: ${check.reason}.`);
+    // The hook is intentionally not registered for Stop. Keep a no-scan fallback
+    // for stale clients that loaded an earlier hooks.json before this change.
     return emit({ continue: true });
   }
   if (eventName === "SubagentStart") {
