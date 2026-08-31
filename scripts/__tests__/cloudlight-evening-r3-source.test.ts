@@ -545,19 +545,17 @@ describe("Cloudlight Evening R3 source contract", () => {
   });
 
   it("writes the same private MIDI and automation source pack twice", () => {
-    const tempRoot = mkdtempSync(
-      join(rootDir, "output/private/cloudlight-evening-r3-source-test-")
-    );
+    const fixtureRoot = sourceFixtureRoot(loadCloudlightR3Source(rootDir));
     const outsideRoot = mkdtempSync(join(tmpdir(), "cloudlight-evening-r3-outside-"));
 
     try {
       const first = writeCloudlightR3SourcePack({
-        rootDir,
-        outputDir: join(tempRoot, "output/private/r3-a"),
+        rootDir: fixtureRoot,
+        outputDir: join(fixtureRoot, "output/private/r3-a"),
       });
       const second = writeCloudlightR3SourcePack({
-        rootDir,
-        outputDir: join(tempRoot, "output/private/r3-b"),
+        rootDir: fixtureRoot,
+        outputDir: join(fixtureRoot, "output/private/r3-b"),
       });
 
       const midi = readFileSync(first.midiPath);
@@ -589,21 +587,27 @@ describe("Cloudlight Evening R3 source contract", () => {
       );
       expect(readFileSync(first.readmePath, "utf8")).toContain("GarageBand");
       expect(() =>
-        writeCloudlightR3SourcePack({ rootDir, outputDir: join(rootDir, "public/sounds/r3") })
+        writeCloudlightR3SourcePack({
+          rootDir: fixtureRoot,
+          outputDir: join(fixtureRoot, "public/sounds/r3"),
+        })
       ).toThrow("must stay under <root>/output/private");
       expect(() =>
         writeCloudlightR3SourcePack({
-          rootDir,
-          outputDir: join(rootDir, "output/private-collision/r3"),
+          rootDir: fixtureRoot,
+          outputDir: join(fixtureRoot, "output/private-collision/r3"),
         })
       ).toThrow("must stay under <root>/output/private");
-      const symlinkEscape = join(tempRoot, "symlink-escape");
+      const symlinkEscape = join(fixtureRoot, "symlink-escape");
       symlinkSync(outsideRoot, symlinkEscape, "dir");
       expect(() =>
-        writeCloudlightR3SourcePack({ rootDir, outputDir: join(symlinkEscape, "r3") })
+        writeCloudlightR3SourcePack({
+          rootDir: fixtureRoot,
+          outputDir: join(symlinkEscape, "r3"),
+        })
       ).toThrow("must stay under <root>/output/private");
     } finally {
-      rmSync(tempRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
       rmSync(outsideRoot, { recursive: true, force: true });
     }
   });
@@ -818,11 +822,11 @@ describe("Cloudlight Evening R3 source contract", () => {
   });
 
   it("independently parses the exact SMF chunks, events, hashes, and source-pack inventory", () => {
-    const tempRoot = mkdtempSync(join(rootDir, "output/private/cloudlight-evening-r3-smf-test-"));
+    const fixtureRoot = sourceFixtureRoot(loadCloudlightR3Source(rootDir));
     try {
       const receipt = writeCloudlightR3SourcePack({
-        rootDir,
-        outputDir: join(tempRoot, "pack"),
+        rootDir: fixtureRoot,
+        outputDir: join(fixtureRoot, "output/private/pack"),
       });
       const midi = readFileSync(receipt.midiPath);
       const smf = parseSmf(midi);
@@ -871,7 +875,9 @@ describe("Cloudlight Evening R3 source contract", () => {
         expect([...simultaneous.values()].every((ranks) => ranks.every((rank, index) => index === 0 || ranks[index - 1] <= rank))).toBe(true);
       }
 
-      const inventory = readdirSync(join(tempRoot, "pack"), { withFileTypes: true });
+      const inventory = readdirSync(join(fixtureRoot, "output/private/pack"), {
+        withFileTypes: true,
+      });
       expect(inventory.map((entry) => entry.name).sort()).toEqual([
         "README.md",
         "automation.json",
@@ -881,7 +887,10 @@ describe("Cloudlight Evening R3 source contract", () => {
       expect(inventory.every((entry) => entry.isFile())).toBe(true);
       expect(manifest.midiSha256).toBe(sha256(receipt.midiPath));
       expect(manifest.automationSha256).toBe(sha256(receipt.automationPath));
-      const sourceConfigPath = join(rootDir, "config/audio/cloudlight-evening-r3-source.json");
+      const sourceConfigPath = join(
+        fixtureRoot,
+        "config/audio/cloudlight-evening-r3-source.json"
+      );
       expect(manifest.sourceConfigSha256).toBe(sha256(sourceConfigPath));
       expect(manifest.sourceConfigBytes).toBe(readFileSync(sourceConfigPath).length);
       expect((receipt.summary as { sourceManifestSha256: string }).sourceManifestSha256).toBe(
@@ -900,7 +909,7 @@ describe("Cloudlight Evening R3 source contract", () => {
         "README.md",
       ]);
     } finally {
-      rmSync(tempRoot, { recursive: true, force: true });
+      rmSync(fixtureRoot, { recursive: true, force: true });
     }
   });
 
