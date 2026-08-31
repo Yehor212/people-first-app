@@ -5,15 +5,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dependencies before importing
 const mockAddListener = vi.fn().mockResolvedValue({ remove: vi.fn() });
+const mockSetState = vi.fn().mockResolvedValue({
+  canConsume: false,
+  hasVisibleLayer: false,
+  revision: 1,
+});
+const mockExitApp = vi.fn();
 
 vi.mock('@capacitor/app', () => ({
   App: {
     addListener: mockAddListener,
-    exitApp: vi.fn(),
+    exitApp: mockExitApp,
   },
 }));
 
 vi.mock('@capacitor/core', () => ({
+  registerPlugin: () => ({
+    addListener: mockAddListener,
+    setState: mockSetState,
+  }),
   Capacitor: {
     isNativePlatform: () => false,
     getPlatform: () => 'web',
@@ -111,39 +121,58 @@ describe('androidBackHandler', () => {
       await result;
     });
 
-    it('treats a cold-start non-root route without web history as an exit prompt instead of a no-op history back', async () => {
+    it('delegates an unobstructed root without an exit prompt or history side effect', async () => {
       vi.resetModules();
-      let backButtonCallback: ((event: { canGoBack: boolean }) => void) | null = null;
-      const nativeAddListener = vi.fn(async (_eventName: string, callback: (event: { canGoBack: boolean }) => void) => {
-        backButtonCallback = callback;
+      let committedBack: ((event: {
+        canGoBack: boolean;
+        hadVisibleLayer: boolean;
+        revision: number;
+      }) => void) | null = null;
+      const nativeSetState = vi.fn().mockResolvedValue({
+        canConsume: false,
+        hasVisibleLayer: false,
+        revision: 1,
+      });
+      const nativeAddListener = vi.fn(async (_eventName: string, callback: typeof committedBack) => {
+        committedBack = callback;
         return { remove: vi.fn() };
       });
-      const nativeExitApp = vi.fn();
 
-      vi.doMock('@capacitor/app', () => ({
-        App: {
+      vi.doMock('@capacitor/core', () => ({
+        registerPlugin: () => ({
           addListener: nativeAddListener,
-          exitApp: nativeExitApp,
-        },
+          setState: nativeSetState,
+        }),
       }));
       vi.doMock('@/lib/platform', () => ({
         isNative: true,
         isAndroid: true,
       }));
 
-      const { initAndroidBackHandler } = await import('../androidBackHandler');
-      window.history.pushState({}, '', '/diary?nav=v2&navLayout=phone');
+      const { initAndroidBackHandler, publishAndroidBackNavigationState } = await import(
+        '../androidBackHandler'
+      );
       const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
 
       await initAndroidBackHandler();
-      const callback = backButtonCallback as ((event: { canGoBack: boolean }) => void) | null;
+      await publishAndroidBackNavigationState({ isRoot: true });
+      const callback = committedBack as unknown as (event: {
+        canGoBack: boolean;
+        hadVisibleLayer: boolean;
+        revision: number;
+      }) => void;
+
       expect(callback).toBeTypeOf('function');
+      callback({ canGoBack: false, hadVisibleLayer: false, revision: 1 });
 
-      callback?.({ canGoBack: false });
-
+      expect(nativeAddListener).toHaveBeenCalledWith('backInvoked', expect.any(Function));
+      expect(nativeSetState).toHaveBeenLastCalledWith({
+        canConsume: false,
+        hasVisibleLayer: false,
+      });
       expect(historyBack).not.toHaveBeenCalled();
-      expect(nativeExitApp).not.toHaveBeenCalled();
-      expect(document.body.textContent).toContain('Press again to exit');
+      expect(mockExitApp).not.toHaveBeenCalled();
+      expect(document.body.textContent).not.toContain('Press again to exit');
     });
   });
 

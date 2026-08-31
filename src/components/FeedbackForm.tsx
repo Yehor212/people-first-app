@@ -156,20 +156,24 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         onKeyDown={handleKeyDown}
       >
         <div
+          data-testid="feedback-form-panel"
           className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-300 pb-safe"
           onTouchEnd={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between pb-4">
-            <div>
+          <div data-slot="feedback-header" className="flex items-center justify-between pb-4">
+            <div data-slot="feedback-header-copy">
               <h2
                 id="feedback-form-title"
+                data-slot="feedback-title"
                 className="text-lg font-semibold flex items-center gap-2"
               >
                 <MessageSquare className="w-5 h-5 text-primary" />
                 {t.feedbackTitle}
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">{t.feedbackSubtitle}</p>
+              <p data-slot="feedback-subtitle" className="text-sm text-muted-foreground mt-1">
+                {t.feedbackSubtitle}
+              </p>
             </div>
             <button
               onClick={handleClose}
@@ -181,7 +185,10 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           </div>
 
             <div className="space-y-4 pb-6">
-            <p className="rounded-xl border border-border bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground">
+            <p
+              data-slot="feedback-privacy-notice"
+              className="rounded-xl border border-border bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground"
+            >
               {t.feedbackPrivacyNotice ||
                 "Feedback may include your message, optional email, app version, device type, screen size, language, and browser info. Do not use this for urgent safety or medical support."}
             </p>

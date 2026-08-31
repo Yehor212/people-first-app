@@ -4,14 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 import { JournalImportConfirmDialog } from "../JournalImportConfirmDialog";
 
 const modalMocks = vi.hoisted(() => ({
-  useModalA11y: vi.fn(() => ({
+  useModalKeyboard: vi.fn(() => ({
     modalProps: { role: "dialog" as const, "aria-modal": true as const },
     handleKeyDown: vi.fn(),
     modalRef: { current: null },
   })),
 }));
 
-vi.mock("@/hooks/useModalA11y", () => modalMocks);
+vi.mock("@/hooks/useModalKeyboard", () => modalMocks);
 
 const ts = {
   cancel: "Cancel",
@@ -51,7 +51,10 @@ describe("JournalImportConfirmDialog", () => {
     expect(dialog).toHaveTextContent("Entries");
     expect(dialog).toHaveTextContent("12");
     expect(dialog).not.toHaveTextContent("Private content");
-    expect(modalMocks.useModalA11y).toHaveBeenCalledWith(true, expect.any(Function));
+    expect(modalMocks.useModalKeyboard).toHaveBeenCalledWith({
+      isOpen: true,
+      onClose: expect.any(Function),
+    });
   });
 
   it("keeps cancel as the first safe action and blocks both actions while importing", () => {

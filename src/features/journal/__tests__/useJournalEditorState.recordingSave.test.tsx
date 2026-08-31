@@ -35,9 +35,16 @@ const draftStorageMocks = vi.hoisted(() => ({
 
 type AndroidBackCallback = () => boolean;
 
-const backHandlerMocks = vi.hoisted(() => ({
-  registerModalCloseCallback: vi.fn((_callback: AndroidBackCallback) => vi.fn()),
-}));
+const backHandlerMocks = vi.hoisted(() => {
+  const activeCallbacks = new Set<AndroidBackCallback>();
+  return {
+    activeCallbacks,
+    registerModalCloseCallback: vi.fn((callback: AndroidBackCallback) => {
+      activeCallbacks.add(callback);
+      return vi.fn(() => activeCallbacks.delete(callback));
+    }),
+  };
+});
 
 const panicGestureMocks = vi.hoisted(() => ({
   onPanic: null as (() => void) | null,
@@ -231,6 +238,7 @@ describe("useJournalEditorState recording save", () => {
     draftStorageMocks.releaseJournalDraftWriter.mockClear();
     draftStorageMocks.touchJournalDraftWriter.mockReset();
     draftStorageMocks.touchJournalDraftWriter.mockResolvedValue(true);
+    backHandlerMocks.activeCallbacks.clear();
     backHandlerMocks.registerModalCloseCallback.mockClear();
     panicGestureMocks.onPanic = null;
     audioLifecycleMocks.pauseAllAudio.mockClear();
@@ -866,7 +874,7 @@ describe("useJournalEditorState recording save", () => {
     expect(onAddAudio).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps failed-save recovery visible when Android Back is pressed", async () => {
+  it("keeps failed-save recovery visible when the mounted modal requests Back close", async () => {
     const onAddAudio = vi.fn().mockRejectedValue(new Error("IndexedDB write failed"));
     const { result } = renderHook(
       () => useJournalEditorState(makeProps({ onAddAudio })),
@@ -881,9 +889,9 @@ describe("useJournalEditorState recording save", () => {
     act(() => result.current.handleStopRecording());
     await waitFor(() => expect(result.current.audioSaveRetryAvailable).toBe(true));
 
-    const androidBack = backHandlerMocks.registerModalCloseCallback.mock.calls.at(-1)?.[0];
+    expect(backHandlerMocks.activeCallbacks.size).toBe(0);
     act(() => {
-      expect(androidBack?.()).toBe(true);
+      result.current.requestDiscardRecording();
     });
 
     const recoveryState = result.current as typeof result.current & {
@@ -1376,6 +1384,23 @@ describe("useJournalEditorState recording save", () => {
     expect(draftStorageMocks.clearJournalDraft).not.toHaveBeenCalled();
   });
 
+  it("keeps dirty Back inside the unsaved cancel-or-commit guard", async () => {
+    const onBack = vi.fn();
+    const onSave = vi.fn();
+    const { result } = renderHook(
+      () => useJournalEditorState(makeProps({ onBack, onSave })),
+      { wrapper: ({ children }: { children: ReactNode }) => <>{children}</> },
+    );
+    await finishDraftPreflight(result);
+
+    act(() => result.current.setTitle("Unsaved title"));
+    act(() => result.current.handleBack());
+
+    expect(result.current.showUnsavedDialog).toBe(true);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onBack).not.toHaveBeenCalled();
+  });
+
   it("does not treat a handled nested Escape as an editor exit request", async () => {
     const onBack = vi.fn();
     const { result } = renderHook(
@@ -1445,7 +1470,32 @@ describe("useJournalEditorState recording save", () => {
     await waitFor(() => expect(result.current.draftAvailable).toBeNull());
   });
 
-  it("flushes an active recording when Android back closes the recording overlay", async () => {
+  it("registers only inline layers and leaves editor or mounted layers to their owner", async () => {
+    const { result } = renderHook(() => useJournalEditorState(makeProps()), {
+      wrapper: ({ children }: { children: ReactNode }) => <>{children}</>,
+    });
+    await finishDraftPreflight(result);
+
+    await waitFor(() => expect(backHandlerMocks.activeCallbacks.size).toBe(0));
+
+    act(() => result.current.setShowDeleteConfirm(true));
+    await waitFor(() => expect(backHandlerMocks.activeCallbacks.size).toBe(0));
+
+    act(() => result.current.setShowDeleteConfirm(false));
+    await waitFor(() => expect(backHandlerMocks.activeCallbacks.size).toBe(0));
+
+    act(() => result.current.setShowMood(true));
+    await waitFor(() => expect(backHandlerMocks.activeCallbacks.size).toBe(1));
+    const inlineMoodOwner = Array.from(backHandlerMocks.activeCallbacks).at(-1);
+    expect(inlineMoodOwner).toBeTypeOf("function");
+
+    act(() => {
+      expect(inlineMoodOwner?.()).toBe(true);
+    });
+    expect(result.current.showMood).toBe(false);
+  });
+
+  it("relinquishes recording Back ownership while preserving the modal stop path", async () => {
     const onAddAudio = vi.fn(() =>
       Promise.resolve({
         id: "audio-from-back",
@@ -1466,16 +1516,10 @@ describe("useJournalEditorState recording save", () => {
       await result.current.handleStartRecording();
     });
     await waitFor(() => expect(result.current.recorder.isRecording).toBe(true));
-    await waitFor(() => expect(backHandlerMocks.registerModalCloseCallback).toHaveBeenCalled());
-
-    const callbacks = backHandlerMocks.registerModalCloseCallback.mock.calls.map(
-      ([callback]) => callback,
-    );
-    const latestBackCallback = callbacks.at(-1);
-    expect(latestBackCallback).toBeTypeOf("function");
+    await waitFor(() => expect(backHandlerMocks.activeCallbacks.size).toBe(0));
 
     act(() => {
-      expect(latestBackCallback?.()).toBe(true);
+      result.current.handleStopRecording();
     });
 
     await waitFor(() => expect(onAddAudio).toHaveBeenCalled());
@@ -1605,7 +1649,7 @@ describe("useJournalEditorState recording save", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("does not dismiss a deletion in progress on Escape or Android Back", async () => {
+  it("does not dismiss a deletion in progress on Escape and leaves Back to its dialog", async () => {
     let finishDelete!: () => void;
     const onDelete = vi.fn(
       () => new Promise<void>((resolve) => {
@@ -1632,10 +1676,7 @@ describe("useJournalEditorState recording save", () => {
     });
     expect(result.current.showDeleteConfirm).toBe(true);
 
-    const androidBack = backHandlerMocks.registerModalCloseCallback.mock.calls.at(-1)?.[0];
-    act(() => {
-      void androidBack?.();
-    });
+    expect(backHandlerMocks.activeCallbacks.size).toBe(0);
     expect(result.current.showDeleteConfirm).toBe(true);
     expect(onDelete).toHaveBeenCalledTimes(1);
 
@@ -1644,7 +1685,7 @@ describe("useJournalEditorState recording save", () => {
     await waitFor(() => expect(result.current.showDeleteConfirm).toBe(false));
   });
 
-  it("does not dismiss a discard in progress on Escape or Android Back", async () => {
+  it("does not dismiss a discard in progress on Escape and leaves Back to its dialog", async () => {
     let finishDraftClear!: () => void;
     storageMocks.discardJournalDraft.mockImplementationOnce(
       () => new Promise<void>((resolve) => {
@@ -1670,10 +1711,7 @@ describe("useJournalEditorState recording save", () => {
     });
     expect(result.current.showUnsavedDialog).toBe(true);
 
-    const androidBack = backHandlerMocks.registerModalCloseCallback.mock.calls.at(-1)?.[0];
-    act(() => {
-      void androidBack?.();
-    });
+    expect(backHandlerMocks.activeCallbacks.size).toBe(0);
     expect(result.current.showUnsavedDialog).toBe(true);
     expect(onBack).not.toHaveBeenCalled();
 

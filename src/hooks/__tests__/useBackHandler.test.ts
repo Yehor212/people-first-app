@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 
 // Mock registerModalCloseCallback
 const mockUnregister = vi.fn();
@@ -10,6 +10,7 @@ vi.mock('@/lib/androidBackHandler', () => ({
 }));
 
 import { useBackHandler } from '../useBackHandler';
+import { useModalClose, useModalState } from '../useModalState';
 
 describe('useBackHandler', () => {
   afterEach(() => {
@@ -62,6 +63,20 @@ describe('useBackHandler', () => {
     expect(mockRegister).not.toHaveBeenCalled();
 
     rerender({ isOpen: true });
+
+    expect(mockRegister).toHaveBeenCalledTimes(1);
+  });
+
+  it('registers exactly one owner through useModalClose', () => {
+    const onClose = vi.fn();
+    renderHook(() => useModalClose(true, onClose));
+
+    expect(mockRegister).toHaveBeenCalledTimes(1);
+  });
+
+  it('registers exactly one owner through useModalState', () => {
+    const { result } = renderHook(() => useModalState());
+    act(() => result.current.open());
 
     expect(mockRegister).toHaveBeenCalledTimes(1);
   });

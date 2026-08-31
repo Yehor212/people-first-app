@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 interface DiaryFormatToolbarProps {
   editorRef: React.RefObject<HTMLDivElement>;
@@ -86,6 +87,12 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repositionRafRef = useRef<number | null>(null);
+  const closeToolbar = useCallback(() => {
+    setVisible(false);
+    setSelectionRect(null);
+  }, []);
+
+  useBackHandler(visible, closeToolbar);
 
   // --- Active format detection ---
   const checkActiveFormats = useCallback(() => {

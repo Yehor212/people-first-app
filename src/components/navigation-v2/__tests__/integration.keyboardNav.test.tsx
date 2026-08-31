@@ -45,6 +45,7 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 vi.mock("@/lib/androidBackHandler", () => ({
+  publishAndroidBackNavigationState: vi.fn(async () => undefined),
   registerModalCloseCallback: () => () => undefined,
 }));
 
@@ -207,7 +208,7 @@ describe("Integration #2 — Ctrl+1..5 keyboard navigation", () => {
         key: "Escape",
         bubbles: true,
         cancelable: true,
-      }),
+      })
     );
 
     expect(localEscapeHandler).toHaveBeenCalledOnce();

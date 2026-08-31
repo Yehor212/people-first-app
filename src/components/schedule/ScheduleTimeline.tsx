@@ -12,7 +12,6 @@ import { getToday } from "@/lib/utils";
 import { ScheduleEvent } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
 import { ParticleBackground } from "@/components/stats";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { zenTap } from "@/lib/animationUtils";
@@ -46,8 +45,6 @@ export function ScheduleTimeline({
   const timelineRef = useRef<HTMLDivElement>(null);
   const daySelectorRef = useRef<HTMLDivElement>(null);
 
-  useBackHandler(showAddModal, () => setShowAddModal(false));
-  useBackHandler(selectedEvent !== null, () => setSelectedEvent(null));
   useScrollLock(showAddModal || selectedEvent !== null);
 
   // Escape key: close modals (event details first, then add modal)

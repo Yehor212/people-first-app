@@ -4,7 +4,7 @@ import { X, Sparkles, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { zenMotion, zenTap } from "@/lib/animationUtils";
-import { useModalClose } from "@/hooks/useModalState";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 
 /**
@@ -19,6 +19,7 @@ interface FocusReflectionModalProps {
   onSelectValue: (value: number) => void;
   onSave: (value: number | null) => Promise<boolean>;
   onDismiss: () => void;
+  onCancel: () => void;
   onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal expansion
 }
 
@@ -27,11 +28,15 @@ export function FocusReflectionModal({
   onSelectValue,
   onSave,
   onDismiss,
+  onCancel,
   onExpandToJournal,
 }: FocusReflectionModalProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
-  useModalClose(true, onDismiss);
+  const { modalRef, handleKeyDown } = useModalKeyboard({
+    isOpen: true,
+    onClose: onCancel,
+  });
 
   return (
     <>
@@ -42,10 +47,12 @@ export function FocusReflectionModal({
         aria-hidden="true"
       />
       <motion.div
+        ref={modalRef}
         className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] backdrop-blur-sm md:mx-auto md:my-6 md:max-w-lg md:rounded-2xl md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-label={t.ariaFocusReflection}
+        onKeyDown={handleKeyDown}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={(e) => {

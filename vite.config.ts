@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync, renameSync } from "fs";
 import { fileURLToPath } from "url";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
@@ -32,6 +32,21 @@ function normalizeIndexBasePathPlugin(base: string) {
     enforce: "post" as const,
     transformIndexHtml(html: string) {
       return collapseDuplicatedBasePathUrls(html, base);
+    },
+  };
+}
+
+function moveT184QaHtmlToRootPlugin() {
+  const qaHtmlPath = path.resolve(__dirname, "dist/src/test/t184/index.html");
+  const rootHtmlPath = path.resolve(__dirname, "dist/index.html");
+
+  return {
+    name: "zenflow-t184-qa-html-root",
+    closeBundle() {
+      if (!existsSync(qaHtmlPath)) {
+        throw new Error("T184 QA HTML output was not emitted");
+      }
+      renameSync(qaHtmlPath, rootHtmlPath);
     },
   };
 }
@@ -97,10 +112,11 @@ export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
+  const t184QaBuild = process.env.VITE_T184_QA_BUILD === "true";
   const androidMotionBenchmark =
     isCapacitor && process.env.ZENFLOW_ANDROID_MOTION_BENCHMARK === "true";
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
-  const base = isCapacitor ? "./" : webBase;
+  const base = t184QaBuild ? "/" : isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
   const journalSaveCeremonyBuildEnabled =
     process.env.ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED === "true";
@@ -407,6 +423,7 @@ export default defineConfig(({ mode }) => {
         : null,
       stripDisabledPwaManifestPlugin(pwaEnabled),
       normalizeIndexBasePathPlugin(base),
+      t184QaBuild && moveT184QaHtmlToRootPlugin(),
       sentrySourceMapUploadEnabled
         ? sentryVitePlugin({
             org: process.env.SENTRY_ORG,
@@ -511,6 +528,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
 
       rollupOptions: {
+        input: t184QaBuild ? { index: "src/test/t184/index.html" } : undefined,
         output: {
           // Enable code splitting for better performance
           manualChunks(id) {

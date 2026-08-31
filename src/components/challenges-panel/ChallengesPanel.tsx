@@ -11,7 +11,6 @@ import { getBadgeById, getRarityColor } from "@/lib/badges";
 import { hapticTap } from "@/lib/haptics";
 import { VirtualGrid, shouldVirtualize } from "@/components/ui/virtual-list";
 import { EmojiOrIcon } from "@/components/icons";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -40,9 +39,7 @@ export function ChallengesPanel({
   const virtualizeBadges = shouldVirtualize(badges.length);
   const hasWideBadgeGrid = useMediaQuery("(min-width: 520px)");
 
-  useBackHandler(!showShareModal, onClose);
   useModalA11y(!showShareModal, onClose);
-  useBackHandler(showShareModal, () => setShowShareModal(false));
   useModalA11y(showShareModal, () => setShowShareModal(false));
   useScrollLock(true);
 

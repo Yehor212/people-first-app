@@ -141,6 +141,7 @@ vi.mock("@/hooks/useKeyboardShortcuts", () => ({
 }));
 
 vi.mock("@/lib/androidBackHandler", () => ({
+  publishAndroidBackNavigationState: vi.fn(async () => undefined),
   registerModalCloseCallback: () => () => undefined,
 }));
 
@@ -275,9 +276,10 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
   it("does not mount the phone drawer before native banner suppression resolves", async () => {
     let acknowledgeSuppression: (() => void) | undefined;
     adProtectedGate.prepareProtectedAdSurface.mockImplementationOnce(
-      () => new Promise<boolean>((resolve) => {
-        acknowledgeSuppression = () => resolve(true);
-      }),
+      () =>
+        new Promise<boolean>((resolve) => {
+          acknowledgeSuppression = () => resolve(true);
+        })
     );
     render(<NavV2Orchestrator />);
 
@@ -335,7 +337,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     render(<NavV2Orchestrator />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "This panel couldn’t open safely. Try again.",
+      "This panel couldn’t open safely. Try again."
     );
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(adProtectedGate.clearProtectedSurfaceSuppressionFailure).toHaveBeenCalledTimes(1);

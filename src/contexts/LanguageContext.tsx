@@ -22,6 +22,7 @@ import {
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
 import { updateNativePushPresentation } from "@/lib/nativePushRealm";
+import { syncNativeLocale } from "@/lib/nativeLocale";
 import {
   safeLocalStorageSet,
   safeLocalStorageGet,
@@ -197,6 +198,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshNativePushPresentation(active.language);
   }, [active.language, refreshNativePushPresentation]);
+
+  useEffect(() => {
+    void syncNativeLocale(active.language).catch(() => {
+      logger.warn("[Language] Native locale update failed");
+    });
+  }, [active.language]);
 
   const setLanguage = useCallback((language: Language) => {
     void requestLanguage(language);

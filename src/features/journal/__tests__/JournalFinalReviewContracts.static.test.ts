@@ -176,9 +176,11 @@ describe("journal final review contracts", () => {
 
     expect(importConfirmSource).not.toContain("truncate");
     expect(importConfirmSource).toContain("flex-col");
-    expect(removePasswordSource).toContain("useBackHandler(true, handleClose)");
+    expect(removePasswordSource).toContain("useModalKeyboard({");
+    expect(removePasswordSource).not.toContain("useBackHandler(true, handleClose)");
     expect(removePasswordSource).toContain("flex-col");
-    expect(exportDialogSource).toContain("useBackHandler(true, handleClose)");
+    expect(exportDialogSource).toContain("useModalKeyboard({");
+    expect(exportDialogSource).not.toContain("useBackHandler(true, handleClose)");
     expect(aiConsentSource).toContain("flex-col");
     expect(aiConsentSource).toContain("whitespace-normal break-words");
 

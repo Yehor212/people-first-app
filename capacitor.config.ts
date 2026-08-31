@@ -16,7 +16,7 @@ const androidOffIncludePlugins = [
 
 if (areAdsRuntimeEnabled()) {
   throw new Error(
-    "Native ad packaging is unavailable until a separately authorized ADR-MON-001 activation restores its native contract.",
+    "Native ad packaging is unavailable until a separately authorized ADR-MON-001 activation restores its native contract."
   );
 }
 
@@ -40,6 +40,10 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   plugins: {
+    App: {
+      // AndroidBackPlugin is the single API 36 predictive Back owner.
+      disableBackButtonHandler: true,
+    },
     SystemBars: {
       insetsHandling: "disable",
       style: "DEFAULT",

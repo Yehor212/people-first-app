@@ -56,6 +56,8 @@ export {
 export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
   const { t } = useLanguage();
   const [, setImportedBackupMarkerRevision] = useState(0);
+  const [notificationPermissionDismissedForSession, setNotificationPermissionDismissedForSession] =
+    useState(false);
   const importedBackupRecoveryRef = useRef<HTMLDivElement | null>(null);
   const importedBackupSettledRef = useRef<HTMLDivElement | null>(null);
   const searchParams =
@@ -303,8 +305,13 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  if (!notificationPermissionChecked) {
-    return <NotificationPermission onComplete={handleNotificationPermissionComplete} />;
+  if (!notificationPermissionChecked && !notificationPermissionDismissedForSession) {
+    return (
+      <NotificationPermission
+        onComplete={handleNotificationPermissionComplete}
+        onCancel={() => setNotificationPermissionDismissedForSession(true)}
+      />
+    );
   }
 
   return <>{children}</>;
