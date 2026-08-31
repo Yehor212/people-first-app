@@ -92,9 +92,9 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe("Codex and Kimi workspace command guard", () => {
+describe("Codex workspace command guard", () => {
   it.each([
-    ["Kimi write tool", { tool_name: "WriteFile", tool_input: { path: "src/new.ts" } }],
+    ["generic write tool", { tool_name: "WriteFile", tool_input: { path: "src/new.ts" } }],
     ["Codex patch tool", { tool_name: "apply_patch", tool_input: { path: "src/new.ts" } }],
     ["Git commit", bash("git commit -m 'direct main'")],
     ["Git add", bash("git add src/new.ts")],
@@ -207,14 +207,6 @@ describe("Codex and Kimi workspace command guard", () => {
     "cd scripts && node agent-workspace.mjs create --agent codex --task guarded --path /tmp/guarded",
     "Set-Location scripts; node agent-workspace.mjs sync --apply",
     "./scripts/agent-workspace.mjs sync --apply",
-    "npm run agent:kimi-hook -- --apply",
-    "npm --silent run agent:kimi-hook -- --apply",
-    "MODE=apply; npm run agent:kimi-hook -- --$MODE",
-    "$mode = 'apply'; npm --silent run agent:kimi-hook -- --$mode",
-    "node scripts/install-kimi-workspace-hook.mjs --apply",
-    "cd scripts && node install-kimi-workspace-hook.mjs --apply",
-    "Set-Location scripts; node install-kimi-workspace-hook.mjs --restore --backup C:\\private-backup",
-    "./scripts/install-kimi-workspace-hook.mjs --restore --backup /tmp/private-backup",
   ])(
     "blocks operator-only workspace mutations through every documented entrypoint: %s",
     async (command) => {
@@ -228,14 +220,14 @@ describe("Codex and Kimi workspace command guard", () => {
     }
   );
 
-  it("blocks an operator-only package script from a PowerShell tool surface", async () => {
+  it("blocks operator-only workspace sync from a PowerShell tool surface", async () => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
     git(root, ["switch", "-c", "codex/guard-test"]);
 
     const result = runHook(root, {
       cwd: root,
       tool_name: "PowerShell",
-      tool_input: { command: "npm --silent run agent:kimi-hook -- --apply" },
+      tool_input: { command: "npm --silent run agent:workspace -- sync --apply" },
     });
 
     expect(result.status, result.stderr).toBe(2);
@@ -250,11 +242,6 @@ describe("Codex and Kimi workspace command guard", () => {
     "node scripts/agent-work''space.mjs cre''ate --agent codex --task guarded --path /tmp/guarded",
     "npm run agent:workspace -- s''ync --apply",
     "npm run agent:workspace -- sync --ap''ply",
-    "npm run agent':'kimi-hook -- --apply",
-    'npm run agent":"kimi-hook -- --apply',
-    "npm run agent:kimi-hook -- --ap''ply",
-    "npm run agent:kimi-hook -- --rest''ore --backup /tmp/private --receipt /tmp/receipt",
-    "node scripts/install-kimi-workspace-ho''ok.mjs --ap''ply",
   ])("blocks operator-only shell-token concatenation: %s", async (command) => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
     git(root, ["switch", "-c", "codex/guard-test"]);
@@ -268,8 +255,6 @@ describe("Codex and Kimi workspace command guard", () => {
   it.each([
     "npm run agent`:workspace -- create --agent codex --task guarded --path C:\\guarded",
     "npm run agent:workspace -- sync --ap`ply",
-    "npm run agent`:kimi-hook -- --apply",
-    "node scripts/install-kimi-workspace-ho`ok.mjs --ap`ply",
   ])("blocks PowerShell backtick concatenation: %s", async (command) => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
     git(root, ["switch", "-c", "codex/guard-test"]);
@@ -330,7 +315,6 @@ describe("Codex and Kimi workspace command guard", () => {
       "$pm='npm'; $s=('agent:'+'workspace'); & $pm run $s -- create --agent codex --task guarded --path C:\\guarded",
     ],
     ["PowerShell", "Invoke-Expression ('npm run agent:'+'workspace -- sync --apply')"],
-    ["PowerShell", "Invoke-Expression ('npm run agent:'+'kimi-hook -- --apply')"],
     ["PowerShell", "Write-Output safe & cmd /c operator-wrapper"],
   ])(
     "fails closed for unknown or opaque operator-command dispatch: %s %s",
@@ -933,7 +917,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
 
     const result = runHook(current, {
       cwd: current,
@@ -945,35 +929,25 @@ describe("Codex and Kimi workspace command guard", () => {
     expect(result.stderr).toContain("cross-worktree");
   });
 
-  it("binds each client hook to its own branch prefix", async () => {
+  it("binds the client hook only to the Codex actor", async () => {
     const codex = await gitWorkspace(CANONICAL_REMOTE);
-    const kimi = await gitWorkspace(CANONICAL_REMOTE);
     git(codex, ["switch", "-c", "codex/current"]);
-    git(kimi, ["switch", "-c", "kimi/audio"]);
     const write = {
       tool_name: "WriteFile",
       tool_input: { path: "src/client-owned.ts" },
     };
 
     expect(runHook(codex, { ...write, cwd: codex }, "codex").status).toBe(0);
-    expect(runHook(kimi, { ...write, cwd: kimi }, "kimi").status).toBe(0);
-
-    for (const [root, actor] of [
-      [codex, "kimi"],
-      [kimi, "codex"],
-    ] as const) {
-      const result = runHook(root, { ...write, cwd: root }, actor);
-      expect(result.status, result.stderr).toBe(2);
-      expect(result.stderr).toMatch(/actor|client|branch prefix/i);
-      expect(result.stderr).toContain(actor);
-    }
+    const retiredActor = runHook(codex, { ...write, cwd: codex }, "kimi");
+    expect(retiredActor.status, retiredActor.stderr).toBe(2);
+    expect(retiredActor.stderr).toContain("actor binding is missing or invalid");
   });
 
   it("finds cross-lane paths nested inside a multi-edit payload", async () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
 
     const result = runHook(current, {
       cwd: current,
@@ -996,7 +970,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
     const edits = Array.from({ length: 100 }, (_, index) => ({
       file_path: `src/local-${index}.ts`,
       new_string: "export {}",
@@ -1037,7 +1011,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
     const otherFile = path.join(other, "src", "incomplete.ts");
     const events = [
       bash(`mv ${otherFile} ./recovered.ts`),
@@ -1085,7 +1059,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
     const commands = [
       "GIT_EDITOR='sh -c touch /tmp/zenflow-env-sentinel' git commit",
       "GIT_EXTERNAL_DIFF='sh -c touch /tmp/zenflow-env-sentinel' git diff",
@@ -1106,7 +1080,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
 
     for (const command of [
       `env -S 'sh -c \"touch /tmp/zenflow-env-sentinel\"'`,
@@ -1157,7 +1131,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
 
     const result = runHook(current, {
       cwd: current,
@@ -1179,7 +1153,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
     const suffix = `/../${path.basename(other)}/confused.ts`;
 
     const result = runHook(current, {
@@ -1195,7 +1169,7 @@ describe("Codex and Kimi workspace command guard", () => {
     const current = await gitWorkspace(CANONICAL_REMOTE);
     const other = await gitWorkspace(CANONICAL_REMOTE);
     git(current, ["switch", "-c", "codex/current"]);
-    git(other, ["switch", "-c", "kimi/other"]);
+    git(other, ["switch", "-c", "codex/other"]);
 
     const result = runHook(current, {
       cwd: current,
@@ -1277,9 +1251,9 @@ describe("Codex and Kimi workspace command guard", () => {
     expect(result.stderr).toContain("actor binding");
   });
 
-  it("evaluates bounded 1, 20, and 100-target payloads within the Kimi hook timeout", async () => {
+  it("evaluates bounded 1, 20, and 100-target payloads within the Codex hook timeout", async () => {
     const root = await gitWorkspace(CANONICAL_REMOTE);
-    git(root, ["switch", "-c", "kimi/performance"]);
+    git(root, ["switch", "-c", "codex/performance"]);
     const timings: Array<{ elapsedMs: number; targets: number }> = [];
 
     for (const count of [1, 20, 100]) {
@@ -1296,7 +1270,7 @@ describe("Codex and Kimi workspace command guard", () => {
             })),
           },
         },
-        "kimi"
+        "codex"
       );
       const elapsedMs = performance.now() - startedAt;
 
@@ -1304,7 +1278,7 @@ describe("Codex and Kimi workspace command guard", () => {
       expect(elapsedMs, `${count} targets took ${elapsedMs.toFixed(2)}ms`).toBeLessThan(5_000);
       timings.push({ elapsedMs: Number(elapsedMs.toFixed(2)), targets: count });
     }
-    console.info("Kimi hook bounded-target timing", timings);
+    console.info("Codex hook bounded-target timing", timings);
   });
 
   it("fails closed on a write when the Git identity probe cannot run", async () => {

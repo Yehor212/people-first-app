@@ -12,7 +12,7 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe("cross-client Git commit and push guard", () => {
+describe("Codex Git commit and push guard", () => {
   it("blocks commits on main and permits them on an agent feature branch", async () => {
     const root = await repository();
 
@@ -74,7 +74,7 @@ describe("cross-client Git commit and push guard", () => {
 
   it.each([
     ["a tag", "refs/tags/unsafe-release"],
-    ["the other agent namespace", "refs/heads/kimi/focused-task"],
+    ["the retired Kimi namespace", "refs/heads/kimi/focused-task"],
     ["a renamed same-agent branch", "refs/heads/codex/other-task"],
     ["an unsupported branch namespace", "refs/heads/shared/focused-task"],
   ])("blocks a feature ref pushed to %s", async (_label, remoteRef) => {
@@ -93,11 +93,11 @@ describe("cross-client Git commit and push guard", () => {
     expect(result.stderr).toMatch(/same-named|tag/);
   });
 
-  it.each(["refs/heads/codex/other-task", "refs/heads/kimi/other-task"])(
+  it.each(["refs/heads/codex/other-task"])(
     "blocks a same-named update for a branch not checked out in this worktree: %s",
     async (otherRef) => {
       const root = await repository();
-      git(root, ["switch", "-c", "kimi/current-task"]);
+      git(root, ["switch", "-c", "codex/current-task"]);
       const head = git(root, ["rev-parse", "HEAD"]).trim();
       const zero = "0".repeat(head.length);
 

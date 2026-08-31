@@ -844,8 +844,8 @@ function handoffWorkspace({ cwd, expectedRemote }) {
     );
   }
   if (!before.locked) fail("UNLOCKED_WORKTREE", "handoff requires a locked worktree");
-  if (!/^(?:codex|kimi)\//.test(before.branch)) {
-    fail("INVALID_AGENT_BRANCH", "handoff requires codex/ or kimi/ branch ownership");
+  if (!/^codex\//.test(before.branch)) {
+    fail("INVALID_AGENT_BRANCH", "handoff requires codex/ branch ownership");
   }
 
   git(before.rootDir, ["fetch", "origin", "--no-prune"]);

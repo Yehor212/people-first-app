@@ -46,4 +46,21 @@ describe("agent workspace pure safety decisions", () => {
       })
     ).toMatchObject({ ok: false });
   });
+
+  it("accepts only the Codex workspace actor", () => {
+    const request = {
+      slug: "focused-task",
+      targetPath: "/repo/worktrees/focused-task",
+      repoRoot: "/repo/control",
+      branchExists: false,
+      targetExists: false,
+      worktreePaths: ["/repo/control"],
+    };
+
+    expect(validateCreateRequest({ ...request, agent: "codex" })).toMatchObject({
+      ok: true,
+      branch: "codex/focused-task",
+    });
+    expect(validateCreateRequest({ ...request, agent: "kimi" })).toMatchObject({ ok: false });
+  });
 });

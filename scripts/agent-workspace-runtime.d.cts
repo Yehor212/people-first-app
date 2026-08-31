@@ -86,7 +86,7 @@ export function inspectWorkspace(input: {
 }): WorkspaceInspection;
 
 export function createWorkspace(input: {
-  agent: "codex" | "kimi";
+  agent: "codex";
   cwd: string;
   destination: string;
   expectedRemote?: string;

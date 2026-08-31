@@ -90,14 +90,14 @@ function evaluateWorkspaceEvent({ event, expectedAgent, fallbackCwd = process.cw
   }
   for (const identity of zenflowIdentities) {
     if (identity.detached && mutationIntent) {
-      reasons.push("detached HEAD is read-only; open a locked codex/ or kimi/ worktree");
+      reasons.push("detached HEAD is read-only; open a locked codex/ worktree");
     }
     if (identity.branch === "main" && mutationIntent) {
-      reasons.push("main is integration-only; open a locked codex/ or kimi/ worktree");
+      reasons.push("main is integration-only; open a locked codex/ worktree");
     }
     if (
       mutationIntent &&
-      (!["codex", "kimi"].includes(expectedAgent) ||
+      (expectedAgent !== "codex" ||
         !identity.branch?.startsWith(`${expectedAgent}/`))
     ) {
       reasons.push(
@@ -245,11 +245,11 @@ function operatorOnlyWorkspaceCommandReason(command) {
   const text = normalized && normalized !== raw ? `${raw}\n${normalized}` : raw;
   const dynamicWorkspaceInvocation = [
     ...text.matchAll(
-      /(?:agent:workspace|agent-workspace\.mjs|agent:kimi-hook|install-kimi-workspace-hook\.mjs)\b[^\r\n;&|]*/gi
+      /(?:agent:workspace|agent-workspace\.mjs)\b[^\r\n;&|]*/gi
     ),
   ].some((match) => /[$`]|%[A-Za-z_][A-Za-z0-9_]*%/.test(match[0]));
   if (dynamicWorkspaceInvocation) {
-    return "dynamic workspace/Kimi-hook arguments are operator-only; use literal reviewed arguments";
+    return "dynamic workspace arguments are operator-only; use literal reviewed arguments";
   }
   if (
     /\bagent:workspace\b[^\r\n;&|]*\b(?:create|bootstrap-human-review)\b/i.test(text) ||
@@ -262,12 +262,6 @@ function operatorOnlyWorkspaceCommandReason(command) {
     /\bagent-workspace\.mjs\b[^\r\n;&|]*\bsync\b[^\r\n;&|]*--apply\b/i.test(text)
   ) {
     return "agent workspace sync --apply is operator-only; the reviewed SHA is a TOCTOU pin, not authorization";
-  }
-  if (
-    /\bagent:kimi-hook\b[^\r\n;&|]*--(?:apply|restore)\b/i.test(text) ||
-    /\binstall-kimi-workspace-hook\.mjs\b[^\r\n;&|]*--(?:apply|restore)\b/i.test(text)
-  ) {
-    return "Kimi hook installation or restoration is operator-only";
   }
   return "";
 }

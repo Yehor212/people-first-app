@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-// Shared Codex and Kimi PreToolUse adapter; each registration binds its client actor.
+// Codex PreToolUse adapter; the tracked registration binds the only supported actor.
 const fs = require("node:fs");
 const { evaluateWorkspaceEvent } = require("../../scripts/agent-workspace-command-guard.cjs");
 
@@ -30,7 +30,7 @@ try {
 
 function expectedAgentArgument(args) {
   if (args.length !== 2 || args[0] !== "--expected-agent") return "";
-  return ["codex", "kimi"].includes(args[1]) ? args[1] : "";
+  return args[1] === "codex" ? args[1] : "";
 }
 
 function block(reason, actor) {
