@@ -22,5 +22,6 @@
 - [x] Capture and inspect fresh phone/desktop, light/dark, enabled/disabled, and Arabic RTL browser evidence.
 - [x] Run the independent read-only visual integrity critic.
 - [x] Run full repository, build, production-data, release-artifact, and security gates.
-- [ ] Commit, push, open the replacement PR, and wait for required CI.
+- [x] Commit and push the scoped replacement branch.
+- [ ] Open the replacement PR and wait for required CI.
 - [ ] Merge and verify main release before closing PR #28.
