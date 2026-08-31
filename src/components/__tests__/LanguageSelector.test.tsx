@@ -211,8 +211,40 @@ describe("LanguageSelector", () => {
     expect(screen.getAllByTestId("entry-gate-backdrop-ribbon")).toHaveLength(3);
 
     for (const option of within(languageGroup).getAllByRole("radio")) {
-      expect(option).toHaveClass("h-auto", "min-w-0", "whitespace-normal", "break-words");
+      expect(option).toHaveClass("h-auto", "min-w-0", "whitespace-normal", "break-normal");
+      expect(option).not.toHaveClass("break-words");
     }
+    for (const label of [
+      "English",
+      "Українська",
+      "Español",
+      "Deutsch",
+      "Français",
+      "日本語",
+      "العربية",
+      "עברית",
+    ]) {
+      expect(screen.getByText(label)).toHaveClass("break-normal");
+      expect(screen.getByText(label)).not.toHaveClass("break-words");
+    }
+  });
+
+  it("uses one readable language column when the rendered labels are large", () => {
+    const originalGetComputedStyle = window.getComputedStyle;
+    const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      const styles = originalGetComputedStyle(element);
+      return element.hasAttribute("data-entry-language-label")
+        ? { ...styles, fontSize: "28px" }
+        : styles;
+    });
+
+    render(<LanguageSelector onComplete={vi.fn()} />);
+
+    const languageGroup = screen.getByRole("radiogroup", { name: "Select language" });
+    expect(languageGroup).toHaveAttribute("data-language-grid-layout", "single-column");
+    expect(languageGroup).toHaveClass("grid-cols-1");
+    expect(languageGroup.className).not.toContain("auto-fit");
+    getComputedStyleSpy.mockRestore();
   });
 
   it("selects a language and completes without form submission side effects", () => {
@@ -227,6 +259,32 @@ describe("LanguageSelector", () => {
 
     fireEvent.click(continueButton);
     expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses one tab stop and selects languages with radio-group navigation keys", () => {
+    render(<LanguageSelector onComplete={vi.fn()} />);
+
+    const group = screen.getByRole("radiogroup", { name: "Select language" });
+    const english = within(group).getByRole("radio", { name: "English" });
+    const ukrainian = within(group).getByRole("radio", { name: "Українська" });
+    const hebrew = within(group).getByRole("radio", { name: "עברית" });
+
+    expect(english).toHaveAttribute("tabindex", "0");
+    expect(ukrainian).toHaveAttribute("tabindex", "-1");
+    expect(hebrew).toHaveAttribute("tabindex", "-1");
+
+    english.focus();
+    fireEvent.keyDown(english, { key: "ArrowLeft" });
+    expect(languageState.setLanguage).toHaveBeenLastCalledWith("he");
+    expect(hebrew).toHaveFocus();
+
+    fireEvent.keyDown(hebrew, { key: "Home" });
+    expect(languageState.setLanguage).toHaveBeenLastCalledWith("en");
+    expect(english).toHaveFocus();
+
+    fireEvent.keyDown(english, { key: "ArrowDown" });
+    expect(languageState.setLanguage).toHaveBeenLastCalledWith("uk");
+    expect(ukrainian).toHaveFocus();
   });
 
   it("blocks continuation while applying a dictionary and offers retry after failure", () => {

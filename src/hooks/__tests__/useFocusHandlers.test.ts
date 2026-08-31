@@ -40,8 +40,16 @@ vi.mock("@/lib/offlineQueueHandlers", () => ({
   queueFocusSessionSync: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("@/storage/cloudSync", () => ({
+  triggerSync: vi.fn(),
+}));
+
 vi.mock("@/lib/randomQuests", () => ({
   updateAllQuestsProgress: vi.fn(() => []),
+}));
+
+vi.mock("@/lib/analytics", () => ({
+  analytics: { focusSessionCompleted: vi.fn() },
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -58,6 +66,9 @@ import { useFocusHandlers } from "../useFocusHandlers";
 import { triggerXpPopup } from "@/components/XpPopup";
 import { playSound } from "@/lib/audioManager";
 import { updateAllQuestsProgress } from "@/lib/randomQuests";
+import { queueFocusSessionSync } from "@/lib/offlineQueueHandlers";
+import { triggerSync } from "@/storage/cloudSync";
+import { analytics } from "@/lib/analytics";
 
 describe("useFocusHandlers", () => {
   beforeEach(() => {
@@ -157,6 +168,42 @@ describe("useFocusHandlers", () => {
 
     expect(mockOpenModal).not.toHaveBeenCalled();
   });
+
+  it.each([true, false])(
+    "persists and syncs an aborted session without completion-only effects when rewardsEnabled=%s",
+    (rewardsEnabled) => {
+      vi.mocked(updateAllQuestsProgress).mockReturnValueOnce([
+        { title: "Focus quest", reward: { xp: 30 } },
+      ] as never);
+      const { result } = renderFocusHandlers({ rewardsEnabled });
+      const session = { ...makeSession(5), status: "aborted" as const };
+
+      act(() => {
+        result.current.handleCompleteFocusSession(session);
+        vi.advanceTimersByTime(600);
+      });
+
+      expect(mockSetFocusSessions).toHaveBeenCalledTimes(1);
+      const updater = mockSetFocusSessions.mock.calls[0][0];
+      expect(updater([])).toEqual([
+        expect.objectContaining({
+          ...session,
+          status: "aborted",
+        }),
+      ]);
+      expect(queueFocusSessionSync).toHaveBeenCalledWith(session);
+      expect(triggerSync).toHaveBeenCalledTimes(1);
+      expect(mockRewardUser).not.toHaveBeenCalled();
+      expect(playSound).not.toHaveBeenCalled();
+      expect(analytics.focusSessionCompleted).not.toHaveBeenCalled();
+      expect(mockUpdateChallengeProgress).not.toHaveBeenCalled();
+      expect(mockCheckForFeatureUnlocks).not.toHaveBeenCalled();
+      expect(updateAllQuestsProgress).not.toHaveBeenCalled();
+      expect(mockEarnTreats).not.toHaveBeenCalled();
+      expect(triggerXpPopup).not.toHaveBeenCalled();
+      expect(mockOpenModal).not.toHaveBeenCalled();
+    }
+  );
 
   it("handleMindfulMomentComplete calls earnTreats", () => {
     const { result } = renderFocusHandlers();

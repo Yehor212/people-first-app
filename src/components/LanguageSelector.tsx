@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Check, RefreshCw } from "lucide-react";
-import { type MouseEvent, useEffect } from "react";
+import { type MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { EntryGateBackdrop } from "@/components/EntryGateBackdrop";
 import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { type Language, languageFlags, languageNames } from "@/i18n/translations";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { isAndroid } from "@/lib/platform";
+import { handleRadioGroupKeyDown } from "@/lib/radioGroupKeyboard";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -21,6 +22,7 @@ interface LanguageSelectorProps {
 
 const languages: Language[] = ["en", "uk", "es", "de", "fr", "ja", "ar", "he"];
 const rtlLanguages = new Set<Language>(["ar", "he"]);
+const ENTRY_LANGUAGE_TWO_COLUMN_MAX_FONT_SIZE_PX = 20;
 
 const shellVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -54,9 +56,42 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
   } = useLanguage();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const animated = !isAndroid && shouldAnimate();
+  const languageGridRef = useRef<HTMLDivElement>(null);
+  const [languageGridLayout, setLanguageGridLayout] = useState<"auto" | "single-column">(
+    "auto"
+  );
 
   useEffect(() => {
     resetEntryGateScroll("language-selector-screen");
+  }, []);
+
+  useLayoutEffect(() => {
+    const grid = languageGridRef.current;
+    const label = grid?.querySelector<HTMLElement>("[data-entry-language-label]");
+    if (!grid || !label) return;
+
+    const updateLayout = () => {
+      const fontSize = Number.parseFloat(window.getComputedStyle(label).fontSize);
+      setLanguageGridLayout(
+        Number.isFinite(fontSize) && fontSize > ENTRY_LANGUAGE_TWO_COLUMN_MAX_FONT_SIZE_PX
+          ? "single-column"
+          : "auto"
+      );
+    };
+
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    window.visualViewport?.addEventListener("resize", updateLayout);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateLayout);
+    resizeObserver?.observe(label);
+
+    return () => {
+      window.removeEventListener("resize", updateLayout);
+      window.visualViewport?.removeEventListener("resize", updateLayout);
+      resizeObserver?.disconnect();
+    };
   }, []);
 
   const handleSelect = (lang: Language, event?: MouseEvent<HTMLButtonElement>) => {
@@ -112,15 +147,22 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
           aria-label={t.selectLanguage}
         >
           <motion.div
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))] gap-2 sm:gap-3"
+            ref={languageGridRef}
+            className={cn(
+              "grid gap-2 sm:gap-3",
+              languageGridLayout === "single-column"
+                ? "grid-cols-1"
+                : "grid-cols-[repeat(auto-fit,minmax(min(100%,calc(9rem*var(--font-scale,1))),1fr))]"
+            )}
             role="radiogroup"
             aria-label={t.selectLanguage}
             aria-busy={Boolean(pendingLanguage)}
+            data-language-grid-layout={languageGridLayout}
             variants={languageListVariants}
             initial={animated ? "hidden" : false}
             animate="visible"
           >
-            {languages.map((lang) => {
+            {languages.map((lang, index) => {
               const selected = (pendingLanguage ?? language) === lang;
 
               return (
@@ -132,9 +174,16 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                   aria-label={languageNames[lang]}
                   lang={lang}
                   dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
+                  tabIndex={selected ? 0 : -1}
                   onClick={(event) => handleSelect(lang, event)}
+                  onKeyDown={(event) =>
+                    handleRadioGroupKeyDown(event, index, languages.length, (nextIndex) => {
+                      const nextLanguage = languages[nextIndex];
+                      if (nextLanguage) setLanguage(nextLanguage);
+                    })
+                  }
                   className={cn(
-                    "entry-action-tile btn-press h-auto min-h-14 min-w-0 whitespace-normal break-words rounded-2xl border px-3 py-2.5 text-start [hyphens:manual] [overflow-wrap:break-word] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    "entry-action-tile btn-press h-auto min-h-14 min-w-0 whitespace-normal break-normal rounded-2xl border px-3 py-2.5 text-start [hyphens:none] outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     selected
                       ? "border-primary/70 bg-primary/20 text-foreground shadow-lg"
                       : "border-border/45 bg-card/55 text-muted-foreground hover:border-primary/40 hover:bg-card/75 hover:text-foreground"
@@ -148,8 +197,9 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                       {languageFlags[lang]}
                     </span>
                     <span
-                      className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight [hyphens:manual] [overflow-wrap:break-word]"
+                      className="min-w-0 flex-1 break-normal text-sm font-semibold leading-tight [hyphens:none]"
                       dir={rtlLanguages.has(lang) ? "rtl" : "ltr"}
+                      data-entry-language-label
                     >
                       {languageNames[lang]}
                     </span>

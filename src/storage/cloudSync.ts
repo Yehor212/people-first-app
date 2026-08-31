@@ -397,8 +397,9 @@ export const silentSync = async () => {
           // Track failures and emit event for monitoring
           consecutiveSyncFailures++;
           emitSyncFailureEvent(error, consecutiveSyncFailures);
-          // NOT re-throwing: silentSync must never throw to prevent unhandled rejections
-          // from setInterval/visibilitychange callers. Orchestrator retries via queue, not exceptions.
+          // Reject the executor so SyncOrchestrator can apply its retry policy.
+          // The outer catch keeps silentSync safe for setInterval and lifecycle callers.
+          throw error;
         }
       },
       { priority: 5, maxRetries: 3 }

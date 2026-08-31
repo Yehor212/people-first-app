@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { GratitudeEntry, Habit } from '@/types';
 
 // We need to test the internal arrayToCSV and sanitizeFilename functions.
 // Since they are not exported, we test them indirectly through the exported functions,
@@ -59,6 +60,7 @@ import {
   exportFocusSessionsToCSV,
   exportGratitudeToCSV,
   exportAllToCSV,
+  exportProgressReportPDF,
 } from '@/lib/exportService';
 
 const getLastDownloadedText = async (): Promise<string> => {
@@ -202,6 +204,67 @@ describe('exportAllToCSV', () => {
       gratitudeEntries: [],
     });
     expect(mockClick).toHaveBeenCalledOnce();
+  });
+});
+
+// ─── Progress report immutability ───────────────────────────────
+
+describe('exportProgressReportPDF', () => {
+  it('ranks report rows without changing the input array order', async () => {
+    const lowerCompletionHabit: Habit = {
+      ...mockHabits[0],
+      id: 'habit-lower',
+      name: 'Lower completion habit',
+      habitType: 'boolean',
+      targetType: 'atLeast',
+      entries: { '2024-01-01': { value: 2 } },
+    };
+    const higherCompletionHabit: Habit = {
+      ...mockHabits[0],
+      id: 'habit-higher',
+      name: 'Higher completion habit',
+      habitType: 'boolean',
+      targetType: 'atLeast',
+      entries: {
+        '2024-01-01': { value: 2 },
+        '2024-01-02': { value: 2 },
+        '2024-01-03': { value: 2 },
+      },
+    };
+    const olderGratitude: GratitudeEntry = {
+      id: 'gratitude-older',
+      date: '2024-01-01',
+      text: 'Older gratitude entry',
+      timestamp: 1704067200000,
+    };
+    const newerGratitude: GratitudeEntry = {
+      id: 'gratitude-newer',
+      date: '2024-01-02',
+      text: 'Newer gratitude entry',
+      timestamp: 1704153600000,
+    };
+    const habits = [lowerCompletionHabit, higherCompletionHabit];
+    const gratitudeEntries = [olderGratitude, newerGratitude];
+
+    await exportProgressReportPDF({
+      moods: [],
+      habits,
+      focusSessions: [],
+      gratitudeEntries,
+    });
+
+    expect.soft(habits).toEqual([lowerCompletionHabit, higherCompletionHabit]);
+    expect.soft(gratitudeEntries).toEqual([olderGratitude, newerGratitude]);
+
+    const pdf = await getLastDownloadedText();
+    const pdfHex = (value: string): string =>
+      [...value].map((character) => character.charCodeAt(0).toString(16).padStart(4, '0').toUpperCase()).join('');
+    expect(pdf.indexOf(pdfHex('Higher completion habit'))).toBeLessThan(
+      pdf.indexOf(pdfHex('Lower completion habit')),
+    );
+    expect(pdf.indexOf(pdfHex('Newer gratitude entry'))).toBeLessThan(
+      pdf.indexOf(pdfHex('Older gratitude entry')),
+    );
   });
 });
 
