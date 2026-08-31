@@ -36,6 +36,9 @@ try {
 if (packageJson.scripts?.["agent:workspace"] !== "node scripts/agent-workspace.mjs") {
   failures.push("package.json must expose agent:workspace");
 }
+if (packageJson.scripts?.["convergence:inventory"] !== "node scripts/convergence-inventory.mjs") {
+  failures.push("package.json must expose convergence:inventory");
+}
 if (Object.hasOwn(packageJson.scripts || {}, "agent:kimi-hook")) {
   failures.push("package.json must not expose retired agent:kimi-hook");
 }
@@ -44,6 +47,8 @@ for (const testPath of [
   "agent-workspace.test.ts",
   "agent-workspace-command-guard.test.ts",
   "agent-workspace-git-hook.test.ts",
+  "convergence-inventory-core.test.ts",
+  "convergence-inventory.test.ts",
 ]) {
   if (!packageJson.scripts?.["test:agent-workspace"]?.includes(testPath)) {
     failures.push(`test:agent-workspace must run ${testPath}`);
