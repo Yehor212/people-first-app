@@ -6,6 +6,7 @@ import {
   storageRemove,
 } from "@/lib/safeJson";
 import { SK, SSK } from "@/lib/storageKeys";
+import { sanitizeRuntimeRoute } from "./runtimeRouteSanitizer";
 
 export const RUNTIME_PERFORMANCE_MODE_EVENT = "zenflow:runtime-perf-mode";
 export const RUNTIME_PERFORMANCE_STARTUP = "startup";
@@ -47,10 +48,23 @@ function getDocumentMode(): RuntimePerformanceMode {
 }
 
 export function readStoredRuntimePerformanceMode(): RuntimePerformanceModeSnapshot | null {
-  return safeSessionStorageGet<RuntimePerformanceModeSnapshot | null>(
+  const stored = safeSessionStorageGet<RuntimePerformanceModeSnapshot | null>(
     SSK.RUNTIME_PERF_GUARD,
     null,
   );
+
+  if (!stored || typeof stored.route !== "string") {
+    return stored;
+  }
+
+  const route = sanitizeRuntimeRoute(stored.route);
+  if (route === stored.route) {
+    return stored;
+  }
+
+  const sanitized = { ...stored, route };
+  safeSessionStorageSet(SSK.RUNTIME_PERF_GUARD, sanitized);
+  return sanitized;
 }
 
 export function readStoredRuntimePerformanceDeviceGuard(): RuntimePerformanceDeviceSnapshot | null {
