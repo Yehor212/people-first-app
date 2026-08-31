@@ -12,7 +12,6 @@ import {
 } from "node:fs";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
 import ts from "typescript";
 
 const TOOL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -69,7 +68,10 @@ const ORB_FAMILY_FILES = new Set([
   "src/components/state-of-mind/orbWebGpu.ts",
 ]);
 const TEST_ONLY_BUNDLE_SENTINEL = "ZENFLOW_T191_TEST_ONLY_MOTION_SENTINEL_4E2B9C71";
-const GENERATED_SOURCE_PREFIXES = ["android/app/src/main/assets/"];
+const GENERATED_SOURCE_PREFIXES = [
+  "android/app/src/main/assets/",
+  "ios/App/App/public/",
+];
 
 const CATEGORY_RULES = [
   ["css-keyframes", /@(?:-webkit-)?keyframes\b/i],
@@ -247,6 +249,61 @@ function resolveModule(root, from, specifier) {
   return found ? posix(root, found) : null;
 }
 
+function expandBracePatterns(pattern) {
+  const open = pattern.indexOf("{");
+  if (open < 0) return [pattern];
+  const close = pattern.indexOf("}", open + 1);
+  if (close < 0) throw new Error("IMPORT_META_GLOB_UNCLOSED_BRACE " + pattern);
+  const choices = pattern.slice(open + 1, close).split(",");
+  if (!choices.length || choices.some((choice) => !choice)) {
+    throw new Error("IMPORT_META_GLOB_EMPTY_BRACE " + pattern);
+  }
+  return choices.flatMap((choice) =>
+    expandBracePatterns(pattern.slice(0, open) + choice + pattern.slice(close + 1))
+  );
+}
+
+function globPatternRegex(pattern) {
+  let regex = "^";
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index];
+    if (character === "*" && pattern[index + 1] === "*") {
+      index += 1;
+      if (pattern[index + 1] === "/") {
+        index += 1;
+        regex += "(?:.*/)?";
+      } else {
+        regex += ".*";
+      }
+    } else if (character === "*") {
+      regex += "[^/]*";
+    } else if (character === "?") {
+      regex += "[^/]";
+    } else {
+      regex += character.replace(/[|\\{}()[\]^$+?.-]/g, "\\$&");
+    }
+  }
+  return new RegExp(regex + "$");
+}
+
+function resolveGlobModules(root, from, specifier, files) {
+  if (specifier.startsWith("!")) {
+    throw new Error("IMPORT_META_GLOB_NEGATION_UNSUPPORTED " + from + " " + specifier);
+  }
+  if (!specifier.startsWith(".")) {
+    throw new Error("IMPORT_META_GLOB_NON_RELATIVE " + from + " " + specifier);
+  }
+  const absolutePattern = resolve(dirname(join(root, from)), specifier);
+  if (absolutePattern !== root && !absolutePattern.startsWith(root + sep)) {
+    throw new Error("IMPORT_META_GLOB_PATH_ESCAPE " + from + " " + specifier);
+  }
+  const rootedPattern = relative(root, absolutePattern).split(sep).join("/");
+  const patterns = expandBracePatterns(rootedPattern).map(globPatternRegex);
+  const matches = files.filter((path) => patterns.some((pattern) => pattern.test(path)));
+  if (!matches.length) throw new Error("IMPORT_META_GLOB_NO_MATCH " + from + " " + specifier);
+  return matches;
+}
+
 function imports(root, path, text) {
   if (/\.(?:css|scss)$/.test(path)) {
     return [...text.matchAll(/@import\s+["']([^"']+)["']/g)].map((match) => ({
@@ -286,6 +343,22 @@ function imports(root, path, text) {
       found.push({ specifier: node.arguments[0].text, kind: "literal-dynamic-import" });
     } else if (
       ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.expression.getText(file) === "import.meta" &&
+      node.expression.name.text === "glob" &&
+      node.arguments.length > 0
+    ) {
+      const patterns = ts.isArrayLiteralExpression(node.arguments[0])
+        ? node.arguments[0].elements
+        : [node.arguments[0]];
+      for (const pattern of patterns) {
+        if (!ts.isStringLiteralLike(pattern)) {
+          throw new Error("IMPORT_META_GLOB_NON_LITERAL " + path);
+        }
+        found.push({ specifier: pattern.text, kind: "import-meta-glob" });
+      }
+    } else if (
+      ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
       node.expression.text === "require" &&
       node.arguments.length === 1 &&
@@ -307,7 +380,7 @@ function imports(root, path, text) {
   return found;
 }
 
-function importGraph(root) {
+function importGraph(root, files) {
   const reachable = new Set();
   const parents = new Map();
   const edgeKinds = new Map();
@@ -325,12 +398,17 @@ function importGraph(root) {
       continue;
     reachable.add(path);
     for (const edge of imports(root, path, readRooted(root, path))) {
-      const target = resolveModule(root, path, edge.specifier);
-      if (!target || TEST_PATH.test(target) || DEV_PATH.test(target)) continue;
-      const key = path + "->" + target;
-      edgeKinds.set(key, edge.kind);
-      if (!parents.has(target)) parents.set(target, { from: path, kind: edge.kind });
-      queue.push(target);
+      const targets =
+        edge.kind === "import-meta-glob"
+          ? resolveGlobModules(root, path, edge.specifier, files)
+          : [resolveModule(root, path, edge.specifier)].filter(Boolean);
+      for (const target of targets) {
+        if (TEST_PATH.test(target) || DEV_PATH.test(target)) continue;
+        const key = path + "->" + target;
+        edgeKinds.set(key, edge.kind);
+        if (!parents.has(target)) parents.set(target, { from: path, kind: edge.kind });
+        queue.push(target);
+      }
     }
   }
   return { reachable, parents, edgeKinds };
@@ -679,26 +757,22 @@ function bundleSentinels(categories) {
   return [...new Set(categories.flatMap((category) => CATEGORY_SENTINELS[category] || []))].sort();
 }
 
-function sourceBase(root) {
-  try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return "UNAVAILABLE_NON_GIT_FIXTURE";
-  }
+function sourceBase(root, files) {
+  const inputs = files.map((path) => {
+    const bytes = readFileSync(safeExistingAbsolute(root, path));
+    return path + "\0" + sha256(bytes);
+  });
+  return "source-input-sha256:" + sha256(inputs.join("\n") + "\n");
 }
 
-function rowFor(root, graph, path, text, group, reachability) {
+function rowFor(root, graph, path, text, group, reachability, sourceBytes = text) {
   const categories = [...new Set(group.occurrences.map((item) => item.category))].sort();
   const source = {
     file: path,
     symbol: group.symbol,
     startLine: Math.min(...group.occurrences.map((item) => item.start)),
     endLine: Math.max(...group.occurrences.map((item) => item.end)),
-    sha256: sha256(text),
+    sha256: sha256(sourceBytes),
     locators: group.occurrences.map((item) => ({
       line: item.line,
       category: item.category,
@@ -814,8 +888,8 @@ function exclusionFor(path, text, occurrences, reason) {
 
 export function discoverInventory(root = TOOL_ROOT) {
   root = resolve(root);
-  const graph = importGraph(root);
   const files = allSourceFiles(root);
+  const graph = importGraph(root, files);
   const motionOwners = [];
   const orbExclusions = [];
   const nonProductionExclusions = [];
@@ -825,6 +899,7 @@ export function discoverInventory(root = TOOL_ROOT) {
   for (const path of files) {
     if (MOTION_ASSET.test(path)) {
       const text = path;
+      const sourceBytes = readFileSync(safeExistingAbsolute(root, path));
       const occurrence = {
         category: "lottie-tgs-video-gif",
         line: 1,
@@ -839,7 +914,8 @@ export function discoverInventory(root = TOOL_ROOT) {
         path,
         text,
         { symbol: occurrence.symbol, occurrences: [occurrence] },
-        "public-shipped-asset"
+        "public-shipped-asset",
+        sourceBytes
       );
       motionOwners.push(row);
       candidateFileLedger.push({
@@ -977,7 +1053,7 @@ export function discoverInventory(root = TOOL_ROOT) {
       id: "T191",
       feature: "002-android-2-1-connected-release",
       title: "Production-reachable non-orb motion inventory",
-      sourceBase: sourceBase(root),
+      sourceBase: sourceBase(root, files),
       generatedOn: "2026-08-14",
       taskScope: "Inventory tooling and evidence only; no production UI, motion or copy change.",
       releaseStatus: "STOP",
@@ -985,7 +1061,7 @@ export function discoverInventory(root = TOOL_ROOT) {
     scope: {
       entry: ENTRY,
       discovery:
-        "Static runtime imports, runtime re-exports, literal dynamic imports, require, CSS imports and literal new URL edges plus shipped public/native roots.",
+        "Static runtime imports, runtime re-exports, literal dynamic imports, literal import.meta.glob patterns, require, CSS imports and literal new URL edges plus shipped public/native roots.",
       candidateFamilies: CATEGORY_RULES.map((item) => item[0]),
       timerBoundary:
         "Timer-only files are not counted as motion owners; they are retained as ambiguous proof rows until a visual role is demonstrated.",
@@ -1109,10 +1185,16 @@ function validateSource(root, row, errors) {
     errors.push("STALE_SOURCE_FILE " + (path || row.id || "unknown"));
     return;
   }
-  const text = MOTION_ASSET.test(path) ? path : readRooted(root, path);
-  if (row.source.sha256 !== sha256(text)) errors.push("STALE_SOURCE_HASH " + path);
+  const isMotionAsset = MOTION_ASSET.test(path);
+  const source = isMotionAsset
+    ? readFileSync(safeExistingAbsolute(root, path))
+    : readRooted(root, path);
+  if (row.source.sha256 !== sha256(source)) errors.push("STALE_SOURCE_HASH " + path);
   for (const locator of row.source.locators || []) {
-    if (!locator.token || !text.includes(locator.token))
+    const locatorPresent = isMotionAsset
+      ? locator.token === path
+      : Boolean(locator.token && source.includes(locator.token));
+    if (!locatorPresent)
       errors.push("STALE_SOURCE_LOCATOR " + path + ":" + (locator.line || "unknown"));
   }
 }

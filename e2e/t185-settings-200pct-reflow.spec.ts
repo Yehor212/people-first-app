@@ -275,6 +275,19 @@ test("Settings keeps words and traversal usable at combined 200% font and displa
   );
   await expect(page.getByTestId("settings-page")).toBeVisible();
 
+  const baselineFontSizes = await page.evaluate(() => {
+    const fontSize = (selector: string) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) throw new Error(`Missing font-scale target: ${selector}`);
+      return Number.parseFloat(getComputedStyle(element).fontSize);
+    };
+    return {
+      heading: fontSize("[data-testid='settings-page-heading']"),
+      moduleLabel: fontSize("[data-slot='settings-module-label']"),
+      footerAction: fontSize("[data-testid='settings-support-footer'] button"),
+    };
+  });
+
   // The viewport models 2x display density; the root size models Android's 2x font scale.
   await page.addStyleTag({
     content: ":root { font-size: 32px !important; -webkit-text-size-adjust: 100% !important; }",
@@ -305,7 +318,8 @@ test("Settings keeps words and traversal usable at combined 200% font and displa
             const range = document.createRange();
             range.setStart(node, index);
             range.setEnd(node, index + 1);
-            const rect = range.getBoundingClientRect();
+            const clientRects = range.getClientRects();
+            const rect = clientRects.item(clientRects.length - 1) ?? range.getBoundingClientRect();
             const line = lines.find((candidate) => Math.abs(candidate.top - rect.top) < 0.75);
             const character = { value: value[index], index };
             if (line) line.chars.push(character);
@@ -352,7 +366,9 @@ test("Settings keeps words and traversal usable at combined 200% font and displa
             const range = document.createRange();
             range.setStart(node, index);
             range.setEnd(node, index + 1);
-            const top = Math.round(range.getBoundingClientRect().top);
+            const clientRects = range.getClientRects();
+            const rect = clientRects.item(clientRects.length - 1) ?? range.getBoundingClientRect();
+            const top = Math.round(rect.top);
             lines.set(top, (lines.get(top) ?? 0) + 1);
           }
           const lineLengths = Array.from(lines.values());
@@ -397,6 +413,23 @@ test("Settings keeps words and traversal usable at combined 200% font and displa
           ? getComputedStyle(firstModule).gridTemplateColumns
           : "",
         firstModuleLabelWidth: firstModuleLabel?.getBoundingClientRect().width ?? 0,
+        fontSizes: {
+          heading: Number.parseFloat(
+            getComputedStyle(
+              document.querySelector<HTMLElement>("[data-testid='settings-page-heading']")!
+            ).fontSize
+          ),
+          moduleLabel: Number.parseFloat(
+            getComputedStyle(
+              document.querySelector<HTMLElement>("[data-slot='settings-module-label']")!
+            ).fontSize
+          ),
+          footerAction: Number.parseFloat(
+            getComputedStyle(
+              document.querySelector<HTMLElement>("[data-testid='settings-support-footer'] button")!
+            ).fontSize
+          ),
+        },
         actions,
       };
     },
@@ -412,6 +445,9 @@ test("Settings keeps words and traversal usable at combined 200% font and displa
   }).toEqual({ count: 0, samples: [] });
   expect(measurement.unusableFragments).toEqual([]);
   expect(measurement.firstModuleLabelWidth).toBeGreaterThanOrEqual(150);
+  for (const key of ["heading", "moduleLabel", "footerAction"] as const) {
+    expect(measurement.fontSizes[key]).toBeGreaterThanOrEqual(baselineFontSizes[key] * 1.99);
+  }
   expect(measurement.traversalViewports).toBeLessThanOrEqual(MAX_SETTINGS_VIEWPORTS);
   expect(measurement.actions.map(({ text }) => text)).toEqual(
     expect.arrayContaining([
@@ -423,6 +459,70 @@ test("Settings keeps words and traversal usable at combined 200% font and displa
     ])
   );
   expect(measurement.actions.filter(({ width, height }) => width < 44 || height < 44)).toEqual([]);
+});
+
+test("Settings preserves scaled text and usable copy tracks in short landscape", async ({ page }) => {
+  await page.setViewportSize({ width: 382, height: 206 });
+  await page.goto(
+    `${process.env.T185_QA_BASE_URL ?? "http://127.0.0.1:4185"}/?qaRoute=settings&qaLang=en`
+  );
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  const baselineFontSize = await page
+    .locator("[data-slot='settings-module-label']")
+    .first()
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  await page.addStyleTag({
+    content: ":root { font-size: 32px !important; -webkit-text-size-adjust: 100% !important; }",
+  });
+
+  const measurement = await page.evaluate(() => {
+    const card = document.querySelector<HTMLElement>("[data-testid^='settings-module-card-']");
+    const copy = card?.querySelector<HTMLElement>("[data-slot='settings-module-copy']");
+    const label = card?.querySelector<HTMLElement>("[data-slot='settings-module-label']");
+    const unusableFragments: Array<{ text: string; lineLengths: number[] }> = [];
+    for (const element of document.querySelectorAll<HTMLElement>(
+      "[data-testid^='settings-module-card-'] [data-slot^='settings-module-']"
+    )) {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode();
+      while (node) {
+        const value = node.textContent ?? "";
+        const lines = new Map<number, number>();
+        for (let index = 0; index < value.length; index += 1) {
+          if (!value[index]?.trim()) continue;
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + 1);
+          const clientRects = range.getClientRects();
+          const rect = clientRects.item(clientRects.length - 1) ?? range.getBoundingClientRect();
+          const top = Math.round(rect.top);
+          lines.set(top, (lines.get(top) ?? 0) + 1);
+        }
+        const lineLengths = Array.from(lines.values());
+        if (
+          lineLengths.length >= 3 &&
+          lineLengths.filter((length) => length <= 2).length / lineLengths.length > 0.5
+        ) {
+          unusableFragments.push({ text: value.trim(), lineLengths });
+        }
+        node = walker.nextNode();
+      }
+    }
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      gridColumns: card ? getComputedStyle(card).gridTemplateColumns : "",
+      copyWidth: copy?.getBoundingClientRect().width ?? 0,
+      labelFontSize: label ? Number.parseFloat(getComputedStyle(label).fontSize) : 0,
+      unusableFragments,
+    };
+  });
+
+  expect(measurement.scrollWidth).toBe(measurement.viewportWidth);
+  expect(measurement.gridColumns.trim().split(/\s+/)).toHaveLength(2);
+  expect(measurement.copyWidth).toBeGreaterThanOrEqual(240);
+  expect(measurement.labelFontSize).toBeGreaterThanOrEqual(baselineFontSize * 1.99);
+  expect(measurement.unusableFragments).toEqual([]);
 });
 
 test("German Settings footer keeps compound action labels readable at combined 200% scale", async ({
@@ -454,7 +554,9 @@ test("German Settings footer keeps compound action labels readable at combined 2
           const range = document.createRange();
           range.setStart(node, index);
           range.setEnd(node, index + 1);
-          characters.push({ value: value[index], index, top: range.getBoundingClientRect().top });
+          const clientRects = range.getClientRects();
+          const rect = clientRects.item(clientRects.length - 1) ?? range.getBoundingClientRect();
+          characters.push({ value: value[index], index, top: rect.top });
         }
         for (let index = 0; index < characters.length - 1; index += 1) {
           const before = characters[index];

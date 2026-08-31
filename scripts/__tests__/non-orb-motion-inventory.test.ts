@@ -21,7 +21,7 @@ interface Inventory {
   motionOwners: Array<Record<string, unknown>>;
   orbExclusions: Array<Record<string, unknown>>;
   sourceOracle: {
-    candidateFileLedger: Array<{ file: string; ownerIds: string[] }>;
+    candidateFileLedger: Array<{ file: string; classification: string; ownerIds: string[] }>;
   };
 }
 
@@ -100,6 +100,9 @@ describe("T191 non-orb motion inventory", () => {
     expect(inventory.summary.validatorFailures).toEqual([]);
     expect(inventory.summary.motionOwnerRows).toBeGreaterThan(0);
     expect(inventory.summary.orbExclusionRows).toBeGreaterThan(0);
+    expect((inventory as unknown as { task: { sourceBase: string } }).task.sourceBase).toMatch(
+      /^source-input-sha256:[a-f0-9]{64}$/
+    );
   }, 30_000);
 
   it("emits byte-identical deterministic output", () => {
@@ -129,23 +132,80 @@ describe("T191 non-orb motion inventory", () => {
     expect(inventory.summary.coveragePercent).toBe(100);
   });
 
-  it("excludes generated Capacitor assets from the source inventory", () => {
+  it("excludes generated Android and iOS Capacitor assets from the source inventory", () => {
     const root = fixtureRoot();
-    const generatedDir = join(root, "android/app/src/main/assets/public/assets");
-    mkdirSync(generatedDir, { recursive: true });
-    writeFileSync(
-      join(generatedDir, "generated.js"),
-      "requestAnimationFrame(() => document.body.animate([]));\n"
-    );
+    for (const generatedDir of [
+      join(root, "android/app/src/main/assets/public/assets"),
+      join(root, "ios/App/App/public/assets"),
+    ]) {
+      mkdirSync(generatedDir, { recursive: true });
+      writeFileSync(
+        join(generatedDir, "generated.js"),
+        "requestAnimationFrame(() => document.body.animate([]));\n"
+      );
+    }
 
     const result = runTool(["--root", root, "--print"]);
     expect(result.status).toBe(0);
     const inventory = JSON.parse(result.stdout) as Inventory;
     expect(
       inventory.sourceOracle.candidateFileLedger.some((row) =>
-        row.file.startsWith("android/app/src/main/assets/")
+        /^(?:android\/app\/src\/main\/assets|ios\/App\/App\/public)\//.test(row.file)
       )
     ).toBe(false);
+  });
+
+  it("treats literal import.meta.glob matches as production-reachable modules", () => {
+    const root = fixtureRoot();
+    mkdirSync(join(root, "src/lazy"), { recursive: true });
+    writeFileSync(
+      join(root, "src/main.tsx"),
+      [
+        'import { lazyModules } from "./LazyShell";',
+        "void lazyModules;",
+        "",
+      ].join("\n")
+    );
+    writeFileSync(
+      join(root, "src/LazyShell.ts"),
+      'export const lazyModules = import.meta.glob("./lazy/{LazyAlpha,LazyBeta}.tsx");\n'
+    );
+    writeFileSync(
+      join(root, "src/lazy/LazyAlpha.tsx"),
+      "export function LazyAlpha() { requestAnimationFrame(() => undefined); return null; }\n"
+    );
+    writeFileSync(
+      join(root, "src/lazy/LazyBeta.tsx"),
+      "export function LazyBeta() { document.body.animate([]); return null; }\n"
+    );
+
+    const result = runTool(["--root", root, "--print"]);
+    expect(result.status).toBe(0);
+    const inventory = JSON.parse(result.stdout) as Inventory;
+    for (const file of ["src/lazy/LazyAlpha.tsx", "src/lazy/LazyBeta.tsx"]) {
+      const row = inventory.sourceOracle.candidateFileLedger.find(
+        (candidate) => candidate.file === file
+      );
+      expect(row?.classification).toMatch(/^INVENTORIED_/);
+      expect(row?.ownerIds.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("binds motion asset hashes to file bytes rather than the path", () => {
+    const root = fixtureRoot();
+    const assetDir = join(root, "src/assets");
+    const assetPath = join(assetDir, "motion.tgs");
+    mkdirSync(assetDir, { recursive: true });
+    writeFileSync(assetPath, Buffer.from([0x54, 0x47, 0x53, 0x31]));
+
+    const generated = runTool(["--root", root, "--print"]);
+    expect(generated.status).toBe(0);
+    const inventory = JSON.parse(generated.stdout) as Inventory;
+    writeFileSync(assetPath, Buffer.from([0x54, 0x47, 0x53, 0x32]));
+
+    const result = runTool(["--root", root, "--check", "--stdin"], inventory);
+    expect(result.status).not.toBe(0);
+    expect(combined(result)).toContain("STALE_SOURCE_HASH src/assets/motion.tgs");
   });
 
   it("rejects a proof-bound orb exclusion when it is mislabeled", () => {

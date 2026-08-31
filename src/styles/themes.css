@@ -1857,6 +1857,63 @@
   }
 }
 
+/* At 200% text size a short landscape phone has the same usable line length as
+ * a much narrower portrait viewport. Move fixed module chrome off the copy
+ * track without reducing rem-based text. */
+@media (max-width: 479px) {
+  [data-v2-readable-page="settings"] [data-testid^="settings-module-card-"] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+    row-gap: 8px;
+    padding-inline: 8px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-icon"] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-copy"] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-description"] {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-label"],
+  [data-v2-readable-page="settings"] [data-slot="settings-module-value"] {
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-chevron"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    inline-size: 100%;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] {
+    padding-inline: 0;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] button {
+    inline-size: 100%;
+    padding-inline: 2px;
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+}
+
 /* Combined Android display and font scaling can reduce the effective WebView
  * to about 206 CSS px. Below 240px the top rail still protects the drawer
  * trigger, so Settings can use the full inline track beneath it. Module chrome
@@ -1921,19 +1978,16 @@
 
   [role="dialog"] [data-slot="feedback-title"] {
     flex-wrap: wrap;
-    font-size: 0.875rem;
     line-height: 1.35;
     overflow-wrap: normal;
     word-break: normal;
   }
 
   [role="dialog"] [data-slot="feedback-subtitle"] {
-    font-size: 0.625rem;
     line-height: 1.4;
   }
 
   [role="dialog"] [data-slot="feedback-privacy-notice"] {
-    font-size: 0.625rem;
     overflow-wrap: normal;
     word-break: normal;
   }
@@ -1952,14 +2006,13 @@
     overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    padding-inline-start: max(12px, var(--safe-inline-start));
-    padding-inline-end: max(12px, var(--safe-inline-end));
+    padding-inline-start: max(8px, var(--safe-inline-start));
+    padding-inline-end: max(8px, var(--safe-inline-end));
     padding-block-start: 12px;
     scroll-padding-block-start: 12px;
   }
 
   [data-v2-readable-page="settings"] [data-testid="settings-page-heading"] {
-    font-size: 0.875rem;
     overflow-wrap: normal;
     word-break: normal;
   }
@@ -1967,48 +2020,6 @@
   [data-v2-readable-page="settings"] article[data-testid^="settings-module-"]::before {
     inset-inline-start: 8px;
     inset-inline-end: 8px;
-  }
-
-  [data-v2-readable-page="settings"] [data-testid^="settings-module-card-"] {
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 8px;
-    row-gap: 8px;
-    padding-inline: 8px;
-  }
-
-  [data-v2-readable-page="settings"] [data-slot="settings-module-icon"] {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  [data-v2-readable-page="settings"] [data-slot="settings-module-copy"] {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  [data-v2-readable-page="settings"] [data-slot="settings-module-description"] {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-
-  [data-v2-readable-page="settings"] [data-slot="settings-module-label"],
-  [data-v2-readable-page="settings"] [data-slot="settings-module-value"] {
-    font-size: 0.53125rem;
-    line-height: 1.35;
-    overflow-wrap: normal;
-    word-break: normal;
-  }
-
-  [data-v2-readable-page="settings"] [data-slot="settings-module-chevron"] {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] button {
-    font-size: 0.4375rem;
-    line-height: 1.35;
-    overflow-wrap: normal;
-    word-break: normal;
   }
 
   [data-v2-readable-page="settings"] [data-slot="settings-footer-legal-label"] {

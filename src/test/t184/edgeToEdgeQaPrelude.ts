@@ -10,6 +10,8 @@ import { parseT184QaLaunchOptions } from "./qaLaunchOptions";
  * session, habits, diary entries, tasks, or other production/user records.
  */
 const qaLaunch = parseT184QaLaunchOptions(window.location.search);
+const T184_QA_BUILD_SENTINEL = "ZENFLOW_T184_QA_ONLY_9F7A2C4E";
+document.documentElement.dataset.t184QaBuild = T184_QA_BUILD_SENTINEL;
 
 safeLocalStorageSet("zenflow-language", qaLaunch.language);
 safeLocalStorageSet("zenflow-language-selected", true);

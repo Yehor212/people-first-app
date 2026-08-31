@@ -22,15 +22,17 @@ dependency, and release decisions remain authoritative.
   state instead of competing for the same event.
 - Cancelling a focus reflection omits the optional score without discarding an already-finished,
   durably persisted focus session.
-- The T184 QA build has an explicit test-only Vite entry and root base. Production Capacitor
-  builds retain their relative asset base and web builds retain the configured web base.
+- The T184 QA build has an explicit test-only Vite entry, root base, sentinel, and isolated
+  `output/t184-android-qa` directory. Production Capacitor builds retain their relative asset
+  base and canonical `dist`; web builds retain the configured web base.
 - Settings, feedback, update, sidebar, mood, and journal surfaces reflow at 200 percent zoom and
   short Android landscape sizes without introducing a parallel production UI.
 - The native Android locale plugin follows the active application language. Failure diagnostics
   are finite and do not bridge raw native exceptions.
 - The generated non-Orb motion inventory accounts for production motion owners and proof-binds
-  Orb exclusions. It ignores generated Capacitor assets, remains deterministic, and fails closed
-  on missing or malformed ownership rows.
+  Orb exclusions. It follows literal `import.meta.glob` edges, hashes motion asset bytes, binds
+  itself to a stable source-input fingerprint, ignores generated Android/iOS Capacitor assets,
+  remains deterministic across commits, and fails closed on missing or malformed ownership rows.
 
 ## Preserved current-main invariants
 
@@ -44,14 +46,17 @@ dependency, and release decisions remain authoritative.
 
 ## Verification
 
-- Full Vitest: 817 files passed, 1 skipped; 9,836 tests passed, 23 skipped, 7 todo; 0 failed.
+- Full Vitest: 817 files passed, 1 skipped; 9,839 tests passed, 23 skipped, 7 todo; 0 failed.
 - ESLint with zero warnings and TypeScript checks: PASS.
-- Production data integrity: PASS with 2,286 scanned files, 872 runtime-reachable files, zero
+- Production data integrity: PASS with 2,560 scanned files, 872 runtime-reachable files, zero
   errors, warnings, baselines, or waivers.
 - Sync contract: PASS with 409 invariants.
-- Non-Orb motion inventory: PASS with 1,263 owners, 56 Orb exclusions, 788 candidate files, and
+- Non-Orb motion inventory: PASS with 1,280 owners, 56 Orb exclusions, 788 candidate files, and
   100 percent source coverage.
-- T184 QA build and T185 Playwright reflow suite: 6/6 scenarios passed.
+- T184 isolated QA build and T185 Playwright reflow suite: 7/7 scenarios passed, including
+  baseline-relative 200 percent font scaling and short-landscape copy-track assertions.
+- Fresh browser screenshots for 200 percent English, Arabic RTL, and short landscape were
+  inspected locally; the corrected landscape layout retains full-size readable words.
 - Android production build, Capacitor sync, and release-artifact checks: PASS.
 - Android Gradle `testDebugUnitTest lintDebug`: PASS; 549 tasks executed.
 

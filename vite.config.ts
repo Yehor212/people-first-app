@@ -12,6 +12,7 @@ import { versionPlugin } from "./vite-plugin-version.ts";
 import { createCompactI18nBuildPlugin } from "./scripts/compact-i18n-build-plugin.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const T184_QA_OUT_DIR = "output/t184-android-qa";
 
 function normalizeBasePath(value: string): string {
   if (!value || value === "/") return "/";
@@ -36,9 +37,9 @@ function normalizeIndexBasePathPlugin(base: string) {
   };
 }
 
-function moveT184QaHtmlToRootPlugin() {
-  const qaHtmlPath = path.resolve(__dirname, "dist/src/test/t184/index.html");
-  const rootHtmlPath = path.resolve(__dirname, "dist/index.html");
+function moveT184QaHtmlToRootPlugin(outDir: string) {
+  const qaHtmlPath = path.resolve(__dirname, outDir, "src/test/t184/index.html");
+  const rootHtmlPath = path.resolve(__dirname, outDir, "index.html");
 
   return {
     name: "zenflow-t184-qa-html-root",
@@ -113,6 +114,7 @@ export default defineConfig(({ mode }) => {
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
   const t184QaBuild = process.env.VITE_T184_QA_BUILD === "true";
+  const outDir = t184QaBuild ? T184_QA_OUT_DIR : "dist";
   const androidMotionBenchmark =
     isCapacitor && process.env.ZENFLOW_ANDROID_MOTION_BENCHMARK === "true";
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
@@ -423,7 +425,7 @@ export default defineConfig(({ mode }) => {
         : null,
       stripDisabledPwaManifestPlugin(pwaEnabled),
       normalizeIndexBasePathPlugin(base),
-      t184QaBuild && moveT184QaHtmlToRootPlugin(),
+      t184QaBuild && moveT184QaHtmlToRootPlugin(outDir),
       sentrySourceMapUploadEnabled
         ? sentryVitePlugin({
             org: process.env.SENTRY_ORG,
@@ -479,6 +481,7 @@ export default defineConfig(({ mode }) => {
     // 2026-04-19 root cause of "design missing" visual regression.
     // Keep `cssMinify: "lightningcss"` below — minifier alone is safe.
     build: {
+      outDir,
       target: "esnext",
       // Terser ~1-2% smaller than esbuild (20-40x slower, acceptable on CI only).
       // esbuild stays for dev minification via optimizeDeps.
