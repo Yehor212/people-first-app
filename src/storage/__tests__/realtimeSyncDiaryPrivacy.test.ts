@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   journalAudioBulkPut: vi.fn(),
   journalAudioBulkDelete: vi.fn(),
   mergeSyncTombstones: vi.fn(),
+  loggerError: vi.fn(),
+  loggerWarn: vi.fn(),
 }));
 
 let protectedDiary = true;
@@ -31,8 +33,8 @@ vi.mock("@/lib/supabaseClient", () => ({
 vi.mock("@/lib/logger", () => ({
   logger: {
     log: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
+    warn: mocks.loggerWarn,
+    error: mocks.loggerError,
   },
 }));
 
@@ -100,6 +102,7 @@ vi.mock("@/storage/db", () => {
 
 import { pullFromCloud } from "@/storage/realtimeSync";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
+import { notifyAccountSessionTransition } from "@/storage/accountBoundaryRuntime";
 
 function queryResult(data: unknown[]) {
   const response = { data, error: null };
@@ -349,6 +352,49 @@ describe("pullFromCloud diary privacy", () => {
     expect(mocks.mergeSyncTombstones).not.toHaveBeenCalled();
     expect(mocks.transaction).not.toHaveBeenCalled();
     expect(mocks.settingsPut).not.toHaveBeenCalled();
+  });
+
+  it("discards an ABA-stale snapshot when the account session changes during local preparation", async () => {
+    mocks.from.mockImplementation(() => queryResult([]));
+    mocks.mergeSyncTombstones.mockImplementationOnce(async () => {
+      notifyAccountSessionTransition();
+      return {
+        mood: new Set(),
+        habit: new Set(),
+        focus: new Set(),
+        gratitude: new Set(),
+        journal: new Set(),
+      };
+    });
+
+    await expect(pullFromCloud("user-1")).resolves.toBe(false);
+
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps private snapshot failure text out of logs and failure event diagnostics", async () => {
+    const privateCanary = "PRIVATE_SNAPSHOT_CANARY: journal prose";
+    mocks.from.mockImplementation(() => queryResult([]));
+    mocks.transaction.mockRejectedValueOnce(new Error(privateCanary));
+    let failureDetail: unknown;
+    const captureFailure = (event: Event) => {
+      failureDetail = (event as CustomEvent<unknown>).detail;
+    };
+    window.addEventListener("zenflow:sync-transaction-failed", captureFailure);
+
+    try {
+      await expect(pullFromCloud("user-1")).resolves.toBe(false);
+    } finally {
+      window.removeEventListener("zenflow:sync-transaction-failed", captureFailure);
+    }
+
+    const diagnostics = JSON.stringify({
+      errorLogs: mocks.loggerError.mock.calls,
+      warningLogs: mocks.loggerWarn.mock.calls,
+      failureDetail,
+    });
+    expect(diagnostics).not.toContain(privateCanary);
+    expect(failureDetail).toMatchObject({ error: "SYNC_TRANSACTION_FAILED" });
   });
 
   it("does not resurrect a removed diary vault from a stale cloud snapshot", async () => {

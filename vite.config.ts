@@ -9,6 +9,7 @@ import { compression } from "vite-plugin-compression2";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { changelogPlugin } from "./vite-plugin-changelog.ts";
 import { versionPlugin } from "./vite-plugin-version.ts";
+import { createCompactI18nBuildPlugin } from "./scripts/compact-i18n-build-plugin.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -104,6 +105,9 @@ export default defineConfig(({ mode }) => {
   const journalSaveCeremonyBuildEnabled =
     (process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY ??
       fileEnvironment.VITE_ENABLE_JOURNAL_SAVE_CEREMONY) === "true";
+  const t173LifecycleProofEnabled =
+    mode === "t173-lifecycle-proof" ||
+    (process.env.VITE_T173_LIFECYCLE_PROOF ?? fileEnvironment.VITE_T173_LIFECYCLE_PROOF) === "true";
 
   // Read version from package.json
   const packageJson = JSON.parse(readFileSync("./package.json", "utf-8"));
@@ -146,9 +150,7 @@ export default defineConfig(({ mode }) => {
       __APP_BUILD_TIME__: JSON.stringify(appBuildTime),
       // Keep the default-disabled ceremony runtime out of production bundles.
       // A literal build constant lets Rolldown prune its dynamic import graph.
-      __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: JSON.stringify(
-        journalSaveCeremonyBuildEnabled,
-      ),
+      __JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__: JSON.stringify(journalSaveCeremonyBuildEnabled),
       // Local profileable Android builds expose motion probes without changing
       // production release assets or WebView debugging policy.
       __ANDROID_MOTION_BENCHMARK__: JSON.stringify(androidMotionBenchmark),
@@ -162,6 +164,7 @@ export default defineConfig(({ mode }) => {
       __RRWEB_EXCLUDE_SHADOW_DOM__: true,
     },
     plugins: [
+      mode !== "development" && createCompactI18nBuildPlugin({ root: __dirname }),
       react(),
       changelogPlugin(),
       versionPlugin({ buildTime: appBuildTime }),
@@ -372,10 +375,7 @@ export default defineConfig(({ mode }) => {
                 "assets/OrbPage-*.css",
                 "assets/orbWorker-*.js",
                 ...(journalSaveCeremonyBuildEnabled
-                  ? [
-                      "assets/atelier-v12-3-*.tgs",
-                      "assets/atelier-v12-3-*-reduced*.svg",
-                    ]
+                  ? ["assets/atelier-v12-3-*.tgs", "assets/atelier-v12-3-*-reduced*.svg"]
                   : []),
                 "assets/*.woff2",
               ],
@@ -426,6 +426,14 @@ export default defineConfig(({ mode }) => {
 
     resolve: {
       alias: [
+        ...(t173LifecycleProofEnabled
+          ? [
+              {
+                find: "/src/main.tsx",
+                replacement: path.resolve(__dirname, "./src/test/t173LifecycleProofEntry.tsx"),
+              },
+            ]
+          : []),
         ...(mode === "production" && !isCapacitor
           ? [
               {

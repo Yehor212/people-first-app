@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { createClient } = require("@supabase/supabase-js");
+const { evidenceFailureCode } = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const ROOT = path.join(__dirname, "..");
 
@@ -32,11 +33,8 @@ function stopUnverified(reason, required) {
   process.exit(required ? 2 : 0);
 }
 
-function fail(message, error) {
-  console.error(`[sync-account] FAIL - ${message}`);
-  if (error) {
-    console.error(error.message || String(error));
-  }
+function fail(_message, error) {
+  console.error(`[sync-account] FAIL - ${error ? evidenceFailureCode(error) : "ZF_SYNC_ACCOUNT_FAILURE"}`);
   process.exit(1);
 }
 

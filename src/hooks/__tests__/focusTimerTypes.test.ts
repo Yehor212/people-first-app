@@ -5,6 +5,18 @@ let rawStorage: Record<string, string> = {};
 
 vi.mock("@/lib/safeJson", () => ({
   storageGetRaw: vi.fn((key: string) => rawStorage[key] ?? null),
+  storageReadRaw: vi.fn((key: string) => ({
+    ok: true,
+    value: rawStorage[key] ?? null,
+  })),
+  safeLocalStorageSet: vi.fn((key: string, value: unknown) => {
+    rawStorage[key] = JSON.stringify(value);
+    return true;
+  }),
+  storageRemove: vi.fn((key: string) => {
+    delete rawStorage[key];
+    return true;
+  }),
   safeJsonParse: vi.fn(<T>(str: string, def: T): T => {
     try {
       return JSON.parse(str);
@@ -16,6 +28,7 @@ vi.mock("@/lib/safeJson", () => ({
 
 vi.mock("@/lib/utils", () => ({
   generateId: vi.fn(() => "test-id-123"),
+  generateUuid: vi.fn(() => "11111111-1111-4111-8111-111111111111"),
   getToday: vi.fn(() => "2026-02-17"),
 }));
 
@@ -108,7 +121,9 @@ describe("loadTimerState", () => {
 describe("createFocusSession", () => {
   it("creates a session with correct fields", () => {
     const session = createFocusSession(25, "Deep work", "completed");
-    expect(session.id).toBe("test-id-123");
+    expect(session.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
     expect(session.duration).toBe(25);
     expect(session.date).toBe("2026-02-17");
     expect(session.label).toBe("Deep work");

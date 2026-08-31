@@ -255,11 +255,11 @@ describe("useSettingsBackdropMotion", () => {
 
     await waitFor(() =>
       expect(warn).toHaveBeenCalledWith(
-        "Settings backdrop app-state listener cleanup did not complete."
+        "[V2Settings] Settings backdrop app-state listener cleanup did not complete."
       )
     );
     expect(warn).toHaveBeenCalledWith(
-      "Settings backdrop motion stayed off because app state was unavailable."
+      "[V2Settings] Settings backdrop motion stayed off because app state was unavailable."
     );
     expect(result.current).toBe(false);
     act(() => harness.appStateListener?.({ isActive: true }));
@@ -304,7 +304,7 @@ describe("useSettingsBackdropMotion", () => {
 
     await waitFor(() => expect(lateRemove).toHaveBeenCalledTimes(1));
     expect(warn).toHaveBeenCalledWith(
-      "Settings backdrop app-state listener cleanup did not complete."
+      "[V2Settings] Settings backdrop app-state listener cleanup did not complete."
     );
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("private native cleanup detail"));
   });

@@ -4,19 +4,47 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 
 // --- mocks ---
 
-const mockSetMoods = vi.fn();
-const mockRewardUser = vi.fn();
-const mockUpdateChallengeProgress = vi.fn();
-const mockTriggerSync = vi.fn();
+const {
+  mockSetMoods,
+  mockRewardUser,
+  mockUpdateChallengeProgress,
+  mockTriggerSync,
+  mockMoodState,
+  mockUseUserDataStore,
+} = vi.hoisted(() => {
+  const mockSetMoods = vi.fn();
+  const mockMoodState: { currentMoods: Array<Record<string, unknown>> } = {
+    currentMoods: [],
+  };
+  const mockUseUserDataStore = Object.assign(
+    vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
+      sel({
+        moods: mockMoodState.currentMoods,
+        setMoods: mockSetMoods,
+        _publishDurableMoods: mockSetMoods,
+      }),
+    ),
+    {
+      getState: () => ({ moods: mockMoodState.currentMoods }),
+    },
+  );
+
+  return {
+    mockSetMoods,
+    mockRewardUser: vi.fn(),
+    mockUpdateChallengeProgress: vi.fn(),
+    mockTriggerSync: vi.fn(),
+    mockMoodState,
+    mockUseUserDataStore,
+  };
+});
 
 vi.mock("@/stores", () => ({
-  useUserDataStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
-    sel({ setMoods: mockSetMoods })
-  ),
+  useUserDataStore: mockUseUserDataStore,
   useGamificationStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
     sel({ rewardUser: mockRewardUser })
   ),
@@ -25,6 +53,7 @@ vi.mock("@/stores", () => ({
 vi.mock("@/lib/utils", () => ({
   getToday: vi.fn(() => "2026-02-19"),
   generateId: vi.fn(() => "test-id"),
+  generateUuid: vi.fn(() => "11111111-1111-4111-8111-111111111111"),
 }));
 
 vi.mock("@/storage/cloudSync", () => ({
@@ -40,8 +69,32 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 vi.mock("@/lib/logger", () => ({
-  logger: { log: vi.fn() },
+  logger: {
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
 }));
+
+vi.mock("@/contexts/LanguageContext", () => ({
+  useLanguage: vi.fn(() => ({ t: { storageErrorDesc: "Storage unavailable" } })),
+}));
+
+vi.mock("@/features/automation", () => ({
+  persistMoodSourceRecord: vi.fn(async () => ({
+    accountBoundaryGeneration: "test-boundary",
+    intentId: null,
+  })),
+}));
+
+vi.mock("@/storage/accountBoundaryRuntime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/storage/accountBoundaryRuntime")>();
+  return {
+    ...actual,
+    assertOriginAccountBoundaryGeneration: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/audioManager", () => ({
   playSound: vi.fn(),
@@ -55,6 +108,7 @@ import { playSound } from "@/lib/audioManager";
 describe("useMoodHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMoodState.currentMoods = [];
   });
 
   const renderMoodHandlers = (options: { rewardsEnabled?: boolean } = {}) =>
@@ -65,91 +119,95 @@ describe("useMoodHandlers", () => {
       })
     );
 
-  it("handleAddMood calls setMoods with new entry appended", () => {
+  it("handleAddMood calls setMoods with new entry appended", async () => {
     const { result } = renderMoodHandlers();
 
     const entry = { id: "1", mood: "good" as const, date: "2026-02-19", timestamp: 1000 };
-    act(() => {
-      result.current.handleAddMood(entry);
+    await act(async () => {
+      await result.current.handleAddMood(entry);
     });
 
-    expect(mockSetMoods).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSetMoods).toHaveBeenCalledTimes(1));
     // The updater function should append the entry
     const updater = mockSetMoods.mock.calls[0][0];
     expect(updater([])).toEqual([expect.objectContaining(entry)]);
   });
 
-  it("handleAddMood calls rewardUser with mood treats", () => {
+  it("handleAddMood calls rewardUser with mood treats", async () => {
     const { result } = renderMoodHandlers();
 
     const entry = { id: "2", mood: "great" as const, date: "2026-02-19", timestamp: 2000 };
-    act(() => {
-      result.current.handleAddMood(entry);
+    await act(async () => {
+      await result.current.handleAddMood(entry);
     });
 
-    expect(mockRewardUser).toHaveBeenCalledWith("mood", {
-      treats: 5,
-      treatReason: "Logged mood",
-      haptic: "moodSaved",
-      seedExtra: "great",
-    });
+    await waitFor(() =>
+      expect(mockRewardUser).toHaveBeenCalledWith("mood", {
+        treats: 5,
+        treatReason: "Logged mood",
+        haptic: "moodSaved",
+        seedExtra: "great",
+      }),
+    );
   });
 
-  it("V2 neutral mode skips rewardUser and plays only neutral mood feedback", () => {
+  it("V2 neutral mode skips rewardUser and plays only neutral mood feedback", async () => {
     const { result } = renderMoodHandlers({ rewardsEnabled: false });
 
     const entry = { id: "v2-mood", mood: "great" as const, date: "2026-02-19", timestamp: 2000 };
-    act(() => {
-      result.current.handleAddMood(entry);
+    await act(async () => {
+      await result.current.handleAddMood(entry);
     });
 
+    await waitFor(() => expect(playSound).toHaveBeenCalledWith("success"));
     expect(mockRewardUser).not.toHaveBeenCalled();
-    expect(playSound).toHaveBeenCalledWith("success");
   });
 
-  it("handleAddMood calls updateChallengeProgress", () => {
+  it("handleAddMood calls updateChallengeProgress", async () => {
     const { result } = renderMoodHandlers();
 
     const entry = { id: "3", mood: "okay" as const, date: "2026-02-19", timestamp: 3000 };
-    act(() => {
-      result.current.handleAddMood(entry);
+    await act(async () => {
+      await result.current.handleAddMood(entry);
     });
 
-    expect(mockUpdateChallengeProgress).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockUpdateChallengeProgress).toHaveBeenCalledTimes(1));
   });
 
-  it("handleQuickMood creates entry with generated id and today date", () => {
+  it("handleQuickMood creates entry with generated id and today date", async () => {
     const { result } = renderMoodHandlers();
 
     act(() => {
       result.current.handleQuickMood("bad");
     });
 
-    expect(mockSetMoods).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSetMoods).toHaveBeenCalledTimes(1));
     const updater = mockSetMoods.mock.calls[0][0];
     const created = updater([])[0];
     expect(created).toMatchObject({
-      id: "test-id",
+      id: "11111111-1111-4111-8111-111111111111",
       mood: "bad",
       date: "2026-02-19",
     });
     expect(created.timestamp).toEqual(expect.any(Number));
   });
 
-  it("handleUpdateMood updates specific entry mood and triggers sync", () => {
+  it("handleUpdateMood updates specific entry mood and triggers sync", async () => {
     const { result } = renderMoodHandlers();
+
+    const existing = [
+      { id: "entry-1", mood: "bad", date: "2026-02-19", timestamp: 100, note: "old" },
+      { id: "entry-2", mood: "okay", date: "2026-02-19", timestamp: 200 },
+    ];
+    mockMoodState.currentMoods = existing;
 
     act(() => {
       result.current.handleUpdateMood("entry-1", "great", "feeling better");
     });
 
-    expect(mockSetMoods).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSetMoods).toHaveBeenCalledTimes(1));
     // Verify the updater correctly maps entries
     const updater = mockSetMoods.mock.calls[0][0];
-    const existing = [
-      { id: "entry-1", mood: "bad", date: "2026-02-19", timestamp: 100, note: "old" },
-      { id: "entry-2", mood: "okay", date: "2026-02-19", timestamp: 200 },
-    ];
     const updated = updater(existing);
     expect(updated[0].mood).toBe("great");
     expect(updated[0].note).toBe("feeling better");

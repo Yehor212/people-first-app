@@ -116,7 +116,7 @@ export function useWidgetData() {
       })
       .catch(err => {
         if (isMounted) {
-          logger.error('Failed to get widget data:', err);
+          logger.error('[Widget] Failed to get widget data:', err);
         }
       });
 

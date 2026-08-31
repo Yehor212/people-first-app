@@ -1087,7 +1087,7 @@ export function useAuthSession(isLoading: boolean): void {
             createImportedBackupAccountClaimError(importedBackupAccountLabel, userId, "save-failed")
           );
           setAccountBoundaryInProgress(false);
-          logger.error("Cloud sync failed after imported backup account binding:", error);
+          logger.error("[CloudSync] Cloud sync failed after imported backup account binding:", error);
           return;
         }
         if (boundarySuspended) {
@@ -1130,7 +1130,7 @@ export function useAuthSession(isLoading: boolean): void {
             setHasValidSession(true);
           }
         }
-        logger.error("Cloud sync failed:", error);
+        logger.error("[CloudSync] Cloud sync failed:", error);
       }
     };
 

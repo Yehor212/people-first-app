@@ -1,6 +1,7 @@
 // MUST be first import — runs before any other module (incl. React) loads.
 // Decodes GH Pages 404.html SPA redirect URL back to canonical path.
 import "./lib/spaRedirect";
+import "./lib/diagnosticConsoleBootstrap";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -32,12 +33,15 @@ import {
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
-import { isChunkLoadMessage } from "./lib/chunkErrorDetection";
+import { pruneRetainedBoundaryDiagnostics } from "./components/ErrorBoundary";
+import { getErrorMessage, isChunkLoadMessage } from "./lib/chunkErrorDetection";
 import { isTrustedServiceWorkerMessage } from "./lib/serviceWorkerMessages";
+import { readLifecycleSnapshot, writeLifecycleSnapshot } from "./lib/lifecycleSnapshot";
 import { SK } from "./lib/storageKeys";
-import { safeLocalStorageGet, safeLocalStorageSet } from "./lib/safeJson";
+import { safeLocalStorageGet } from "./lib/safeJson";
 import { scheduleIdle } from "./lib/scheduleIdle";
 import { captureOrBuffer } from "./lib/errorBuffer";
+import { pruneRetainedCrashReports } from "./lib/crashReporting";
 import { initWebVitalsDev } from "./observability/reportWebVitals";
 import { initLongTaskObserverDev } from "./observability/initLongTaskObserverDev";
 import {
@@ -50,8 +54,10 @@ import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
 
-// The bounded error buffer supports local recovery diagnostics without enabling
-// optional external crash reporting before the user has a corresponding choice.
+// Drop legacy raw records and enforce the current retention window before any
+// new runtime failure can be recorded.
+pruneRetainedBoundaryDiagnostics();
+pruneRetainedCrashReports();
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors
@@ -263,9 +269,12 @@ void resetLocalDevPwaCaches();
 // These catch errors that escape React's error boundary
 window.addEventListener("unhandledrejection", (event) => {
   if (event.defaultPrevented) return;
+  // The bounded buffer and fixed-code logger are the canonical diagnostics.
+  // Prevent the browser/WebView from additionally printing the raw reason.
+  event.preventDefault();
 
   const reason = event.reason;
-  const message = reason instanceof Error ? reason.message : String(reason);
+  const message = getErrorMessage(reason);
 
   if (isChunkLoadMessage(message)) {
     event.preventDefault();
@@ -273,7 +282,7 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 
   // Suppress generic browser/Capacitor permission rejections (e.g. notification denied)
-  if (reason === "Rejected" || (reason instanceof Error && reason.message === "Rejected")) {
+  if (reason === "Rejected" || message === "Rejected") {
     event.preventDefault();
     logger.warn("[Global] Suppressed generic rejection:", reason);
     return;
@@ -281,15 +290,22 @@ window.addEventListener("unhandledrejection", (event) => {
 
   logger.error("[Global] Unhandled promise rejection:", reason);
   // Keep a bounded in-memory record for the current runtime only.
-  if (reason instanceof Error) {
-    captureOrBuffer(reason, { type: "unhandledrejection" });
+  try {
+    if (reason instanceof Error) {
+      captureOrBuffer(reason, { type: "unhandledrejection" });
+    }
+  } catch {
+    logger.error("[Global] Unhandled rejection classification failed");
   }
 });
 
 window.addEventListener("error", (event) => {
   if (event.defaultPrevented) return;
+  // React 18 and browsers otherwise forward the original Error to console,
+  // bypassing the diagnostic privacy boundary below.
+  event.preventDefault();
 
-  const message = event.error instanceof Error ? event.error.message : event.message;
+  const message = getErrorMessage(event.error) ?? getErrorMessage(event.message);
   if (isChunkLoadMessage(message)) {
     event.preventDefault();
     return;
@@ -297,8 +313,12 @@ window.addEventListener("error", (event) => {
 
   logger.error("[Global] Uncaught error:", event.error || event.message);
   // Send to Sentry (buffered if Sentry not yet loaded)
-  if (event.error instanceof Error) {
-    captureOrBuffer(event.error, { type: "uncaught" });
+  try {
+    if (event.error instanceof Error) {
+      captureOrBuffer(event.error, { type: "uncaught" });
+    }
+  } catch {
+    logger.error("[Global] Uncaught error classification failed");
   }
 });
 
@@ -308,13 +328,12 @@ window.addEventListener("error", (event) => {
 // with the Error. Dispatch the same CHUNK_LOAD_ERROR_EVENT the dialog listens for.
 // Source: vite.dev/guide/build.html#load-error-handling, vitejs/vite#11804.
 window.addEventListener("vite:preloadError", (event) => {
-  const message = event.payload?.message || "vite:preloadError";
-  logger.warn("[Vite] Preload error:", message);
   // Prevent Vite's default auto-reload — dialog gives user control (see research §4).
   event.preventDefault();
+  logger.warn("[Vite] Preload error");
   window.dispatchEvent(
     new CustomEvent("zenflow:chunk-load-error", {
-      detail: { message, chunk: "preload", timestamp: Date.now() },
+      detail: { message: "ZF_VITE_PRELOAD_ERROR", chunk: "preload", timestamp: Date.now() },
     })
   );
 });
@@ -325,14 +344,13 @@ window.addEventListener("vite:preloadError", (event) => {
  * beforeunload: Web - when tab is closed or refreshed
  * visibilitychange: Both - when app goes to background
  *
- * Synchronous localStorage snapshot is used here — beforeunload handlers have
- * ~10ms budget and localStorage is the only sync storage. Network transmission
- * for unload events lives in cloudSync.ts (sendBeacon). Keep first-10 actions
- * for recovery; full queue is already persisted via offlineQueue's Dexie store.
+ * Synchronous localStorage marker is used here — beforeunload handlers have
+ * ~10ms budget and localStorage is the only sync storage. The marker contains
+ * fixed codes and a count only; the full authoritative queue remains in Dexie.
  */
 // Save critical state before app closes
 window.addEventListener("beforeunload", () => {
-  const pendingActions = savePendingQueueSnapshot({ includeQueueSnapshot: true });
+  const pendingActions = savePendingQueueSnapshot({ phase: "before-unload" });
   if (pendingActions > 0) {
     logger.log(`[Main] Saved ${pendingActions} pending actions before unload`);
   }
@@ -349,24 +367,28 @@ let pendingLifecycleTaskId: number | null = null;
 
 function savePendingQueueSnapshot(
   options: {
-    hidden?: boolean;
-    includeQueueSnapshot?: boolean;
+    phase?: "before-unload" | "hidden";
   } = {}
 ): number {
   try {
     const queueState = offlineQueue.getState();
     if (queueState.actions.length === 0) return 0;
 
-    safeLocalStorageSet(SK.LAST_STATE, {
-      timestamp: Date.now(),
-      pendingActions: queueState.actions.length,
-      ...(options.hidden ? { hidden: true } : {}),
-      ...(options.includeQueueSnapshot ? { queueSnapshot: queueState.actions.slice(0, 10) } : {}),
+    writeLifecycleSnapshot({
+      phase: options.phase ?? "hidden",
+      pendingActionCount: queueState.actions.length,
     });
     return queueState.actions.length;
   } catch (_error) {
     // Ignore errors during lifecycle snapshots.
     return 0;
+  }
+}
+
+function inspectRetainedLifecycleSnapshot(): void {
+  const lifecycleSnapshot = readLifecycleSnapshot();
+  if (lifecycleSnapshot.status === "invalid-retained") {
+    logger.warn("[Main] Invalid lifecycle marker could not be removed");
   }
 }
 
@@ -405,7 +427,7 @@ function handleAppPause(): void {
     logger.warn("[Main] cloudSync flush failed during pause:", err);
   }
 
-  savePendingQueueSnapshot({ hidden: true });
+  savePendingQueueSnapshot({ phase: "hidden" });
 
   // Reset flag after short delay to allow next pause event
   setTimeout(() => {
@@ -418,6 +440,7 @@ async function handleAppResume(): Promise<void> {
   isHandlingResume = true;
 
   try {
+    inspectRetainedLifecycleSnapshot();
     if (isNative) {
       try {
         dispatchNativeReminderReconcile("app-resume");
@@ -507,7 +530,7 @@ async function handleAppResume(): Promise<void> {
 // Handle visibility change (app going to background on mobile)
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    savePendingQueueSnapshot({ hidden: true });
+    savePendingQueueSnapshot({ phase: "hidden" });
     scheduleLifecycleTask("pause");
   } else if (document.visibilityState === "visible") {
     scheduleLifecycleTask("resume");
@@ -661,18 +684,24 @@ const rootOptions = {
   },
 };
 
+inspectRetainedLifecycleSnapshot();
+
+function renderConfiguredRoot(): void {
+  createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+}
+
 // Language is part of the first useful frame; version checks block only recovery paths.
 Promise.all([ensureFreshVersionBeforeRender(), prepareInitialLanguageBeforeRender()])
   .then(([shouldRender]) => {
     if (shouldRender) {
-      createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+      renderConfiguredRoot();
       scheduleVersionCheckAfterStartup();
       scheduleRuntimeAudioCacheWarmAfterStartup();
     }
   })
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
-    createRoot(document.getElementById("root")!, rootOptions).render(<App />);
+    renderConfiguredRoot();
     scheduleVersionCheckAfterStartup();
     scheduleRuntimeAudioCacheWarmAfterStartup();
   });

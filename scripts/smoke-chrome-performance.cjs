@@ -3,6 +3,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 const packageJson = require("../package.json");
 const perfBudgetManifest = require("../config/chrome-performance-budgets.json");
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceFailureClass,
+  sanitizeEvidenceMethod,
+  sanitizeEvidenceResourceType,
+  sanitizeEvidenceRoute,
+  sanitizeEvidenceUrl,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
 const appVersionSource = fs.readFileSync(
   path.join(__dirname, "..", "src", "lib", "appVersion.ts"),
   "utf8",
@@ -45,7 +53,7 @@ function readNumber(name, fallback) {
 
   const parsed = Number(rawValue);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    console.warn(`[chrome-performance] Ignoring invalid ${name}=${rawValue}`);
+    console.warn(`[chrome-performance] Ignoring invalid ${name}`);
     return fallback;
   }
 
@@ -57,12 +65,7 @@ function resolveUrl(path) {
 }
 
 function compactUrl(url) {
-  try {
-    const parsed = new URL(url);
-    return `${parsed.pathname}${parsed.search}`;
-  } catch {
-    return url;
-  }
+  return sanitizeEvidenceUrl(url);
 }
 
 async function seedApp(page) {
@@ -111,7 +114,7 @@ async function seedApp(page) {
             .getEntries()
             .filter((entry) => entry.startTime >= phaseStartedAt)
             .map((entry) => ({
-              name: entry.name,
+              name: "longtask",
               startTime: entry.startTime,
               duration: entry.duration,
             })),
@@ -139,12 +142,12 @@ async function seedApp(page) {
                 duration: script.duration,
                 executionStart: script.executionStart,
                 forcedStyleAndLayoutDuration: script.forcedStyleAndLayoutDuration,
-                invoker: script.invoker,
-                invokerType: script.invokerType,
+                invoker: "observed",
+                invokerType: "observed",
                 pauseDuration: script.pauseDuration,
-                sourceFunctionName: script.sourceFunctionName,
-                sourceURL: script.sourceURL,
-                windowAttribution: script.windowAttribution,
+                sourceFunctionName: "redacted",
+                sourceURL: "redacted",
+                windowAttribution: "observed",
               })),
             })),
         );
@@ -312,7 +315,7 @@ async function measure(context, routeGroup, route) {
 
   page.on("console", (message) => {
     if (message.type() === "error") {
-      consoleErrors.push(message.text());
+      consoleErrors.push("ZF_BROWSER_CONSOLE_ERROR");
     }
   });
 
@@ -320,10 +323,10 @@ async function measure(context, routeGroup, route) {
     if (pageClosing) return;
 
     failedRequests.push({
-      method: request.method(),
-      resourceType: request.resourceType(),
+      method: sanitizeEvidenceMethod(request.method()),
+      resourceType: sanitizeEvidenceResourceType(request.resourceType()),
       url: compactUrl(request.url()),
-      errorText: request.failure()?.errorText || "unknown",
+      errorClass: sanitizeEvidenceFailureClass(request.failure()?.errorText),
     });
   });
 
@@ -332,7 +335,7 @@ async function measure(context, routeGroup, route) {
     if (isReportableResponse(response)) {
       failedResponses.push({
         status: response.status(),
-        resourceType: response.request().resourceType(),
+        resourceType: sanitizeEvidenceResourceType(response.request().resourceType()),
         url: compactUrl(response.url()),
       });
     }
@@ -363,8 +366,7 @@ async function measure(context, routeGroup, route) {
   await waitForRouteNetworkIdle(page);
   const appReadyBeforeSteady = await waitForAppReady(page, route.name);
   const routeReadyBeforeSteady = await waitForRouteReady(page, route).catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[chrome-performance] ${route.name} route ready selector timed out: ${message}`);
+    console.warn(`[chrome-performance] ${route.name} route ready selector timed out: ${evidenceFailureCode(error)}`);
     return false;
   });
 
@@ -387,7 +389,6 @@ async function measure(context, routeGroup, route) {
     page,
     () => ({
       nodeCount: document.querySelectorAll("*").length,
-      title: document.title,
     }),
     route.name,
     "page-info",
@@ -407,8 +408,8 @@ async function measure(context, routeGroup, route) {
     routeReadyBeforeSteady,
     appReadyBeforeSteady,
     budgets,
-    path: route.path || "/",
-    url,
+    path: sanitizeEvidenceRoute(url),
+    url: sanitizeEvidenceUrl(url),
     bootRawLongTaskCount: bootMetrics.rawLongTaskCount,
     bootRawMaxLongTaskMs: bootMetrics.rawMaxLongTaskMs,
     bootLongTaskCount: bootMetrics.longTaskCount,
@@ -433,17 +434,13 @@ async function launchMeasurementBrowser() {
     return await chromium.launch({ channel: "chrome", headless: true });
   } catch (error) {
     console.warn(
-      `[chrome-performance] Installed Chrome is unavailable, falling back to Playwright Chromium: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      `[chrome-performance] Installed Chrome is unavailable, falling back to Playwright Chromium: ${evidenceFailureCode(error)}`,
     );
     try {
       return await chromium.launch({ headless: true });
     } catch (fallbackError) {
       console.error(
-        `[chrome-performance] Playwright Chromium is unavailable: ${
-          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-        }`,
+        `[chrome-performance] Playwright Chromium is unavailable: ${evidenceFailureCode(fallbackError)}`,
       );
       process.exit(2);
     }
@@ -596,7 +593,7 @@ function collectFailures(results) {
 
   const report = {
     generatedAt: new Date().toISOString(),
-    baseUrl: BASE_URL,
+    baseUrl: sanitizeEvidenceUrl(BASE_URL),
     budgetManifest: "config/chrome-performance-budgets.json",
     maxAllowedLongTaskMs: MAX_LONG_TASK_MS,
     longAnimationFrameWarnMs: LONG_ANIMATION_FRAME_WARN_MS,
@@ -624,6 +621,6 @@ function collectFailures(results) {
     process.exit(1);
   }
 })().catch((error) => {
-  console.error(error);
+  console.error(`[chrome-performance] ${evidenceFailureCode(error)}`);
   process.exit(1);
 });

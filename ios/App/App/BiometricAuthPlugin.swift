@@ -5,6 +5,10 @@ import Security
 
 @objc(BiometricAuthPlugin)
 public class BiometricAuthPlugin: CAPPlugin, CAPBridgedPlugin {
+    private let errorUnavailable = "biometric_unavailable"
+    private let errorFailed = "biometric_failed"
+    private let errorNotEnrolled = "biometric_not_enrolled"
+    private let errorCanceled = "biometric_canceled"
     public let identifier = "BiometricAuthPlugin"
     public let jsName = "BiometricAuth"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -25,8 +29,8 @@ public class BiometricAuthPlugin: CAPPlugin, CAPBridgedPlugin {
         var payload: [String: Any] = ["available": available]
         if available {
             payload["type"] = biometricType(for: context.biometryType)
-        } else if let authError = authError {
-            payload["error"] = authError.localizedDescription
+        } else {
+            payload["error"] = errorUnavailable
         }
 
         call.resolve(payload)
@@ -40,7 +44,7 @@ public class BiometricAuthPlugin: CAPPlugin, CAPBridgedPlugin {
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) else {
             call.resolve([
                 "success": false,
-                "error": authError?.localizedDescription ?? "Biometric authentication is not available"
+                "error": errorUnavailable
             ])
             return
         }
@@ -48,7 +52,7 @@ public class BiometricAuthPlugin: CAPPlugin, CAPBridgedPlugin {
         guard let secret = call.getString("secret"), !secret.isEmpty else {
             call.resolve([
                 "success": false,
-                "error": "Biometric diary unlock needs an unlocked journal key."
+                "error": errorFailed
             ])
             return
         }
@@ -84,7 +88,7 @@ public class BiometricAuthPlugin: CAPPlugin, CAPBridgedPlugin {
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) else {
             call.resolve([
                 "success": false,
-                "error": authError?.localizedDescription ?? "Biometric authentication is not available"
+                "error": errorUnavailable
             ])
             return
         }
@@ -189,21 +193,21 @@ public class BiometricAuthPlugin: CAPPlugin, CAPBridgedPlugin {
             return keychainErrorMessage(OSStatus(nsError.code))
         }
 
-        return error.localizedDescription
+        return errorFailed
     }
 
     private func keychainErrorMessage(_ status: OSStatus) -> String {
         switch status {
         case errSecItemNotFound:
-            return "Biometric diary unlock is not enrolled. Unlock with your password and enable biometrics again."
+            return errorNotEnrolled
         case errSecUserCanceled:
-            return "Biometric authentication was canceled."
+            return errorCanceled
         case errSecAuthFailed:
-            return "Biometric authentication failed."
+            return errorFailed
         case errSecInteractionNotAllowed:
-            return "Biometric authentication is not available while the app is inactive."
+            return errorUnavailable
         default:
-            return SecCopyErrorMessageString(status, nil) as String? ?? "Biometric authentication failed."
+            return errorFailed
         }
     }
 

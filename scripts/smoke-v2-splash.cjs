@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 const { chromium } = require("playwright");
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceUrl,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const THEME_STORAGE_KEY = "zenflow:theme-v0c";
 const DEFAULT_URL = "https://yehor212.github.io/people-first-app/orb?nav=v2&navLayout=phone";
@@ -54,7 +58,7 @@ async function captureSplash(browser, check) {
 
   page.on("console", (message) => {
     if (message.type() === "error" && !message.text().startsWith("Failed to load resource:")) {
-      consoleErrors.push(message.text());
+      consoleErrors.push("ZF_BROWSER_CONSOLE_ERROR");
     }
   });
 
@@ -63,7 +67,7 @@ async function captureSplash(browser, check) {
 
     const failure = {
       status: response.status(),
-      url: response.url(),
+      url: sanitizeEvidenceUrl(response.url()),
     };
 
     if (response.url().endsWith("/registerSW.js")) {
@@ -82,15 +86,17 @@ async function captureSplash(browser, check) {
   const shell = page.locator('[data-testid="splash-theme-shell"]');
   await shell.waitFor({ state: "attached", timeout: 8_000 });
 
-  const evidence = await page.evaluate(() => {
+  const evidence = await page.evaluate(({ expectedTheme, expectedScene }) => {
     const splashShell = document.querySelector('[data-testid="splash-theme-shell"]');
     if (!splashShell) return null;
 
     return {
-      url: window.location.href,
-      theme: splashShell.getAttribute("data-splash-theme"),
-      scene: splashShell.getAttribute("data-splash-scene"),
-      instant: splashShell.getAttribute("data-splash-instant"),
+      previewModeActive:
+        new URL(window.location.href).searchParams.has("dev") ||
+        new URL(window.location.href).searchParams.has("splashPreview"),
+      themeMatches: splashShell.getAttribute("data-splash-theme") === expectedTheme,
+      sceneMatches: splashShell.getAttribute("data-splash-scene") === expectedScene,
+      instant: splashShell.getAttribute("data-splash-instant") === "true",
       logoRing: document.querySelectorAll('[data-testid="splash-day-logo-ring"]').length,
       dayBubbles: document.querySelectorAll('[data-testid="splash-day-bubble"]').length,
       nightBackgrounds: document.querySelectorAll('[data-testid="splash-night-background"]').length,
@@ -98,7 +104,7 @@ async function captureSplash(browser, check) {
       loaderSvg: Boolean(document.querySelector('[data-testid="splash-infinity-loader"] svg')),
       brandLogo: Boolean(document.querySelector('[data-testid="splash-brand-logo"]')),
     };
-  });
+  }, { expectedTheme: check.preference, expectedScene: check.expectedScene });
 
   await context.close();
   return { evidence, consoleErrors, failedResponses, ignoredDevResponses };
@@ -111,16 +117,16 @@ function assertEvidence(check, evidence) {
     return [`${check.name}: splash shell was not captured`];
   }
 
-  if (evidence.url.includes("dev=true") || evidence.url.includes("splashPreview")) {
-    failures.push(`${check.name}: smoke used a preview/dev URL`);
+  if (evidence.previewModeActive) {
+    failures.push(`${check.name}: ZF_SPLASH_PREVIEW_ROUTE`);
   }
 
-  if (evidence.theme !== check.preference) {
-    failures.push(`${check.name}: expected theme ${check.preference}, got ${evidence.theme}`);
+  if (!evidence.themeMatches) {
+    failures.push(`${check.name}: ZF_SPLASH_THEME_MISMATCH`);
   }
 
-  if (evidence.scene !== check.expectedScene) {
-    failures.push(`${check.name}: expected scene ${check.expectedScene}, got ${evidence.scene}`);
+  if (!evidence.sceneMatches) {
+    failures.push(`${check.name}: ZF_SPLASH_SCENE_MISMATCH`);
   }
 
   if (!evidence.brandLogo) {
@@ -184,13 +190,13 @@ function assertEvidence(check, evidence) {
     await browser.close();
   }
 
-  console.log(JSON.stringify({ targetUrl, results }, null, 2));
+  console.log(JSON.stringify({ targetUrl: sanitizeEvidenceUrl(targetUrl), results }, null, 2));
 
   if (failures.length > 0) {
     console.error(`V2 splash smoke failed:\n- ${failures.join("\n- ")}`);
     process.exit(1);
   }
 })().catch((error) => {
-  console.error(error);
+  console.error(`[v2-splash] ${evidenceFailureCode(error)}`);
   process.exit(1);
 });

@@ -1,5 +1,7 @@
 import { storageGetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { sanitizeDiagnosticRoute } from "@/lib/diagnosticPrivacy";
+import { registerAccountBoundaryRuntimeReset } from "@/storage/accountBoundaryRuntime";
 import {
   applyRuntimePerformanceMode,
   applyRuntimePerformanceStartup,
@@ -9,6 +11,7 @@ import {
   type RuntimePerformanceModeSnapshot,
 } from "./runtimePerformanceMode";
 import { sanitizeRuntimeRoute } from "./runtimeRouteSanitizer";
+import { subscribeDiagnosticRouteChange } from "./diagnosticRouteObserver";
 
 const MAX_ENTRIES = 80;
 const ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -55,6 +58,11 @@ interface RuntimeFlightRecorder {
   };
   markRoute: (route?: string) => void;
 }
+
+let activeFlightRecorderDispose: (() => void) | null = null;
+let activeFlightRecorderObservers: PerformanceObserver[] = [];
+let activeRuntimeGuardObservers: PerformanceObserver[] = [];
+let activeRuntimeGuardTimeout: number | null = null;
 
 interface RuntimePerformanceGuard {
   enabled: true;
@@ -104,14 +112,11 @@ function normalizeFlag(value: string | null | undefined): boolean {
 export function shouldEnableRuntimeFlightRecorder(
   search: string,
   storedFlag: string,
-  devMode: boolean,
+  devMode: boolean
 ): boolean {
   const params = new URLSearchParams(search);
   const explicit =
-    params.get("perf") ??
-    params.get("perfDebug") ??
-    params.get("runtimePerf") ??
-    params.get("dev");
+    params.get("perf") ?? params.get("perfDebug") ?? params.get("runtimePerf") ?? params.get("dev");
 
   if (explicit !== null) {
     return normalizeFlag(explicit);
@@ -139,35 +144,59 @@ export function shouldEnableRuntimePerformanceGuard(search: string): boolean {
   return true;
 }
 
-function currentRoute(): string {
-  return sanitizeRuntimeRoute(
-    `${window.location.pathname}${window.location.search}`,
-  );
+function sanitizeFlightRecorderRoute(route: string): string {
+  // Keep the existing finite query allowlist for known app destinations, but
+  // collapse dynamic/deep-link paths before they can retain private IDs.
+  if (sanitizeDiagnosticRoute(route) === "unknown") return "unknown";
+  return sanitizeRuntimeRoute(route);
 }
+
+function currentRoute(): string {
+  return sanitizeFlightRecorderRoute(`${window.location.pathname}${window.location.search}`);
+}
+
+function currentGuardRoute(): string {
+  return sanitizeDiagnosticRoute(window.location.href);
+}
+
+function sanitizeFlightEntry(entry: LoAFEntry): RuntimePerfEntry["scripts"] {
+  return (entry.scripts || []).slice(0, 5).map((script) => ({
+    duration: Number.isFinite(script.duration) ? script.duration : 0,
+    invoker: "observed",
+    invokerType: "observed",
+    sourceFunctionName: "observed",
+    sourceURL: "[REDACTED]",
+    forcedStyleAndLayoutDuration: Number.isFinite(script.forcedStyleAndLayoutDuration)
+      ? script.forcedStyleAndLayoutDuration
+      : undefined,
+  }));
+}
+
+function clearRuntimeFlightRecorderState(): void {
+  if (typeof window === "undefined") return;
+  window.__zenflowRuntimePerf?.entries.splice(0);
+  for (const observer of activeFlightRecorderObservers) observer.disconnect();
+  activeFlightRecorderObservers = [];
+  activeFlightRecorderDispose?.();
+  activeFlightRecorderDispose = null;
+  for (const observer of activeRuntimeGuardObservers) observer.disconnect();
+  activeRuntimeGuardObservers = [];
+  if (activeRuntimeGuardTimeout !== null) {
+    window.clearTimeout(activeRuntimeGuardTimeout);
+    activeRuntimeGuardTimeout = null;
+  }
+  delete window.__zenflowRuntimePerf;
+  delete window.__zenflowRuntimePerfGuard;
+  clearRuntimePerformanceMode({ clearDevice: true });
+}
+
+registerAccountBoundaryRuntimeReset(clearRuntimeFlightRecorderState);
 
 function pushEntry(store: RuntimeFlightRecorder, entry: RuntimePerfEntry): void {
   store.entries.push(entry);
   if (store.entries.length > MAX_ENTRIES) {
     store.entries.splice(0, store.entries.length - MAX_ENTRIES);
   }
-}
-
-function patchHistory(store: RuntimeFlightRecorder): void {
-  const patchMethod = <T extends "pushState" | "replaceState">(method: T) => {
-    const original = window.history[method];
-    window.history[method] = function patchedHistoryMethod(
-      this: History,
-      ...args: Parameters<History[T]>
-    ) {
-      const result = original.apply(this, args);
-      queueMicrotask(() => store.markRoute());
-      return result;
-    } as History[T];
-  };
-
-  patchMethod("pushState");
-  patchMethod("replaceState");
-  window.addEventListener("popstate", () => store.markRoute(), { passive: true });
 }
 
 export function installRuntimeFlightRecorder(): boolean {
@@ -182,7 +211,7 @@ export function installRuntimeFlightRecorder(): boolean {
   const shouldEnable = shouldEnableRuntimeFlightRecorder(
     window.location.search,
     storageGetRaw(SK.RUNTIME_PERF_RECORDER, ""),
-    import.meta.env.DEV,
+    import.meta.env.DEV
   );
 
   if (!shouldEnable) {
@@ -204,18 +233,18 @@ export function installRuntimeFlightRecorder(): boolean {
           0,
           ...entries
             .filter((entry) => entry.kind === "longtask")
-            .map((entry) => entry.duration || 0),
+            .map((entry) => entry.duration || 0)
         ),
         maxLongAnimationFrameMs: Math.max(
           0,
           ...entries
             .filter((entry) => entry.kind === "long-animation-frame")
-            .map((entry) => entry.duration || 0),
+            .map((entry) => entry.duration || 0)
         ),
       };
     },
     markRoute: (route = currentRoute()) => {
-      const sanitizedRoute = sanitizeRuntimeRoute(route);
+      const sanitizedRoute = sanitizeFlightRecorderRoute(route);
       store.route = sanitizedRoute;
       pushEntry(store, {
         kind: "route",
@@ -227,14 +256,15 @@ export function installRuntimeFlightRecorder(): boolean {
   };
 
   window.__zenflowRuntimePerf = store;
-  patchHistory(store);
+  activeFlightRecorderDispose = subscribeDiagnosticRouteChange(() => store.markRoute());
   store.markRoute();
 
   const supportedEntryTypes = PerformanceObserver.supportedEntryTypes || [];
 
   try {
     if (supportedEntryTypes.includes("longtask")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerf !== store) return;
         for (const entry of list.getEntries()) {
           pushEntry(store, {
             kind: "longtask",
@@ -243,7 +273,9 @@ export function installRuntimeFlightRecorder(): boolean {
             duration: entry.duration,
           });
         }
-      }).observe({ type: "longtask", buffered: true });
+      });
+      activeFlightRecorderObservers.push(observer);
+      observer.observe({ type: "longtask", buffered: true });
     }
   } catch {
     // Observability must never block app startup.
@@ -251,7 +283,8 @@ export function installRuntimeFlightRecorder(): boolean {
 
   try {
     if (supportedEntryTypes.includes("long-animation-frame")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerf !== store) return;
         for (const entry of list.getEntries() as LoAFEntry[]) {
           pushEntry(store, {
             kind: "long-animation-frame",
@@ -261,10 +294,12 @@ export function installRuntimeFlightRecorder(): boolean {
             blockingDuration: entry.blockingDuration,
             renderStart: entry.renderStart,
             styleAndLayoutStart: entry.styleAndLayoutStart,
-            scripts: (entry.scripts || []).slice(0, 5),
+            scripts: sanitizeFlightEntry(entry),
           });
         }
-      }).observe({ type: "long-animation-frame", buffered: true });
+      });
+      activeFlightRecorderObservers.push(observer);
+      observer.observe({ type: "long-animation-frame", buffered: true });
     }
   } catch {
     // Observability must never block app startup.
@@ -287,7 +322,7 @@ function makeGuardSnapshot(reason: string, duration: number): RuntimePerformance
 function activateRuntimePerformanceGuard(
   state: RuntimePerformanceGuard,
   reason: string,
-  duration: number,
+  duration: number
 ): void {
   if (state.activated) {
     return;
@@ -315,7 +350,7 @@ export function installRuntimePerformanceGuard(): boolean {
     enabled: true,
     startedAt: performance.now(),
     activated: false,
-    route: currentRoute(),
+    route: currentGuardRoute(),
     repeatedLoAFCount: 0,
     maxLongTaskMs: 0,
     maxLongAnimationFrameMs: 0,
@@ -339,10 +374,11 @@ export function installRuntimePerformanceGuard(): boolean {
     applyRuntimePerformanceMode(stored);
   } else if (readStoredRuntimePerformanceDeviceGuard()) {
     applyRuntimePerformanceStartup();
-    window.setTimeout(() => {
+    activeRuntimeGuardTimeout = window.setTimeout(() => {
       if (!state.activated && document.documentElement.dataset.runtimePerf === "startup") {
         clearRuntimePerformanceMode();
       }
+      activeRuntimeGuardTimeout = null;
     }, STARTUP_WARMUP_MS);
   }
 
@@ -354,7 +390,8 @@ export function installRuntimePerformanceGuard(): boolean {
 
   try {
     if (supportedEntryTypes.includes("long-animation-frame")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerfGuard !== state) return;
         for (const entry of list.getEntries()) {
           const duration = entry.duration || 0;
           const blockingDuration = (entry as LoAFEntry).blockingDuration || 0;
@@ -365,7 +402,7 @@ export function installRuntimePerformanceGuard(): boolean {
           state.maxLongAnimationFrameMs = Math.max(state.maxLongAnimationFrameMs, duration);
           state.maxLongAnimationFrameBlockingMs = Math.max(
             state.maxLongAnimationFrameBlockingMs,
-            blockingDuration,
+            blockingDuration
           );
 
           if (duration >= REPEATED_LOAF_MS && blockingDuration >= REPEATED_LOAF_BLOCKING_MS) {
@@ -378,11 +415,13 @@ export function installRuntimePerformanceGuard(): boolean {
             activateRuntimePerformanceGuard(
               state,
               "repeated-blocking-long-animation-frame",
-              duration,
+              duration
             );
           }
         }
-      }).observe({ type: "long-animation-frame", buffered: true });
+      });
+      activeRuntimeGuardObservers.push(observer);
+      observer.observe({ type: "long-animation-frame", buffered: true });
     }
   } catch {
     // Runtime perf guard must never block app startup.
@@ -390,7 +429,8 @@ export function installRuntimePerformanceGuard(): boolean {
 
   try {
     if (supportedEntryTypes.includes("longtask")) {
-      new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver((list) => {
+        if (window.__zenflowRuntimePerfGuard !== state) return;
         for (const entry of list.getEntries()) {
           const duration = entry.duration || 0;
           if ((entry.startTime || 0) < state.startedAt) {
@@ -403,7 +443,9 @@ export function installRuntimePerformanceGuard(): boolean {
             activateRuntimePerformanceGuard(state, "longtask", duration);
           }
         }
-      }).observe({ type: "longtask", buffered: true });
+      });
+      activeRuntimeGuardObservers.push(observer);
+      observer.observe({ type: "longtask", buffered: true });
     }
   } catch {
     // Runtime perf guard must never block app startup.

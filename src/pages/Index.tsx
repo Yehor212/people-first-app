@@ -39,6 +39,8 @@ import { useInnerWorld } from "@/hooks/useInnerWorld";
 import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAutomation } from "@/features/automation";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
 import {
   deriveCurrentProductAdEntitlement,
@@ -147,6 +149,7 @@ function IndexV2Impl() {
   useSessionTimeout(!!supabase);
   useReminderMigration();
   useEmotionSync();
+  const { t } = useLanguage();
 
   const challengesRef = useRef<ChallengeList | null>(null);
   const badgesRef = useRef<BadgeList | null>(null);
@@ -172,7 +175,7 @@ function IndexV2Impl() {
   const accountBoundaryInProgress = useAppStore((s) => s.isAccountBoundaryInProgress);
   const emotionProtectedToday = useMemo(
     () => isEmotionallyProtectedOnLocalDate(moods, currentDate),
-    [currentDate, moods],
+    [currentDate, moods]
   );
   const adEntitlement = deriveCurrentProductAdEntitlement({
     accountBoundaryInProgress,
@@ -196,13 +199,17 @@ function IndexV2Impl() {
   const adGraceComplete = useAdGracePeriod({
     isLoading,
     hasExistingData:
-      moods.length > 0 || habits.length > 0 || focusSessions.length > 0 || gratitudeEntries.length > 0,
+      moods.length > 0 ||
+      habits.length > 0 ||
+      focusSessions.length > 0 ||
+      gratitudeEntries.length > 0,
     localDate: currentDate,
   });
 
   useAuthSession(isLoading);
   useDeepLinkHandler({ handleDiaryDeepLinks: false });
   useTelegramGradeSyncRuntime();
+  useAutomation({ localizedMoodJournalTitle: t.journalTitle });
 
   const { checkForFeatureUnlocks, updateChallengeProgress } = useChallengeHandlers({
     safeMoods: moods,
@@ -239,7 +246,7 @@ function IndexV2Impl() {
       onNameChange: handleNameChange,
       onResetData: handleResetData,
       reminders,
-       onRemindersChange: handleRemindersChange,
+      onRemindersChange: handleRemindersChange,
       habits,
       moods,
       focusSessions,
@@ -258,7 +265,7 @@ function IndexV2Impl() {
       moods,
       privacy,
       reminders,
-       handleRemindersChange,
+      handleRemindersChange,
       userName,
       userNameCustom,
     ]

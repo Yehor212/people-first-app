@@ -2,6 +2,12 @@
 "use strict";
 
 const { chromium } = require("@playwright/test");
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceRoute,
+  sanitizeEvidenceUrl,
+  sanitizeSyncHealthEvidenceSnapshot,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const DEFAULT_URL = "https://yehor212.github.io/people-first-app/?navLayout=phone&syncHealth=1";
 const TARGET_URL = withSyncHealthFlag(process.env.ZENFLOW_SYNC_HEALTH_URL || DEFAULT_URL);
@@ -26,14 +32,14 @@ function withSyncHealthFlag(rawUrl) {
   return url.toString();
 }
 
-function stopUnverified(reason) {
-  console.log(`[sync-health] UNVERIFIED - ${reason}`);
+function stopUnverified(_reason) {
+  console.log("[sync-health] UNVERIFIED - ZF_BROWSER_UNAVAILABLE");
   process.exit(REQUIRED ? 2 : 0);
 }
 
-function fail(message, detail) {
-  console.error(`[sync-health] FAIL - ${message}`);
-  if (detail) console.error(detail);
+function fail(code) {
+  const safeCode = /^ZF_[A-Z0-9_]{3,64}$/.test(code) ? code : evidenceFailureCode(code);
+  console.error(`[sync-health] FAIL - ${safeCode}`);
   process.exit(1);
 }
 
@@ -41,7 +47,7 @@ function assertNoForbiddenContent(snapshot) {
   const serialized = JSON.stringify(snapshot);
   const leaked = FORBIDDEN_STRINGS.filter((token) => serialized.includes(token));
   if (leaked.length > 0) {
-    fail(`snapshot leaked forbidden token(s): ${leaked.join(", ")}`);
+    fail("ZF_SYNC_HEALTH_PRIVATE_DATA");
   }
 }
 
@@ -53,7 +59,7 @@ async function main() {
   try {
     browser = await chromium.launch({ headless: true });
   } catch (error) {
-    stopUnverified(`Chromium could not start: ${error.message || String(error)}`);
+    stopUnverified(evidenceFailureCode(error));
   }
 
   try {
@@ -61,11 +67,11 @@ async function main() {
 
     page.on("console", (message) => {
       if (message.type() === "error") {
-        consoleErrors.push(message.text());
+        consoleErrors.push("ZF_BROWSER_CONSOLE_ERROR");
       }
     });
     page.on("requestfailed", (request) => {
-      failedRequests.push(`${request.failure()?.errorText || "unknown"} ${request.url()}`);
+      failedRequests.push({ code: "ZF_REQUEST_FAILED", url: sanitizeEvidenceUrl(request.url()) });
     });
 
     await page.addInitScript(() => {
@@ -87,13 +93,17 @@ async function main() {
 
     const initial = await page.evaluate(() => window.__zenflowSyncHealth.snapshot());
     if (initial.version !== 1 || initial.enabled !== true) {
-      fail("snapshot is not the expected v1 enabled sync-health shape");
+      fail("ZF_SYNC_HEALTH_SHAPE_INVALID");
     }
-    if (!initial.route.includes("syncHealth=1") && !initial.route.includes("syncDebug=true")) {
-      fail(`snapshot route does not prove explicit debug opt-in: ${initial.route}`);
+    const target = new URL(TARGET_URL);
+    if (!target.searchParams.has("syncHealth") && !target.searchParams.has("syncDebug")) {
+      fail("ZF_SYNC_HEALTH_OPT_IN_MISSING");
+    }
+    if (initial.route !== sanitizeEvidenceRoute(TARGET_URL) || /[?#]/.test(initial.route)) {
+      fail("ZF_SYNC_HEALTH_ROUTE_UNSAFE");
     }
     if (typeof initial.lastSeq !== "number" || typeof initial.queue?.pending !== "number") {
-      fail("snapshot is missing numeric cursor or queue evidence");
+      fail("ZF_SYNC_HEALTH_NUMERIC_EVIDENCE_MISSING");
     }
     assertNoForbiddenContent(initial);
 
@@ -105,8 +115,8 @@ async function main() {
         queueMicrotask(() => resolve(window.__zenflowSyncHealth.snapshot().route));
       });
     });
-    if (!String(routeAfterPush).includes("syncHealthDrill=route")) {
-      fail(`snapshot route did not update after history.pushState: ${routeAfterPush}`);
+    if (routeAfterPush !== initial.route || /[?#]/.test(String(routeAfterPush))) {
+      fail("ZF_SYNC_HEALTH_ROUTE_UPDATE_UNSAFE");
     }
 
     const receiptSnapshot = await page.evaluate(() => {
@@ -131,23 +141,24 @@ async function main() {
       return window.__zenflowSyncHealth.snapshot();
     });
     if (receiptSnapshot.lastReceipt?.kind !== "delta-empty") {
-      fail("snapshot did not capture a coarse sync receipt");
+      fail("ZF_SYNC_HEALTH_RECEIPT_MISSING");
     }
     assertNoForbiddenContent(receiptSnapshot);
 
+    const safeSnapshot = sanitizeSyncHealthEvidenceSnapshot(receiptSnapshot);
     const result = {
       generatedAt: new Date().toISOString(),
-      url: TARGET_URL,
-      route: receiptSnapshot.route,
-      auth: receiptSnapshot.auth,
-      online: receiptSnapshot.online,
-      lastSeq: receiptSnapshot.lastSeq,
-      queue: receiptSnapshot.queue,
-      receiptCount: receiptSnapshot.receipts.length,
-      lastReceipt: receiptSnapshot.lastReceipt,
+      url: sanitizeEvidenceUrl(TARGET_URL),
+      route: safeSnapshot.route,
+      auth: safeSnapshot.auth,
+      online: safeSnapshot.online,
+      lastSeq: safeSnapshot.lastSeq,
+      queue: safeSnapshot.queue,
+      receiptCount: safeSnapshot.receipts.length,
+      lastReceipt: safeSnapshot.lastReceipt,
       consoleErrorCount: consoleErrors.length,
       requestFailedCount: failedRequests.length,
-      forbiddenTokensChecked: FORBIDDEN_STRINGS,
+      privateCanaryCountChecked: FORBIDDEN_STRINGS.length,
     };
 
     if (OUTPUT_PATH) {
@@ -155,10 +166,10 @@ async function main() {
     }
 
     if (consoleErrors.length > 0) {
-      fail("console errors were emitted", consoleErrors.slice(0, 5).join("\n"));
+      fail("ZF_SYNC_HEALTH_CONSOLE_ERROR");
     }
     if (failedRequests.length > 0) {
-      fail("network requests failed", failedRequests.slice(0, 5).join("\n"));
+      fail("ZF_SYNC_HEALTH_NETWORK_FAILURE");
     }
 
     console.log(
@@ -169,4 +180,4 @@ async function main() {
   }
 }
 
-main().catch((error) => fail("unexpected smoke error", error.stack || error.message || String(error)));
+main().catch((error) => fail(evidenceFailureCode(error)));

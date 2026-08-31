@@ -81,6 +81,42 @@ describe("reportWebVitals", () => {
     expect(window.__zenflowVitals?.CLS.rating).toBe("needs-improvement");
   });
 
+  it("does not retain or print attribution, ids, nested errors, or query canaries", async () => {
+    const canary = "ZF_T172_CWV_QUERY_8K3M7V2Q5R9P";
+    vi.stubEnv("DEV", true);
+    vi.resetModules();
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { initWebVitalsDev } = await import("../reportWebVitals");
+
+    await initWebVitalsDev();
+    const callback = mockOnLCP.mock.calls[0][0];
+    callback({
+      name: "LCP",
+      value: 321,
+      rating: "poor",
+      delta: 123,
+      id: canary,
+      navigationType: `reload-${canary}`,
+      attribution: {
+        url: `https://example.test/diary?code=${canary}`,
+        nested: { error: new Error(canary) },
+      },
+    });
+
+    const serialized = JSON.stringify({
+      store: window.__zenflowVitals,
+      console: consoleLog.mock.calls,
+    });
+    expect(serialized).not.toContain(canary);
+    expect(window.__zenflowVitals?.LCP).toMatchObject({
+      name: "LCP",
+      value: 321,
+      rating: "poor",
+      delta: 123,
+    });
+    consoleLog.mockRestore();
+  });
+
   it("never throws when web-vitals load fails", async () => {
     vi.stubEnv("DEV", true);
     vi.resetModules();
@@ -93,6 +129,7 @@ describe("reportWebVitals", () => {
 
     await expect(initWebVitalsDev()).resolves.toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("module not found");
     warnSpy.mockRestore();
     vi.doUnmock("web-vitals/attribution");
   });

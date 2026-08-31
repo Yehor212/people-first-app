@@ -14,14 +14,23 @@ import { sanitizeString } from "./sanitize";
 import { parseLocalDate, getToday } from "@/lib/utils";
 import { logger } from "./logger";
 import {
+  joinChallengeByCode as joinCloudChallengeByCode,
   isCloudChallengesAvailable,
   syncLocalChallengeToCloud,
   updateMyProgress as updateCloudProgress,
 } from "./challengeService";
 
-// Zod schema for decoded invite data — validates fields from untrusted deep links (CWE-20)
-const invitePayloadSchema = z.object({
-  cd: z.string().min(1).max(100),
+const challengeCodeSchema = z.string().regex(/^ZEN-[A-Z0-9]{6}$/);
+
+// Current outbound links carry only an opaque lookup code. Legacy full-detail
+// links remain readable locally for backwards compatibility, but are never emitted.
+const privateInvitePayloadSchema = z.object({
+  v: z.literal(2),
+  cd: challengeCodeSchema,
+}).strict();
+
+const legacyInvitePayloadSchema = z.object({
+  cd: challengeCodeSchema,
   n: z.string().min(1).max(100),
   i: z.string().min(1).max(100),
   d: z.number().int().min(1).max(365),
@@ -52,11 +61,13 @@ export interface Challenge {
 
 export interface ChallengeInvite {
   code: string;
-  habitName: string;
-  habitIcon: string;
-  duration: number;
+  habitName?: string;
+  habitIcon?: string;
+  duration?: number;
   creatorName?: string;
   startDate?: string; // Optional: synced start date from creator
+  /** Internal proof that the authenticated join RPC already created membership. */
+  cloudJoined?: boolean;
 }
 
 // ============================================
@@ -164,17 +175,12 @@ export function createChallenge(habit: Habit, duration: number, creatorName?: st
 }
 
 /**
- * Encode challenge data for sharing
- * Includes: habitName, habitIcon, duration, creatorName, code, startDate
+ * Encode a privacy-minimized challenge lookup payload for sharing.
  */
 export function encodeInviteData(challenge: Challenge): string {
   const data = {
-    n: challenge.habitName,
-    i: challenge.habitIcon,
-    d: challenge.duration,
-    c: challenge.creatorName || "",
+    v: 2 as const,
     cd: challenge.code,
-    sd: challenge.startDate, // Include start date for synced timing
   };
   // Use encodeURIComponent to handle Unicode characters (emoji, non-ASCII)
   return btoa(encodeURIComponent(JSON.stringify(data)));
@@ -202,8 +208,14 @@ export function decodeInviteData(encoded: string): ChallengeInvite | null {
     const raw = safeJsonParse<Record<string, unknown> | null>(jsonStr, null);
     if (!raw) return null;
 
-    // Validate structure and types with Zod (CWE-20: deep link field sanitization)
-    const parsed = invitePayloadSchema.safeParse(raw);
+    const privatePayload = privateInvitePayloadSchema.safeParse(raw);
+    if (privatePayload.success) {
+      return { code: privatePayload.data.cd };
+    }
+
+    // Backwards-compatible local intake for links created before v2. The app
+    // does not re-emit these private fields into a new URL.
+    const parsed = legacyInvitePayloadSchema.safeParse(raw);
     if (!parsed.success) return null;
     const data = parsed.data;
 
@@ -224,6 +236,9 @@ export function decodeInviteData(encoded: string): ChallengeInvite | null {
  * Join an existing challenge from invite data
  */
 export function joinChallenge(invite: ChallengeInvite): Challenge {
+  if (!invite.habitName || !invite.habitIcon || typeof invite.duration !== "number") {
+    throw new Error("Challenge invite details are unavailable");
+  }
   // Use synced start date if provided, otherwise use today
   const startDate = invite.startDate || getToday();
 
@@ -254,7 +269,7 @@ export function joinChallenge(invite: ChallengeInvite): Challenge {
   saveChallenges(challenges);
 
   // Sync to cloud (non-blocking)
-  if (isCloudChallengesAvailable()) {
+  if (isCloudChallengesAvailable() && !invite.cloudJoined) {
     syncLocalChallengeToCloud(
       challenge.code,
       challenge.habitName,
@@ -284,31 +299,39 @@ export function joinChallengeByCode(code: string): Challenge | null {
 
   // Check if already joined
   const existing = challenges.find((c) => c.code === normalizedCode);
-  if (existing) {
-    return existing;
+  return existing ?? null;
+}
+
+/** Resolve code-only links from local truth or the authoritative cloud record. */
+export async function resolveChallengeInviteByCode(
+  code: string,
+): Promise<ChallengeInvite | null> {
+  const normalizedCode = code.trim().toUpperCase();
+  if (!challengeCodeSchema.safeParse(normalizedCode).success) return null;
+
+  const local = joinChallengeByCode(normalizedCode);
+  if (local) {
+    return {
+      code: local.code,
+      habitName: local.habitName,
+      habitIcon: local.habitIcon,
+      duration: local.duration,
+      creatorName: local.creatorName,
+      startDate: local.startDate,
+    };
   }
 
-  const today = getToday();
-
-  // Create challenge with default values (without server we don't know habit details)
-  const challenge: Challenge = {
-    id: generateId(),
-    code: normalizedCode,
-    habitName: "Friend Challenge",
-    habitIcon: "🤝",
-    duration: 7, // Default 7 days
-    startDate: today,
-    endDate: calculateEndDate(today, 7),
-    creatorName: undefined,
-    myProgress: 0,
-    isCreator: false,
-    status: "active",
+  if (!isCloudChallengesAvailable()) return null;
+  const remote = await joinCloudChallengeByCode(normalizedCode);
+  if (!remote) return null;
+  return {
+    code: remote.code,
+    habitName: remote.habitName,
+    habitIcon: remote.habitIcon,
+    duration: remote.duration,
+    startDate: remote.startDate,
+    cloudJoined: true,
   };
-
-  challenges.push(challenge);
-  saveChallenges(challenges);
-
-  return challenge;
 }
 
 /**
@@ -421,8 +444,10 @@ export function deleteChallenge(challengeId: string): boolean {
  */
 export function generateShareLink(challenge: Challenge): string {
   const encoded = encodeInviteData(challenge);
-  // Use custom scheme for direct app opening (no domain verification needed)
-  return `zenflow://challenge?data=${encoded}`;
+  // The canonical web fallback works on every supported platform without
+  // relying on an unverified custom-scheme or app-link association. Keeping
+  // the capability in the fragment prevents it from entering HTTP access logs.
+  return `https://yehor212.github.io/people-first-app/#challenge=${encoded}`;
 }
 
 /**
@@ -465,7 +490,7 @@ export async function shareChallenge(
       return true;
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
-        logger.error("Share failed:", error);
+        logger.error("[FriendChallenge] Share failed:", error);
       }
       return false;
     }
@@ -475,7 +500,8 @@ export async function shareChallenge(
   try {
     await navigator.clipboard.writeText(`${text}\n\n${url}`);
     return true;
-  } catch {
+  } catch (error) {
+    logger.warn("[FriendChallenge] Clipboard share fallback failed", error);
     return false;
   }
 }

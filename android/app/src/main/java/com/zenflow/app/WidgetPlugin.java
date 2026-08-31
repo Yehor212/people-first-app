@@ -106,7 +106,7 @@ public class WidgetPlugin extends Plugin {
             call.resolve();
 
         } catch (Exception e) {
-            call.reject("Failed to update widget: " + e.getMessage());
+            call.reject("ZF_WIDGET_UPDATE_FAILED");
         }
     }
 
@@ -129,7 +129,7 @@ public class WidgetPlugin extends Plugin {
             call.resolve(result);
 
         } catch (Exception e) {
-            call.reject("Failed to get widget data: " + e.getMessage());
+            call.reject("ZF_WIDGET_READ_FAILED");
         }
     }
 
@@ -155,7 +155,7 @@ public class WidgetPlugin extends Plugin {
 
             call.resolve();
         } catch (Exception error) {
-            call.reject("Failed to clear widget account data: " + error.getMessage());
+            call.reject("ZF_WIDGET_CLEAR_FAILED");
         }
     }
 

@@ -14,7 +14,7 @@ export function useDateTracking(): void {
     const checkDateChange = () => {
       const newDate = getToday();
       if (newDate !== currentDate) {
-        logger.log('Date changed from', currentDate, 'to', newDate);
+        logger.log('[AppInit] Date changed from', currentDate, 'to', newDate);
         setCurrentDate(newDate);
       }
     };

@@ -342,10 +342,7 @@ export async function runWithDataWriteBarrier<T>(
               await settleDeferredWrites();
               if (!refreshFailed) recordMountedRefreshIssue();
               if (refreshPass >= MAX_DATA_REFRESH_QUIESCENCE_PASSES) {
-                logger.error(
-                  "[useIndexedDB] Mounted refresh did not reach write quiescence; " +
-                    "finalized durable writes without another automatic refresh",
-                );
+                logger.error("[useIndexedDB] Mounted refresh did not reach write quiescence; finalized durable writes without another automatic refresh");
               }
               break;
             }
@@ -830,7 +827,7 @@ export function useIndexedDB<T>({
             ? safeJsonStringify(nextValue)
             : null;
         if (shouldPersistFallback && !persistFallbackValue(nextValue)) {
-          logger.warn("localStorage backup failed while refreshing data");
+          logger.warn("[useIndexedDB] localStorage backup failed while refreshing data");
         }
         if (!canCommitRead()) {
           // Do not delete a newer account's fallback if it replaced this value
@@ -940,12 +937,12 @@ export function useIndexedDB<T>({
                     );
                   }
                 } catch (parseError) {
-                  logger.warn("Failed to parse localStorage data for migration:", parseError);
+                  logger.warn("[useIndexedDB] Failed to parse localStorage data for migration:", parseError);
                 }
               }
             } catch (storageError) {
               // localStorage not available (Safari Private Mode, quota exceeded)
-              logger.warn("localStorage not available:", storageError);
+              logger.warn("[useIndexedDB] localStorage not available:", storageError);
             }
           } else if (!timedOut) {
             commitRead(defaults);
@@ -989,7 +986,7 @@ export function useIndexedDB<T>({
                     if (canCommitRead()) {
                       const serializedFallback = safeJsonStringify(nextValue);
                       if (!safeLocalStorageSet(localStorageKey, nextValue)) {
-                        logger.warn("localStorage backup failed while migrating array fallback");
+                        logger.warn("[useIndexedDB] localStorage backup failed while migrating array fallback");
                       }
                       if (
                         !canCommitRead() &&
@@ -1001,12 +998,12 @@ export function useIndexedDB<T>({
                     }
                   }
                 } catch (parseError) {
-                  logger.warn("Failed to parse localStorage array data for migration:", parseError);
+                  logger.warn("[useIndexedDB] Failed to parse localStorage array data for migration:", parseError);
                 }
               }
             } catch (storageError) {
               // localStorage not available (Safari Private Mode, quota exceeded)
-              logger.warn("localStorage not available:", storageError);
+              logger.warn("[useIndexedDB] localStorage not available:", storageError);
             }
           } else if (!timedOut) {
             commitRead(defaults);
@@ -1014,7 +1011,7 @@ export function useIndexedDB<T>({
         }
       } catch (error) {
         if (refreshSignal?.aborted) return;
-        logger.error("Error loading from IndexedDB:", error);
+        logger.error("[useIndexedDB] Error loading from IndexedDB:", error);
         // Fallback to localStorage
         try {
           if (readFallbackValueRef.current) {
@@ -1046,12 +1043,12 @@ export function useIndexedDB<T>({
                 commitRead(validated !== null ? validated : defaults, false);
               }
             } catch (parseError) {
-              logger.warn("Failed to parse localStorage fallback data:", parseError);
+              logger.warn("[useIndexedDB] Failed to parse localStorage fallback data:", parseError);
             }
           }
         } catch (storageError) {
           // localStorage not available (Safari Private Mode, quota exceeded)
-          logger.warn("localStorage fallback not available:", storageError);
+          logger.warn("[useIndexedDB] localStorage fallback not available:", storageError);
         }
       } finally {
         if (isInitialLoad) {
@@ -1173,10 +1170,10 @@ export function useIndexedDB<T>({
 
                   await table.put({ key: localStorageKey, value: replayValue });
                   if (!persistFallbackValue(replayValue as T)) {
-                    logger.warn("localStorage backup failed");
+                    logger.warn("[useIndexedDB] localStorage backup failed");
                   }
                 } catch (error) {
-                  logger.error("Error replaying deferred IndexedDB setting:", error);
+                  logger.error("[useIndexedDB] Error replaying deferred IndexedDB setting:", error);
                   throw error;
                 } finally {
                   clearDeferredShadow();
@@ -1215,10 +1212,10 @@ export function useIndexedDB<T>({
                   });
                   const authoritativeValue = await table.toArray();
                   if (!persistFallbackValue(authoritativeValue as T)) {
-                    logger.warn("localStorage backup failed");
+                    logger.warn("[useIndexedDB] localStorage backup failed");
                   }
                 } catch (error) {
-                  logger.error("Error replaying deferred IndexedDB collection patch:", error);
+                  logger.error("[useIndexedDB] Error replaying deferred IndexedDB collection patch:", error);
                   throw error;
                 } finally {
                   clearDeferredShadow();
@@ -1250,7 +1247,7 @@ export function useIndexedDB<T>({
               }
               // Also save to localStorage as backup while DATA is still held.
               if (!persistFallbackValue(newValue)) {
-                logger.warn("localStorage backup failed");
+                logger.warn("[useIndexedDB] localStorage backup failed");
               }
             }, writeGeneration);
           } catch (error) {
@@ -1259,14 +1256,14 @@ export function useIndexedDB<T>({
               resetStaleAccountState();
               return;
             }
-            logger.error("Error saving to IndexedDB:", error);
+            logger.error("[useIndexedDB] Error saving to IndexedDB:", error);
             try {
               // The IndexedDB lock has been released. Reacquire DATA and assert
               // the exact generation accepted by this write before fallback;
               // a suspended old tab must not repopulate localStorage after purge.
               await runWithAcceptedOriginDataWrite(async () => {
                 if (persistFallbackValue(newValue)) return;
-                logger.warn("localStorage fallback also failed");
+                logger.warn("[useIndexedDB] localStorage fallback also failed");
                 window.dispatchEvent(
                   new CustomEvent("zenflow:storage-error", {
                     detail: {
@@ -1286,7 +1283,7 @@ export function useIndexedDB<T>({
                 resetStaleAccountState();
                 return;
               }
-              logger.error("Error saving the localStorage fallback:", fallbackError);
+              logger.error("[useIndexedDB] Error saving the localStorage fallback:", fallbackError);
               window.dispatchEvent(
                 new CustomEvent("zenflow:storage-error", {
                   detail: {

@@ -54,7 +54,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       try {
         ownerUserId = await getCurrentSessionUserId();
       } catch (error) {
-        logger.error("Failed to identify the quest owner:", error);
+        logger.error("[QuestsSync] Failed to identify the quest owner:", error);
       }
       if (!active) return;
 
@@ -90,7 +90,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     if (!expectedOwnerUserId) return;
     pushQuestsToCloud(data, expectedOwnerUserId).catch((err) => {
       // graceful: local save succeeded; cloud is secondary, retry on next sync
-      logger.error("Failed to push quests to cloud:", err);
+      logger.error("[QuestsSync] Failed to push quests to cloud:", err);
     });
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded, expectedOwnerUserId]);
 

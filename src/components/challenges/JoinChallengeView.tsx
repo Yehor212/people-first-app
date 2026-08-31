@@ -8,8 +8,23 @@ import {
   Challenge,
   ChallengeInvite,
   joinChallenge,
-  joinChallengeByCode,
+  resolveChallengeInviteByCode,
 } from "@/lib/friendChallenge";
+import { logger } from "@/lib/logger";
+
+function hasResolvedInvite(
+  invite: ChallengeInvite | null | undefined,
+): invite is ChallengeInvite & {
+  habitName: string;
+  habitIcon: string;
+  duration: number;
+} {
+  return Boolean(
+    invite?.habitName &&
+    invite.habitIcon &&
+    typeof invite.duration === "number",
+  );
+}
 
 export function JoinChallengeView({
   initialInvite,
@@ -61,29 +76,29 @@ export function JoinChallengeView({
     void hapticTap();
     setError("");
 
-    // If we have full invite data, use it
-    if (initialInvite && initialInvite.habitName) {
-      setIsJoining(true);
-      const challenge = joinChallenge(initialInvite);
+    setIsJoining(true);
+    try {
+      const invite = hasResolvedInvite(initialInvite)
+        ? initialInvite
+        : await resolveChallengeInviteByCode(code);
+
+      if (!hasResolvedInvite(invite)) {
+        setError(t.invalidChallengeCode || "Invalid code. Format: ZEN-XXXXXX");
+        void hapticWarning();
+        return;
+      }
+
+      const challenge = joinChallenge(invite);
       await new Promise((resolve) => setTimeout(resolve, 300));
       void hapticSuccess();
       onJoined(challenge);
-      return;
-    }
-
-    // Otherwise, join by code only
-    const challenge = joinChallengeByCode(code);
-
-    if (!challenge) {
+    } catch (error) {
+      logger.warn("[FriendChallenge] Invite resolution failed", error);
       setError(t.invalidChallengeCode || "Invalid code. Format: ZEN-XXXXXX");
       void hapticWarning();
-      return;
+    } finally {
+      setIsJoining(false);
     }
-
-    setIsJoining(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    void hapticSuccess();
-    onJoined(challenge);
   };
 
   const isValidCode = /^ZEN-[A-Z0-9]{6}$/.test(code);

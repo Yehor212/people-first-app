@@ -97,7 +97,7 @@ function pickWhisperKey(date = new Date()): (typeof WHISPER_KEYS)[number] {
 
 interface OrbPageProps {
   navigateToPage?: (page: NavV2Page) => void;
-  onAddMood?: (entry: MoodEntry) => void;
+  onAddMood?: (entry: MoodEntry) => void | Promise<void>;
 }
 
 export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbPageProps) {

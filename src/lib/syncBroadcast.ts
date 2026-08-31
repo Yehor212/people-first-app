@@ -20,6 +20,7 @@ export type SyncEntity =
   | "gratitude"
   | "journal"
   | "settings"
+  | "automation"
   | "backup";
 
 interface SyncSignal {
@@ -60,6 +61,7 @@ const SYNC_ENTITIES = new Set<SyncEntity>([
   "gratitude",
   "journal",
   "settings",
+  "automation",
   "backup",
 ]);
 

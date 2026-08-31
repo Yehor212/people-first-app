@@ -548,7 +548,7 @@ async function scheduleLocalRemindersOperation(
     // Check permission
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
-      logger.log('Notification permission not granted for local reminders');
+      logger.log('[Notifications] Notification permission not granted for local reminders');
       return;
     }
 
@@ -583,15 +583,15 @@ async function scheduleLocalRemindersOperation(
     ]);
 
     if (notifications.length === 0) {
-      logger.log('No local reminders to schedule outside quiet hours');
+      logger.log('[Notifications] No local reminders to schedule outside quiet hours');
       return;
     }
 
     if (!isAccountScheduleCurrent(generation)) return;
     await LocalNotifications.schedule({ notifications });
-    logger.log('Local notifications scheduled successfully');
+    logger.log('[Notifications] Local notifications scheduled successfully');
   } catch (error) {
-    logger.error('Failed to schedule local notifications:', error);
+    logger.error('[Notifications] Failed to schedule local notifications:', error);
   }
 }
 
@@ -626,7 +626,7 @@ function buildHabitReminderNotifications(
     }
     if (notificationId > HABIT_REMINDER_ID_MAX) {
       if (!habitReminderCapacityReached) {
-        logger.warn('Habit reminder notification capacity reached; skipping remaining habit reminders');
+        logger.warn('[Notifications] Habit reminder notification capacity reached; skipping remaining habit reminders');
       }
       habitReminderCapacityReached = true;
       return;
@@ -677,7 +677,7 @@ async function scheduleHabitRemindersOperation(
     // Check permission
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
-      logger.log('Notification permission not granted for habit reminders');
+      logger.log('[Notifications] Notification permission not granted for habit reminders');
       return;
     }
 
@@ -695,12 +695,12 @@ async function scheduleHabitRemindersOperation(
     if (notifications.length > 0) {
       if (!isAccountScheduleCurrent(generation)) return;
       await LocalNotifications.schedule({ notifications });
-      logger.log(`Scheduled ${notifications.length} habit reminder notifications`);
+      logger.log(`[Notifications] Scheduled ${notifications.length} habit reminder notifications`);
     } else {
-      logger.log('No habit reminders to schedule');
+      logger.log('[Notifications] No habit reminders to schedule');
     }
   } catch (error) {
-    logger.error('Failed to schedule habit reminders:', error);
+    logger.error('[Notifications] Failed to schedule habit reminders:', error);
   }
 }
 
@@ -734,9 +734,9 @@ export async function registerMoodNotificationActions(): Promise<void> {
         },
       ],
     });
-    logger.log('Mood notification actions registered');
+    logger.log('[Notifications] Mood notification actions registered');
   } catch (error) {
-    logger.error('Failed to register mood notification actions:', error);
+    logger.error('[Notifications] Failed to register mood notification actions:', error);
   }
 }
 
@@ -775,7 +775,7 @@ export async function setupNotificationActionListener(): Promise<() => Promise<v
       ) return;
 
       const moodType = moodEntry[0] as MoodType;
-      logger.log('Quick mood action completed');
+      logger.log('[Notifications] Quick mood action completed');
       registration.callback(moodType);
     }
   );
@@ -962,7 +962,7 @@ async function scheduleMoodQuickLogNotificationOperation(
       ownerUserId,
     );
     if (notifications.length === 0) {
-      logger.log('Mood quick-log notification skipped during quiet hours');
+      logger.log('[Notifications] Mood quick-log notification skipped during quiet hours');
       return;
     }
 
@@ -972,9 +972,9 @@ async function scheduleMoodQuickLogNotificationOperation(
       notifications,
     });
 
-    logger.log('Mood quick-log notification scheduled');
+    logger.log('[Notifications] Mood quick-log notification scheduled');
   } catch (error) {
-    logger.error('Failed to schedule mood quick-log notification:', error);
+    logger.error('[Notifications] Failed to schedule mood quick-log notification:', error);
   }
 }
 
@@ -999,7 +999,7 @@ export async function cancelMoodQuickLogNotification(): Promise<void> {
       await LocalNotifications.cancel({ notifications: quickLogNotifications });
     }
   } catch (error) {
-    logger.error('Failed to cancel mood quick-log notification:', error);
+    logger.error('[Notifications] Failed to cancel mood quick-log notification:', error);
   }
 }
 

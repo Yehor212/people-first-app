@@ -106,7 +106,7 @@ export function PremiumIcon({
   const resolvedAnimated = animated ?? gateAnimated;
 
   if (!IconComponent) {
-    logger.warn(`PremiumIcon: Unknown icon name "${name}"`);
+    logger.warn(`[PremiumIcon] Unknown icon name "${name}"`);
     return null;
   }
 

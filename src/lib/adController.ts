@@ -5,10 +5,10 @@
  * missing configuration, and the first three onboarding days.
  */
 
-import { getBannerAdUnitId, hasBannerAdUnitId } from '@/lib/adConfig';
-import { IS_ADMOB_QA_TEST_MODE, IS_DEV } from '@/lib/env';
-import { logger } from '@/lib/logger';
-import { isNative, platform } from '@/lib/platform';
+import { getBannerAdUnitId, hasBannerAdUnitId } from "@/lib/adConfig";
+import { IS_ADMOB_QA_TEST_MODE, IS_DEV } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { isNative, platform } from "@/lib/platform";
 import {
   AdMob,
   AdmobConsentStatus,
@@ -67,15 +67,15 @@ const NATIVE_BANNER_LOAD_TIMEOUT_MS = 10_000;
 
 class NativeBannerTimeoutError extends Error {
   constructor() {
-    super('Android banner native command timed out');
-    this.name = 'NativeBannerTimeoutError';
+    super("Android banner native command timed out");
+    this.name = "NativeBannerTimeoutError";
   }
 }
 
 class NativeBannerSuppressionError extends Error {
   constructor() {
-    super('Android banner suppression was not acknowledged');
-    this.name = 'NativeBannerSuppressionError';
+    super("Android banner suppression was not acknowledged");
+    this.name = "NativeBannerSuppressionError";
   }
 }
 
@@ -106,7 +106,10 @@ const ANDROID_MOTION_BENCHMARK_ENABLED =
 function withNativeBannerTimeout<T>(operation: Promise<T>): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new NativeBannerTimeoutError()), NATIVE_BANNER_COMMAND_TIMEOUT_MS);
+    timeoutId = setTimeout(
+      () => reject(new NativeBannerTimeoutError()),
+      NATIVE_BANNER_COMMAND_TIMEOUT_MS
+    );
   });
   return Promise.race([operation, timeout]).finally(() => {
     if (timeoutId !== undefined) clearTimeout(timeoutId);
@@ -114,7 +117,7 @@ function withNativeBannerTimeout<T>(operation: Promise<T>): Promise<T> {
 }
 
 function afterNextPaint(callback: () => void): void {
-  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+  if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
     window.requestAnimationFrame(() => callback());
     return;
   }
@@ -138,8 +141,8 @@ function enqueueBannerCommand<T>(command: () => Promise<T>): Promise<T> {
   return result;
 }
 
-async function removeNativeBannerAfterFailure(context: string): Promise<boolean> {
-  if (!AdMobPlugin || typeof AdMobPlugin.removeBanner !== 'function') return false;
+async function removeNativeBannerAfterFailure(_context: string): Promise<boolean> {
+  if (!AdMobPlugin || typeof AdMobPlugin.removeBanner !== "function") return false;
 
   bannerRemovalInFlight = true;
   try {
@@ -149,9 +152,9 @@ async function removeNativeBannerAfterFailure(context: string): Promise<boolean>
     await withNativeBannerTimeout(AdMobPlugin.removeBanner());
     bannerSuppressionAcknowledged = true;
     return true;
-  } catch (removeError) {
+  } catch {
     bannerSuppressionAcknowledged = false;
-    logger.warn(context, removeError);
+    logger.warn("[Ads]", "Native banner removal deferred");
     return false;
   } finally {
     bannerRemovalInFlight = false;
@@ -174,7 +177,8 @@ function startBannerLoadWatchdog(lifecycleEpoch: number, placementEpoch: number)
       bannerLoaded ||
       !isLifecycleCurrent(lifecycleEpoch) ||
       !isBannerPlacementCurrent(placementEpoch)
-    ) return;
+    )
+      return;
 
     bannerPlacementEpoch += 1;
     bannerRequested = false;
@@ -184,11 +188,9 @@ function startBannerLoadWatchdog(lifecycleEpoch: number, placementEpoch: number)
     bannerMeasuredHeight = 0;
     bannerViewportWidth = null;
     reportBannerHeight(0, true);
-    logger.warn('[Ads] Android habits banner load timed out; removing hidden native view');
+    logger.warn("[Ads] Android habits banner load timed out; removing hidden native view");
     void enqueueBannerCommand(() =>
-      removeNativeBannerAfterFailure(
-        '[Ads] Failed to remove timed-out Android habits banner:',
-      ),
+      removeNativeBannerAfterFailure("[Ads] Failed to remove timed-out Android habits banner:")
     );
   }, NATIVE_BANNER_LOAD_TIMEOUT_MS);
 }
@@ -202,7 +204,8 @@ function scheduleBannerReveal(lifecycleEpoch: number, placementEpoch: number): v
       !bannerLoaded ||
       !isLifecycleCurrent(lifecycleEpoch) ||
       !isBannerPlacementCurrent(placementEpoch)
-    ) return;
+    )
+      return;
 
     void enqueueBannerCommand(async () => {
       if (
@@ -212,7 +215,8 @@ function scheduleBannerReveal(lifecycleEpoch: number, placementEpoch: number): v
         !bannerLoaded ||
         !isLifecycleCurrent(lifecycleEpoch) ||
         !isBannerPlacementCurrent(placementEpoch)
-      ) return;
+      )
+        return;
       try {
         await withNativeBannerTimeout(AdMobPlugin.resumeBanner());
         if (
@@ -232,9 +236,9 @@ function scheduleBannerReveal(lifecycleEpoch: number, placementEpoch: number): v
         bannerViewportWidth = null;
         clearBannerLoadWatchdog();
         reportBannerHeight(0);
-        logger.warn('[Ads] Failed to reveal reserved Android habits banner:', error);
+        logger.warn("[Ads] Failed to reveal reserved Android habits banner:", error);
         await removeNativeBannerAfterFailure(
-          '[Ads] Failed to remove unrevealed Android habits banner:',
+          "[Ads] Failed to remove unrevealed Android habits banner:"
         );
       }
     });
@@ -260,8 +264,8 @@ export function isBannerAdsSupported(): boolean {
   return Boolean(
     (!IS_DEV || IS_ADMOB_QA_TEST_MODE) &&
     isNative &&
-    platform === 'android' &&
-    hasBannerAdUnitId('android')
+    platform === "android" &&
+    hasBannerAdUnitId("android")
   );
 }
 
@@ -426,7 +430,7 @@ export async function initializeAds(
   privacyAuthorizationActive = true;
   if (authorization.graceComplete !== true) {
     resetAdAvailability({ clearPrivacyOptions: false });
-    logger.log('[Ads] Active-day grace period — ads disabled');
+    logger.log("[Ads] Active-day grace period — ads disabled");
     return false;
   }
   if (state.initialized) return state.sdkAvailable;
@@ -564,7 +568,7 @@ export function showHabitsBanner(
         currentViewportWidth !== null &&
         bannerViewportWidth !== currentViewportWidth
       ) {
-        logger.log('[Ads] Rebuilding Android habits banner for viewport width', {
+        logger.log("[Ads] Rebuilding Android habits banner for viewport width", {
           previousWidth: bannerViewportWidth,
           currentWidth: currentViewportWidth,
         });
@@ -585,10 +589,7 @@ export function showHabitsBanner(
         bannerViewportWidth = null;
         clearBannerLoadWatchdog();
         reportBannerHeight(0);
-        if (
-          !isLifecycleCurrent(lifecycleEpoch) ||
-          !isBannerPlacementCurrent(placementEpoch)
-        ) {
+        if (!isLifecycleCurrent(lifecycleEpoch) || !isBannerPlacementCurrent(placementEpoch)) {
           onHeightChange(0);
           return { shown: false, error: "placement_changed" };
         }
@@ -629,11 +630,11 @@ export function showHabitsBanner(
             reportBannerHeight(measuredHeight);
             if (measuredHeight <= 0 || bannerVisible) return;
             scheduleBannerReveal(adLifecycleEpoch, currentPlacementEpoch);
-          },
+          }
         );
       }
 
-      if (!bannerLoadedListener && typeof AdMobPlugin.addListener === 'function') {
+      if (!bannerLoadedListener && typeof AdMobPlugin.addListener === "function") {
         const loadedEvent = BannerAdPluginEvents.Loaded;
         bannerLoadedListener = await AdMobPlugin.addListener(loadedEvent, () => {
           if (!state.sdkAvailable || !bannerCreated || !bannerRequested) return;
@@ -648,7 +649,7 @@ export function showHabitsBanner(
         });
       }
 
-      if (!bannerFailureListener && typeof AdMobPlugin.addListener === 'function') {
+      if (!bannerFailureListener && typeof AdMobPlugin.addListener === "function") {
         const failedEvent = BannerAdPluginEvents.FailedToLoad;
         bannerFailureListener = await AdMobPlugin.addListener(
           failedEvent,
@@ -663,13 +664,13 @@ export function showHabitsBanner(
             bannerViewportWidth = null;
             clearBannerLoadWatchdog();
             reportBannerHeight(0);
-            logger.warn('[Ads] Android habits banner failed to load:', failure);
+            logger.warn("[Ads] Android habits banner failed to load:", failure);
             void enqueueBannerCommand(() =>
               removeNativeBannerAfterFailure(
-                '[Ads] Failed to remove unloaded Android habits banner:',
-              ),
+                "[Ads] Failed to remove unloaded Android habits banner:"
+              )
             );
-          },
+          }
         );
       }
 
@@ -678,7 +679,7 @@ export function showHabitsBanner(
         return { shown: false, error: "placement_changed" };
       }
 
-      const adId = getBannerAdUnitId('android');
+      const adId = getBannerAdUnitId("android");
       bannerRequested = true;
       bannerCreated = true;
       bannerLoaded = false;
@@ -694,14 +695,11 @@ export function showHabitsBanner(
           margin: 0,
           isTesting: false,
           npa: true,
-        }),
+        })
       );
 
-      if (
-        !isLifecycleCurrent(lifecycleEpoch) ||
-        !isBannerPlacementCurrent(placementEpoch)
-      ) {
-        logger.log('[Ads] Removing superseded Android habits banner after native show');
+      if (!isLifecycleCurrent(lifecycleEpoch) || !isBannerPlacementCurrent(placementEpoch)) {
+        logger.log("[Ads] Removing superseded Android habits banner after native show");
         bannerRemovalInFlight = true;
         try {
           await AdMobPlugin.removeBanner?.();
@@ -734,13 +732,13 @@ export function showHabitsBanner(
       reportBannerHeight(0);
       bannerHeightCallback = null;
       onHeightChange(0);
-      logger.warn('[Ads] Android habits banner failed:', err);
+      logger.warn("[Ads] Android habits banner failed:", err);
       await removeNativeBannerAfterFailure(
-        '[Ads] Failed to remove Android habits banner after an error:',
+        "[Ads] Failed to remove Android habits banner after an error:"
       );
       return {
         shown: false,
-        error: err instanceof NativeBannerTimeoutError ? 'banner_timeout' : 'banner_failed',
+        error: err instanceof NativeBannerTimeoutError ? "banner_timeout" : "banner_failed",
       };
     }
   });
@@ -766,9 +764,9 @@ export function hideHabitsBanner(): Promise<void> {
       await withNativeBannerTimeout(AdMobPlugin.hideBanner());
       bannerSuppressionAcknowledged = true;
     } catch (err) {
-      logger.warn('[Ads] Failed to hide Android habits banner:', err);
+      logger.warn("[Ads] Failed to hide Android habits banner:", err);
       const removed = await removeNativeBannerAfterFailure(
-        '[Ads] Failed to remove Android habits banner after hide failure:',
+        "[Ads] Failed to remove Android habits banner after hide failure:"
       );
       if (!removed) {
         // The native AdView may still be attached above the WebView. Preserve
@@ -792,7 +790,7 @@ export function hideHabitsBanner(): Promise<void> {
 }
 
 export function removeHabitsBanner(): Promise<void> {
-  logger.log('[Ads] Removing Android habits banner and native listeners');
+  logger.log("[Ads] Removing Android habits banner and native listeners");
   bannerPlacementEpoch += 1;
   bannerRequested = false;
   bannerCreated = false;
@@ -805,7 +803,7 @@ export function removeHabitsBanner(): Promise<void> {
 
   return enqueueBannerCommand(async () => {
     try {
-      if (AdMobPlugin && typeof AdMobPlugin.removeBanner === 'function') {
+      if (AdMobPlugin && typeof AdMobPlugin.removeBanner === "function") {
         await withNativeBannerTimeout(AdMobPlugin.removeBanner());
       }
     } catch (err) {
@@ -821,7 +819,7 @@ export function removeHabitsBanner(): Promise<void> {
     try {
       await bannerLoadedListener?.remove?.();
     } catch (err) {
-      logger.warn('[Ads] Failed to remove Android banner loaded listener:', err);
+      logger.warn("[Ads] Failed to remove Android banner loaded listener:", err);
     }
 
     try {

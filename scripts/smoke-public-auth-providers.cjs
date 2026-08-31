@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceRoute,
+  sanitizeEvidenceUrl,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
+
 const DEFAULT_PUBLIC_AUTH_URL = "https://yehor212.github.io/people-first-app/";
 const DEFAULT_EXPECTED_PROVIDERS = ["google", "telegram"];
 const DEFAULT_FORBIDDEN_PROVIDERS = ["facebook", "apple"];
@@ -23,6 +29,13 @@ const OAUTH_CALLBACK_PARAM_NAMES = [
   "expires_at",
   "expires_in",
 ];
+const SAFE_PROVIDER_LABELS = new Set(["apple", "facebook", "google", "telegram"]);
+
+function sanitizeProviderList(values) {
+  return Array.isArray(values)
+    ? values.filter((value) => typeof value === "string" && SAFE_PROVIDER_LABELS.has(value))
+    : [];
+}
 
 function parseCsv(value, fallback, options = {}) {
   if (value === undefined || value === null) return [...fallback];
@@ -155,6 +168,7 @@ function resultHostMatchesApp(result, appHost) {
 
 function isRetryableAppLoadFailure(result, appHost) {
   if (!result || result.ok || result.providerError) return false;
+  if (result.appAssetTransientFailure === true) return true;
   if (!resultHostMatchesApp(result, appHost)) return false;
 
   const diagnostics = diagnosticEntries(result).join("\n");
@@ -227,18 +241,20 @@ function buildOAuthErrorCallbackUrl(baseUrl, label = "callback-error") {
 
 function validateOAuthErrorCallbackState(state, expectedProviders, forbiddenProviders = []) {
   const finalUrl = String(state?.finalUrl || "");
-  const providers = Array.isArray(state?.providers) ? state.providers.filter(Boolean) : [];
+  const providers = sanitizeProviderList(state?.providers);
   const providerSet = new Set(providers);
   const buttons = Array.isArray(state?.buttons) ? state.buttons : [];
-  const alertText = String(state?.alertText || "");
+  const alertAccessDenied =
+    state?.alertAccessDenied === true || String(state?.alertText || "").includes("access_denied");
   const missingExpected = expectedProviders.filter((provider) => !providerSet.has(provider));
   const forbiddenVisible = forbiddenProviders.filter((provider) => providerSet.has(provider));
   const disabledExpected = buttons
     .filter((button) => expectedProviders.includes(button.provider) && button.disabled)
     .map((button) => button.provider);
-  const hasOAuthParams = hasOAuthCallbackParams(finalUrl);
+  const hasOAuthParams =
+    typeof state?.hasOAuthParams === "boolean" ? state.hasOAuthParams : hasOAuthCallbackParams(finalUrl);
   const authScreenVisible = Boolean(state?.authScreenVisible);
-  const alertOk = alertText.includes("access_denied");
+  const alertOk = alertAccessDenied;
   const ok =
     authScreenVisible &&
     alertOk &&
@@ -249,9 +265,9 @@ function validateOAuthErrorCallbackState(state, expectedProviders, forbiddenProv
 
   return {
     ok,
-    finalUrl,
+    finalRoute: sanitizeEvidenceRoute(finalUrl),
     authScreenVisible,
-    alertText,
+    alertAccessDenied,
     providers,
     missingExpected,
     forbiddenVisible,
@@ -305,17 +321,21 @@ async function verifyOAuthErrorCallback({
 
   const consoleMessages = [];
   const failedRequests = [];
+  let appAssetTransientFailure = false;
   const callbackUrl = buildOAuthErrorCallbackUrl(baseUrl);
 
   page.on("console", (message) => {
     if (message.type() === "error" || message.type() === "warning") {
-      consoleMessages.push(message.type() + ": " + message.text());
+      const text = message.text();
+      appAssetTransientFailure ||= /\/assets\/|status of 503|net::err_aborted/i.test(text);
+      consoleMessages.push("ZF_BROWSER_CONSOLE_ERROR");
     }
   });
   page.on("requestfailed", (request) => {
-    failedRequests.push(
-      request.method() + " " + request.url() + " " + request.failure()?.errorText
-    );
+    const failureText = request.failure()?.errorText || "";
+    appAssetTransientFailure ||=
+      request.url().includes("/assets/") && /503|net::err_aborted/i.test(failureText);
+    failedRequests.push("ZF_REQUEST_FAILED");
   });
 
   try {
@@ -335,7 +355,9 @@ async function verifyOAuthErrorCallback({
       { timeout: timeoutMs }
     );
 
-    const pageState = await page.evaluate(() => {
+    const pageState = await page.evaluate((callbackParamNames) => {
+      const current = new URL(location.href);
+      const hashParams = new URLSearchParams(current.hash.replace(/^#/, ""));
       const providers = Array.from(
         document.querySelectorAll('[data-testid^="auth-provider-content-"]')
       ).map((element) =>
@@ -354,13 +376,18 @@ async function verifyOAuthErrorCallback({
       });
 
       return {
-        finalUrl: location.href,
+        finalUrl: current.pathname,
+        hasOAuthParams: callbackParamNames.some(
+          (param) => current.searchParams.has(param) || hashParams.has(param)
+        ),
         authScreenVisible: Boolean(document.querySelector('[data-testid="auth-screen"]')),
-        alertText: document.querySelector('[role="alert"]')?.textContent?.trim() || "",
+        alertAccessDenied: Boolean(
+          document.querySelector('[role="alert"]')?.textContent?.includes("access_denied")
+        ),
         providers,
         buttons,
       };
-    });
+    }, OAUTH_CALLBACK_PARAM_NAMES);
     const validation = validateOAuthErrorCallbackState(
       pageState,
       expectedProviders,
@@ -374,6 +401,7 @@ async function verifyOAuthErrorCallback({
       ...validation,
       consoleCount: consoleMessages.length,
       failedCount: failedRequests.length,
+      appAssetTransientFailure,
       consoleMessages: consoleMessages.slice(0, 5),
       failedRequests: failedRequests.slice(0, 5),
     };
@@ -381,10 +409,11 @@ async function verifyOAuthErrorCallback({
     return {
       ok: false,
       reason: "oauth_error_callback_check_failed",
-      error: error instanceof Error ? error.message : String(error),
-      currentUrl: page.url(),
+      error: evidenceFailureCode(error),
+      currentRoute: sanitizeEvidenceRoute(page.url()),
       consoleCount: consoleMessages.length,
       failedCount: failedRequests.length,
+      appAssetTransientFailure,
       consoleMessages: consoleMessages.slice(0, 5),
       failedRequests: failedRequests.slice(0, 5),
     };
@@ -407,10 +436,13 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
   const externalConsoleMessages = [];
   const externalFailedRequests = [];
   let providerRedirectStarted = false;
+  let appAssetTransientFailure = false;
 
   page.on("console", (message) => {
     if (message.type() === "error" || message.type() === "warning") {
-      const diagnostic = message.type() + ": " + message.text();
+      const text = message.text();
+      appAssetTransientFailure ||= /\/assets\/|status of 503|net::err_aborted/i.test(text);
+      const diagnostic = "ZF_BROWSER_CONSOLE_ERROR";
       const target = isAppDiagnosticUrl(
         message.location().url,
         page.url(),
@@ -423,7 +455,10 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
     }
   });
   page.on("requestfailed", (request) => {
-    const diagnostic = request.method() + " " + request.url() + " " + request.failure()?.errorText;
+    const failureText = request.failure()?.errorText || "";
+    appAssetTransientFailure ||=
+      request.url().includes("/assets/") && /503|net::err_aborted/i.test(failureText);
+    const diagnostic = "ZF_REQUEST_FAILED";
     const target = isAppDiagnosticUrl(request.url(), page.url(), appHost)
       ? failedRequests
       : externalFailedRequests;
@@ -431,11 +466,11 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
   });
 
   try {
-    const providersBefore = await collectProviders(
+    const providersBefore = sanitizeProviderList(await collectProviders(
       page,
       createScenarioUrl(baseUrl, "provider-" + provider),
       timeoutMs
-    );
+    ));
 
     if (!providersBefore.includes(provider)) {
       return {
@@ -481,15 +516,14 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
       provider,
       ok,
       reason: providerError?.reason || (hostOk ? null : "unexpected_redirect_host"),
-      providerError: providerError?.providerError,
+      providerError: Boolean(providerError),
       providersBefore,
-      finalHost: finalUrl.host,
-      finalPath: finalUrl.pathname,
-      allowedHosts,
+      finalHostClass: hostOk ? "allowed-provider" : "unexpected-provider",
       consoleCount: consoleMessages.length,
       failedCount: failedRequests.length,
       externalConsoleCount: externalConsoleMessages.length,
       externalFailedCount: externalFailedRequests.length,
+      appAssetTransientFailure,
       consoleMessages: consoleMessages.slice(0, 5),
       failedRequests: failedRequests.slice(0, 5),
     };
@@ -498,12 +532,13 @@ async function verifyProviderRedirect({ browser, baseUrl, provider, timeoutMs })
       provider,
       ok: false,
       reason: "redirect_check_failed",
-      error: error instanceof Error ? error.message : String(error),
-      currentUrl: page.url(),
+      error: evidenceFailureCode(error),
+      currentRoute: sanitizeEvidenceRoute(page.url()),
       consoleCount: consoleMessages.length,
       failedCount: failedRequests.length,
       externalConsoleCount: externalConsoleMessages.length,
       externalFailedCount: externalFailedRequests.length,
+      appAssetTransientFailure,
       consoleMessages: consoleMessages.slice(0, 5),
       failedRequests: failedRequests.slice(0, 5),
     };
@@ -520,8 +555,7 @@ async function launchBrowser(chromium) {
     return await chromium.launch({ channel });
   } catch (error) {
     console.warn(
-      "[public-auth-smoke] Browser channel unavailable, falling back to bundled Chromium:",
-      channel
+      `[public-auth-smoke] Browser channel unavailable; ${evidenceFailureCode(error)}`
     );
     return chromium.launch();
   }
@@ -544,16 +578,20 @@ async function verifyPublicAuthUrlOnce({
   const listPage = await listContext.newPage();
   const listConsoleMessages = [];
   const listFailedRequests = [];
+  let appAssetTransientFailure = false;
 
   listPage.on("console", (message) => {
     if (message.type() === "error" || message.type() === "warning") {
-      listConsoleMessages.push(message.type() + ": " + message.text());
+      const text = message.text();
+      appAssetTransientFailure ||= /\/assets\/|status of 503|net::err_aborted/i.test(text);
+      listConsoleMessages.push("ZF_BROWSER_CONSOLE_ERROR");
     }
   });
   listPage.on("requestfailed", (request) => {
-    listFailedRequests.push(
-      request.method() + " " + request.url() + " " + request.failure()?.errorText
-    );
+    const failureText = request.failure()?.errorText || "";
+    appAssetTransientFailure ||=
+      request.url().includes("/assets/") && /503|net::err_aborted/i.test(failureText);
+    listFailedRequests.push("ZF_REQUEST_FAILED");
   });
 
   let publicProviders = [];
@@ -566,7 +604,7 @@ async function verifyPublicAuthUrlOnce({
       timeoutMs
     );
   } catch (error) {
-    listFailure = error instanceof Error ? error.message : String(error);
+    listFailure = evidenceFailureCode(error);
   } finally {
     await listContext.close();
   }
@@ -576,8 +614,8 @@ async function verifyPublicAuthUrlOnce({
       ok: false,
       reason: "provider_list_failed",
       error: listFailure,
-      currentUrl: listPage.url(),
-      url: baseUrl.toString(),
+      currentRoute: sanitizeEvidenceRoute(listPage.url()),
+      url: sanitizeEvidenceUrl(baseUrl.toString()),
       expectedProviders,
       publicProviders,
       forbiddenProviders,
@@ -585,12 +623,14 @@ async function verifyPublicAuthUrlOnce({
       missingExpected: expectedProviders,
       listConsoleCount: listConsoleMessages.length,
       listFailedCount: listFailedRequests.length,
+      appAssetTransientFailure,
       listConsoleMessages: listConsoleMessages.slice(0, 5),
       listFailedRequests: listFailedRequests.slice(0, 5),
       redirectResults: [],
     };
   }
 
+  publicProviders = sanitizeProviderList(publicProviders);
   const providerSet = new Set(publicProviders);
   const expectedMatches = publicProviders.join(",") === expectedProviders.join(",");
   const forbiddenVisible = forbiddenProviders.filter((provider) => providerSet.has(provider));
@@ -623,7 +663,7 @@ async function verifyPublicAuthUrlOnce({
 
   return {
     ok,
-    url: baseUrl.toString(),
+    url: sanitizeEvidenceUrl(baseUrl.toString()),
     expectedProviders,
     publicProviders,
     forbiddenProviders,
@@ -631,6 +671,7 @@ async function verifyPublicAuthUrlOnce({
     missingExpected,
     listConsoleCount: listConsoleMessages.length,
     listFailedCount: listFailedRequests.length,
+    appAssetTransientFailure,
     listConsoleMessages: listConsoleMessages.slice(0, 5),
     listFailedRequests: listFailedRequests.slice(0, 5),
     errorCallbackResult,
@@ -661,19 +702,19 @@ async function run() {
     urls: process.env.ZENFLOW_PUBLIC_AUTH_URLS,
     additionalPaths: process.env.ZENFLOW_PUBLIC_AUTH_ADDITIONAL_PATHS,
   });
-  const expectedProviders = parseCsv(
+  const expectedProviders = sanitizeProviderList(parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_EXPECTED_PROVIDERS,
     DEFAULT_EXPECTED_PROVIDERS
-  );
-  const forbiddenProviders = parseCsv(
+  ));
+  const forbiddenProviders = sanitizeProviderList(parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_FORBIDDEN_PROVIDERS,
     DEFAULT_FORBIDDEN_PROVIDERS,
     { emptyMeansEmpty: true }
-  );
-  const clickProviders = parseCsv(
+  ));
+  const clickProviders = sanitizeProviderList(parseCsv(
     process.env.ZENFLOW_PUBLIC_AUTH_CLICK_PROVIDERS,
     expectedProviders
-  );
+  ));
   const timeoutMs = Number(process.env.ZENFLOW_PUBLIC_AUTH_TIMEOUT_MS || 45_000);
 
   const browser = await launchBrowser(chromium);
@@ -699,7 +740,7 @@ async function run() {
   const ok = routeResults.every((result) => result.ok);
   const summary = {
     ok,
-    urls: publicAuthUrls.map((url) => url.toString()),
+    urls: publicAuthUrls.map((url) => sanitizeEvidenceUrl(url.toString())),
     expectedProviders,
     forbiddenProviders,
     routeResults,
@@ -715,7 +756,7 @@ async function run() {
 
 if (require.main === module) {
   run().catch((error) => {
-    console.error(error instanceof Error ? error.stack || error.message : String(error));
+    console.error(`[public-auth-smoke] ${evidenceFailureCode(error)}`);
     process.exit(1);
   });
 }

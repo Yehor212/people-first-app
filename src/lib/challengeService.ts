@@ -140,6 +140,40 @@ export async function getChallengeByCode(code: string): Promise<FriendChallenge 
 }
 
 /**
+ * Atomically join an active challenge by opaque code and return only the
+ * privacy-minimized preview emitted by the authenticated RPC.
+ */
+export async function joinChallengeByCode(code: string): Promise<{
+  code: string;
+  habitName: string;
+  habitIcon: string;
+  duration: number;
+  startDate: string;
+} | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .rpc('join_friend_challenge_by_code', { p_code: code.toUpperCase() })
+    .abortSignal(AbortSignal.timeout(10000));
+
+  if (error) {
+    logger.error('[ChallengeService] Failed to join challenge by code:', error);
+    return null;
+  }
+
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return null;
+
+  return {
+    code: row.code,
+    habitName: row.habit_name,
+    habitIcon: row.habit_icon,
+    duration: row.duration,
+    startDate: row.start_date,
+  };
+}
+
+/**
  * Get challenge by ID
  */
 export async function getChallengeById(challengeId: string): Promise<FriendChallenge | null> {

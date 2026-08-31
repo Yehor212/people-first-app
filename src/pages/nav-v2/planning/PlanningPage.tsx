@@ -6,10 +6,11 @@ import { cn, formatDate, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUIStore, useUserDataStore } from "@/stores";
 import { generateHabitScheduleEvents, mergeScheduleEvents } from "@/lib/habitScheduleSync";
-import { syncSetting } from "@/storage/sync/syncSettings";
-import { triggerSync } from "@/storage/cloudSync";
+import { reportDurablePersistenceFailure } from "@/lib/durablePersistenceFailure";
+import { persistManualScheduleEvents as commitManualScheduleEvents } from "@/features/automation";
 import { logger } from "@/lib/logger";
 import type { FocusSession, ScheduleEvent } from "@/types";
+import type { FocusCommitBoundary } from "@/types/focusTimerTypes";
 import { PlanningActionPanel } from "./PlanningActionPanel";
 import { PlanningBridgeActions } from "./PlanningBridgeActions";
 import { PlanningDayPulse } from "./PlanningDayPulse";
@@ -19,17 +20,18 @@ import { derivePlanningFeatureModel, type PlanningMode } from "./planningFeature
 
 const ScheduleTimeline = lazyWithRetry(
   () => import("@/components/ScheduleTimeline").then((m) => ({ default: m.ScheduleTimeline })),
-  "ScheduleTimeline",
+  "ScheduleTimeline"
 );
 const FocusTimer = lazyWithRetry(
   () => import("@/components/FocusTimer").then((m) => ({ default: m.FocusTimer })),
-  "FocusTimer",
+  "FocusTimer"
 );
 
-const SCHEDULE_EVENTS_SETTING_KEY = "zenflow-schedule-events";
-
 interface PlanningPageProps {
-  onCompleteFocusSession?: (session: FocusSession) => void;
+  onCompleteFocusSession?: (
+    session: FocusSession,
+    boundary?: FocusCommitBoundary
+  ) => void | Promise<void>;
 }
 
 function createScheduleEventId(): string {
@@ -54,7 +56,7 @@ function isManualScheduleEvent(event: ScheduleEvent | undefined): event is Sched
 }
 
 export function getLatestCompletedFocusSession(
-  focusSessions: readonly FocusSession[],
+  focusSessions: readonly FocusSession[]
 ): FocusSession | null {
   let latest: FocusSession | null = null;
 
@@ -97,7 +99,9 @@ export const PlanningPage = memo(function PlanningPage({
   const initialScheduleDate = useMemo(getInitialScheduleDate, []);
 
   const scheduleEvents = useUserDataStore((s) => s.scheduleEvents);
-  const setScheduleEvents = useUserDataStore((s) => s.setScheduleEvents);
+  const publishDurableScheduleEvents = useUserDataStore(
+    (s) => s._publishDurableScheduleEvents
+  );
   const habits = useUserDataStore((s) => s.habits);
   const moods = useUserDataStore((s) => s.moods);
   const focusSessions = useUserDataStore((s) => s.focusSessions);
@@ -108,14 +112,11 @@ export const PlanningPage = memo(function PlanningPage({
   const focusIsBreak = useUIStore((s) => s.focusIsBreak);
   const focusLabel = useUIStore((s) => s.focusLabel);
 
-  const habitScheduleEvents = useMemo(
-    () => generateHabitScheduleEvents(habits, 7),
-    [habits],
-  );
+  const habitScheduleEvents = useMemo(() => generateHabitScheduleEvents(habits, 7), [habits]);
 
   const allScheduleEvents = useMemo(
     () => mergeScheduleEvents(scheduleEvents, habitScheduleEvents),
-    [habitScheduleEvents, scheduleEvents],
+    [habitScheduleEvents, scheduleEvents]
   );
 
   const todayScheduleEvents = useMemo(() => {
@@ -138,12 +139,21 @@ export const PlanningPage = memo(function PlanningPage({
         habits,
         moodEntries: moods,
       }),
-    [allScheduleEvents, focusEndTime, focusIsBreak, focusIsRunning, focusLabel, focusSessions, habits, moods],
+    [
+      allScheduleEvents,
+      focusEndTime,
+      focusIsBreak,
+      focusIsRunning,
+      focusLabel,
+      focusSessions,
+      habits,
+      moods,
+    ]
   );
 
   const lastCompletedFocusSession = useMemo(
     () => getLatestCompletedFocusSession(focusSessions),
-    [focusSessions],
+    [focusSessions]
   );
 
   const planningModeLabels: Record<PlanningMode, string> = {
@@ -154,14 +164,17 @@ export const PlanningPage = memo(function PlanningPage({
   };
 
   const persistManualScheduleEvents = useCallback(
-    (nextEvents: ScheduleEvent[]) => {
-      setScheduleEvents(nextEvents);
-      void syncSetting(SCHEDULE_EVENTS_SETTING_KEY, nextEvents).catch((error) => {
-        logger.warn("[Planning] Failed to sync schedule events", error);
-      });
-      triggerSync();
+    (update: (current: ScheduleEvent[]) => ScheduleEvent[]) => {
+      void commitManualScheduleEvents(update, scheduleEvents)
+        .then(({ events }) => publishDurableScheduleEvents(events))
+        .catch((error) => {
+          reportDurablePersistenceFailure(error, {
+            domain: "Planning",
+            localizedMessage: t.storageErrorDesc,
+          });
+        });
     },
-    [setScheduleEvents],
+    [publishDurableScheduleEvents, scheduleEvents, t.storageErrorDesc]
   );
 
   const handleAddScheduleEvent = useCallback(
@@ -172,39 +185,35 @@ export const PlanningPage = memo(function PlanningPage({
         source: "manual",
         isEditable: true,
       };
-      persistManualScheduleEvents([...scheduleEvents, newEvent]);
+      persistManualScheduleEvents((current) => [...current, newEvent]);
     },
-    [persistManualScheduleEvents, scheduleEvents],
+    [persistManualScheduleEvents]
   );
 
   const handleDeleteScheduleEvent = useCallback(
     (id: string) => {
       const event = allScheduleEvents.find((candidate) => candidate.id === id);
       if (!isManualScheduleEvent(event)) {
-        logger.warn("[Planning] Ignoring delete for non-manual schedule event", id);
+        logger.warn("[Planning] Ignoring delete for non-manual schedule event");
         return;
       }
 
-      const nextEvents = scheduleEvents.filter((candidate) => candidate.id !== id);
-      if (nextEvents.length === scheduleEvents.length) {
-        logger.warn("[Planning] Manual schedule event not found in local store", id);
-        return;
-      }
-
-      persistManualScheduleEvents(nextEvents);
+      persistManualScheduleEvents((current) =>
+        current.filter((candidate) => candidate.id !== id)
+      );
     },
-    [allScheduleEvents, persistManualScheduleEvents, scheduleEvents],
+    [allScheduleEvents, persistManualScheduleEvents]
   );
 
   const handleCompleteFocusSession = useCallback(
-    (session: FocusSession) => {
+    async (session: FocusSession, boundary?: FocusCommitBoundary): Promise<void> => {
       if (onCompleteFocusSession) {
-        onCompleteFocusSession(session);
+        await onCompleteFocusSession(session, boundary);
         return;
       }
       logger.warn("[Planning] Focus session completed without a V2 completion handler");
     },
-    [onCompleteFocusSession],
+    [onCompleteFocusSession]
   );
 
   const activatePlanningMode = useCallback((mode: PlanningMode) => {
@@ -245,7 +254,7 @@ export const PlanningPage = memo(function PlanningPage({
       aria-labelledby="planning-page-heading"
       className={cn(
         "dark main-content-v2 v2-fullscreen-page v2-readable-page v2-readable-page--standard relative min-h-[var(--app-viewport-height)] overflow-x-hidden bg-background outline-none",
-        "px-4 pb-[calc(var(--safe-bottom)+5rem)] pt-[calc(var(--safe-top)+4.75rem)] md:px-6 md:pt-10 lg:px-10",
+        "px-4 pb-[calc(var(--safe-bottom)+5rem)] pt-[calc(var(--safe-top)+4.75rem)] md:px-6 md:pt-10 lg:px-10"
       )}
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_start,hsl(var(--primary)/0.13),transparent_34%),radial-gradient(circle_at_80%_16%,hsl(var(--accent)/0.10),transparent_30%)]" />
@@ -259,7 +268,10 @@ export const PlanningPage = memo(function PlanningPage({
             </span>
           </div>
           <div className="min-w-0 max-w-3xl space-y-2">
-            <h1 id="planning-page-heading" className="min-w-0 break-words font-display text-xl font-semibold leading-[1.02] text-foreground [hyphens:manual] [overflow-wrap:normal] min-[420px]:text-3xl md:text-display-5xl">
+            <h1
+              id="planning-page-heading"
+              className="min-w-0 break-words font-display text-xl font-semibold leading-[1.02] text-foreground [hyphens:manual] [overflow-wrap:normal] min-[420px]:text-3xl md:text-display-5xl"
+            >
               {t.navV2PlanningHeading}
             </h1>
             <p className="min-w-0 max-w-2xl break-words text-base leading-7 text-muted-foreground [hyphens:manual] [overflow-wrap:normal] md:text-lg">
@@ -309,7 +321,7 @@ export const PlanningPage = memo(function PlanningPage({
           data-active-planning-mode={activeMode === "review" ? "true" : "false"}
           className={cn(
             "rounded-[1.35rem] outline-none motion-safe:transition-shadow",
-            activeMode === "review" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
+            activeMode === "review" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background"
           )}
         >
           <PlanningReviewLane
@@ -333,7 +345,8 @@ export const PlanningPage = memo(function PlanningPage({
             aria-label={t.navV2Planning}
             className={cn(
               "min-w-0 rounded-[1.75rem] outline-none motion-safe:transition-shadow",
-              activeMode === "schedule" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
+              activeMode === "schedule" &&
+                "ring-2 ring-primary/70 ring-offset-2 ring-offset-background"
             )}
           >
             <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-foreground">
@@ -358,7 +371,8 @@ export const PlanningPage = memo(function PlanningPage({
             aria-label={t.focus}
             className={cn(
               "min-w-0 rounded-[1.75rem] outline-none motion-safe:transition-shadow",
-              activeMode === "focus" && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
+              activeMode === "focus" &&
+                "ring-2 ring-primary/70 ring-offset-2 ring-offset-background"
             )}
           >
             <Suspense fallback={<PlanningPageFallback label={fallbackLabel} />}>
@@ -373,11 +387,7 @@ export const PlanningPage = memo(function PlanningPage({
         </div>
 
         {isLoading && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="sr-only"
-          >
+          <div role="status" aria-live="polite" className="sr-only">
             {fallbackLabel}
           </div>
         )}

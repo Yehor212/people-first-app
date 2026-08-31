@@ -6,6 +6,7 @@ const path = require("node:path");
 const {
   computeJournalMagicLinkProofSourceSha256,
 } = require("./journal-magic-link-proof-source.cjs");
+const { evidenceFailureCode } = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const ROOT = path.join(__dirname, "..");
 const DEFAULT_PACKET = path.join(ROOT, "docs", "JOURNAL_MAGIC_LINK_LIVE_PROOF_STATUS.json");
@@ -241,7 +242,7 @@ function main() {
       currentSourceSha256: computeJournalMagicLinkProofSourceSha256(ROOT),
     });
   } catch (error) {
-    console.log(`[journal-magic-link-proof-status] UNVERIFIED - ${error.message}`);
+    console.log(`[journal-magic-link-proof-status] UNVERIFIED - ${evidenceFailureCode(error)}`);
     process.exit(2);
   }
 
@@ -255,8 +256,9 @@ function main() {
     }
   }
   for (const itemIssue of report.issues) {
+    const safeItemId = REQUIRED_ITEM_IDS.includes(itemIssue.itemId) ? itemIssue.itemId : "";
     console.log(
-      `[journal-magic-link-proof-status] issue=${itemIssue.code}${itemIssue.itemId ? ` item=${itemIssue.itemId}` : ""} - ${itemIssue.message}`,
+      `[journal-magic-link-proof-status] issue=${itemIssue.code}${safeItemId ? ` item=${safeItemId}` : ""}`,
     );
   }
 

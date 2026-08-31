@@ -80,6 +80,9 @@ export const validateDataIntegrity = async (): Promise<boolean> => {
     await db.focusSessions.count();
     await db.gratitudeEntries.count();
     await db.settings.count();
+    await db.automationTransactions.count();
+    await db.automationHistoryMarkers.count();
+    await db.automationRemoteEvents.count();
 
     logger.log('[Migration] Data integrity check passed');
     return true;

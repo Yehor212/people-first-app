@@ -33,6 +33,8 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 vi.mock("@/lib/challengeService", () => ({
+  getChallengeByCode: vi.fn(),
+  joinChallengeByCode: vi.fn(),
   isCloudChallengesAvailable: vi.fn(() => false),
   syncLocalChallengeToCloud: vi.fn(),
   updateMyProgress: vi.fn(),
@@ -55,10 +57,17 @@ import {
   generateShareLink,
   getChallengeProgress,
   getDaysRemaining,
+  resolveChallengeInviteByCode,
+  shareChallenge,
   CHALLENGE_DURATIONS,
   type Challenge,
 } from "@/lib/friendChallenge";
 import { safeLocalStorageGet } from "@/lib/safeJson";
+import {
+  joinChallengeByCode,
+  isCloudChallengesAvailable,
+} from "@/lib/challengeService";
+import { logger } from "@/lib/logger";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -113,7 +122,7 @@ describe("encodeInviteData", () => {
     expect(encoded.length).toBeGreaterThan(0);
   });
 
-  it("round-trips with decodeInviteData", () => {
+  it("round-trips only the opaque lookup code", () => {
     const challenge = makeChallenge({
       habitName: "Run",
       habitIcon: "🏃",
@@ -126,19 +135,16 @@ describe("encodeInviteData", () => {
     const decoded = decodeInviteData(encoded);
 
     expect(decoded).not.toBeNull();
-    expect(decoded?.habitName).toBe("Run");
-    expect(decoded?.habitIcon).toBe("🏃");
-    expect(decoded?.duration).toBe(14);
-    expect(decoded?.creatorName).toBe("Alice");
     expect(decoded?.code).toBe("ZEN-XXXXXX");
-    expect(decoded?.startDate).toBe("2024-06-10");
+    expect(decoded).toEqual({ code: "ZEN-XXXXXX" });
   });
 
-  it("handles Unicode characters (emoji in habit name)", () => {
+  it("does not include Unicode habit content in the encoded payload", () => {
     const challenge = makeChallenge({ habitName: "🌸 花を育てる" });
     const encoded = encodeInviteData(challenge);
     const decoded = decodeInviteData(encoded);
-    expect(decoded?.habitName).toBe("🌸 花を育てる");
+    expect(decoded).toEqual({ code: challenge.code });
+    expect(decodeURIComponent(atob(encoded))).not.toContain("花を育てる");
   });
 
   it("handles empty creatorName", () => {
@@ -179,6 +185,54 @@ describe("decodeInviteData", () => {
     const result = decodeInviteData(encoded);
     // Zod validation now rejects objects missing required fields (security hardening)
     expect(result).toBeNull();
+  });
+});
+
+describe("resolveChallengeInviteByCode", () => {
+  it("resolves a code-only link from existing local truth", async () => {
+    const local = makeChallenge({ code: "ZEN-A2B3C4" });
+    (safeLocalStorageGet as ReturnType<typeof vi.fn>).mockReturnValue([local]);
+
+    await expect(resolveChallengeInviteByCode("zen-a2b3c4")).resolves.toEqual({
+      code: local.code,
+      habitName: local.habitName,
+      habitIcon: local.habitIcon,
+      duration: local.duration,
+      creatorName: local.creatorName,
+      startDate: local.startDate,
+    });
+  });
+
+  it("resolves a code-only link from the authoritative cloud record", async () => {
+    (isCloudChallengesAvailable as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (joinChallengeByCode as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "remote-id",
+      code: "ZEN-A2B3C4",
+      habitName: "Meditate",
+      habitIcon: "🧘",
+      duration: 14,
+      startDate: "2024-06-15",
+    });
+
+    await expect(resolveChallengeInviteByCode("ZEN-A2B3C4")).resolves.toEqual({
+      code: "ZEN-A2B3C4",
+      habitName: "Meditate",
+      habitIcon: "🧘",
+      duration: 14,
+      startDate: "2024-06-15",
+      cloudJoined: true,
+    });
+    expect(joinChallengeByCode).toHaveBeenCalledWith("ZEN-A2B3C4");
+  });
+
+  it("returns an explicit unavailable result instead of fabricating challenge data", async () => {
+    (isCloudChallengesAvailable as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (joinChallengeByCode as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    const resolved = await resolveChallengeInviteByCode("ZEN-A2B3C4");
+
+    expect(resolved).toBeNull();
+    expect(JSON.stringify(resolved)).not.toContain("Friend Challenge");
   });
 });
 
@@ -230,16 +284,49 @@ describe("generateShareText", () => {
 // ─── generateShareLink ──────────────────────────────────────────
 
 describe("generateShareLink", () => {
-  it("generates zenflow:// protocol link", () => {
+  it("generates an HTTPS capability link instead of a hijackable custom scheme", () => {
     const link = generateShareLink(makeChallenge());
-    expect(link).toMatch(/^zenflow:\/\/challenge\?data=/);
+    expect(link).toMatch(/^https:\/\/yehor212\.github\.io\/people-first-app\/#challenge=/);
+    expect(link).not.toMatch(/^zenflow:/);
   });
 
   it("includes encoded invite data in URL", () => {
     const challenge = makeChallenge();
     const link = generateShareLink(challenge);
     const encoded = encodeInviteData(challenge);
-    expect(link).toContain(encoded);
+    expect(new URL(link).hash).toContain(encoded);
+  });
+
+  it("keeps habit and identity content out of the deep-link query payload", () => {
+    const habitCanary = "ZF_T172_HABIT_4N8C2V7X5L3D";
+    const identityCanary = "ZF_T172_IDENTITY_5M7R2Q9T4C8P";
+    const challenge = makeChallenge({
+      habitName: habitCanary,
+      creatorName: identityCanary,
+      code: "ZEN-A2B3C4",
+    });
+    const link = generateShareLink(challenge);
+    const encoded = new URLSearchParams(new URL(link).hash.replace(/^#/, "")).get("challenge");
+    expect(encoded).not.toBeNull();
+
+    const decodedPayload = decodeURIComponent(atob(encoded!));
+    expect(decodedPayload).not.toContain(habitCanary);
+    expect(decodedPayload).not.toContain(identityCanary);
+    expect(decodedPayload).toContain("ZEN-A2B3C4");
+  });
+});
+
+describe("shareChallenge failure diagnostics", () => {
+  it("reports a fixed-boundary diagnostic when the share fallback is unavailable", async () => {
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+
+    await expect(shareChallenge(makeChallenge())).resolves.toBe(false);
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      "[FriendChallenge] Clipboard share fallback failed",
+      expect.any(TypeError),
+    );
   });
 });
 

@@ -32,6 +32,7 @@ import {
   scheduleNavV2RoutePreload,
 } from "./navV2RouteLoaders";
 import type { FocusSession, GratitudeEntry, MoodEntry } from "@/types";
+import type { FocusCommitBoundary } from "@/types/focusTimerTypes";
 import type { V2SettingsControls } from "@/pages/nav-v2/SettingsPage";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 
@@ -54,9 +55,12 @@ const CommandPalette = lazy(loadCommandPalette);
  * the drawer as primary navigation.
  */
 interface NavV2OrchestratorProps {
-  onAddMood?: (entry: MoodEntry) => void;
+  onAddMood?: (entry: MoodEntry) => void | Promise<void>;
   onAddGratitude?: (entry: GratitudeEntry) => void;
-  onCompleteFocusSession?: (session: FocusSession) => void;
+  onCompleteFocusSession?: (
+    session: FocusSession,
+    boundary?: FocusCommitBoundary
+  ) => void | Promise<void>;
   onMindfulMomentComplete?: () => void;
   settingsControls?: V2SettingsControls;
 }
