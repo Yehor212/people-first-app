@@ -18,6 +18,7 @@ describe("Android app locale bridge", () => {
     expect(activity).toContain("registerPlugin(LocalePlugin.class);");
     expect(plugin).toContain("LocaleManager");
     expect(plugin).toContain("setApplicationLocales");
+    expect(plugin).not.toMatch(/call\.reject\([^;]*,\s*error\s*\)/s);
   });
 
   it("synchronizes the active web language without changing non-Android runtimes", () => {

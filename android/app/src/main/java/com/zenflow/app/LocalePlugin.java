@@ -50,8 +50,8 @@ public class LocalePlugin extends Plugin {
                 JSObject result = new JSObject();
                 result.put("language", language);
                 call.resolve(result);
-            } catch (Exception error) {
-                call.reject("Failed to apply locale", error);
+            } catch (Exception ignored) {
+                call.reject("Failed to apply locale");
             }
         });
     }
