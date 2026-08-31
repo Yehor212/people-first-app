@@ -3,7 +3,9 @@
 const path = require("node:path");
 
 const CANONICAL_REMOTE_ID = "github.com/yehor212/people-first-app";
-const SUPPORTED_AGENTS = new Set(["codex", "kimi"]);
+const SUPPORTED_AGENTS = new Set(["codex"]);
+const CODEX_BRANCH = /^codex\//;
+const CODEX_REMOTE_BRANCH = /^refs\/heads\/codex\//;
 const DEFAULT_BRANCH = "main";
 const ZERO_OBJECT_ID = /^0{40,64}$/;
 
@@ -65,8 +67,8 @@ function evaluatePushGuard({ currentBranch, updates }) {
   const errors = [];
   const branch = String(currentBranch || "");
   const currentRef = `refs/heads/${branch}`;
-  if (!/^(?:codex|kimi)\//.test(branch)) {
-    errors.push("push requires the checked-out codex/ or kimi/ worktree branch");
+  if (!CODEX_BRANCH.test(branch)) {
+    errors.push("push requires the checked-out codex/ worktree branch");
   }
   for (const update of Array.isArray(updates) ? updates : []) {
     const localRef = String(update?.localRef || "");
@@ -94,13 +96,13 @@ function evaluatePushGuard({ currentBranch, updates }) {
     if (
       remoteRef.startsWith("refs/heads/") &&
       remoteRef !== `refs/heads/${DEFAULT_BRANCH}` &&
-      !/^refs\/heads\/(?:codex|kimi)\//.test(remoteRef) &&
+      !CODEX_REMOTE_BRANCH.test(remoteRef) &&
       !isZeroObjectId(update?.localSha)
     ) {
-      errors.push(`agent handoff requires a same-named codex/ or kimi/ branch, not ${remoteRef}`);
+      errors.push(`agent handoff requires a same-named codex/ branch, not ${remoteRef}`);
     }
     if (
-      /^refs\/heads\/(?:codex|kimi)\//.test(remoteRef) &&
+      CODEX_REMOTE_BRANCH.test(remoteRef) &&
       localRef !== remoteRef &&
       !isZeroObjectId(update?.localSha)
     ) {
@@ -161,7 +163,7 @@ function validateCreateRequest({
 }
 
 function validateAgent(agent, errors) {
-  if (!SUPPORTED_AGENTS.has(agent)) errors.push('agent must be "codex" or "kimi"');
+  if (!SUPPORTED_AGENTS.has(agent)) errors.push('agent must be "codex"');
 }
 
 function isInsideOrEqual(parent, candidate) {

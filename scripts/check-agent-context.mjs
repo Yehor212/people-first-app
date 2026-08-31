@@ -138,7 +138,7 @@ function assertNoSecrets(relativePath, text) {
 }
 
 function assertAgentWorkspaceProtocol() {
-  assertGovernanceFile("docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md");
+  assertGovernanceFile("docs/ai/CODEX_WORKSPACE_PROTOCOL.md");
   assertGovernanceFile("scripts/check-agent-workspace-protocol.cjs");
   try {
     execFileSync(process.execPath, ["scripts/check-agent-workspace-protocol.cjs"], {
@@ -858,7 +858,7 @@ async function main() {
       "Snyk Security At Inception",
       "Architecture",
       "Agent Entry Points",
-      "Codex And Kimi Workspace Isolation",
+      "Codex Workspace Isolation",
       "Agent Change Governance",
       "Snyk And Security Fallback",
     ]) {

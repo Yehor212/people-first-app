@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-const { readFileSync, statSync } = require("node:fs");
+const { existsSync, readFileSync, statSync } = require("node:fs");
 const path = require("node:path");
 
 const rootDir = process.cwd();
@@ -20,6 +20,12 @@ function requireText(relativePath, text, marker) {
   if (!text.includes(marker)) failures.push(`${relativePath} is missing marker: ${marker}`);
 }
 
+function requireMissing(relativePath) {
+  if (existsSync(path.join(rootDir, relativePath))) {
+    failures.push(`${relativePath} must be removed with the retired Kimi workspace gate`);
+  }
+}
+
 const packageJsonText = read("package.json");
 let packageJson = {};
 try {
@@ -30,19 +36,21 @@ try {
 if (packageJson.scripts?.["agent:workspace"] !== "node scripts/agent-workspace.mjs") {
   failures.push("package.json must expose agent:workspace");
 }
-if (packageJson.scripts?.["agent:kimi-hook"] !== "node scripts/install-kimi-workspace-hook.mjs") {
-  failures.push("package.json must expose agent:kimi-hook");
+if (Object.hasOwn(packageJson.scripts || {}, "agent:kimi-hook")) {
+  failures.push("package.json must not expose retired agent:kimi-hook");
 }
 for (const testPath of [
   "agent-workspace-core.test.ts",
   "agent-workspace.test.ts",
   "agent-workspace-command-guard.test.ts",
   "agent-workspace-git-hook.test.ts",
-  "install-kimi-workspace-hook.test.ts",
 ]) {
   if (!packageJson.scripts?.["test:agent-workspace"]?.includes(testPath)) {
     failures.push(`test:agent-workspace must run ${testPath}`);
   }
+}
+if (packageJson.scripts?.["test:agent-workspace"]?.includes("install-kimi-workspace-hook")) {
+  failures.push("test:agent-workspace must not run the retired Kimi hook installer tests");
 }
 if (
   packageJson.scripts?.["check:agent-workspace"] !==
@@ -97,18 +105,25 @@ for (const hookPath of [".husky/pre-commit", ".husky/pre-push"]) {
     // read() already records the missing-file error.
   }
 }
-const protocol = read("docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md");
+for (const retiredPath of [
+  "docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md",
+  "scripts/install-kimi-workspace-hook.mjs",
+  "scripts/install-kimi-workspace-hook.d.mts",
+  "scripts/__tests__/install-kimi-workspace-hook.test.ts",
+]) {
+  requireMissing(retiredPath);
+}
+
+const protocolPath = "docs/ai/CODEX_WORKSPACE_PROTOCOL.md";
+const protocol = read(protocolPath);
 if (/\/Users\/[^/\s]+\/|[A-Za-z]:\\Users\\[^\\\s]+\\/i.test(protocol)) {
-  failures.push(
-    "docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md must not commit an operator-specific home path"
-  );
+  failures.push(`${protocolPath} must not commit an operator-specific home path`);
 }
 for (const marker of [
   "<absolute-control-path>",
   "--reviewed-sha",
   ".code-workspace",
   "`sync` performs only `git fetch",
-  "Kimi Working Directory",
   "<absolute-review-workspace-file>",
   "<absolute-audio-review-path>",
   "files.readonlyFromPermissions",
@@ -128,19 +143,17 @@ for (const marker of [
   "handoff",
   "UNVERIFIED",
 ]) {
-  requireText("docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md", protocol, marker);
+  requireText(protocolPath, protocol, marker);
 }
 
 const agents = read("AGENTS.md");
-requireText("AGENTS.md", agents, "Codex And Kimi Workspace Isolation");
-requireText("AGENTS.md", agents, "docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md");
+requireText("AGENTS.md", agents, "Codex Workspace Isolation");
+requireText("AGENTS.md", agents, protocolPath);
 
 const cli = read("scripts/agent-workspace.mjs");
 const runtime = read("scripts/agent-workspace-runtime.cjs");
 const runtimeTypes = read("scripts/agent-workspace-runtime.d.cts");
 const commandGuard = read("scripts/agent-workspace-command-guard.cjs");
-const kimiInstaller = read("scripts/install-kimi-workspace-hook.mjs");
-const kimiInstallerTypes = read("scripts/install-kimi-workspace-hook.d.mts");
 const codexGuard = read(".codex/hooks/agent-workspace-guard.cjs");
 const hooksJson = read(".codex/hooks.json");
 try {
@@ -164,7 +177,6 @@ for (const [relativePath, text] of [
   ["scripts/agent-workspace.mjs", cli],
   ["scripts/agent-workspace-runtime.cjs", runtime],
   ["scripts/agent-workspace-command-guard.cjs", commandGuard],
-  ["scripts/install-kimi-workspace-hook.mjs", kimiInstaller],
 ]) {
   if (/\bshell\s*:\s*true\b/.test(text)) {
     failures.push(`${relativePath} must never execute through a shell`);
@@ -243,23 +255,6 @@ for (const marker of [
 ]) {
   requireText(".codex/hooks.json", hooksJson, marker);
 }
-for (const marker of [
-  "[[hooks]]",
-  'event = "PreToolUse"',
-  "zenflow-agent-workspace-guard:v1",
-  "0o600",
-  "replaceIfUnchanged",
-  "assertRegularFile",
-  "assertSnapshotUnchanged",
-  "hookReady",
-  "nlink",
-  "--expected-agent kimi",
-]) {
-  requireText("scripts/install-kimi-workspace-hook.mjs", kimiInstaller, marker);
-}
-for (const marker of ["applyKimiHook", "inspectKimiHook", "restoreKimiBackup"]) {
-  requireText("scripts/install-kimi-workspace-hook.d.mts", kimiInstallerTypes, marker);
-}
 if (!/sync fetches only by default/.test(cli)) {
   failures.push("agent-workspace CLI help must state fetch-only default");
 }
@@ -277,5 +272,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  "Agent workspace protocol: PASS (isolated worktrees, main guards, VS Code root isolation, safe sync, exact-tip handoff)\n"
+  "Codex workspace protocol: PASS (isolated worktrees, main guards, VS Code root isolation, safe sync, exact-tip handoff)\n"
 );

@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
-# Cross-client safety boundary for terminal, VS Code, Codex, and Kimi.
+# Codex and repository safety boundary for terminal, VS Code, and agent tooling.
 # GitHub rules remain the authoritative remote boundary.
 node scripts/agent-workspace-git-hook.cjs pre-push "$@"

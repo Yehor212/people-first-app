@@ -1175,10 +1175,10 @@ function destructiveGitReason(operation, args) {
       (arg) =>
         arg === "--tags" ||
         /(?:^|:)refs\/tags\//.test(arg) ||
-        /:(?:refs\/heads\/)?(?:codex|kimi)\//.test(arg)
+        /^[^:]+:(?:refs\/heads\/)?[^:]+$/.test(arg)
     )
   ) {
-    return "explicit tag or renamed agent-branch pushes bypass the same-name handoff contract";
+    return "explicit tag or renamed branch pushes bypass the same-name handoff contract";
   }
   if (
     operation === "branch" &&

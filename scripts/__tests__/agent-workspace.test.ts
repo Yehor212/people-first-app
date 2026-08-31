@@ -29,6 +29,8 @@ import {
   syncWorkspace,
 } from "../agent-workspace-runtime.cjs";
 
+const WORKSPACE_CLI = path.resolve("scripts/agent-workspace.mjs");
+
 type Fixture = {
   control: string;
   peer: string;
@@ -529,9 +531,9 @@ describe("agent workspace lifecycle", () => {
 
     expect(() =>
       createWorkspace({
-        agent: "kimi",
+        agent: "codex",
         cwd: fixture.control,
-        destination: path.join(fixture.root, "worktrees", "kimi-stale-control"),
+        destination: path.join(fixture.root, "worktrees", "codex-stale-control"),
         expectedRemote: fixture.remote,
         task: "stale-control",
       })
@@ -594,13 +596,43 @@ describe("agent workspace lifecycle", () => {
 
     expect(() =>
       createWorkspace({
-        agent: "kimi",
+        agent: "codex",
         cwd: fixture.control,
-        destination: path.join(foreignRepository, "worktrees", "kimi-nested"),
+        destination: path.join(foreignRepository, "worktrees", "codex-nested"),
         expectedRemote: fixture.remote,
         task: "nested-repository",
       })
     ).toThrowError(/NESTED_REPOSITORY_TARGET/);
+  });
+
+  it("rejects the retired Kimi actor even when the branch prefix matches", async () => {
+    const fixture = await repositoryFixture();
+    const destination = path.join(fixture.root, "worktrees", "codex-cli-actor");
+    createWorkspace({
+      agent: "codex",
+      cwd: fixture.control,
+      destination,
+      expectedRemote: fixture.remote,
+      task: "cli-actor",
+    });
+    git(destination, [
+      "remote",
+      "set-url",
+      "origin",
+      "https://github.com/Yehor212/people-first-app.git",
+    ]);
+    git(destination, ["branch", "-m", "kimi/cli-actor"]);
+
+    const result = spawnSync(
+      process.execPath,
+      [WORKSPACE_CLI, "doctor", "--mode", "edit", "--agent", "kimi", "--json"],
+      { cwd: destination, encoding: "utf8" }
+    );
+    const output = JSON.parse(result.stdout);
+
+    expect(result.status).toBe(2);
+    expect(output).toMatchObject({ status: "STOP", ok: false });
+    expect(output.errors).toContain('edit mode requires --agent "codex"');
   });
 
   it("rolls back only exact newly created artifacts when worktree checkout fails", async () => {
@@ -1157,9 +1189,9 @@ describe("agent workspace lifecycle", () => {
 
   it("accepts handoff only after a locked feature branch is clean and exactly pushed", async () => {
     const fixture = await repositoryFixture();
-    const destination = path.join(fixture.root, "worktrees", "kimi-audio");
+    const destination = path.join(fixture.root, "worktrees", "codex-audio");
     createWorkspace({
-      agent: "kimi",
+      agent: "codex",
       cwd: fixture.control,
       destination,
       expectedRemote: fixture.remote,
@@ -1175,7 +1207,7 @@ describe("agent workspace lifecycle", () => {
 
     expect(receipt).toMatchObject({
       baseSha: expect.stringMatching(/^[0-9a-f]{40,64}$/),
-      branch: "kimi/audio",
+      branch: "codex/audio",
       changedPaths: ["candidate.txt"],
       clean: true,
       ready: true,
@@ -1214,6 +1246,28 @@ describe("agent workspace lifecycle", () => {
         expectedRemote: fixture.remote,
       })
     ).toThrowError(/DIRTY_WORKTREE/);
+  }, 30_000);
+
+  it("refuses handoff for the retired Kimi branch namespace", async () => {
+    const fixture = await repositoryFixture();
+    const destination = path.join(fixture.root, "worktrees", "codex-retired-actor");
+    createWorkspace({
+      agent: "codex",
+      cwd: fixture.control,
+      destination,
+      expectedRemote: fixture.remote,
+      task: "retired-actor",
+    });
+    git(destination, ["branch", "-m", "kimi/retired-actor"]);
+    await commit(destination, "candidate.txt", "tracked\n", "candidate");
+    git(destination, ["push", "-u", "origin", "HEAD"]);
+
+    expect(() =>
+      handoffWorkspace({
+        cwd: destination,
+        expectedRemote: fixture.remote,
+      })
+    ).toThrowError(/INVALID_AGENT_BRANCH/);
   }, 30_000);
 
   it("refuses handoff when the shared registry contains multiple main lanes", async () => {

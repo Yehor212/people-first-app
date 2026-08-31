@@ -86,8 +86,8 @@ function doctorErrors(state, mode, agent) {
     }
   }
   if (mode === "edit") {
-    if (!["codex", "kimi"].includes(String(agent))) {
-      errors.push('edit mode requires --agent "codex" or "kimi"');
+    if (String(agent) !== "codex") {
+      errors.push('edit mode requires --agent "codex"');
     }
     if (state.branch === "main") errors.push("main is review/integration only");
     if (agent && !String(state.branch || "").startsWith(`${agent}/`)) {
@@ -200,12 +200,12 @@ function sanitizeError(error) {
 function printHelp() {
   process.stdout.write(
     [
-      "ZenFlow Codex/Kimi isolated workspace command",
+      "ZenFlow Codex isolated workspace command",
       "",
       "Usage:",
       "  npm run agent:workspace -- doctor --mode review [--json]",
-      "  npm run agent:workspace -- doctor --mode edit --agent codex|kimi [--allow-dirty] [--json]",
-      "  npm run agent:workspace -- create --agent codex|kimi --task <slug> --path <absolute-path>",
+      "  npm run agent:workspace -- doctor --mode edit --agent codex [--allow-dirty] [--json]",
+      "  npm run agent:workspace -- create --agent codex --task <slug> --path <absolute-path>",
       "  npm run agent:workspace -- bootstrap-human-review --control-path <absolute-path> --audio-source-path <absolute-path> --audio-review-path <absolute-path> --workspace-file <absolute-path>",
       "  npm run agent:workspace -- check-human-review --control-path <absolute-path> --audio-review-path <absolute-path> --workspace-file <absolute-path>",
       "  npm run agent:workspace -- sync [--apply] [--reviewed-sha <exact-origin-main-sha>]",
