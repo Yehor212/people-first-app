@@ -47,7 +47,9 @@ gradle.taskGraph.whenReady { taskGraph ->
         task.project == project && debugPackagingTaskNames.contains(task.name.toLowerCase(Locale.ROOT))
     }
 
-    if (debugPackagingTaskRequested && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)) {
+    // Owner-less debug builds (CI/local without secrets) get the debug-only
+    // sample id via src/debug/res; a provided-but-wrong id still fails fast.
+    if (debugPackagingTaskRequested && zenflowAdMobAndroidAppId != "" && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)) {
         throw new GradleException("Debug builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt.")
     }
 
@@ -91,6 +93,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Google Mobile Ads initializes from a ContentProvider before the
+            // WebView starts. A valid sample application id keeps owner-less
+            // debug APKs launchable; ad requests remain disabled in JS unless
+            // the explicit admob-qa Vite mode is built.
+            manifestPlaceholders = [
+                    adMobApplicationId: "@string/zenflow_debug_admob_application_id"
+            ]
+        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

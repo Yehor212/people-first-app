@@ -30,7 +30,10 @@ describe("production AdMob no-mockdata contract", () => {
     expect(androidBuild).toContain("debugPackagingTaskNames");
     expect(androidBuild).toContain("debugPackagingTaskRequested");
     expect(androidBuild).toContain(
-      "debugPackagingTaskRequested && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)",
+      'adMobApplicationId: "@string/zenflow_debug_admob_application_id"',
+    );
+    expect(androidBuild).toContain(
+      "debugPackagingTaskRequested && zenflowAdMobAndroidAppId != \"\" && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)",
     );
     expect(androidBuild).toContain(
       "Debug builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt.",
