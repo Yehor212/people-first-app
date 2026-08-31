@@ -41,8 +41,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { consumePendingDiaryEditorOpen, subscribeToDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
-import { useBackHandler } from "@/hooks/useBackHandler";
-import { useModalA11y } from "@/hooks/useModalA11y";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 import { createFocusTrap, getFocusableElements, announceSuccess, announceError } from "@/lib/a11y";
 import { AUTH_COMPLETE_EVENT, getAuthRedirectUrl } from "@/lib/authRedirect";
 import { createPkceAttemptRedirectUrl } from "@/lib/pkceAttemptStorage";
@@ -1117,11 +1116,6 @@ type ResetStep =
       requestAnimationFrame(() => mobileDiarySidebarTriggerRef.current?.focus({ preventScroll: true }));
     }
   }, []);
-
-  useBackHandler(showExportPicker, () => {
-    if (!exporting) setShowExportPicker(false);
-  });
-  useBackHandler(showMobileDiarySidebar, closeMobileDiarySidebar);
 
   const settingsDismissBlocked = settingsBusy || importing || removePasswordSubmitting;
 
@@ -2628,10 +2622,12 @@ type ResetStep =
 
   // --- HOOKS (all callbacks declared above — safe from TDZ in production minified chunks) ---
   useScrollLock(moduleState === "open" && !isPagePresentation);
-  useModalA11y(
-    moduleState === "open" && !isLgScreen && !disableCardShell && !isPagePresentation,
-    handleClose
-  );
+  useModalKeyboard({
+    isOpen: moduleState === "open" && !isLgScreen && !disableCardShell && !isPagePresentation,
+    onClose: handleClose,
+    trapFocus: false,
+    restoreFocus: false,
+  });
 
   // Focus trap for main overlay (skip on desktop — sidebar must be accessible)
   useEffect(() => {
@@ -2679,6 +2675,12 @@ type ResetStep =
   // Android back button handling
   useEffect(() => {
     if (moduleState !== "open") return;
+    if (pendingJournalImport)
+      return registerModalCloseCallback(() => {
+        if (importing) return true;
+        setPendingJournalImport(null);
+        return true;
+      });
     // RemovePasswordConfirmDialog registers the topmost callback itself.
     // Do not add a second parent callback that can outlive or undercut it.
     if (showRemovePasswordConfirm) return;
@@ -2731,6 +2733,8 @@ type ResetStep =
     closeSettings,
     closeResetDialog,
     moduleState,
+    pendingJournalImport,
+    importing,
     showExportPicker,
     exporting,
     resetStep,

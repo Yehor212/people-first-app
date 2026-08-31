@@ -5,7 +5,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { zenTap } from "@/lib/animationUtils";
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { ParticleBackground } from "@/components/stats";
 import { getEventGradient } from "./constants";
 
@@ -21,7 +20,6 @@ export function EventDetailsModal({
 }) {
   const { t } = useLanguage();
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
-  useBackHandler(true, onClose);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isHabitEvent = event.source === "habit";

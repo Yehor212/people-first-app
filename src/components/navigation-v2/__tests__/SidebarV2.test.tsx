@@ -161,18 +161,32 @@ describe("SidebarV2", () => {
 
     const musicToggle = screen.getByTestId("background-music-toggle");
     const settings = screen.getByRole("button", { name: "Settings" });
-    expect(musicToggle.compareDocumentPosition(settings)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
+    expect(musicToggle.compareDocumentPosition(settings)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(musicToggle).toHaveClass("min-h-[44px]");
   });
 
   it("keeps the localized music tooltip in collapsed mode", () => {
     render(<SidebarV2 {...defaultProps} collapsed />);
 
-    expect(screen.getByTestId("background-music-toggle")).toHaveAttribute(
-      "title",
-      "Evening music",
-    );
+    expect(screen.getByTestId("background-music-toggle")).toHaveAttribute("title", "Evening music");
+  });
+
+  it("keeps fixed actions visible while destinations scroll in a short adaptive window", () => {
+    render(<SidebarV2 {...defaultProps} />);
+
+    const sidebar = screen.getByRole("navigation", { name: "Primary navigation" });
+    const destinations = screen.getByTestId("sidebar-v2-destinations");
+    const footer = screen.getByTestId("sidebar-v2-footer");
+
+    expect(sidebar.className).toContain("overflow-y-hidden");
+    expect(sidebar.className).toContain("overscroll-y-contain");
+    expect(sidebar.className).toContain("overflow-x-hidden");
+    expect(sidebar.className).toContain("zf-sidebar-adaptive-surface");
+    expect(destinations.className).toContain("min-h-0");
+    expect(destinations.className).toContain("flex-1");
+    expect(destinations.className).toContain("overflow-y-auto");
+    expect(footer.className).toContain("shrink-0");
+    expect(footer).toContainElement(screen.getByRole("button", { name: "Settings" }));
+    expect(footer).toContainElement(screen.getByTestId("sidebar-v2-collapse-toggle"));
   });
 });

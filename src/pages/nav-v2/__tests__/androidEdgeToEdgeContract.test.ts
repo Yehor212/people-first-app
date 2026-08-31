@@ -89,7 +89,10 @@ describe("Android edge-to-edge native contract", () => {
     const viteConfig = read("vite.config.ts");
 
     expect(viteConfig).toContain("process.env.CAPACITOR_BUILD === \"true\"");
-    expect(viteConfig).toContain("const base = isCapacitor ? \"./\" : webBase;");
+    expect(viteConfig).toContain('process.env.VITE_T184_QA_BUILD === "true"');
+    expect(viteConfig).toContain(
+      'const base = t184QaBuild ? "/" : isCapacitor ? "./" : webBase;'
+    );
     expect(viteConfig).toContain("const pwaEnabled = !isCapacitor");
 
     const nativeIndexPath = "android/app/src/main/assets/public/index.html";

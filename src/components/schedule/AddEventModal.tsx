@@ -8,7 +8,6 @@ import { zenTap } from "@/lib/animationUtils";
 import { parseLocalDate, getToday, formatDate } from "@/lib/utils";
 import { safeParseInt } from "@/lib/validation";
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { ParticleBackground } from "@/components/stats";
 import { EVENT_PRESETS, getEventColor, getEventGradient, HOURS } from "./constants";
 
@@ -27,7 +26,6 @@ export function AddEventModal({
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
-  useBackHandler(true, onClose);
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
   const [time, setTime] = useState({

@@ -773,6 +773,11 @@ export function useFocusTimer({
     return true;
   };
 
+  // Back/Escape omits the optional score but preserves durable completion.
+  const handleCancelReflection = () => {
+    void handleSaveReflection(null);
+  };
+
   const handleHyperfocusComplete = () => {
     if (pendingCommitRef.current || recoveryBlockedRef.current) return;
     recoveryBlockedRef.current = true;
@@ -796,9 +801,8 @@ export function useFocusTimer({
     });
   };
 
-  useBackHandler(showReflection, () => void handleSaveReflection(null));
+  useBackHandler(showReflection, handleCancelReflection);
   useScrollLock(showReflection);
-  useBackHandler(showHyperfocus, () => setShowHyperfocus(false));
 
   useEffect(() => {
     setFocusControls({ toggle: throttledToggle, reset: throttledReset });
@@ -840,6 +844,7 @@ export function useFocusTimer({
     throttledReset,
     handlePresetSelect,
     handleSaveReflection,
+    handleCancelReflection,
     handleHyperfocusComplete,
     handleFocusInputBlur,
     handleBreakInputBlur,

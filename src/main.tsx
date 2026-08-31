@@ -578,7 +578,7 @@ initAudioManager();
 
 // Ambient sounds load on demand so the web/PWA/Capacitor startup path stays light.
 
-// Initialize Android back button handler (double-tap to exit + modal handling)
+// Initialize the deterministic AndroidX Back owner and visual-layer stack.
 void initAndroidBackHandler();
 
 // Splash screen is hidden in Index.tsx after initialization completes

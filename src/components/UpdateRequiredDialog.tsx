@@ -34,10 +34,7 @@ const lazyBreadcrumb = (bc: {
     .catch((e) => logger.warn("[Sentry] lazy load skipped:", e));
 };
 import { logger } from "@/lib/logger";
-import {
-  getErrorMessage,
-  isChunkLoadMessage,
-} from "@/lib/chunkErrorDetection";
+import { getErrorMessage, isChunkLoadMessage } from "@/lib/chunkErrorDetection";
 import { forceHardReload } from "@/lib/versionCheck";
 
 // Event name for chunk load failures
@@ -152,6 +149,7 @@ export function UpdateRequiredDialog() {
     <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
       <AlertDialogContent
         ref={contentRef}
+        data-testid="update-required-dialog"
         className="w-[calc(100%-0.5rem)] max-w-md p-1 min-[360px]:w-[calc(100%-1rem)] min-[360px]:p-2 min-[420px]:p-4 sm:p-6"
         onEscapeKeyDown={(event) => {
           if (isRefreshingRef.current) event.preventDefault();
@@ -168,10 +166,12 @@ export function UpdateRequiredDialog() {
           previousFocusRef.current = null;
           if (!previousFocus?.isConnected) return;
 
-          previousFocus.focus({ preventScroll: true });
-          if (document.activeElement === previousFocus) {
-            event.preventDefault();
-          }
+          event.preventDefault();
+          window.requestAnimationFrame(() => {
+            if (previousFocus.isConnected) {
+              previousFocus.focus({ preventScroll: true });
+            }
+          });
         }}
       >
         <AlertDialogHeader>

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { shouldAnimate } from "@/lib/animationUtils";
 import { hapticTap } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { Mic } from "lucide-react";
 
 interface SlashCommandMenuProps {
@@ -167,6 +168,8 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({
     slashRangeRef.current = null;
     onClose();
   }, [onClose]);
+
+  useBackHandler(open, close);
 
   const executeCommand = useCallback(
     (id: CommandId | string) => {

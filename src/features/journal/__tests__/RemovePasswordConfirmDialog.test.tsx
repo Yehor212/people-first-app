@@ -96,8 +96,8 @@ describe("RemovePasswordConfirmDialog", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    backHandlerMock.handler?.();
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(backHandlerMock.handler).toBeNull();
+    expect(onClose).toHaveBeenCalledTimes(1);
     expect(cancel).toHaveClass("min-h-[48px]");
     expect(remove).toHaveClass("min-h-[48px]");
   });

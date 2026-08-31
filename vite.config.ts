@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync, renameSync } from "fs";
 import { fileURLToPath } from "url";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
@@ -12,6 +12,7 @@ import { versionPlugin } from "./vite-plugin-version.ts";
 import { createCompactI18nBuildPlugin } from "./scripts/compact-i18n-build-plugin.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const T184_QA_OUT_DIR = "output/t184-android-qa";
 
 function normalizeBasePath(value: string): string {
   if (!value || value === "/") return "/";
@@ -32,6 +33,21 @@ function normalizeIndexBasePathPlugin(base: string) {
     enforce: "post" as const,
     transformIndexHtml(html: string) {
       return collapseDuplicatedBasePathUrls(html, base);
+    },
+  };
+}
+
+function moveT184QaHtmlToRootPlugin(outDir: string) {
+  const qaHtmlPath = path.resolve(__dirname, outDir, "src/test/t184/index.html");
+  const rootHtmlPath = path.resolve(__dirname, outDir, "index.html");
+
+  return {
+    name: "zenflow-t184-qa-html-root",
+    closeBundle() {
+      if (!existsSync(qaHtmlPath)) {
+        throw new Error("T184 QA HTML output was not emitted");
+      }
+      renameSync(qaHtmlPath, rootHtmlPath);
     },
   };
 }
@@ -97,10 +113,12 @@ export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
   // Automatically determined by npm script (build vs build:android)
   const isCapacitor = process.env.CAPACITOR_BUILD === "true";
+  const t184QaBuild = process.env.VITE_T184_QA_BUILD === "true";
+  const outDir = t184QaBuild ? T184_QA_OUT_DIR : "dist";
   const androidMotionBenchmark =
     isCapacitor && process.env.ZENFLOW_ANDROID_MOTION_BENCHMARK === "true";
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
-  const base = isCapacitor ? "./" : webBase;
+  const base = t184QaBuild ? "/" : isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
   const journalSaveCeremonyBuildEnabled =
     process.env.ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED === "true";
@@ -407,6 +425,7 @@ export default defineConfig(({ mode }) => {
         : null,
       stripDisabledPwaManifestPlugin(pwaEnabled),
       normalizeIndexBasePathPlugin(base),
+      t184QaBuild && moveT184QaHtmlToRootPlugin(outDir),
       sentrySourceMapUploadEnabled
         ? sentryVitePlugin({
             org: process.env.SENTRY_ORG,
@@ -462,6 +481,7 @@ export default defineConfig(({ mode }) => {
     // 2026-04-19 root cause of "design missing" visual regression.
     // Keep `cssMinify: "lightningcss"` below — minifier alone is safe.
     build: {
+      outDir,
       target: "esnext",
       // Terser ~1-2% smaller than esbuild (20-40x slower, acceptable on CI only).
       // esbuild stays for dev minification via optimizeDeps.
@@ -511,6 +531,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
 
       rollupOptions: {
+        input: t184QaBuild ? { index: "src/test/t184/index.html" } : undefined,
         output: {
           // Enable code splitting for better performance
           manualChunks(id) {

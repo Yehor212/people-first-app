@@ -1,6 +1,6 @@
 import { useCallback, useId } from "react";
 
-import { useModalA11y } from "@/hooks/useModalA11y";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 import type { JournalImportInspection } from "./journalImport";
 
 interface JournalImportConfirmDialogProps {
@@ -26,7 +26,7 @@ export function JournalImportConfirmDialog({
   const close = useCallback(() => {
     if (!busy) onCancel();
   }, [busy, onCancel]);
-  const { modalProps, handleKeyDown } = useModalA11y(true, close);
+  const { modalProps, handleKeyDown } = useModalKeyboard({ isOpen: true, onClose: close });
   const rows = [
     [ts.journalEntries || ts.journalImportEntries || "Entries", inspection.entries],
     [ts.journalExportPhotos || "Photos", inspection.photos],

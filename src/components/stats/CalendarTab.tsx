@@ -3,7 +3,7 @@
  * 4 useState, 4 useMemo (calendar-specific only).
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Calendar,
   ChevronLeft,
@@ -16,6 +16,7 @@ import { MoodEntry, Habit, GratitudeEntry } from "@/types";
 import { safeParseInt } from "@/lib/validation";
 import { CalendarGrid } from "./CalendarGrid";
 import { SelectedDayPanel } from "./SelectedDayPanel";
+import { useBackHandler } from "@/hooks/useBackHandler";
 
 interface CalendarTabProps {
   moodsByDate: Map<string, MoodEntry[]>;
@@ -52,6 +53,9 @@ export function CalendarTab({
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const closeMonthSelector = useCallback(() => setShowMonthSelector(false), []);
+
+  useBackHandler(showMonthSelector, closeMonthSelector);
 
   const availableYears = useMemo(() => {
     const set = new Set<number>();

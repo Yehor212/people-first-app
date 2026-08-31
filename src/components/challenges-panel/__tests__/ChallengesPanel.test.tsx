@@ -55,7 +55,7 @@ describe("ChallengesPanel", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Challenges & Badges")).toBeInTheDocument();
-    expect(mockUseBackHandler).toHaveBeenCalledTimes(2);
+    expect(mockUseBackHandler).not.toHaveBeenCalled();
     expect(mockUseScrollLock).toHaveBeenCalledWith(true);
     expect(mockUseModalA11y).toHaveBeenNthCalledWith(1, true, onClose);
     expect(mockUseModalA11y).toHaveBeenNthCalledWith(

@@ -86,8 +86,22 @@ describe("UpdateRequiredDialog", () => {
       }
       expect(screen.getByRole("alertdialog")).toContainElement(activeElement);
 
+      const pendingFrames: FrameRequestCallback[] = [];
+      const animationFrameSpy = vi
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((callback) => {
+          pendingFrames.push(callback);
+          return pendingFrames.length;
+        });
+
       fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      });
+      expect(pendingFrames).toHaveLength(1);
+      pendingFrames.splice(0).forEach((callback) => callback(performance.now()));
       await waitFor(() => expect(outside).toHaveFocus());
+      animationFrameSpy.mockRestore();
     } finally {
       outside.remove();
     }

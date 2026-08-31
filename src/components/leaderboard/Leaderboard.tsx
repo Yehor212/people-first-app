@@ -5,7 +5,6 @@ import { zenTap } from "@/lib/animationUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useBackHandler } from "@/hooks/useBackHandler";
 import { Trophy, Flame, Star, Users, Eye, EyeOff, Medal, X, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +22,6 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
   useModalA11y(isOpen, () => setIsOpen(false));
   useScrollLock(isOpen);
-  useBackHandler(isOpen, () => setIsOpen(false));
 
   const data = useLeaderboardData({
     activeTab,

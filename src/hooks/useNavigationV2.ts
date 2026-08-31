@@ -184,8 +184,8 @@ export interface UseNavigationV2Return {
   closeDrawer: () => void;
   /** Commits a prepared phone route after the retained drawer exit unmounts. */
   completeDrawerExit: () => void;
-  /** Android/hardware back. Returns true if handled (drawer close). */
-  handleBackButton: () => boolean;
+  /** Android/hardware Back. Returns true if an in-app destination consumed it. */
+  handleBackButton: (event?: { canGoBack: boolean }) => boolean;
   /** Command palette visibility (shared with Ctrl+K shortcut). */
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -411,18 +411,22 @@ export function useNavigationV2(): UseNavigationV2Return {
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  // Android hardware back: drawer close > command palette close > (let caller handle page back)
-  const handleBackButton = useCallback((): boolean => {
-    if (drawerOpen) {
-      setDrawerOpen(false);
-      return true;
-    }
+  // Android hardware Back follows the visible stack, then destination history.
+  const handleBackButton = useCallback((event?: { canGoBack: boolean }): boolean => {
     if (commandPaletteOpen) {
       setCommandPaletteOpen(false);
       return true;
     }
+    if (drawerOpen) {
+      setDrawerOpen(false);
+      return true;
+    }
+    if (!event?.canGoBack && (activePage !== "orb" || unknownPath !== null)) {
+      setActivePage("orb", { skipTransition: true });
+      return true;
+    }
     return false;
-  }, [drawerOpen, commandPaletteOpen]);
+  }, [activePage, commandPaletteOpen, drawerOpen, setActivePage, unknownPath]);
 
   return {
     activePage,

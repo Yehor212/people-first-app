@@ -72,9 +72,10 @@ export function HabitHubList({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const closeSortMenu = useCallback(() => setShowSortMenu(false), []);
 
   // P0: Android hardware back must close sort dropdown
-  useBackHandler(showSortMenu, () => setShowSortMenu(false));
+  useBackHandler(showSortMenu, closeSortMenu);
 
   const {
     todayHabits,

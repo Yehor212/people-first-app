@@ -1857,6 +1857,177 @@
   }
 }
 
+/* At 200% text size a short landscape phone has the same usable line length as
+ * a much narrower portrait viewport. Move fixed module chrome off the copy
+ * track without reducing rem-based text. */
+@media (max-width: 479px) {
+  [data-v2-readable-page="settings"] [data-testid^="settings-module-card-"] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+    row-gap: 8px;
+    padding-inline: 8px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-icon"] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-copy"] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-description"] {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-label"],
+  [data-v2-readable-page="settings"] [data-slot="settings-module-value"] {
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-module-chevron"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    inline-size: 100%;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] {
+    padding-inline: 0;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-support-footer"] button {
+    inline-size: 100%;
+    padding-inline: 2px;
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+}
+
+/* Combined Android display and font scaling can reduce the effective WebView
+ * to about 206 CSS px. Below 240px the top rail still protects the drawer
+ * trigger, so Settings can use the full inline track beneath it. Module chrome
+ * occupies its own row and leaves copy in a readable, ordered full-width row. */
+@media (max-width: 239px) {
+  [data-testid="update-required-dialog"] {
+    inset-block-start: max(8px, var(--safe-top)) !important;
+    inset-block-end: max(8px, var(--safe-bottom)) !important;
+    inset-inline-start: max(8px, var(--safe-inline-start)) !important;
+    inset-inline-end: max(8px, var(--safe-inline-end)) !important;
+    inline-size: auto !important;
+    max-block-size: none !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .v2-edge-to-edge-surface[data-active-page="settings"] {
+    min-block-size: var(--app-viewport-height);
+    block-size: var(--app-viewport-height);
+    overflow: hidden;
+  }
+
+  :root[data-theme="paper"] .settings-day-cosmic-backdrop {
+    display: none;
+  }
+
+  :root[data-theme="paper"] .v2-edge-to-edge-surface[data-active-page="settings"] {
+    background:
+      radial-gradient(
+        circle at 14% 8%,
+        hsl(var(--settings-v2-rim-light) / 0.92),
+        transparent 36%
+      ),
+      radial-gradient(
+        circle at 88% 82%,
+        hsl(var(--settings-v2-accent) / 0.14),
+        transparent 44%
+      ),
+      linear-gradient(
+        160deg,
+        hsl(var(--settings-v2-shell)),
+        hsl(var(--settings-v2-panel))
+      );
+  }
+
+  [role="dialog"] [data-testid="feedback-form-panel"] {
+    padding-inline: 12px;
+    overflow-x: clip;
+  }
+
+  [role="dialog"] [data-slot="feedback-header"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  [role="dialog"] [data-slot="feedback-header-copy"] {
+    min-width: 0;
+  }
+
+  [role="dialog"] [data-slot="feedback-title"] {
+    flex-wrap: wrap;
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  [role="dialog"] [data-slot="feedback-subtitle"] {
+    line-height: 1.4;
+  }
+
+  [role="dialog"] [data-slot="feedback-privacy-notice"] {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  [role="dialog"] [data-testid="feedback-form-panel"] button {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  :root[data-theme] [data-v2-readable-page="settings"] {
+    min-block-size: 0;
+    block-size: calc(
+      var(--app-viewport-height) - var(--safe-top) - var(--v2-phone-drawer-top-rail)
+    );
+    margin-block-start: calc(var(--safe-top) + var(--v2-phone-drawer-top-rail));
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-inline-start: max(8px, var(--safe-inline-start));
+    padding-inline-end: max(8px, var(--safe-inline-end));
+    padding-block-start: 12px;
+    scroll-padding-block-start: 12px;
+  }
+
+  [data-v2-readable-page="settings"] [data-testid="settings-page-heading"] {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  [data-v2-readable-page="settings"] article[data-testid^="settings-module-"]::before {
+    inset-inline-start: 8px;
+    inset-inline-end: 8px;
+  }
+
+  [data-v2-readable-page="settings"] [data-slot="settings-footer-legal-label"] {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+}
+
 @media (prefers-contrast: more) {
   :root[data-theme="ink"] .settings-emerald-night-backdrop__nebula {
     display: none;

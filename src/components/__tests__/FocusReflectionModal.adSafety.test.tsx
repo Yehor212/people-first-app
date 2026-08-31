@@ -1,33 +1,33 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import { FocusReflectionModal } from '@/components/FocusReflectionModal';
+import { FocusReflectionModal } from "@/components/FocusReflectionModal";
 
-vi.mock('@/contexts/LanguageContext', () => ({
+vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
-      ariaFocusReflection: 'Focus reflection',
-      close: 'Close',
-      focusReflectionTitle: 'Session reflection',
-      focusReflectionQuestion: 'How did this focus session feel?',
-      focusReflectionSkip: 'Skip',
-      focusReflectionSave: 'Save',
-      focusExpandToJournal: 'Write about it in your journal',
+      ariaFocusReflection: "Focus reflection",
+      close: "Close",
+      focusReflectionTitle: "Session reflection",
+      focusReflectionQuestion: "How did this focus session feel?",
+      focusReflectionSkip: "Skip",
+      focusReflectionSave: "Save",
+      focusExpandToJournal: "Write about it in your journal",
     },
   }),
 }));
 
-vi.mock('@/hooks/useModalState', () => ({
+vi.mock("@/hooks/useModalState", () => ({
   useModalClose: vi.fn(),
 }));
 
-vi.mock('@/components/cosmic/CosmicStarField', () => ({
+vi.mock("@/components/cosmic/CosmicStarField", () => ({
   CosmicStar: ({ id }: { id: string }) => <span data-testid={`cosmic-star-${id}`} />,
-  cosmicStars: [{ id: 's1' }, { id: 's2' }],
+  cosmicStars: [{ id: "s1" }, { id: "s2" }],
 }));
 
-vi.mock('framer-motion', async () => {
-  const React = await import('react');
+vi.mock("framer-motion", async () => {
+  const React = await import("react");
   const stripMotionProps = <T extends Record<string, unknown>>(props: T) => {
     const {
       animate: _animate,
@@ -42,35 +42,43 @@ vi.mock('framer-motion', async () => {
 
   return {
     motion: {
-      div: React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(function MotionDiv(
+      div: React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(function MotionDiv(
         { children, ...props },
-        ref,
+        ref
       ) {
-        return <div ref={ref} {...stripMotionProps(props)}>{children}</div>;
+        return (
+          <div ref={ref} {...stripMotionProps(props)}>
+            {children}
+          </div>
+        );
       }),
-      button: React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(function MotionButton(
-        { children, ...props },
-        ref,
-      ) {
-        return <button ref={ref} {...stripMotionProps(props)}>{children}</button>;
-      }),
+      button: React.forwardRef<HTMLButtonElement, React.ComponentProps<"button">>(
+        function MotionButton({ children, ...props }, ref) {
+          return (
+            <button ref={ref} {...stripMotionProps(props)}>
+              {children}
+            </button>
+          );
+        }
+      ),
     },
   };
 });
 
-describe('FocusReflectionModal ad safety', () => {
-  it('does not place advertising inside the reflection decision moment', () => {
+describe("FocusReflectionModal ad safety", () => {
+  it("does not place advertising inside the reflection decision moment", () => {
     render(
       <FocusReflectionModal
         reflectionValue={3}
         onSelectValue={vi.fn()}
         onSave={vi.fn()}
         onDismiss={vi.fn()}
-      />,
+        onCancel={vi.fn()}
+      />
     );
 
-    expect(screen.getByRole('dialog', { name: 'Focus reflection' })).toBeInTheDocument();
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Close' }).className).toContain('min-h-[44px]');
+    expect(screen.getByRole("dialog", { name: "Focus reflection" })).toBeInTheDocument();
+    expect(screen.queryByRole("banner")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" }).className).toContain("min-h-[44px]");
   });
 });

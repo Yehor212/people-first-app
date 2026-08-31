@@ -10,7 +10,10 @@ import { useUIStore } from "@/stores";
 import { useNavigationV2 } from "@/hooks/useNavigationV2";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useDeviceTier } from "@/hooks/useDeviceTier";
-import { registerModalCloseCallback } from "@/lib/androidBackHandler";
+import {
+  publishAndroidBackNavigationState,
+  registerModalCloseCallback,
+} from "@/lib/androidBackHandler";
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { isAndroid } from "@/lib/platform";
@@ -227,11 +230,23 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
     void preloadNavV2Route(page);
   }, []);
 
-  // Register Android back handler — drawer close > palette close > let native back
+  const ownsAndroidBack =
+    drawerOpen || commandPaletteOpen || activePage !== "orb" || unknownPath !== null;
+
   useEffect(() => {
-    const unregister = registerModalCloseCallback(() => handleBackButton());
+    void publishAndroidBackNavigationState({
+      isRoot: activePage === "orb" && unknownPath === null,
+    });
+  }, [activePage, unknownPath]);
+
+  useEffect(() => {
+    if (!ownsAndroidBack) return undefined;
+    const unregister = registerModalCloseCallback(
+      (event) => handleBackButton(event),
+      { layer: "navigation" },
+    );
     return unregister;
-  }, [handleBackButton]);
+  }, [handleBackButton, ownsAndroidBack]);
 
   useEffect(() => {
     if (isWebNavigation && drawerOpen) {
