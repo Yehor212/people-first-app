@@ -40,6 +40,39 @@ function loadFacebookAuthLive(): FacebookAuthLiveModule {
 }
 
 describe("Facebook live auth readiness", () => {
+  it("reconstructs injected probe output instead of retaining arbitrary auth diagnostics", async () => {
+    const { checkFacebookAuthLive } = loadFacebookAuthLive();
+    const canary = "ZF_T172_FACEBOOK_AUTH_d08731";
+
+    const result = await checkFacebookAuthLive({
+      env: { VITE_SUPABASE_URL: "https://bwgfslmxmueyglpumkbf.supabase.co" },
+      probeImpl: async () => ({
+        status: "PASS",
+        exitCode: 0,
+        message: canary,
+        reason: canary,
+        finalHost: canary,
+      }),
+    });
+
+    expect(JSON.stringify(result)).not.toContain(canary);
+    expect(result).toMatchObject({ status: "PASS", exitCode: 0 });
+  });
+
+  it("fails closed when both browser and redirect probes throw private diagnostics", async () => {
+    const { checkFacebookAuthLive } = loadFacebookAuthLive();
+    const canary = "ZF_T172_FACEBOOK_FETCH_9f261c";
+
+    const result = await checkFacebookAuthLive({
+      env: { VITE_SUPABASE_URL: "https://bwgfslmxmueyglpumkbf.supabase.co" },
+      probeImpl: async () => { throw new Error(canary); },
+      fetchImpl: async () => { throw new Error(canary); },
+    });
+
+    expect(JSON.stringify(result)).not.toContain(canary);
+    expect(result).toMatchObject({ status: "UNVERIFIED", exitCode: 0 });
+  });
+
   it("detects the Meta invalid-scope email error before public exposure", async () => {
     const { detectFacebookOAuthProblem } = loadFacebookAuthLive();
 

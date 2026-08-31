@@ -111,12 +111,14 @@ export function StorageErrorBanner() {
     const showRetryableStatus = (
       event: CustomEvent<RetryableStatusEvent>,
       title: string,
-      malformedEvent: string,
+      _malformedEvent:
+        | "[StorageErrorBanner] Ignored malformed push revocation event"
+        | "[StorageErrorBanner] Ignored malformed reminder reconcile event",
       key: string,
     ) => {
       const { message, retryLabel, retry } = event.detail;
       if (!message || !retryLabel || typeof retry !== "function") {
-        logger.warn(malformedEvent);
+        logger.warn("[StorageErrorBanner] Ignored malformed retry event");
         return;
       }
 

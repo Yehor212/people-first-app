@@ -2023,11 +2023,19 @@ function analyzeProductionTextFile(root, relativePath, config, findings, reportP
   }
 }
 
+function maskStoredRoutineBodies(text) {
+  const storedRoutine =
+    /\bcreate\s+(?:or\s+replace\s+)?(?:function|procedure)\b[\s\S]*?\bas\s+(\$[a-zA-Z_][a-zA-Z0-9_]*\$|\$\$)[\s\S]*?\1\s*;/gi;
+  return text.replace(storedRoutine, (block) => block.replace(/[^\n]/g, " "));
+}
+
 function analyzeSqlFile(root, relativePath, config, findings, reportPath) {
   if (!reportPath(relativePath) || classifyPath(relativePath, config) === "test") return;
   const text = readText(root, relativePath, config.limits.maxSourceFileBytes);
   if (text === null) return;
-  const withoutComments = text.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  const withoutComments = maskStoredRoutineBodies(
+    text.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ")
+  );
   const userDataTables = new Set(
     config.userDataTables.map((table) => table.split(".").pop().toLowerCase())
   );

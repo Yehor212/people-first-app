@@ -10,11 +10,20 @@ import type {
   JournalSpace,
   JournalSpaceCapture,
 } from "@/features/journal/types";
+import type {
+  AutomationHistoryMarker,
+  AutomationRemoteEvent,
+  AutomationTransactionTableRow,
+} from "@/features/automation/types";
 import { logger } from "@/lib/logger";
 import { SK, SSK } from "@/lib/storageKeys";
 import { storageKeys, storageRemove } from "@/lib/safeJson";
 import { resetAccountBoundaryRuntimeState } from "@/storage/accountBoundaryRuntime";
 import { isLocalOnlySettingKey } from "@/storage/sync/settingSyncPolicy";
+import {
+  AUTOMATION_PREFERENCE_SETTING_KEY,
+  AUTOMATION_SOURCE_RESCAN_SETTING_KEY,
+} from "@/features/automation/types";
 
 /**
  * Offline queue action stored in IndexedDB
@@ -46,6 +55,8 @@ export interface DeadLetterItem {
   failedAt: number;
 }
 
+export const ZENFLOW_SCHEMA_VERSION = 11;
+
 // Определяем схему базы данных
 export class ZenFlowDB extends Dexie {
   moods!: Table<MoodEntry, string>;
@@ -63,6 +74,9 @@ export class ZenFlowDB extends Dexie {
   journalPracticeSessions!: Table<JournalPracticeSession, string>;
   journalEntryLinks!: Table<JournalEntryLink, string>;
   journalSpaceCaptures!: Table<JournalSpaceCapture, string>;
+  automationTransactions!: Table<AutomationTransactionTableRow, string>;
+  automationHistoryMarkers!: Table<AutomationHistoryMarker, string>;
+  automationRemoteEvents!: Table<AutomationRemoteEvent, string>;
 
   constructor() {
     super("ZenFlowDB");
@@ -199,6 +213,32 @@ export class ZenFlowDB extends Dexie {
       journalEntryLinks: "id, entryId, targetType, targetId, createdAt",
       journalSpaceCaptures: "id, spaceId, date, createdAt, updatedAt",
     });
+
+    // Version 11: account-bound connected-record intent, encrypted history,
+    // authoritative replay order and purge-generation fencing.
+    this.version(ZENFLOW_SCHEMA_VERSION).stores({
+      moods: "id, timestamp, date, valence, updatedAt",
+      habits: "id, createdAt, type",
+      focusSessions: "id, startTime, date, updatedAt",
+      gratitudeEntries: "id, timestamp, date, updatedAt",
+      settings: "key",
+      offlineQueue: "id, type, entityId, timestamp",
+      deadLetterQueue: "id, type, entityId, failedAt",
+      journalEntries: "id, date, createdAt, updatedAt",
+      journalPhotos: "id, entryId, createdAt",
+      journalAudio: "id, entryId, createdAt",
+      journalHubPreferences: "id, updatedAt",
+      journalSpaces: "id, sortOrder, updatedAt",
+      journalPracticeSessions: "id, practiceId, entryId, startedAt, completedAt",
+      journalEntryLinks: "id, entryId, targetType, targetId, createdAt",
+      journalSpaceCaptures: "id, spaceId, date, createdAt, updatedAt",
+      automationTransactions:
+        "id, ownerUserId, kind, status, sourceKey, createdAt, serverSequence, [ownerUserId+sourceKey], [ownerUserId+status], [ownerUserId+serverSequence]",
+      automationHistoryMarkers:
+        "ownerUserId, historyGeneration, snapshotSequence, lastAppliedServerSequence, updatedAt",
+      automationRemoteEvents:
+        "id, ownerUserId, syncEventId, syncEventSequence, transactionId, historyGeneration, serverSequence, [ownerUserId+historyGeneration+serverSequence]",
+    });
   }
 }
 
@@ -216,6 +256,9 @@ export const journalSpacesRepo = db.journalSpaces;
 export const journalPracticeSessionsRepo = db.journalPracticeSessions;
 export const journalEntryLinksRepo = db.journalEntryLinks;
 export const journalSpaceCapturesRepo = db.journalSpaceCaptures;
+export const automationTransactionsRepo = db.automationTransactions;
+export const automationHistoryMarkersRepo = db.automationHistoryMarkers;
+export const automationRemoteEventsRepo = db.automationRemoteEvents;
 
 /**
  * User-specific settings keys stored in db.settings IndexedDB table.
@@ -247,6 +290,8 @@ const USER_SETTINGS_KEYS = [
  * can otherwise upload them under the next active Supabase session.
  */
 const USER_BOUNDARY_ACCOUNT_STORAGE_KEYS = [
+  AUTOMATION_PREFERENCE_SETTING_KEY,
+  AUTOMATION_SOURCE_RESCAN_SETTING_KEY,
   SK.TASKS,
   SK.TASK_MOMENTUM,
   SK.INNER_WORLD,
@@ -271,6 +316,7 @@ const USER_BOUNDARY_ACCOUNT_STORAGE_KEYS = [
   SK.DAILY_SURPRISE_SEEN,
   SK.LAST_SHOWN_STREAK,
   SK.TIMER_STATE,
+  SK.FOCUS_PENDING_COMMIT,
   SK.JOURNAL_PASSWORD,
   SK.JOURNAL_VAULT_KEY,
   SK.JOURNAL_PASSWORD_COOLDOWN,
@@ -353,6 +399,7 @@ const USER_BOUNDARY_LOCAL_ONLY_KEYS = [
 ];
 
 const USER_BOUNDARY_SESSION_STORAGE_KEYS = [
+  SSK.RUNTIME_PERF_GUARD,
   SSK.MOOD_ENTRY_DRAFT,
   SSK.SPOTIFY_TOKENS,
   SSK.SPOTIFY_PKCE_VERIFIER,
@@ -402,6 +449,9 @@ export const clearLocalUserData = async (
         db.journalPracticeSessions,
         db.journalEntryLinks,
         db.journalSpaceCaptures,
+        db.automationTransactions,
+        db.automationHistoryMarkers,
+        db.automationRemoteEvents,
         db.offlineQueue,
         db.deadLetterQueue,
         db.settings,
@@ -425,6 +475,9 @@ export const clearLocalUserData = async (
         await db.journalPracticeSessions.clear();
         await db.journalEntryLinks.clear();
         await db.journalSpaceCaptures.clear();
+        await db.automationTransactions.clear();
+        await db.automationHistoryMarkers.clear();
+        await db.automationRemoteEvents.clear();
         await db.offlineQueue.clear();
         await db.deadLetterQueue.clear();
         // Delete account-bound settings and local-only sync state, including

@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    tauri::Builder::default()
+    if tauri::Builder::default()
         .run(tauri::generate_context!())
-        .expect("error while running ZenFlow desktop");
+        .is_err()
+    {
+        eprintln!("ZF_TAURI_RUNTIME_FAILED");
+        std::process::exit(1);
+    }
 }
-

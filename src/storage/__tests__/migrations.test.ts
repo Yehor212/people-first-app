@@ -10,6 +10,9 @@ const {
   mockHabitsCount,
   mockFocusSessionsCount,
   mockGratitudeEntriesCount,
+  mockAutomationTransactionsCount,
+  mockAutomationHistoryMarkersCount,
+  mockAutomationRemoteEventsCount,
 } = vi.hoisted(() => ({
   mockSettingsToArray: vi.fn(() => Promise.resolve([] as any[])),
   mockSettingsPut: vi.fn(),
@@ -18,6 +21,9 @@ const {
   mockHabitsCount: vi.fn(() => Promise.resolve(0)),
   mockFocusSessionsCount: vi.fn(() => Promise.resolve(0)),
   mockGratitudeEntriesCount: vi.fn(() => Promise.resolve(0)),
+  mockAutomationTransactionsCount: vi.fn(() => Promise.resolve(0)),
+  mockAutomationHistoryMarkersCount: vi.fn(() => Promise.resolve(0)),
+  mockAutomationRemoteEventsCount: vi.fn(() => Promise.resolve(0)),
 }));
 
 vi.mock('@/storage/db', () => ({
@@ -27,6 +33,9 @@ vi.mock('@/storage/db', () => ({
     habits: { count: mockHabitsCount },
     focusSessions: { count: mockFocusSessionsCount },
     gratitudeEntries: { count: mockGratitudeEntriesCount },
+    automationTransactions: { count: mockAutomationTransactionsCount },
+    automationHistoryMarkers: { count: mockAutomationHistoryMarkersCount },
+    automationRemoteEvents: { count: mockAutomationRemoteEventsCount },
   },
 }));
 
@@ -110,10 +119,21 @@ describe('validateDataIntegrity', () => {
     expect(mockFocusSessionsCount).toHaveBeenCalled();
     expect(mockGratitudeEntriesCount).toHaveBeenCalled();
     expect(mockSettingsCount).toHaveBeenCalled();
+    expect(mockAutomationTransactionsCount).toHaveBeenCalled();
+    expect(mockAutomationHistoryMarkersCount).toHaveBeenCalled();
+    expect(mockAutomationRemoteEventsCount).toHaveBeenCalled();
   });
 
   it('returns false when a table throws an error', async () => {
     mockHabitsCount.mockRejectedValue(new Error('Table corrupted'));
+
+    const result = await validateDataIntegrity();
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false when a v11 automation store is inaccessible', async () => {
+    mockAutomationHistoryMarkersCount.mockRejectedValue(new Error('v11 store unavailable'));
 
     const result = await validateDataIntegrity();
 

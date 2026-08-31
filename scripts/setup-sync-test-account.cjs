@@ -17,6 +17,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { spawnSync } = require("node:child_process");
 const { createClient } = require("@supabase/supabase-js");
+const { evidenceFailureCode } = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const ROOT = path.join(__dirname, "..");
 const APPLY = process.env.ZENFLOW_SYNC_TEST_ACCOUNT_APPLY === "true";
@@ -58,7 +59,7 @@ function log(status, message) {
 
 function fail(message, error) {
   console.error(`[sync-test-account] FAIL - ${message}`);
-  if (error) console.error(error.message || String(error));
+  if (error) console.error(`[sync-test-account] code=${evidenceFailureCode(error)}`);
   process.exit(1);
 }
 
@@ -109,8 +110,7 @@ function setGitHubSecret(repo, name, value) {
     input: value,
   });
   if (result.status !== 0) {
-    const detail = [result.stderr, result.stdout].filter(Boolean).join(" ").trim();
-    fail(`could not set GitHub secret ${name}${detail ? `: ${detail}` : ""}`);
+    fail(`could not set GitHub secret ${name}`, result.error || new Error("secret-write-failed"));
   }
 }
 
@@ -153,9 +153,8 @@ async function runAccountSmoke() {
     },
   });
 
-  if (smoke.stdout) process.stdout.write(smoke.stdout);
-  if (smoke.stderr) process.stderr.write(smoke.stderr);
-  if (smoke.status !== 0) fail("same-account sync smoke failed");
+  if (smoke.status !== 0) fail("same-account sync smoke failed", smoke.error || new Error("sync-smoke-failed"));
+  log("PASS", "same-account sync smoke completed");
 }
 
 async function main() {
@@ -212,7 +211,7 @@ async function main() {
     if (!repo) fail("could not resolve GitHub repository for secret write");
     setGitHubSecret(repo, "ZENFLOW_SYNC_TEST_EMAIL", email);
     setGitHubSecret(repo, "ZENFLOW_SYNC_TEST_PASSWORD", password);
-    log("PASS", `GitHub secret names updated for ${repo}`);
+    log("PASS", "GitHub secret names updated for the configured repository");
   } else if (!providedPassword) {
     log(
       "UNVERIFIED",

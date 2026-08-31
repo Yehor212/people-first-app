@@ -1289,7 +1289,7 @@ describe("production data integrity checker", () => {
 
   it("hashes raw bundle bytes without lossy UTF-8 string coercion", () => {
     expect(CORE.PDI_TEST_API.sha256Bytes(Buffer.from([0x80]))).not.toBe(
-      CORE.PDI_TEST_API.sha256Bytes(Buffer.from([0x81])),
+      CORE.PDI_TEST_API.sha256Bytes(Buffer.from([0x81]))
     );
   });
 
@@ -1324,6 +1324,29 @@ describe("production data integrity checker", () => {
       "supabase/migrations/20260709000010_user_write.sql": sql,
     });
     expectRule(run(root), "PDI008");
+  });
+
+  it("allows owner-bound operational DML inside a stored function", () => {
+    const root = fixture({
+      "src/main.ts": "export {};",
+      "supabase/migrations/20260709000020_commit_mood_rpc.sql": [
+        "CREATE OR REPLACE FUNCTION public.commit_mood(p_mood text)",
+        "RETURNS void",
+        "LANGUAGE plpgsql",
+        "SECURITY DEFINER",
+        "SET search_path = ''",
+        "AS $commit_mood$",
+        "BEGIN",
+        "  INSERT INTO public.moods (id, user_id, mood)",
+        "  VALUES (extensions.gen_random_uuid(), auth.uid(), p_mood);",
+        "END;",
+        "$commit_mood$;",
+      ].join("\n"),
+    });
+
+    const result = run(root);
+    expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+    expect(result.report.findings.some((finding) => finding.ruleId === "PDI008")).toBe(false);
   });
 
   it("rejects semantic config weakening and broad exclusions", () => {

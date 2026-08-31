@@ -57,13 +57,18 @@ interface AttributedMetric {
   attribution?: unknown;
 }
 
+type VitalsInspectionMetric = Pick<
+  AttributedMetric,
+  "name" | "value" | "rating" | "delta" | "navigationType"
+>;
+
 /**
  * Store the last-seen metric for devtools inspection. Cumulative — overwrites
  * on subsequent reports (e.g. CLS can report multiple times). Attached to
  * window so developers can inspect `window.__zenflowVitals` in DevTools.
  */
 interface VitalsInspection {
-  [metric: string]: AttributedMetric;
+  [metric: string]: VitalsInspectionMetric;
 }
 
 declare global {
@@ -93,8 +98,34 @@ function logMetric(metric: AttributedMetric): void {
     `[CWV] %c${metric.name}%c  ${formatted}  (${metric.rating})`,
     style,
     "color: inherit;",
-    metric.attribution ?? {},
   );
+}
+
+const METRIC_NAMES = new Set(["CLS", "FCP", "INP", "LCP", "TTFB"]);
+const METRIC_RATINGS = new Set(["good", "needs-improvement", "poor"]);
+const NAVIGATION_TYPES = new Set([
+  "back-forward",
+  "back-forward-cache",
+  "navigate",
+  "prerender",
+  "reload",
+  "restore",
+]);
+
+function safeFiniteNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function sanitizeMetric(metric: AttributedMetric): VitalsInspectionMetric {
+  return {
+    name: METRIC_NAMES.has(metric.name) ? metric.name : "unknown",
+    value: safeFiniteNumber(metric.value),
+    rating: METRIC_RATINGS.has(metric.rating) ? metric.rating : "unknown",
+    delta: safeFiniteNumber(metric.delta),
+    navigationType: NAVIGATION_TYPES.has(metric.navigationType)
+      ? metric.navigationType
+      : "unknown",
+  };
 }
 
 /**
@@ -115,8 +146,9 @@ export async function initWebVitalsDev(): Promise<void> {
     const store: VitalsInspection = (window.__zenflowVitals ??= {});
 
     const onMetric = (metric: AttributedMetric): void => {
-      store[metric.name] = metric;
-      logMetric(metric);
+      const safeMetric = sanitizeMetric(metric);
+      store[safeMetric.name] = safeMetric;
+      logMetric(safeMetric as AttributedMetric);
     };
 
     mod.onCLS(onMetric);
@@ -124,8 +156,8 @@ export async function initWebVitalsDev(): Promise<void> {
     mod.onINP(onMetric);
     mod.onLCP(onMetric);
     mod.onTTFB(onMetric);
-  } catch (err) {
+  } catch {
     // eslint-disable-next-line no-console
-    console.warn("[CWV] web-vitals load failed (non-fatal):", err);
+    console.warn("ZF_CWV_LOAD_FAILED");
   }
 }

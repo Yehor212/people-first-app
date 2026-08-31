@@ -514,7 +514,7 @@ export function updateAllQuestsProgress(action: {
 
     return newlyCompleted;
   } catch (error) {
-    logger.error("Failed to update quests progress:", error);
+    logger.error("[QuestsSync] Failed to update quests progress:", error);
     return [];
   }
 }

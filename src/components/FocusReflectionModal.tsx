@@ -17,7 +17,7 @@ import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 interface FocusReflectionModalProps {
   reflectionValue: number | null;
   onSelectValue: (value: number) => void;
-  onSave: (value: number | null) => void;
+  onSave: (value: number | null) => Promise<boolean>;
   onDismiss: () => void;
   onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal expansion
 }
@@ -132,10 +132,10 @@ export function FocusReflectionModal({
               {t.focusReflectionSkip}
             </motion.button>
             <motion.button
-              onClick={() => {
+              onClick={async () => {
                 if (isSaving) return;
                 setIsSaving(true);
-                onSave(reflectionValue);
+                if (!(await onSave(reflectionValue))) setIsSaving(false);
               }}
               disabled={isSaving}
               className={cn(
@@ -154,11 +154,11 @@ export function FocusReflectionModal({
           {onExpandToJournal && (
             <button
               disabled={isSaving}
-              onClick={() => {
+              onClick={async () => {
                 if (isSaving) return;
                 setIsSaving(true);
-                onSave(reflectionValue);
-                onExpandToJournal();
+                if (await onSave(reflectionValue)) onExpandToJournal();
+                else setIsSaving(false);
               }}
               className="mt-3 flex min-h-[44px] h-auto w-full items-center justify-center gap-2 whitespace-normal break-words hyphens-manual rounded-xl py-2.5 text-sm font-medium text-violet-600 hover:bg-violet-50 motion-safe:transition-colors dark:text-violet-400 dark:hover:bg-violet-950/30"
             >

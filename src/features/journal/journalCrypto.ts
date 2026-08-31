@@ -6,13 +6,19 @@ const MAX_PBKDF2_ITERATIONS = DEFAULT_PBKDF2_ITERATIONS;
 const SALT_BYTES = 16;
 const IV_BYTES = 12;
 const MIN_CIPHERTEXT_BYTES = 16;
+const MAX_ADDITIONAL_DATA_BYTES = 2_048;
 
 export const JOURNAL_CONTENT_ENCRYPTION_PREFIX = "zenflow:journal-content:v1:";
 
 type JournalContentEncryptionOptions = {
   iterations?: number;
+  additionalData?: string;
   unsafeTestOnlyIvBytes?: Uint8Array;
   unsafeTestOnlySaltBytes?: Uint8Array;
+};
+
+type JournalContentDecryptionOptions = {
+  additionalData?: string;
 };
 
 type JournalContentEnvelope = {
@@ -70,6 +76,18 @@ function normalizeIterations(iterations: number | undefined): number {
     throw new JournalContentCryptoError("Invalid journal content encryption iteration count");
   }
   return value;
+}
+
+function normalizeAdditionalData(value: string | undefined): ArrayBuffer | undefined {
+  if (value === undefined) return undefined;
+  if (value.length === 0) {
+    throw new JournalContentCryptoError("Journal content associated data cannot be empty");
+  }
+  const bytes = new TextEncoder().encode(value);
+  if (bytes.byteLength > MAX_ADDITIONAL_DATA_BYTES) {
+    throw new JournalContentCryptoError("Journal content associated data is too large");
+  }
+  return toArrayBuffer(bytes);
 }
 
 function requireEnvelopeBytes(value: string, field: "salt" | "iv" | "ciphertext"): Uint8Array {
@@ -168,8 +186,13 @@ export async function encryptJournalContent(
   }
 
   const key = await deriveContentKey(password, saltBytes, iterations);
+  const additionalData = normalizeAdditionalData(options.additionalData);
   const ciphertext = await getWebCrypto().subtle.encrypt(
-    { name: JOURNAL_CONTENT_ENCRYPTION_ALG, iv: toArrayBuffer(ivBytes) },
+    {
+      name: JOURNAL_CONTENT_ENCRYPTION_ALG,
+      iv: toArrayBuffer(ivBytes),
+      ...(additionalData ? { additionalData } : {}),
+    },
     key,
     new TextEncoder().encode(plaintext),
   );
@@ -185,16 +208,25 @@ export async function encryptJournalContent(
   });
 }
 
-export async function decryptJournalContent(encryptedContent: string, password: string): Promise<string> {
+export async function decryptJournalContent(
+  encryptedContent: string,
+  password: string,
+  options: JournalContentDecryptionOptions = {},
+): Promise<string> {
   const envelope = parseEnvelope(encryptedContent);
   const saltBytes = requireEnvelopeBytes(envelope.salt, "salt");
   const ivBytes = requireEnvelopeBytes(envelope.iv, "iv");
   const ciphertextBytes = requireEnvelopeBytes(envelope.ciphertext, "ciphertext");
   const key = await deriveContentKey(password, saltBytes, envelope.iterations);
+  const additionalData = normalizeAdditionalData(options.additionalData);
 
   try {
     const plaintext = await getWebCrypto().subtle.decrypt(
-      { name: JOURNAL_CONTENT_ENCRYPTION_ALG, iv: toArrayBuffer(ivBytes) },
+      {
+        name: JOURNAL_CONTENT_ENCRYPTION_ALG,
+        iv: toArrayBuffer(ivBytes),
+        ...(additionalData ? { additionalData } : {}),
+      },
       key,
       toArrayBuffer(ciphertextBytes),
     );

@@ -4,6 +4,10 @@ const { stdin, stdout } = require("node:process");
 const { applyAppleAuthLive } = require("./apply-apple-auth-live.cjs");
 const { checkAppleAuthLive } = require("./check-apple-auth-live.cjs");
 const { checkAppleAuthPublic } = require("./check-apple-auth-public.cjs");
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceStatus,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const BASE_PROMPTS = [
   "SUPABASE_ACCESS_TOKEN",
@@ -18,14 +22,27 @@ const SIGNING_INPUT_PROMPTS = [
   "SUPABASE_APPLE_KEY_ID",
   "SUPABASE_APPLE_PRIVATE_KEY_PATH",
 ];
-const SECRET_ENV_KEYS = [
-  ...BASE_PROMPTS,
-  APPLE_CLIENT_SECRET_PROMPT,
-  ...SIGNING_INPUT_PROMPTS,
-];
-
 function writeLine(write, status, message) {
   write("[apple-auth-activate] " + status + " " + message);
+}
+
+function appleEvidenceMessage(stage, status) {
+  if (stage === "apply") {
+    if (status === "PASS") return "Hosted Supabase Apple Auth applied.";
+    if (status === "FAIL") return "Hosted Supabase Apple Auth apply failed.";
+    return "Hosted Supabase Apple Auth apply was not verified.";
+  }
+  if (stage === "public") {
+    if (status === "PASS") return "Public Supabase Auth settings expose Apple provider.";
+    if (status === "FAIL") return "Public Apple Auth verification failed.";
+    return "Public Apple Auth verification was incomplete.";
+  }
+  if (stage === "live") {
+    if (status === "PASS") return "Hosted Supabase Apple Auth is enabled with required redirects.";
+    if (status === "FAIL") return "Hosted Apple Auth verification failed.";
+    return "Hosted Apple Auth verification was incomplete.";
+  }
+  return "Apple Auth evidence was not verified.";
 }
 
 function hasValue(value) {
@@ -200,19 +217,13 @@ async function activateAppleAuthLiveInteractive({
   await collectAppleSecretSource({ nextEnv, promptedValues, prompt, write });
 
   nextEnv.ZENFLOW_APPLE_AUTH_APPLY_CONFIRM = "true";
-  const secretValues = [
-    ...promptedValues,
-    ...SECRET_ENV_KEYS.map((name) => nextEnv[name]).filter(hasValue),
-    nextEnv.SUPABASE_AUTH_EXTERNAL_APPLE_SECRET,
-    nextEnv.SUPABASE_APPLE_PRIVATE_KEY,
-  ];
   const result = await apply({ env: nextEnv, rootDir });
-  const redactionList = Array.from(new Set(secretValues.filter(hasValue)));
-  const safeMessage = redactSecrets(result.message, redactionList);
-  writeLine(write, result.status, safeMessage);
+  const applyStatus = sanitizeEvidenceStatus(result.status);
+  const safeMessage = appleEvidenceMessage("apply", applyStatus);
+  writeLine(write, applyStatus, safeMessage);
 
-  if (result.status !== "PASS" || result.exitCode !== 0) {
-    return { ...result, message: safeMessage };
+  if (applyStatus !== "PASS" || result.exitCode !== 0) {
+    return { status: applyStatus, message: safeMessage, exitCode: applyStatus === "FAIL" ? 1 : 2 };
   }
 
   writeLine(write, "INFO", "Verifying hosted Apple Auth after apply.");
@@ -234,16 +245,18 @@ async function activateAppleAuthLiveInteractive({
 
   const publicResult = await checkPublic({ env: verificationEnv, rootDir });
   const liveResult = await checkLive({ env: verificationEnv, rootDir });
-  const safePublicMessage = redactSecrets(publicResult.message, redactionList);
-  const safeLiveMessage = redactSecrets(liveResult.message, redactionList);
-  writeLine(write, publicResult.status, safePublicMessage);
-  writeLine(write, liveResult.status, safeLiveMessage);
+  const publicStatus = sanitizeEvidenceStatus(publicResult.status);
+  const liveStatus = sanitizeEvidenceStatus(liveResult.status);
+  const safePublicMessage = appleEvidenceMessage("public", publicStatus);
+  const safeLiveMessage = appleEvidenceMessage("live", liveStatus);
+  writeLine(write, publicStatus, safePublicMessage);
+  writeLine(write, liveStatus, safeLiveMessage);
 
-  if (publicResult.status === "PASS" && liveResult.status === "PASS") {
+  if (publicStatus === "PASS" && liveStatus === "PASS") {
     return { status: "PASS", message: "Hosted Supabase Apple Auth applied and verified.", exitCode: 0 };
   }
 
-  if (publicResult.status === "FAIL" || liveResult.status === "FAIL") {
+  if (publicStatus === "FAIL" || liveStatus === "FAIL") {
     return {
       status: "FAIL",
       message: "Hosted Supabase Apple Auth applied but verification failed.",
@@ -263,7 +276,7 @@ async function main() {
     const result = await activateAppleAuthLiveInteractive();
     process.exitCode = result.exitCode;
   } catch (error) {
-    writeLine(console.log, "UNVERIFIED", error instanceof Error ? error.message : "Apple Auth activation failed.");
+    writeLine(console.log, "UNVERIFIED", evidenceFailureCode(error));
     process.exitCode = 2;
   }
 }

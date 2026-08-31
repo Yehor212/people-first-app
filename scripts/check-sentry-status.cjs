@@ -11,6 +11,7 @@
 
 const { spawnSync } = require("node:child_process");
 const path = require("node:path");
+const { evidenceFailureCode } = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const ROOT = path.join(__dirname, "..");
 
@@ -59,14 +60,17 @@ function runSentryStatus({ env = process.env, runner = run } = {}) {
   let hardFailure = false;
 
   for (const check of CHECKS) {
-    const result = runner(process.execPath, [check.script], { cwd: ROOT, env: childEnv });
+    let result;
+    try {
+      result = runner(process.execPath, [check.script], { cwd: ROOT, env: childEnv });
+    } catch (error) {
+      result = { status: 1, stdout: "", stderr: "", error };
+    }
     const stdout = result.stdout || "";
     const stderr = result.stderr || "";
-    appendBlock(stdoutParts, stdout);
-    appendBlock(stderrParts, stderr);
-
-    if (result.error?.message) {
-      appendBlock(stderrParts, "[sentry-status] " + check.key + " launch error: " + result.error.message);
+    if (result.error) {
+      appendBlock(stderrParts, "[sentry-status] " + check.key + " launch-error=" + evidenceFailureCode(result.error));
+      hardFailure = true;
     }
 
     const status = extractStatus(stdout + "\n" + stderr);

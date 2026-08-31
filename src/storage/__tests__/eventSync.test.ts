@@ -29,12 +29,17 @@ const mocks = vi.hoisted(() => ({
   journalAudioBulkPut: vi.fn(),
   journalAudioBulkDelete: vi.fn(),
   journalAudioMetadataIn: vi.fn(),
+  automationRemoteEventsWhere: vi.fn(),
+  automationRemoteEventsEquals: vi.fn(),
+  automationRemoteEventsCount: vi.fn(),
   runJournalSecurityWriteLock: vi.fn(),
   triggerDataRefresh: vi.fn(),
   broadcastChange: vi.fn(),
+  signalAutomationSourceReady: vi.fn(),
   enqueue: vi.fn(),
   storageRemove: vi.fn(),
   localOwnerUserId: "user-1",
+  syncLastSeq: 10,
   supabase: null as { from: ReturnType<typeof vi.fn> } | null,
 }));
 
@@ -59,6 +64,10 @@ vi.mock("@/hooks/useIndexedDB", () => ({
 
 vi.mock("@/lib/syncBroadcast", () => ({
   broadcastChange: mocks.broadcastChange,
+}));
+
+vi.mock("@/features/automation/automationRuntimeSignals", () => ({
+  signalAutomationSourceReady: mocks.signalAutomationSourceReady,
 }));
 
 vi.mock("@/lib/offlineQueue", () => ({
@@ -98,6 +107,9 @@ vi.mock("@/storage/db", () => ({
       get: mocks.journalAudioGet,
       bulkPut: mocks.journalAudioBulkPut,
       bulkDelete: mocks.journalAudioBulkDelete,
+    },
+    automationRemoteEvents: {
+      where: mocks.automationRemoteEventsWhere,
     },
     table: mocks.table,
     transaction: mocks.transaction,
@@ -144,6 +156,7 @@ describe("eventSync auth guards", () => {
     vi.clearAllMocks();
     mocks.storageRemove.mockReturnValue(true);
     mocks.localOwnerUserId = "user-1";
+    mocks.syncLastSeq = 10;
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.limit.mockResolvedValue({ data: [], error: null });
     mocks.single.mockResolvedValue({ data: { last_seq: 42 }, error: null });
@@ -166,11 +179,15 @@ describe("eventSync auth guards", () => {
       error: null,
     });
     mocks.settingsGet.mockImplementation(async (key: string) => {
-      if (key === "sync-last-seq") return { key, value: 10 };
+      if (key === "sync-last-seq") return { key, value: mocks.syncLastSeq };
       if (key === "zenflow-device-id") return { key, value: "current-device" };
       return undefined;
     });
-    mocks.settingsPut.mockResolvedValue(undefined);
+    mocks.settingsPut.mockImplementation(async (record: { key: string; value: unknown }) => {
+      if (record.key === "sync-last-seq" && typeof record.value === "number") {
+        mocks.syncLastSeq = record.value;
+      }
+    });
     mocks.settingsDelete.mockResolvedValue(undefined);
     mocks.habitTableGet.mockResolvedValue(undefined);
     mocks.habitTablePut.mockResolvedValue(undefined);
@@ -189,6 +206,13 @@ describe("eventSync auth guards", () => {
     mocks.journalAudioBulkPut.mockResolvedValue(undefined);
     mocks.journalAudioBulkDelete.mockResolvedValue(undefined);
     mocks.journalAudioMetadataIn.mockResolvedValue({ data: [], error: null });
+    mocks.automationRemoteEventsWhere.mockReturnValue({
+      equals: mocks.automationRemoteEventsEquals,
+    });
+    mocks.automationRemoteEventsEquals.mockReturnValue({
+      count: mocks.automationRemoteEventsCount,
+    });
+    mocks.automationRemoteEventsCount.mockResolvedValue(0);
     mocks.runJournalSecurityWriteLock.mockImplementation(
       async (operation: () => Promise<unknown>) => operation()
     );
@@ -455,6 +479,295 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 13 });
   });
 
+  it("merges per-date local truth into a later full habit event", async () => {
+    const localEntry = {
+      value: ENTRY.YES_MANUAL,
+      loggedAt: "2026-05-11T08:00:00.000Z",
+      source: "quickTap",
+    };
+    const remoteEntry = {
+      value: ENTRY.YES_MANUAL,
+      loggedAt: "2026-05-12T08:00:00.000Z",
+      source: "calendar",
+    };
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-merge",
+      name: "Local metadata",
+      habitType: "boolean",
+      entries: { "2026-05-11": localEntry },
+      updatedAt: "2026-05-11T08:00:00.000Z",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-habit-merge",
+          seq: 14,
+          entity_type: "habit",
+          entity_id: "habit-merge",
+          op: "upsert",
+          payload: {
+            id: "habit-merge",
+            name: "Remote metadata",
+            habitType: "boolean",
+            entries: { "2026-05-12": remoteEntry },
+            updatedAt: "2026-05-12T09:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-12T09:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "habit-merge",
+        name: "Remote metadata",
+        entries: {
+          "2026-05-11": localEntry,
+          "2026-05-12": remoteEntry,
+        },
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
+  });
+
+  it("keeps disjoint remote entries when the local habit aggregate is newer", async () => {
+    const newerLocalEntry = {
+      value: ENTRY.YES_MANUAL,
+      loggedAt: "2026-05-12T11:00:00.000Z",
+      source: "quickTap",
+    };
+    const remoteDisjointEntry = {
+      value: ENTRY.YES_MANUAL,
+      loggedAt: "2026-05-11T09:00:00.000Z",
+      source: "calendar",
+    };
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-local-newer",
+      name: "Local newer metadata",
+      habitType: "boolean",
+      entries: { "2026-05-12": newerLocalEntry },
+      updatedAt: "2026-05-12T11:00:00.000Z",
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-habit-local-newer",
+          seq: 15,
+          entity_type: "habit",
+          entity_id: "habit-local-newer",
+          op: "upsert",
+          payload: {
+            id: "habit-local-newer",
+            name: "Remote older metadata",
+            habitType: "boolean",
+            entries: { "2026-05-11": remoteDisjointEntry },
+            updatedAt: "2026-05-11T10:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-11T10:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "habit-local-newer",
+        name: "Local newer metadata",
+        entries: {
+          "2026-05-11": remoteDisjointEntry,
+          "2026-05-12": newerLocalEntry,
+        },
+        updatedAt: "2026-05-12T11:00:00.000Z",
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
+  });
+
+  it("keeps the newer same-date habit entry when a later full event carries stale entry bytes", async () => {
+    const newerLocalEntry = {
+      value: 3,
+      loggedAt: "2026-05-12T10:00:00.000Z",
+      source: "quickTap",
+    };
+    const staleRemoteEntry = {
+      value: ENTRY.YES_MANUAL,
+      loggedAt: "2026-05-12T08:00:00.000Z",
+      source: "calendar",
+    };
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-same-date",
+      name: "Local metadata",
+      habitType: "boolean",
+      entries: { "2026-05-12": newerLocalEntry },
+      updatedAt: "2026-05-12T10:00:00.000Z",
+    });
+
+    await applyDelta(
+      [
+        {
+          id: "event-habit-same-date",
+          seq: 15,
+          entity_type: "habit",
+          entity_id: "habit-same-date",
+          op: "upsert",
+          payload: {
+            id: "habit-same-date",
+            name: "Remote newer metadata",
+            habitType: "boolean",
+            entries: { "2026-05-12": staleRemoteEntry },
+            updatedAt: "2026-05-12T11:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-12T11:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(mocks.habitTablePut).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Remote newer metadata",
+        entries: { "2026-05-12": newerLocalEntry },
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 15 });
+  });
+
+  it("uses server order to converge equal-timestamp same-date habit edits", async () => {
+    const loggedAt = "2026-05-12T10:00:00.000Z";
+    const firstEntry = { value: 1, loggedAt, source: "quickTap" };
+    const finalEntry = { value: 2, loggedAt, source: "calendar" };
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-equal-time",
+      name: "Habit",
+      habitType: "numeric",
+      entries: { "2026-05-12": firstEntry },
+      updatedAt: loggedAt,
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-habit-equal-time-own",
+          seq: 16,
+          entity_type: "habit",
+          entity_id: "habit-equal-time",
+          op: "upsert",
+          payload: {
+            id: "habit-equal-time",
+            name: "Habit",
+            habitType: "numeric",
+            entries: { "2026-05-12": firstEntry },
+            updatedAt: loggedAt,
+          },
+          device_id: "current-device",
+          created_at: loggedAt,
+        },
+        {
+          id: "event-habit-equal-time-final",
+          seq: 17,
+          entity_type: "habit",
+          entity_id: "habit-equal-time",
+          op: "upsert",
+          payload: {
+            id: "habit-equal-time",
+            name: "Habit",
+            habitType: "numeric",
+            entries: { "2026-05-12": finalEntry },
+            updatedAt: loggedAt,
+          },
+          device_id: "remote-device",
+          created_at: loggedAt,
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(2);
+    expect(mocks.habitTablePut).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: "habit-equal-time",
+        entries: { "2026-05-12": finalEntry },
+      })
+    );
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 17 });
+  });
+
+  it("does not apply or regress the cursor for a delayed stale batch", async () => {
+    mocks.syncLastSeq = 11;
+    mocks.settingsGet.mockImplementation(async (key: string) => {
+      if (key === "sync-last-seq") return { key, value: mocks.syncLastSeq };
+      if (key === "zenflow-device-id") return { key, value: "current-device" };
+      return undefined;
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-stale-batch",
+          seq: 10,
+          entity_type: "setting",
+          entity_id: "mood-reminder-enabled",
+          op: "upsert",
+          payload: {
+            key: "mood-reminder-enabled",
+            value: false,
+            updatedAt: "2026-05-12T09:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-05-12T09:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(mocks.settingsPut).not.toHaveBeenCalledWith(
+      expect.objectContaining({ key: "mood-reminder-enabled" })
+    );
+    expect(mocks.syncLastSeq).toBe(11);
+  });
+
+  it("does not promote an older payload when its event row is delivered later", async () => {
+    mocks.habitTableGet.mockResolvedValue({
+      id: "habit-delayed",
+      name: "Current",
+      entries: {},
+      updatedAt: "2026-08-13T11:00:00.000Z",
+    });
+
+    await applyDelta(
+      [
+        {
+          id: "event-delayed-old-payload",
+          seq: 18,
+          entity_type: "habit",
+          entity_id: "habit-delayed",
+          op: "upsert",
+          payload: {
+            id: "habit-delayed",
+            name: "Stale",
+            entries: {},
+            updatedAt: "2026-08-13T10:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-08-13T12:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(mocks.habitTablePut).not.toHaveBeenCalled();
+    expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 18 });
+  });
+
   it("applies setting events directly through the ordered event log", async () => {
     const applied = await applyDelta(
       [
@@ -482,6 +795,103 @@ describe("eventSync auth guards", () => {
       value: true,
     });
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 14 });
+  });
+
+  it("does not let a delayed older setting payload replace a newer applied value", async () => {
+    const stored = new Map<string, { key: string; value: unknown }>();
+    stored.set("sync-last-seq", { key: "sync-last-seq", value: 10 });
+    mocks.settingsGet.mockImplementation(async (key: string) => stored.get(key));
+    mocks.settingsPut.mockImplementation(async (record: { key: string; value: unknown }) => {
+      stored.set(record.key, record);
+      if (record.key === "sync-last-seq" && typeof record.value === "number") {
+        mocks.syncLastSeq = record.value;
+      }
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-setting-newer",
+          seq: 19,
+          entity_type: "setting",
+          entity_id: "zenflow-schedule-events",
+          op: "upsert",
+          payload: {
+            key: "zenflow-schedule-events",
+            value: [{ id: "newer" }],
+            updatedAt: "2026-08-13T11:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-08-13T11:00:00.000Z",
+        },
+        {
+          id: "event-setting-delayed-older",
+          seq: 20,
+          entity_type: "setting",
+          entity_id: "zenflow-schedule-events",
+          op: "upsert",
+          payload: {
+            key: "zenflow-schedule-events",
+            value: [{ id: "older" }],
+            updatedAt: "2026-08-13T10:00:00.000Z",
+          },
+          device_id: "remote-device",
+          created_at: "2026-08-13T12:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(1);
+    expect(stored.get("zenflow-schedule-events")).toEqual({
+      key: "zenflow-schedule-events",
+      value: [{ id: "newer" }],
+    });
+    expect(mocks.syncLastSeq).toBe(20);
+  });
+
+  it("does not let this device's delayed setting event replace a newer local durable commit", async () => {
+    const stored = new Map<string, { key: string; value: unknown }>();
+    stored.set("sync-last-seq", { key: "sync-last-seq", value: 20 });
+    stored.set("zenflow-schedule-events", {
+      key: "zenflow-schedule-events",
+      value: [{ id: "newer-local" }],
+    });
+    stored.set("zenflow-setting-sync-revision:zenflow-schedule-events", {
+      key: "zenflow-setting-sync-revision:zenflow-schedule-events",
+      value: Date.parse("2026-08-13T11:00:00.000Z"),
+    });
+    mocks.settingsGet.mockImplementation(async (key: string) => stored.get(key));
+    mocks.settingsPut.mockImplementation(async (record: { key: string; value: unknown }) => {
+      stored.set(record.key, record);
+      if (record.key === "sync-last-seq" && typeof record.value === "number") {
+        mocks.syncLastSeq = record.value;
+      }
+    });
+
+    const applied = await applyDelta(
+      [
+        {
+          id: "event-setting-own-delayed",
+          seq: 21,
+          entity_type: "setting",
+          entity_id: "zenflow-schedule-events",
+          op: "upsert",
+          payload: {
+            key: "zenflow-schedule-events",
+            value: [{ id: "older-own" }],
+            updatedAt: "2026-08-13T10:00:00.000Z",
+          },
+          device_id: "current-device",
+          created_at: "2026-08-13T12:00:00.000Z",
+        },
+      ],
+      "current-device"
+    );
+
+    expect(applied).toBe(0);
+    expect(stored.get("zenflow-schedule-events")?.value).toEqual([{ id: "newer-local" }]);
+    expect(mocks.syncLastSeq).toBe(21);
   });
 
   it("ignores remote deletes for local-only unsaved journal drafts", async () => {
@@ -1007,7 +1417,7 @@ describe("eventSync auth guards", () => {
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 16 });
   });
 
-  it("applies later durable server events even when payload timestamps are stale", async () => {
+  it("does not let later event insertion time promote a stale timestamped payload", async () => {
     const remoteHabit = {
       id: "habit-seq-wins",
       name: "Remote server event wins",
@@ -1035,8 +1445,8 @@ describe("eventSync auth guards", () => {
       "current-device"
     );
 
-    expect(applied).toBe(1);
-    expect(mocks.habitTablePut).toHaveBeenCalledWith(remoteHabit);
+    expect(applied).toBe(0);
+    expect(mocks.habitTablePut).not.toHaveBeenCalled();
     expect(mocks.settingsPut).toHaveBeenCalledWith({ key: "sync-last-seq", value: 17 });
   });
 
@@ -1063,7 +1473,26 @@ describe("eventSync auth guards", () => {
     });
     expect(mocks.insertSingle).toHaveBeenCalled();
     expect(mocks.broadcastChange).toHaveBeenCalledWith("habits", 21);
+    expect(mocks.signalAutomationSourceReady).toHaveBeenCalledTimes(1);
     expect(event?.seq).toBe(21);
+  });
+
+  it("reuses a caller-bound event idempotency key across durable outbox retries", async () => {
+    mocks.getCurrentUserId.mockResolvedValue("user-1");
+    const idempotencyKey = "44444444-4444-4444-8444-444444444444";
+
+    await writeEventAndBroadcast(
+      "focus",
+      "55555555-5555-4555-8555-555555555555",
+      "upsert",
+      { id: "55555555-5555-4555-8555-555555555555" },
+      "device-1",
+      { expectedOwnerUserId: "user-1", idempotencyKey }
+    );
+
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotency_key: idempotencyKey })
+    );
   });
 
   it("does not write or queue an event while an imported backup awaits an account choice", async () => {
@@ -1132,6 +1561,7 @@ describe("eventSync auth guards", () => {
 
     expect(event).toBeNull();
     expect(mocks.broadcastChange).not.toHaveBeenCalled();
+    expect(mocks.signalAutomationSourceReady).not.toHaveBeenCalled();
     expect(mocks.enqueue).toHaveBeenCalledWith(
       "WRITE_SYNC_EVENT",
       expect.stringContaining("sync-event:mood:mood-1:delete:"),

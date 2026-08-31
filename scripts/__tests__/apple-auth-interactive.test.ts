@@ -11,6 +11,28 @@ const supabaseAccessTokenEnvKey = ["SUPABASE", "ACCESS", "TOKEN"].join("_");
 const appleClientCredentialEnvKey = ["SUPABASE", "APPLE", "CLIENT", "SECRET"].join("_");
 
 describe("activate-apple-auth-live", () => {
+  it("never emits arbitrary downstream auth diagnostics", async () => {
+    const { activateAppleAuthLiveInteractive } = require("../activate-apple-auth-live.cjs") as {
+      activateAppleAuthLiveInteractive: (input: Record<string, unknown>) => Promise<{ message: string }>;
+    };
+    const canary = "ZF_T172_AUTH_APPLE_91bf4e";
+    const output: string[] = [];
+
+    const result = await activateAppleAuthLiveInteractive({
+      env: {
+        SUPABASE_ACCESS_TOKEN: "fixed-test-token",
+        SUPABASE_APPLE_CLIENT_ID: "com.zenflow.app.web",
+        SUPABASE_APPLE_CLIENT_SECRET: "fixed-test-secret",
+      },
+      prompt: async () => "",
+      applyAppleAuthLive: async () => ({ status: "UNVERIFIED", message: canary, exitCode: 2 }),
+      write: (line: string) => output.push(line),
+    });
+
+    expect(output.join("\n")).not.toContain(canary);
+    expect(result.message).not.toContain(canary);
+  });
+
   it("collects missing secrets locally and does not print them", async () => {
     const { activateAppleAuthLiveInteractive } = require("../activate-apple-auth-live.cjs") as {
       activateAppleAuthLiveInteractive: (input: {
@@ -112,7 +134,7 @@ describe("activate-apple-auth-live", () => {
     const printed = output.join("\n");
     expect(printed).not.toContain(existingToken);
     expect(printed).not.toContain(existingAppleValue);
-    expect(printed).toContain("[redacted]");
+    expect(printed).toContain("Hosted Supabase Apple Auth apply was not verified");
   });
 
 

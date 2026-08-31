@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   chunkFromFilename,
   chunkFromMessage,
+  getErrorMessage,
   isChunkLoadError,
   isChunkLoadMessage,
 } from "../chunkErrorDetection";
@@ -40,6 +41,21 @@ describe("chunkErrorDetection", () => {
       expect(isChunkLoadError(null)).toBe(false);
       expect(isChunkLoadError(undefined)).toBe(false);
       expect(isChunkLoadError(new Error(""))).toBe(false);
+    });
+
+    it("is total for hostile message getters and proxies", () => {
+      const canary = "ZF_T172_CHUNK_HOSTILE_7a2c91e4";
+      const getter = Object.create(Error.prototype);
+      Object.defineProperty(getter, "message", { get: () => { throw new Error(canary); } });
+      const proxy = new Proxy({}, {
+        has: () => { throw new Error(canary); },
+        getPrototypeOf: () => { throw new Error(canary); },
+      });
+
+      expect(() => getErrorMessage(getter)).not.toThrow();
+      expect(() => isChunkLoadError(proxy)).not.toThrow();
+      expect(getErrorMessage(getter)).toBeNull();
+      expect(isChunkLoadError(proxy)).toBe(false);
     });
   });
 

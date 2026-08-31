@@ -108,6 +108,15 @@ interface UserDataActions {
   /** @deprecated Use setAuthGateChecked. Kept as a synchronized legacy alias. */
   setGoogleAuthChecked: Setter<boolean>;
 
+  /** Publishes a mood already committed by the persistence-first adapter. */
+  _publishDurableMoods: Setter<MoodEntry[]>;
+  /** Publishes focus state already committed by the persistence-first adapter. */
+  _publishDurableFocusSessions: Setter<FocusSession[]>;
+  /** Publishes habit state already committed by the persistence-first adapter. */
+  _publishDurableHabits: Setter<Habit[]>;
+  /** Publishes schedule state already committed with its owner-bound outbox. */
+  _publishDurableScheduleEvents: Setter<ScheduleEvent[]>;
+
   _registerSetters: (setters: RegisteredSetters) => void;
   _hydrateFromDB: (data: Partial<UserDataState>) => void;
 }
@@ -234,6 +243,29 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   ),
   setAuthGateChecked: createAuthGateCheckedAction(set, get),
   setGoogleAuthChecked: (value) => get().setAuthGateChecked(value),
+
+  _publishDurableMoods: (value) => {
+    set((state) => ({
+      moods: typeof value === "function" ? value(state.moods) : value,
+    }));
+  },
+  _publishDurableFocusSessions: (value) => {
+    set((state) => ({
+      focusSessions:
+        typeof value === "function" ? value(state.focusSessions) : value,
+    }));
+  },
+  _publishDurableHabits: (value) => {
+    set((state) => ({
+      habits: typeof value === "function" ? value(state.habits) : value,
+    }));
+  },
+  _publishDurableScheduleEvents: (value) => {
+    set((state) => ({
+      scheduleEvents:
+        typeof value === "function" ? value(state.scheduleEvents) : value,
+    }));
+  },
 
   _registerSetters: (setters) => set({ _setters: setters }),
   _hydrateFromDB: (data) => {

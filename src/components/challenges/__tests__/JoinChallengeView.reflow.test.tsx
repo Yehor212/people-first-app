@@ -1,5 +1,15 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const challengeMocks = vi.hoisted(() => ({
+  joinChallenge: vi.fn(),
+  resolveChallengeInviteByCode: vi.fn(),
+}));
+
+vi.mock("@/lib/friendChallenge", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/friendChallenge")>()),
+  ...challengeMocks,
+}));
 
 import { JoinChallengeView } from "@/components/challenges/JoinChallengeView";
 import type { Translations } from "@/i18n/types";
@@ -11,6 +21,10 @@ vi.mock("@/lib/haptics", () => ({
 }));
 
 describe("JoinChallengeView action reflow", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("stacks long localized actions until both labels have enough inline space", () => {
     render(
       <JoinChallengeView
@@ -43,5 +57,30 @@ describe("JoinChallengeView action reflow", () => {
         "[overflow-wrap:break-word]",
       );
     }
+  });
+
+  it("shows the existing unavailable state and releases the busy state when code resolution fails", async () => {
+    challengeMocks.resolveChallengeInviteByCode.mockRejectedValueOnce(new Error("private remote detail"));
+
+    render(
+      <JoinChallengeView
+        initialInvite={{ code: "ZEN-A2B3C4" }}
+        onJoined={vi.fn()}
+        onCancel={vi.fn()}
+        t={{
+          cancel: "Cancel",
+          join: "Join",
+          joining: "Joining...",
+          invalidChallengeCode: "Invalid challenge code",
+          challengeCode: "Challenge code",
+        } as Translations}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Invalid challenge code");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Join" })).toBeEnabled());
+    expect(challengeMocks.joinChallenge).not.toHaveBeenCalled();
   });
 });

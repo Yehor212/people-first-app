@@ -8,12 +8,32 @@
  */
 
 import * as Sentry from "@sentry/browser";
-import type { Breadcrumb, BreadcrumbHint, Integration, SeverityLevel } from "@sentry/core";
+import type {
+  Breadcrumb,
+  BreadcrumbHint,
+  Event,
+  EventHint,
+  Integration,
+  SeverityLevel,
+  SpanAttributeValue,
+  SpanJSON,
+  TransactionEvent,
+} from "@sentry/core";
 import {
   SENTRY_ALLOW_URLS,
   SENTRY_IGNORE_ERRORS,
   shouldDropSentryEvent,
 } from "@/lib/sentryEventFilters";
+import {
+  DIAGNOSTIC_REDACTED,
+  diagnosticCodeFrom,
+  diagnosticErrorName,
+  diagnosticStackFingerprint,
+  sanitizeDiagnosticMetadata,
+  sanitizeDiagnosticMetadataKey,
+  sanitizeDiagnosticUrl,
+  toDiagnosticError,
+} from "@/lib/diagnosticPrivacy";
 
 // Declare global app version
 declare const __APP_VERSION__: string;
@@ -34,54 +54,295 @@ function isUsableSentryDsn(dsn: string | undefined): dsn is string {
   }
 }
 
-const SENSITIVE_PATTERNS = [
-  /Bearer\s+[A-Za-z0-9\-_.]+/gi,
-  /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-  /refresh_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-  /id_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
-  /token[=:]\s*["']?[A-Za-z0-9\-_.]{20,}["']?/gi,
-  /[#&](access_token|refresh_token|id_token|token)=[^&\s"'}]+/gi,
-] as const;
-
-const SENSITIVE_FIELD_NAME_PATTERN =
-  /(^|[_-])(authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|session[_-]?token|token|jwt|secret|password|cookie)s?($|[_-])/i;
-
-// Structured telemetry must never carry ZenFlow's private writing or wellbeing
-// payloads. Exact generic names cover producer-neutral objects, while semantic
-// prefixes cover the camelCase/snake_case names used by journal, mood, coach,
-// reflection, and audio features. The boundary deliberately does not redact
-// operational names such as `contentType`, `responseStatus`, or `errorMessage`.
-const SENSITIVE_CONTENT_FIELD_NAME_PATTERN =
-  /(^|[_-])((?:journal|diary)[_-]?(?:entry|text|content|note|notes)?|mood[_-]?(?:note|notes|text|content)|(?:reflection|gratitude)[_-]?(?:text|content|note|notes)?|coach[_-]?(?:prompt|response|message|content)|audio[_-]?(?:transcript|note|notes|content)|entry[_-]?(?:title|text|content|note|notes)|content|body|text|title|note|notes|prompt|response|transcript)s?($|[_-])/i;
-
-function scrubString(str: string): string {
-  return SENSITIVE_PATTERNS.reduce((result, pattern) => result.replace(pattern, "[REDACTED]"), str);
+function sanitizeSentryException(
+  exception: NonNullable<Event["exception"]>,
+): NonNullable<Event["exception"]> {
+  return {
+    values: exception.values?.map((value) => ({
+      type: "Error",
+      value: "ZF_SENTRY_EXCEPTION",
+      stacktrace: value.stacktrace
+        ? {
+            frames: value.stacktrace.frames?.slice(-20).map((frame) => ({
+              function: frame.function ? "ZF_FRAME" : undefined,
+              filename: frame.filename ? sanitizeDiagnosticUrl(frame.filename) : undefined,
+              lineno: frame.lineno,
+              colno: frame.colno,
+              in_app: frame.in_app,
+            })),
+          }
+        : undefined,
+    })),
+  };
 }
 
-function shouldRedactField(fieldName: string): boolean {
-  return (
-    SENSITIVE_FIELD_NAME_PATTERN.test(fieldName) ||
-    SENSITIVE_CONTENT_FIELD_NAME_PATTERN.test(fieldName)
-  );
+const SAFE_HTTP_METHODS = new Set(["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]);
+const SAFE_CONTENT_TYPES = new Set([
+  "application/json",
+  "application/octet-stream",
+  "application/x-www-form-urlencoded",
+  "multipart/form-data",
+  "text/plain",
+]);
+const SAFE_BREADCRUMB_TYPES = new Set(["default", "error", "http", "info", "navigation", "query", "user"]);
+const SAFE_EVENT_ENVIRONMENTS = new Set(["development", "production", "staging", "test"]);
+const SAFE_EVENT_LEVELS = new Set([
+  "debug",
+  "error",
+  "fatal",
+  "info",
+  "log",
+  "warning",
+]);
+const SAFE_EVENT_KEYS = new Set([
+  "breadcrumbs",
+  "contexts",
+  "environment",
+  "event_id",
+  "exception",
+  "extra",
+  "fingerprint",
+  "level",
+  "logentry",
+  "logger",
+  "measurements",
+  "message",
+  "platform",
+  "release",
+  "request",
+  "sdk",
+  "spans",
+  "start_timestamp",
+  "tags",
+  "timestamp",
+  "transaction",
+  "transaction_info",
+  "type",
+  "user",
+]);
+const SAFE_MEASUREMENTS = new Set(["cls", "fcp", "fid", "inp", "lcp", "ttfb"]);
+const SAFE_SPAN_STATUSES = new Set([
+  "already_exists",
+  "cancelled",
+  "data_loss",
+  "deadline_exceeded",
+  "failed_precondition",
+  "internal_error",
+  "invalid_argument",
+  "not_found",
+  "ok",
+  "out_of_range",
+  "permission_denied",
+  "resource_exhausted",
+  "unauthenticated",
+  "unavailable",
+  "unimplemented",
+  "unknown_error",
+]);
+
+function safeHexIdentifier(value: string | undefined, length: number): string | undefined {
+  return value && new RegExp(`^[a-f0-9]{${length}}$`).test(value) ? value : undefined;
 }
 
-function scrubSentryPayload(value: unknown, seen = new WeakSet<object>()): unknown {
-  if (typeof value === "string") return scrubString(value);
-  if (value === null || typeof value !== "object") return value;
-  if (value instanceof Date) return value;
-  if (seen.has(value)) return "[Circular]";
+function sanitizeSentrySpanData(data: SpanJSON["data"]): SpanJSON["data"] {
+  const safe: Record<string, SpanAttributeValue | undefined> = {};
+  for (const [key, value] of Object.entries(sanitizeDiagnosticMetadata(data))) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      safe[key] = value;
+    }
+  }
+  return safe;
+}
 
-  seen.add(value);
+function sanitizeSentryBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
+  return {
+    category: breadcrumb.category ? "zenflow.diagnostic" : undefined,
+    level: breadcrumb.level,
+    timestamp: breadcrumb.timestamp,
+    type: breadcrumb.type && SAFE_BREADCRUMB_TYPES.has(breadcrumb.type)
+      ? breadcrumb.type
+      : undefined,
+    message: breadcrumb.message ? "ZF_SENTRY_BREADCRUMB" : undefined,
+    data: breadcrumb.data ? sanitizeDiagnosticMetadata(breadcrumb.data) : undefined,
+  };
+}
 
-  if (Array.isArray(value)) {
-    return value.map((item) => scrubSentryPayload(item, seen));
+function trySanitizeSentryBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
+  try {
+    return sanitizeSentryBreadcrumb(breadcrumb);
+  } catch {
+    return null;
+  }
+}
+
+function clearSentryHint(hint: EventHint | undefined): boolean {
+  try {
+    if (!hint) return true;
+    let cleared = true;
+    try {
+      if (Array.isArray(hint.attachments) && hint.attachments.length > 0) {
+        hint.attachments.length = 0;
+        if (hint.attachments.length !== 0) cleared = false;
+      } else if (hint.attachments !== undefined && !Array.isArray(hint.attachments)) {
+        hint.attachments = undefined;
+      }
+    } catch {
+      cleared = false;
+    }
+    for (const key of ["originalException", "syntheticException", "captureContext", "data"] as const) {
+      try {
+        if (hint[key] === undefined) continue;
+        hint[key] = undefined;
+        if (hint[key] !== undefined) cleared = false;
+      } catch {
+        cleared = false;
+      }
+    }
+    return cleared;
+  } catch {
+    return false;
+  }
+}
+
+function scrubSentryEventOrDrop<T extends Event>(event: T, hint?: EventHint): T | null {
+  let sanitized: T | null = null;
+  let hintCleared = false;
+  try {
+    if (!shouldDropSentryEvent(event, hint)) {
+      sanitized = sanitizeSentryEvent(event);
+    }
+  } catch {
+    sanitized = null;
+  } finally {
+    hintCleared = clearSentryHint(hint);
+  }
+  return hintCleared ? sanitized : null;
+}
+
+function sanitizeSentryEvent<T extends Event>(event: T): T {
+  const eventRecord = event as T & Record<string, unknown>;
+  for (const key of Object.keys(eventRecord)) {
+    if (!SAFE_EVENT_KEYS.has(key)) delete eventRecord[key];
   }
 
-  const scrubbed: Record<string, unknown> = {};
-  for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
-    scrubbed[key] = shouldRedactField(key) ? "[REDACTED]" : scrubSentryPayload(nestedValue, seen);
+  const eventId = safeHexIdentifier(event.event_id, 32);
+  if (eventId) event.event_id = eventId;
+  else delete event.event_id;
+  if (event.timestamp !== undefined && (!Number.isFinite(event.timestamp) || event.timestamp < 0)) {
+    delete event.timestamp;
   }
-  return scrubbed;
+  if (
+    event.start_timestamp !== undefined &&
+    (!Number.isFinite(event.start_timestamp) || event.start_timestamp < 0)
+  ) {
+    delete event.start_timestamp;
+  }
+  if (event.level && !SAFE_EVENT_LEVELS.has(event.level)) delete event.level;
+  if (event.platform) event.platform = "javascript";
+  if (event.release) event.release = `zenflow@${__APP_VERSION__}`;
+  if (event.environment) {
+    event.environment = SAFE_EVENT_ENVIRONMENTS.has(MODE) ? MODE : "production";
+  }
+  if (event.transaction_info) event.transaction_info = { source: "custom" };
+  if (event.type && event.type !== "transaction") delete event.type;
+
+  if (event.user) event.user = {};
+  if (event.sdk) {
+    event.sdk = {
+      name: "sentry.javascript.browser",
+      version: Sentry.SDK_VERSION,
+      settings: { infer_ip: "never" },
+    };
+  }
+  if (event.message) event.message = diagnosticCodeFrom(event.message, "ZF_SENTRY_EVENT");
+  if (event.logentry) event.logentry = { message: "ZF_SENTRY_LOGENTRY" };
+  if (event.transaction) event.transaction = "ZF_SENTRY_TRANSACTION";
+  if (event.exception) event.exception = sanitizeSentryException(event.exception);
+  if (event.fingerprint) event.fingerprint = ["ZF_SENTRY_FINGERPRINT"];
+  if (event.tags) event.tags = sanitizeDiagnosticMetadata(event.tags) as typeof event.tags;
+
+  if (event.breadcrumbs) {
+    event.breadcrumbs = event.breadcrumbs.slice(-50).map(sanitizeSentryBreadcrumb);
+  }
+
+  if (event.request) {
+    const request = event.request;
+    const method = typeof request.method === "string" ? request.method.toUpperCase() : undefined;
+    const contentType = request.headers?.["content-type"] ?? request.headers?.["Content-Type"];
+    const safeHeaders: Record<string, string> = typeof contentType === "string" && SAFE_CONTENT_TYPES.has(contentType)
+      ? { "content-type": contentType }
+      : {};
+    event.request = {
+      ...(request.url ? { url: sanitizeDiagnosticUrl(request.url) } : {}),
+      ...(method && SAFE_HTTP_METHODS.has(method) ? { method } : {}),
+      ...(request.query_string ? { query_string: DIAGNOSTIC_REDACTED } : {}),
+      ...(request.cookies ? { cookies: { redacted: DIAGNOSTIC_REDACTED } } : {}),
+      ...(request.data
+        ? {
+            data: typeof request.data === "object" && request.data !== null
+              ? sanitizeDiagnosticMetadata(request.data as Record<string, unknown>)
+              : DIAGNOSTIC_REDACTED,
+          }
+        : {}),
+      ...(request.headers ? { headers: safeHeaders } : {}),
+    };
+  }
+
+  if (event.extra) event.extra = sanitizeDiagnosticMetadata(event.extra);
+  if (event.contexts) {
+    const contexts: Record<string, ReturnType<typeof sanitizeDiagnosticMetadata>> = {};
+    for (const [index, [key, value]] of Object.entries(event.contexts).slice(0, 10).entries()) {
+      let safeKey = sanitizeDiagnosticMetadataKey(key, index);
+      if (Object.prototype.hasOwnProperty.call(contexts, safeKey)) {
+        safeKey = `redacted_context_${index}`;
+      }
+      contexts[safeKey] = sanitizeDiagnosticMetadata(value);
+    }
+    event.contexts = contexts;
+  }
+
+  if (event.spans) {
+    event.spans = event.spans.slice(-100).map((span) => ({
+      data: sanitizeSentrySpanData(span.data),
+      description: span.description ? "ZF_SENTRY_SPAN" : undefined,
+      op: span.op ? "zf.operation" : undefined,
+      parent_span_id: safeHexIdentifier(span.parent_span_id, 16),
+      span_id: safeHexIdentifier(span.span_id, 16) ?? "0000000000000000",
+      start_timestamp: span.start_timestamp,
+      status: span.status && SAFE_SPAN_STATUSES.has(span.status) ? span.status : undefined,
+      timestamp: span.timestamp,
+      trace_id: safeHexIdentifier(span.trace_id, 32) ?? "00000000000000000000000000000000",
+      origin: span.origin ? "manual.app" : undefined,
+      exclusive_time: span.exclusive_time,
+      is_segment: span.is_segment,
+      segment_id: safeHexIdentifier(span.segment_id, 16),
+      measurements: span.measurements
+        ? Object.fromEntries(
+            Object.entries(span.measurements)
+              .filter(([key, measurement]) =>
+                SAFE_MEASUREMENTS.has(key) && Number.isFinite(measurement.value),
+              )
+              .map(([key, measurement]) => [key, { value: measurement.value, unit: "none" }]),
+          )
+        : undefined,
+    }));
+  }
+
+  if (event.measurements) {
+    event.measurements = Object.fromEntries(
+      Object.entries(event.measurements).filter(([key, measurement]) =>
+        SAFE_MEASUREMENTS.has(key) && Number.isFinite(measurement.value),
+      ).map(([key, measurement]) => [key, { value: measurement.value, unit: "none" }]),
+    );
+  }
+
+  if (event.logger) event.logger = "zenflow.diagnostic";
+  if (event.server_name) event.server_name = DIAGNOSTIC_REDACTED;
+  delete event.modules;
+  delete event.debug_meta;
+  delete event.sdkProcessingMetadata;
+  delete event.threads;
+  return event;
 }
 
 function getSentryPlatform(): "android" | "ios" | "web" {
@@ -177,87 +438,27 @@ export function initSentry(): void {
 
     integrations,
 
+    beforeBreadcrumb(breadcrumb) {
+      return trySanitizeSentryBreadcrumb(breadcrumb);
+    },
+
     // Privacy: Strip PII and tokens before sending
     // Also filter out expected/handled errors
     beforeSend(event, hint) {
-      // Drop expected browser cancellations, stale-deploy chunk failures, and
-      // known Supabase auth lock contention before scrubbing/sending.
-      if (shouldDropSentryEvent(event, hint)) {
-        return null;
-      }
-
-      // Remove user email and IP
-      if (event.user) {
-        delete event.user.email;
-        delete event.user.ip_address;
-        delete event.user.username;
-      }
-
-      // Scrub top-level strings too. Auth callback failures and manually
-      // captured messages can carry token-bearing URLs outside request fields.
-      if (event.message) {
-        event.message = scrubString(event.message);
-      }
-      if (event.transaction) {
-        event.transaction = scrubString(event.transaction);
-      }
-      if (event.exception) {
-        event.exception = scrubSentryPayload(event.exception) as typeof event.exception;
-      }
-      if (event.fingerprint) {
-        event.fingerprint = scrubSentryPayload(event.fingerprint) as typeof event.fingerprint;
-      }
-      if (event.tags) {
-        event.tags = scrubSentryPayload(event.tags) as typeof event.tags;
-      }
-
-      // Scrub breadcrumb messages, request metadata, and caller-provided context.
-      if (event.breadcrumbs) {
-        event.breadcrumbs = event.breadcrumbs.map((bc) => ({
-          ...bc,
-          message: bc.message ? scrubString(bc.message) : bc.message,
-          data: bc.data ? (scrubSentryPayload(bc.data) as Breadcrumb["data"]) : bc.data,
-        }));
-      }
-
-      // Scrub request URLs and payload-like fields.
-      if (event.request?.url) {
-        event.request.url = scrubString(event.request.url);
-      }
-      if (event.request?.query_string) {
-        const scrubbedQueryString = scrubSentryPayload(event.request.query_string);
-        event.request.query_string =
-          typeof scrubbedQueryString === "string"
-            ? scrubbedQueryString
-            : JSON.stringify(scrubbedQueryString);
-      }
-      if (event.request?.cookies) {
-        event.request.cookies = scrubSentryPayload(event.request.cookies) as typeof event.request.cookies;
-      }
-      if (event.request?.data) {
-        event.request.data = scrubSentryPayload(event.request.data);
-      }
-      if (event.request?.headers) {
-        const headers: Record<string, string> = {};
-        for (const [key, value] of Object.entries(event.request.headers)) {
-          headers[key] = shouldRedactField(key) ? "[REDACTED]" : scrubString(String(value));
-        }
-        event.request.headers = headers;
-      }
-
-      if (event.extra) {
-        event.extra = scrubSentryPayload(event.extra) as typeof event.extra;
-      }
-      if (event.contexts) {
-        event.contexts = scrubSentryPayload(event.contexts) as typeof event.contexts;
-      }
+      const sanitized = scrubSentryEventOrDrop(event, hint);
+      if (!sanitized) return null;
 
       // Don't send events in development
       if (IS_DEV) {
         return null;
       }
 
-      return event;
+      return sanitized;
+    },
+
+    beforeSendTransaction(event: TransactionEvent, hint) {
+      const sanitized = scrubSentryEventOrDrop(event, hint);
+      return IS_DEV ? null : sanitized;
     },
 
     // Add platform context
@@ -286,8 +487,11 @@ export type ErrorCategory =
  * Capture a custom error with context
  */
 export function captureError(error: Error, context?: Record<string, unknown>): void {
-  Sentry.captureException(error, {
-    extra: context,
+  Sentry.captureException(toDiagnosticError(error, "ZF_SENTRY_EXCEPTION"), {
+    extra: {
+      ...sanitizeDiagnosticMetadata(context),
+      stack_fingerprint: diagnosticStackFingerprint(error),
+    },
   });
 }
 
@@ -304,22 +508,30 @@ export function captureErrorWithCategory(
     scope.setTag("category", category);
 
     // Add extra context based on error type
-    if (error.name === "AbortError") {
+    const safeErrorName = diagnosticErrorName(error);
+    let rawMessage = "";
+    try {
+      rawMessage = typeof error.message === "string" ? error.message : "";
+    } catch {
+      rawMessage = "";
+    }
+    if (safeErrorName === "AbortError") {
       scope.setTag("error_type", "abort");
-      scope.setExtra("abort_reason", error.message);
-    } else if (error.message.includes("Database deleted")) {
+      scope.setExtra("reason", "abort");
+    } else if (rawMessage.includes("Database deleted")) {
       scope.setTag("error_type", "database_deleted");
-      scope.setExtra("likely_cause", "User cleared site data or Safari ITP");
-    } else if (error.message.includes("chunk") || error.message.includes("module")) {
+      scope.setExtra("reason", "site_data_unavailable");
+    } else if (rawMessage.includes("chunk") || rawMessage.includes("module")) {
       scope.setTag("error_type", "chunk_load");
-      scope.setExtra("likely_cause", "Version mismatch after deployment");
+      scope.setExtra("reason", "version_mismatch");
     }
 
     if (context) {
-      scope.setExtras(context);
+      scope.setExtras(sanitizeDiagnosticMetadata(context));
     }
+    scope.setExtra("stack_fingerprint", diagnosticStackFingerprint(error));
 
-    Sentry.captureException(error);
+    Sentry.captureException(toDiagnosticError(error, "ZF_SENTRY_EXCEPTION"));
   });
 }
 
@@ -334,31 +546,25 @@ export function addCategorizedBreadcrumb(
 ): void {
   Sentry.addBreadcrumb({
     category,
-    message,
+    message: diagnosticCodeFrom(`[${category}] ${message}`, "ZF_SENTRY_BREADCRUMB"),
     level,
-    data,
+    data: sanitizeDiagnosticMetadata(data),
   });
 }
 
 /**
  * Capture a custom message
  */
-export function captureMessage(message: string, level: SeverityLevel = "info"): void {
-  Sentry.captureMessage(message, level);
+export function captureMessage(_message: string, level: SeverityLevel = "info"): void {
+  Sentry.captureMessage("ZF_SENTRY_MESSAGE", level);
 }
 
 /**
  * Set user context (anonymized)
  */
 export function setUserContext(userId: string): void {
-  // Hash userId to avoid sending raw PII to Sentry (GDPR pseudonymization)
-  let hash = 5381;
-  for (let i = 0; i < userId.length; i++) {
-    hash = ((hash << 5) + hash + userId.charCodeAt(i)) >>> 0;
-  }
-  Sentry.setUser({
-    id: `u-${hash.toString(36)}`,
-  });
+  void userId;
+  Sentry.setUser(null);
 }
 
 /**
@@ -373,5 +579,10 @@ export function clearUserContext(): void {
  * instead of Sentry packages directly.
  */
 export function addBreadcrumb(breadcrumb: Breadcrumb, hint?: BreadcrumbHint): void {
-  Sentry.addBreadcrumb(breadcrumb, hint);
+  // SDK hints can contain DOM events, request objects, or thrown values. They
+  // are not needed for ZenFlow's bounded breadcrumb schema and never cross the
+  // telemetry boundary.
+  void hint;
+  const sanitized = trySanitizeSentryBreadcrumb(breadcrumb);
+  if (sanitized) Sentry.addBreadcrumb(sanitized);
 }

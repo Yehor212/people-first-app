@@ -260,7 +260,7 @@ describe("runtime performance guards", () => {
     );
 
     expect(source).toContain("function scheduleLifecycleTask");
-    expect(listener).toContain("savePendingQueueSnapshot({ hidden: true })");
+    expect(listener).toContain('savePendingQueueSnapshot({ phase: "hidden" })');
     expect(listener).toContain('scheduleLifecycleTask("pause")');
     expect(listener).toContain('scheduleLifecycleTask("resume")');
     expect(listener).not.toContain("handleAppPause()");

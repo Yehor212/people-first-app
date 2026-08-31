@@ -198,9 +198,7 @@ describe("useAuthHandlers Apple availability preflight", () => {
     });
     expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
     expect(mocks.canStartAuthFlow).not.toHaveBeenCalled();
-    expect(session.setDebugInfo).toHaveBeenCalledWith(
-      expect.stringContaining("Apple auth availability: disabled")
-    );
+    expect(session.setDebugInfo).toHaveBeenCalledWith("auth_apple_unavailable");
   });
 
   it("continues to Supabase OAuth when Apple public settings are unreachable", async () => {
@@ -278,5 +276,52 @@ describe("useAuthHandlers Apple availability preflight", () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
     expect(session.setError).toHaveBeenCalledWith(t.authUnexpectedError);
+  });
+
+  it("writes only fixed auth evidence fields to the downloaded Blob", () => {
+    const canary = "ZF_T172_AUTH_BLOB_3a7f219d";
+    const session = createSession();
+    const privateError = new Error(canary) as Error & { cause?: unknown };
+    privateError.cause = new Error(encodeURIComponent(canary));
+    Object.assign(session, {
+      error: privateError,
+      debugInfo: `${canary}:identity@example.test`,
+    });
+    let serialized = "";
+    const OriginalBlob = globalThis.Blob;
+    const createObjectUrlDescriptor = Object.getOwnPropertyDescriptor(URL, "createObjectURL");
+    const revokeObjectUrlDescriptor = Object.getOwnPropertyDescriptor(URL, "revokeObjectURL");
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    class CapturingBlob {
+      constructor(parts: unknown[]) {
+        serialized = parts.map(String).join("");
+      }
+    }
+    vi.stubGlobal("Blob", CapturingBlob);
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: () => "blob:safe" });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: () => undefined });
+
+    try {
+      const { result } = renderHook(() => useAuthHandlers(session, t));
+      act(() => result.current.exportDebugInfo());
+
+      expect(JSON.parse(serialized)).toMatchObject({
+        schemaVersion: 1,
+        platform: "web",
+        redirectRoute: "home",
+        hasUserVisibleError: true,
+        diagnosticCode: "auth_failure",
+      });
+      expect(serialized).not.toContain(canary);
+      expect(serialized).not.toContain("identity@example.test");
+      expect(serialized).not.toContain("userAgent");
+    } finally {
+      vi.stubGlobal("Blob", OriginalBlob);
+      click.mockRestore();
+      if (createObjectUrlDescriptor) Object.defineProperty(URL, "createObjectURL", createObjectUrlDescriptor);
+      else Reflect.deleteProperty(URL, "createObjectURL");
+      if (revokeObjectUrlDescriptor) Object.defineProperty(URL, "revokeObjectURL", revokeObjectUrlDescriptor);
+      else Reflect.deleteProperty(URL, "revokeObjectURL");
+    }
   });
 });

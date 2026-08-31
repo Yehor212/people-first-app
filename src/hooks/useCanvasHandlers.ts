@@ -16,7 +16,7 @@ import {
   updateGoalEmoji,
   updateGoalColor,
 } from '@/lib/canvasGoals';
-import { generateId, getToday } from '@/lib/utils';
+import { generateUuid, getToday } from '@/lib/utils';
 import type { MindMapCanvasRef } from '@/components/canvas/MindMapCanvas';
 import type { MoodType } from '@/types';
 
@@ -61,7 +61,7 @@ export function useCanvasHandlers({ handleAddMood }: UseCanvasHandlersParams) {
 
   const onEmotionSave = useCallback((mood: MoodType, text?: string) => {
     const entry = {
-      id: generateId(),
+      id: generateUuid(),
       mood,
       date: getToday(),
       timestamp: Date.now(),

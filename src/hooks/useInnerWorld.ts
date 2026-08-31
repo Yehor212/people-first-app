@@ -108,7 +108,7 @@ export function useInnerWorld() {
         if (!isCurrentWorld || !expectedOwnerUserId) return;
         return updateMyStreak(world.currentActiveStreak, expectedOwnerUserId);
       })
-      .catch((err) => logger.error("Failed to schedule inner world streak sync:", err));
+      .catch((err) => logger.error("[InnerWorld] Failed to schedule inner world streak sync:", err));
 
     return () => {
       isCurrentWorld = false;
@@ -133,13 +133,13 @@ export function useInnerWorld() {
 
       syncTimeoutRef.current = setTimeout(() => {
         pushInnerWorldToCloud(world, expectedOwnerUserId).catch((err) =>
-          logger.error("Failed to push inner world to cloud:", err)
+          logger.error("[InnerWorld] Failed to push inner world to cloud:", err)
         );
       }, 5000); // Sync 5 seconds after last change
     };
 
     void scheduleCloudPush().catch((err) =>
-      logger.error("Failed to schedule inner world cloud sync:", err)
+      logger.error("[InnerWorld] Failed to schedule inner world cloud sync:", err)
     );
 
     return () => {

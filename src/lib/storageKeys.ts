@@ -58,6 +58,7 @@ export const SK = {
 
   // ─── Timer ───
   TIMER_STATE: "zenflow-timer-state",
+  FOCUS_PENDING_COMMIT: "zenflow-focus-pending-commit",
 
   // ─── Journal ───
   JOURNAL_PASSWORD: "journal_password",

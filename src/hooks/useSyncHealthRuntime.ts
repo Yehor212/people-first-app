@@ -10,9 +10,10 @@ import {
   type SyncHealthAuthState,
   type SyncHealthQueueSnapshot,
 } from "@/observability/syncHealthRecorder";
+import { sanitizeDiagnosticRoute } from "@/lib/diagnosticPrivacy";
 
 function currentRoute(): string {
-  return `${window.location.pathname}${window.location.search}`;
+  return sanitizeDiagnosticRoute(window.location.href);
 }
 
 function readQueueSnapshot(): SyncHealthQueueSnapshot {

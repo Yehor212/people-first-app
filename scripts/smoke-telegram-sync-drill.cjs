@@ -13,6 +13,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const {
+  evidenceFailureCode,
+  sanitizeEvidenceRoute,
+} = require("./lib/diagnostic-evidence-privacy.cjs");
 
 const ROOT = path.join(__dirname, "..");
 const OUTPUT_PATH = process.env.ZENFLOW_TELEGRAM_SYNC_DRILL_OUTPUT || "";
@@ -75,14 +79,6 @@ function nodeCommand(script, env = {}) {
   };
 }
 
-function printOutput(label, output) {
-  const trimmed = String(output || "").trim();
-  if (!trimmed) return;
-
-  console.log(`[telegram-sync-drill:${label}] output`);
-  console.log(trimmed);
-}
-
 function record(name, status, evidence) {
   results.push({ name, status, evidence });
   console.log(`[telegram-sync-drill] ${status} - ${name}: ${evidence}`);
@@ -98,11 +94,7 @@ function runCommand(name, commandSpec, classify = classifyByExitCode) {
   });
   const durationMs = Date.now() - startedAt;
 
-  printOutput(name, child.stdout);
-  printOutput(name, child.stderr);
-
-  const spawnError = child.error ? `${child.error.code || "SPAWN_ERROR"}: ${child.error.message}` : "";
-  printOutput(name, spawnError);
+  const spawnError = child.error ? evidenceFailureCode(child.error) : "";
 
   const combinedOutput = [child.stdout, child.stderr, spawnError].filter(Boolean).join("\n");
   const classified = classify(child.status, combinedOutput, durationMs, child.error);
@@ -117,13 +109,13 @@ function classifyByExitCode(status, output, durationMs, error) {
   if (isEnvironmentBlocker(output, error)) {
     return {
       status: "UNVERIFIED",
-      evidence: `blocked by runtime/tooling: ${firstLine(output) || "spawn failed"} durationMs=${durationMs}`,
+      evidence: `code=RUNTIME_BLOCKED durationMs=${durationMs}`,
     };
   }
 
   return {
     status: "FAIL",
-    evidence: `exit=${status ?? "signal"} durationMs=${durationMs} output=${firstLine(output)}`,
+    evidence: `code=COMMAND_FAILED exit=${Number.isInteger(status) ? status : "signal"} durationMs=${durationMs}`,
   };
 }
 
@@ -132,21 +124,21 @@ function classifySyncHealth(status, output, durationMs, error) {
     return { status: "PASS", evidence: `privacy-safe browser diagnostic passed durationMs=${durationMs}` };
   }
   if (status === 0 && output.includes("[sync-health] UNVERIFIED")) {
-    return { status: "UNVERIFIED", evidence: firstLine(output) || `durationMs=${durationMs}` };
+    return { status: "UNVERIFIED", evidence: `code=SYNC_HEALTH_UNVERIFIED durationMs=${durationMs}` };
   }
   if (status === 2 && output.includes("[sync-health] UNVERIFIED")) {
-    return { status: "UNVERIFIED", evidence: firstLine(output) || `required proof missing durationMs=${durationMs}` };
+    return { status: "UNVERIFIED", evidence: `code=SYNC_HEALTH_UNVERIFIED durationMs=${durationMs}` };
   }
   if (isEnvironmentBlocker(output, error)) {
     return {
       status: "UNVERIFIED",
-      evidence: `browser proof blocked by runtime/tooling: ${firstLine(output) || "spawn failed"} durationMs=${durationMs}`,
+      evidence: `code=RUNTIME_BLOCKED durationMs=${durationMs}`,
     };
   }
 
   return {
     status: "FAIL",
-    evidence: `sync-health exit=${status ?? "signal"} durationMs=${durationMs} output=${firstLine(output)}`,
+    evidence: `code=SYNC_HEALTH_FAILED exit=${Number.isInteger(status) ? status : "signal"} durationMs=${durationMs}`,
   };
 }
 
@@ -155,21 +147,21 @@ function classifySyncAccount(status, output, durationMs, error) {
     return { status: "PASS", evidence: `same-account Supabase proof passed durationMs=${durationMs}` };
   }
   if (status === 0 && output.includes("[sync-account] UNVERIFIED")) {
-    return { status: "UNVERIFIED", evidence: firstLine(output) || `durationMs=${durationMs}` };
+    return { status: "UNVERIFIED", evidence: `code=SYNC_ACCOUNT_UNVERIFIED durationMs=${durationMs}` };
   }
   if (status === 2 && output.includes("[sync-account] UNVERIFIED")) {
-    return { status: "UNVERIFIED", evidence: firstLine(output) || `required proof missing durationMs=${durationMs}` };
+    return { status: "UNVERIFIED", evidence: `code=SYNC_ACCOUNT_UNVERIFIED durationMs=${durationMs}` };
   }
   if (isEnvironmentBlocker(output, error)) {
     return {
       status: "UNVERIFIED",
-      evidence: `account proof blocked by runtime/tooling: ${firstLine(output) || "spawn failed"} durationMs=${durationMs}`,
+      evidence: `code=RUNTIME_BLOCKED durationMs=${durationMs}`,
     };
   }
 
   return {
     status: "FAIL",
-    evidence: `sync-account exit=${status ?? "signal"} durationMs=${durationMs} output=${firstLine(output)}`,
+    evidence: `code=SYNC_ACCOUNT_FAILED exit=${Number.isInteger(status) ? status : "signal"} durationMs=${durationMs}`,
   };
 }
 
@@ -178,13 +170,6 @@ function isEnvironmentBlocker(output, error) {
   return /spawn\s+\w+\s+EPERM|E_ACCESSDENIED|ENOENT|EACCES|browserType\.launch|Chromium.*(failed|could not|not found)/i.test(
     output || ""
   );
-}
-
-function firstLine(output) {
-  return String(output || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)[0] || "";
 }
 
 function ensureTestFilesExist() {
@@ -247,7 +232,7 @@ function summarize() {
   const artifact = {
     generatedAt: new Date().toISOString(),
     required: REQUIRED,
-    url: SYNC_DRILL_URL || null,
+    route: sanitizeEvidenceRoute(SYNC_DRILL_URL),
     overall,
     results,
   };
@@ -317,4 +302,17 @@ function main() {
   summarize();
 }
 
-main();
+if (require.main === module) {
+  try {
+    main();
+  } catch (error) {
+    console.error(`[telegram-sync-drill] FAIL - code=${evidenceFailureCode(error)}`);
+    process.exit(1);
+  }
+}
+
+module.exports = {
+  classifyByExitCode,
+  classifySyncAccount,
+  classifySyncHealth,
+};

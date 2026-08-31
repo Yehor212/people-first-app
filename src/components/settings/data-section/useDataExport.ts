@@ -120,7 +120,7 @@ export function useDataExport({
               });
             } catch (error) {
               cleanupError = error;
-              logger.error("Native backup cache cleanup failed:", error);
+              logger.error("[Export] Native backup cache cleanup failed:", error);
             }
           }
         }
@@ -172,7 +172,7 @@ export function useDataExport({
         }
       }
       if (operationGeneration !== exportGenerationRef.current) return;
-      logger.error("Export failed:", error);
+      logger.error("[Export] Export failed:", error);
       setDataStatus(backupExportStatus(error, t));
     } finally {
       if (operationGeneration === exportGenerationRef.current) {

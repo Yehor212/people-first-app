@@ -42,7 +42,7 @@ public class StatusBarStylePlugin extends Plugin {
                 currentStyle = style;
                 scheduleStatusBarStyleAfterVisualState(style, call);
             } catch (Exception e) {
-                call.reject("Failed to set status bar style: " + e.getMessage());
+                call.reject("ZF_STATUS_BAR_STYLE_FAILED");
             }
         });
     }
@@ -85,11 +85,11 @@ public class StatusBarStylePlugin extends Plugin {
                             applyStatusBarStyle(activity, style);
                             resolveCall(call);
                         } catch (Exception e) {
-                            rejectCall(call, "Failed to set status bar style: " + e.getMessage());
+                            rejectCall(call, "ZF_STATUS_BAR_STYLE_FAILED");
                         }
                     });
                 } catch (Exception e) {
-                    rejectCall(call, "Failed to set status bar style: " + e.getMessage());
+                    rejectCall(call, "ZF_STATUS_BAR_STYLE_FAILED");
                 }
             }
         });

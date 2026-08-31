@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores";
 import {
   SYNC_HEALTH_RECEIPT_EVENT,
+  SYNC_HEALTH_RESET_EVENT,
+  sanitizeSyncHealthReceipt,
   type SyncHealthReceipt,
 } from "@/observability/syncHealthRecorder";
 import {
@@ -63,17 +65,26 @@ export function SyncHealthCard({
     const handleReceipt = (event: Event) => {
       const detail = (event as CustomEvent<Partial<SyncHealthReceipt>>).detail;
       if (!detail?.kind || !detail.source) return;
-      const receipt = {
+      const receipt = sanitizeSyncHealthReceipt({
         ...detail,
         at: detail.at ?? Date.now(),
-        route: detail.route ?? `${window.location.pathname}${window.location.search}`,
-      } as SyncHealthReceipt;
+        route: detail.route ?? window.location.href,
+      });
+      if (!receipt) return;
       setLastReceipt(receipt);
       setRecentReceipts((prev) => [...prev, receipt].slice(-MAX_RECENT_RECEIPTS));
     };
 
     window.addEventListener(SYNC_HEALTH_RECEIPT_EVENT, handleReceipt);
-    return () => window.removeEventListener(SYNC_HEALTH_RECEIPT_EVENT, handleReceipt);
+    const handleReset = () => {
+      setLastReceipt(null);
+      setRecentReceipts([]);
+    };
+    window.addEventListener(SYNC_HEALTH_RESET_EVENT, handleReset);
+    return () => {
+      window.removeEventListener(SYNC_HEALTH_RECEIPT_EVENT, handleReceipt);
+      window.removeEventListener(SYNC_HEALTH_RESET_EVENT, handleReset);
+    };
   }, []);
 
   const cloudEnabled = isCloudSyncEnabled();

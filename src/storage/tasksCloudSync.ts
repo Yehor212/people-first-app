@@ -107,7 +107,7 @@ export async function pullTasksFromCloud(expectedOwnerUserId: string): Promise<T
   if (!(await validateSyncOwner(ownerUserId, 'Task pull'))) return null;
 
   if (error) {
-    logger.error('Error pulling tasks:', error);
+    logger.error('[TasksSync] Error pulling tasks:', error);
     return null; // Return null to signal error - caller should keep local data
   }
 
@@ -137,7 +137,7 @@ export async function pushTasksToCloud(
     });
 
   if (error) {
-    logger.error('Error pushing tasks:', error);
+    logger.error('[TasksSync] Error pushing tasks:', error);
     logger.warn('[Sync] Operation failed, will retry via orchestrator');
   }
 }
@@ -310,7 +310,7 @@ export async function pullQuestsFromCloud(
   if (!(await validateSyncOwner(ownerUserId, 'Quest pull'))) return undefined;
 
   if (error) {
-    logger.error('Error pulling quests:', error);
+    logger.error('[QuestsSync] Error pulling quests:', error);
     return undefined; // Return undefined to signal error - caller should keep local data
   }
 
@@ -351,7 +351,7 @@ export async function pushQuestsToCloud(
     });
 
   if (error) {
-    logger.error('Error pushing quests:', error);
+    logger.error('[QuestsSync] Error pushing quests:', error);
     logger.warn('[Sync] Operation failed, will retry via orchestrator');
   }
 }

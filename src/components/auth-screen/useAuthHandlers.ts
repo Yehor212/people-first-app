@@ -18,6 +18,11 @@ import { analytics } from "@/lib/analytics";
 import { hapticError } from "@/lib/haptics";
 import { phoneSchema } from "@/lib/schemas";
 import type { useAuthSession } from "./useAuthSession";
+import {
+  AUTH_DIAGNOSTIC_CODES,
+  buildAuthDiagnosticEvidence,
+  serializeAuthDiagnosticEvidence,
+} from "./authDiagnosticEvidence";
 
 type Session = ReturnType<typeof useAuthSession>;
 
@@ -46,11 +51,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
             t.authNotConfigured ||
             "Apple sign-in is not available yet. Please use another sign-in method."
         );
-        session.setDebugInfo(
-          `Apple auth availability: ${availability.status}${
-            availability.reason ? ` (${availability.reason})` : ""
-          }`
-        );
+        session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.APPLE_UNAVAILABLE);
         return;
       }
     }
@@ -90,7 +91,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
 
       const platform = isNative ? "native" : "web";
       logger.log("[Auth] Platform:", platform);
-      session.setDebugInfo(`Platform: ${platform}, Redirect: configured`);
+      session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.OAUTH_READY);
 
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         ...buildOAuthCredentials(provider, {
@@ -113,9 +114,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         }
 
         session.setError(errorMessage);
-        session.setDebugInfo(
-          `Error code: ${signInError.status || "unknown"}, Message: ${signInError.message}`
-        );
+        session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.OAUTH_REJECTED);
         if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
         endAuthFlow();
         session.setLoadingProvider(null);
@@ -124,7 +123,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
 
       if (data?.url) {
         logger.log(`[Auth] ${provider} OAuth URL generated`);
-        session.setDebugInfo(`OAuth URL generated successfully`);
+        session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.OAUTH_READY);
         if (isNative) {
           if (!isTrustedOAuthRedirectUrl(data.url, provider)) {
             logger.error("[Auth] Untrusted OAuth redirect URL blocked");
@@ -142,7 +141,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       } else {
         logger.error(`[Auth] ${provider} OAuth URL missing`);
         session.setError(t.authUnexpectedError || `Failed to sign in with ${provider}.`);
-        session.setDebugInfo("OAuth URL was not returned by Supabase");
+        session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.OAUTH_MISSING_URL);
         await cancelPkceAttemptFromUrl(supabase.auth, redirectUrl);
         if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
         endAuthFlow();
@@ -160,7 +159,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       }
       logger.error(`[Auth] Unexpected error during ${provider} sign-in:`, err);
       session.setError(t.authUnexpectedError);
-      session.setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
+      session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.FAILURE);
       if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
       endAuthFlow();
       session.setLoadingProvider(null);
@@ -200,13 +199,13 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         } else if (result.error === "cancelled") {
           session.setLoadingProvider(null);
         } else {
-          session.setError(result.error || t.authUnexpectedError);
-          session.setDebugInfo(`Native auth error: ${result.error}`);
+          session.setError(t.authUnexpectedError);
+          session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.NATIVE_FAILURE);
         }
       } catch (err) {
         logger.error("[Auth] Native Google auth exception:", err);
         session.setError(t.authUnexpectedError);
-        session.setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
+        session.setDebugInfo(AUTH_DIAGNOSTIC_CODES.NATIVE_FAILURE);
       } finally {
         endAuthFlow();
         session.setLoadingProvider(null);
@@ -338,27 +337,18 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     session.setError(null);
   };
 
-  // Strip HTML-injection chars and control bytes for defense-in-depth before
-  // the blob download. Same pattern as ErrorBoundary's sanitizeReport.
-  const sanitizeAuthDebug = (s: string | undefined | null): string => {
-    if (!s) return "";
-    // eslint-disable-next-line no-control-regex
-    return s.replace(/[<>"'&]/g, "").replace(/[\u0000-\u001F\u007F]/g, " ");
-  };
-
   // Export debug info
   const exportDebugInfo = () => {
-    const info = {
+    const info = buildAuthDiagnosticEvidence({
       timestamp: new Date().toISOString(),
-      platform: isNative ? "native" : "web",
-      redirectUrl: sanitizeAuthDebug(getAuthRedirectUrl()),
+      isNative,
+      redirectUrl: getAuthRedirectUrl(),
       supabaseConfigured: !!supabase,
-      error: sanitizeAuthDebug(session.error),
-      debugInfo: sanitizeAuthDebug(session.debugInfo),
-      userAgent: sanitizeAuthDebug(navigator.userAgent.slice(0, 200)),
-    };
+      error: session.error,
+      debugInfo: session.debugInfo,
+    });
 
-    const blob = new Blob([JSON.stringify(info, null, 2)], {
+    const blob = new Blob([serializeAuthDiagnosticEvidence(info)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);

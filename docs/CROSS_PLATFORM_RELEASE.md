@@ -42,6 +42,21 @@ npx cap sync ios
 - `CURRENT_PROJECT_VERSION`/`MARKETING_VERSION` поднимать каждый релиз.
 - Review занимает 1–2 дня — учитывать в parity-плане.
 
+## Forward-only data schema (v11)
+
+forward_schema_floor: 11
+legacy_v10_rollback: forbidden
+rollback_artifact: v11-aware-or-newer
+
+После первого распространения schema v11 нельзя выпускать, откатывать или
+продвигать binary, который знает только v10. Такой binary не видит
+`automationTransactions`, `automationHistoryMarkers` и `automationRemoteEvents`,
+поэтому его account-clear оставляет приватные v11 rows на устройстве. При
+инциденте нужно остановить rollout и заменить artifact только сборкой с v11-aware
+миграцией и очисткой всех трёх stores; uninstall/reinstall не является
+доказательством удаления cloud-данных. Перед replacement повторно запускается
+`npm run check:forward-only-schema` и upgrade/account-clear/backup negative controls.
+
 ## Desktop release (Tauri)
 
 ```bash

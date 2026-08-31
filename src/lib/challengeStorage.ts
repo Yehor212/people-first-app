@@ -12,7 +12,7 @@ export function getChallenges(): Challenge[] {
 
 export function saveChallenges(challenges: Challenge[]): void {
   if (!safeLocalStorageSet(SK.CHALLENGES, challenges)) {
-    logger.error('Failed to save challenges');
+    logger.error('[Challenge] Failed to save challenges');
   }
 }
 
@@ -56,7 +56,7 @@ export function initializeBadges(): Badge[] {
 
 export function saveBadges(badges: Badge[]): void {
   if (!safeLocalStorageSet(SK.BADGES, badges)) {
-    logger.error('Failed to save badges');
+    logger.error('[Challenge] Failed to save badges');
   }
 }
 

@@ -242,7 +242,7 @@ class SyncOrchestrator {
     // If already processing, wait for current batch to complete then check queue again
     void this.startProcessing().catch((error: unknown) => {
       const normalized = this.normalizeError(error);
-      logger.error("Failed to start queue processing", normalized);
+      logger.error("[SyncOrchestrator] Failed to start queue processing", normalized);
       if (this.removeOperation(operation)) {
         this.rejectOperation(operation, normalized);
         this.updateState({ queueLength: this.queue.length });
@@ -442,7 +442,7 @@ class SyncOrchestrator {
             },
             "error"
           );
-          logger.error(`Sync error for ${operation.type}:`, normalizedError);
+          logger.error(`[SyncOrchestrator] Sync error for ${operation.type}:`, normalizedError);
 
           operation.error = normalizedError;
           operation.retries++;
@@ -551,7 +551,7 @@ class SyncOrchestrator {
             // Move to end of queue and retry after delay
             await this.requeueAfterDelay(operation, delay, controller);
           } else {
-            logger.error(`Max retries exceeded for ${operation.type}`);
+            logger.error(`[SyncOrchestrator] Max retries exceeded for ${operation.type}`);
 
             this.removeOperation(operation);
             this.rejectOperation(operation, normalizedError);

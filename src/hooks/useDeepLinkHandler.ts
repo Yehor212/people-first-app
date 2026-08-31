@@ -56,6 +56,17 @@ function fingerprintForAuthDedupe(value: string): string {
   return `${value.length}:${(hash >>> 0).toString(16)}`;
 }
 
+/** Build a bounded key without retaining OAuth codes, state, errors, or tokens. */
+export function getAuthDedupeKey(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const endpoint = `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+    return `${endpoint}|auth=${fingerprintForAuthDedupe(`${parsed.search}\u0000${parsed.hash}`)}`;
+  } catch {
+    return "invalid-auth-url";
+  }
+}
+
 function isTrustedAuthCallbackUrl(url: string): boolean {
   let parsedUrl: URL;
   try {
@@ -84,6 +95,42 @@ function isTrustedAuthCallbackUrl(url: string): boolean {
   return false;
 }
 
+/** Parse only admitted challenge transports; HTTPS capabilities must stay in the fragment. */
+export function parseChallengeInviteUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const isLegacyCustomScheme =
+      parsedUrl.protocol === "zenflow:" &&
+      parsedUrl.hostname === "challenge" &&
+      (parsedUrl.pathname === "" || parsedUrl.pathname === "/");
+    const isCanonicalPublicOrigin = parsedUrl.origin === "https://yehor212.github.io";
+    const isLocalDevelopmentOrigin =
+      parsedUrl.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsedUrl.hostname);
+    const isCanonicalWebFallback =
+      (isCanonicalPublicOrigin || isLocalDevelopmentOrigin) &&
+      (isLocalDevelopmentOrigin || parsedUrl.port === "") &&
+      parsedUrl.username === "" &&
+      parsedUrl.password === "" &&
+      (parsedUrl.pathname === "/people-first-app" || parsedUrl.pathname === "/people-first-app/");
+    const isLegacyHttpsAppLink =
+      parsedUrl.protocol === "https:" &&
+      parsedUrl.hostname === "zenflow.app" &&
+      parsedUrl.port === "" &&
+      parsedUrl.username === "" &&
+      parsedUrl.password === "" &&
+      (parsedUrl.pathname === "/challenge" || parsedUrl.pathname === "/challenge/");
+
+    if (!isLegacyCustomScheme && !isCanonicalWebFallback && !isLegacyHttpsAppLink) return null;
+
+    const fragment = new URLSearchParams(parsedUrl.hash.replace(/^#/, ""));
+    const data = fragment.get("challenge") ?? fragment.get("data") ??
+      (isLegacyCustomScheme ? parsedUrl.searchParams.get("data") : null);
+    return data ? decodeInviteData(data) : null;
+  } catch {
+    return null;
+  }
+}
+
 interface UseDeepLinkHandlerOptions {
   handleDiaryDeepLinks?: boolean;
 }
@@ -110,6 +157,25 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
   const handledAuthKeysRef = useRef<Set<string>>(new Set());
   const userNameCustomRef = useRef(userNameCustom);
   userNameCustomRef.current = userNameCustom;
+
+  useEffect(() => {
+    if (isNative || typeof window === "undefined") return undefined;
+    const invite = parseChallengeInviteUrl(window.location.href);
+    if (!invite) return undefined;
+
+    // The fragment is a join capability. Remove it from browser history as
+    // soon as it has been decoded, even when the feature is disabled.
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    if (isFeatureVisible("challenges")) {
+      setChallengeInvite(invite);
+      setShowChallengeModal(true);
+    }
+    return undefined;
+  }, [isFeatureVisible, setChallengeInvite]);
 
   useEffect(() => {
     if (!isNative) return;
@@ -161,26 +227,6 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
           trySettle(null);
         }, 15_000);
       });
-    };
-
-    const getAuthDedupeKey = (url: string): string => {
-      try {
-        const parsed = new URL(url);
-        const hash = new URLSearchParams(parsed.hash.replace(/^#/, ""));
-        const code = parsed.searchParams.get("code") || hash.get("code") || "";
-        const state = parsed.searchParams.get("state") || hash.get("state") || "";
-        const tokenHash =
-          parsed.searchParams.get("token_hash") || hash.get("token_hash") || "";
-        const accessToken = hash.get("access_token") || "";
-        const refreshToken = hash.get("refresh_token") || "";
-        const tokenFingerprint = fingerprintForAuthDedupe(
-          tokenHash || (accessToken && refreshToken ? `${accessToken}\u0000${refreshToken}` : ""),
-        );
-        const error = parsed.searchParams.get("error") || hash.get("error") || "";
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}|code=${code}|state=${state}|token=${tokenFingerprint}|error=${error}`;
-      } catch {
-        return url;
-      }
     };
 
     const isExactlyAdmittedSession = async (expectedUserId: string): Promise<boolean> => {
@@ -281,34 +327,16 @@ export function useDeepLinkHandler(options: UseDeepLinkHandlerOptions = {}): voi
 
     // Handle challenge deep links
     const handleChallengeUrl = (url: string): boolean => {
-      try {
-        const parsedUrl = new URL(url);
-        // Check if it's a challenge invite URL
-        // Support both: zenflow://challenge?data=... and https://zenflow.app/challenge?data=...
-        const isCustomScheme =
-          parsedUrl.protocol === "zenflow:" && parsedUrl.hostname === "challenge";
-        const isHttpsScheme =
-          parsedUrl.hostname === "zenflow.app" && parsedUrl.pathname.startsWith("/challenge");
-
-        if (isCustomScheme || isHttpsScheme) {
-          const data = parsedUrl.searchParams.get("data");
-          if (data) {
-            const invite = decodeInviteData(data);
-            if (invite) {
-              logger.log("[Index] Challenge invite received:", invite.code);
-              // Only open challenge modal if challenges feature is enabled
-              if (isFeatureVisible("challenges")) {
-                setChallengeInvite(invite);
-                setShowChallengeModal(true);
-                return true;
-              } else {
-                logger.log("[Index] Challenges feature disabled, ignoring invite");
-              }
-            }
-          }
+      const invite = parseChallengeInviteUrl(url);
+      if (invite) {
+        logger.log("[Index] Challenge invite received:", invite.code);
+        if (isFeatureVisible("challenges")) {
+          setChallengeInvite(invite);
+          setShowChallengeModal(true);
+          return true;
+        } else {
+          logger.log("[Index] Challenges feature disabled, ignoring invite");
         }
-      } catch (error) {
-        logger.error("[Index] Failed to parse challenge URL:", error);
       }
       return false;
     };

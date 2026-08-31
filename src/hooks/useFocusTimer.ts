@@ -1,40 +1,231 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { logger } from "@/lib/logger";
-import { FocusSession } from "@/types";
+import type { FocusSession } from "@/types";
 import { getToday } from "@/lib/utils";
-import { safeLocalStorageSet, storageRemove } from "@/lib/safeJson";
+import {
+  safeLocalStorageSet,
+  storageReadRaw,
+  storageRemove,
+} from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { runWithOriginExclusiveLock } from "@/lib/originExclusiveLock";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { haptics } from "@/lib/haptics";
 import { announceSuccess } from "@/lib/a11y";
 import { scheduleFocusCompletionNotification } from "@/lib/focusCompletionNotification";
-
 import { useUIStore, setFocusControls } from "@/stores";
-import { DEFAULT_FOCUS_MINUTES, loadTimerState, createFocusSession } from "@/types/focusTimerTypes";
-import type { TimerState, UseFocusTimerOptions } from "@/types/focusTimerTypes";
+import {
+  ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+  assertOriginAccountBoundaryGeneration,
+  captureOriginAccountBoundaryGeneration,
+  registerAccountBoundaryRuntimeReset,
+  subscribeAccountSessionTransition,
+  subscribeOriginAccountBoundaryObservation,
+} from "@/storage/accountBoundaryRuntime";
+import { getLocalDataOwnerId } from "@/storage/db";
+import {
+  DEFAULT_FOCUS_MINUTES,
+  clearPendingFocusCommit,
+  createFocusSession,
+  pendingFocusCommitMatches,
+  persistPendingFocusCommit,
+  readPendingFocusCommit,
+  readTimerState,
+} from "@/types/focusTimerTypes";
+import type {
+  FocusCommitBoundary,
+  PendingFocusCommit,
+  PendingFocusCommitRead,
+  TimerState,
+  TimerStateRead,
+  UseFocusTimerOptions,
+} from "@/types/focusTimerTypes";
 import { useFocusTimerConfig } from "./useFocusTimerConfig";
 
 // Re-export for backward compatibility
 export { presetColors } from "@/types/focusTimerTypes";
+
+async function assertPendingBoundary(pending: PendingFocusCommit): Promise<void> {
+  assertOriginAccountBoundaryGeneration(pending.accountBoundaryGeneration);
+  const currentOwnerUserId = await getLocalDataOwnerId();
+  assertOriginAccountBoundaryGeneration(pending.accountBoundaryGeneration);
+  if (currentOwnerUserId !== pending.ownerUserId) {
+    throw new Error("Focus recovery owner changed");
+  }
+}
+
+async function createDurablePendingFocusCommit(
+  session: FocusSession,
+  requiresReflection: boolean,
+  accountBoundaryGeneration: string
+): Promise<PendingFocusCommit | null> {
+  try {
+    return await runWithOriginExclusiveLock(
+      ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+      async () => {
+        assertOriginAccountBoundaryGeneration(accountBoundaryGeneration);
+        const ownerUserId = await getLocalDataOwnerId();
+        assertOriginAccountBoundaryGeneration(accountBoundaryGeneration);
+        if (readPendingFocusCommit().status !== "absent") return null;
+        const pending: PendingFocusCommit = {
+          schemaVersion: 1,
+          ownerUserId,
+          accountBoundaryGeneration,
+          session,
+          requiresReflection,
+        };
+        if (!persistPendingFocusCommit(pending)) return null;
+        await assertPendingBoundary(pending);
+        return pending;
+      }
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function updateDurablePendingFocusCommit(
+  expected: PendingFocusCommit,
+  session: FocusSession
+): Promise<PendingFocusCommit | null> {
+  try {
+    return await runWithOriginExclusiveLock(
+      ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+      async () => {
+        await assertPendingBoundary(expected);
+        const current = readPendingFocusCommit();
+        if (
+          current.status !== "present" ||
+          !pendingFocusCommitMatches(current.value, expected)
+        ) {
+          return null;
+        }
+        const next: PendingFocusCommit = { ...current.value, session };
+        if (!persistPendingFocusCommit(next)) return null;
+        await assertPendingBoundary(next);
+        return next;
+      }
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function validateDurablePendingFocusCommit(
+  expected: PendingFocusCommit
+): Promise<boolean> {
+  try {
+    return await runWithOriginExclusiveLock(
+      ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+      async () => {
+        await assertPendingBoundary(expected);
+        const current = readPendingFocusCommit();
+        return (
+          current.status === "present" &&
+          pendingFocusCommitMatches(current.value, expected)
+        );
+      }
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function acknowledgeDurablePendingFocusCommit(
+  expected: PendingFocusCommit
+): Promise<boolean> {
+  try {
+    return await runWithOriginExclusiveLock(
+      ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+      async () => {
+        await assertPendingBoundary(expected);
+        const current = readPendingFocusCommit();
+        if (current.status === "unavailable" || current.status === "invalid") {
+          return false;
+        }
+        if (current.status === "absent") {
+          const pendingRaw = storageReadRaw(SK.FOCUS_PENDING_COMMIT);
+          const timerRaw = storageReadRaw(SK.TIMER_STATE);
+          return (
+            pendingRaw.ok &&
+            pendingRaw.value === null &&
+            timerRaw.ok &&
+            timerRaw.value === null
+          );
+        }
+        if (!pendingFocusCommitMatches(current.value, expected)) return false;
+        // The expired/running checkpoint must be removed before the durable
+        // pending marker. If either operation fails, the exact primary identity
+        // remains retryable and the UI stays behind the acknowledgement gate.
+        if (!storageRemove(SK.TIMER_STATE)) return false;
+        if (!clearPendingFocusCommit()) return false;
+        await assertPendingBoundary(expected);
+        return true;
+      }
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function discardExpiredBoundaryFocusRecovery(
+  expected: PendingFocusCommit
+): Promise<boolean> {
+  try {
+    return await runWithOriginExclusiveLock(
+      ACCOUNT_BOUNDARY_DATA_WRITE_LOCK,
+      async () => {
+        const current = readPendingFocusCommit();
+        if (current.status === "unavailable" || current.status === "invalid") return false;
+        if (
+          current.status === "absent" ||
+          !pendingFocusCommitMatches(current.value, expected)
+        ) {
+          return true;
+        }
+        if (!storageRemove(SK.TIMER_STATE)) return false;
+        return clearPendingFocusCommit();
+      }
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function useFocusTimer({
   sessions,
   onCompleteSession,
   onMinuteUpdate,
 }: UseFocusTimerOptions) {
-  // Hyperfocus Mode state
   const [showHyperfocus, setShowHyperfocus] = useState(false);
 
-  // Load persisted state once on mount
-  const savedStateRef = useRef<TimerState | null>(null);
-  if (savedStateRef.current === null) {
-    savedStateRef.current = loadTimerState();
-  }
-  const savedState = savedStateRef.current;
+  const timerReadRef = useRef<TimerStateRead | null>(null);
+  if (timerReadRef.current === null) timerReadRef.current = readTimerState();
+  const timerRead = timerReadRef.current;
+  const savedState = timerRead.status === "present" ? timerRead.value : null;
 
-  // Config sub-hook (preset, minutes, durations, presets, input handlers)
+  const pendingReadRef = useRef<PendingFocusCommitRead | null>(null);
+  if (pendingReadRef.current === null) pendingReadRef.current = readPendingFocusCommit();
+  const pendingRead = pendingReadRef.current;
+  const storedPending = pendingRead.status === "present" ? pendingRead.value : null;
+  const initialStorageReadBlocked =
+    timerRead.status === "unavailable" ||
+    timerRead.status === "invalid" ||
+    pendingRead.status === "unavailable" ||
+    pendingRead.status === "invalid";
+  const expiredFocusCheckpoint = Boolean(
+    !storedPending &&
+      savedState?.endTime &&
+      savedState.isRunning &&
+      !savedState.isBreak &&
+      Math.ceil((savedState.endTime - Date.now()) / 1000) <= 0
+  );
+  const initialRecoveryNeeded = Boolean(
+    initialStorageReadBlocked || storedPending || expiredFocusCheckpoint
+  );
+
   const {
     t,
     preset,
@@ -52,78 +243,110 @@ export function useFocusTimer({
     handleBreakInputBlur,
   } = useFocusTimerConfig(savedState);
 
-  // Session recovery: detect if a focus session expired while app was closed
-  const expiredSessionRef = useRef<FocusSession | null>(
-    savedState?.endTime &&
-      savedState.isRunning &&
-      !savedState.isBreak &&
-      Math.ceil((savedState.endTime - Date.now()) / 1000) <= 0
-      ? createFocusSession(savedState.focusMinutes, savedState.label || "", "completed")
-      : null
-  );
-
-  // Timer state
   const [timeLeft, setTimeLeft] = useState(() => {
-    if (expiredSessionRef.current) {
-      storageRemove(SK.TIMER_STATE);
+    if (initialRecoveryNeeded) {
       return (savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES) * 60;
     }
     if (savedState?.endTime && savedState.isRunning) {
       const remaining = Math.ceil((savedState.endTime - Date.now()) / 1000);
       if (remaining > 0) return remaining;
     }
-    const minutes = savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES;
-    return minutes * 60;
+    return (savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES) * 60;
   });
-  const [isRunning, setIsRunning] = useState(savedState?.isRunning || false);
-  const [isBreak, setIsBreak] = useState(savedState?.isBreak || false);
+  const [isRunning, setIsRunning] = useState(
+    initialRecoveryNeeded ? false : savedState?.isRunning || false
+  );
+  const [isBreak, setIsBreak] = useState(
+    initialRecoveryNeeded ? false : savedState?.isBreak || false
+  );
   const [label, setLabel] = useState(savedState?.label || "");
-
-  // Reflection state
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionValue, setReflectionValue] = useState<number | null>(null);
   const [pendingSession, setPendingSession] = useState<FocusSession | null>(null);
 
-  // Refs
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const intervalTickRef = useRef<number>(0);
+  const intervalTickRef = useRef(0);
   const isMountedRef = useRef(true);
   const savePendingRef = useRef(false);
-  const endTimeRef = useRef<number | null>(savedState?.endTime || null);
-  const focusStartRef = useRef<number | null>(savedState?.focusStartTime || null);
+  const endTimeRef = useRef<number | null>(
+    initialRecoveryNeeded ? null : savedState?.endTime || null
+  );
+  const focusStartRef = useRef<number | null>(
+    initialRecoveryNeeded ? null : savedState?.focusStartTime || null
+  );
   const focusAccumulatedRef = useRef(savedState?.focusAccumulated || 0);
-  const lastMinuteRef = useRef<number>(0);
+  const lastMinuteRef = useRef(0);
+  const pendingCommitRef = useRef<PendingFocusCommit | null>(storedPending);
+  const recoveryBlockedRef = useRef(initialRecoveryNeeded);
+  const recoveryStartedRef = useRef(false);
+  const expiredRecoverySessionRef = useRef<FocusSession | null>(null);
+  const primaryCommitTokenRef = useRef<object | null>(null);
+  const runtimeEpochRef = useRef(0);
+  const boundaryGenerationRef = useRef(captureOriginAccountBoundaryGeneration());
 
-  // Store latest state in ref for synchronous unmount save (avoids stale closure)
   const stateRef = useRef({ isRunning, isBreak, focusMinutes, breakMinutes, label, preset });
   stateRef.current = { isRunning, isBreak, focusMinutes, breakMinutes, label, preset };
-
-  // Derived values
   const prevFocusDurationRef = useRef(focusDuration);
   const prevBreakDurationRef = useRef(breakDuration);
 
-  const todaySessions = sessions.filter((s) => s.date === getToday() && s.status !== "aborted");
-  const todayMinutes = todaySessions.reduce((acc, s) => acc + s.duration, 0);
-
+  const todaySessions = sessions.filter((session) => {
+    return session.date === getToday() && session.status !== "aborted";
+  });
+  const todayMinutes = todaySessions.reduce((total, session) => total + session.duration, 0);
   const getCurrentRunningMinutes = () => {
     if (!isRunning || isBreak) return 0;
     const runningElapsed = focusStartRef.current ? Date.now() - focusStartRef.current : 0;
-    const totalElapsed = focusAccumulatedRef.current + runningElapsed;
-    return Math.floor(totalElapsed / 60000);
+    return Math.floor((focusAccumulatedRef.current + runningElapsed) / 60_000);
   };
-
   const totalMinutesToday = todayMinutes + getCurrentRunningMinutes();
-
   const progress = isBreak
     ? ((breakDuration - timeLeft) / breakDuration) * 100
     : ((focusDuration - timeLeft) / focusDuration) * 100;
 
-  // ============================================
-  // EFFECTS
-  // ============================================
+  const clearInMemoryTimer = useCallback(
+    (nextIsBreak = false) => {
+      endTimeRef.current = null;
+      focusStartRef.current = null;
+      focusAccumulatedRef.current = 0;
+      lastMinuteRef.current = 0;
+      setIsRunning(false);
+      setIsBreak(nextIsBreak);
+      setTimeLeft(nextIsBreak ? breakDuration : focusDuration);
+      useUIStore.getState().clearFocusTimerBridge();
+    },
+    [breakDuration, focusDuration]
+  );
 
-  // Manage mounted state for cleanup
+  const commitAndAcknowledgePending = useCallback(
+    async (pending: PendingFocusCommit): Promise<boolean> => {
+      if (primaryCommitTokenRef.current) return false;
+      const epoch = runtimeEpochRef.current;
+      if (!(await validateDurablePendingFocusCommit(pending))) return false;
+      if (epoch !== runtimeEpochRef.current) return false;
+      const token = {};
+      primaryCommitTokenRef.current = token;
+      const boundary: FocusCommitBoundary = {
+        ownerUserId: pending.ownerUserId,
+        accountBoundaryGeneration: pending.accountBoundaryGeneration,
+        expectedPending: pending,
+      };
+      try {
+        await onCompleteSession(pending.session, boundary);
+        if (epoch !== runtimeEpochRef.current) return false;
+        return await acknowledgeDurablePendingFocusCommit(pending);
+      } catch {
+        logger.warn("[FocusTimer] Primary focus persistence deferred");
+        return false;
+      } finally {
+        if (primaryCommitTokenRef.current === token) {
+          primaryCommitTokenRef.current = null;
+        }
+      }
+    },
+    [onCompleteSession]
+  );
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -131,40 +354,140 @@ export function useFocusTimer({
     };
   }, []);
 
-  // Session recovery: if a focus session expired while app was closed, auto-complete it
   useEffect(() => {
-    const expired = expiredSessionRef.current;
-    if (expired) {
-      expiredSessionRef.current = null;
-      setPendingSession(expired);
-      setShowReflection(true);
-      setIsRunning(false);
-      setIsBreak(false);
-      logger.log("[FocusTimer] Recovered expired session:", expired.duration, "min");
-    }
-  }, []);
+    const resetForAccountBoundary = () => {
+      runtimeEpochRef.current += 1;
+      boundaryGenerationRef.current = captureOriginAccountBoundaryGeneration();
+      primaryCommitTokenRef.current = null;
+      pendingCommitRef.current = null;
+      recoveryBlockedRef.current = initialStorageReadBlocked;
+      recoveryStartedRef.current = false;
+      expiredRecoverySessionRef.current = null;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (!isMountedRef.current) return;
+      setPendingSession(null);
+      setShowReflection(false);
+      setReflectionValue(null);
+      setShowHyperfocus(false);
+      setLabel("");
+      clearInMemoryTimer(false);
+    };
+    const unregisterReset = registerAccountBoundaryRuntimeReset(resetForAccountBoundary);
+    const unsubscribeSessionTransition = subscribeAccountSessionTransition(
+      resetForAccountBoundary
+    );
+    const unsubscribeObservation = subscribeOriginAccountBoundaryObservation(
+      resetForAccountBoundary
+    );
+    return () => {
+      unregisterReset();
+      unsubscribeSessionTransition();
+      unsubscribeObservation();
+    };
+  }, [clearInMemoryTimer, initialStorageReadBlocked]);
 
-  // Synchronous save on unmount to prevent state loss when switching tabs
+  useEffect(() => {
+    if (!initialRecoveryNeeded || recoveryStartedRef.current) return;
+    recoveryStartedRef.current = true;
+    recoveryBlockedRef.current = true;
+    const epoch = runtimeEpochRef.current;
+
+    void (async () => {
+      if (initialStorageReadBlocked) {
+        logger.error("[FocusTimer] Durable recovery state unavailable");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("zenflow:storage-error", {
+              detail: {
+                type: "read_failed",
+                message: t.storageErrorDesc,
+              },
+            })
+          );
+        }
+        return;
+      }
+      let pending = storedPending;
+      if (pending) {
+        if (!(await validateDurablePendingFocusCommit(pending))) {
+          const discarded = await discardExpiredBoundaryFocusRecovery(pending);
+          if (!discarded) logger.warn("[FocusTimer] Stale recovery cleanup deferred");
+          if (epoch === runtimeEpochRef.current) {
+            pendingCommitRef.current = null;
+            recoveryBlockedRef.current = !discarded;
+            if (discarded && isMountedRef.current) clearInMemoryTimer(false);
+          }
+          return;
+        }
+      } else if (expiredFocusCheckpoint && savedState) {
+        expiredRecoverySessionRef.current ??= createFocusSession(
+          savedState.focusMinutes,
+          savedState.label,
+          "completed"
+        );
+        pending = await createDurablePendingFocusCommit(
+          expiredRecoverySessionRef.current,
+          true,
+          boundaryGenerationRef.current
+        );
+        if (!pending) {
+          logger.error("[FocusTimer] Pending completion recovery unavailable");
+          return;
+        }
+      }
+
+      if (!pending || epoch !== runtimeEpochRef.current) return;
+      pendingCommitRef.current = pending;
+      if (pending.requiresReflection) {
+        if (!isMountedRef.current) return;
+        setPendingSession(pending.session);
+        setReflectionValue(pending.session.reflection ?? null);
+        setShowReflection(true);
+        logger.log("[FocusTimer] Recovered pending completed session");
+        return;
+      }
+
+      const acknowledged = await commitAndAcknowledgePending(pending);
+      if (!acknowledged || epoch !== runtimeEpochRef.current) {
+        logger.warn("[FocusTimer] Aborted session recovery deferred");
+        return;
+      }
+      pendingCommitRef.current = null;
+      recoveryBlockedRef.current = false;
+      if (isMountedRef.current) clearInMemoryTimer(false);
+    })();
+  }, [
+    clearInMemoryTimer,
+    commitAndAcknowledgePending,
+    expiredFocusCheckpoint,
+    initialRecoveryNeeded,
+    initialStorageReadBlocked,
+    savedState,
+    storedPending,
+    t.storageErrorDesc,
+  ]);
+
   useEffect(() => {
     return () => {
-      const { isRunning, isBreak, focusMinutes, breakMinutes, label, preset } = stateRef.current;
+      if (pendingCommitRef.current || recoveryBlockedRef.current) return;
+      const current = stateRef.current;
       const state: TimerState = {
         endTime: endTimeRef.current,
-        focusMinutes,
-        breakMinutes,
-        isRunning,
-        isBreak,
-        label,
+        focusMinutes: current.focusMinutes,
+        breakMinutes: current.breakMinutes,
+        isRunning: current.isRunning,
+        isBreak: current.isBreak,
+        label: current.label,
         focusStartTime: focusStartRef.current,
         focusAccumulated: focusAccumulatedRef.current,
-        preset,
+        preset: current.preset,
       };
       safeLocalStorageSet(SK.TIMER_STATE, state);
     };
   }, []);
 
-  // Persist timer state
   const saveTimerState = useCallback(() => {
+    if (pendingCommitRef.current || recoveryBlockedRef.current) return;
     const state: TimerState = {
       endTime: endTimeRef.current,
       focusMinutes,
@@ -177,11 +500,10 @@ export function useFocusTimer({
       preset,
     };
     if (!safeLocalStorageSet(SK.TIMER_STATE, state)) {
-      logger.error("Failed to save timer state");
+      logger.error("[FocusTimer] Failed to save timer state");
     }
   }, [focusMinutes, breakMinutes, isRunning, isBreak, label, preset]);
 
-  // Sync timeLeft when focusDuration changes (not running, not break)
   useEffect(() => {
     if (!isRunning && !isBreak && focusDuration !== prevFocusDurationRef.current) {
       setTimeLeft(focusDuration);
@@ -189,7 +511,6 @@ export function useFocusTimer({
     prevFocusDurationRef.current = focusDuration;
   }, [focusDuration, isRunning, isBreak]);
 
-  // Sync timeLeft when breakDuration changes (not running, during break)
   useEffect(() => {
     if (!isRunning && isBreak && breakDuration !== prevBreakDurationRef.current) {
       setTimeLeft(breakDuration);
@@ -197,145 +518,142 @@ export function useFocusTimer({
     prevBreakDurationRef.current = breakDuration;
   }, [breakDuration, isRunning, isBreak]);
 
-  // Save state whenever it changes (debounced to prevent race conditions with interval saves)
   useEffect(() => {
-    if (saveDebounceRef.current) {
-      clearTimeout(saveDebounceRef.current);
-    }
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
     savePendingRef.current = true;
     saveDebounceRef.current = setTimeout(() => {
       saveTimerState();
       savePendingRef.current = false;
     }, 300);
-
     return () => {
-      if (saveDebounceRef.current) {
-        clearTimeout(saveDebounceRef.current);
-      }
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
     };
   }, [saveTimerState]);
 
-  // Restore state on mount
   useEffect(() => {
-    const saved = loadTimerState();
-    if (saved && saved.endTime && saved.isRunning) {
-      const now = Date.now();
-      if (saved.endTime > now) {
-        const remaining = Math.ceil((saved.endTime - now) / 1000);
-        setTimeLeft(remaining);
-      } else {
-        storageRemove(SK.TIMER_STATE);
-      }
+    if (initialRecoveryNeeded) return;
+    const saved = readTimerState();
+    if (
+      saved.status === "present" &&
+      saved.value.endTime &&
+      saved.value.isRunning &&
+      saved.value.endTime > Date.now()
+    ) {
+      setTimeLeft(Math.ceil((saved.value.endTime - Date.now()) / 1000));
     }
-  }, []);
+  }, [initialRecoveryNeeded]);
 
-  // Main timer interval loop
+  const beginCompletedRecovery = useCallback(
+    async (session: FocusSession): Promise<void> => {
+      recoveryBlockedRef.current = true;
+      const epoch = runtimeEpochRef.current;
+      const pending = await createDurablePendingFocusCommit(
+        session,
+        true,
+        boundaryGenerationRef.current
+      );
+      if (!pending || epoch !== runtimeEpochRef.current) {
+        logger.error("[FocusTimer] Pending completion recovery unavailable");
+        return;
+      }
+      pendingCommitRef.current = pending;
+      if (!isMountedRef.current) return;
+      setPendingSession(session);
+      setReflectionValue(session.reflection ?? null);
+      setShowReflection(true);
+      announceSuccess(t.focusCompletedShort || "Focus session complete");
+      void scheduleFocusCompletionNotification(
+        t.focusCompletedShort || "Focus session complete"
+      ).catch(() => logger.warn("[FocusTimer] Completion notification deferred"));
+    },
+    [t.focusCompletedShort]
+  );
+
   useEffect(() => {
     if (!isRunning) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
       saveTimerState();
       return;
     }
 
     intervalRef.current = setInterval(() => {
-      if (!isMountedRef.current || !endTimeRef.current) return;
+      if (!isMountedRef.current || !endTimeRef.current || recoveryBlockedRef.current) return;
       const now = Date.now();
       const remaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
       setTimeLeft(remaining);
 
       if (!isBreak) {
         const runningElapsed = focusStartRef.current ? now - focusStartRef.current : 0;
-        const totalElapsed = focusAccumulatedRef.current + runningElapsed;
-        const currentMinutes = Math.floor(totalElapsed / 60000);
-
+        const currentMinutes = Math.floor(
+          (focusAccumulatedRef.current + runningElapsed) / 60_000
+        );
         if (currentMinutes !== lastMinuteRef.current) {
           lastMinuteRef.current = currentMinutes;
-          if (onMinuteUpdate) {
-            onMinuteUpdate(currentMinutes);
-          }
+          onMinuteUpdate?.(currentMinutes);
         }
       }
 
       if (remaining === 0) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-        endTimeRef.current = null;
+        if (intervalRef.current) clearInterval(intervalRef.current);
         if (!isBreak) {
-          // Focus session completed
-          const session = createFocusSession(focusMinutes, label, "completed");
-          setPendingSession(session);
-          setShowReflection(true);
-
-          announceSuccess(t.focusCompletedShort || "Focus session complete");
-
-          void scheduleFocusCompletionNotification(
-            t.focusCompletedShort || "Focus session complete",
-          ).catch((err) => logger.warn("[Focus]", "Notification failed:", err));
-
-          // Switch to break mode
-          focusStartRef.current = null;
-          focusAccumulatedRef.current = 0;
+          recoveryBlockedRef.current = true;
           setIsRunning(false);
-          setIsBreak(true);
-          setTimeLeft(breakDuration);
-          lastMinuteRef.current = 0;
-          useUIStore
-            .getState()
-            .setFocusTimerBridge({ endTime: null, isRunning: false, isBreak: true, label });
-
-          if (onMinuteUpdate) {
-            onMinuteUpdate(0);
-          }
+          const session = createFocusSession(focusMinutes, label, "completed");
+          void beginCompletedRecovery(session);
         } else {
-          // Break completed, switch back to focus mode
+          endTimeRef.current = null;
           setIsRunning(false);
           setIsBreak(false);
           setTimeLeft(focusDuration);
+          storageRemove(SK.TIMER_STATE);
           useUIStore.getState().clearFocusTimerBridge();
         }
-        storageRemove(SK.TIMER_STATE);
       }
 
-      // Save state every 10 ticks (5 seconds) to reduce localStorage writes
-      intervalTickRef.current++;
+      intervalTickRef.current += 1;
       if (intervalTickRef.current >= 10) {
         intervalTickRef.current = 0;
-        if (!savePendingRef.current) {
-          saveTimerState();
-        }
+        if (!savePendingRef.current) saveTimerState();
       }
     }, 500);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [
-    isRunning,
-    isBreak,
-    focusMinutes,
+    beginCompletedRecovery,
     focusDuration,
-    breakDuration,
+    focusMinutes,
+    isBreak,
+    isRunning,
     label,
-    todayMinutes,
     onMinuteUpdate,
     saveTimerState,
-    t,
   ]);
 
-  // ============================================
-  // HANDLERS
-  // ============================================
-
   const toggleTimer = () => {
+    if (
+      recoveryBlockedRef.current ||
+      pendingCommitRef.current ||
+      primaryCommitTokenRef.current
+    ) {
+      return;
+    }
+    const pendingStatus = readPendingFocusCommit().status;
+    const timerStatus = readTimerState().status;
+    if (
+      pendingStatus !== "absent" ||
+      timerStatus === "unavailable" ||
+      timerStatus === "invalid"
+    ) {
+      recoveryBlockedRef.current = true;
+      logger.warn("[FocusTimer] Pending recovery must finish before timer start");
+      return;
+    }
+
     if (isRunning) {
       if (endTimeRef.current) {
-        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
-        setTimeLeft(remaining);
+        setTimeLeft(Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000)));
       }
       endTimeRef.current = null;
       if (!isBreak && focusStartRef.current) {
@@ -350,68 +668,140 @@ export function useFocusTimer({
       return;
     }
 
-    if (timeLeft <= 0) {
-      setTimeLeft(isBreak ? breakDuration : focusDuration);
-    }
+    boundaryGenerationRef.current = captureOriginAccountBoundaryGeneration();
+    if (timeLeft <= 0) setTimeLeft(isBreak ? breakDuration : focusDuration);
     endTimeRef.current =
-      Date.now() + (timeLeft > 0 ? timeLeft : isBreak ? breakDuration : focusDuration) * 1000;
+      Date.now() +
+      (timeLeft > 0 ? timeLeft : isBreak ? breakDuration : focusDuration) * 1000;
     if (!isBreak) {
       focusStartRef.current = Date.now();
       void haptics.focusStarted();
     }
     setIsRunning(true);
-    useUIStore
-      .getState()
-      .setFocusTimerBridge({ endTime: endTimeRef.current, isRunning: true, isBreak, label });
+    useUIStore.getState().setFocusTimerBridge({
+      endTime: endTimeRef.current,
+      isRunning: true,
+      isBreak,
+      label,
+    });
   };
 
-  const resetTimer = () => {
+  const resetTimer = async () => {
+    if (primaryCommitTokenRef.current) return;
+    const durablePending = pendingCommitRef.current;
+    if (durablePending) {
+      if (durablePending.requiresReflection) return;
+      const acknowledged = await commitAndAcknowledgePending(durablePending);
+      if (!acknowledged) {
+        logger.warn("[FocusTimer] Aborted session acknowledgement deferred");
+        return;
+      }
+      pendingCommitRef.current = null;
+      recoveryBlockedRef.current = false;
+      clearInMemoryTimer(false);
+      return;
+    }
+    if (recoveryBlockedRef.current) return;
+
     if (isRunning && !isBreak) {
       const runningElapsed = focusStartRef.current ? Date.now() - focusStartRef.current : 0;
-      const totalElapsed = focusAccumulatedRef.current + runningElapsed;
-      const minutes = Math.max(1, Math.round(totalElapsed / 60000));
+      const minutes = Math.max(
+        1,
+        Math.round((focusAccumulatedRef.current + runningElapsed) / 60_000)
+      );
+      recoveryBlockedRef.current = true;
       const session = createFocusSession(minutes, label, "aborted");
-      onCompleteSession(session);
+      const pending = await createDurablePendingFocusCommit(
+        session,
+        false,
+        boundaryGenerationRef.current
+      );
+      if (!pending) {
+        logger.error("[FocusTimer] Pending aborted-session recovery unavailable");
+        recoveryBlockedRef.current = false;
+        return;
+      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setIsRunning(false);
+      pendingCommitRef.current = pending;
+      const acknowledged = await commitAndAcknowledgePending(pending);
+      if (!acknowledged) {
+        logger.warn("[FocusTimer] Aborted session persistence deferred");
+        return;
+      }
+      pendingCommitRef.current = null;
+      recoveryBlockedRef.current = false;
+      clearInMemoryTimer(false);
+      return;
     }
-    endTimeRef.current = null;
-    focusStartRef.current = null;
-    focusAccumulatedRef.current = 0;
-    lastMinuteRef.current = 0;
-    setIsRunning(false);
-    setIsBreak(false);
-    setTimeLeft(focusDuration);
-    storageRemove(SK.TIMER_STATE);
+
+    if (!storageRemove(SK.TIMER_STATE)) {
+      logger.warn("[FocusTimer] Timer reset persistence deferred");
+      return;
+    }
+    clearInMemoryTimer(false);
     saveTimerState();
-    useUIStore.getState().clearFocusTimerBridge();
   };
 
   const throttledToggle = useThrottledCallback(toggleTimer, 800);
   const throttledReset = useThrottledCallback(resetTimer, 800);
 
-  const handleSaveReflection = (value: number | null) => {
-    if (pendingSession) {
-      onCompleteSession({ ...pendingSession, reflection: value ?? undefined });
+  const handleSaveReflection = async (value: number | null): Promise<boolean> => {
+    const current = pendingCommitRef.current;
+    if (!current?.requiresReflection || !pendingSession || primaryCommitTokenRef.current) {
+      return false;
     }
+    const committedSession = { ...pendingSession, reflection: value ?? undefined };
+    const updated = await updateDurablePendingFocusCommit(current, committedSession);
+    if (!updated) {
+      logger.error("[FocusTimer] Pending reflection recovery unavailable");
+      return false;
+    }
+    pendingCommitRef.current = updated;
+    setPendingSession(committedSession);
+    const acknowledged = await commitAndAcknowledgePending(updated);
+    if (!acknowledged) {
+      logger.warn("[FocusTimer] Completed session acknowledgement deferred");
+      return false;
+    }
+    pendingCommitRef.current = null;
+    recoveryBlockedRef.current = false;
     setPendingSession(null);
     setShowReflection(false);
     setReflectionValue(null);
+    clearInMemoryTimer(true);
+    return true;
   };
 
   const handleHyperfocusComplete = () => {
-    setShowHyperfocus(false);
+    if (pendingCommitRef.current || recoveryBlockedRef.current) return;
+    recoveryBlockedRef.current = true;
     const session = createFocusSession(focusMinutes, label, "completed");
-    setPendingSession(session);
-    setShowReflection(true);
+    const epoch = runtimeEpochRef.current;
+    void createDurablePendingFocusCommit(
+      session,
+      true,
+      boundaryGenerationRef.current
+    ).then((pending) => {
+      if (!pending || epoch !== runtimeEpochRef.current) {
+        logger.error("[FocusTimer] Pending hyperfocus recovery unavailable");
+        if (epoch === runtimeEpochRef.current) recoveryBlockedRef.current = false;
+        return;
+      }
+      pendingCommitRef.current = pending;
+      if (!isMountedRef.current) return;
+      setShowHyperfocus(false);
+      setPendingSession(session);
+      setShowReflection(true);
+    });
   };
 
-  useBackHandler(showReflection, () => handleSaveReflection(null));
+  useBackHandler(showReflection, () => void handleSaveReflection(null));
   useScrollLock(showReflection);
   useBackHandler(showHyperfocus, () => setShowHyperfocus(false));
 
-  // Register focus controls for global mini-player bridge
   useEffect(() => {
     setFocusControls({ toggle: throttledToggle, reset: throttledReset });
-    // Sync initial state if timer was running from localStorage restore
     if (isRunning && endTimeRef.current) {
       useUIStore.getState().setFocusTimerBridge({
         endTime: endTimeRef.current,
@@ -420,13 +810,10 @@ export function useFocusTimer({
         label,
       });
     }
-    return () => {
-      setFocusControls(null);
-    };
+    return () => setFocusControls(null);
   }, [throttledToggle, throttledReset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
-    // Config
     preset,
     focusMinutes,
     breakMinutes,
@@ -436,24 +823,19 @@ export function useFocusTimer({
     setLabel,
     setFocusInputValue,
     setBreakInputValue,
-    // Timer
     timeLeft,
     isRunning,
     isBreak,
-    // Reflection
     showReflection,
     reflectionValue,
     setReflectionValue,
-    // UI
     showHyperfocus,
     setShowHyperfocus,
-    // Derived
     totalMinutesToday,
     progress,
     focusDuration,
     breakDuration,
     presets,
-    // Actions
     throttledToggle,
     throttledReset,
     handlePresetSelect,

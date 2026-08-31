@@ -84,6 +84,13 @@ vi.mock("@/storage/deletionTracker", () => ({
   mergeDeletionTrackerIdsInCurrentTransaction: vi.fn(() => Promise.resolve(new Set())),
   trackDeletedJournalEntryId: vi.fn(() => Promise.resolve()),
 }));
+vi.mock("@/features/automation/automationRepository", () => ({
+  detachAutomationRecordRevisionInCurrentTransaction: vi.fn(() => Promise.resolve()),
+  markAutomationSourceRescanRequiredInCurrentTransaction: vi.fn(() => Promise.resolve()),
+  persistAutomationSourceIntentInCurrentTransaction: vi.fn(() =>
+    Promise.resolve({ intentPersisted: false })
+  ),
+}));
 
 vi.mock("@/storage/journalStorageService", () => ({
   JOURNAL_PHOTO_UPLOAD_MAX_BYTES: 1_048_576,

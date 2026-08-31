@@ -61,9 +61,9 @@ public class DndPlugin extends Plugin {
                 result.put("filterName", "all");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error checking DND status", e);
+            Log.e(TAG, "ZF_DND_STATUS_FAILED");
             result.put("active", false);
-            result.put("error", e.getMessage());
+            result.put("error", "ZF_DND_STATUS_FAILED");
         }
 
         call.resolve(result);
@@ -101,9 +101,9 @@ public class DndPlugin extends Plugin {
                 result.put("available", false);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error getting DND status", e);
+            Log.e(TAG, "ZF_DND_DETAILS_FAILED");
             result.put("available", false);
-            result.put("error", e.getMessage());
+            result.put("error", "ZF_DND_DETAILS_FAILED");
         }
 
         call.resolve(result);
@@ -128,7 +128,7 @@ public class DndPlugin extends Plugin {
                 result.put("granted", false);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error checking notification policy access", e);
+            Log.e(TAG, "ZF_DND_POLICY_ACCESS_FAILED");
             result.put("granted", false);
         }
 
