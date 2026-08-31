@@ -87,7 +87,7 @@ function invoke(
 }
 
 describe("production data integrity Codex hook", () => {
-  it("is registered for every supported lifecycle event with bounded cross-platform commands", () => {
+  it("is registered for every enforcement event except Stop with bounded cross-platform commands", () => {
     const config = JSON.parse(readFileSync(".codex/hooks.json", "utf8")) as {
       hooks: Record<
         string,
@@ -101,7 +101,6 @@ describe("production data integrity Codex hook", () => {
       "UserPromptSubmit",
       "PreToolUse",
       "PostToolUse",
-      "Stop",
       "SubagentStart",
       "SubagentStop",
     ]) {
@@ -114,6 +113,10 @@ describe("production data integrity Codex hook", () => {
       expect(handlers[0].timeout).toBeGreaterThan(0);
       expect(handlers[0].timeout).toBeLessThanOrEqual(20);
     }
+    const stopHandlers = (config.hooks.Stop ?? [])
+      .flatMap((entry) => entry.hooks)
+      .filter((handler) => handler.command.includes("production-data-integrity-gate.cjs"));
+    expect(stopHandlers).toHaveLength(0);
     expect(config.hooks.PreToolUse[0].matcher).toContain("Bash");
     expect(config.hooks.PreToolUse[0].matcher).toContain("apply_patch");
   });
@@ -313,25 +316,42 @@ describe("production data integrity Codex hook", () => {
     expect(result.json).toEqual({});
   });
 
-  it("runs a fast diff check after a relevant write and blocks findings", () => {
-    const result = invoke(
-      {
-        hook_event_name: "PostToolUse",
-        tool_name: "apply_patch",
-        tool_input: { command: "*** Begin Patch\n*** Update File: src/main.ts\n*** End Patch" },
-      },
-      "finding"
-    );
-    expect(result.status, result.stderr).toBe(0);
-    expect(JSON.stringify(result.json)).toContain("PDI002");
-    expect(JSON.stringify(result.json)).toContain("block");
-  });
+  it.each(["finding", "error"] as const)(
+    "runs a fast diff check after a relevant write and blocks %s",
+    (stub) => {
+      const result = invoke(
+        {
+          hook_event_name: "PostToolUse",
+          tool_name: "apply_patch",
+          tool_input: { command: "*** Begin Patch\n*** Update File: src/main.ts\n*** End Patch" },
+        },
+        stub
+      );
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.stringify(result.json)).toContain(stub === "finding" ? "PDI002" : "internal");
+      expect(JSON.stringify(result.json)).toContain("block");
+    }
+  );
 
-  it.each(["finding", "error"] as const)("blocks Stop when the checker returns %s", (stub) => {
-    const result = invoke({ hook_event_name: "Stop", stop_hook_active: false }, stub);
+  it.each(["clean", "finding", "error"] as const)(
+    "does not run the checker at Stop when its stub is %s",
+    (stub) => {
+      const result = invoke({ hook_event_name: "Stop", stop_hook_active: false }, stub);
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.json).toEqual({ continue: true });
+    }
+  );
+
+  it("does not require a checker for Stop when the recursion guard is inactive", () => {
+    const root = mkdtempSync(join(tmpdir(), "zenflow-pdi-stop-no-checker-"));
+    temporaryRoots.push(root);
+    const result = spawnSync(process.execPath, [HOOK], {
+      cwd: root,
+      encoding: "utf8",
+      input: JSON.stringify({ hook_event_name: "Stop", stop_hook_active: false }),
+    });
     expect(result.status, result.stderr).toBe(0);
-    expect(JSON.stringify(result.json)).toContain("block");
-    expect(JSON.stringify(result.json)).toContain(stub === "finding" ? "PDI002" : "internal");
+    expect(JSON.parse(result.stdout)).toEqual({ continue: true });
   });
 
   it("honors the Stop recursion guard without invoking a missing checker", () => {
