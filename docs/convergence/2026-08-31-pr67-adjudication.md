@@ -50,6 +50,7 @@ Current `main` is version 2.1.2 / Android version code 39 and contains a newer A
 - Production build, bundle production-data-integrity (`scanned=2435`, `reachable=822`), and duplicate release-artifact verification passed.
 - Security quick profile `20260831T160114Z-30125`: Gitleaks, TruffleHog, Trivy, Checkov, and KICS returned zero; Snyk reported 60 repository-wide existing results and zero in the durable completion paths; Terrascan parsed unrelated JSON as IaC and returned status 4 with 785 policies checked and zero violations.
 - Final strict secrets profile `20260831T160437Z-31676`: Gitleaks and TruffleHog returned zero.
+- PR CI exposed a pre-existing Orb timing observation race unrelated to durable completion. The test-only MutationObserver correction is documented in `docs/convergence/2026-08-31-orb-performance-observer-fix.md`; the 2,500 ms budget is unchanged.
 
 ## Release Boundary
 

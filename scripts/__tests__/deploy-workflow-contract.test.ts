@@ -441,6 +441,10 @@ describe("GitHub Pages deploy workflow contract", () => {
     const perfSpec = readFileSync("e2e/orb-user-flow-performance.spec.ts", "utf8");
     expect(perfSpec).toContain("const directUserEventNames = new Set([");
     expect(perfSpec).toContain("async function waitForFiniteAnimationsToSettle(page: Page)");
+    expect(perfSpec).toContain("async function installOrbVisualReadyProbe(page: Page)");
+    expect(perfSpec).toContain("new MutationObserver");
+    expect(perfSpec).toContain("async function readOrbVisualReadyMs(page: Page)");
+    expect(perfSpec).not.toContain("performance.now() - startedAt");
     expect(perfSpec).toContain("await noteInput.focus();");
     expect(perfSpec).toContain("await expect(noteInput).toBeFocused();");
     expect(perfSpec).toContain('await page.keyboard.insertText("Quick performance proof");');
