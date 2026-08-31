@@ -20,6 +20,11 @@ const MAX_ORB_VISUAL_READY_MS = readBudget("ZENFLOW_USER_FLOW_MAX_ORB_VISUAL_REA
 const REAL_CHROME_CHANNEL = process.env.ZENFLOW_ORB_CHROME_CHANNEL === "true";
 
 type UserFlowPerfWindow = typeof window & {
+  __zenflowOrbVisualReadyProbe?: {
+    observedAt: number | null;
+    observer?: MutationObserver;
+    startedAt: number;
+  };
   __zenflowUserFlowPerf?: {
     actionMeasures: Array<{
       duration: number;
@@ -202,6 +207,50 @@ async function waitForTwoFrames(page: Page) {
   await page.evaluate(
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   );
+}
+
+async function installOrbVisualReadyProbe(page: Page) {
+  await page.evaluate(() => {
+    const win = window as UserFlowPerfWindow;
+    win.__zenflowOrbVisualReadyProbe?.observer?.disconnect();
+
+    const probe: NonNullable<UserFlowPerfWindow["__zenflowOrbVisualReadyProbe"]> = {
+      observedAt: null,
+      startedAt: performance.now(),
+    };
+    win.__zenflowOrbVisualReadyProbe = probe;
+
+    const recordReady = () => {
+      const ready = document.querySelector(
+        "[data-testid='orb-page-hero'] [data-orb-visual-ready='true']",
+      );
+      if (!ready) return;
+      if (probe.observedAt === null) probe.observedAt = performance.now();
+      probe.observer?.disconnect();
+    };
+
+    recordReady();
+    if (probe.observedAt !== null) return;
+
+    probe.observer = new MutationObserver(recordReady);
+    probe.observer.observe(document.documentElement, {
+      attributeFilter: ["data-orb-visual-ready"],
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
+  });
+}
+
+async function readOrbVisualReadyMs(page: Page) {
+  return page.evaluate(() => {
+    const probe = (window as UserFlowPerfWindow).__zenflowOrbVisualReadyProbe;
+    if (!probe || probe.observedAt === null) {
+      throw new Error("Orb visual-ready probe did not observe the ready attribute");
+    }
+    probe.observer?.disconnect();
+    return probe.observedAt - probe.startedAt;
+  });
 }
 
 async function waitForFiniteAnimationsToSettle(page: Page) {
@@ -484,7 +533,7 @@ test.describe("Orb user-flow performance", () => {
     await page.goto(v2RoutePath("orb", { layout: "phone" }), {
       waitUntil: "domcontentloaded",
     });
-    const orbRouteReadyStartedAt = await page.evaluate(() => performance.now());
+    await installOrbVisualReadyProbe(page);
     await expect(page.getByTestId("orb-page-next")).toBeVisible({ timeout: 30_000 });
     await page
       .getByTestId("orb-page-hero")
@@ -494,10 +543,7 @@ test.describe("Orb user-flow performance", () => {
         state: "attached",
         timeout: MAX_ORB_VISUAL_READY_MS,
       });
-    const orbVisualReadyMs = await page.evaluate(
-      (startedAt) => performance.now() - startedAt,
-      orbRouteReadyStartedAt,
-    );
+    const orbVisualReadyMs = await readOrbVisualReadyMs(page);
     await page.evaluate(() => document.fonts.ready);
     await waitForTwoFrames(page);
     if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
