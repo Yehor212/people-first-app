@@ -101,9 +101,31 @@ async function primeApp(page: import("@playwright/test").Page, oklchEnabled: boo
 async function waitForApp(page: import("@playwright/test").Page) {
   // Keep navigation relative to Playwright's baseURL. A leading "/" drops the
   // /people-first-app/ GitHub Pages base path when this test targets production.
-  await page.goto("", { waitUntil: "load", timeout: 45000 });
+  // This suite validates the design-token bridge, not GPU-driver parity. Use
+  // the explicit debug-only canvas renderer so Linux CI and macOS capture the
+  // same stable pixels while dedicated orb suites continue covering WebGPU/WebGL.
+  await page.goto("?orbRenderer=canvas&dev=true", {
+    waitUntil: "load",
+    timeout: 45000,
+  });
   const nav = page.locator('[role="navigation"]');
   await expect(nav.first()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("background-music-toggle")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("orb-page-next")).toBeDisabled({ timeout: 30000 });
+  const canonicalOrbs = page.locator('[data-orb-renderer-policy]');
+  await expect.poll(
+    async () => {
+      const count = await canonicalOrbs.count();
+      if (count < 2) return false;
+      return canonicalOrbs.evaluateAll((orbs) =>
+        orbs.every((orb) => orb.getAttribute("data-orb-visual-ready") === "true"),
+      );
+    },
+    {
+      message: "canonical home orbs should publish a stable first visual frame",
+      timeout: 30000,
+    },
+  ).toBe(true);
   // CRITICAL Phase 2-B.2 fix: wait for @fontsource-variable Fraunces/Inter/
   // Caveat to finish loading BEFORE any screenshot, so the display-serif swap
   // is stable instead of FOUT stub. Without this, baselines capture system
