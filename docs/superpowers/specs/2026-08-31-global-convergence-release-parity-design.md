@@ -1,7 +1,7 @@
 # Global Convergence and Release Parity Design
 
 **Date:** 2026-08-31
-**Status:** Approved in chat for design/spec execution; implementation remains gated by this written review
+**Status:** Owner approved full Kimi workspace-gate retirement and final single-clone cleanup; implementation remains gated by review of this revised written spec
 **Base commit:** `ae3411acbad605dad9f2966b3500546866b44b43`
 **Canonical remote:** `https://github.com/Yehor212/people-first-app.git`
 **Implementation lane:** `codex/global-convergence-20260831`
@@ -23,6 +23,9 @@ The owner sees separate `main` and `origin/main` histories in VS Code and cannot
 - Use best-practice Git, CI, deployment, and rollback controls.
 - Deliver the final release across Web/PWA, Android, iOS, and Desktop.
 - Make VS Code show one canonical, understandable production checkout.
+- Retire the complete Kimi workspace-gate stack while preserving Codex-only isolation and protected delivery.
+- Commit and push every valuable production-intended state before integration, then remove superseded branches, worktrees, and clones after recoverability proof.
+- Finish with one local canonical clone on `main`, one remote default branch `main`, and immutable release tags.
 
 ## Non-Goals
 
@@ -31,7 +34,8 @@ The owner sees separate `main` and `origin/main` histories in VS Code and cannot
 - Do not modify, stop, or delete an active writer's lane without a fresh ownership check.
 - Do not publish private receipts, production-derived data, secrets, caches, build output, or quarantine media.
 - Do not claim Android, iOS, Desktop, store, or mirror delivery from Web/PWA evidence.
-- Do not remove legacy worktrees, branches, clones, or artifacts in this convergence task.
+- Do not treat every Kimi-named historical audio/provenance artifact as part of the workspace gate; those records are adjudicated by provenance and release intent.
+- Do not remove a branch, worktree, clone, or artifact before its exact value, reachability, active use, recovery path, and final disposition are proved.
 
 ## Verified Evidence Snapshot
 
@@ -88,9 +92,9 @@ This would combine experiments, preservation snapshots, obsolete dependencies, f
 
 1. `origin/main` is the only production source reference.
 2. A clean control clone owns the only `main` worktree in its Git common directory.
-3. `codex/global-convergence-20260831` is the only convergence edit lane.
+3. `codex/global-convergence-20260831` is the only current convergence edit lane; later subprojects use one locked `codex/` lane at a time.
 4. Legacy roots and their 76 worktrees are recovery inputs, never integration destinations.
-5. Qwen, Codex, or any other actor may write only in its own locked branch/worktree.
+5. Codex is the only repository-writing agent in this program and may write only in its own locked `codex/` branch/worktree. Qwen remains read-only unless a separate future design adds a dedicated actor namespace; Kimi-specific branch and hook support is retired.
 6. Transfer occurs only through exact commits, pushed same-name branches, handoff receipts, and pull requests.
 7. VS Code editing windows are single-root. The owner review window points to the clean canonical checkout, not a legacy root.
 
@@ -99,16 +103,37 @@ This would combine experiments, preservation snapshots, obsolete dependencies, f
 This umbrella design is intentionally larger than one implementation plan or pull request. Execution is split into independently reviewable subprojects, each with its own plan, test cycle, exact-tip handoff, PR, rollback, and completion packet:
 
 1. **Baseline determinism:** make a pristine locked lane pass the full canonical test suite without relying on ignored directories or prior build output.
-2. **Writer freeze and preservation:** capture stable, private, hash-bound packets without modifying source lanes.
-3. **Inventory and adjudication:** produce the complete convergence ledger; this subproject changes evidence/docs only and selects no product change by itself.
-4. **Domain convergence batches:** one plan and PR per coherent product/governance domain selected as `TAKE` or `MERGE`; unrelated domains never share a commit merely to reduce PR count.
-5. **Web/PWA delivery:** establish the final source SHA and public deployment evidence after the last convergence batch.
-6. **Android release parity:** signed artifact, release-equivalent runtime proof, Play internal track, and staged rollout.
-7. **iOS release parity:** version/signing alignment, TestFlight proof, and App Store delivery.
-8. **Desktop release parity:** version/signing alignment, current-main workflow, artifact proof, and published release.
-9. **Mirror and local workspace convergence:** verify or retire mirrors, then move VS Code to one clean canonical root while retaining legacy recovery sources.
+2. **Kimi workspace-gate retirement:** remove Kimi-specific protocol, installer, package wiring, branch authorization, enforcement checks, and tests while keeping Codex-only protections green.
+3. **Writer freeze and preservation:** capture stable, private, hash-bound packets without modifying source lanes.
+4. **Inventory and adjudication:** produce the complete convergence ledger; this subproject changes evidence/docs only and selects no product change by itself.
+5. **Domain convergence batches:** one plan and PR per coherent product/governance domain selected as `TAKE` or `MERGE`; unrelated domains never share a commit merely to reduce PR count.
+6. **Web/PWA delivery:** establish the final source SHA and public deployment evidence after the last convergence batch.
+7. **Android release parity:** signed artifact, release-equivalent runtime proof, Play internal track, and staged rollout.
+8. **iOS release parity:** version/signing alignment, TestFlight proof, and App Store delivery.
+9. **Desktop release parity:** version/signing alignment, current-main workflow, artifact proof, and published release.
+10. **Mirror and local workspace convergence:** verify or retire mirrors, then move VS Code to one clean canonical root.
+11. **Final branch/worktree/clone cleanup:** delete only proven superseded/recovered state and leave one canonical clone plus remote `main` and release tags.
 
 The implementation plan written after this spec review covers subproject 1 first. Later plans may use evidence produced by earlier subprojects, but none inherits release authorization or a PASS verdict automatically.
+
+## Kimi Workspace-Gate Retirement Contract
+
+The user explicitly retired the Kimi workspace gate. This change removes active Kimi integration without weakening the remaining Codex, Git, or GitHub boundaries.
+
+Required removals and rewrites:
+
+- delete `docs/ai/CODEX_KIMI_WORKSPACE_PROTOCOL.md` and replace its still-valid shared safety content with a Codex-only workspace protocol;
+- delete `scripts/install-kimi-workspace-hook.mjs`, `scripts/install-kimi-workspace-hook.d.mts`, and `scripts/__tests__/install-kimi-workspace-hook.test.ts`;
+- remove `agent:kimi-hook` and the deleted installer test from `package.json` scripts/test lists;
+- rename the `AGENTS.md` workspace section and remove Kimi setup, hook, branch, rollback, and Working Directory instructions;
+- make `scripts/agent-workspace.mjs`, `scripts/agent-workspace-runtime.cjs`, `.codex/hooks/agent-workspace-guard.cjs`, Husky hooks, and their tests accept only the `codex/` actor/branch namespace where they currently encode Kimi authorization;
+- update `scripts/check-agent-workspace-protocol.cjs`, agent-context references, declarations, and protected-surface tests so no live check requires the deleted Kimi protocol or installer;
+- preserve generic isolation, clean review-only `main`, locked worktrees, exact-tip handoff, no-reset/no-force rules, remote identity checks, protected PR delivery, and Codex actor binding;
+- leave Qwen CLI configuration and runtime untouched because Qwen is not the retired Kimi gate;
+- do not authorize Qwen repository writes through the deleted Kimi path; Qwen remains an observable read-only source during this convergence unless the owner later approves a separate Qwen workspace contract;
+- retain historical Kimi-named audio/provenance records until the convergence ledger decides `IN_MAIN`, `SUPERSEDED`, `TAKE`, `QUARANTINE`, or deletion after recovery proof.
+
+Acceptance requires repository-wide search to show no active Kimi gate/installer/actor authorization outside explicitly historical provenance records, and all focused workspace/governance/agent-context checks must pass.
 
 ## Writer Freeze Contract
 
@@ -289,9 +314,33 @@ After remote integration and release verification:
 
 1. Open only the generated single-root convergence/review workspace or the clean canonical control checkout in a new VS Code window.
 2. Confirm Source Control exposes exactly one repository and its `main` equals live `origin/main` with zero changes.
-3. Close the legacy workspace window; do not delete its folder.
-4. Mark the legacy checkout and historical worktrees as frozen recovery evidence in the ledger.
-5. Any later archive/removal is a separate task requiring unused/open-handle/recoverability proof and exact owner authorization.
+3. Close the legacy workspace window before filesystem cleanup.
+4. Prove each legacy checkout and historical worktree is unused, has no open handles, has a stable preservation packet, and has no unmerged production-intended value.
+5. Remove registered worktrees with Git-native removal, remove independent clones only by exact resolved path, and verify the remaining canonical clone immediately after every batch.
+
+## Final Branch, Worktree, and Clone Cleanup
+
+Cleanup is part of the owner-approved final state but happens only after integration and release parity are proved.
+
+1. Refresh the convergence ledger against the final live `origin/main` SHA.
+2. For every local and remote branch, prove one of:
+   - its production-intended commits are reachable from final `main`;
+   - equivalent behavior is in `main` with named replacement tests;
+   - it is a failed/experimental/private/preservation-only state captured in a verified bundle and excluded from production.
+3. Commit and push every valuable production-intended state to a reviewable branch before integration. Never push caches, build output, credentials, private receipts, production-derived data, or failed experimental payloads merely to make the branch count zero.
+4. Merge approved branches through protected PRs, close superseded PRs with evidence, and delete their remote branches only after the merge/recovery proof is stable.
+5. Resolve or close Dependabot PRs through compatibility/security review; do not merge outdated dependency updates blindly. Current Dependabot branches may be deleted at completion, while future automation may create new ephemeral branches.
+6. Create immutable release tags for shipped platform artifacts and record artifact hashes/source SHA.
+7. Remove local feature branches only after remote/main reachability or bundle recovery is verified.
+8. Remove linked worktrees only when no process/open handle uses them and `git worktree` identity matches the reviewed target.
+9. Remove independent clones only after their Git objects, dirty/untracked state, ignored/private exclusions, sync state, and recoverability are proved and VS Code/terminal processes no longer reference them.
+10. Verify the final snapshot:
+    - exactly one local canonical clone;
+    - its only checked-out branch is `main` tracking `origin/main`;
+    - local `main`, local `origin/main`, and live remote `main` are the same SHA with divergence `0 0`;
+    - no extra registered worktrees;
+    - no current remote feature branches or open PRs;
+    - release tags and platform delivery evidence remain accessible.
 
 ## Rollout and Rollback
 
@@ -301,7 +350,7 @@ After remote integration and release verification:
 - Android rollback halts staged rollout or promotes a reviewed corrective artifact with a higher `versionCode`; already-installed binaries are not rewritten.
 - iOS rollback pauses phased release or submits a higher-build corrective version.
 - Desktop rollback retains immutable artifacts and publishes a corrective release; do not replace signed assets silently.
-- Preservation packets and ledger records remain available until the owner separately approves retirement.
+- Preservation packets remain until final cleanup verification succeeds; the owner has approved retirement of superseded packets/clones after their recovery and release obligations are proved.
 
 ## Done Criteria
 
@@ -310,7 +359,8 @@ After remote integration and release verification:
 - Clean canonical `main`, `origin/main`, and live remote `main` equal the final SHA with divergence `0 0`.
 - Required local checks and current GitHub checks pass on the exact final SHA.
 - Web/PWA, Android, iOS, Desktop, and configured mirrors have artifact/source-SHA delivery proof, or the global release remains incomplete.
-- VS Code shows one clean canonical repository; the legacy checkout remains preserved but is not presented as production.
+- VS Code shows one clean canonical repository, and final cleanup leaves exactly one local clone whose only local branch is `main`, with no additional registered worktrees.
+- The remote repository has only the protected default branch `main` plus immutable release tags at the completion snapshot; no open PR remains unclassified.
 - No secret, private/production-derived data, generated output, cache, or test-only dependency enters runtime or Git.
 - Rollback evidence and remaining `UNVERIFIED` rows are explicit.
 
@@ -328,3 +378,4 @@ After remote integration and release verification:
 - Installed-PWA update behavior for the future final convergence commit.
 - Static validation and disposition of the 60 inherited Snyk Code results; none may be attributed to this Markdown-only spec without source-to-sink review.
 - Terrascan coverage for actual IaC after excluding non-IaC Playwright YAML and dependency shims through a reviewed scanner configuration rather than deleting evidence.
+- Exact final deletion inventory for local branches, remote branches, worktrees, independent clones, preservation packets, and historical Kimi provenance artifacts.
