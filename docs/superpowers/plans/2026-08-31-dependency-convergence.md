@@ -19,5 +19,6 @@
 - [x] Restore the verified Capacitor 8.3.3/8.3.4 installed set and original declared ranges.
 - [x] Add focused Tooltip accessibility coverage and rerun Vaul Drawer/native tests.
 - [x] Run full tests, build, PDI, license, audit, security, Android, and iOS gates.
-- [ ] Commit, push, open a replacement PR for #9, and wait for required CI.
+- [x] Commit and push the scoped replacement branch.
+- [ ] Open a replacement PR for #9 and wait for required CI.
 - [ ] Merge and verify main release before closing PR #9.
