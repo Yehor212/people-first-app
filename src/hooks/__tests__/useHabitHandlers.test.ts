@@ -5,8 +5,9 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { ENTRY } from "@/types";
+import { ENTRY, type Habit } from "@/types";
 import { makeTestHabit, datesToEntries } from "@/test/habitFixtures";
+import { getToday } from "@/lib/utils";
 
 // --- mocks ---
 
@@ -17,6 +18,7 @@ const mockSetReminders = vi.fn((updater: unknown) => {
 });
 const mockSetConfettiBurst = vi.fn();
 const mockTriggerSync = vi.fn();
+const mockSyncHabitCompletion = vi.fn(() => Promise.resolve());
 const mockHabits = [
   makeTestHabit({
     id: "h1",
@@ -42,6 +44,26 @@ const mockHabits = [
     entries: {},
   }),
 ];
+const mockCommitHabitToggle = vi.fn(
+  async (habitId: string, date: string): Promise<{ habit: Habit; nextValue: number }> => {
+    const habit = mockHabits.find((item) => item.id === habitId);
+    if (!habit) throw new Error(`Habit ${habitId} no longer exists`);
+    return {
+      habit: {
+        ...habit,
+        entries: { ...habit.entries, [date]: { value: ENTRY.YES_MANUAL } },
+      },
+      nextValue: ENTRY.YES_MANUAL,
+    };
+  },
+);
+const mockCommitHabitEntry = vi.fn(
+  async (habitId: string, date: string, value: number): Promise<Habit> => {
+    const habit = mockHabits.find((item) => item.id === habitId);
+    if (!habit) throw new Error(`Habit ${habitId} no longer exists`);
+    return { ...habit, entries: { ...habit.entries, [date]: { value } } };
+  },
+);
 
 vi.mock("@/stores", () => ({
   useUserDataStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
@@ -69,6 +91,32 @@ vi.mock("@/components/XpPopup", () => ({
 
 vi.mock("@/storage/cloudSync", () => ({
   triggerSync: (...args: unknown[]) => mockTriggerSync(...args),
+}));
+
+vi.mock("@/storage/realtimeSync", () => ({
+  syncHabit: vi.fn(() => Promise.resolve()),
+  syncHabitCompletion: (...args: Parameters<typeof mockSyncHabitCompletion>) =>
+    mockSyncHabitCompletion(...args),
+  deleteHabitFromCloud: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@/storage/deletionTracker", () => ({
+  DELETION_TRACKER_KEYS: {
+    habit: "zenflow-deleted-habit-ids",
+    journal: "zenflow-deleted-journal-entry-ids",
+    mood: "zenflow-deleted-mood-ids",
+    focus: "zenflow-deleted-focus-session-ids",
+    gratitude: "zenflow-deleted-gratitude-ids",
+  },
+  getDeletedHabitIds: vi.fn(() => Promise.resolve(new Set())),
+  trackDeletedHabitId: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@/storage/habitCompletionCommit", () => ({
+  commitHabitEntry: (...args: Parameters<typeof mockCommitHabitEntry>) =>
+    mockCommitHabitEntry(...args),
+  commitHabitToggle: (...args: Parameters<typeof mockCommitHabitToggle>) =>
+    mockCommitHabitToggle(...args),
 }));
 
 vi.mock("@/lib/audioManager", () => ({
@@ -135,7 +183,6 @@ vi.mock("@/lib/safeJson", async (importOriginal) => {
 
 import { useHabitHandlers } from "../useHabitHandlers";
 import { useUserDataStore } from "@/stores";
-import type { Habit } from "@/types";
 import { playSound } from "@/lib/audioManager";
 
 describe("useHabitHandlers", () => {
@@ -226,13 +273,18 @@ describe("useHabitHandlers", () => {
     expect(updated.find((h) => h.id === "h1")).toBeUndefined();
   });
 
-  it("handleToggleHabit toggles daily completion on", () => {
+  it("handleToggleHabit publishes a durable daily completion", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
-      result.current.handleToggleHabit("h1", "2026-02-19");
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", "2026-02-19");
     });
 
+    expect(mockCommitHabitToggle).toHaveBeenCalledWith(
+      "h1",
+      "2026-02-19",
+      "calendar",
+    );
     const updated = lastSetHabitsUpdater()(mockHabits);
     const habit = updated.find((h) => h.id === "h1");
     expect(habit?.entries["2026-02-19"]?.value).toBe(ENTRY.YES_MANUAL);
@@ -240,7 +292,85 @@ describe("useHabitHandlers", () => {
     expect(playSound).toHaveBeenCalledWith("complete");
   });
 
-  it("handleToggleHabit toggles daily completion off when already completed", () => {
+  it("preserves quick-tap provenance for a completion logged today", async () => {
+    const { result } = renderAndClearEffects();
+    const today = getToday();
+
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", today);
+    });
+
+    expect(mockCommitHabitToggle).toHaveBeenCalledWith("h1", today, "quickTap");
+  });
+
+  it("does not publish a completion until its durable commit resolves", async () => {
+    const { result } = renderAndClearEffects();
+    let resolveCommit!: (value: { habit: Habit; nextValue: number }) => void;
+    mockCommitHabitToggle.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCommit = resolve;
+        }),
+    );
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.handleToggleHabit("h1", "2026-02-19");
+    });
+    await act(async () => Promise.resolve());
+
+    expect(mockCommitHabitToggle).toHaveBeenCalledOnce();
+    expect(mockSetHabits).not.toHaveBeenCalled();
+    expect(mockAwardXp).not.toHaveBeenCalled();
+    expect(mockTriggerSync).not.toHaveBeenCalled();
+    expect(mockSyncHabitCompletion).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveCommit({
+        habit: {
+          ...mockHabits[0],
+          entries: { "2026-02-19": { value: ENTRY.YES_MANUAL } },
+        },
+        nextValue: ENTRY.YES_MANUAL,
+      });
+      await pending;
+    });
+
+    expect(mockSetHabits).toHaveBeenCalledOnce();
+    expect(mockAwardXp).toHaveBeenCalledWith("habit");
+    expect(mockTriggerSync).toHaveBeenCalledOnce();
+    expect(mockSyncHabitCompletion).toHaveBeenCalledOnce();
+  });
+
+  it("does not publish a completion when its durable commit fails", async () => {
+    const { result } = renderAndClearEffects();
+    mockCommitHabitToggle.mockRejectedValueOnce(new Error("durable write failed"));
+
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", "2026-02-19");
+    });
+
+    expect(mockSetHabits).not.toHaveBeenCalled();
+    expect(mockAwardXp).not.toHaveBeenCalled();
+    expect(mockTriggerSync).not.toHaveBeenCalled();
+    expect(mockSyncHabitCompletion).not.toHaveBeenCalled();
+  });
+
+  it("releases the in-flight guard after a failed durable commit", async () => {
+    const { result } = renderAndClearEffects();
+    mockCommitHabitToggle.mockRejectedValueOnce(new Error("durable write failed"));
+
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", "2026-02-19");
+      await result.current.handleToggleHabit("h1", "2026-02-19");
+    });
+
+    expect(mockCommitHabitToggle).toHaveBeenCalledTimes(2);
+    expect(mockSetHabits).toHaveBeenCalledOnce();
+    expect(mockAwardXp).toHaveBeenCalledOnce();
+  });
+
+  it("handleToggleHabit publishes a durable completion removal", async () => {
     const habitsWithCompleted = mockHabits.map((h) =>
       h.id === "h1" ? { ...h, entries: datesToEntries(["2026-02-19"]) } : h
     );
@@ -258,9 +388,16 @@ describe("useHabitHandlers", () => {
       })) as typeof useUserDataStore);
 
     const { result } = renderAndClearEffects();
+    mockCommitHabitToggle.mockResolvedValueOnce({
+      habit: {
+        ...habitsWithCompleted[0],
+        entries: { "2026-02-19": { value: ENTRY.UNKNOWN } },
+      },
+      nextValue: ENTRY.UNKNOWN,
+    });
 
-    act(() => {
-      result.current.handleToggleHabit("h1", "2026-02-19");
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", "2026-02-19");
     });
 
     const updated = lastSetHabitsUpdater()(habitsWithCompleted);
@@ -286,11 +423,11 @@ describe("useHabitHandlers", () => {
       })) as typeof useUserDataStore);
   });
 
-  it("handleToggleHabit increments numerical type completions", () => {
+  it("handleToggleHabit durably increments numerical type completions", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
-      result.current.handleToggleHabit("h2", "2026-02-19");
+    await act(async () => {
+      await result.current.handleToggleHabit("h2", "2026-02-19");
     });
 
     const updated = lastSetHabitsUpdater()(mockHabits);
@@ -300,27 +437,33 @@ describe("useHabitHandlers", () => {
     expect(mockAwardXp).toHaveBeenCalledWith("habit");
   });
 
-  it("handleAdjustHabit adjusts numerical habit value", () => {
+  it("handleAdjustHabit publishes a durable numerical value", async () => {
     const { result } = renderAndClearEffects();
 
-    act(() => {
-      result.current.handleAdjustHabit("h3", "2026-02-19", 1);
+    await act(async () => {
+      await result.current.handleAdjustHabit("h3", "2026-02-19", 1);
     });
 
+    expect(mockCommitHabitEntry).toHaveBeenCalledWith(
+      "h3",
+      "2026-02-19",
+      1000,
+      "calendar",
+    );
     const updated = lastSetHabitsUpdater()(mockHabits);
     const habit = updated.find((h) => h.id === "h3");
     expect(habit?.entries["2026-02-19"]).toBeDefined();
   });
 
-  it("handleAdjustHabit adjusts numerical completions with delta", () => {
+  it("handleAdjustHabit durably adjusts numerical completions with delta", async () => {
     const habitsWithNumericalProgress = mockHabits.map((h) =>
       h.id === "h2" ? { ...h, entries: { "2026-02-19": { value: 2000 } } } : h
     );
 
     const { result } = renderAndClearEffects();
 
-    act(() => {
-      result.current.handleAdjustHabit("h2", "2026-02-19", -1);
+    await act(async () => {
+      await result.current.handleAdjustHabit("h2", "2026-02-19", -1);
     });
 
     const updated = lastSetHabitsUpdater()(habitsWithNumericalProgress);
@@ -328,31 +471,90 @@ describe("useHabitHandlers", () => {
     expect(habit?.entries["2026-02-19"]).toBeDefined();
   });
 
-  it("double-click guard prevents rapid duplicate toggles", () => {
+  it("handleSetNumericalValue publishes only the durable exact value", async () => {
+    const { result } = renderAndClearEffects();
+
+    await act(async () => {
+      await result.current.handleSetNumericalValue("h2", "2026-02-19", 2.5);
+    });
+
+    expect(mockCommitHabitEntry).toHaveBeenCalledWith(
+      "h2",
+      "2026-02-19",
+      2500,
+      "calendar",
+    );
+    const updated = lastSetHabitsUpdater()(mockHabits);
+    expect(updated.find((habit) => habit.id === "h2")?.entries["2026-02-19"]?.value).toBe(
+      2500,
+    );
+    expect(mockTriggerSync).toHaveBeenCalledOnce();
+    expect(mockSyncHabitCompletion).toHaveBeenCalledOnce();
+  });
+
+  it("does not publish an exact numerical value when its durable commit fails", async () => {
+    const { result } = renderAndClearEffects();
+    mockCommitHabitEntry.mockRejectedValueOnce(new Error("durable write failed"));
+
+    await act(async () => {
+      await result.current.handleSetNumericalValue("h2", "2026-02-19", 2.5);
+    });
+
+    expect(mockSetHabits).not.toHaveBeenCalled();
+    expect(mockAwardXp).not.toHaveBeenCalled();
+    expect(mockTriggerSync).not.toHaveBeenCalled();
+    expect(mockSyncHabitCompletion).not.toHaveBeenCalled();
+  });
+
+  it("double-click guard prevents duplicate numerical delta commits", async () => {
     const { result } = renderAndClearEffects();
 
     act(() => {
-      result.current.handleToggleHabit("h1", "2026-02-19");
+      void result.current.handleAdjustHabit("h2", "2026-02-19", 1);
+      void result.current.handleAdjustHabit("h2", "2026-02-19", 1);
     });
+    await act(async () => Promise.resolve());
 
-    // Second call with same habitId+date should be blocked by processingHabitsRef
+    expect(mockCommitHabitEntry).toHaveBeenCalledTimes(1);
+    expect(mockSetHabits).toHaveBeenCalledTimes(1);
+    expect(mockSyncHabitCompletion).toHaveBeenCalledTimes(1);
+  });
+
+  it("double-click guard prevents rapid duplicate durable toggles", async () => {
+    const { result } = renderAndClearEffects();
+
     act(() => {
-      result.current.handleToggleHabit("h1", "2026-02-19");
+      void result.current.handleToggleHabit("h1", "2026-02-19");
+      void result.current.handleToggleHabit("h1", "2026-02-19");
     });
+    await act(async () => Promise.resolve());
 
-    // setHabits should only be called once (the second toggle is a no-op)
+    expect(mockCommitHabitToggle).toHaveBeenCalledTimes(1);
     expect(mockSetHabits).toHaveBeenCalledTimes(1);
 
-    // After timeout clears the processing guard, should work again
+    // After the duplicate-completion window expires, an intentional toggle works again.
     act(() => {
-      vi.advanceTimersByTime(600);
+      vi.advanceTimersByTime(751);
     });
 
-    act(() => {
-      result.current.handleToggleHabit("h1", "2026-02-19");
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", "2026-02-19");
     });
 
+    expect(mockCommitHabitToggle).toHaveBeenCalledTimes(2);
     expect(mockSetHabits).toHaveBeenCalledTimes(2);
+  });
+
+  it("deduplicates a retry immediately after a durable completion", async () => {
+    const { result } = renderAndClearEffects();
+
+    await act(async () => {
+      await result.current.handleToggleHabit("h1", "2026-02-19");
+      await result.current.handleToggleHabit("h1", "2026-02-19");
+    });
+
+    expect(mockCommitHabitToggle).toHaveBeenCalledTimes(1);
+    expect(mockAwardXp).toHaveBeenCalledTimes(1);
   });
 
   it("triggerSync is called after mutations", () => {
