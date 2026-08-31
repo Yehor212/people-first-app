@@ -56,7 +56,7 @@ function Probe() {
 describe('AdContext UMP privacy options', () => {
   it('does not contact UMP when age eligibility is unknown', async () => {
     render(
-      <AdProvider adConsent adAgeEligibility="unknown" isPremium={false}>
+      <AdProvider adConsent adAgeEligibility="unknown" adEntitlement="free" emotionProtectedToday={false}>
         <Probe />
       </AdProvider>,
     );
@@ -71,7 +71,7 @@ describe('AdContext UMP privacy options', () => {
 
   it('refreshes UMP privacy choices for an adult even when the optional banner is off', async () => {
     render(
-      <AdProvider adConsent={false} adAgeEligibility="adult" isPremium={false}>
+      <AdProvider adConsent={false} adAgeEligibility="adult" adEntitlement="free" emotionProtectedToday={false}>
         <Probe />
       </AdProvider>,
     );

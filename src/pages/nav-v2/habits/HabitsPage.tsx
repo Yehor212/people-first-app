@@ -48,6 +48,7 @@ import { HeroTemplateLibrarySheet } from "./hero/HeroTemplateLibrarySheet";
 import { useHabitsPageState } from "./useHabitsPageState";
 import type { HabitTemplate } from "@/lib/habitTemplates";
 import type { Habit } from "@/types";
+import { isHabitsBannerSurfaceEligible } from "@/lib/adEligibility";
 import type { HabitEntrySource } from "@/types";
 import type { NumericalEntryAction } from "@/lib/habitNumericalInteraction";
 // Lazy-load HabitDetailSheet — keeps its ~20KB chunk off the initial
@@ -112,7 +113,7 @@ function HabitFieldBackdrop({ isEmpty, animate }: { isEmpty: boolean; animate: b
 export const HabitsPage = memo(function HabitsPage() {
   const { t } = useLanguage();
   const tx = t;
-  const { bannerHeight, setHabitsBannerActive } = useAds();
+  const { bannerHeight, prepareProtectedAdSurface, setHabitsBannerActive } = useAds();
   const mainRef = useRef<HTMLElement>(null);
   const { habits, todaysHabits, dailyProgress, isEmpty: hasNoActiveHabits } = useHabitsPageState();
   const animateBackdrop = useShouldAnimate();
@@ -353,12 +354,23 @@ export const HabitsPage = memo(function HabitsPage() {
     },
     [habits, setHabits, entryMetadata]
   );
-  const openCreate = useCallback(() => {
+  const prepareProtectedAction = useCallback(async (): Promise<boolean> => {
     captureReturnFocus();
+    const acknowledged = await prepareProtectedAdSurface();
+    if (!acknowledged) {
+      restoreReturnFocus();
+      return false;
+    }
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    return acknowledged;
+  }, [captureReturnFocus, prepareProtectedAdSurface, restoreReturnFocus]);
+
+  const openCreate = useCallback(async () => {
+    if (!(await prepareProtectedAction())) return;
     setEditingHabit(null);
     setSelectedTemplate(null);
     setCreateOpen(true);
-  }, [captureReturnFocus]);
+  }, [prepareProtectedAction]);
   const closeCreate = useCallback(() => {
     setCreateOpen(false);
     setEditingHabit(null);
@@ -372,44 +384,51 @@ export const HabitsPage = memo(function HabitsPage() {
    * had collapsed onto the same affordance.
    */
   const openEditForm = useCallback(
-    (habit: Habit) => {
-      captureReturnFocus();
+    async (habit: Habit) => {
+      if (!(await prepareProtectedAction())) return;
       setEditingHabit(habit);
       setSelectedTemplate(null);
       setCreateOpen(true);
     },
-    [captureReturnFocus]
+    [prepareProtectedAction]
   );
   const openTemplateSetup = useCallback(
-    (template: HabitTemplate) => {
-      captureReturnFocus();
+    async (template: HabitTemplate) => {
+      if (!(await prepareProtectedAction())) return;
       setEditingHabit(null);
       setSelectedTemplate(template);
       setLibraryOpen(false);
       setCreateOpen(true);
     },
-    [captureReturnFocus]
+    [prepareProtectedAction]
   );
-  const openLibrary = useCallback(() => {
-    captureReturnFocus();
+  const openLibrary = useCallback(async () => {
+    if (!(await prepareProtectedAction())) return;
     setLibraryOpen(true);
-  }, [captureReturnFocus]);
+  }, [prepareProtectedAction]);
   const closeLibrary = useCallback(() => {
     setLibraryOpen(false);
     restoreReturnFocus();
   }, [restoreReturnFocus]);
   const openDetail = useCallback(
-    (habit: Habit) => {
-      captureReturnFocus();
+    async (habit: Habit) => {
+      if (!(await prepareProtectedAction())) return;
       setDetailHabit(habit);
       analytics.habitDetailOpened(habits.length);
     },
-    [captureReturnFocus, habits.length]
+    [habits.length, prepareProtectedAction]
   );
   const closeDetail = useCallback(() => {
     setDetailHabit(null);
     restoreReturnFocus();
   }, [restoreReturnFocus]);
+  const handleActionSheetOpenChange = useCallback(
+    (open: boolean) => {
+      setActionSheetOpen(open);
+      if (!open) restoreReturnFocus();
+    },
+    [restoreReturnFocus],
+  );
   const openEditFromDetail = useCallback((habit: Habit) => {
     setPendingDetailEditHabit(habit);
     setDetailHabit(null);
@@ -504,7 +523,7 @@ export const HabitsPage = memo(function HabitsPage() {
   const handlePickTemplate = useCallback(
     (template: HabitTemplate) => {
       if (habits.some((h) => h.templateId === template.id)) return;
-      openTemplateSetup(template);
+      void openTemplateSetup(template);
     },
     [habits, openTemplateSetup]
   );
@@ -516,7 +535,10 @@ export const HabitsPage = memo(function HabitsPage() {
     actionSheetOpen ||
     detailHabit !== null ||
     pendingDetailEditHabit !== null;
-  const bannerPlacementActive = !isEmpty && !hasOpenInteractionOwner;
+  const bannerPlacementActive = isHabitsBannerSurfaceEligible({
+    visibleHabitCount: todaysHabits.length,
+    protectedSurfaceOpen: hasOpenInteractionOwner,
+  });
   // Vaul blocks pointer input on the app shell, but Android WebView can still
   // expose background buttons through UIAutomator unless the owned page
   // content is also inert. Keep the portal-rendered sheets outside this node.
@@ -542,7 +564,7 @@ export const HabitsPage = memo(function HabitsPage() {
         id="main-content-v2"
         role="main"
         tabIndex={-1}
-        className="v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative isolate min-h-[var(--app-viewport-height)] w-full overflow-hidden pb-[calc(4rem+var(--android-ad-banner-height,0px))] outline-none motion-safe:transition-[background] motion-safe:duration-700"
+        className="v2-fullscreen-page v2-readable-page v2-readable-page--ambient relative isolate min-h-[var(--app-viewport-height)] w-full overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(4rem+var(--android-ad-banner-height,0px))] outline-none motion-safe:transition-[background] motion-safe:duration-700"
         style={habitFieldStyle}
         aria-labelledby="habits-page-heading"
         data-testid="habits-page"
@@ -583,7 +605,8 @@ export const HabitsPage = memo(function HabitsPage() {
             onPickTemplate={handlePickTemplate}
             onOpenLibrary={openLibrary}
             onOpenDetail={openDetail}
-            onActionSheetOpenChange={setActionSheetOpen}
+            onBeforeActionSheetOpen={prepareProtectedAction}
+            onActionSheetOpenChange={handleActionSheetOpenChange}
           />
         </div>
 

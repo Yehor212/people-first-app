@@ -668,6 +668,7 @@ export const uk: Translations = {
   adAgeCheckCancel: "Скасувати",
   adAgeCheckContinue: "Продовжити",
   adAgeCheckInvalid: "Не вдалося перевірити цю дату. Перевірте її та спробуйте ще раз.",
+  adProtectedSurfaceUnavailable: "Не вдалося безпечно відкрити цю панель. Спробуйте ще раз.",
   adAgeMinorNotice: "Банер недоступний для цього віку. Рекламні сервіси не запускалися.",
   adAgeReview: "Перевірити дані про вік",
   adAgeReviewHint:

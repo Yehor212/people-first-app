@@ -672,6 +672,7 @@ export const es: Translations = {
   adAgeCheckCancel: "Cancelar",
   adAgeCheckContinue: "Continuar",
   adAgeCheckInvalid: "No hemos podido comprobar esa fecha. Revísala e inténtalo de nuevo.",
+  adProtectedSurfaceUnavailable: "No se pudo abrir este panel de forma segura. Inténtalo de nuevo.",
   adAgeMinorNotice: "El banner no está disponible para esta edad. No se inició ningún servicio publicitario.",
   adAgeReview: "Revisar la información de edad",
   adAgeReviewHint:

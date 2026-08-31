@@ -10,6 +10,7 @@ import {
 import { NavV2Orchestrator } from "@/components/navigation-v2/NavV2Orchestrator";
 import {
   getModalToggle,
+  useAppStore,
   useUserDataStore,
   useHydrateUserData,
   useHydrateGamification,
@@ -23,6 +24,7 @@ import { useEmotionSync } from "@/hooks/useEmotionSync";
 import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
 import { useV2FullscreenSurface } from "@/hooks/useV2FullscreenSurface";
+import { useAdGracePeriod } from "@/hooks/useAdGracePeriod";
 import { useNotificationSetup } from "@/hooks/useNotificationSetup";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
 import { useFocusHandlers } from "@/hooks/useFocusHandlers";
@@ -38,6 +40,12 @@ import { useGamification } from "@/hooks/useGamification";
 import { AdProvider } from "@/contexts/AdContext";
 import { supabase } from "@/lib/supabaseClient";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
+import {
+  deriveCurrentProductAdEntitlement,
+  isEmotionallyProtectedOnLocalDate,
+} from "@/lib/adEligibility";
+import { IS_ADMOB_QA_TEST_MODE } from "@/lib/env";
+import { getToday } from "@/lib/utils";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
 );
@@ -160,14 +168,16 @@ function IndexV2Impl() {
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const isLoadingUserData = useUserDataStore((s) => s.isLoading);
   const privacy = useUserDataStore((s) => s.privacy);
-  const currentMoodForAds = useMemo(() => {
-    const latestMood = moods.reduce<(typeof moods)[number] | null>((latest, entry) => {
-      if (!latest) return entry;
-      return entry.timestamp > latest.timestamp ? entry : latest;
-    }, null);
-
-    return latestMood?.mood ?? null;
-  }, [moods]);
+  const currentDate = useAppStore((s) => s.currentDate) || getToday();
+  const accountBoundaryInProgress = useAppStore((s) => s.isAccountBoundaryInProgress);
+  const emotionProtectedToday = useMemo(
+    () => isEmotionallyProtectedOnLocalDate(moods, currentDate),
+    [currentDate, moods],
+  );
+  const adEntitlement = deriveCurrentProductAdEntitlement({
+    accountBoundaryInProgress,
+    qaTestEligibility: IS_ADMOB_QA_TEST_MODE,
+  });
   const emptyScheduleEvents = useMemo(() => [], []);
   const { handleNameChange, handlePrivacyChange, handleRemindersChange, handleResetData } =
     useSettingsHandlers(emptyScheduleEvents);
@@ -183,6 +193,12 @@ function IndexV2Impl() {
   const { awardXp } = useGamification({ enabled: V2_REWARDS_ENABLED });
   useHydrateGamification({ awardXp, earnTreats, plantSeed, waterPlants });
   const isLoading = isLoadingUserData || isLoadingInnerWorld;
+  const adGraceComplete = useAdGracePeriod({
+    isLoading,
+    hasExistingData:
+      moods.length > 0 || habits.length > 0 || focusSessions.length > 0 || gratitudeEntries.length > 0,
+    localDate: currentDate,
+  });
 
   useAuthSession(isLoading);
   useDeepLinkHandler({ handleDiaryDeepLinks: false });
@@ -256,8 +272,9 @@ function IndexV2Impl() {
         <AdProvider
           adConsent={privacy.adConsent === true}
           adAgeEligibility={privacy.adAgeEligibility ?? "unknown"}
-          isPremium={false}
-          currentMood={currentMoodForAds}
+          adEntitlement={adEntitlement}
+          emotionProtectedToday={emotionProtectedToday}
+          adGraceComplete={adGraceComplete}
         >
           <NavV2Orchestrator
             onAddMood={handleAddMood}

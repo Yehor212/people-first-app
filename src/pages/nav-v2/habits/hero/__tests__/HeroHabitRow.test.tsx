@@ -196,6 +196,58 @@ describe("HeroHabitRow", () => {
     expect(onActionSheetOpenChange).toHaveBeenLastCalledWith(false);
   });
 
+  it("does not mount the action sheet before native banner suppression resolves", async () => {
+    let acknowledgeSuppression: (() => void) | undefined;
+    const onBeforeActionSheetOpen = vi.fn(
+      () => new Promise<boolean>((resolve) => {
+        acknowledgeSuppression = () => resolve(true);
+      }),
+    );
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onBeforeActionSheetOpen={onBeforeActionSheetOpen}
+      />,
+    );
+
+    const row = screen.getByTestId("hero-habit-row-h1");
+    row.focus();
+    fireEvent.keyDown(row, { key: "Enter" });
+
+    expect(onBeforeActionSheetOpen).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("habit-action-sheet-h1")).not.toBeInTheDocument();
+
+    await act(async () => {
+      acknowledgeSuppression?.();
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
+    expect(row).not.toHaveFocus();
+  });
+
+  it("keeps the action sheet closed when native banner suppression is not acknowledged", async () => {
+    const onBeforeActionSheetOpen = vi.fn(() => Promise.resolve(false));
+    render(
+      <HeroHabitRow
+        habit={habit()}
+        onToggle={vi.fn()}
+        onDelete={vi.fn()}
+        onBeforeActionSheetOpen={onBeforeActionSheetOpen}
+      />,
+    );
+
+    const row = screen.getByTestId("hero-habit-row-h1");
+    row.focus();
+    fireEvent.keyDown(row, { key: "Enter" });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.queryByTestId("habit-action-sheet-h1")).not.toBeInTheDocument();
+  });
+
   it("passes progressive collapse state into the weekly card", () => {
     render(
       <HeroHabitRow

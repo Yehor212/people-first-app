@@ -115,6 +115,7 @@ export const SK = {
 
   // ─── Onboarding & Hints ───
   ONBOARDING_STATE: "zenflow_onboarding_state",
+  AD_GRACE_STATE: "zenflow_ad_grace_state_v1",
   HABIT_SWIPE_HINT_SEEN: "habit-swipe-hint-seen",
   DIARY_FORMAT_HINT_SEEN: "diary-format-hint-seen",
   NOTIFICATION_PERMISSION_ASKED: "notification-permission-asked",

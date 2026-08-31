@@ -50,8 +50,51 @@ describe("Android AdMob banner edge-to-edge patch", () => {
       "new CoordinatorLayout.LayoutParams(adWidthPixels, adHeightPixels)",
     );
     expect(source).toContain("RelativeLayout.LayoutParams.MATCH_PARENT");
-    expect(source).toContain("mAdViewLayout.addView(mAdView, adViewLayoutParams)");
+    expect(source).toContain(
+      "adViewLayoutForRequest.addView(adViewForRequest, adViewLayoutParams)",
+    );
     expect(source).not.toContain("adViewLayoutParams.addRule(RelativeLayout.CENTER_IN_PARENT)");
+  });
+
+  it("publishes exact adaptive geometry while the native view is still invisible", () => {
+    const source = readFileSync(bannerExecutorPath, "utf8");
+    const hiddenIndex = source.indexOf(
+      "adViewLayoutForRequest.setVisibility(View.INVISIBLE)",
+    );
+    const geometryIndex = source.indexOf(
+      "notifyListeners(BannerAdPluginEvents.SizeChanged.getWebEventName(), sizeInfo)",
+      hiddenIndex,
+    );
+    const loadIndex = source.indexOf("adViewForRequest.loadAd(adRequest)", geometryIndex);
+
+    expect(hiddenIndex).toBeGreaterThan(0);
+    expect(geometryIndex).toBeGreaterThan(hiddenIndex);
+    expect(loadIndex).toBeGreaterThan(geometryIndex);
+  });
+
+  it("ignores late SDK callbacks from a banner that was removed or replaced", () => {
+    const source = readFileSync(bannerExecutorPath, "utf8");
+
+    expect(source).toContain("final AdView adViewForRequest = mAdView;");
+    expect(source).toMatch(
+      /public void onAdLoaded\(\) \{\s*if \(mAdView != adViewForRequest\)/,
+    );
+    expect(source).toContain("new BannerAdSizeInfo(adViewForRequest)");
+    expect(source).toContain("adViewForRequest.loadAd(adRequest)");
+  });
+
+  it("rejects a stale existing-view reload instead of dereferencing a removed AdView", () => {
+    const source = readFileSync(bannerExecutorPath, "utf8");
+
+    expect(source).toContain("updateExistingAdView(adOptions, call)");
+    expect(source).toMatch(
+      /private void updateExistingAdView\(AdOptions adOptions, PluginCall call\)[\s\S]*final AdView adViewForRequest = mAdView;/,
+    );
+    expect(source).toMatch(
+      /if \(mAdView != adViewForRequest \|\| adViewForRequest == null\) \{\s*call\.reject\("Banner was removed before it could be reloaded"\);/,
+    );
+    expect(source).toContain("adViewForRequest.loadAd(adRequest)");
+    expect(source).toMatch(/adViewForRequest\.loadAd\(adRequest\);\s*call\.resolve\(\);/);
   });
 
   it("sizes an adaptive banner to the inset-aware Capacitor content width", () => {
@@ -72,7 +115,11 @@ describe("Android AdMob banner edge-to-edge patch", () => {
     expect(patch).toContain("new CoordinatorLayout.LayoutParams(adWidthPixels, adHeightPixels)");
     expect(patch).toContain("RelativeLayout.LayoutParams.MATCH_PARENT");
     expect(patch).toContain("availableWidthPixels = mViewGroup.getWidth()");
-    expect(patch).toContain("mAdViewLayout.addView(mAdView, adViewLayoutParams)");
+    expect(patch).toContain(
+      "adViewLayoutForRequest.addView(adViewForRequest, adViewLayoutParams)",
+    );
+    expect(patch).toContain("adViewLayoutForRequest.setVisibility(View.INVISIBLE)");
+    expect(patch).toContain("Publish measured geometry before loading/visibility");
     expect(patch).toContain("Test ad requests are disabled in ZenFlow production builds");
     expect(patch).toContain("A real adId is required in ZenFlow production builds");
   });

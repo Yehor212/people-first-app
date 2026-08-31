@@ -652,6 +652,7 @@ export const ja: Translations = {
   adAgeCheckCancel: "キャンセル",
   adAgeCheckContinue: "続ける",
   adAgeCheckInvalid: "この日付を確認できませんでした。内容を確認して、もう一度お試しください。",
+  adProtectedSurfaceUnavailable: "このパネルを安全に開けませんでした。もう一度お試しください。",
   adAgeMinorNotice: "この年齢ではバナーを利用できません。広告サービスは開始されていません。",
   adAgeReview: "年齢情報を確認",
   adAgeReviewHint:

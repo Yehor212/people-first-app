@@ -10,12 +10,14 @@ vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
 
 const adPlacement = vi.hoisted(() => ({
   bannerHeight: 50,
+  prepareProtectedAdSurface: vi.fn(() => Promise.resolve(true)),
   setHabitsBannerActive: vi.fn(),
 }));
 
 vi.mock("@/contexts/AdContext", () => ({
   useAds: () => ({
     bannerHeight: adPlacement.bannerHeight,
+    prepareProtectedAdSurface: adPlacement.prepareProtectedAdSurface,
     setHabitsBannerActive: adPlacement.setHabitsBannerActive,
   }),
 }));
@@ -209,6 +211,8 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     syncMocks.trackDeletedHabitId.mockClear();
     syncMocks.triggerSync.mockClear();
     adPlacement.bannerHeight = 50;
+    adPlacement.prepareProtectedAdSurface.mockReset();
+    adPlacement.prepareProtectedAdSurface.mockResolvedValue(true);
     adPlacement.setHabitsBannerActive.mockClear();
   });
 
@@ -305,7 +309,48 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(false);
   });
 
-  it("tracks V2 destructive habit deletes before cloud/backups can resurrect them", () => {
+  it("keeps the banner-reserved viewport vertically scrollable on short landscape screens", () => {
+    render(<HabitsPage />);
+
+    const page = screen.getByTestId("habits-page");
+    expect(page).toHaveClass("overflow-x-hidden", "overflow-y-auto", "overscroll-y-contain");
+    expect(page).not.toHaveClass("overflow-hidden");
+  });
+
+  it("does not mount a protected sheet until native banner suppression is acknowledged", async () => {
+    let acknowledgeSuppression: (() => void) | undefined;
+    adPlacement.prepareProtectedAdSurface.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => {
+        acknowledgeSuppression = () => resolve(true);
+      }),
+    );
+
+    render(<HabitsPage />);
+    const trigger = screen.getByTestId("habits-hero-create-empty");
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(adPlacement.prepareProtectedAdSurface).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
+
+    acknowledgeSuppression?.();
+    await waitFor(() => expect(screen.getByTestId("vaul-root")).toBeInTheDocument());
+    expect(trigger).not.toHaveFocus();
+  });
+
+  it("keeps a protected sheet closed when native banner suppression is not acknowledged", async () => {
+    adPlacement.prepareProtectedAdSurface.mockResolvedValueOnce(false);
+
+    render(<HabitsPage />);
+    fireEvent.click(screen.getByTestId("habits-hero-create-empty"));
+
+    await waitFor(() => {
+      expect(adPlacement.prepareProtectedAdSurface).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
+  });
+
+  it("tracks V2 destructive habit deletes before cloud/backups can resurrect them", async () => {
     mockHabits = [
       {
         id: "h1",
@@ -325,6 +370,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     render(<HabitsPage />);
 
     fireEvent.keyDown(screen.getByTestId("hero-habit-row-h1"), { key: "Enter" });
+    await screen.findByTestId("habit-action-sheet-h1-delete");
     fireEvent.click(screen.getByTestId("habit-action-sheet-h1-delete"));
 
     expect(syncMocks.trackDeletedHabitId).toHaveBeenCalledWith("h1");
@@ -335,7 +381,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(setRemindersSpy).toHaveBeenCalled();
   });
 
-  it("keeps the page active but shows a no-habits-today state when scheduled habits are off today", () => {
+  it("keeps the page active but suppresses the banner when scheduled habits are off today", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 3, 20, 12, 0, 0)); // Monday
     mockHabits = [
@@ -360,6 +406,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     );
     expect(screen.getByText("No habits today")).toBeInTheDocument();
     expect(screen.queryByTestId("hero-group-anytime")).not.toBeInTheDocument();
+    expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(false);
   });
 
   it("does not render the create sheet when closed", () => {
@@ -367,7 +414,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
   });
 
-  it("makes the Habits page content inert while a create sheet owns interaction", () => {
+  it("makes the Habits page content inert while a create sheet owns interaction", async () => {
     render(<HabitsPage />);
 
     const content = screen.getByTestId("habits-page-content");
@@ -376,7 +423,9 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
 
     fireEvent.click(screen.getByTestId("habits-hero-create-empty"));
 
-    expect(content).toHaveAttribute("inert", "");
+    // Opening waits for the protected-surface suppression handshake to be
+    // acknowledged before the sheet (and its inert backdrop) mounts.
+    await waitFor(() => expect(content).toHaveAttribute("inert", ""));
     expect(content).toHaveAttribute("aria-hidden", "true");
   });
 

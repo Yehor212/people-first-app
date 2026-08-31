@@ -7,12 +7,20 @@ import { useUIStore, useUserDataStore } from "@/stores";
 const { mockIsFeatureVisible } = vi.hoisted(() => ({
   mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(),
 }));
-const adOverlay = vi.hoisted(() => ({
-  setGlobalAdOverlayOpen: vi.fn(),
-}));
-const drawerLifecycle = vi.hoisted(() => ({
-  onExitComplete: null as null | (() => void),
-}));
+const { adOverlay, drawerLifecycle, adProtectedGate } = vi.hoisted(() => {
+  const setGlobalAdOverlayOpen = vi.fn();
+  const adOverlay = { setGlobalAdOverlayOpen };
+  const drawerLifecycle = {
+    onExitComplete: null as null | (() => void),
+  };
+  const adProtectedGate = {
+    prepareProtectedAdSurface: vi.fn(() => Promise.resolve(true)),
+    setGlobalAdOverlayOpen,
+    protectedSurfaceSuppressionFailed: false,
+    clearProtectedSurfaceSuppressionFailure: vi.fn(),
+  };
+  return { adOverlay, drawerLifecycle, adProtectedGate };
+});
 
 // --- Mocks ---
 
@@ -46,6 +54,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       notFoundBack: "Back",
       notFoundHint: "Use Home to return to your ZenFlow space.",
       goHome: "Go Home",
+      adProtectedSurfaceUnavailable: "This panel couldn’t open safely. Try again.",
+      close: "Close",
     },
     isRTL: false,
     language: "en",
@@ -57,7 +67,7 @@ vi.mock("@/contexts/FeatureFlagsContext", () => ({
 }));
 
 vi.mock("@/contexts/AdContext", () => ({
-  useAds: () => ({ setGlobalAdOverlayOpen: adOverlay.setGlobalAdOverlayOpen }),
+  useAds: () => adProtectedGate,
 }));
 
 vi.mock("@/components/FeatureUnlock", () => ({
@@ -242,6 +252,80 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
       focusEndTime: null,
     });
     useUserDataStore.setState({ userName: "Friend" });
+    adProtectedGate.prepareProtectedAdSurface.mockReset();
+    adProtectedGate.prepareProtectedAdSurface.mockResolvedValue(true);
+    adProtectedGate.setGlobalAdOverlayOpen.mockClear();
+    adProtectedGate.protectedSurfaceSuppressionFailed = false;
+    adProtectedGate.clearProtectedSurfaceSuppressionFailure.mockClear();
+  });
+
+  it("does not mount the phone drawer before native banner suppression resolves", async () => {
+    let acknowledgeSuppression: (() => void) | undefined;
+    adProtectedGate.prepareProtectedAdSurface.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => {
+        acknowledgeSuppression = () => resolve(true);
+      }),
+    );
+    render(<NavV2Orchestrator />);
+
+    const trigger = screen.getByTestId("nav-v2-open-drawer");
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(adProtectedGate.setGlobalAdOverlayOpen).toHaveBeenLastCalledWith(true);
+    expect(adProtectedGate.prepareProtectedAdSurface).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("drawer-v2-open")).not.toBeInTheDocument();
+
+    await act(async () => {
+      acknowledgeSuppression?.();
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("drawer-v2-open")).toBeInTheDocument();
+    expect(trigger).not.toHaveFocus();
+  });
+
+  it("keeps the phone drawer closed when native banner suppression is not acknowledged", async () => {
+    adProtectedGate.prepareProtectedAdSurface.mockResolvedValueOnce(false);
+    render(<NavV2Orchestrator />);
+
+    fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
+
+    await waitFor(() => {
+      expect(adProtectedGate.prepareProtectedAdSurface).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByTestId("drawer-v2-open")).not.toBeInTheDocument();
+  });
+
+  it("resets the drawer request after suppression fails so the menu can retry", async () => {
+    adProtectedGate.prepareProtectedAdSurface
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    render(<NavV2Orchestrator />);
+
+    const trigger = screen.getByTestId("nav-v2-open-drawer");
+    fireEvent.click(trigger);
+
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
+    expect(trigger).not.toHaveAttribute("aria-controls");
+    expect(screen.queryByTestId("drawer-v2-open")).not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+
+    expect(await screen.findByTestId("drawer-v2-open")).toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(trigger).toHaveAttribute("aria-controls", "nav-v2-drawer");
+    expect(adProtectedGate.prepareProtectedAdSurface).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a dismissible recovery notice after protected-surface suppression fails", () => {
+    adProtectedGate.protectedSurfaceSuppressionFailed = true;
+    render(<NavV2Orchestrator />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This panel couldn’t open safely. Try again.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(adProtectedGate.clearProtectedSurfaceSuppressionFailure).toHaveBeenCalledTimes(1);
   });
 
   it("shows one V2 progression dialog at a time and clears a closed challenge invitation", async () => {
@@ -260,7 +344,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     render(<NavV2Orchestrator />);
 
-    expect(screen.getByRole("dialog", { name: "Feature unlocked" })).toHaveTextContent(
+    expect(await screen.findByRole("dialog", { name: "Feature unlocked" })).toHaveTextContent(
       "challenges"
     );
     await waitFor(() => {
@@ -417,7 +501,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     render(<NavV2Orchestrator />);
 
     fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
-    fireEvent.click(screen.getByRole("button", { name: "Planning" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Planning" }));
     act(() => drawerLifecycle.onExitComplete?.());
 
     await waitFor(() =>
@@ -435,7 +519,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     render(<NavV2Orchestrator />);
 
     fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
-    fireEvent.click(screen.getByRole("button", { name: "Habits" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Habits" }));
 
     expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "orb");
     expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
@@ -465,7 +549,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     expect(screen.queryByTestId("mobile-nav-v2")).not.toBeInTheDocument();
   });
 
-  it("drawer trigger has a top-left 48px Android-safe target and accessible label", () => {
+  it("drawer trigger has a top-left 48px Android-safe target and accessible label", async () => {
     render(<NavV2Orchestrator />);
     const trigger = screen.getByTestId("nav-v2-open-drawer");
 
@@ -481,7 +565,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-controls", "nav-v2-drawer");
-    expect(document.getElementById("nav-v2-drawer")).toBeInTheDocument();
+    expect(await screen.findByTestId("drawer-v2-open")).toBeInTheDocument();
   });
 
   it("portals the Android phone menu trigger above global status banners", () => {
@@ -505,7 +589,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     try {
       trigger.focus();
       fireEvent.click(trigger);
-      const close = screen.getByRole("button", { name: "Close menu" });
+      const close = await screen.findByRole("button", { name: "Close menu" });
       expect(close).toHaveFocus();
       fireEvent.click(close);
 

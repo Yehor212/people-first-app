@@ -70,7 +70,7 @@ export function TemplatePicker({
         {t.quickAdd}
       </p>
       <div
-        className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(8rem*var(--font-scale,1))),1fr))] gap-2"
+        className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,calc(12rem*var(--font-scale,1))),1fr))] gap-2"
         data-slot="template-picker-grid"
       >
         {visibleTemplates

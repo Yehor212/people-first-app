@@ -1,8 +1,9 @@
-import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AppBackgroundMusicProvider } from "./AppBackgroundMusicProvider";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/lib/haptics";
+import { logger } from "@/lib/logger";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAds } from "@/contexts/AdContext";
 import { useUIStore } from "@/stores";
@@ -81,7 +82,13 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   settingsControls,
 }: NavV2OrchestratorProps) {
   const { t } = useLanguage();
-  const { setGlobalAdOverlayOpen } = useAds();
+  const {
+    prepareProtectedAdSurface,
+    setGlobalAdOverlayOpen,
+    protectedSurfaceSuppressionFailed,
+    clearProtectedSurfaceSuppressionFailure,
+  } = useAds();
+  const [globalAdOverlayReady, setGlobalAdOverlayReady] = useState(false);
   const featureToUnlock = useUIStore((state) => state.featureToUnlock);
   const showChallengeModal = useUIStore((state) => state.showChallengeModal);
   const showMindfulMoment = useUIStore((state) => state.showMindfulMoment);
@@ -115,28 +122,62 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
 
+  const globalAdOverlayRequested =
+    (!isWebNavigation && drawerOpen) ||
+    commandPaletteOpen ||
+    Boolean(featureToUnlock) ||
+    showChallengeModal ||
+    showMindfulMoment ||
+    focusIsRunning ||
+    focusEndTime !== null;
+
   useEffect(() => {
-    setGlobalAdOverlayOpen(
-      (!isWebNavigation && drawerOpen) ||
-        commandPaletteOpen ||
-        Boolean(featureToUnlock) ||
-        showChallengeModal ||
-        showMindfulMoment ||
-        focusIsRunning ||
-        focusEndTime !== null
-    );
-    return () => setGlobalAdOverlayOpen(false);
+    let cancelled = false;
+    if (!globalAdOverlayRequested) {
+      setGlobalAdOverlayReady(false);
+      setGlobalAdOverlayOpen(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setGlobalAdOverlayReady(false);
+    setGlobalAdOverlayOpen(true);
+    void prepareProtectedAdSurface()
+      .then((acknowledged) => {
+        if (cancelled) return;
+        if (acknowledged) {
+          if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+          setGlobalAdOverlayReady(true);
+          return;
+        }
+        if (!isWebNavigation && drawerOpen) {
+          closeDrawer();
+        }
+      })
+      .catch((error) => {
+        logger.warn("[Ads] Protected shell surface suppression failed", error);
+        if (!cancelled && !isWebNavigation && drawerOpen) {
+          closeDrawer();
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
-    commandPaletteOpen,
+    closeDrawer,
     drawerOpen,
-    featureToUnlock,
-    focusEndTime,
-    focusIsRunning,
+    globalAdOverlayRequested,
     isWebNavigation,
+    prepareProtectedAdSurface,
     setGlobalAdOverlayOpen,
-    showChallengeModal,
-    showMindfulMoment,
   ]);
+
+  useEffect(
+    () => () => setGlobalAdOverlayOpen(false),
+    [setGlobalAdOverlayOpen],
+  );
 
   useEffect(() => scheduleNavV2RoutePreload(activePage), [activePage]);
 
@@ -337,8 +378,25 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
 
       {pendingRouteLabel && <NavV2RoutePending label={pendingRouteLabel} />}
 
+      {protectedSurfaceSuppressionFailed && (
+        <div
+          role="alert"
+          className="fixed inset-x-4 top-[calc(var(--safe-top)+1rem)] z-[90] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg"
+          data-testid="protected-surface-recovery-notice"
+        >
+          <span className="min-w-0 flex-1">{tx.adProtectedSurfaceUnavailable}</span>
+          <button
+            type="button"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl px-3 font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            onClick={clearProtectedSurfaceSuppressionFailure}
+          >
+            {tx.close}
+          </button>
+        </div>
+      )}
+
       <DrawerV2
-        open={!isWebNavigation && drawerOpen}
+        open={!isWebNavigation && drawerOpen && globalAdOverlayReady}
         activePage={activePage}
         onClose={closeDrawer}
         onExitComplete={handleDrawerExitComplete}
@@ -347,7 +405,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
 
-      {commandPaletteOpen && (
+      {commandPaletteOpen && globalAdOverlayReady && (
         <Suspense fallback={null}>
           <CommandPalette
             open={commandPaletteOpen}
@@ -361,12 +419,18 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         {pageNode}
       </Suspense>
 
-      <V2FocusMiniPlayer
-        activePage={activePage}
-        onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
-      />
-      <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
-      <V2ProgressionModalLayer />
+      {(!focusIsRunning && focusEndTime === null || globalAdOverlayReady) && (
+        <V2FocusMiniPlayer
+          activePage={activePage}
+          onNavigateToPlanning={() => handlePrimaryPageChange("planning")}
+        />
+      )}
+      {(!showMindfulMoment || globalAdOverlayReady) && (
+        <V2MindfulMomentLayer onComplete={onMindfulMomentComplete} />
+      )}
+      {(!featureToUnlock && !showChallengeModal || globalAdOverlayReady) && (
+        <V2ProgressionModalLayer />
+      )}
     </div>
     </AppBackgroundMusicProvider>
   );
