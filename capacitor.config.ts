@@ -34,18 +34,18 @@ const config: CapacitorConfig = {
     contentInset: "never",
   },
   backgroundColor: "#071614",
-    SystemBars: {
-      insetsHandling: "disable",
-      style: "DEFAULT",
-      hidden: false,
-      animation: "NONE",
-    },
   server: {
     androidScheme: "https",
     iosScheme: "https",
     cleartext: false,
   },
   plugins: {
+    SystemBars: {
+      insetsHandling: "disable",
+      style: "DEFAULT",
+      hidden: false,
+      animation: "NONE",
+    },
     SplashScreen: {
       launchAutoHide: false,
       launchFadeOutDuration: 300,

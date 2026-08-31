@@ -25,7 +25,6 @@
     <style name="AppTheme.NoActionBarLaunch.Base" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:background">@drawable/splash</item>
         <item name="android:windowBackground">@color/zenflow_splash_dark</item>
-        <item name="android:windowSplashScreenBackground">@color/zenflow_splash_dark</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
