@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ParticleBackground } from "@/components/stats";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { zenTap } from "@/lib/animationUtils";
 
 import {
@@ -40,6 +41,7 @@ export function ScheduleTimeline({
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(
     null,
   );
+  const motionAllowed = useShouldAnimate();
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const daySelectorRef = useRef<HTMLDivElement>(null);
@@ -180,13 +182,13 @@ export function ScheduleTimeline({
       />
 
       {/* Floating particles */}
-      <ParticleBackground count={15} color="purple" />
+      <ParticleBackground count={15} color="purple" animated={motionAllowed} />
 
       {/* Nebula glow effects */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        animate={{ opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 6, repeat: Infinity }}
+        animate={{ opacity: motionAllowed ? [0.3, 0.5, 0.3] : 0.3 }}
+        transition={{ duration: 6, repeat: motionAllowed ? Infinity : 0 }}
         style={{
           background: `
             radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
@@ -208,6 +210,7 @@ export function ScheduleTimeline({
             <AnimatedClockRing
               currentHour={currentHour}
               currentMinute={currentMinute}
+              motionAllowed={motionAllowed}
             />
 
             <div className="min-w-0 flex-1">
@@ -215,8 +218,8 @@ export function ScheduleTimeline({
               <motion.h3 className="flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-slate-800 [text-shadow:0_0_10px_rgba(139,92,246,0.3)] dark:text-white">
                 <motion.span
                   className="shrink-0"
-                  animate={{ rotate: [0, 15, -15, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  animate={{ rotate: motionAllowed ? [0, 15, -15, 0] : 0 }}
+                  transition={{ duration: 2, repeat: motionAllowed ? Infinity : 0 }}
                 >
                   <Sparkles className="w-5 h-5 text-purple-400" />
                 </motion.span>
@@ -246,8 +249,8 @@ export function ScheduleTimeline({
                 >
                   <motion.div
                     className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
-                    animate={{ scale: [1, 1.3, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
+                    animate={{ scale: motionAllowed ? [1, 1.3, 1] : 1 }}
+                    transition={{ duration: 1, repeat: motionAllowed ? Infinity : 0 }}
                   />
                   <span className="min-w-0 whitespace-normal break-words text-xs text-blue-600 [hyphens:manual] [overflow-wrap:normal] dark:text-blue-400">
                     {t.googleCalendar || "Google Calendar"}...
@@ -300,6 +303,7 @@ export function ScheduleTimeline({
               hasEvents={dateHasEvents(date)}
               onClick={() => handleDayClick(date)}
               language={language}
+              motionAllowed={motionAllowed}
             />
           ))}
         </div>
@@ -332,6 +336,7 @@ export function ScheduleTimeline({
                   t={t}
                   onEventClick={setSelectedEvent}
                   isEventCurrent={isEventCurrent}
+                  motionAllowed={motionAllowed}
                 />
               ))}
             </div>

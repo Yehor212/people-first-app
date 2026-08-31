@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  installRuntimeFlightRecorder,
   installRuntimePerformanceGuard,
   shouldEnableRuntimeFlightRecorder,
   shouldEnableRuntimePerformanceGuard,
 } from "../runtimeFlightRecorder";
+import { readStoredRuntimePerformanceMode } from "../runtimePerformanceMode";
 import { SK, SSK } from "@/lib/storageKeys";
 
 type ObserverCb = (list: { getEntries: () => PerformanceEntry[] }) => void;
@@ -50,6 +52,7 @@ describe("runtime flight recorder enablement", () => {
     delete document.documentElement.dataset.runtimePerf;
     sessionStorage.removeItem(SSK.RUNTIME_PERF_GUARD);
     localStorage.removeItem(SK.RUNTIME_PERF_DEVICE_GUARD);
+    window.history.replaceState({}, "", "/");
     vi.unstubAllGlobals();
   });
 
@@ -77,7 +80,78 @@ describe("runtime flight recorder enablement", () => {
     expect(shouldEnableRuntimePerformanceGuard("?perfGuard=1")).toBe(true);
   });
 
+  it("minimizes sensitive query and fragment values in the in-memory recorder", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/orb?perf=1&nav=v2&navLayout=phone&code=oauth-code&state=oauth-state&access_token=secret#refresh_token=secret",
+    );
+    installPerformanceObserverMock([]);
+
+    expect(installRuntimeFlightRecorder()).toBe(true);
+    expect(window.__zenflowRuntimePerf?.snapshot().route).toBe(
+      "/orb?nav=v2&navLayout=phone",
+    );
+
+    window.__zenflowRuntimePerf?.markRoute(
+      "/settings?nav=v2&navLayout=desktop&token_hash=secret&email=person%40example.com#provider_token=secret",
+    );
+
+    const serialized = JSON.stringify(window.__zenflowRuntimePerf?.snapshot());
+    expect(window.__zenflowRuntimePerf?.snapshot().route).toBe(
+      "/settings?nav=v2&navLayout=desktop",
+    );
+    for (const forbidden of [
+      "oauth-code",
+      "oauth-state",
+      "access_token",
+      "refresh_token",
+      "token_hash",
+      "provider_token",
+      "person@example.com",
+    ]) {
+      expect(serialized).not.toContain(forbidden);
+    }
+  });
+
+  it("sanitizes and rewrites a legacy stored runtime route without losing guard fields", () => {
+    sessionStorage.setItem(
+      SSK.RUNTIME_PERF_GUARD,
+      JSON.stringify({
+        version: 1,
+        mode: "strained",
+        reason: "blocking-long-animation-frame",
+        duration: 720,
+        route:
+          "/orb?nav=v2&navLayout=phone&code=legacy-code&state=legacy-state&journalReset=private-proof#error=secret",
+        activatedAt: 123456,
+      }),
+    );
+
+    expect(readStoredRuntimePerformanceMode()).toEqual({
+      version: 1,
+      mode: "strained",
+      reason: "blocking-long-animation-frame",
+      duration: 720,
+      route: "/orb?nav=v2&navLayout=phone",
+      activatedAt: 123456,
+    });
+    expect(JSON.parse(sessionStorage.getItem(SSK.RUNTIME_PERF_GUARD) || "{}")).toEqual({
+      version: 1,
+      mode: "strained",
+      reason: "blocking-long-animation-frame",
+      duration: 720,
+      route: "/orb?nav=v2&navLayout=phone",
+      activatedAt: 123456,
+    });
+  });
+
   it("activates strained mode from a severe blocking long animation frame", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/orb?nav=v2&navLayout=phone&code=guard-code&state=guard-state",
+    );
     installPerformanceObserverMock(["long-animation-frame"]);
 
     expect(installRuntimePerformanceGuard()).toBe(true);
@@ -94,9 +168,13 @@ describe("runtime flight recorder enablement", () => {
     });
 
     expect(document.documentElement.dataset.runtimePerf).toBe("strained");
-    expect(sessionStorage.getItem(SSK.RUNTIME_PERF_GUARD)).toContain(
+    const storedGuard = sessionStorage.getItem(SSK.RUNTIME_PERF_GUARD);
+    expect(storedGuard).toContain(
       "blocking-long-animation-frame",
     );
+    expect(storedGuard).toContain('"/orb?nav=v2&navLayout=phone"');
+    expect(storedGuard).not.toContain("guard-code");
+    expect(storedGuard).not.toContain("guard-state");
     expect(window.__zenflowRuntimePerfGuard?.snapshot().activated).toBe(true);
   });
 

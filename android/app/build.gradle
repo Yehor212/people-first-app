@@ -26,6 +26,11 @@ def zenflowConfiguredAdMobPublisher = (zenflowAdMobAndroidAppId =~ /ca-app-(pub-
 def zenflowConfiguredAdMobBannerPublisher = (zenflowAdMobAndroidBannerId =~ /ca-app-(pub-\d{16})\/\d+/).with { matcher -> matcher.matches() ? matcher.group(1) : "" }
 
 gradle.taskGraph.whenReady { taskGraph ->
+    def debugPackagingTaskNames = [
+            "assembledebug",
+            "bundledebug",
+            "packagedebug",
+    ] as Set
     def publishableReleaseTaskNames = [
             "assemblerelease",
             "bundlerelease",
@@ -35,6 +40,17 @@ gradle.taskGraph.whenReady { taskGraph ->
         publishableReleaseTaskNames.contains(requestedTask.tokenize(":").last().toLowerCase(Locale.ROOT))
     } || taskGraph.getAllTasks().any { task ->
         task.project == project && publishableReleaseTaskNames.contains(task.name.toLowerCase(Locale.ROOT))
+    }
+    def debugPackagingTaskRequested = gradle.startParameter.taskNames.any { requestedTask ->
+        debugPackagingTaskNames.contains(requestedTask.tokenize(":").last().toLowerCase(Locale.ROOT))
+    } || taskGraph.getAllTasks().any { task ->
+        task.project == project && debugPackagingTaskNames.contains(task.name.toLowerCase(Locale.ROOT))
+    }
+
+    // Owner-less debug builds (CI/local without secrets) get the debug-only
+    // sample id via src/debug/res; a provided-but-wrong id still fails fast.
+    if (debugPackagingTaskRequested && zenflowAdMobAndroidAppId != "" && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)) {
+        throw new GradleException("Debug builds require ZENFLOW_ADMOB_ANDROID_APP_ID or VITE_ADMOB_APP_ID_ANDROID with a real app id matching public/app-ads.txt.")
     }
 
     if (publishableReleaseTaskRequested && (!zenflowConfiguredAdMobPublisher || zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher)) {

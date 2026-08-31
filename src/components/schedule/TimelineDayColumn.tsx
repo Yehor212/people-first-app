@@ -8,7 +8,7 @@ import { EventCard3D, CurrentTimeOrb } from './ScheduleVisuals';
 export function TimelineDayColumn({
   date, dayOffset, dayEvents, isDayToday, isDaySelected,
   currentHour, currentTimePositionPercent, language, t,
-  onEventClick, isEventCurrent,
+  onEventClick, isEventCurrent, motionAllowed = true,
 }: {
   date: string; dayOffset: number; dayEvents: ScheduleEvent[];
   isDayToday: boolean; isDaySelected: boolean;
@@ -16,6 +16,7 @@ export function TimelineDayColumn({
   language: string; t: Translations;
   onEventClick: (event: ScheduleEvent) => void;
   isEventCurrent: (event: ScheduleEvent) => boolean;
+  motionAllowed?: boolean;
 }) {
   const formatTime = (hour: number) => `${hour.toString().padStart(2, '0')}:00`;
 
@@ -93,11 +94,17 @@ export function TimelineDayColumn({
             event={event}
             isCurrent={isDayToday && isEventCurrent(event)}
             onClick={() => onEventClick(event)}
+            motionAllowed={motionAllowed}
           />
         ))}
 
         {/* Current time orb */}
-        {isDayToday && <CurrentTimeOrb positionPercent={currentTimePositionPercent} />}
+        {isDayToday && (
+          <CurrentTimeOrb
+            positionPercent={currentTimePositionPercent}
+            motionAllowed={motionAllowed}
+          />
+        )}
       </div>
 
       {/* Period labels */}

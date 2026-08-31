@@ -8,9 +8,11 @@ import { formatDayShort, getEventGradient, HOURS_PER_DAY } from "./constants";
 export function AnimatedClockRing({
   currentHour,
   currentMinute,
+  motionAllowed = true,
 }: {
   currentHour: number;
   currentMinute: number;
+  motionAllowed?: boolean;
 }) {
   const dayProgress = ((currentHour * 60 + currentMinute) / (24 * 60)) * 100;
   const circumference = 2 * Math.PI * 42;
@@ -25,13 +27,15 @@ export function AnimatedClockRing({
       <motion.div
         className="absolute inset-0 rounded-full"
         animate={{
-          boxShadow: [
-            "0 0 20px rgba(139, 92, 246, 0.3)",
-            "0 0 40px rgba(139, 92, 246, 0.5)",
-            "0 0 20px rgba(139, 92, 246, 0.3)",
-          ],
+          boxShadow: motionAllowed
+            ? [
+                "0 0 20px rgba(139, 92, 246, 0.3)",
+                "0 0 40px rgba(139, 92, 246, 0.5)",
+                "0 0 20px rgba(139, 92, 246, 0.3)",
+              ]
+            : "0 0 20px rgba(139, 92, 246, 0.3)",
         }}
-        transition={{ duration: 3, repeat: Infinity }}
+        transition={{ duration: 3, repeat: motionAllowed ? Infinity : 0 }}
       />
 
       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -102,8 +106,8 @@ export function AnimatedClockRing({
           style={{
             color: "hsl(var(--cosmic-text-primary))",
           }}
-          animate={{ opacity: [1, 0.8, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          animate={{ opacity: motionAllowed ? [1, 0.8, 1] : 1 }}
+          transition={{ duration: 2, repeat: motionAllowed ? Infinity : 0 }}
         >
           {currentHour.toString().padStart(2, "0")}:
           {currentMinute.toString().padStart(2, "0")}
@@ -121,6 +125,7 @@ export function PremiumDayPill({
   hasEvents,
   onClick,
   language,
+  motionAllowed = true,
 }: {
   date: string;
   isSelected: boolean;
@@ -128,6 +133,7 @@ export function PremiumDayPill({
   hasEvents: boolean;
   onClick: () => void;
   language: string;
+  motionAllowed?: boolean;
 }) {
   const { day, weekday } = formatDayShort(date, language);
 
@@ -151,13 +157,15 @@ export function PremiumDayPill({
         <motion.div
           className="absolute inset-0 rounded-2xl pointer-events-none"
           animate={{
-            boxShadow: [
-              "0 0 10px rgba(34, 197, 94, 0.3)",
-              "0 0 20px rgba(34, 197, 94, 0.5)",
-              "0 0 10px rgba(34, 197, 94, 0.3)",
-            ],
+            boxShadow: motionAllowed
+              ? [
+                  "0 0 10px rgba(34, 197, 94, 0.3)",
+                  "0 0 20px rgba(34, 197, 94, 0.5)",
+                  "0 0 10px rgba(34, 197, 94, 0.3)",
+                ]
+              : "0 0 10px rgba(34, 197, 94, 0.3)",
           }}
-          transition={{ duration: 2, repeat: Infinity }}
+          transition={{ duration: 2, repeat: motionAllowed ? Infinity : 0 }}
         />
       )}
 
@@ -188,8 +196,8 @@ export function PremiumDayPill({
             "absolute -top-1 -end-1 w-3 h-3 rounded-full",
             isSelected ? "bg-white dark:bg-white" : "bg-accent",
           )}
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          animate={{ scale: motionAllowed ? [1, 1.2, 1] : 1 }}
+          transition={{ duration: 1.5, repeat: motionAllowed ? Infinity : 0 }}
         />
       )}
     </motion.button>
@@ -201,10 +209,12 @@ export function EventCard3D({
   event,
   isCurrent,
   onClick,
+  motionAllowed = true,
 }: {
   event: ScheduleEvent;
   isCurrent: boolean;
   onClick: () => void;
+  motionAllowed?: boolean;
 }) {
   const gradient = getEventGradient(event.colorVar, event.urgent);
   const isHabitEvent = event.source === "habit";
@@ -251,8 +261,8 @@ export function EventCard3D({
       {isCurrent && (
         <motion.div
           className="absolute inset-0 rounded-xl border-2 border-white/60 dark:border-white/60 pointer-events-none"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          animate={{ opacity: motionAllowed ? [0.5, 1, 0.5] : 1 }}
+          transition={{ duration: 1.5, repeat: motionAllowed ? Infinity : 0 }}
         />
       )}
 
@@ -275,8 +285,8 @@ export function EventCard3D({
 
       {/* Emoji with glow */}
       <motion.span
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ duration: 2, repeat: Infinity }}
+        animate={{ scale: motionAllowed ? [1, 1.1, 1] : 1 }}
+        transition={{ duration: 2, repeat: motionAllowed ? Infinity : 0 }}
         className="drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
       >
         {event.emoji}
@@ -290,8 +300,10 @@ export function EventCard3D({
 // Current Time Orb indicator
 export function CurrentTimeOrb({
   positionPercent,
+  motionAllowed = true,
 }: {
   positionPercent: number;
+  motionAllowed?: boolean;
 }) {
   return (
     <motion.div
@@ -308,28 +320,32 @@ export function CurrentTimeOrb({
       <motion.div
         className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full"
         animate={{
-          boxShadow: [
-            "0 0 10px rgba(239, 68, 68, 0.5)",
-            "0 0 20px rgba(239, 68, 68, 0.8)",
-            "0 0 10px rgba(239, 68, 68, 0.5)",
-          ],
-          scale: [1, 1.2, 1],
+          boxShadow: motionAllowed
+            ? [
+                "0 0 10px rgba(239, 68, 68, 0.5)",
+                "0 0 20px rgba(239, 68, 68, 0.8)",
+                "0 0 10px rgba(239, 68, 68, 0.5)",
+              ]
+            : "0 0 10px rgba(239, 68, 68, 0.5)",
+          scale: motionAllowed ? [1, 1.2, 1] : 1,
         }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+        transition={{ duration: 1.5, repeat: motionAllowed ? Infinity : 0 }}
       />
 
       {/* Bottom orb */}
       <motion.div
         className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full"
         animate={{
-          boxShadow: [
-            "0 0 10px rgba(239, 68, 68, 0.5)",
-            "0 0 20px rgba(239, 68, 68, 0.8)",
-            "0 0 10px rgba(239, 68, 68, 0.5)",
-          ],
-          scale: [1, 1.2, 1],
+          boxShadow: motionAllowed
+            ? [
+                "0 0 10px rgba(239, 68, 68, 0.5)",
+                "0 0 20px rgba(239, 68, 68, 0.8)",
+                "0 0 10px rgba(239, 68, 68, 0.5)",
+              ]
+            : "0 0 10px rgba(239, 68, 68, 0.5)",
+          scale: motionAllowed ? [1, 1.2, 1] : 1,
         }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+        transition={{ duration: 1.5, repeat: motionAllowed ? Infinity : 0, delay: 0.5 }}
       />
     </motion.div>
   );
