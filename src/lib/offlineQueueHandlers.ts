@@ -287,7 +287,9 @@ export function initializeOfflineQueueHandlers(): void {
   offlineQueue.registerHandler("REVOKE_AUTOMATION_PREFERENCE", async (action, context) => {
     const parsed = automationPreferenceRevocationIntentSchema.safeParse(action.payload);
     if (!parsed.success) {
-      logger.warn("[OfflineQueue] Invalid connected-record revocation payload, keeping row blocked");
+      logger.warn(
+        "[OfflineQueue] Invalid connected-record revocation payload, keeping row blocked"
+      );
       throw new OfflineQueuePayloadValidationError(action.type);
     }
     await runOwnerBoundCloudMutation(context, async () => {
@@ -302,7 +304,7 @@ export function initializeOfflineQueueHandlers(): void {
       throw new OfflineQueuePayloadValidationError(action.type);
     }
     const outcome = await runOwnerBoundCloudMutation(context, () =>
-      processQueuedAutomationCommit(parsed.data, context.ownerUserId),
+      processQueuedAutomationCommit(parsed.data, context.ownerUserId)
     );
     return outcome.status === "committed"
       ? COMMITTED
@@ -319,7 +321,7 @@ export function initializeOfflineQueueHandlers(): void {
       throw new OfflineQueuePayloadValidationError(action.type);
     }
     const outcome = await runOwnerBoundCloudMutation(context, () =>
-      processQueuedAutomationUndo(parsed.data, context.ownerUserId),
+      processQueuedAutomationUndo(parsed.data, context.ownerUserId)
     );
     return outcome.status === "committed"
       ? COMMITTED
@@ -340,7 +342,7 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   offlineQueue.registerHandler("DELETE_JOURNAL_ENTRY", async (action, context) => {
-    await runOwnerBoundCloudMutation(context, () =>
+    return runOwnerBoundCloudMutation(context, () =>
       deleteJournalEntryFromCloud(
         action.entityId,
         context.ownerUserId,
@@ -348,7 +350,6 @@ export function initializeOfflineQueueHandlers(): void {
         context.operationId
       )
     );
-    return COMMITTED;
   });
 
   offlineQueue.registerHandler("UPLOAD_JOURNAL_PHOTO_STORAGE", async (action, context) => {
@@ -356,7 +357,7 @@ export function initializeOfflineQueueHandlers(): void {
       retryJournalPhotoUpload(
         action.payload ?? { id: action.entityId },
         context.ownerUserId,
-        context.signal,
+        context.signal
       )
     );
     return COMMITTED;
@@ -367,7 +368,7 @@ export function initializeOfflineQueueHandlers(): void {
       retryJournalAudioUpload(
         action.payload ?? { id: action.entityId },
         context.ownerUserId,
-        context.signal,
+        context.signal
       )
     );
     return COMMITTED;
@@ -378,7 +379,7 @@ export function initializeOfflineQueueHandlers(): void {
       retryJournalPhotoDelete(
         action.payload ?? { id: action.entityId },
         context.ownerUserId,
-        context.signal,
+        context.signal
       )
     );
     return COMMITTED;
@@ -389,7 +390,7 @@ export function initializeOfflineQueueHandlers(): void {
       retryJournalAudioDelete(
         action.payload ?? { id: action.entityId },
         context.ownerUserId,
-        context.signal,
+        context.signal
       )
     );
     return COMMITTED;

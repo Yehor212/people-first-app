@@ -5,7 +5,10 @@ import { settingsRepo } from "@/storage/db";
 import { deleteSettingFromCloud } from "@/storage/realtimeSync";
 import { getCurrentSessionUserId } from "@/lib/supabaseClient";
 import type { MoodType } from "@/types";
-import { getJournalContentVaultKey } from "./journalContentSession";
+import {
+  getJournalContentVaultKey,
+  getJournalContentVaultRevision,
+} from "./journalContentSession";
 import { runWithJournalSecurityWriteLock } from "./journalSecurityWriteLock";
 import { getJournalVaultKeyForWrite } from "./journalWriteSecurity";
 import {
@@ -31,6 +34,10 @@ import {
 import { isCanonicalJournalDate } from "./journalDateUtils";
 import { normalizeJournalPhotoLayout } from "./photoLayout";
 import { normalizeJournalStyleFields } from "./journalStyleFields";
+import {
+  normalizeJournalVaultRevision,
+  requireSafeJournalVaultRevision,
+} from "./journalVaultEpoch";
 
 export interface JournalDraftData {
   title: string;
@@ -61,6 +68,8 @@ export interface JournalDraftData {
     string,
     { x: number; y: number; width: number; description?: string }
   >;
+  /** Exact journal vault epoch for protected storage; absent for plaintext. */
+  vaultRevision?: number;
 }
 
 const JOURNAL_DRAFT_KEY_PREFIX = SK.journalDraft("");
@@ -125,6 +134,7 @@ function normalizeJournalDraftData(value: unknown): JournalDraftData | null {
       : undefined;
   const photoLayout = normalizeJournalPhotoLayout(raw.photoLayout, photoIds);
 
+  const vaultRevision = normalizeJournalVaultRevision(raw.vaultRevision);
   return {
     title: typeof raw.title === "string" ? raw.title : "",
     date:
@@ -144,7 +154,13 @@ function normalizeJournalDraftData(value: unknown): JournalDraftData | null {
         : 0,
     ...style,
     ...(photoLayout ? { photoLayout } : {}),
+    ...(vaultRevision !== null ? { vaultRevision } : {}),
   };
+}
+
+function withoutDraftVaultRevision(data: JournalDraftData): JournalDraftData {
+  const { vaultRevision: _vaultRevision, ...plaintext } = data;
+  return plaintext;
 }
 
 function getJournalDraftWriterLease(value: unknown): JournalDraftWriterLease | null {
@@ -223,13 +239,25 @@ async function syncDraftDelete(key: string, expectedOwnerUserId: string | null):
 
 async function protectDraftForStorage(
   data: JournalDraftData,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number,
 ): Promise<JournalDraftData> {
-  if (!vaultKey || !data.content || isEncryptedJournalContent(data.content)) return data;
+  if (!vaultKey) return withoutDraftVaultRevision(data);
+  const revision = requireSafeJournalVaultRevision(
+    vaultRevision ?? getJournalContentVaultRevision(),
+    "draft",
+  );
+  if (data.content && isEncryptedJournalContent(data.content)) {
+    await decryptJournalContentIfNeeded(data.content, vaultKey);
+  }
 
   return {
     ...data,
-    content: await encryptJournalContent(data.content, vaultKey),
+    content:
+      data.content && !isEncryptedJournalContent(data.content)
+        ? await encryptJournalContent(data.content, vaultKey)
+        : data.content,
+    vaultRevision: revision,
   };
 }
 
@@ -243,13 +271,14 @@ export function getDraftDataFromSetting(record: {
 
 export async function encryptJournalDraftSettingForStorage(
   record: { key: string; value: unknown },
-  vaultKey: string
+  vaultKey: string,
+  vaultRevision: number,
 ): Promise<{ key: string; value: JournalDraftData } | null> {
   const data = getDraftDataFromSetting(record);
   if (!data) return null;
   return {
     key: record.key,
-    value: await protectDraftForStorage(data, vaultKey),
+    value: await protectDraftForStorage(data, vaultKey, vaultRevision),
   };
 }
 
@@ -261,20 +290,21 @@ export async function decryptJournalDraftSettingForStorage(
   if (!data) return null;
   return {
     key: record.key,
-    value: {
+    value: withoutDraftVaultRevision({
       ...data,
       content:
         data.content && isEncryptedJournalContent(data.content)
           ? await decryptJournalContentIfNeeded(data.content, vaultKey)
           : data.content,
-    },
+    }),
   };
 }
 
 async function transformJournalDrafts(
   vaultKey: string,
   shouldTransform: (content: string) => boolean,
-  transform: (content: string, vaultKey: string) => Promise<string>
+  transform: (content: string, vaultKey: string) => Promise<string>,
+  vaultRevision?: number,
 ): Promise<number> {
   const records = await settingsRepo.toArray();
   const drafts = records.flatMap((record) => {
@@ -284,13 +314,19 @@ async function transformJournalDrafts(
   if (drafts.length === 0) return 0;
 
   const updates = await Promise.all(
-    drafts.map(async ({ record, data }) => ({
-      key: record.key,
-      value: {
+    drafts.map(async ({ record, data }) => {
+      const transformed = {
         ...data,
         content: await transform(data.content, vaultKey),
-      },
-    }))
+      };
+      return {
+        key: record.key,
+        value:
+          vaultRevision === undefined
+            ? withoutDraftVaultRevision(transformed)
+            : { ...transformed, vaultRevision },
+      };
+    })
   );
   await settingsRepo.bulkPut(updates);
   return updates.length;
@@ -308,7 +344,8 @@ export async function decryptEncryptedJournalDrafts(vaultKey: string): Promise<n
   return transformJournalDrafts(
     vaultKey,
     (content) => Boolean(content) && isEncryptedJournalContent(content),
-    decryptJournalContentIfNeeded
+    decryptJournalContentIfNeeded,
+    undefined,
   );
 }
 
@@ -316,7 +353,8 @@ export async function encryptPlaintextJournalDrafts(vaultKey: string): Promise<n
   return transformJournalDrafts(
     vaultKey,
     (content) => Boolean(content) && !isEncryptedJournalContent(content),
-    encryptJournalContent
+    encryptJournalContent,
+    requireSafeJournalVaultRevision(getJournalContentVaultRevision(), "draft"),
   );
 }
 

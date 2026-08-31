@@ -53,6 +53,7 @@ import { migrateLegacyFeedbackSettings } from "./lib/legacyFeedbackMigration";
 import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
+import { resumePendingJournalPasswordRemoval } from "./features/journal/journalSecurityRemovalLifecycle";
 
 // Drop legacy raw records and enforce the current retention window before any
 // new runtime failure can be recorded.
@@ -441,6 +442,11 @@ async function handleAppResume(): Promise<void> {
 
   try {
     inspectRetainedLifecycleSnapshot();
+    try {
+      await resumePendingJournalPasswordRemoval();
+    } catch {
+      logger.warn("[Main] Diary protection cleanup remains pending after resume");
+    }
     if (isNative) {
       try {
         dispatchNativeReminderReconcile("app-resume");
@@ -695,6 +701,9 @@ Promise.all([ensureFreshVersionBeforeRender(), prepareInitialLanguageBeforeRende
   .then(([shouldRender]) => {
     if (shouldRender) {
       renderConfiguredRoot();
+      void resumePendingJournalPasswordRemoval().catch(() => {
+        logger.warn("[Main] Diary protection cleanup remains pending after startup");
+      });
       scheduleVersionCheckAfterStartup();
       scheduleRuntimeAudioCacheWarmAfterStartup();
     }
@@ -702,6 +711,9 @@ Promise.all([ensureFreshVersionBeforeRender(), prepareInitialLanguageBeforeRende
   .catch((err) => {
     logger.error("[Init] Fatal:", err);
     renderConfiguredRoot();
+    void resumePendingJournalPasswordRemoval().catch(() => {
+      logger.warn("[Main] Diary protection cleanup remains pending after startup fallback");
+    });
     scheduleVersionCheckAfterStartup();
     scheduleRuntimeAudioCacheWarmAfterStartup();
   });

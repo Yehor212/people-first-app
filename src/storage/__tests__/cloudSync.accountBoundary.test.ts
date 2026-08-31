@@ -74,6 +74,14 @@ vi.mock("@/storage/accountBoundaryRuntime", () => ({
   ),
 }));
 
+vi.mock("@/features/journal/journalVaultEpoch", () => ({
+  readDurableJournalVaultRevision: vi.fn(async () => ({
+    protected: false,
+    vaultRevision: null,
+  })),
+  validateJournalBackupVaultEpoch: vi.fn(),
+}));
+
 vi.mock("@/storage/sync/serverTombstones", () => ({
   fetchAndMergeServerTombstones: mocks.fetchAndMergeServerTombstones,
 }));

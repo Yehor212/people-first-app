@@ -254,29 +254,23 @@ describe("JournalModule V2 header", () => {
     expect(source).toContain("closeMobileDiarySidebar");
   });
 
-  it("prioritizes the topmost remove-password confirmation before closing settings on Android back", () => {
+  it("lets the topmost remove-password dialog own Escape and Android Back", () => {
     const escapeHandlerBlock =
-      /const activeDialog =[\s\S]*?const handler = \(e: KeyboardEvent\) => \{[\s\S]*?\};\n {4}document\.addEventListener\("keydown", handler, true\);/.exec(
+      /\/\/ Consolidated Escape key handler[\s\S]*?document\.removeEventListener\("keydown", handler, true\);/.exec(
         source,
       )?.[0] ?? "";
+    expect(escapeHandlerBlock).toContain("if (showRemovePasswordConfirm) return;");
     expect(escapeHandlerBlock).toContain("e.preventDefault();");
     expect(escapeHandlerBlock).toContain("e.stopPropagation();");
     expect(source).toContain('document.removeEventListener("keydown", handler, true)');
-    expect(escapeHandlerBlock.indexOf("showRemovePasswordConfirm")).toBeGreaterThanOrEqual(0);
-    expect(escapeHandlerBlock.indexOf("showPasswordSettings")).toBeGreaterThanOrEqual(0);
-    expect(escapeHandlerBlock.indexOf("showRemovePasswordConfirm")).toBeLessThan(
-      escapeHandlerBlock.indexOf("showPasswordSettings"),
-    );
+    expect(escapeHandlerBlock).not.toContain('activeDialog === "remove"');
 
     const androidBackBlock =
       /\/\/ Android back button handling[\s\S]*?useEffect\(\(\) => \{[\s\S]*?\}, \[[\s\S]*?\]\);/.exec(
         source,
       )?.[0] ?? "";
-    expect(androidBackBlock.indexOf("showRemovePasswordConfirm")).toBeGreaterThanOrEqual(0);
-    expect(androidBackBlock.indexOf("showPasswordSettings")).toBeGreaterThanOrEqual(0);
-    expect(androidBackBlock.indexOf("showRemovePasswordConfirm")).toBeLessThan(
-      androidBackBlock.indexOf("showPasswordSettings"),
-    );
+    expect(androidBackBlock).toContain("if (showRemovePasswordConfirm) return;");
+    expect(androidBackBlock).not.toContain("setShowRemovePasswordConfirm(false)");
   });
 
   it("routes Android hardware back from statistics through the stats-aware back handler", () => {

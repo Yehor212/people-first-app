@@ -23,6 +23,7 @@ const migrationMocks = vi.hoisted(() => ({
   getIntent: vi.fn(() => Promise.resolve(null)),
   getRemovalIntent: vi.fn(() => Promise.resolve(null)),
   removeAtomic: vi.fn(() => Promise.resolve({ cloudMigrationPending: false })),
+  recordNativeCleanup: vi.fn(() => Promise.resolve()),
 }));
 type BiometricAuthMockResult = { success: boolean; error?: string; secret?: string };
 const biometricTestValues = vi.hoisted(() => ({
@@ -124,13 +125,20 @@ vi.mock("../journalSecurityMigration", () => ({
   ensureJournalSecurityRemovalQueued: migrationMocks.ensureRemovalQueued,
   getJournalSecurityMigrationIntent: migrationMocks.getIntent,
   getJournalSecurityRemovalIntent: migrationMocks.getRemovalIntent,
+  normalizeJournalDataForActiveVault: vi.fn(() =>
+    Promise.resolve({
+      changedCount: 0,
+      unboundMediaCount: 0,
+      cloudMigrationPending: false,
+    }),
+  ),
   removeJournalPasswordProtectionAtomically: migrationMocks.removeAtomic,
+  recordJournalSecurityRemovalNativeCleanup: migrationMocks.recordNativeCleanup,
   runWithJournalSecurityBoundary: migrationMocks.runBoundary,
   JOURNAL_SECURITY_MIGRATION_EVENT: "zenflow:journal-security-migration-updated",
 }));
 
 import { useJournalSecurity } from "../useJournalSecurity";
-import { JournalRemovePasswordPartialError } from "../journalSecurityErrors";
 
 function bytesToString(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
@@ -143,6 +151,11 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     ownerState.current = "account-a";
     migrationMocks.getIntent.mockResolvedValue(null);
     migrationMocks.ensureQueued.mockResolvedValue(false);
+    migrationMocks.removeAtomic.mockImplementation(async () => {
+      settingsStore.delete("journal_password");
+      settingsStore.delete("journal_vault_key");
+      return { cloudMigrationPending: false };
+    });
     migrationMocks.captureBoundary.mockImplementation(() =>
       Promise.resolve({
         generation: 1,
@@ -352,7 +365,6 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
       success: false,
       error: "Keychain item could not be deleted",
     });
-
     await act(async () => {
       await expect(hook.result.current.setBiometricEnabled(false)).resolves.toBe(false);
     });
@@ -361,7 +373,7 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     expect(settingsStore.get("journal_biometric")?.value).toBe(true);
   });
 
-  it("does not leave biometric unlock marked enabled after native cleanup succeeds but atomic removal fails", async () => {
+  it("does not remove native biometric credentials before atomic local removal succeeds", async () => {
     const hook = renderHook(() => useJournalSecurity());
 
     await waitFor(() => expect(hook.result.current.loading).toBe(false));
@@ -377,19 +389,55 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     migrationMocks.removeAtomic.mockRejectedValueOnce(new Error("atomic removal failed"));
 
     await act(async () => {
-      await expect(hook.result.current.removePassword()).rejects.toBeInstanceOf(
-        JournalRemovePasswordPartialError,
-      );
+      await expect(hook.result.current.removePassword()).rejects.toThrow("atomic removal failed");
     });
 
-    expect(biometricMocks.unenroll).toHaveBeenCalledTimes(1);
+    expect(biometricMocks.unenroll).not.toHaveBeenCalled();
     expect(journalStorageMocks.decryptEncryptedJournalEntries).not.toHaveBeenCalled();
     expect(journalStorageMocks.decryptEncryptedJournalMedia).not.toHaveBeenCalled();
     expect(settingsStore.has("journal_password")).toBe(true);
     expect(settingsStore.has("journal_vault_key")).toBe(true);
     expect(hook.result.current.hasPassword).toBe(true);
-    expect(hook.result.current.biometricEnabled).toBe(false);
-    expect(settingsStore.get("journal_biometric")?.value).toBe(false);
+    expect(hook.result.current.biometricEnabled).toBe(true);
+    expect(settingsStore.get("journal_biometric")?.value).toBe(true);
+  });
+
+  it("reports local removal as cleanup pending when native credential deletion fails afterward", async () => {
+    const hook = renderHook(() => useJournalSecurity());
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    await waitFor(() => expect(hook.result.current.biometricAvailable).toBe(true));
+
+    await act(async () => {
+      await hook.result.current.setPassword("correct horse battery staple");
+    });
+    await act(async () => {
+      await expect(hook.result.current.setBiometricEnabled(true)).resolves.toBe(true);
+    });
+
+    biometricMocks.unenroll.mockResolvedValueOnce({
+      success: false,
+      error: "Keychain item could not be deleted",
+    });
+    migrationMocks.removeAtomic.mockImplementationOnce(async () => {
+      settingsStore.delete("journal_password");
+      settingsStore.delete("journal_vault_key");
+      return { cloudMigrationPending: true };
+    });
+
+    let removalResult: Awaited<ReturnType<typeof hook.result.current.removePassword>> | undefined;
+    await act(async () => {
+      removalResult = await hook.result.current.removePassword();
+    });
+
+    expect(removalResult).toEqual({
+      status: "removed-cleanup-pending",
+      pending: expect.arrayContaining(["biometric", "cloud"]),
+    });
+    expect(settingsStore.has("journal_password")).toBe(false);
+    expect(settingsStore.has("journal_vault_key")).toBe(false);
+    expect(hook.result.current.hasPassword).toBe(false);
+    expect(hook.result.current.cloudProtectionPending).toBe(true);
   });
 
   it("does not remove native biometric credentials when locked encrypted content blocks password removal", async () => {
@@ -412,9 +460,11 @@ describe("useJournalSecurity iOS biometric vault key lifecycle", () => {
     journalStorageMocks.hasEncryptedJournalContent.mockResolvedValueOnce(true);
 
     await act(async () => {
-      await expect(hook.result.current.removePassword()).rejects.toThrow(
-        "Unlock your diary before removing password protection.",
-      );
+      await expect(hook.result.current.removePassword()).resolves.toEqual({
+        status: "blocked",
+        blocker: "unlock-required",
+        recoveryAction: "unlock",
+      });
     });
 
     expect(biometricMocks.unenroll).not.toHaveBeenCalled();

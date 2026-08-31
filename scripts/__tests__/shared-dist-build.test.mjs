@@ -106,6 +106,10 @@ describe("shared dist build input boundary", () => {
       ["--target", "ios", "--mode", "production"],
       { kind: "build", target: "ios", mode: "production" },
     ],
+    [
+      ["--target", "tauri", "--mode", "production"],
+      { kind: "build", target: "tauri", mode: "production" },
+    ],
     [["--validate-production-web"], { kind: "validate-production-web" }],
   ])("accepts one exact supported invocation", (argv, expected) => {
     expect(parseSharedDistBuildArgs(argv)).toEqual(expected);
@@ -138,6 +142,7 @@ describe("shared dist build plans", () => {
       "design tokens",
       "production-web manifest begin",
       "Vite production web build",
+      "feature capability receipt write",
       "dist duplicate-artifact prune",
       "production-web manifest complete",
     ]);
@@ -178,19 +183,40 @@ describe("shared dist build plans", () => {
       expect(plan.map((command) => command.label)).toEqual([
         "design tokens",
         `Vite production ${target} build`,
+        "feature capability receipt write",
         "Capacitor asset prune",
         "dist duplicate-artifact prune",
         "dist duplicate-artifact verify",
       ]);
-      expect(plan.slice(0, 3).every((command) => command.env?.CAPACITOR_BUILD === "true")).toBe(
+      expect([plan[0], plan[1], plan[3]].every(
+        (command) => command.env?.CAPACITOR_BUILD === "true",
+      )).toBe(
         true
       );
-      expect(plan[2].args).toEqual([path.join(REPO_ROOT, "scripts", "capacitor-prune-assets.cjs")]);
-      expect(plan.slice(3).every((command) => command.env === undefined)).toBe(true);
+      expect(plan[3].args).toEqual([path.join(REPO_ROOT, "scripts", "capacitor-prune-assets.cjs")]);
+      expect([plan[2], ...plan.slice(4)].every((command) => command.env === undefined)).toBe(true);
       expect(plan.at(-1)?.args).toContain("--verify");
       expect(plan.some((command) => command.args.includes("--bundle-manifest-begin"))).toBe(false);
     }
   );
+
+  it("keeps the Tauri receipt inside its guarded production build plan", () => {
+    const plan = createSharedDistBuildPlan({
+      rootDir: REPO_ROOT,
+      target: "tauri",
+      mode: "production",
+      nodeExecutable: "/portable/node",
+    });
+
+    expect(plan.map((command) => command.label)).toEqual([
+      "design tokens",
+      "Vite production tauri build",
+      "feature capability receipt write",
+      "dist duplicate-artifact prune",
+      "dist duplicate-artifact verify",
+    ]);
+    expect(plan.every((command) => command.env === undefined)).toBe(true);
+  });
 });
 
 describe("shared dist build lock", () => {
@@ -395,7 +421,11 @@ describe("shared dist build lock", () => {
       },
     });
 
-    expect(labels).toEqual(["production-web manifest validate", "dist duplicate-artifact verify"]);
+    expect(labels).toEqual([
+      "feature capability receipt validate",
+      "production-web manifest validate",
+      "dist duplicate-artifact verify",
+    ]);
     expect(existsSync(sharedDistBuildLockPath(rootDir, { lockBaseDir }))).toBe(false);
   });
 
@@ -483,7 +513,11 @@ describe("shared dist build lock", () => {
       },
     });
 
-    expect(labels).toEqual(["production-web manifest validate", "dist duplicate-artifact verify"]);
+    expect(labels).toEqual([
+      "feature capability receipt validate",
+      "production-web manifest validate",
+      "dist duplicate-artifact verify",
+    ]);
     expect(readFileSync(path.join(resurrectedRepoLock, "owner 2.json"), "utf8")).toBe(
       "FileProvider conflict copy"
     );
@@ -606,6 +640,9 @@ describe("package build wiring", () => {
     );
     expect(packageJson.scripts["build:ios"]).toBe(
       "node scripts/run-shared-dist-build.mjs --target ios --mode production"
+    );
+    expect(packageJson.scripts["build:tauri"]).toBe(
+      "node scripts/run-shared-dist-build.mjs --target tauri --mode production"
     );
   });
 });

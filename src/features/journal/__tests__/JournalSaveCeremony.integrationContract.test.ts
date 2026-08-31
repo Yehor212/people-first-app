@@ -99,8 +99,10 @@ describe("journal save ceremony integration contract", () => {
     const env = source("src/lib/env.ts");
     const module = source("src/features/journal/JournalModule.tsx");
     const vite = source("vite.config.ts");
-    expect(env).toContain("VITE_ENABLE_JOURNAL_SAVE_CEREMONY");
+    expect(env).not.toContain("VITE_ENABLE_JOURNAL_SAVE_CEREMONY");
     expect(env).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
+    expect(vite).toContain("ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED");
+    expect(vite).not.toContain("VITE_ENABLE_JOURNAL_SAVE_CEREMONY");
     expect(vite).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
     expect(module).toContain("__JOURNAL_SAVE_CEREMONY_BUILD_ENABLED__");
     expect(module).not.toContain(

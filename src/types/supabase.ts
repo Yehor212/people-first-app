@@ -650,6 +650,7 @@ export type Database = {
           storage_path: string | null;
           storage_url: string | null;
           user_id: string;
+          vault_revision: number | null;
         };
         Insert: {
           created_at: number;
@@ -660,6 +661,7 @@ export type Database = {
           storage_path?: string | null;
           storage_url?: string | null;
           user_id: string;
+          vault_revision?: number | null;
         };
         Update: {
           created_at?: number;
@@ -670,6 +672,7 @@ export type Database = {
           storage_path?: string | null;
           storage_url?: string | null;
           user_id?: string;
+          vault_revision?: number | null;
         };
         Relationships: [
           {
@@ -739,6 +742,7 @@ export type Database = {
           title: string;
           updated_at: number;
           user_id: string;
+          vault_revision: number | null;
         };
         Insert: {
           audio_ids?: string[];
@@ -765,6 +769,7 @@ export type Database = {
           title?: string;
           updated_at: number;
           user_id: string;
+          vault_revision?: number | null;
         };
         Update: {
           audio_ids?: string[];
@@ -791,6 +796,7 @@ export type Database = {
           title?: string;
           updated_at?: number;
           user_id?: string;
+          vault_revision?: number | null;
         };
         Relationships: [];
       };
@@ -804,6 +810,7 @@ export type Database = {
           storage_url: string | null;
           user_id: string;
           width: number;
+          vault_revision: number | null;
         };
         Insert: {
           created_at: number;
@@ -814,6 +821,7 @@ export type Database = {
           storage_url?: string | null;
           user_id: string;
           width?: number;
+          vault_revision?: number | null;
         };
         Update: {
           created_at?: number;
@@ -824,6 +832,7 @@ export type Database = {
           storage_url?: string | null;
           user_id?: string;
           width?: number;
+          vault_revision?: number | null;
         };
         Relationships: [
           {
@@ -1277,16 +1286,19 @@ export type Database = {
           payload: Json;
           updated_at: string;
           user_id: string;
+          vault_revision: number | null;
         };
         Insert: {
           payload: Json;
           updated_at?: string;
           user_id: string;
+          vault_revision?: number | null;
         };
         Update: {
           payload?: Json;
           updated_at?: string;
           user_id?: string;
+          vault_revision?: number | null;
         };
         Relationships: [];
       };
@@ -1961,6 +1973,37 @@ export type Database = {
         };
         Relationships: [];
       };
+
+      journal_security_states: {
+        Row: {
+          journal_write_mode: string;
+          protection_state: string;
+          removal_operation_revision: string | null;
+          updated_at: string;
+          user_id: string;
+          vault_revision: number;
+          wrapper_revision: number;
+        };
+        Insert: {
+          journal_write_mode?: string;
+          protection_state: string;
+          removal_operation_revision?: string | null;
+          updated_at?: string;
+          user_id: string;
+          vault_revision: number;
+          wrapper_revision?: number;
+        };
+        Update: {
+          journal_write_mode?: string;
+          protection_state?: string;
+          removal_operation_revision?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          vault_revision?: number;
+          wrapper_revision?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -2276,6 +2319,31 @@ export type Database = {
         Args: { p_rows: Json };
         Returns: number;
       };
+
+      begin_journal_password_removal: {
+        Args: {
+          p_expected_vault_revision: number;
+          p_inventory: Json;
+          p_operation_revision: string;
+        };
+        Returns: string;
+      };
+      compare_and_swap_journal_vault_wrapper: {
+        Args: { p_expected_value: Json; p_next_value: Json };
+        Returns: string;
+      };
+      enable_journal_strict_write_fence: {
+        Args: { p_expected_vault_revision: number };
+        Returns: string;
+      };
+      finalize_journal_password_removal: {
+        Args: {
+          p_expected_vault_revision: number;
+          p_operation_revision: string;
+        };
+        Returns: string;
+      };
+      recover_journal_password_removal: { Args: never; Returns: Json };
     };
     Enums: {
       [_ in never]: never;

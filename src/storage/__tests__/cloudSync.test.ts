@@ -9,8 +9,9 @@ const mockEq = vi.fn();
 const mockMaybeSingle = vi.fn();
 const mockUpsert = vi.fn();
 const mockFrom = vi.fn();
-const { mockGetLocalDataOwnerId } = vi.hoisted(() => ({
+const { mockGetLocalDataOwnerId, mockSettingsGet } = vi.hoisted(() => ({
   mockGetLocalDataOwnerId: vi.fn(),
+  mockSettingsGet: vi.fn(),
 }));
 
 let mockSupabase: any = null;
@@ -27,6 +28,11 @@ vi.mock("@/storage/backup", () => ({
 }));
 
 vi.mock("@/storage/db", () => ({
+  db: {
+    settings: {
+      get: mockSettingsGet,
+    },
+  },
   getLocalDataOwnerId: mockGetLocalDataOwnerId,
 }));
 
@@ -173,6 +179,7 @@ beforeEach(() => {
     return result;
   });
   mockGetLocalDataOwnerId.mockResolvedValue("user-1");
+  mockSettingsGet.mockResolvedValue(undefined);
   // Restore isAbortError to its default factory behavior in case a test overrode it
   vi.mocked(isAbortError).mockImplementation(
     (err: unknown) => err instanceof DOMException && err.name === "AbortError"
@@ -782,11 +789,12 @@ describe("triggerSync", () => {
     mockSupabase = null;
     const spy = vi.spyOn(globalThis, "setTimeout");
 
-    triggerSync();
+    const outcome = triggerSync();
 
     // No timeout should be set for the debounce
     const syncTimeoutCalls = spy.mock.calls.filter((call) => call[1] === 30_000);
     expect(syncTimeoutCalls).toHaveLength(0);
+    expect(outcome).toBe("unavailable");
     spy.mockRestore();
   });
 
@@ -794,10 +802,11 @@ describe("triggerSync", () => {
     mockSupabase = createMockSupabase();
     const spy = vi.spyOn(globalThis, "setTimeout");
 
-    triggerSync();
+    const outcome = triggerSync();
 
     const syncTimeoutCalls = spy.mock.calls.filter((call) => call[1] === 30_000);
     expect(syncTimeoutCalls).toHaveLength(1);
+    expect(outcome).toBe("scheduled");
     spy.mockRestore();
   });
 

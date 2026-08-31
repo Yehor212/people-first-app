@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getCurrentSessionUserId: vi.fn<() => Promise<string | null>>(),
   getLastSeq: vi.fn(),
   getPersistentDeviceId: vi.fn(),
+  saveLastSeq: vi.fn(),
   getServerMaxSeq: vi.fn(),
   authChangeCallback: null as
     | ((event: string, session: { user: { id: string } } | null) => void)
@@ -38,7 +39,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/contexts/FeatureFlagsContext", () => ({
   useFeatureFlags: () => ({
-    isFeatureEnabled: (flag: string) => flag === "deltaSync",
+    isFeatureVisible: (flag: string) => flag === "deltaSync",
   }),
 }));
 
@@ -118,6 +119,7 @@ vi.mock("@/storage/eventSync", () => ({
   getLastSeq: mocks.getLastSeq,
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   getServerMaxSeq: mocks.getServerMaxSeq,
+  saveLastSeq: mocks.saveLastSeq,
 }));
 
 vi.mock("@/storage/initialDeltaSync", () => ({
@@ -480,7 +482,59 @@ describe("useDeltaSyncEffects", () => {
     resolveAccountASnapshot(true);
 
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    expect(mocks.getServerMaxSeq).not.toHaveBeenCalled();
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledTimes(1);
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledWith("account-a");
+    expect(mocks.fetchAllDeltas).not.toHaveBeenCalledWith(50, expect.any(AbortSignal));
+
+    unmount();
+  });
+
+  it("applies a vault-removal event that lands during a gap-fallback snapshot before advancing the cursor", async () => {
+    let finishSnapshot!: (applied: boolean) => void;
+    const snapshot = new Promise<boolean>((resolve) => {
+      finishSnapshot = resolve;
+    });
+    const vaultRemovalEvent = {
+      id: "vault-removal-51",
+      seq: 51,
+      entity_type: "setting",
+      entity_id: "journal_vault_key",
+      op: "delete",
+      payload: {
+        key: "journal_vault_key",
+        operationRevision: "101:removaloperation",
+        vaultRevision: 101,
+      },
+      device_id: "server:journal-password-removal",
+      created_at: "2026-08-03T00:00:00.000Z",
+    };
+    mocks.getCurrentSessionUserId.mockResolvedValue("account-a");
+    mocks.getServerMaxSeq.mockResolvedValue(50);
+    mocks.pullFromCloud.mockReturnValue(snapshot);
+    mocks.fetchAllDeltas.mockResolvedValue([vaultRemovalEvent]);
+    mocks.getPersistentDeviceId.mockResolvedValue("device-current");
+    mocks.applyDelta.mockResolvedValue(1);
+
+    const { unmount } = renderHook(() => useDeltaSyncEffects());
+    mocks.remoteChangeCallback?.({ eventSeq: 2002 });
+
+    await waitFor(() => {
+      expect(mocks.pullFromCloud).toHaveBeenCalledWith("account-a");
+    });
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledBefore(mocks.pullFromCloud);
+
+    finishSnapshot(true);
+
+    await waitFor(() => {
+      expect(mocks.applyDelta).toHaveBeenCalledWith(
+        [vaultRemovalEvent],
+        "device-current",
+        expect.objectContaining({ expectedOwnerUserId: "account-a" }),
+      );
+    });
+    expect(mocks.fetchAllDeltas).toHaveBeenCalledWith(50, expect.any(AbortSignal));
+    expect(mocks.pullFromCloud).toHaveBeenCalledBefore(mocks.fetchAllDeltas);
+    expect(mocks.syncActions).toContainEqual({ type: "SNAPSHOT_SUCCESS", lastSeq: 51 });
 
     unmount();
   });
@@ -490,6 +544,8 @@ describe("useDeltaSyncEffects", () => {
     mocks.getLastSeq.mockResolvedValue(10);
     mocks.pullFromCloud.mockResolvedValue(true);
     mocks.getServerMaxSeq.mockResolvedValue(2002);
+    mocks.fetchAllDeltas.mockResolvedValue([]);
+    mocks.saveLastSeq.mockResolvedValue(undefined);
     mocks.runWithSyncLeaderLock.mockImplementation(async (_name, task) => ({
       acquired: true,
       value: await task(),
@@ -501,8 +557,9 @@ describe("useDeltaSyncEffects", () => {
     await waitFor(() => {
       expect(mocks.bootstrapAutomationHistory).toHaveBeenCalledWith("account-a", { force: true });
     });
+    expect(mocks.getServerMaxSeq).toHaveBeenCalledBefore(mocks.pullFromCloud);
     expect(mocks.pullFromCloud).toHaveBeenCalledBefore(mocks.bootstrapAutomationHistory);
-    expect(mocks.bootstrapAutomationHistory).toHaveBeenCalledBefore(mocks.getServerMaxSeq);
+    expect(mocks.bootstrapAutomationHistory).toHaveBeenCalledBefore(mocks.fetchAllDeltas);
     expect(mocks.syncActions).toContainEqual({
       type: "SNAPSHOT_SUCCESS",
       lastSeq: 2002,

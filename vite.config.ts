@@ -103,8 +103,7 @@ export default defineConfig(({ mode }) => {
   const base = isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
   const journalSaveCeremonyBuildEnabled =
-    (process.env.VITE_ENABLE_JOURNAL_SAVE_CEREMONY ??
-      fileEnvironment.VITE_ENABLE_JOURNAL_SAVE_CEREMONY) === "true";
+    process.env.ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED === "true";
   const t173LifecycleProofEnabled =
     mode === "t173-lifecycle-proof" ||
     (process.env.VITE_T173_LIFECYCLE_PROOF ?? fileEnvironment.VITE_T173_LIFECYCLE_PROOF) === "true";

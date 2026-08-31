@@ -108,6 +108,8 @@ The checker uses layered evidence:
 5. **Sink context:** persistence/sync versus analytics/export/share/release output.
 6. **Native/public/text controls:** bounded strict-UTF-8 reads and high-confidence field structure for Java, Swift, Rust, HTML, JSON, and shipped public assets.
 7. **SQL classification:** static statement parsing followed by exact user-table `Set` membership; quoted identifiers are included and config never becomes a dynamic regular expression.
+
+For PDI008, “production migration seeds” means SQL executed while the migration is applied. Top-level statements, `DO` bodies, and stored routines reached by a migration-time `SELECT`, `CALL`, or `PERFORM` remain executable SQL and are scanned. An uninvoked dollar-quoted `CREATE FUNCTION` or `CREATE PROCEDURE` body is inert DDL at migration time, so it is line-preservingly masked rather than mislabeled as an already executed seed. Direct and transitive invocation negative controls keep this boundary fail-closed; there is no path or user-table allowlist.
 8. **Bundle canary:** `ZENFLOW_TEST_FIXTURE_SENTINEL_7F4C9A2E` is defined by the checker/config and injected only into transient adversarial-test or CI artifacts. It must never remain under shipped `dist/**`, including source maps and unknown/text extensions. Every bounded artifact receives a raw-byte sentinel scan; an explicitly requested missing, empty, symlinked, escaped, or text-unreadable bundle is an internal error, not clean.
 9. **Governance contracts:** code-owned, order-insensitive semantic digests pin every detector/exclusion/evidence registry and repository contract; code-owned exact package commands pin all four local entrypoints. Canonical roots may grow only through the reviewed additive coverage fields. Core, CLI, config, ledgers, package, CI, hook, tests, policy, review, and waiver invariants are checked together.
 10. **Evidence association:** every positive status is evaluated separately. Proof must be on the same claim object or its own direct child named `evidence`, `proof`, `verification`, or `commandEvidence`; neither an ancestor nor any sibling artifact can authenticate the claim implicitly.
@@ -134,6 +136,8 @@ Bundle verification is fail-closed before content classification. Finder/FilePro
 | PDI010 | ENFORCEMENT_TAMPERING | Required contract is removed, masked, broadened, or stale |
 | PDI011 | FAKE_RELEASE_OR_VERIFICATION_EVIDENCE | Each PASS/ready claim lacks fresh command-bound proof associated with that claim |
 | PDI012 | UNCLASSIFIED_SYNTHETIC_SOURCE | Medium-confidence unreachable/unresolved source needs review |
+
+PDI008 therefore still blocks every user-data write reached while applying the migration, including `DO` and invoked routines. Stored-routine source remains production code subject to security review even when its body is inert during migration application.
 
 ## Baseline policy
 

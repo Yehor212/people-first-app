@@ -7,6 +7,7 @@ const vaultMocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/journalContentSession", () => ({
   getJournalContentVaultKey: vi.fn(() => vaultMocks.key),
+  getJournalContentVaultRevision: vi.fn(() => 1),
   consumeJournalReplaceAuthorization: vi.fn(() => vaultMocks.replaceAuthorized),
 }));
 

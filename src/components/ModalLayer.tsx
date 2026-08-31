@@ -4,6 +4,7 @@ import { useUIStore, useUserDataStore, useAppStore, getModalToggle } from "@/sto
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { LazyErrorBoundary } from "@/components/ErrorBoundary";
+import { FeatureAvailabilityDialog } from "@/components/FeatureAvailabilityDialog";
 // Lazy-loaded static modals — keeps these out of the main bundle
 const WeeklyReport = lazyWithRetry(
   () => import("@/components/WeeklyReport").then((m) => ({ default: m.WeeklyReport })),
@@ -82,7 +83,7 @@ export function ModalLayer({
   currentStreak,
   userLevel,
 }: ModalLayerProps) {
-  const { isFeatureVisible } = useFeatureFlags();
+  const { getFeatureAvailability } = useFeatureFlags();
 
   // UI modal/panel state — single subscription (was 13 individual)
   const {
@@ -115,6 +116,9 @@ export function ModalLayer({
   const setShowQuestsPanel = getModalToggle("showQuestsPanel");
   const setShowFriendsPanel = getModalToggle("showFriendsPanel");
   const setShowMindfulMoment = getModalToggle("showMindfulMoment");
+  const challengeAvailability = getFeatureAvailability("challenges");
+  const focusAvailability = getFeatureAvailability("focusTimer");
+  const questsAvailability = getFeatureAvailability("quests");
 
   // User data — single subscription (was 5 individual)
   const {
@@ -180,7 +184,7 @@ export function ModalLayer({
       )}
 
       {/* Challenges Panel Modal (Progressive: Day 4) */}
-      {showChallenges && isFeatureVisible("challenges") && (
+      {showChallenges && challengeAvailability.visible && (
         <LazyErrorBoundary componentName="Challenges">
           <Suspense fallback={<SkeletonSection />}>
             <ChallengesPanel
@@ -198,7 +202,7 @@ export function ModalLayer({
       )}
 
       {/* Time Helper Modal */}
-      {isFeatureVisible("focusTimer") && showTimeHelper && (
+      {focusAvailability.visible && showTimeHelper && (
         <LazyErrorBoundary componentName="Time Helper">
           <Suspense fallback={<SkeletonSection />}>
             <TimeHelper onClose={() => setShowTimeHelper(false)} />
@@ -224,7 +228,7 @@ export function ModalLayer({
       )}
 
       {/* Quests Panel Modal (Progressive: Day 3) */}
-      {showQuestsPanel && isFeatureVisible("quests") && (
+      {showQuestsPanel && questsAvailability.visible && (
         <LazyErrorBoundary componentName="Quests">
           <Suspense fallback={<SkeletonList />}>
             <QuestsPanel onClose={() => setShowQuestsPanel(false)} />
@@ -247,7 +251,7 @@ export function ModalLayer({
       )}
 
       {/* Challenge Modal - for deep link invites and habit challenges */}
-      {isFeatureVisible("challenges") && (
+      {challengeAvailability.visible && (
         <LazyErrorBoundary componentName="Challenge">
           <Suspense fallback={null}>
             <ChallengeModal
@@ -268,7 +272,7 @@ export function ModalLayer({
       )}
 
       {/* MindfulMoment - shows after focus session completion */}
-      {isFeatureVisible("focusTimer") && (
+      {focusAvailability.visible && (
         <LazyErrorBoundary componentName="Mindful Moment">
           <Suspense fallback={null}>
             <MindfulMoment
@@ -281,6 +285,30 @@ export function ModalLayer({
           </Suspense>
         </LazyErrorBoundary>
       )}
+      {(showChallenges || showChallengeModal) && !challengeAvailability.visible ? (
+        <FeatureAvailabilityDialog
+          availability={challengeAvailability}
+          onClose={() => {
+            setShowChallenges(false);
+            setShowChallengeModal(false);
+            setChallengeInvite(undefined);
+            setChallengeHabit(undefined);
+          }}
+        />
+      ) : showQuestsPanel && !questsAvailability.visible ? (
+        <FeatureAvailabilityDialog
+          availability={questsAvailability}
+          onClose={() => setShowQuestsPanel(false)}
+        />
+      ) : (showTimeHelper || showMindfulMoment) && !focusAvailability.visible ? (
+        <FeatureAvailabilityDialog
+          availability={focusAvailability}
+          onClose={() => {
+            setShowTimeHelper(false);
+            setShowMindfulMoment(false);
+          }}
+        />
+      ) : null}
     </>
   );
 }

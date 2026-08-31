@@ -56,6 +56,8 @@ const securityMocks = vi.hoisted(() => ({
     hasPassword: false,
     isLocked: false,
     loading: false,
+    cloudProtectionPending: false,
+    cloudProtectionPendingKind: null as null | "removal" | "vault-sync",
   },
   lock: vi.fn(),
   removePassword: vi.fn(),
@@ -79,6 +81,11 @@ const hapticsMocks = vi.hoisted(() => ({
 const loggerMocks = vi.hoisted(() => ({
   error: vi.fn(),
   warn: vi.fn(),
+}));
+
+const a11yMocks = vi.hoisted(() => ({
+  announceError: vi.fn(),
+  announceSuccess: vi.fn(),
 }));
 
 const journalImportMocks = vi.hoisted(() => ({
@@ -193,8 +200,8 @@ vi.mock("@/lib/authRedirect", () => ({
 }));
 
 vi.mock("@/lib/a11y", () => ({
-  announceError: vi.fn(),
-  announceSuccess: vi.fn(),
+  announceError: a11yMocks.announceError,
+  announceSuccess: a11yMocks.announceSuccess,
   createFocusTrap: vi.fn(() => vi.fn()),
 }));
 
@@ -591,6 +598,7 @@ describe("JournalModule orb handoff behavior", () => {
     journalImportMocks.importJournalBackup.mockReset();
     securityMocks.lock.mockReset();
     securityMocks.removePassword.mockReset();
+    securityMocks.removePassword.mockResolvedValue({ status: "removed" });
     securityMocks.setPassword.mockReset();
     securityMocks.touch.mockReset();
     securityMocks.unlock.mockReset();
@@ -608,6 +616,8 @@ describe("JournalModule orb handoff behavior", () => {
       hasPassword: false,
       isLocked: false,
       loading: false,
+      cloudProtectionPending: false,
+      cloudProtectionPendingKind: null,
     });
     safeJsonStore.values.clear();
     safeJsonStore.readBlocked = false;
@@ -1505,9 +1515,44 @@ describe("JournalModule orb handoff behavior", () => {
       expect(securityMocks.removePassword).toHaveBeenCalledTimes(1);
     });
     expect(securityMocks.removePassword).toHaveBeenCalledWith();
+    expect(a11yMocks.announceSuccess).toHaveBeenCalledTimes(1);
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: /remove password lock/i })).not.toBeInTheDocument();
     });
+  });
+
+  it("announces pending cleanup only inside the open removal dialog", async () => {
+    Object.assign(securityMocks.state, {
+      hasPassword: true,
+      isLocked: false,
+      cloudProtectionPending: true,
+      cloudProtectionPendingKind: "removal",
+    });
+    securityMocks.removePassword.mockResolvedValueOnce({
+      status: "removed-cleanup-pending",
+      pending: ["biometric", "cloud"],
+    });
+
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+      />,
+    );
+
+    fireEvent.click(await screen.findByTestId("journal-mobile-settings"));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /continue removing diary lock/i }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: /remove password lock/i });
+    fireEvent.click(within(dialog).getByRole("button", { name: /remove password lock/i }));
+
+    expect(await within(dialog).findByRole("status")).toBeInTheDocument();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(dialog).toBeInTheDocument();
+    expect(a11yMocks.announceSuccess).not.toHaveBeenCalled();
   });
 
   it("opens password reset as a labelled dialog", async () => {
@@ -1651,8 +1696,8 @@ describe("JournalModule orb handoff behavior", () => {
       return false;
     });
     securityMocks.removePassword.mockImplementationOnce(
-      () => new Promise<void>((resolve) => {
-        finishRemoval = resolve;
+      () => new Promise<{ status: "removed" }>((resolve) => {
+        finishRemoval = () => resolve({ status: "removed" });
       }),
     );
     safeJsonStore.values.set(
@@ -2266,7 +2311,11 @@ describe("JournalModule orb handoff behavior", () => {
       hasPassword: true,
       isLocked: true,
     });
-    securityMocks.removePassword.mockRejectedValueOnce(new Error("cloud cleanup failed"));
+    securityMocks.removePassword.mockResolvedValueOnce({
+      status: "blocked",
+      blocker: "storage-failed",
+      recoveryAction: "retry",
+    });
 
     render(
       <JournalModule
@@ -2296,7 +2345,7 @@ describe("JournalModule orb handoff behavior", () => {
     });
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Unlock your diary first, then try removing the lock again.",
+      "This device could not read the complete diary. Keep the app open, reload, and try again. Nothing was changed.",
     );
     expect(screen.getAllByText(/entries remain protected/i).length).toBeGreaterThan(0);
     expect(safeJsonStore.values.has(SK.JOURNAL_PASSWORD_RESET)).toBe(false);

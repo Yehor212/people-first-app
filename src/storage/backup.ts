@@ -21,6 +21,7 @@ import {
 import {
   consumeJournalReplaceAuthorization,
   getJournalContentVaultKey,
+  getJournalContentVaultRevision,
   type JournalReplaceAuthorization,
 } from "@/lib/journalContentSession";
 import {
@@ -58,6 +59,7 @@ import {
 } from "@/storage/deletionTracker";
 import { isAccountSyncedSettingKey } from "@/storage/sync/settingSyncPolicy";
 import { validateSyncOwner } from "@/storage/sync/syncOwner";
+import { requireSafeJournalVaultRevision } from "@/features/journal/journalVaultEpoch";
 import { runWithJournalSecurityWriteLock } from "@/features/journal/journalSecurityWriteLock";
 import {
   serializePortableBackupWithinLimit,
@@ -200,11 +202,7 @@ export interface BackupPayloadV4 {
   deletedGratitudeIds?: string[];
 }
 
-export type BackupPayload =
-  | BackupPayloadV1
-  | BackupPayloadV2
-  | BackupPayloadV3
-  | BackupPayloadV4;
+export type BackupPayload = BackupPayloadV1 | BackupPayloadV2 | BackupPayloadV3 | BackupPayloadV4;
 
 export interface PortableBackupArtifact extends SerializedPortableBackup {
   payload: BackupPayloadV4;
@@ -568,20 +566,25 @@ async function mapSequentially<T, R>(
 
 async function encryptImportedJournalEntryForStorage(
   entry: JournalEntry,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number
 ): Promise<JournalEntry> {
-  if (!entry.content) return entry;
+  if (!vaultKey) return { ...entry, vaultRevision: undefined };
+  const revision = requireSafeJournalVaultRevision(vaultRevision, "backup entry");
+  if (!entry.content) return { ...entry, vaultRevision: revision };
   if (isEncryptedJournalContent(entry.content)) {
-    if (!vaultKey) throw new BackupImportBlockedError("JOURNAL_BACKUP_UNREADABLE");
     try {
       await decryptJournalContentIfNeeded(entry.content, vaultKey);
-      return entry;
+      return { ...entry, vaultRevision: revision };
     } catch {
       throw new BackupImportBlockedError("JOURNAL_BACKUP_UNREADABLE");
     }
   }
-  if (!vaultKey) return entry;
-  return { ...entry, content: await encryptJournalContent(entry.content, vaultKey) };
+  return {
+    ...entry,
+    content: await encryptJournalContent(entry.content, vaultKey),
+    vaultRevision: revision,
+  };
 }
 
 async function encryptImportedJournalMediaData(
@@ -610,24 +613,28 @@ async function encryptImportedJournalMediaData(
 
 async function encryptImportedJournalPhotoForStorage(
   photo: JournalPhoto,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number
 ): Promise<JournalPhoto> {
-  if (!vaultKey) return photo;
+  if (!vaultKey) return { ...photo, vaultRevision: undefined };
   return {
     ...photo,
     data: await encryptImportedJournalMediaData(photo.data, vaultKey),
     thumbnail: await encryptImportedJournalMediaData(photo.thumbnail, vaultKey),
+    vaultRevision: requireSafeJournalVaultRevision(vaultRevision, "backup photo"),
   };
 }
 
 async function encryptImportedJournalAudioForStorage(
   audio: JournalAudio,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number
 ): Promise<JournalAudio> {
-  if (!vaultKey) return audio;
+  if (!vaultKey) return { ...audio, vaultRevision: undefined };
   return {
     ...audio,
     data: await encryptImportedJournalMediaData(audio.data, vaultKey),
+    vaultRevision: requireSafeJournalVaultRevision(vaultRevision, "backup audio"),
   };
 }
 
@@ -658,18 +665,23 @@ async function protectImportedJournalString(
 
 async function protectImportedJournalSpace(
   space: JournalSpace,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number
 ): Promise<JournalSpace> {
   return {
     ...space,
     name: await protectImportedJournalString(space.name, vaultKey),
     description: await protectImportedJournalString(space.description, vaultKey),
+    vaultRevision: vaultKey
+      ? requireSafeJournalVaultRevision(vaultRevision, "backup space")
+      : undefined,
   };
 }
 
 async function protectImportedJournalSpaceCapture(
   capture: JournalSpaceCapture,
-  vaultKey: string | null
+  vaultKey: string | null,
+  vaultRevision?: number
 ): Promise<JournalSpaceCapture> {
   return {
     ...capture,
@@ -681,6 +693,9 @@ async function protectImportedJournalSpaceCapture(
         value: (await protectImportedJournalString(field.value, vaultKey)) || "",
       }))
     ),
+    vaultRevision: vaultKey
+      ? requireSafeJournalVaultRevision(vaultRevision, "backup capture")
+      : undefined,
   };
 }
 
@@ -807,7 +822,12 @@ async function makePortableJournalPhoto(
   if (!data) {
     throw new BackupExportBlockedError("JOURNAL_MEDIA_UNAVAILABLE");
   }
-  const { storagePath: _storagePath, storageUrl: _storageUrl, ...portable } = photo;
+  const {
+    storagePath: _storagePath,
+    storageUrl: _storageUrl,
+    vaultRevision: _vaultRevision,
+    ...portable
+  } = photo;
   return { ...portable, data, thumbnail };
 }
 
@@ -819,7 +839,12 @@ async function makePortableJournalAudio(
   if (!data) {
     throw new BackupExportBlockedError("JOURNAL_MEDIA_UNAVAILABLE");
   }
-  const { storagePath: _storagePath, storageUrl: _storageUrl, ...portable } = audio;
+  const {
+    storagePath: _storagePath,
+    storageUrl: _storageUrl,
+    vaultRevision: _vaultRevision,
+    ...portable
+  } = audio;
   return { ...portable, data };
 }
 
@@ -831,6 +856,7 @@ async function makePortableJournalSpace(
     ...space,
     name: await decryptPortableJournalString(space.name, vaultKey),
     description: await decryptPortableJournalString(space.description, vaultKey),
+    vaultRevision: undefined,
   };
 }
 
@@ -848,6 +874,7 @@ async function makePortableJournalSpaceCapture(
         value: (await decryptPortableJournalString(field.value, vaultKey)) || "",
       }))
     ),
+    vaultRevision: undefined,
   };
 }
 
@@ -941,9 +968,9 @@ const exportBackupWithinJournalSecurityLock = async (
         automationTransactions.filter(
           (row) =>
             row.kind !== "purge_pending" &&
-            (row.kind !== "transaction" || row.status === "committed" || row.status === "undone"),
+            (row.kind !== "transaction" || row.status === "committed" || row.status === "undone")
         ),
-        automationHistoryMarkers,
+        automationHistoryMarkers
       );
       return {
         data: {
@@ -1003,6 +1030,7 @@ const exportBackupWithinJournalSecurityLock = async (
           snapshot.data.journalEntries.map(async (entry) => ({
             ...entry,
             content: (await decryptPortableJournalString(entry.content, vaultKey)) || "",
+            vaultRevision: undefined,
           }))
         ),
         Promise.all(
@@ -1213,7 +1241,7 @@ function automationImportError(code: BackupImportBlockCode): never {
 function validateAutomationBackupCollections(
   rowsValue: unknown,
   markersValue: unknown,
-  expectedOwnerUserId: string | undefined,
+  expectedOwnerUserId: string | undefined
 ): ValidatedAutomationBackup {
   if (!Array.isArray(rowsValue) || !Array.isArray(markersValue)) {
     return automationImportError("AUTOMATION_HISTORY_INVALID");
@@ -1253,7 +1281,7 @@ function validateAutomationBackupCollections(
       const parsed = automationTransactionSchema.safeParse(metadata);
       if (!parsed.success) return automationImportError("AUTOMATION_HISTORY_INVALID");
       cumulativeCiphertextBytes += new TextEncoder().encode(
-        parsed.data.revisionCiphertext,
+        parsed.data.revisionCiphertext
       ).byteLength;
       addRow({ kind: "transaction", ...parsed.data });
       continue;
@@ -1285,7 +1313,7 @@ function validateAutomationBackupCollections(
   }
 
   const transactionRows = rows.filter(
-    (row): row is AutomationTransactionStoreRow => row.kind === "transaction",
+    (row): row is AutomationTransactionStoreRow => row.kind === "transaction"
   );
   const authoritativeSequences = new Set<number>();
   for (const row of transactionRows) {
@@ -1306,7 +1334,7 @@ function validateAutomationBackupCollections(
         row.historyGeneration === undefined ||
         row.historyGeneration !== marker.historyGeneration ||
         row.serverSequence === undefined ||
-        row.serverSequence > marker.lastAppliedServerSequence,
+        row.serverSequence > marker.lastAppliedServerSequence
     )
   ) {
     return automationImportError("AUTOMATION_HISTORY_INVALID");
@@ -1317,7 +1345,7 @@ function validateAutomationBackupCollections(
 
 function validateAutomationBackupForExport(
   rows: AutomationTransactionTableRow[],
-  markers: AutomationHistoryMarker[],
+  markers: AutomationHistoryMarker[]
 ): ValidatedAutomationBackup {
   const ownerIds = new Set([...rows, ...markers].map((item) => item.ownerUserId));
   if (ownerIds.size > 1) {
@@ -1342,10 +1370,10 @@ function validateAutomationBackupForExport(
 
 async function authenticateAutomationBackupRows(
   rows: readonly AutomationTransactionTableRow[],
-  vaultKey: string | null,
+  vaultKey: string | null
 ): Promise<void> {
   const transactionRows = rows.filter(
-    (row): row is AutomationTransactionStoreRow => row.kind === "transaction",
+    (row): row is AutomationTransactionStoreRow => row.kind === "transaction"
   );
   if (transactionRows.length > 0 && !vaultKey) {
     automationImportError("JOURNAL_UNLOCK_REQUIRED");
@@ -1372,15 +1400,12 @@ async function authenticateAutomationBackupRows(
 function mergeAutomationHistoryMarkers(
   local: AutomationHistoryMarker | undefined,
   incoming: AutomationHistoryMarker | undefined,
-  mode: ImportMode,
+  mode: ImportMode
 ): AutomationHistoryMarker | undefined {
   if (!incoming) return local;
   if (!local) return incoming;
   if (incoming.historyGeneration !== local.historyGeneration) {
-    if (
-      mode === "replace" &&
-      incoming.historyGeneration > local.historyGeneration
-    ) {
+    if (mode === "replace" && incoming.historyGeneration > local.historyGeneration) {
       return incoming;
     }
     automationImportError("AUTOMATION_HISTORY_STALE");
@@ -1394,7 +1419,7 @@ function mergeAutomationHistoryMarkers(
     snapshotSequence: Math.max(local.snapshotSequence, incoming.snapshotSequence),
     lastAppliedServerSequence: Math.max(
       local.lastAppliedServerSequence,
-      incoming.lastAppliedServerSequence,
+      incoming.lastAppliedServerSequence
     ),
     bootstrapCompletedAt:
       local.bootstrapCompletedAt === null
@@ -1467,7 +1492,7 @@ async function applyAutomationBackupInCurrentTransaction(args: {
   };
   const sameRow = (
     left: AutomationTransactionTableRow,
-    right: AutomationTransactionTableRow,
+    right: AutomationTransactionTableRow
   ): boolean => canonicalizeAutomationValue(left) === canonicalizeAutomationValue(right);
 
   const finalTransactions = new Map<string, AutomationTransactionStoreRow>();
@@ -1479,11 +1504,7 @@ async function applyAutomationBackupInCurrentTransaction(args: {
         continue;
       }
       const isAccepted = row.status === "committed" || row.status === "undone";
-      if (
-        isAccepted &&
-        mergedMarker &&
-        row.historyGeneration !== mergedMarker.historyGeneration
-      ) {
+      if (isAccepted && mergedMarker && row.historyGeneration !== mergedMarker.historyGeneration) {
         rowsToDelete.add(row.id);
         continue;
       }
@@ -1496,7 +1517,7 @@ async function applyAutomationBackupInCurrentTransaction(args: {
     .sort(
       (left, right) =>
         (left.serverSequence ?? Number.MAX_SAFE_INTEGER) -
-          (right.serverSequence ?? Number.MAX_SAFE_INTEGER) || left.id.localeCompare(right.id),
+          (right.serverSequence ?? Number.MAX_SAFE_INTEGER) || left.id.localeCompare(right.id)
     );
   for (const row of incomingTransactions) {
     const incomingGeneration = row.historyGeneration;
@@ -1595,7 +1616,7 @@ async function applyAutomationBackupInCurrentTransaction(args: {
         continue;
       }
       rowsToWrite.push(
-        automationRecordRevisionStoreRowSchema.parse({ ...row, transactionId: null }),
+        automationRecordRevisionStoreRowSchema.parse({ ...row, transactionId: null })
       );
     }
   }
@@ -1868,10 +1889,13 @@ const importBackupWithinJournalSecurityLock = async (
   const validAutomation = validateAutomationBackupCollections(
     automationTransactions,
     automationHistoryMarkers,
-    options.expectedOwnerUserId,
+    options.expectedOwnerUserId
   );
 
   const journalVaultKey = getJournalContentVaultKey();
+  const journalVaultRevision = journalVaultKey
+    ? requireSafeJournalVaultRevision(getJournalContentVaultRevision(), "backup import")
+    : undefined;
   await authenticateAutomationBackupRows(validAutomation.rows, journalVaultKey);
   const [
     journalPasswordSetting,
@@ -1973,19 +1997,19 @@ const importBackupWithinJournalSecurityLock = async (
     // Encrypt sequentially so WebCrypto does not retain several large input
     // and output buffers at once on memory-constrained mobile WebViews.
     validJournalEntries = await mapSequentially(validJournalEntries, (entry) =>
-      encryptImportedJournalEntryForStorage(entry, journalVaultKey)
+      encryptImportedJournalEntryForStorage(entry, journalVaultKey, journalVaultRevision)
     );
     validJournalPhotos = await mapSequentially(validJournalPhotos, (photo) =>
-      encryptImportedJournalPhotoForStorage(photo, journalVaultKey)
+      encryptImportedJournalPhotoForStorage(photo, journalVaultKey, journalVaultRevision)
     );
     validJournalAudio = await mapSequentially(validJournalAudio, (audio) =>
-      encryptImportedJournalAudioForStorage(audio, journalVaultKey)
+      encryptImportedJournalAudioForStorage(audio, journalVaultKey, journalVaultRevision)
     );
     validJournalSpaces = await mapSequentially(validJournalSpaces, (space) =>
-      protectImportedJournalSpace(space, journalVaultKey)
+      protectImportedJournalSpace(space, journalVaultKey, journalVaultRevision)
     );
     validJournalSpaceCaptures = await mapSequentially(validJournalSpaceCaptures, (capture) =>
-      protectImportedJournalSpaceCapture(capture, journalVaultKey)
+      protectImportedJournalSpaceCapture(capture, journalVaultKey, journalVaultRevision)
     );
   }
 

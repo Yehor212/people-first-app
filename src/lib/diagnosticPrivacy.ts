@@ -91,6 +91,7 @@ const SAFE_DIAGNOSTIC_SUBSYSTEMS = new Set([
   "FloatingMediaLayer",
   "Focus",
   "FocusTimer",
+  "FeatureFlags",
   "FriendChallenge",
   "FriendsSync",
   "Gamification",
