@@ -108,6 +108,10 @@ public class StatusBarStylePlugin extends Plugin {
         WindowInsetsControllerCompat controller =
                 WindowCompat.getInsetsController(window, decorView);
         controller.setAppearanceLightStatusBars(!"DARK".equals(resolvedStyle));
+
+        if (activity instanceof MainActivity) {
+            ((MainActivity) activity).setNativeEdgeBackdropDark("DARK".equals(resolvedStyle));
+        }
     }
 
     private void resolveCall(PluginCall call) {

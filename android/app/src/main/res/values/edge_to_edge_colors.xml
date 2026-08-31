@@ -4,4 +4,5 @@
     <color name="zenflow_edge_bleed_mid">#A7D9D5</color>
     <color name="zenflow_edge_bleed_navigation">#C5DCCF</color>
     <color name="zenflow_edge_bleed_window">#A7D9D5</color>
+    <color name="zenflow_splash_dark">#071614</color>
 </resources>

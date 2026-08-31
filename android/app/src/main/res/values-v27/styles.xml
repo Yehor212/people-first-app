@@ -8,7 +8,7 @@
     <style name="AppTheme.NoActionBar" parent="AppTheme.NoActionBar.V27" />
 
     <style name="AppTheme.NoActionBarLaunch.V27" parent="AppTheme.NoActionBarLaunch.Base">
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
