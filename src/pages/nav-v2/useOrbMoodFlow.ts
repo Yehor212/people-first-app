@@ -104,10 +104,12 @@ export function useOrbMoodFlow(
   }, [orbValence]);
 
   const canProceedFromSelect =
-    draftScope !== "specific" || Boolean(draftSpecificTime);
+    draftValence !== null &&
+    (draftScope !== "specific" || Boolean(draftSpecificTime));
 
   const canOpenDiary =
     step === "refine-for-diary" &&
+    draftValence !== null &&
     (draftScope !== "specific" || Boolean(draftSpecificTime));
 
   const handleSliderCommit = useCallback(
@@ -133,26 +135,23 @@ export function useOrbMoodFlow(
 
   const handleNextStep = useCallback(() => {
     if (!canProceedFromSelect) return;
-    if (draftValence === null) {
-      setDraftValence(0);
-    }
     setStep("refine-for-diary");
-  }, [canProceedFromSelect, draftValence, setDraftValence]);
+  }, [canProceedFromSelect]);
 
   const handleBackStep = useCallback(() => {
     setStep("orb-select");
   }, []);
 
   const commitDraftMood = useCallback(() => {
-    if (!canOpenDiary) return;
+    if (!canOpenDiary || draftValence === null) return;
 
     const now = Date.now();
-    const mood = valenceToMood(draftValence ?? 0);
+    const mood = valenceToMood(draftValence);
     const note = draftNote.trim();
     const entry: MoodEntry = {
       id: generateId(),
       mood,
-      valence: draftValence ?? 0,
+      valence: draftValence,
       logType: draftScope === "day" ? "overall" : "momentary",
       emotionTags: draftEmotion ? [draftEmotion] : [],
       date: getToday(),
@@ -195,11 +194,12 @@ export function useOrbMoodFlow(
   }, [commitDraftMood, resetFlow]);
 
   const handleOpenDiary = useCallback(() => {
+    if (draftValence === null) return;
     const committedMood = commitDraftMood();
     if (!committedMood) return;
 
     setPendingMoodContext({
-      valence: draftValence ?? 0,
+      valence: draftValence,
       mood: committedMood.mood,
       scope: draftScope,
       specificTime: draftSpecificTime,

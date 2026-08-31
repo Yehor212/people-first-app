@@ -567,6 +567,7 @@ describe("OrbPage progressive flow", () => {
     const navigateToPage = vi.fn();
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
     expect(androidBackControl.callback).not.toBeNull();
@@ -636,6 +637,7 @@ describe("OrbPage progressive flow", () => {
 
     expect(selectScroller).toHaveClass("overflow-x-hidden");
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
     const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
@@ -653,6 +655,7 @@ describe("OrbPage progressive flow", () => {
     expect(selectFooter).not.toHaveClass("absolute");
     expect(selectScroller).toHaveClass("pb-3");
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
     const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
@@ -686,6 +689,7 @@ describe("OrbPage progressive flow", () => {
       expect(setScrollTop).toHaveBeenCalledWith(0);
 
       setScrollTop.mockClear();
+      fireEvent.click(screen.getByTestId("mood-orb-option-good"));
       fireEvent.click(screen.getByTestId("orb-page-next"));
 
       const refineScroller = screen.getByTestId("orb-page-refine").closest(".overflow-y-auto");
@@ -703,6 +707,7 @@ describe("OrbPage progressive flow", () => {
 
   it("bounds the refine heading to the mobile scroller without splitting ordinary words", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
     const heading = screen.getByTestId("orb-page-refine-heading");
@@ -910,15 +915,23 @@ describe("OrbPage progressive flow", () => {
     expect(media.pause).toHaveBeenCalled();
   });
 
-  it("allows Next from the neutral center on first render", () => {
+  it("requires an explicit mood choice before leaving the select step", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     const next = screen.getByTestId("orb-page-next");
-    expect(next).not.toBeDisabled();
+    expect(next).toBeDisabled();
+    expect(next).toHaveClass("bg-muted", "text-muted-foreground");
 
+    fireEvent.click(next);
+    expect(screen.queryByTestId("orb-page-refine")).not.toBeInTheDocument();
+    expect(useMoodEntryDraftStore.getState().valence).toBeNull();
+
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+    expect(next).not.toBeDisabled();
+    expect(next).toHaveClass("bg-primary", "text-primary-foreground");
     fireEvent.click(next);
 
     expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
-    expect(useMoodEntryDraftStore.getState().valence).toBe(0);
+    expect(useMoodEntryDraftStore.getState().valence).toBe(0.5);
   });
 
   it("retains the outgoing Orb step while the refine scene blooms in", () => {
@@ -1015,7 +1028,7 @@ describe("OrbPage progressive flow", () => {
     });
   });
 
-  it("requires a time before leaving the select step when scope is specific", () => {
+  it("requires both a mood choice and time before leaving the select step when scope is specific", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("mood-scope-chip-specific"));
@@ -1024,6 +1037,9 @@ describe("OrbPage progressive flow", () => {
     fireEvent.change(screen.getByTestId("mood-scope-time-input"), {
       target: { value: "14:30" },
     });
+    expect(screen.getByTestId("orb-page-next")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(screen.getByTestId("orb-page-next")).not.toBeDisabled();
   });
 
@@ -1065,6 +1081,7 @@ describe("OrbPage progressive flow", () => {
     const navigateToPage = vi.fn();
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     expect(screen.getByTestId("orb-page-runtime-content")).toHaveClass(
       "px-3",
@@ -1118,8 +1135,8 @@ describe("OrbPage progressive flow", () => {
     expect(onAddMoodMock).toHaveBeenCalledTimes(1);
     expect(setMoodsSpy).not.toHaveBeenCalled();
     expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
-      valence: 0,
-      mood: "okay",
+      valence: 0.5,
+      mood: "good",
       scope: "now",
       specificTime: null,
       emotion: null,
@@ -1173,6 +1190,7 @@ describe("OrbPage progressive flow", () => {
 
   it("releases the nested refine gutter below 360px so long emotion words stay inside their chip", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
     const stepsCss = readFileSync("src/pages/nav-v2/OrbPageSteps.css", "utf8");
@@ -1211,6 +1229,7 @@ describe("OrbPage progressive flow", () => {
     const navigateToPage = vi.fn();
     render(<OrbPage navigateToPage={navigateToPage} onAddMood={onAddMoodMock} />);
 
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
