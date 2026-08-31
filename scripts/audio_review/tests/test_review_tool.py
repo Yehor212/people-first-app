@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
+from scripts.audio_review import builder as builder_module
 from scripts.audio_review import rights as rights_module
 from scripts.audio_review.builder import build_environment_record, build_review_package, write_rights_receipts
 from scripts.audio_review.dsp import AudioError, _family_texture, _intensity_score, _normalize, encode_mp3, measure_audio, measure_pcm, render_hyperfocus
@@ -1389,6 +1390,62 @@ class BuilderTests(unittest.TestCase):
             self.assertEqual(marker.read_text(encoding="utf-8"), "preserve")
 
 class WorkflowContractTests(unittest.TestCase):
+    def test_libmp3lame_provenance_uses_ffmpeg_when_dpkg_is_unavailable(self):
+        encoder_proof = "Encoder libmp3lame [libmp3lame MP3 (MPEG audio layer 3)]:"
+        with (
+            mock.patch.object(builder_module.shutil, "which", return_value=None),
+            mock.patch.object(
+                builder_module,
+                "_tool_version",
+                return_value=encoder_proof,
+            ) as tool_version,
+        ):
+            result = builder_module._libmp3lame_version("/opt/ffmpeg")
+
+        self.assertEqual(result, encoder_proof)
+        tool_version.assert_called_once_with(
+            ["/opt/ffmpeg", "-hide_banner", "-h", "encoder=libmp3lame"]
+        )
+
+    def test_libmp3lame_provenance_falls_back_when_dpkg_package_is_missing(self):
+        encoder_proof = "Encoder libmp3lame [libmp3lame MP3 (MPEG audio layer 3)]:"
+        with (
+            mock.patch.object(
+                builder_module.shutil,
+                "which",
+                return_value="/usr/bin/dpkg-query",
+            ),
+            mock.patch.object(
+                builder_module,
+                "_tool_version",
+                side_effect=["UNAVAILABLE: package missing", encoder_proof],
+            ) as tool_version,
+        ):
+            result = builder_module._libmp3lame_version("/opt/ffmpeg")
+
+        self.assertEqual(result, encoder_proof)
+        self.assertEqual(
+            tool_version.call_args_list,
+            [
+                mock.call(
+                    [
+                        "/usr/bin/dpkg-query",
+                        "-W",
+                        "-f=${Version}",
+                        "libmp3lame0",
+                    ]
+                ),
+                mock.call(
+                    [
+                        "/opt/ffmpeg",
+                        "-hide_banner",
+                        "-h",
+                        "encoder=libmp3lame",
+                    ]
+                ),
+            ],
+        )
+
     def test_build_environment_record_binds_toolchain_and_inputs(self):
         declared_source_head = "a" * 40
         workflow_event_sha = "f" * 40

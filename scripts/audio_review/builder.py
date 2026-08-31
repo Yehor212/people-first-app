@@ -58,6 +58,19 @@ def _tool_version(command: list[str], *, cwd: str | Path | None = None) -> str:
         return f"UNAVAILABLE: {exc}"
 
 
+def _libmp3lame_version(ffmpeg: str) -> str:
+    dpkg_query = shutil.which("dpkg-query")
+    if dpkg_query:
+        package_version = _tool_version(
+            [dpkg_query, "-W", "-f=${Version}", "libmp3lame0"]
+        )
+        if not package_version.startswith("UNAVAILABLE:"):
+            return package_version
+    return _tool_version(
+        [ffmpeg, "-hide_banner", "-h", "encoder=libmp3lame"]
+    )
+
+
 def _duration(asset: AssetSpec, cap: float | None) -> float:
     return min(asset.duration_seconds, cap) if cap is not None else asset.duration_seconds
 
@@ -138,9 +151,7 @@ def build_environment_record(
         "numpy": __import__("numpy").__version__,
         "ffmpeg": _tool_version([ffmpeg, "-version"]),
         "ffprobe": _tool_version([ffprobe, "-version"]),
-        "libmp3lame": _tool_version(
-            ["dpkg-query", "-W", "-f=${Version}", "libmp3lame0"]
-        ),
+        "libmp3lame": _libmp3lame_version(ffmpeg),
         "osRelease": (
             os_release.read_text(encoding="utf-8").strip()
             if os_release.is_file()
