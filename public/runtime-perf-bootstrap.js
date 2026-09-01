@@ -26,8 +26,8 @@ const shouldApply = (rawGuard) => {
 };
 
 // In-app reduce-motion preference, applied pre-React so the first paint
-// has no animation flash (10-agent review, Role 10). The React
-// AnimationGate re-applies the same decision via body.reduce-motion.
+// has no animation flash. React owns the same data-reduced-motion
+// attribute and can therefore restore motion without a reload.
 const reduceMotionEnabled = (rawPref) => {
   if (!rawPref) return false;
   try {
@@ -43,7 +43,7 @@ try {
       document.documentElement.dataset.runtimePerf = startup;
     }
     if (reduceMotionEnabled(window.localStorage.getItem(motionKey))) {
-      document.documentElement.dataset.reduceMotion = "true";
+      document.documentElement.dataset.reducedMotion = "true";
     }
   }
 } catch {

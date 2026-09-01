@@ -4,6 +4,7 @@ import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it } from "vitest";
 
 const RUNTIME_PERF_DEVICE_GUARD_KEY = "zenflow-runtime-perf-device-guard";
+const REDUCE_MOTION_KEY = "zenflow_reduce_motion";
 const source = readFileSync(
   resolve(process.cwd(), "src/runtime-perf-bootstrap.js"),
   "utf8",
@@ -28,7 +29,10 @@ function runBootstrap(): void {
 describe("runtime performance early bootstrap", () => {
   afterEach(() => {
     delete document.documentElement.dataset.runtimePerf;
+    delete document.documentElement.dataset.reduceMotion;
+    delete document.documentElement.dataset.reducedMotion;
     localStorage.removeItem(RUNTIME_PERF_DEVICE_GUARD_KEY);
+    localStorage.removeItem(REDUCE_MOTION_KEY);
     window.history.replaceState({}, "", "/");
   });
 
@@ -97,6 +101,22 @@ describe("runtime performance early bootstrap", () => {
 
     runBootstrap();
     expect(document.documentElement.dataset.runtimePerf).toBeUndefined();
+  });
+
+  it("uses the React-owned reduced-motion attribute across boot and live re-enable", () => {
+    localStorage.setItem(
+      REDUCE_MOTION_KEY,
+      JSON.stringify({
+        reduceMotion: true,
+      }),
+    );
+
+    runBootstrap();
+    expect(document.documentElement.dataset.reducedMotion).toBe("true");
+    expect(document.documentElement.dataset.reduceMotion).toBeUndefined();
+
+    document.documentElement.dataset.reducedMotion = "false";
+    expect(document.documentElement.matches('[data-reduced-motion="true"]')).toBe(false);
   });
 
   it("loads as a Vite source module before the React bundle on every route", () => {

@@ -3562,18 +3562,18 @@ body.reduce-motion [class*="animate-"] {
 }
 
 /* Pre-React boot: the in-app reduce-motion preference is applied by
-   runtime-perf-bootstrap.js via <html data-reduce-motion> before
+   runtime-perf-bootstrap.js via <html data-reduced-motion> before
    hydration, so the first paint has no animation flash. The React
-   AnimationGate re-applies the same decision as body.reduce-motion. */
-html[data-reduce-motion="true"] *,
-html[data-reduce-motion="true"] *::before,
-html[data-reduce-motion="true"] *::after {
+   AnimationGate owns the same attribute and body.reduce-motion. */
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
 }
 
-html[data-reduce-motion="true"] [class*="animate-"] {
+html[data-reduced-motion="true"] [class*="animate-"] {
   animation: none !important;
 }
 
