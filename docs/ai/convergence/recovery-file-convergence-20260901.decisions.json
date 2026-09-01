@@ -244,6 +244,126 @@
         "src/hooks/__tests__/useDeepLinkHandler.test.ts#current encoded invite contract supersedes unsupported short codes",
         "src/lib/__tests__/crashReporting.test.ts#current privacy-hardened crash boundary supersedes weaker logger variant"
       ]
+    },
+    {
+      "id": "product-coherence-legacy-audit-tooling-and-receipts",
+      "selector": {
+        "packetPattern": "^(?:product-coherence-deep-audit-v2-6f4ef1ad3fba5771|product-coherence-task1-forensics-v2-2762e9d65a14c02b|product-coherence-task2-pdi-verify\\.nosync-6b03f0ab6fade9c6|product-coherence-remediation-verify\\.nosync-ccec13641e0f37b2)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/recovery-file-convergence.mjs#current deterministic per-file recovery ledger",
+        "scripts/__tests__/recovery-file-convergence.test.ts#31 convergence policy tests pass",
+        "scripts/__tests__/production-data-integrity-hook.test.ts#current production-data enforcement contract passes",
+        "output-policy#historical audit JSONL, rendered receipts, local locators, and synthetic credential fixtures stay outside main"
+      ]
+    },
+    {
+      "id": "product-coherence-current-runtime-owners",
+      "selector": {
+        "packetPattern": "^(?:product-coherence-deep-audit-v2-main-29c96b8337f459cc|product-coherence-p1-a11y-verify\\.nosync-0333a466b3616a09)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "b16c26cd#current recovered runtime and test composition",
+        "focused-recovery-integrity-suite#21 files and 175 tests pass",
+        "src/__tests__/AppAnimationGate.static.test.ts#current global animation gate passes",
+        "src/components/__tests__/FocusReflectionModal.adSafety.test.tsx#current focus-reflection contract passes",
+        "src/hooks/__tests__/useFocusTimer.persistence.test.tsx#current durable timer contract passes"
+      ]
+    },
+    {
+      "id": "supabase-integrity-current-journal-owners",
+      "selector": {
+        "packetPattern": "^supabase-integrity-schema-2e8281c948c17a0d$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/storage/sync/journalMediaParentIntegrityMigration.ts#current authoritative parent-integrity owner",
+        "src/storage/sync/journalMediaDeletionAdmissionMigration.ts#current deletion admission owner",
+        "src/storage/sync/__tests__/journalMediaParentIntegrityMigration.test.ts#current parent-integrity suite passes",
+        "src/storage/sync/__tests__/journalMediaDeletionAdmissionMigration.test.ts#current deletion admission suite passes",
+        "focused-recovery-integrity-suite#21 files and 175 tests pass"
+      ]
+    },
+    {
+      "id": "private-receipt-transport-remains-fail-closed",
+      "selector": {
+        "packetPattern": "^governance-private-receipt-adapter-r1-7aa11141b96e1e2d$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "scripts/codex-governance/export-private-receipt.cjs#current least-privilege fail-closed owner",
+        "scripts/__tests__/private-receipt-export.test.mjs#TRUST_ANCHOR_REQUIRED contract passes",
+        "permission-boundary#external signed receipt transport is not authorized by repository convergence"
+      ]
+    },
+    {
+      "id": "governance-hooks-current-stronger-composition",
+      "selector": {
+        "packetPattern": "^required-check-context-uniqueness-900d60f960d8e03f$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".codex/hooks.json#current additive hook composition preserves Android visual and subagent guards",
+        "scripts/__tests__/agent-workspace-git-hook.test.ts#current workspace hook passes",
+        "scripts/__tests__/android-visual-runtime-hook.test.ts#current Android visual guard passes",
+        "focused-recovery-integrity-suite#21 files and 175 tests pass"
+      ]
+    },
+    {
+      "id": "sync-retry-current-vault-fenced-owner",
+      "selector": {
+        "packetPattern": "^product-coherence-p1-sync-retry-r1-8ad6f813ba759db6$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/journalVaultEpoch.ts#current vault-epoch fencing owner",
+        "src/features/journal/__tests__/journalVaultEpoch.test.ts#current epoch validation passes",
+        "src/storage/__tests__/cloudSync.accountBoundary.test.ts#current account-boundary retry contract passes"
+      ]
+    },
+    {
+      "id": "style-dictionary-security-current-dependency-owner",
+      "selector": {
+        "packetPattern": "^style-dictionary-security-fix-5d7828195b3a97ab$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "package.json#current style-dictionary 5.5 line and security overrides retained",
+        "package-lock.json#current resolved dependency graph",
+        "baseline-install#npm ci reports zero vulnerabilities",
+        "dependency-policy#older package variants and removed scripts are not reintroduced"
+      ]
+    },
+    {
+      "id": "special-worktree-archives-are-commit-represented-copies",
+      "selector": {
+        "sourceKind": "special-archive",
+        "sourceIdPattern": "^special-archive:(?:epic002-patch-lane|original-vscode-untracked-transport)$"
+      },
+      "disposition": "EXCLUDED_DUPLICATE_COPY",
+      "evidence": [
+        "archive-blob-audit#original transport has 3104 commit-represented safe files; remaining source variants are weaker current PDI copies and private marker files",
+        "archive-blob-audit#epic002 has 231 of 232 safe non-generated files represented by d35c74ea; the remainder is generated Capacitor config",
+        "archive-policy#node_modules, packaged web assets, build output, reports, and whole-worktree copies stay outside main",
+        "historical-ledger#commit-represented changes remain individually reviewed"
+      ]
+    },
+    {
+      "id": "original-vscode-current-enforcement-owners",
+      "selector": {
+        "sourceKind": "special-file",
+        "packetPattern": "^original-vscode-dirty$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".codex/hooks.json#current hooks retain Android visual, production-data, and subagent guards",
+        "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md#current PDI008 trigger-reachability explanation retained",
+        "scripts/check-enforcement-health.ts#current enforcement health includes Android visual runtime gate",
+        "scripts/__tests__/production-data-integrity-hook.test.ts#current production-data hook passes",
+        "scripts/__tests__/android-visual-runtime-hook.test.ts#current Android visual hook passes"
+      ]
     }
   ]
 }
