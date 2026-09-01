@@ -85,6 +85,111 @@
         "src/components/habit-pictogram/habitCelebrationAssets.ts#current runtime owner",
         "android-build#six approved TGS assets reachable with drink-water inline"
       ]
+    },
+    {
+      "id": "pwa-desktop-modernization-current-composition",
+      "selector": {
+        "commit": "f7fd550efe15ef6bf93b8bfd20088031d5069ed5"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ]
+    },
+    {
+      "id": "pwa-quality-feature-pointer-current",
+      "selector": {
+        "commit": "9951c2ba4453dc674dd4190f5f869b540fd8925b",
+        "pathPattern": "^\\.specify/feature\\.json$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".specify/feature.json#current integration feature pointer preserved",
+        "src/lib/__tests__/pwaShellLifecycle.test.ts#recovered PWA shell contract passes"
+      ]
+    },
+    {
+      "id": "product-coherence-remediation-current-ui-owners",
+      "selector": {
+        "packetPattern": "^product-coherence-remediation-e5016-8a9492aefdc2cc08$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ]
+    },
+    {
+      "id": "language-selector-current-large-text-owner",
+      "selector": {
+        "packetPattern": "^(?:entry-radiogroup-a11y-e5016-5ca7a0e4f6412ac6|product-coherence-p1-remediation-r1-2fb1c82b3e0d4485)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ]
+    },
+    {
+      "id": "focus-abort-current-owner",
+      "selector": {
+        "packetPattern": "^product-coherence-focus-aborted-fix-4595eff1ed2f9a3d$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/hooks/__tests__/useFocusHandlers.test.ts#current focus completion and abort suite passes",
+        "src/hooks/useFocusHandlers.ts#current owner"
+      ]
+    },
+    {
+      "id": "settings-local-recovery-current-owner",
+      "selector": {
+        "packetPattern": "^(?:local-only-backup-recovery-e5016-eb87e7297a105905|product-coherence-p1-local-import-r1-6a99a50b9064a49a|product-coherence-p1-local-reset-r1-d32ebeca0f7f9b52)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ]
+    },
+    {
+      "id": "report-export-current-owner",
+      "selector": {
+        "packetPattern": "^report-export-state-integrity-e5016-dc13a29d6dc1d143$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/exportService.test.ts#current export state suite passes"
+      ]
+    },
+    {
+      "id": "orb-ambience-current-owner",
+      "selector": {
+        "packetPattern": "^product-coherence-p1-orb-ambience-r1-434a41abb3fc41f1$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/OrbPage.test.tsx#current Orb ambience and interaction suite passes",
+        "src/lib/appAudioAssets.ts#current ambience catalog"
+      ]
+    },
+    {
+      "id": "reduced-motion-index-current-composition",
+      "selector": {
+        "packetPattern": "^candidate-reduced-motion-handoff-e5016-c2cb40a19e558e42$"
+      },
+      "disposition": "MERGED",
+      "evidence": [
+        "14a27e29#reduced-motion bootstrap batch merged",
+        "src/__tests__/animationContracts.static.test.ts#current motion contract"
+      ]
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "schema": "zenflow-recovery-file-convergence-v1",
   "baseSha": "9ec698be381fc2b3f2e98f4e30291fed7660c350",
-  "mainSha": "90a6bd6d6b68e9fd1fe2644cbaee499074bcf5c7",
+  "mainSha": "6b8ac5513bab910337bb9c14aaced4b6b855827c",
   "summary": {
     "dirtyVariants": 900,
     "deletionIntents": 11,
@@ -9,18 +9,19 @@
     "historicalFileChanges": 12068,
     "specialRecords": 6,
     "specialArchiveFiles": 32565,
-    "decisionRules": 7,
+    "decisionRules": 16,
     "records": 12985,
     "byDisposition": {
-      "ALREADY_CURRENT": 1003,
+      "ALREADY_CURRENT": 1024,
       "EXCLUDED_DUPLICATE_COPY": 3,
       "EXCLUDED_GENERATED_CACHE": 8969,
       "EXCLUDED_KIMI": 65,
       "EXCLUDED_SECRET_PRIVATE": 3,
-      "REVIEW_REQUIRED": 2899,
-      "SUPERSEDED_WITH_EVIDENCE": 43
+      "MERGED": 1,
+      "REVIEW_REQUIRED": 2723,
+      "SUPERSEDED_WITH_EVIDENCE": 197
     },
-    "open": 2899
+    "open": 2723
   },
   "packetRecords": [
     {
@@ -51,7 +52,12 @@
       "sourceSha256": "29ae48e05289587ea7edc6989e7cc64d75a1fcedc9abab82c69ff6926e78d4c5",
       "mainSha256": "c8fa4304c86d10241d6b3ab229f0767e9665976ca145d6ac6dcaf6c1bc755a05",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "MERGED",
+      "evidence": [
+        "14a27e29#reduced-motion bootstrap batch merged",
+        "src/__tests__/animationContracts.static.test.ts#current motion contract"
+      ],
+      "decisionRule": "reduced-motion-index-current-composition"
     },
     {
       "sourceId": "dirty-file:candidate-reduced-motion-handoff-e5016-c2cb40a19e558e42:src/observability/__tests__/runtimePerformanceEarlyBootstrap.test.ts:653fe4035d2d",
@@ -261,7 +267,13 @@
       "sourceSha256": "cefd82a5dc88f29e2368051b13d84e3cfd6f2d0c530a6d68b75c8b8718e0a9e7",
       "mainSha256": "b1f5d5993fad8d2c629410e781f6081cf29cbd5dfb2514d3883ee046882175cd",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:entry-radiogroup-a11y-e5016-5ca7a0e4f6412ac6:src/components/LanguageSelector.tsx:66a1a386612b",
@@ -271,7 +283,13 @@
       "sourceSha256": "66a1a386612b929240ca54bfc6a6d45908cf22928c7ab4f9adc26a6da6e9e7a8",
       "mainSha256": "22815714321fe319d3bf95ef0022eb4b7cbdf6d8e53949add7177ebbf8dbe9af",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:experience-quality-baseline-e501-1b555f010521e096:node_modules.baseline-vite-cache/.vite/deps/_metadata.json:ee922c607075",
@@ -1369,7 +1387,7 @@
       "packet": "experience-quality-deep-audit-20260728-f5aa4a98be81029e",
       "path": "ARCHITECTURE.md",
       "sourceSha256": "cfbeb63db2f611bb8e6efb6c962b9177ae2a5b995e3dd19224c30e04b082c390",
-      "mainSha256": "1a1ff040facc7f885cab8d8fbb904fb0b2247f7edfaabe0ae6d1d8a6a6615eac",
+      "mainSha256": "5a428f92d573f35a012b34f81e3b1c93d4cdae4338916b6d816ae593fcc5ba4c",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -1739,7 +1757,7 @@
       "packet": "experience-quality-deep-audit-20260728-f5aa4a98be81029e",
       "path": "public/offline.html",
       "sourceSha256": "70d7e7953e4fe37963140cabf923784d8145bdf09108496c7169812c43928acb",
-      "mainSha256": "a297906b97ad2c1b60fc28f84dc97e068d65124a1277f1015b59e34db51aa701",
+      "mainSha256": "07e879f73b2b44352458034b02edefeae100e13f6c7e3392f05ddf9c9ec70603",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -2089,7 +2107,7 @@
       "packet": "experience-quality-deep-audit-20260728-f5aa4a98be81029e",
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "sourceSha256": "033c1af5c55e0afe45c3cd5bcd7a16292d07d154f308a872fceaf2ab21477480",
-      "mainSha256": "b9de1c8aee265a8e437aaa37a025803ded86b90d14af4c41dbb344961a4c55ed",
+      "mainSha256": "b0f4871445dfb12a088be445416afea7779377df6f995f9c302c33cafa4290d0",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -3462,7 +3480,7 @@
       "packet": "experience-quality-deep-audit-20260728-f5aa4a98be81029e",
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "sourceSha256": "43c2f9dc50212c1e4ab74653e2429ca35d143e80c76fd688500ef36c785603ff",
-      "mainSha256": "314cad985ae891acf2cf2fbbb3eb5431edb243f66c1171b44c0dba3d0c723e1b",
+      "mainSha256": "e72f8d9596b5e65edad9821bf680cbe768cefd3980e6212422966aac5b56961e",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -3722,7 +3740,7 @@
       "packet": "experience-quality-deep-audit-20260728-f5aa4a98be81029e",
       "path": "src/sw.ts",
       "sourceSha256": "145e9275a1544576eef5416dfc824a7b3eab3ed50d530a4ae189a22959385490",
-      "mainSha256": "83f4419e6a4e037b900bd34b2fada77080fd669a2bfb1cb9572e8d75491fc46b",
+      "mainSha256": "bda4c664d3176459e38fcbf9bbc4b62fcdb8dc17fda96328a25062c7ac3e37d2",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -3784,7 +3802,12 @@
       "sourceSha256": "524d7cb108dd485920af935728f7408a3be4f7021ab4ced9171f517af7e58b87",
       "mainSha256": "600645a353d09a6c144a98f8c9fa52e033240a275618d0135df414f914d72182",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ],
+      "decisionRule": "settings-local-recovery-current-owner"
     },
     {
       "sourceId": "dirty-file:local-only-backup-recovery-e5016-eb87e7297a105905:src/pages/nav-v2/settings/V2SettingsDataPanels.tsx:2d8b86afc0fa",
@@ -3794,7 +3817,12 @@
       "sourceSha256": "2d8b86afc0faf85198e7e7f0fd1aaa3022a6d4d38a72e577712450e8e39a6382",
       "mainSha256": "5efb85141d51ed9d273834ac24b6171617f6611495cb4776d43a4b1990ef9204",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ],
+      "decisionRule": "settings-local-recovery-current-owner"
     },
     {
       "sourceId": "dirty-file:people-first-app-codex-kimi-safe-sync-cc3b85832fa4e7f7:.codex/hooks.json:1bb411201fd1",
@@ -3852,7 +3880,7 @@
       "packet": "people-first-app-codex-kimi-safe-sync-cc3b85832fa4e7f7",
       "path": "ARCHITECTURE.md",
       "sourceSha256": "27009364884efa6ba923537df0b671c94ae7b0de1b50c3865ce9379ebac77edc",
-      "mainSha256": "1a1ff040facc7f885cab8d8fbb904fb0b2247f7edfaabe0ae6d1d8a6a6615eac",
+      "mainSha256": "5a428f92d573f35a012b34f81e3b1c93d4cdae4338916b6d816ae593fcc5ba4c",
       "changeKind": "file-variant",
       "disposition": "EXCLUDED_KIMI"
     },
@@ -4192,7 +4220,7 @@
       "packet": "product-coherence-deep-audit-v2-6f4ef1ad3fba5771",
       "path": "ARCHITECTURE.md",
       "sourceSha256": "61a68e74a30ea4f801459e76715a1a39ca12e39343f949b2f14bb1ee245a6746",
-      "mainSha256": "1a1ff040facc7f885cab8d8fbb904fb0b2247f7edfaabe0ae6d1d8a6a6615eac",
+      "mainSha256": "5a428f92d573f35a012b34f81e3b1c93d4cdae4338916b6d816ae593fcc5ba4c",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -7098,7 +7126,7 @@
       "packet": "product-coherence-deep-audit-v2-main-29c96b8337f459cc",
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "sourceSha256": "33cdde32f91da448358837b4434b5e7e5836ef5462622eb79856bbce1b8bc875",
-      "mainSha256": "314cad985ae891acf2cf2fbbb3eb5431edb243f66c1171b44c0dba3d0c723e1b",
+      "mainSha256": "e72f8d9596b5e65edad9821bf680cbe768cefd3980e6212422966aac5b56961e",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -7129,7 +7157,12 @@
       "sourceSha256": "146f47b5964f2cb8dd0205e2b0cf28776fb8f5c2323f61218a7caee75c919b8d",
       "mainSha256": "65b9f276f14f59d041c67ac6eebdd60f48ad2c6c482e37fca5d0e13c26b36504",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/hooks/__tests__/useFocusHandlers.test.ts#current focus completion and abort suite passes",
+        "src/hooks/useFocusHandlers.ts#current owner"
+      ],
+      "decisionRule": "focus-abort-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-focus-aborted-fix-4595eff1ed2f9a3d:src/hooks/useFocusHandlers.ts:480bc78402d8",
@@ -7139,7 +7172,12 @@
       "sourceSha256": "480bc78402d889af9b373a3d0d4d3c3bf7f755b3cbbddb0aa2d52be7c2a8729b",
       "mainSha256": "bc324a299802278b63e37c6bc8c4ceec88651f7f222f837c3a92ec2a143bbc00",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/hooks/__tests__/useFocusHandlers.test.ts#current focus completion and abort suite passes",
+        "src/hooks/useFocusHandlers.ts#current owner"
+      ],
+      "decisionRule": "focus-abort-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-a11y-verify.nosync-0333a466b3616a09:src/components/__tests__/FocusReflectionModal.adSafety.test.tsx:24a65f4660e6",
@@ -7209,7 +7247,12 @@
       "sourceSha256": "022949731d12cee4bc0da7cd45f523e5aa30b57dadd62a9471a0fb29aa61466b",
       "mainSha256": "600645a353d09a6c144a98f8c9fa52e033240a275618d0135df414f914d72182",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ],
+      "decisionRule": "settings-local-recovery-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-local-import-r1-6a99a50b9064a49a:src/pages/nav-v2/settings/V2SettingsDataPanels.tsx:8894b4d726af",
@@ -7219,7 +7262,12 @@
       "sourceSha256": "8894b4d726af2857fbfa1e7328b48d014979344f29e14badfecf0001fda12aea",
       "mainSha256": "5efb85141d51ed9d273834ac24b6171617f6611495cb4776d43a4b1990ef9204",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ],
+      "decisionRule": "settings-local-recovery-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-local-reset-r1-d32ebeca0f7f9b52:src/pages/nav-v2/__tests__/SettingsPage.test.tsx:d1f53936eac5",
@@ -7229,7 +7277,12 @@
       "sourceSha256": "d1f53936eac58e87f77ec41d70c68162747e0034d3401c80b9afd4f70ceca5e3",
       "mainSha256": "600645a353d09a6c144a98f8c9fa52e033240a275618d0135df414f914d72182",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ],
+      "decisionRule": "settings-local-recovery-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-local-reset-r1-d32ebeca0f7f9b52:src/pages/nav-v2/settings/V2SettingsDataPanels.tsx:99d0525673d7",
@@ -7239,7 +7292,12 @@
       "sourceSha256": "99d0525673d7577ccedcc9acb3f631f3060f9883295da66e7a1838c346362b02",
       "mainSha256": "5efb85141d51ed9d273834ac24b6171617f6611495cb4776d43a4b1990ef9204",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ],
+      "decisionRule": "settings-local-recovery-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-orb-ambience-r1-434a41abb3fc41f1:e2e/orb-ambience-focus.spec.ts:6f4e737d11e2",
@@ -7249,7 +7307,12 @@
       "sourceSha256": "6f4e737d11e24c540612c627ea8c3c8e0d45977b1caec02f979183bf13ed9e3b",
       "mainSha256": "b8ad3d342df47642f03d39529c331ce360c81e6caafaca1bcb94ed8d23119328",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/OrbPage.test.tsx#current Orb ambience and interaction suite passes",
+        "src/lib/appAudioAssets.ts#current ambience catalog"
+      ],
+      "decisionRule": "orb-ambience-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-orb-ambience-r1-434a41abb3fc41f1:src/pages/nav-v2/__tests__/OrbPage.test.tsx:27868199a2c5",
@@ -7259,7 +7322,12 @@
       "sourceSha256": "27868199a2c5d2aa6312941512b650413c8c539c22681f0ce509b5ca62bc8851",
       "mainSha256": "a64ce768db83293779d7c57b994e5de8655a2d151f801a4c15914c9219b7ca81",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/OrbPage.test.tsx#current Orb ambience and interaction suite passes",
+        "src/lib/appAudioAssets.ts#current ambience catalog"
+      ],
+      "decisionRule": "orb-ambience-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-orb-ambience-r1-434a41abb3fc41f1:src/pages/nav-v2/OrbAmbienceControl.css:7b26dc756721",
@@ -7269,7 +7337,12 @@
       "sourceSha256": "7b26dc756721cf9effc831291c79ff0b9f0f2eb8c4ce293927736a417660fd61",
       "mainSha256": "b83329f5ee307ff2eaeab869ed4319b9c773e733a2261ec0999b95d209a37a9e",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/OrbPage.test.tsx#current Orb ambience and interaction suite passes",
+        "src/lib/appAudioAssets.ts#current ambience catalog"
+      ],
+      "decisionRule": "orb-ambience-current-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-remediation-r1-2fb1c82b3e0d4485:src/components/__tests__/LanguageSelector.test.tsx:35dce6ebf206",
@@ -7279,7 +7352,13 @@
       "sourceSha256": "35dce6ebf20688483f5c438f9f00dbe2e2c2bd0dccb2c9a3b93d47ac644f2dce",
       "mainSha256": "b1f5d5993fad8d2c629410e781f6081cf29cbd5dfb2514d3883ee046882175cd",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-remediation-r1-2fb1c82b3e0d4485:src/components/LanguageSelector.tsx:228db13122e0",
@@ -7289,7 +7368,13 @@
       "sourceSha256": "228db13122e0c0ad09a19f4aa16f0d9da6adc3c59b012896fb6a173e0103651e",
       "mainSha256": "22815714321fe319d3bf95ef0022eb4b7cbdf6d8e53949add7177ebbf8dbe9af",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-remediation-r1-2fb1c82b3e0d4485:src/hooks/__tests__/useNotificationSetup.test.tsx:6ff86e027aa6",
@@ -7299,7 +7384,13 @@
       "sourceSha256": "6ff86e027aa6758c74123173748b127a284e1761cd0b21b3cd6734005c556701",
       "mainSha256": "a1ad1cd8e551fd9a598243d070747f7a233ac5f7210837aa9585b511c8fd6927",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-remediation-r1-2fb1c82b3e0d4485:src/hooks/useNotificationSetup.ts:1c734785b75d",
@@ -7309,7 +7400,13 @@
       "sourceSha256": "1c734785b75d713d7e5e5c4a2ca0a4036d349704491e85527f72f1a42ea88197",
       "mainSha256": "f5b1717631c03a21107892f80b589f3c30e0106d6c592ac332e559c888a8adb9",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-remediation-r1-2fb1c82b3e0d4485:src/lib/__tests__/pushNotifications.test.ts:7c53c461c288",
@@ -7319,7 +7416,13 @@
       "sourceSha256": "7c53c461c288f54a7fea9193db7b2eb009acebf99e77b0cd2d6fee65259dbc81",
       "mainSha256": "086dcf4db348c8b5d660b9422141bc08b9f8a4c98af344f08453aefedf994ff4",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-remediation-r1-2fb1c82b3e0d4485:src/lib/pushNotifications.ts:c09ce6127a1e",
@@ -7329,7 +7432,13 @@
       "sourceSha256": "c09ce6127a1e00ece859c1cba97eadc7f09f867de114ca95c7604c9c66439c44",
       "mainSha256": "8612a05e4f24a25d13407fee049b005021091a4102d0262557b91c4d1691b493",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ],
+      "decisionRule": "language-selector-current-large-text-owner"
     },
     {
       "sourceId": "dirty-file:product-coherence-p1-sync-retry-r1-8ad6f813ba759db6:src/storage/__tests__/cloudSync.test.ts:5a1117434c82",
@@ -7357,9 +7466,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "ARCHITECTURE.md",
       "sourceSha256": "4683e541bfff54d3a5df2faefc018df88f1fcbc13b1256740e7759cc38741897",
-      "mainSha256": "1a1ff040facc7f885cab8d8fbb904fb0b2247f7edfaabe0ae6d1d8a6a6615eac",
+      "mainSha256": "5a428f92d573f35a012b34f81e3b1c93d4cdae4338916b6d816ae593fcc5ba4c",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:package-lock.json:a9267f5162b3",
@@ -7369,7 +7486,15 @@
       "sourceSha256": "a9267f5162b33f2321c20e354b4fa8faeacec7fc0ebd0c712761b14bc6261507",
       "mainSha256": "bd39b3f795ecf923c94f103eadf74ba32f05d520732c9e98df91a3c057de6ef4",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:package.json:8898f7615988",
@@ -7379,7 +7504,15 @@
       "sourceSha256": "8898f7615988568bc64e475968bed5a529e7eb8253e57497aea1e0145dab4dc1",
       "mainSha256": "4dab4ba9bacb055ab6eeb29965ecf9ba40c418d99ecab979e386d8d375861cb7",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:scripts/__tests__/agent-workspace.test.ts:4daf1b6065be",
@@ -7389,7 +7522,15 @@
       "sourceSha256": "4daf1b6065be8e7046072e6a367fd5bce11fab554e8982e3d46a6ecee28b8b52",
       "mainSha256": "db1abb02c88f270e1f9caf18cd32ff432b8ae014f9c62a3614d2235e4c299537",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:scripts/agent-workspace-runtime.cjs:cfd8e732d38b",
@@ -7399,7 +7540,15 @@
       "sourceSha256": "cfd8e732d38bff71cd72360c2d77f912a363683722865c4687d601a0c1ceb444",
       "mainSha256": "93ecde4716401974c08c8a9d45b86f8d73e7a6178c389b305d4e2452337ec7eb",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/__tests__/EssentialTextReflowContract.test.ts:14d47f97a3e7",
@@ -7409,7 +7558,15 @@
       "sourceSha256": "14d47f97a3e77822fc56274dfe95622af926508f69e0e9b7d4398c14a4027cf7",
       "mainSha256": "6fa369314f016730a18bfe5ab22b629d4f2121293b426621741e3c71fafe71de",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/__tests__/IntentionalSingleLineTextContract.test.ts:b8cfc4713933",
@@ -7419,7 +7576,15 @@
       "sourceSha256": "b8cfc4713933de5e4e4d35ad283ed5f3d8467b514e072ddf646751eb2cac2ffc",
       "mainSha256": "67f45946170148ebfdde2710a178ffd88a7327013fc96a595f3ac8930c70eb82",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/__tests__/EssentialCardTextReflow.static.test.ts:55b6ca47ccd4",
@@ -7429,7 +7594,15 @@
       "sourceSha256": "55b6ca47ccd419fbad204e7336501946789d82de0a48ec0910bb6fe6b611c1fa",
       "mainSha256": "cb8ca881c514fc333eac9bb85aa48fb4d38296b3059758eb2c57389d95ba7ebf",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/__tests__/LanguageSelector.test.tsx:bb944eaefe78",
@@ -7439,7 +7612,15 @@
       "sourceSha256": "bb944eaefe78d1576c1c9461325d04d67ab880cbc26248fa1af3f55e17c2d773",
       "mainSha256": "b1f5d5993fad8d2c629410e781f6081cf29cbd5dfb2514d3883ee046882175cd",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx:977178a97cf1",
@@ -7447,9 +7628,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx",
       "sourceSha256": "977178a97cf1e358e4d2a6e86bbff7e2a6613954c89a1089ddbef394903f9d5b",
-      "mainSha256": null,
+      "mainSha256": "95f858a2af2d5a9363799e9cbddc2e36bad2186a153340c55920413de12803df",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/canvas/GoalNode.tsx:f544d82b5176",
@@ -7459,7 +7648,15 @@
       "sourceSha256": "f544d82b5176cc7ce80a4d178fa583653efde88a4aac416494636cd4462ff337",
       "mainSha256": "7a04273460e0d902ad1e5ee9cde94917676f3ceba994c9feb95c517970e57d21",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/desktop/__tests__/CommandPalette.v2.test.tsx:fb8634ce1741",
@@ -7469,7 +7666,15 @@
       "sourceSha256": "fb8634ce17413c9182ef1e2b720c832e6b80255668b878438882772fa77739b0",
       "mainSha256": "866c6a16f8048fcfa09acea3b59d64245172cf5d5e23b2a89f7bfe3127610ef7",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/desktop/CommandPalette.tsx:ab028ad1fd73",
@@ -7479,7 +7684,15 @@
       "sourceSha256": "ab028ad1fd73d85b86a366723a85ad0439429ed742c07f9c39fc14e5d1668ef0",
       "mainSha256": "f302cc02da7f17f81691b551a70cc72ebbc2665bee3137d2583ae9df522910fa",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/EntryGateBackdrop.tsx:e9fabf97c166",
@@ -7489,7 +7702,15 @@
       "sourceSha256": "e9fabf97c166331af1af6ba72d56def945e7b19b1da1cc7d4860f5073a295ac8",
       "mainSha256": "6861f45e84b51e1fea92335cbb4ec4d69a8bb8b1d67783f8a82b50d4c853ee68",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx:c5b787b7d2bd",
@@ -7497,9 +7718,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx",
       "sourceSha256": "c5b787b7d2bda411d9b75cc53379eaf13d013c5bf72873a56c8ea969bd4f75b5",
-      "mainSha256": null,
+      "mainSha256": "ea96d0cc0e2b79459e5b2529009cb05641aca18d410fe28a59dd7c5ed8591313",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/focus-timer/CosmicBackground.tsx:eade0e36938d",
@@ -7509,7 +7738,15 @@
       "sourceSha256": "eade0e36938da2f276284dab613fd9e7b3993034a2e24bf6fc3c7cfc2b756c53",
       "mainSha256": "fe9bd196de7eeb5a61d0508490ec6aab847d2d1a544cb1900555a2e8dfcdad14",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/focus-timer/FocusTimer.tsx:2d2d5bf08468",
@@ -7517,9 +7754,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "sourceSha256": "2d2d5bf084686775faaedd67d82165c3a4954755b1938d6460b74193e5dbb1df",
-      "mainSha256": "b9de1c8aee265a8e437aaa37a025803ded86b90d14af4c41dbb344961a4c55ed",
+      "mainSha256": "b0f4871445dfb12a088be445416afea7779377df6f995f9c302c33cafa4290d0",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/FocusReflectionModal.tsx:759410c25096",
@@ -7529,7 +7774,15 @@
       "sourceSha256": "759410c250966a8f567346ce2c123ac3ad6a0fd8d5ab685d3090c1ade2a6f800",
       "mainSha256": "81376d4669bc6b7842760412ad18ac8dd0b733e9d4d874d329b157e136a2f8cd",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/habit-creation-form/HabitCreationForm.tsx:3451c93a7ab7",
@@ -7539,7 +7792,15 @@
       "sourceSha256": "3451c93a7ab7869a78b61e85d9909e4613b77cd82f6e62a923c28ea104f5ea0f",
       "mainSha256": "4746d92c103d2a70e5c1e2858c73e5b14a8d06918d59f23551e952f2e25754e0",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/hyperfocus/HyperfocusBackground.tsx:53c6290de7e5",
@@ -7549,7 +7810,15 @@
       "sourceSha256": "53c6290de7e5761987cbe3566eb84c924879814b48262c491814f8484eb26dd4",
       "mainSha256": "8de8ab6c3cf55a249b102a0ed732c522a221c9da3311d94f45bf869b90ad95dd",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/hyperfocus/HyperfocusMode.tsx:e43c80ccff2f",
@@ -7559,7 +7828,15 @@
       "sourceSha256": "e43c80ccff2f52be4c8ae68b2158128eba3d2cb945b798bbf960d573d4b43655",
       "mainSha256": "f9d85e3f637d09a46029e761a29d0e39ea312db40465e818bcb61d93ea7ce98f",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/LanguageSelector.tsx:5e13285dcc8b",
@@ -7569,7 +7846,15 @@
       "sourceSha256": "5e13285dcc8b64c5884cc7db1c90777b036b667691ab6d445b20c4915071590b",
       "mainSha256": "22815714321fe319d3bf95ef0022eb4b7cbdf6d8e53949add7177ebbf8dbe9af",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/navigation-v2/__tests__/integration.keyboardNav.test.tsx:fc9a855cefb7",
@@ -7579,7 +7864,15 @@
       "sourceSha256": "fc9a855cefb77c10c395816b991dfc1e74d22cf41325c0d0a283b2d91e08f894",
       "mainSha256": "b3b2bde82b2121c0a3dcf841013f5325013b0203ac7e03cc3fd46e11aed44eec",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/navigation-v2/__tests__/NavV2Orchestrator.test.tsx:bfdbea4d141e",
@@ -7589,7 +7882,15 @@
       "sourceSha256": "bfdbea4d141e0768f0d3d8a2002f566c0c18f48d4b18c2ed98b40927d5aef612",
       "mainSha256": "337b9a932ba2389dd242dc11d541d49cd1ce1ace286cc6d352e7a08987282cc9",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/navigation-v2/__tests__/V2ChallengeLayer.test.tsx:1e818d83d699",
@@ -7599,7 +7900,15 @@
       "sourceSha256": "1e818d83d699162e26adefc395ae289d5e422ec7f42c63463b1836ad9dc161a8",
       "mainSha256": null,
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/navigation-v2/NavV2Orchestrator.tsx:9a5ee26a803b",
@@ -7609,7 +7918,15 @@
       "sourceSha256": "9a5ee26a803b518d4a1fd53c896fdbe61cb18ce0da8bf88473bc4b216fd8a38a",
       "mainSha256": "f89a25393900e6e806d0803196a5b8021d6089736f454ecdfc7c820baa2de9f3",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/navigation-v2/V2ChallengeLayer.tsx:4bf5e789dcf6",
@@ -7619,7 +7936,15 @@
       "sourceSha256": "4bf5e789dcf6e357e7c55647840b0ba3407d9085cd7112e8ccbb5b4ff4cce800",
       "mainSha256": null,
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/ProgressStoriesViewer.tsx:932426468496",
@@ -7627,9 +7952,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/components/ProgressStoriesViewer.tsx",
       "sourceSha256": "9324264684969c1e94ff0364cf792a5b65159f84af6e4a42ec2ed17e26968be8",
-      "mainSha256": "c02daee95485595e858bc22bbed56ac85c50a56f8d55ea3794c621a275a828e1",
+      "mainSha256": "cca4dd35da62770ade838ac596c5677e71bc1008eda6d822353cd2b474c7a4a9",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/RestModeCard.tsx:75362d15f25b",
@@ -7639,7 +7972,15 @@
       "sourceSha256": "75362d15f25b8a9c23b04354545f2287b0b921990fce0fcc9ad8ac2d974a1bb3",
       "mainSha256": "449b91c48495d85f73839dcb4bf000dd264214f7efb7ee4f9f8b22aa6903026d",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/schedule/ScheduleVisuals.tsx:0a8c5610b4ee",
@@ -7649,7 +7990,15 @@
       "sourceSha256": "0a8c5610b4ee831efca719baf26c3dafd30dab0208296de78184c263ef3326ad",
       "mainSha256": "722ad0d36d9b31a3dd58e71a6bb3b76a73eefa6b9f36ba48e0835a9247da6f86",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/schedule/TimelineDayColumn.tsx:634782a8cc1a",
@@ -7659,7 +8008,15 @@
       "sourceSha256": "634782a8cc1a34d1eaa524ad0ba807dd1e331f01127fc7ef433e61f2ed5ab5bb",
       "mainSha256": "ad960b48ae38bce8db2226ddcb7055c1ff35fbc02da412df5d0ca5cb61b02d67",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/share/UnifiedShareModal.tsx:8624bd0cc3ff",
@@ -7667,9 +8024,9 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/components/share/UnifiedShareModal.tsx",
       "sourceSha256": "8624bd0cc3ff8972967d0ea3e8fc257157a23c04dc5f075186af0104702c0eb6",
-      "mainSha256": "bb18b5fe4dea17d2a14df47699e93ab218647d75b1982cb76a296ad124b9ca92",
+      "mainSha256": "8624bd0cc3ff8972967d0ea3e8fc257157a23c04dc5f075186af0104702c0eb6",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/CalendarGrid.tsx:1adc3235d8b4",
@@ -7679,7 +8036,15 @@
       "sourceSha256": "1adc3235d8b4a4410ca3aa6c54ef7647a48f36486ab8d0fa9093494d753ea1e6",
       "mainSha256": "9eca54f49031226836b2e4e99e99f5d07a57640465f721edd978b3c570275597",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/CrystalCalendar.tsx:97248064a4e6",
@@ -7689,7 +8054,15 @@
       "sourceSha256": "97248064a4e6e9d7a0e96a0391cbf9dc098d96287ebecf45ceb47303b795f3e1",
       "mainSha256": "13be7a9741aa5c5ad5922d4ad06cb9dd5314af4b3f499880e6da59628e20443f",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/DataMountains.tsx:48cb5250d1c1",
@@ -7699,7 +8072,15 @@
       "sourceSha256": "48cb5250d1c1ffb60a30e49e48fa79804300da41574050d21993742e93cc2479",
       "mainSha256": "094a218ffd8cbc21550bf8c9aa91ed1a659d185b0d17e7eaf28fb2851be4c706",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/emotion-galaxy/EmotionGalaxy.tsx:a219b577435d",
@@ -7709,7 +8090,15 @@
       "sourceSha256": "a219b577435d5c5218e051b5fa8ba0a52a48771a04c6b418d597d0426ffe530c",
       "mainSha256": "ca959a597478c23315dd9f8000e42557a6a6f1d50243a67f6b42e0c62b9bd812",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/SelectedDayPanel.tsx:95d1ad372f23",
@@ -7719,7 +8108,15 @@
       "sourceSha256": "95d1ad372f23675249830bf88c97f4ac60ef09b0f6df915a70bac93897fd4076",
       "mainSha256": "0ad8ed268e1b9717528158e3764c61af1489c3cff313754c646a1960e530e78b",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/TrophyHall.tsx:70522d234ba2",
@@ -7729,7 +8126,15 @@
       "sourceSha256": "70522d234ba214ad89a00c8679ed479e4eb85af97707957a2ee11036de497955",
       "mainSha256": "0088c10173f1a10a7f5e15552e0fa5cdf86b4c4eee77f283bae3fd600afe80c9",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/stats/weekly-review/WeeklyReview.tsx:33abd1c1d4d3",
@@ -7739,7 +8144,15 @@
       "sourceSha256": "33abd1c1d4d37016d09d6a585155d147e3c9644b245a081e92a234dba4a13e67",
       "mainSha256": "1d4587e2ad0d8ede8aea35238667a56caa375d71eabeb7ba5a19715738d0468a",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/components/UpdatePrompt.tsx:7a5dce0b42ce",
@@ -7749,7 +8162,15 @@
       "sourceSha256": "7a5dce0b42ce48c0ee8149ae043663a6dbd86417beeabe4161b6fcc5d58e85c5",
       "mainSha256": "c18bb744abaf3930a584234da77299560e21f1333a9dd28e5584e05ff7cade6e",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/features/journal/MemoryPortalCanvas.tsx:777c698e7d10",
@@ -7759,7 +8180,15 @@
       "sourceSha256": "777c698e7d1027c4a37567124400473d6cef657e55eebfa77cfa073d40495782",
       "mainSha256": "2730eafd8eb1019b354a08de9132f34ad2e07c4021b238450b747299d4bf8710",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/hooks/__tests__/useAuthSession.test.ts:7568190021db",
@@ -7769,7 +8198,15 @@
       "sourceSha256": "7568190021db52fde622f766e77e08f9fc3be3d3b58ad35df6ff6e7845d67b42",
       "mainSha256": "ad1482095a1b2d4ec7cae5505a0bcc97b17aec148f8f61fe3f0562e1e7aa145b",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/hooks/__tests__/useDateTracking.test.ts:8592b14a8510",
@@ -7779,7 +8216,15 @@
       "sourceSha256": "8592b14a8510c578dae4feb37e5bb02e1524fca97bbe04b20ed5d18b0a98a8ff",
       "mainSha256": "43261c2a4877bf49d9fce9afa32013103a12746fe9c6101d1d025df9ba3ed13a",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/hooks/__tests__/useFocusHandlers.test.ts:146f47b5964f",
@@ -7789,7 +8234,15 @@
       "sourceSha256": "146f47b5964f2cb8dd0205e2b0cf28776fb8f5c2323f61218a7caee75c919b8d",
       "mainSha256": "65b9f276f14f59d041c67ac6eebdd60f48ad2c6c482e37fca5d0e13c26b36504",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/hooks/useDateTracking.ts:942498070751",
@@ -7799,7 +8252,15 @@
       "sourceSha256": "942498070751510a315f577fb1925385aaac7f8352b00a4152dfb232f31f4819",
       "mainSha256": "723cfacd573159ff3dfd0a3c6451961021f5e8e28ea2b7c62140a23c579477c8",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/hooks/useFocusHandlers.ts:480bc78402d8",
@@ -7809,7 +8270,15 @@
       "sourceSha256": "480bc78402d889af9b373a3d0d4d3c3bf7f755b3cbbddb0aa2d52be7c2a8729b",
       "mainSha256": "bc324a299802278b63e37c6bc8c4ceec88651f7f222f837c3a92ec2a143bbc00",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/lib/__tests__/appInitializer.test.ts:7fd3f7062325",
@@ -7819,7 +8288,15 @@
       "sourceSha256": "7fd3f7062325409e8a13b473a350164442cd53ecb5de6aae123cf588ec8ae261",
       "mainSha256": "188e144f01ea58232c54f8aac7dde1b6db1babfc0b03bd344ac6fffcdf458d2f",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/lib/__tests__/habitScheduleSync.test.ts:1878fc7460b3",
@@ -7829,7 +8306,15 @@
       "sourceSha256": "1878fc7460b3705535774b0b9dea9861320ba39360ca4c8940ad7f6a4fffae04",
       "mainSha256": "309beae85bec4478843c27cd6ff1ebe3fa189afdd570205c87134adb0e8ef1e0",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/lib/__tests__/offlineQueue.accountBoundary.test.ts:3ff41b2fdb73",
@@ -7839,7 +8324,15 @@
       "sourceSha256": "3ff41b2fdb736b706c55aacc7045c6ce3c1ffb59f5c242274cb0885c0f73a099",
       "mainSha256": "a8679e597ef2d7f9d518f1bda03e5c8f62695e1bc102043af8e7b2b7f282c5b5",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/lib/appInitializer.ts:1d98c9a3b777",
@@ -7849,7 +8342,15 @@
       "sourceSha256": "1d98c9a3b7776654e143fa9155495a55262e9efc6169a129c322d235e4bd7dce",
       "mainSha256": "cd93a09ec2dbbfc7437541113cbd0cad385df1371932f7bebf6db38f2e39033a",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/lib/habitScheduleSync.ts:fe9ae02836d9",
@@ -7859,7 +8360,15 @@
       "sourceSha256": "fe9ae02836d90bf29825781cc43c6accb4ba9708fc6acfa1eecea115dec9db78",
       "mainSha256": "719f2233a75959602f9798395f4b7453ed45dce3cc459a920acdc6fdb85bd212",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/lib/offlineQueue.ts:dbe37146c1f7",
@@ -7869,7 +8378,15 @@
       "sourceSha256": "dbe37146c1f7b7c65f3c243f44bb8515209a943fb8af449b307a5631c9d29e92",
       "mainSha256": "1480e28e4dd2660e3230549b0f3b7b0f660e9bc1c939191e74845e09eddbf942",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts:107c28f454de",
@@ -7877,9 +8394,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts",
       "sourceSha256": "107c28f454de208dd4f5a493ac8ce9ed1cb6521bf6848054bf5ba41ab99dffec",
-      "mainSha256": null,
+      "mainSha256": "7112d5c2b7efe14b8d3817a060d01e5b8bc92b6a7c360e26257f34c5d46ae60e",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/__tests__/planningFocusTransferContract.test.ts:d49ffd72e4a5",
@@ -7889,7 +8414,15 @@
       "sourceSha256": "d49ffd72e4a5d47e1d421778a86b3d4329b2066fcf993e380ba84c6234fd19b9",
       "mainSha256": "4f6a77475152e7d27b5af1c5719e800861ff248d9ac4f8400650be55257b9df1",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/__tests__/PlanningPage.test.tsx:d33e7a32fdce",
@@ -7899,7 +8432,15 @@
       "sourceSha256": "d33e7a32fdce841b7dacdf01b2c2a93ce1256d7fad9ba7d487c90fadb4af2cab",
       "mainSha256": "062cf809ddae45c87f67cc300b6d3fc358305cb9f61b83afae3692e4123f4b91",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/__tests__/HabitsPage.test.tsx:9571f6697a4e",
@@ -7909,7 +8450,15 @@
       "sourceSha256": "9571f6697a4eae0c1928aaac38339dd2be69b2bffb6519c5c1b368a1541ed62d",
       "mainSha256": "fe071377be7f5e068ae5ce21a35af0861f2fe9a71845806b2040bd65a0619020",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/__tests__/useHabitsPageState.test.ts:8dad687c5a3e",
@@ -7919,7 +8468,15 @@
       "sourceSha256": "8dad687c5a3e5527fc7a1a59e7c475d0c5e288a4ec277b27f7200eaffdaa86fa",
       "mainSha256": "06711098e501161965855efb2e2cb73558dd4aa3b023dd8533761a03dfdbca39",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/HabitsHeroZone.tsx:0ad058c9bced",
@@ -7929,7 +8486,15 @@
       "sourceSha256": "0ad058c9bced28e77d9ff045d0e5f410d17f02615dbb925dec41746dff21da2f",
       "mainSha256": "a6fd6a14118cb3ffc922cdbb5fffabbfab7dc3b0f86dec23afcda69e24d54393",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/HabitsPage.tsx:a073028a1095",
@@ -7939,7 +8504,15 @@
       "sourceSha256": "a073028a1095a4d71885a71e739aaebe962e820783e92e98170df3f9d8659ab9",
       "mainSha256": "fa5226e697db192444689849c3e6600aabeacaa0b47b7236be0b8bf6ad4beee0",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/hero/HeroHabitRow.tsx:186d432aec3c",
@@ -7949,7 +8522,15 @@
       "sourceSha256": "186d432aec3c4fac7d163670bdf9ac38a521a8266e766d0120ecc1da07064577",
       "mainSha256": "74a23451f5a4897879034ecee1cd8d25c059e91427fdfa78d38f81b08f761300",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/hero/HeroTimeOfDayGroup.tsx:db1037c6d9e4",
@@ -7959,7 +8540,15 @@
       "sourceSha256": "db1037c6d9e4a3121db5e8012d158e72075874c56afc1995410c6c377eb2541b",
       "mainSha256": "61c493c2bf0249fbc142a2f09111289e19bac895e82a400f084ba7faac1438e5",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx:fb3c8a0e77ca",
@@ -7969,7 +8558,15 @@
       "sourceSha256": "fb3c8a0e77ca5bb1f8b30b16e4a5f952075a9e6975db28d3d3004f1670d405c3",
       "mainSha256": "cc775683d0d063a78b902679f87f26762c3ecbbb2880c6d446e52c4444e496e3",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/habits/useHabitsPageState.ts:277ae68e39f4",
@@ -7979,7 +8576,15 @@
       "sourceSha256": "277ae68e39f42574823bcfd370226e5f143d0632177983b0f5e0883f838e2c40",
       "mainSha256": "e2f588ebb47efb68217d4f61724856441efd988c888fbb941ab8981337bea4bd",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/__tests__/planningDates.test.ts:6aa89eac2f12",
@@ -7987,9 +8592,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/pages/nav-v2/planning/__tests__/planningDates.test.ts",
       "sourceSha256": "6aa89eac2f126104043ad12ea7b2dc887e6a9a0b41f4d00252c3c9ab73aceebf",
-      "mainSha256": null,
+      "mainSha256": "b148d2f9164bd5ecdc08255059c8ec7fac13571f676e24cdd10be5828dbff84d",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/planningDates.ts:9904ed89b458",
@@ -7997,9 +8610,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/pages/nav-v2/planning/planningDates.ts",
       "sourceSha256": "9904ed89b4588e62b3dd285891fbab9d72e3d74f73e193cfb23f9ccafb6eddc2",
-      "mainSha256": null,
+      "mainSha256": "4014eb6f04c95fc62c48900aff98af2e9bbd088322c28e54d86d80f074bd2e35",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/PlanningDayPulse.tsx:815e67caae98",
@@ -8009,7 +8630,15 @@
       "sourceSha256": "815e67caae98b8651d6da8cf72f550fa6902a222e37fbbce60941959fd71adf2",
       "mainSha256": "bb588b2209a6639668ecdc5aae2913adb2e296a2917c7a79d4c15929d94a44e1",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/planningFeatureModel.ts:cb157902e020",
@@ -8019,7 +8648,15 @@
       "sourceSha256": "cb157902e0208e01608c7baf560d47a59286f6e90ae8d814d25b5ba86af2761f",
       "mainSha256": "9efb6106ad179c6466fbdb68ac7ae2e483407d142475963c419e3234854d3041",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/PlanningModeRail.tsx:6ba9a6de7447",
@@ -8029,7 +8666,15 @@
       "sourceSha256": "6ba9a6de74473ed6d68efa4fcf96b18b02f91cbdd600834d3eef56212f1f699f",
       "mainSha256": "87b6b3486aced8f3a10bc06970da7ac19b2b597ac2968b5b9e0a6a4a520557af",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/PlanningPage.tsx:a46aa28aab14",
@@ -8037,9 +8682,17 @@
       "packet": "product-coherence-remediation-e5016-8a9492aefdc2cc08",
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "sourceSha256": "a46aa28aab149f8162b4a1307ae0a7c3a82dee40098ea54ffd75d2779c4356eb",
-      "mainSha256": "314cad985ae891acf2cf2fbbb3eb5431edb243f66c1171b44c0dba3d0c723e1b",
+      "mainSha256": "e72f8d9596b5e65edad9821bf680cbe768cefd3980e6212422966aac5b56961e",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-e5016-8a9492aefdc2cc08:src/pages/nav-v2/planning/PlanningReviewLane.tsx:7e01d98f6c5e",
@@ -8049,7 +8702,15 @@
       "sourceSha256": "7e01d98f6c5ed4dcc7b7fec27c5a3423f5f9a960675ba9bf5a0bd285371166a7",
       "mainSha256": "1cd8e81d9e8354ee84b77f85d22b1b8fbe7aa14c6041f1db0cbb5011cf11f9e5",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ],
+      "decisionRule": "product-coherence-remediation-current-ui-owners"
     },
     {
       "sourceId": "dirty-file:product-coherence-remediation-verify.nosync-ccec13641e0f37b2:.gitignore:b25b2a6b0dc7",
@@ -8433,7 +9094,7 @@
       "packet": "product-coherence-remediation-verify.nosync-ccec13641e0f37b2",
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "sourceSha256": "33cdde32f91da448358837b4434b5e7e5836ef5462622eb79856bbce1b8bc875",
-      "mainSha256": "314cad985ae891acf2cf2fbbb3eb5431edb243f66c1171b44c0dba3d0c723e1b",
+      "mainSha256": "e72f8d9596b5e65edad9821bf680cbe768cefd3980e6212422966aac5b56961e",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -8522,7 +9183,7 @@
       "packet": "product-coherence-task2-pdi-verify.nosync-6b03f0ab6fade9c6",
       "path": "ARCHITECTURE.md",
       "sourceSha256": "8793c69f70421a35d672d9e328d5bc8c5b613303a180862336125143098912ac",
-      "mainSha256": "1a1ff040facc7f885cab8d8fbb904fb0b2247f7edfaabe0ae6d1d8a6a6615eac",
+      "mainSha256": "5a428f92d573f35a012b34f81e3b1c93d4cdae4338916b6d816ae593fcc5ba4c",
       "changeKind": "file-variant",
       "disposition": "REVIEW_REQUIRED"
     },
@@ -8964,7 +9625,11 @@
       "sourceSha256": "ebedd10bca5bf55ddbc3c26a2b157363954312c9b3ed6ed6270a1abec31f2192",
       "mainSha256": "d3ae7d94fc6e26b5094cfd50611fd1f7a0c5b29269170fb0b0f94107b21ea32c",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/exportService.test.ts#current export state suite passes"
+      ],
+      "decisionRule": "report-export-current-owner"
     },
     {
       "sourceId": "dirty-file:required-check-context-uniqueness-900d60f960d8e03f:.codex/hooks/production-data-integrity-gate.cjs:7a04e431f6df",
@@ -10681,7 +11346,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "817d8977ddcabd40c11bf597d102415c5ace1e5f",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -12467,7 +13132,7 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "38d3e604f63adf5562bdfa7e25f0205a01ec1671",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -13413,7 +14078,7 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "38d3e604f63adf5562bdfa7e25f0205a01ec1671",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -14062,8 +14727,8 @@
       "path": "src/hooks/__tests__/usePwaInstall.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "e655df26ac9e8b5263aafadfc74a94eb78313594",
-      "mainGitOid": "e655df26ac9e8b5263aafadfc74a94eb78313594",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "e637d4cbc8ed34b2699ae20494821bda04a933b2",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:1c8cc3d9a4d460c473e0b69f9435808717e66ee8:M:src/hooks/__tests__/useUserStartedAmbienceAudio.test.tsx",
@@ -14190,8 +14855,8 @@
       "path": "src/hooks/usePwaInstall.ts",
       "changeKind": "modify",
       "sourceGitOid": "f91a91d61792faac9559a97e34ec6640f7a7dc67",
-      "mainGitOid": "f91a91d61792faac9559a97e34ec6640f7a7dc67",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "9e95fc16aaa2c427eb8c3d09098a42cd7b4188c4",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:1c8cc3d9a4d460c473e0b69f9435808717e66ee8:M:src/hooks/useSyncHealthRuntime.ts",
@@ -14582,7 +15247,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "e02bd7e9a3d7d948cd129a9901bb9e1bbaef89e4",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -16284,7 +16949,7 @@
       "path": "src/components/ProgressStoriesViewer.tsx",
       "changeKind": "modify",
       "sourceGitOid": "6068f3f08cf648010e356f59cf41c5377a8480e1",
-      "mainGitOid": "3e3d02118e82b0365f2ad216a75f89bad98a1ff9",
+      "mainGitOid": "06d317c2acebfe61269843e3e70c8de1c08294c8",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -16317,7 +16982,7 @@
       "path": "src/components/share/UnifiedShareModal.tsx",
       "changeKind": "modify",
       "sourceGitOid": "22614168d0e21b42ada0121836f1f9163b110930",
-      "mainGitOid": "e0c5631e360963c67b8fe8f67615c8479b893668",
+      "mainGitOid": "b147c699600e8b6baebb3546cdc6241d7af706df",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -17441,7 +18106,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "63e8524a0b54c070abc83e26eee2dc923ba5008f",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -17694,7 +18359,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "fa8db2803854784362b915d699eff301e7b7c36a",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -17716,7 +18381,7 @@
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c9a088bb98e96fbb5a2a5b8d82bd40c2c333d286",
-      "mainGitOid": "bcf281c131311bdfb7368964d5050eb29783d23e",
+      "mainGitOid": "fd38a7f0917f56b8607082a799ec26ba5efe4724",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -18673,7 +19338,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "0412d09c2cb3310d8d58bf95a1f593dcb1361b9b",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -18761,8 +19426,8 @@
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
-      "mainGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "9e54bab96cf044e44314343a398562bfc89d5638",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:6ab3ac4ede9cb4b6bcc618629adf1022363ae90a:M:src/pages/nav-v2/useOrbMoodFlow.ts",
@@ -19575,7 +20240,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "aacfb28e71ddef696ce11eca46bf19d9d2293e71",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -23779,7 +24444,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "aea2159fe3d0824919732aa7ba80a5e3246bf759",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -24094,7 +24759,7 @@
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "changeKind": "modify",
       "sourceGitOid": "8f4545649b08676c0139d2644bcd89921bee9f94",
-      "mainGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
+      "mainGitOid": "9e54bab96cf044e44314343a398562bfc89d5638",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -24424,7 +25089,7 @@
       "path": "src/sw.ts",
       "changeKind": "modify",
       "sourceGitOid": "1cc2e717c4b62ba4b481322974e00a3f8a3cbd25",
-      "mainGitOid": "23ce0c59aa232f4f4e0858b03ff3764daaecde25",
+      "mainGitOid": "a27210965b220b669cf6f7ecce656490106f2734",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -24545,7 +25210,7 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "73399af54d6a813165c881178dfec1945472ba25",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -24556,7 +25221,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "eb20bfb57060cbbe64ac5aa9d0229be4fb30efba",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -24699,7 +25364,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "4dcdd7e1d072749538bb487dfe59824ffbcfefb7",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -24798,7 +25463,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "fa8db2803854784362b915d699eff301e7b7c36a",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -25205,7 +25870,7 @@
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c9a088bb98e96fbb5a2a5b8d82bd40c2c333d286",
-      "mainGitOid": "bcf281c131311bdfb7368964d5050eb29783d23e",
+      "mainGitOid": "fd38a7f0917f56b8607082a799ec26ba5efe4724",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -26052,8 +26717,8 @@
       "path": "src/hooks/__tests__/usePwaInstall.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "e655df26ac9e8b5263aafadfc74a94eb78313594",
-      "mainGitOid": "e655df26ac9e8b5263aafadfc74a94eb78313594",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "e637d4cbc8ed34b2699ae20494821bda04a933b2",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:870686c05a8abd4a02aea839f3266b4b90d31784:M:src/hooks/__tests__/useUserStartedAmbienceAudio.test.tsx",
@@ -26235,8 +26900,8 @@
       "path": "src/hooks/usePwaInstall.ts",
       "changeKind": "modify",
       "sourceGitOid": "f91a91d61792faac9559a97e34ec6640f7a7dc67",
-      "mainGitOid": "f91a91d61792faac9559a97e34ec6640f7a7dc67",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "9e95fc16aaa2c427eb8c3d09098a42cd7b4188c4",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:870686c05a8abd4a02aea839f3266b4b90d31784:M:src/hooks/useSyncHealthRuntime.ts",
@@ -26825,7 +27490,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c4e5f328952f6833d2e4913496792d0e3ca7249e",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -27012,8 +27677,8 @@
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
-      "mainGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "9e54bab96cf044e44314343a398562bfc89d5638",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:870686c05a8abd4a02aea839f3266b4b90d31784:M:src/pages/nav-v2/settings/__tests__/useSettingsBackdropMotion.test.ts",
@@ -27529,7 +28194,7 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "e6ef1f934049a625c8298808849abd097f26982d",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -29254,7 +29919,12 @@
       "changeKind": "modify",
       "sourceGitOid": "71072f0caa66daad2c166288445292eec294d062",
       "mainGitOid": "64741651168c10d833184928be12fb74ca575f1e",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".specify/feature.json#current integration feature pointer preserved",
+        "src/lib/__tests__/pwaShellLifecycle.test.ts#recovered PWA shell contract passes"
+      ],
+      "decisionRule": "pwa-quality-feature-pointer-current"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:docs/superpowers/plans/2026-08-09-pwa-quality.md",
@@ -29781,7 +30451,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "817d8977ddcabd40c11bf597d102415c5ace1e5f",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -31146,7 +31816,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "871b8c834c5c915d5bbc5d59840fb61735d7a723",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -31443,7 +32113,7 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "d42a52c83225b01ebd40725867764a8723087c37",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -129399,7 +130069,7 @@
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "changeKind": "modify",
       "sourceGitOid": "b94249449af879ab5527394b3f08cc1ce1c3e7ed",
-      "mainGitOid": "bcf281c131311bdfb7368964d5050eb29783d23e",
+      "mainGitOid": "fd38a7f0917f56b8607082a799ec26ba5efe4724",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -132001,7 +132671,7 @@
       "path": "src/sw.ts",
       "changeKind": "modify",
       "sourceGitOid": "086ce0f5f94420bf145d326766d83c8a6250c4af",
-      "mainGitOid": "23ce0c59aa232f4f4e0858b03ff3764daaecde25",
+      "mainGitOid": "a27210965b220b669cf6f7ecce656490106f2734",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -133014,7 +133684,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "871b8c834c5c915d5bbc5d59840fb61735d7a723",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -133542,7 +134212,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "87742202af115adef171510a481ac346711c50ad",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -134231,7 +134901,7 @@
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "changeKind": "modify",
       "sourceGitOid": "6fbc70fcd2398d0788f3ee1410c9fe998aafcf7e",
-      "mainGitOid": "bcf281c131311bdfb7368964d5050eb29783d23e",
+      "mainGitOid": "fd38a7f0917f56b8607082a799ec26ba5efe4724",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -134605,7 +135275,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c1ad0be4576544e8ae318754531214a7a92fbc3d",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -135023,7 +135693,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "55cf40cc7fa931d827b5f92f2b7444a6bb23834c",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -135166,7 +135836,7 @@
       "path": "scripts/capacitor-prune-assets.cjs",
       "changeKind": "modify",
       "sourceGitOid": "1fd0d1c8528a26c048129347b2561b13feb091e8",
-      "mainGitOid": "c55f7e482d1186ccdb75cb2f8fb8a230219f3c11",
+      "mainGitOid": "bbf50f08d3bfa856fc5ea676f52be84664054a09",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -135513,7 +136183,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "471f5521aa03126c041733296639d930d954d095",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -137087,7 +137757,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "871b8c834c5c915d5bbc5d59840fb61735d7a723",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -137450,7 +138120,7 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "4a4a9b9397e557eb315ba6516b7903c06fe7e261",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -139609,7 +140279,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "fa8db2803854784362b915d699eff301e7b7c36a",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -139675,7 +140345,7 @@
       "path": "src/components/focus-timer/FocusTimer.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c9a088bb98e96fbb5a2a5b8d82bd40c2c333d286",
-      "mainGitOid": "bcf281c131311bdfb7368964d5050eb29783d23e",
+      "mainGitOid": "fd38a7f0917f56b8607082a799ec26ba5efe4724",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -140643,7 +141313,7 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "0412d09c2cb3310d8d58bf95a1f593dcb1361b9b",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -140731,8 +141401,8 @@
       "path": "src/pages/nav-v2/planning/PlanningPage.tsx",
       "changeKind": "modify",
       "sourceGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
-      "mainGitOid": "c8c6e7ec91d352116b53c64a15a87beeb35dc979",
-      "disposition": "ALREADY_CURRENT"
+      "mainGitOid": "9e54bab96cf044e44314343a398562bfc89d5638",
+      "disposition": "REVIEW_REQUIRED"
     },
     {
       "sourceId": "historical-file:ec377b6ec12ae26df2c228efa1d7535a3a5c78e0:M:src/pages/nav-v2/useOrbMoodFlow.ts",
@@ -141524,7 +142194,7 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "25cb24e7ac12279c72a23e62c58d5512f4786b87",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
       "disposition": "REVIEW_REQUIRED"
     },
     {
@@ -141635,7 +142305,14 @@
       "changeKind": "modify",
       "sourceGitOid": "c3c76efbbf7034ad2427c4cb4fb8222b56123f67",
       "mainGitOid": "64741651168c10d833184928be12fb74ca575f1e",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:ARCHITECTURE.md",
@@ -141645,8 +142322,15 @@
       "path": "ARCHITECTURE.md",
       "changeKind": "modify",
       "sourceGitOid": "0ba60100878f3b6955f1e9ea306779f5c6062ea0",
-      "mainGitOid": "b72d9f4b219b537b9324cc439df7ce31b8a65141",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "fb8fbc5d342ba8ffaa55ad111225cbb78f9194a5",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:config/brand-logo-assets.json",
@@ -141656,8 +142340,8 @@
       "path": "config/brand-logo-assets.json",
       "changeKind": "modify",
       "sourceGitOid": "e6e888c5a84875d22dab530e31b276f7f0ce2ab4",
-      "mainGitOid": "aad2f317b5ccebb93c6a35ac9ac7282a419453de",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "e6e888c5a84875d22dab530e31b276f7f0ce2ab4",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/404.html",
@@ -141668,7 +142352,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9e66e6e573dabc22cfa857a61585bde11e626f72",
       "mainGitOid": "f7da9399294cd5bac7b21a66756bc9ba796b8a22",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/delete-account-de.html",
@@ -141679,7 +142370,14 @@
       "changeKind": "modify",
       "sourceGitOid": "73047d9a016232a53823e3468a430337ff6fad25",
       "mainGitOid": "4a442e9df6d8bfc39c83defdaa2a09aa22971203",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/delete-account-es.html",
@@ -141690,7 +142388,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9c919decc7ed37648dd7da8bd2377886dd55553c",
       "mainGitOid": "c86f8caee1bce124e4abd75c3b7b721490583a4e",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/delete-account-fr.html",
@@ -141701,7 +142406,14 @@
       "changeKind": "modify",
       "sourceGitOid": "3f516a36e5f6e45240390c9aeffcb5f294d85245",
       "mainGitOid": "e3fdff882cbd7ba0ab191066fff0d6fdce43c61e",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/delete-account-ru.html",
@@ -141712,7 +142424,14 @@
       "changeKind": "modify",
       "sourceGitOid": "34107ae4265f508e74e005a114b82ab5a906d3fc",
       "mainGitOid": "9643ce8a255f7d9ce932a139d9d1148170168571",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/delete-account-uk.html",
@@ -141723,7 +142442,14 @@
       "changeKind": "modify",
       "sourceGitOid": "41a2959d9d1d214bf48d84660f4470c4f9d991d8",
       "mainGitOid": "9fe832dacaa6dd7778c019d5377b4b56985c487f",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/delete-account.html",
@@ -141734,7 +142460,14 @@
       "changeKind": "modify",
       "sourceGitOid": "19256e41bac5e36dcf6d1245780ababf72a81297",
       "mainGitOid": "a84d53c6e86766c173c6f48f71621ca188ac9620",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/ENTRY_GATE_PWA_CONTRACT.md",
@@ -141745,7 +142478,14 @@
       "changeKind": "modify",
       "sourceGitOid": "ebb3c223003c970a0fa40fd62b51c36739a6c634",
       "mainGitOid": "5d1860227c710f9cbb567f74543caeeb51637c5b",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/index.html",
@@ -141756,7 +142496,14 @@
       "changeKind": "modify",
       "sourceGitOid": "d0aa2c1e9781db02ae541b1378015472e4cc936f",
       "mainGitOid": "56eb239adf63cdce9b0547836abc2996c7c1e539",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/manifest.webmanifest",
@@ -141766,8 +142513,8 @@
       "path": "docs/manifest.webmanifest",
       "changeKind": "modify",
       "sourceGitOid": "fed6eae8f9c88e4f44986b8eb2a779891da76715",
-      "mainGitOid": "f105caeab865feadc9ecafdfbeac8f13787cbb34",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "fed6eae8f9c88e4f44986b8eb2a779891da76715",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/offline.html",
@@ -141777,8 +142524,8 @@
       "path": "docs/offline.html",
       "changeKind": "modify",
       "sourceGitOid": "a1ee17bba426a2094b7eaf604a524888ade5b946",
-      "mainGitOid": "5c8a068fb2cbc0b362d39344003b0060156233b2",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "a1ee17bba426a2094b7eaf604a524888ade5b946",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy-de.html",
@@ -141789,7 +142536,14 @@
       "changeKind": "modify",
       "sourceGitOid": "0962714b0f04b96088a575c92d53a3a211ec2426",
       "mainGitOid": "9e893e492b6af1895ad13c4d0878dbf9597e8afd",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy-es.html",
@@ -141800,7 +142554,14 @@
       "changeKind": "modify",
       "sourceGitOid": "c932e20cb4f940a681ddbb14f4341db5257474c3",
       "mainGitOid": "5f403e364509b8f3466dbfd3e9186929c3f65e51",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy-fr.html",
@@ -141811,7 +142572,14 @@
       "changeKind": "modify",
       "sourceGitOid": "e7a623e563ab3a3e5aa6e0444bfe92b6d10fa3a9",
       "mainGitOid": "dbe16471d54d76612107a7f5a5642d322271467e",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy-policy.html",
@@ -141822,7 +142590,14 @@
       "changeKind": "modify",
       "sourceGitOid": "f0dadbeb03813c8bfda95f46a4936fb1a3788c1d",
       "mainGitOid": "0617efbdce72546edd682aa3c2c4f750ed106905",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy-ru.html",
@@ -141833,7 +142608,14 @@
       "changeKind": "modify",
       "sourceGitOid": "e32af2dfc681c7a296b96a52cfb83481b7544cc4",
       "mainGitOid": "3fa925b7a29a0deaeb10a6df01d34dcee4b4b2ee",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy-uk.html",
@@ -141844,7 +142626,14 @@
       "changeKind": "modify",
       "sourceGitOid": "e242aa7e6ba0e4a00d4a3c7084a3bae8400c223f",
       "mainGitOid": "b656935e52ac0a057e6d1b7e277934c1cbe3d6ac",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/privacy.html",
@@ -141855,7 +142644,14 @@
       "changeKind": "modify",
       "sourceGitOid": "73e1b833923e78665923623efcd22cfadb7027c7",
       "mainGitOid": "b4b5704902d1b4e3f6da52779b0c60f722168cd6",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:docs/pwa-maskable-1024.png",
@@ -141865,8 +142661,8 @@
       "path": "docs/pwa-maskable-1024.png",
       "changeKind": "add",
       "sourceGitOid": "7518377a9aa1fe101f8d6876a05034a09501d547",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "7518377a9aa1fe101f8d6876a05034a09501d547",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/terms-de.html",
@@ -141877,7 +142673,14 @@
       "changeKind": "modify",
       "sourceGitOid": "def9063c781fd9625dccde45f109a013e73029d9",
       "mainGitOid": "194ea1fb1d1f65ae55015264c2ef99ca66344360",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/terms-es.html",
@@ -141888,7 +142691,14 @@
       "changeKind": "modify",
       "sourceGitOid": "5a3be39189756c109ff0c3966fa5abab517d829e",
       "mainGitOid": "bb285b951daba957c41baf26fb129a09385f5d43",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/terms-fr.html",
@@ -141899,7 +142709,14 @@
       "changeKind": "modify",
       "sourceGitOid": "10fd9d35ccce3988c9ff8d3f5f59d33278cdee97",
       "mainGitOid": "72b33679005c925df3a65ea3d30efea3ce76af6b",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/terms-ru.html",
@@ -141910,7 +142727,14 @@
       "changeKind": "modify",
       "sourceGitOid": "5141141c8083ac7a2a91565962e22875daea3561",
       "mainGitOid": "dc7b24981fe58da9121b04bf749ee26360f0b770",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/terms-uk.html",
@@ -141921,7 +142745,14 @@
       "changeKind": "modify",
       "sourceGitOid": "908d57e9897659bfa0d4034169662256fe4e6e22",
       "mainGitOid": "443c4a0337de91814f8f78e304845ba147893ac4",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:docs/terms.html",
@@ -141932,7 +142763,14 @@
       "changeKind": "modify",
       "sourceGitOid": "3cee0d91a6479ab43967656e455c14ef8362a593",
       "mainGitOid": "3cb5adaa7488aa2941015b6c9dbea3c7cc3d477c",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:e2e/helpers/pwa-offline/playwright.config.ts",
@@ -141943,7 +142781,14 @@
       "changeKind": "modify",
       "sourceGitOid": "46f0291e2e986aab283a88923d38d3e84a285583",
       "mainGitOid": "238cdaa26fa30b2b2f381f57b3d12b4e66bc2206",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:e2e/pwa-desktop-lifecycle.spec.ts",
@@ -141953,8 +142798,8 @@
       "path": "e2e/pwa-desktop-lifecycle.spec.ts",
       "changeKind": "add",
       "sourceGitOid": "06bd033c00b6b183dd7dfb5372164351c1f35d70",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "06bd033c00b6b183dd7dfb5372164351c1f35d70",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:index.html",
@@ -141965,7 +142810,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9a2d97bca020960236769eddbe9b531ef5be1eff",
       "mainGitOid": "5285a4aaca5ea36beaaf7d8b98678d95d22e1781",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/404.html",
@@ -141976,7 +142828,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9e66e6e573dabc22cfa857a61585bde11e626f72",
       "mainGitOid": "f7da9399294cd5bac7b21a66756bc9ba796b8a22",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/delete-account.html",
@@ -141987,7 +142846,14 @@
       "changeKind": "modify",
       "sourceGitOid": "597cbd1c49f7bacccdcb706a68df4a446143d316",
       "mainGitOid": "e183df9a5ea0072bd443db56936dd6c38d2242f2",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/manifest.webmanifest",
@@ -141997,8 +142863,8 @@
       "path": "public/manifest.webmanifest",
       "changeKind": "modify",
       "sourceGitOid": "fed6eae8f9c88e4f44986b8eb2a779891da76715",
-      "mainGitOid": "f105caeab865feadc9ecafdfbeac8f13787cbb34",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "fed6eae8f9c88e4f44986b8eb2a779891da76715",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/offline.html",
@@ -142008,8 +142874,8 @@
       "path": "public/offline.html",
       "changeKind": "modify",
       "sourceGitOid": "a1ee17bba426a2094b7eaf604a524888ade5b946",
-      "mainGitOid": "4f497099fe03ddab314eaa3f66aaa37caed63266",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "a1ee17bba426a2094b7eaf604a524888ade5b946",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/privacy-policy.html",
@@ -142020,7 +142886,14 @@
       "changeKind": "modify",
       "sourceGitOid": "3574dceddb139e7bee77e261196bb8a52e18409f",
       "mainGitOid": "39f54baf79bd91e47c018219247da977d42c0a85",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/privacy.html",
@@ -142031,7 +142904,14 @@
       "changeKind": "modify",
       "sourceGitOid": "3574dceddb139e7bee77e261196bb8a52e18409f",
       "mainGitOid": "39f54baf79bd91e47c018219247da977d42c0a85",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:public/pwa-maskable-1024.png",
@@ -142041,8 +142921,8 @@
       "path": "public/pwa-maskable-1024.png",
       "changeKind": "add",
       "sourceGitOid": "7518377a9aa1fe101f8d6876a05034a09501d547",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "7518377a9aa1fe101f8d6876a05034a09501d547",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:public/terms.html",
@@ -142053,7 +142933,14 @@
       "changeKind": "modify",
       "sourceGitOid": "d90b30467cd670eddaec29ade335ad10c644ba1a",
       "mainGitOid": "83c3a9f445f335229881f2740e071e95f3d60fa4",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/__tests__/capacitor-prune-assets.test.ts",
@@ -142063,8 +142950,8 @@
       "path": "scripts/__tests__/capacitor-prune-assets.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "d54010f6962c8e5ff78597dbbf30adc4badb6b26",
-      "mainGitOid": "f3c3815f85f065a8d50339e65e820f10cb3aa509",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "d54010f6962c8e5ff78597dbbf30adc4badb6b26",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/__tests__/offline-page-i18n.test.ts",
@@ -142074,8 +142961,8 @@
       "path": "scripts/__tests__/offline-page-i18n.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "298081e8ead12191f0e1e09b2cf44e715946b337",
-      "mainGitOid": "7ded5c523cb1d8b85f7117941b9e3ebc8fdd6bf8",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "298081e8ead12191f0e1e09b2cf44e715946b337",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:scripts/__tests__/prepare-pages-artifact.test.ts",
@@ -142085,8 +142972,8 @@
       "path": "scripts/__tests__/prepare-pages-artifact.test.ts",
       "changeKind": "add",
       "sourceGitOid": "82537c505bd4f3778aea9f1e27efd9c0a43764d3",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "82537c505bd4f3778aea9f1e27efd9c0a43764d3",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/__tests__/public-webmanifest-contract.test.ts",
@@ -142096,8 +142983,8 @@
       "path": "scripts/__tests__/public-webmanifest-contract.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "1f7043f09112c57688a3385143a1e918b156abf3",
-      "mainGitOid": "d7494d6fc1ef0139e0e6eda26862faad55bad218",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "1f7043f09112c57688a3385143a1e918b156abf3",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/__tests__/release-artifact-integrity.test.ts",
@@ -142107,8 +142994,8 @@
       "path": "scripts/__tests__/release-artifact-integrity.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "470c99c5d84deaa84f6d884445682c3be034998a",
-      "mainGitOid": "c369455ec97dcb4f9b22ce2d2505a8362c31ec41",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "470c99c5d84deaa84f6d884445682c3be034998a",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/__tests__/shared-dist-build.test.mjs",
@@ -142119,7 +143006,14 @@
       "changeKind": "modify",
       "sourceGitOid": "3aed6589a1985502dba3391ae5956307291ffe71",
       "mainGitOid": "c54ba738d4965481785a67f7dfbd3079a43f8178",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/__tests__/stage-release-artifact.test.ts",
@@ -142129,8 +143023,8 @@
       "path": "scripts/__tests__/stage-release-artifact.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "95732f783b2e78adbb6b8ecfb854e54ae0d65189",
-      "mainGitOid": "d6142f0035d814297d4b6fcf9afd571aae9161a8",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "95732f783b2e78adbb6b8ecfb854e54ae0d65189",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/capacitor-prune-assets.cjs",
@@ -142140,8 +143034,8 @@
       "path": "scripts/capacitor-prune-assets.cjs",
       "changeKind": "modify",
       "sourceGitOid": "bbf50f08d3bfa856fc5ea676f52be84664054a09",
-      "mainGitOid": "c55f7e482d1186ccdb75cb2f8fb8a230219f3c11",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "bbf50f08d3bfa856fc5ea676f52be84664054a09",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/check-brand-logo-assets.cjs",
@@ -142151,8 +143045,8 @@
       "path": "scripts/check-brand-logo-assets.cjs",
       "changeKind": "modify",
       "sourceGitOid": "d853d8ba39d29ada880279490259852578f2f49d",
-      "mainGitOid": "0cc5afc0a0d2a770b1444a1a54752d0eea8b93ac",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "d853d8ba39d29ada880279490259852578f2f49d",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/check-release-artifact-integrity.cjs",
@@ -142162,8 +143056,8 @@
       "path": "scripts/check-release-artifact-integrity.cjs",
       "changeKind": "modify",
       "sourceGitOid": "98889a4e00517e8aa8df6d07aecea77cb1ba8e2a",
-      "mainGitOid": "51cd91f91cf7ac71b190ae5b11a66513d448aa20",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "98889a4e00517e8aa8df6d07aecea77cb1ba8e2a",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/generate-icons.cjs",
@@ -142173,8 +143067,8 @@
       "path": "scripts/generate-icons.cjs",
       "changeKind": "modify",
       "sourceGitOid": "c750ec7a6c19822cdba2e8fb2538e994e0ba4a8f",
-      "mainGitOid": "e7686c3bdb0fb31b144e9161cbcdca9e0d6a8a7c",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "c750ec7a6c19822cdba2e8fb2538e994e0ba4a8f",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/prepare-pages-artifact.cjs",
@@ -142184,8 +143078,8 @@
       "path": "scripts/prepare-pages-artifact.cjs",
       "changeKind": "modify",
       "sourceGitOid": "621caf8474659943f9a57651f15411500c91f10d",
-      "mainGitOid": "c5e13fe09abd4d31a3355d1c70185192a1aa2908",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "621caf8474659943f9a57651f15411500c91f10d",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/stage-release-artifact.cjs",
@@ -142195,8 +143089,8 @@
       "path": "scripts/stage-release-artifact.cjs",
       "changeKind": "modify",
       "sourceGitOid": "c704860b6d9ef08da91e7382b318102da90332e2",
-      "mainGitOid": "963d8e1d8b10d7b18bcb318a9100026b47e0e960",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "c704860b6d9ef08da91e7382b318102da90332e2",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:scripts/validate-production-web-build.ts",
@@ -142206,8 +143100,8 @@
       "path": "scripts/validate-production-web-build.ts",
       "changeKind": "modify",
       "sourceGitOid": "b2b2ecae667df163fd8c853a44d82069da71a751",
-      "mainGitOid": "e06b20ce299945bc6c3b6d128af86f39e2cfdd38",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "b2b2ecae667df163fd8c853a44d82069da71a751",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/analysis.md",
@@ -142217,8 +143111,15 @@
       "path": "specs/002-pwa-desktop-modernization/analysis.md",
       "changeKind": "add",
       "sourceGitOid": "cce66473999b997f08f996bad2f0d233b029030e",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "1ae6603f07cdc922b8bbf6ccd6edd0468f7a7024",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/checklists/requirements.md",
@@ -142228,8 +143129,15 @@
       "path": "specs/002-pwa-desktop-modernization/checklists/requirements.md",
       "changeKind": "add",
       "sourceGitOid": "ace60df1c6c10b2ae19393a5536691e3051188b5",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "84e9dd6d81401fd1d7cf19317eb274ecaa4cf354",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/contracts/pwa-evidence.schema.json",
@@ -142239,8 +143147,8 @@
       "path": "specs/002-pwa-desktop-modernization/contracts/pwa-evidence.schema.json",
       "changeKind": "add",
       "sourceGitOid": "0744037ff7ff0c6dba388f9b49b74b5749a47331",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "0744037ff7ff0c6dba388f9b49b74b5749a47331",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/convergence.md",
@@ -142250,8 +143158,15 @@
       "path": "specs/002-pwa-desktop-modernization/convergence.md",
       "changeKind": "add",
       "sourceGitOid": "f62c92c2b90d7ea124f286781eee1aa6349c10d5",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "ab1bfddc11756f4393ab8d0c9281f9bd3b0ec310",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/data-model.md",
@@ -142261,8 +143176,8 @@
       "path": "specs/002-pwa-desktop-modernization/data-model.md",
       "changeKind": "add",
       "sourceGitOid": "bf62caf63ebef2ab4dfd46375ad386919c173d41",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "bf62caf63ebef2ab4dfd46375ad386919c173d41",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/plan.md",
@@ -142272,8 +143187,15 @@
       "path": "specs/002-pwa-desktop-modernization/plan.md",
       "changeKind": "add",
       "sourceGitOid": "0eb8dff2f0926c5cffc6126bb4d06625e7d8f5e2",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "4f93ce7bb77088aa249d87c333693905d47f9732",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/quickstart.md",
@@ -142283,8 +143205,8 @@
       "path": "specs/002-pwa-desktop-modernization/quickstart.md",
       "changeKind": "add",
       "sourceGitOid": "6ac500fb8be3a6f87b62c602503ce86c7eb39779",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "6ac500fb8be3a6f87b62c602503ce86c7eb39779",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/research.md",
@@ -142294,8 +143216,15 @@
       "path": "specs/002-pwa-desktop-modernization/research.md",
       "changeKind": "add",
       "sourceGitOid": "b8719e294698e1882bcfab013af1536c1d08e26b",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "3815b733afda8b68dcfbdaea28241b37e096b99c",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/spec.md",
@@ -142305,8 +143234,15 @@
       "path": "specs/002-pwa-desktop-modernization/spec.md",
       "changeKind": "add",
       "sourceGitOid": "ce24338fa00a3e97e3ae11081b711b46c887163a",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "20fbdeb14a49ed700306d82aaad939874f707370",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:specs/002-pwa-desktop-modernization/tasks.md",
@@ -142316,8 +143252,15 @@
       "path": "specs/002-pwa-desktop-modernization/tasks.md",
       "changeKind": "add",
       "sourceGitOid": "50d805fd2b7b579b12a30c33e589667b9525a3f9",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "5531e879d4bf5cc02b2ee4c4d6ae36dd0b25a3bf",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/components/__tests__/AuthGate.test.tsx",
@@ -142328,7 +143271,14 @@
       "changeKind": "modify",
       "sourceGitOid": "8db945e435d991aadafc013e3b273c3b2f657826",
       "mainGitOid": "26df826571783f42574171d43b0d11998851e5a4",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/components/__tests__/UpdateRequiredDialog.test.tsx",
@@ -142339,7 +143289,14 @@
       "changeKind": "modify",
       "sourceGitOid": "b033f7363139fc2a6419cc6da524b6ade4640bc0",
       "mainGitOid": "6e0be1fa25d8e031c4030dbfd3fff62893ce03a2",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/components/AuthGateInitErrorScreen.tsx",
@@ -142350,7 +143307,14 @@
       "changeKind": "modify",
       "sourceGitOid": "6a57b05b67422bac5a780833203e05030daef507",
       "mainGitOid": "e5990bee83644f9aaf7242d65399368708730b47",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/components/UpdateRequiredDialog.tsx",
@@ -142361,7 +143325,14 @@
       "changeKind": "modify",
       "sourceGitOid": "6e2d70d88139ac2b8dabeadffb19a5cb91b8a1a9",
       "mainGitOid": "47321432d2beaca4591b000c64b7c399d4c9e305",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/hooks/__tests__/usePwaInstall.test.ts",
@@ -142371,8 +143342,8 @@
       "path": "src/hooks/__tests__/usePwaInstall.test.ts",
       "changeKind": "modify",
       "sourceGitOid": "e637d4cbc8ed34b2699ae20494821bda04a933b2",
-      "mainGitOid": "e655df26ac9e8b5263aafadfc74a94eb78313594",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "e637d4cbc8ed34b2699ae20494821bda04a933b2",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/hooks/usePwaInstall.ts",
@@ -142382,8 +143353,15 @@
       "path": "src/hooks/usePwaInstall.ts",
       "changeKind": "modify",
       "sourceGitOid": "391da17e8ed3129fc366d8e9b4adacd4c9fe7353",
-      "mainGitOid": "f91a91d61792faac9559a97e34ec6640f7a7dc67",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "9e95fc16aaa2c427eb8c3d09098a42cd7b4188c4",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/__tests__/settingsReminderTruthAndBidi.test.ts",
@@ -142394,7 +143372,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9210166fb3a0e770f0d93431118f560bd5fe7396",
       "mainGitOid": "b353707d990a89c6753a15f18437dd50a00c9713",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/ar.ts",
@@ -142405,7 +143390,14 @@
       "changeKind": "modify",
       "sourceGitOid": "97a3388b01aee0aaefc757f274bd9f75ea70efa8",
       "mainGitOid": "3c43e3ad6d55ab9a45a2302c7c32d698f3aed3ea",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/de.ts",
@@ -142416,7 +143408,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9e88d956738de925e494a167b9e02142923e1dac",
       "mainGitOid": "9eafedfcff0265bdb3a4d079e9bde0702b774ad6",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/en.ts",
@@ -142427,7 +143426,14 @@
       "changeKind": "modify",
       "sourceGitOid": "a392afb0e96ff17e697f2206484a0f989f5425e5",
       "mainGitOid": "874d18eacf4dfd7c197e70b8bc6d60f617b47b84",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/es.ts",
@@ -142438,7 +143444,14 @@
       "changeKind": "modify",
       "sourceGitOid": "b93ec871f543d9cd7089f93b9785db7264c97c90",
       "mainGitOid": "5e4b55fa1ea20b78620c463a40258a10e704488d",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/fr.ts",
@@ -142449,7 +143462,14 @@
       "changeKind": "modify",
       "sourceGitOid": "ffd5664a801f1796b3d07202019ae25f638e2ffc",
       "mainGitOid": "3db30e31afccb402e83a6c960a4256e9df4ed0ab",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/he.ts",
@@ -142460,7 +143480,14 @@
       "changeKind": "modify",
       "sourceGitOid": "65a88400955cf22a37ac8b35f0e420517027677d",
       "mainGitOid": "16a26f4257533c32379893dd39a433aaa72504a0",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/ja.ts",
@@ -142471,7 +143498,14 @@
       "changeKind": "modify",
       "sourceGitOid": "bb687b86e9a73fccb4c6c6fed096ef995f7e613d",
       "mainGitOid": "8c763a2a1a6cea6ef64dcf468972fb724183a15b",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/languages/uk.ts",
@@ -142482,7 +143516,14 @@
       "changeKind": "modify",
       "sourceGitOid": "643d1bd229d8eb4d2c62ca26c6e04b76f84ddd4e",
       "mainGitOid": "363884365a7b6fd48d5a79ce68948dd7a99e8b1b",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/i18n/types.ts",
@@ -142493,7 +143534,14 @@
       "changeKind": "modify",
       "sourceGitOid": "28bcd5e3a7043669b926141f93e75dd8a621c8e2",
       "mainGitOid": "35bcb4d7a18a2be6e125d5c4799a351ba81c6fc2",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/lib/__tests__/lazyWithRetry.test.ts",
@@ -142504,7 +143552,14 @@
       "changeKind": "modify",
       "sourceGitOid": "7de6e1791433c3e24408abea8ccbd2bc545b8d46",
       "mainGitOid": "738fc972be154fbb33b6b4d795ca7b7ae06b3f64",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:src/lib/__tests__/pwaDesktopModernization.contract.test.ts",
@@ -142514,8 +143569,8 @@
       "path": "src/lib/__tests__/pwaDesktopModernization.contract.test.ts",
       "changeKind": "add",
       "sourceGitOid": "ae2dd242ee194ddcd868dff16f1443f4ab2c76cf",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "ae2dd242ee194ddcd868dff16f1443f4ab2c76cf",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/lib/__tests__/runtimePerformanceGuards.test.ts",
@@ -142526,7 +143581,14 @@
       "changeKind": "modify",
       "sourceGitOid": "8a5b752f731d2a2ff453e3b090bcfae7a7dd7ac2",
       "mainGitOid": "976526258d3080ec1a51589cc1dd43d505c45547",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/lib/lazyWithRetry.ts",
@@ -142537,7 +143599,14 @@
       "changeKind": "modify",
       "sourceGitOid": "08f8d947ce1328d1a27fc5b0f2e7dcd38b1be9e2",
       "mainGitOid": "c1e5f66811c625b6e9c130dcfd2ca68d59e4dee8",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/lib/offlineQueue.ts",
@@ -142548,7 +143617,14 @@
       "changeKind": "modify",
       "sourceGitOid": "ab867de9117461da012ee281d56fb1afb0569dcd",
       "mainGitOid": "b1ef87844eb6f82e775421e8eb763263fedbfe64",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:A:src/lib/pwaInstallPrompt.ts",
@@ -142558,8 +143634,8 @@
       "path": "src/lib/pwaInstallPrompt.ts",
       "changeKind": "add",
       "sourceGitOid": "993ed07c18733df3de1bae05081a50d8a6155bfd",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "993ed07c18733df3de1bae05081a50d8a6155bfd",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/lib/versionCheck.ts",
@@ -142570,7 +143646,14 @@
       "changeKind": "modify",
       "sourceGitOid": "7ad7ec8e7a0d0ee7ab60c8e11575ec5425e17893",
       "mainGitOid": "edf01c028ab322c26baee0ca43766a1a0fa5f417",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/main.tsx",
@@ -142580,8 +143663,15 @@
       "path": "src/main.tsx",
       "changeKind": "modify",
       "sourceGitOid": "86b281a8a39bc91c695ef59f1db172befd49c1be",
-      "mainGitOid": "bf3d6cdfd933fc8c66b9635fa750d6caad5f4363",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "3e9ac97901c7ecf81acb94714839800f7ec3cd7e",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/pages/nav-v2/__tests__/SettingsPage.test.tsx",
@@ -142592,7 +143682,14 @@
       "changeKind": "modify",
       "sourceGitOid": "0a474d673ab4e6aeb54439df30c714058e792d89",
       "mainGitOid": "f87f9d9aeb1cecab7d296107be1c7bbfe2290a62",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/pages/nav-v2/settings/V2SettingsAboutPanel.tsx",
@@ -142603,7 +143700,14 @@
       "changeKind": "modify",
       "sourceGitOid": "11a35402b2a2b989f5ff820fcfe1ed45b64b5c7c",
       "mainGitOid": "436da505f92c85c4306cdea14c3636e41ccefd3a",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:src/sw.ts",
@@ -142613,8 +143717,15 @@
       "path": "src/sw.ts",
       "changeKind": "modify",
       "sourceGitOid": "464f246aad9062d7d67d76d1fed648d609e91fde",
-      "mainGitOid": "23ce0c59aa232f4f4e0858b03ff3764daaecde25",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "a27210965b220b669cf6f7ecce656490106f2734",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f7fd550efe15ef6bf93b8bfd20088031d5069ed5:M:vite.config.ts",
@@ -142624,8 +143735,15 @@
       "path": "vite.config.ts",
       "changeKind": "modify",
       "sourceGitOid": "3de7461f598c19153f754da8be3e129f016a9049",
-      "mainGitOid": "94226f531e9c832eca24859993798621e7db92e7",
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "d104058d164ba15b8d99eb91325a3f2b33fcf027",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ],
+      "decisionRule": "pwa-desktop-modernization-current-composition"
     },
     {
       "sourceId": "historical-file:f86328cde7ae85a7582c252af813eca7ad092ef0:M:src/lib/__tests__/pkceAttemptIsolation.test.ts",
