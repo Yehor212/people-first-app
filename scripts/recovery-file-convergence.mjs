@@ -31,6 +31,7 @@ const manifest = readJson(manifestPath);
 const inventory = readJson(inventoryPath);
 const decisions = options.decisions ? readJson(options.decisions) : { rules: [] };
 const decisionRules = Array.isArray(decisions?.rules) ? decisions.rules : [];
+const mainAncestorOids = collectCommitAncestors(repo, mainSha);
 const mainHashes = collectMainHashes({ manifest, mainSha, repo });
 const packetRecords = applyDecisionRules(
   collectPacketRecords(manifest, mainHashes),
@@ -40,9 +41,13 @@ const specialRecords = applyDecisionRules(
   collectSpecialRecords(manifest, mainHashes),
   decisionRules,
 ).map(sanitizeLedgerRecord);
-const historicalRecords = collectHistoricalRecords({ baseSha, inventory, repo }).map(
-  sanitizeLedgerRecord,
-);
+const historicalRecords = collectHistoricalRecords({
+  baseSha,
+  inventory,
+  mainAncestorOids,
+  mainSha,
+  repo,
+}).map(sanitizeLedgerRecord);
 const historicalFileRecords = applyDecisionRules(
   collectHistoricalFileRecords({
     historicalRecords,
@@ -123,7 +128,13 @@ function collectMainHashes({ manifest, mainSha: currentMain, repo: repository })
   return hashes;
 }
 
-function collectHistoricalRecords({ baseSha: base, inventory, repo: repository }) {
+function collectHistoricalRecords({
+  baseSha: base,
+  inventory,
+  mainAncestorOids,
+  mainSha: currentMain,
+  repo: repository,
+}) {
   const heads = collectUniqueHeadShas(inventory);
   if (heads.length === 0) return [];
   const output = execFileSync("git", ["-C", repository, "rev-list", ...heads, "--not", base], {
@@ -146,7 +157,16 @@ function collectHistoricalRecords({ baseSha: base, inventory, repo: repository }
       subject,
       packet: subject,
     };
-    return { ...record, disposition: classifyMechanicalPolicy(record) };
+    const mechanicalDisposition = classifyMechanicalPolicy(record);
+    if (mechanicalDisposition !== "REVIEW_REQUIRED" || !mainAncestorOids.has(commit)) {
+      return { ...record, disposition: mechanicalDisposition };
+    }
+    return {
+      ...record,
+      disposition: "MERGED",
+      evidence: [`git-ancestry#${commit} is an ancestor of ${currentMain}`],
+      closureBasis: "git-ancestry",
+    };
   });
 }
 
@@ -194,7 +214,21 @@ function collectHistoricalFileRecords({ historicalRecords, mainSha: currentMain,
         sourceGitOid,
         mainGitOid,
       };
-      records.push({ ...record, disposition: classifyMechanicalPolicy(record) });
+      const mechanicalDisposition = classifyMechanicalPolicy(record);
+      if (
+        mechanicalDisposition === "REVIEW_REQUIRED" &&
+        commitRecord.disposition === "MERGED" &&
+        commitRecord.closureBasis === "git-ancestry"
+      ) {
+        records.push({
+          ...record,
+          disposition: "MERGED",
+          evidence: [...commitRecord.evidence],
+          closureBasis: "git-ancestry",
+        });
+      } else {
+        records.push({ ...record, disposition: mechanicalDisposition });
+      }
     }
   }
   return records.sort((left, right) =>
@@ -202,6 +236,14 @@ function collectHistoricalFileRecords({ historicalRecords, mainSha: currentMain,
     left.path.localeCompare(right.path) ||
     left.sourceId.localeCompare(right.sourceId),
   );
+}
+
+function collectCommitAncestors(repository, commit) {
+  const output = execFileSync("git", ["-C", repository, "rev-list", commit], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return new Set(output.split(/\r?\n/).filter(Boolean));
 }
 
 function collectTreeOids(repository, treeish) {

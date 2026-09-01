@@ -611,6 +611,12 @@ describe("recovery convergence CLI", () => {
       writeFileSync(join(root, "historical.txt"), "history\n", "utf8");
       execFileSync("git", ["-C", root, "add", "current.txt", "historical.txt"]);
       execFileSync("git", ["-C", root, "commit", "-qm", "feature"]);
+      const historicalHead = execFileSync("git", ["-C", root, "rev-parse", "HEAD"], {
+        encoding: "utf8",
+      }).trim();
+      writeFileSync(join(root, "historical.txt"), "current history\n", "utf8");
+      execFileSync("git", ["-C", root, "add", "historical.txt"]);
+      execFileSync("git", ["-C", root, "commit", "-qm", "advance main"]);
       const mainSha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"], {
         encoding: "utf8",
       }).trim();
@@ -650,7 +656,7 @@ describe("recovery convergence CLI", () => {
       writeFileSync(
         inventoryPath,
         JSON.stringify({
-          refs: [{ classification: "UNIQUE_COMMITS", head: mainSha }],
+          refs: [{ classification: "UNIQUE_COMMITS", head: historicalHead }],
         }),
         "utf8",
       );
@@ -686,6 +692,11 @@ describe("recovery convergence CLI", () => {
           open: number;
         };
         packetRecords: Array<{ disposition: string; path: string }>;
+        historicalFileRecords: Array<{
+          disposition: string;
+          path: string;
+          evidence?: string[];
+        }>;
       };
       expect(text).not.toContain("/private/example");
       expect(ledger.schema).toBe("zenflow-recovery-file-convergence-v1");
@@ -700,6 +711,15 @@ describe("recovery convergence CLI", () => {
         expect.objectContaining({ path: "current.txt", disposition: "ALREADY_CURRENT" }),
         expect.objectContaining({ path: "removed.txt", disposition: "ALREADY_CURRENT" }),
       ]);
+      expect(ledger.historicalFileRecords).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "historical.txt",
+            disposition: "MERGED",
+            evidence: [expect.stringContaining("ancestor")],
+          }),
+        ]),
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
