@@ -348,9 +348,9 @@ export const PlanningPage = memo(function PlanningPage({
             aria-label={t.navV2Planning}
             className="min-w-0 rounded-[1.75rem] outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-foreground">
+            <div className="mb-3 flex min-w-0 items-center gap-2 pe-1 ps-[calc(var(--v2-phone-drawer-size)+var(--v2-phone-drawer-inset)+0.75rem)] text-sm font-semibold text-foreground md:px-1">
               <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
-              <span>{t.navV2Planning}</span>
+              <span className="min-w-0 break-words">{t.navV2Planning}</span>
             </div>
             <Suspense fallback={<PlanningPageFallback label={fallbackLabel} />}>
               <ScheduleTimeline

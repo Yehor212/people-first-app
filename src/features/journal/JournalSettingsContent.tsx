@@ -722,6 +722,7 @@ export function JournalSettingsContent({
           </label>
           <select
             id="journal-auto-lock-timeout"
+            aria-label={ts.journalLockTimeout || "Journal auto-lock"}
             value={autoLockMs}
             disabled={importing}
             onChange={(event) => {

@@ -3907,7 +3907,7 @@ export interface Translations {
   diaryAmbiencePlay: string;
   diaryAmbiencePause: string;
 
-  // Phase 3-A.4b: Orb mood-to-journal flow (scope + explicit save/handoff + first-run hint)
+  // Phase 3-A.4b: Orb mood-to-journal flow (scope + explicit save/handoff)
   orbScopeGroupLabel: string;
   orbScopeNow: string;
   orbScopeDay: string;
@@ -3919,11 +3919,6 @@ export interface Translations {
   orbSkip: string;
   orbUndo: string;
   orbMoodSaved: string;
-  orbFirstRunTitle: string;
-  orbFirstRunStep1: string;
-  orbFirstRunStep2: string;
-  orbFirstRunStep3: string;
-  orbFirstRunGotIt: string;
 
   // Preserved from the concurrent orb translation contract.
   settingsSoundFeedbackComfortable: string;

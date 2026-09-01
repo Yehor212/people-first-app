@@ -63,11 +63,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       orbScopeSpecific: "At a specific time",
       orbScopeSpecificTimeLabel: "Pick a time",
       orbSkip: "Later",
-      orbFirstRunTitle: "Three steps",
-      orbFirstRunStep1: "Step one",
-      orbFirstRunStep2: "Step two",
-      orbFirstRunStep3: "Step three",
-      orbFirstRunGotIt: "Got it",
       moodGreat: "Great",
       moodGood: "Good",
       moodOkay: "Okay",
@@ -331,7 +326,20 @@ vi.mock("@/hooks/useShouldAnimate", () => ({
 }));
 
 vi.mock("@/lib/motion", () => ({
-  Bloom: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Bloom: ({
+    children,
+    disabled,
+  }: {
+    children: React.ReactNode;
+    disabled?: boolean;
+  }) => (
+    <div
+      data-testid="orb-page-bloom"
+      data-page-entrance-disabled={disabled ? "true" : "false"}
+    >
+      {children}
+    </div>
+  ),
   bloom: {
     exit: { scale: 0.96, opacity: 0, y: 8 },
     transition: { duration: 0.32, ease: [0.2, 0.9, 0.2, 1] },
@@ -375,7 +383,6 @@ describe("OrbPage progressive flow", () => {
     setViewport(1024, 900);
     useMoodEntryDraftStore.getState().reset();
     useDiaryDraftStore.getState().clearPendingMoodContext();
-    window.localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     media.play.mockClear();
     media.pause.mockClear();
     Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
@@ -386,6 +393,14 @@ describe("OrbPage progressive flow", () => {
       configurable: true,
       value: media.pause,
     });
+  });
+
+  it("starts the canonical page Bloom settled so route changes do not add a second entrance", () => {
+    const source = readFileSync("src/pages/nav-v2/OrbPage.tsx", "utf8");
+
+    expect(source).toContain(
+      '<Bloom key="orb-page" initial={false} transition={staggerDelay("primary")}>',
+    );
   });
 
   it("keeps a cold orb route inert until a real orb frame survives the next paint", async () => {
@@ -799,14 +814,15 @@ describe("OrbPage progressive flow", () => {
     expect(toggle).not.toHaveAttribute("tabindex", "-1");
   });
 
-  it("keeps the hidden Android ambience control out of the fixed compositor until focus", () => {
+  it("keeps the Android ambience control visible, safe-area bounded, and touch reachable", () => {
     const css = readFileSync("src/pages/nav-v2/OrbAmbienceControl.css", "utf8");
 
     expect(css).toMatch(
-      /:root\[data-platform="android"\] \.orb-ambience-focus-control\s*\{[^}]*position:\s*absolute;[^}]*contain:\s*strict;/s,
+      /:root\[data-platform="android"\] \.orb-ambience-focus-control\s*\{[^}]*position:\s*fixed;[^}]*contain:\s*none;[^}]*width:\s*auto;[^}]*height:\s*auto;[^}]*overflow:\s*visible;[^}]*clip-path:\s*none;/s,
     );
-    expect(css).toMatch(
-      /:root\[data-platform="android"\] \.orb-ambience-focus-control:focus-within\s*\{[^}]*position:\s*fixed;[^}]*contain:\s*none;/s,
+    expect(css).toContain("inset-inline-end: max(1rem, var(--safe-right))");
+    expect(css).not.toContain(
+      ':root[data-platform="android"] .orb-ambience-focus-control:focus-within',
     );
   });
 
@@ -1016,6 +1032,10 @@ describe("OrbPage progressive flow", () => {
     fireEvent.click(screen.getByTestId("orb-page-next"));
 
     expect(screen.getByTestId("emotion-tag-grid")).toBeInTheDocument();
+    expect(screen.getByTestId("orb-page-note-input")).toHaveAttribute(
+      "aria-label",
+      "Continue writing",
+    );
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
     expect(screen.getByTestId("orb-page-refine-heading")).toHaveTextContent("Localized hopeful");
     fireEvent.change(screen.getByTestId("orb-page-note-input"), {

@@ -186,7 +186,7 @@ vi.mock("../SidebarV2", () => ({
   }: {
     collapsed?: boolean;
     forceVisible?: boolean;
-    onPageChange: (page: "habits" | "planning") => void;
+    onPageChange: (page: "habits" | "diary" | "planning") => void;
   }) => (
     <nav
       data-testid="sidebar-v2"
@@ -213,7 +213,7 @@ vi.mock("../DrawerV2", () => ({
     open: boolean;
     onClose: () => void;
     onExitComplete?: () => void;
-    onPageChange: (page: "habits" | "planning") => void;
+    onPageChange: (page: "habits" | "diary" | "planning") => void;
   }) => {
     drawerLifecycle.onExitComplete = onExitComplete ?? null;
     return open ? (
@@ -224,6 +224,9 @@ vi.mock("../DrawerV2", () => ({
         </button>
         <button type="button" onClick={() => onPageChange("habits")}>
           Habits
+        </button>
+        <button type="button" onClick={() => onPageChange("diary")}>
+          Diary
         </button>
         <button type="button" onClick={() => onPageChange("planning")}>
           Planning
@@ -519,12 +522,11 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Planning" }));
     act(() => drawerLifecycle.onExitComplete?.());
 
-    await waitFor(() =>
-      expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-        "data-active-page",
-        "planning"
-      )
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
+      "data-active-page",
+      "planning"
     );
+    expect(await screen.findByTestId("planning-page")).toBeInTheDocument();
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
 
     scrollTo.mockRestore();
@@ -536,19 +538,16 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
     fireEvent.click(await screen.findByRole("button", { name: "Habits" }));
 
-    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "orb");
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "habits");
+    expect(screen.getByTestId("orb-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("habits-page")).not.toBeInTheDocument();
     expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Habits");
     expect(morph).not.toHaveBeenCalled();
     expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
 
     act(() => drawerLifecycle.onExitComplete?.());
 
-    await waitFor(() =>
-      expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
-        "data-active-page",
-        "habits"
-      )
-    );
+    expect(await screen.findByTestId("habits-page")).toBeInTheDocument();
     expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
     expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-active-page", "habits");
     await waitFor(() =>
@@ -625,6 +624,14 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     const trigger = screen.getByTestId("nav-v2-open-drawer");
     expect(trigger.querySelector(".lucide-menu")).toBeInTheDocument();
     expect(trigger.querySelector(".lucide-chevron-left")).not.toBeInTheDocument();
+  });
+
+  it("gives the phone menu trigger the dark token scope on Planning", () => {
+    window.history.replaceState({}, "", "/planning?nav=v2&navLayout=phone");
+
+    render(<NavV2Orchestrator />);
+
+    expect(screen.getByTestId("nav-v2-open-drawer").className).toContain("dark");
   });
 
   it("drawer trigger is fixed at the safe logical start edge", () => {

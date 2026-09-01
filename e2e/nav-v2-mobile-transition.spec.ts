@@ -1,14 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { primeZenflowV2 } from "./helpers/zenflowV2State";
 
-async function primeWithFirstRunHint(page: import("@playwright/test").Page) {
+async function primeNewUserOrb(page: import("@playwright/test").Page) {
   await primeZenflowV2(page, {
     clearStorage: true,
     language: "en",
     theme: "paper",
-  });
-  await page.addInitScript(() => {
-    localStorage.removeItem("zenflow-orb-first-run-dismissed");
   });
 }
 
@@ -346,15 +343,12 @@ test.describe("V2 mobile web route transitions", () => {
     await installViewTransitionProbe(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await primeWithFirstRunHint(page);
+    await primeNewUserOrb(page);
 
     await page.goto("orb?nav=v2&navLayout=web&dev=true", {
       waitUntil: "domcontentloaded",
     });
 
-    await expect(page.getByTestId("mood-first-run-hint")).toBeVisible({
-      timeout: 20_000,
-    });
     await resetViewTransitionProbe(page);
 
     const startedAt = await page.evaluate(() => performance.now());
@@ -385,14 +379,10 @@ test.describe("V2 mobile web route transitions", () => {
     });
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await primeWithFirstRunHint(page);
+    await primeNewUserOrb(page);
 
     await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
       waitUntil: "domcontentloaded",
-    });
-
-    await expect(page.getByTestId("mood-first-run-hint")).toBeVisible({
-      timeout: 20_000,
     });
 
     await expect
@@ -401,11 +391,6 @@ test.describe("V2 mobile web route transitions", () => {
         timeout: 1_500,
       })
       .toBeGreaterThan(0);
-
-    await page.getByRole("button", { name: "Got it" }).click({ timeout: 5_000 });
-    await expect(page.getByTestId("mood-first-run-hint")).toBeHidden({
-      timeout: 5_000,
-    });
 
     await page.getByTestId("nav-v2-open-drawer").click({ timeout: 5_000 });
     await page.getByTestId("drawer-v2-destination-habits").click({
@@ -510,15 +495,12 @@ test.describe("V2 mobile web route transitions", () => {
     });
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await primeWithFirstRunHint(page);
+    await primeNewUserOrb(page);
 
     await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
       waitUntil: "domcontentloaded",
     });
 
-    await expect(page.getByTestId("mood-first-run-hint")).toBeVisible({
-      timeout: 20_000,
-    });
     await expect
       .poll(() => habitsRouteRequests, {
         message: "Habits route should preload through the setTimeout fallback",
@@ -690,7 +672,7 @@ test.describe("V2 mobile web route transitions", () => {
     }
   });
 
-  test("dev compact web rail keeps Habits reachable while the first-run mood hint is visible", async ({
+  test("dev compact web rail keeps Habits reachable for a new user", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -699,14 +681,10 @@ test.describe("V2 mobile web route transitions", () => {
     );
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await primeWithFirstRunHint(page);
+    await primeNewUserOrb(page);
 
     await page.goto("orb?nav=v2&navLayout=web&dev=true", {
       waitUntil: "domcontentloaded",
-    });
-
-    await expect(page.getByTestId("mood-first-run-hint")).toBeVisible({
-      timeout: 20_000,
     });
 
     await page
@@ -717,18 +695,14 @@ test.describe("V2 mobile web route transitions", () => {
     await expectHabitsRouteVisible(page, { visibleTimeout: 10_000 });
   });
 
-  test("phone drawer remains reachable while the first-run mood hint is visible", async ({
+  test("phone drawer remains reachable for a new user", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await primeWithFirstRunHint(page);
+    await primeNewUserOrb(page);
 
     await page.goto("orb?nav=v2&navLayout=phone&dev=true", {
       waitUntil: "domcontentloaded",
-    });
-
-    await expect(page.getByTestId("mood-first-run-hint")).toBeVisible({
-      timeout: 20_000,
     });
 
     await page.getByTestId("nav-v2-open-drawer").click({ timeout: 5_000 });

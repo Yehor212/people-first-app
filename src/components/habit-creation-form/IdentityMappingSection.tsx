@@ -156,6 +156,7 @@ export function IdentityMappingSection({
             type="text"
             value={identityVerb}
             onChange={(e) => setIdentityVerb(e.target.value)}
+            aria-label={ts.identityVerb || "Identity action"}
             placeholder={ts.identityVerbPlaceholder}
             maxLength={60}
             data-testid="identity-verb-input"
@@ -185,6 +186,7 @@ export function IdentityMappingSection({
             list={identityClustersListId}
             value={identityCluster}
             onChange={(e) => setIdentityCluster(e.target.value)}
+            aria-label={ts.identityCluster || "Identity group"}
             placeholder={ts.identityClusterPlaceholder}
             maxLength={40}
             data-testid="identity-cluster-input"

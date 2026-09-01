@@ -90,6 +90,7 @@ export const FocusTimer = memo(function FocusTimer({
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
+            aria-label={t.focusLabelPrompt}
             placeholder={t.focusLabelPlaceholder}
             className="min-h-11 w-full rounded-xl border border-input bg-background p-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors"
           />

@@ -81,8 +81,8 @@ describe("Schedule visual craft contract", () => {
   });
 
   it("keeps user-authored schedule text bidi-isolated", () => {
-    expect(addEventSource).toContain('htmlFor="schedule-event-title"');
-    expect(addEventSource).toContain('id="schedule-event-title"');
+    expect(addEventSource).toContain("htmlFor={eventTitleInputId}");
+    expect(addEventSource).toContain("id={eventTitleInputId}");
     expect(addEventSource).toContain("<fieldset");
     expect(addEventSource).toContain("<legend");
     expect(addEventSource).toMatch(/<input[\s\S]*?dir="auto"/);

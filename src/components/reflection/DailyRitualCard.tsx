@@ -320,6 +320,11 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                       ? setPriorities(event.target.value)
                       : setWins(event.target.value)
                   }
+                  aria-label={
+                    selectedType === "opening"
+                      ? copy.reflectionPrioritiesLabel || "Top priorities"
+                      : copy.reflectionWinsLabel || "What moved"
+                  }
                   rows={3}
                   placeholder={
                     copy.reflectionOnePerLineHint ||
@@ -341,6 +346,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                   <input
                     value={focusIntent}
                     onChange={(event) => setFocusIntent(event.target.value)}
+                    aria-label={copy.reflectionFocusIntentLabel || "Focus intention"}
                     placeholder={
                       copy.reflectionFocusIntentHint ||
                       "What kind of attention does today need?"
@@ -356,6 +362,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                   <input
                     value={habitIntent}
                     onChange={(event) => setHabitIntent(event.target.value)}
+                    aria-label={copy.reflectionHabitIntentLabel || "Habit anchor"}
                     placeholder={
                       copy.reflectionHabitIntentHint ||
                       "What will make your habits realistic today?"
@@ -373,6 +380,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                   <textarea
                     value={drains}
                     onChange={(event) => setDrains(event.target.value)}
+                    aria-label={copy.reflectionDrainsLabel || "What drained you"}
                     rows={3}
                     placeholder={
                       copy.reflectionDrainsHint ||
@@ -390,6 +398,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                     <input
                       value={carryForward}
                       onChange={(event) => setCarryForward(event.target.value)}
+                      aria-label={copy.reflectionCarryForwardLabel || "Carry forward"}
                       placeholder={
                         copy.reflectionCarryForwardHint ||
                         "What should tomorrow inherit from today?"
@@ -405,6 +414,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
                     <input
                       value={gratitude}
                       onChange={(event) => setGratitude(event.target.value)}
+                      aria-label={copy.reflectionGratitudeLabel || "Gratitude"}
                       placeholder={
                         copy.reflectionGratitudeHint ||
                         "What deserves a softer look tonight?"
@@ -424,6 +434,7 @@ export const DailyRitualCard = memo(function DailyRitualCard({
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
+              aria-label={copy.reflectionNoteLabel || "Note"}
               rows={compact ? 2 : 3}
               placeholder={
                 copy.reflectionNoteHint || "Leave yourself one honest sentence."

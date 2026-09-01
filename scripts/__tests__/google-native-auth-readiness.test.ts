@@ -42,11 +42,14 @@ function runCheck(
   const directory = mkdtempSync(join(tmpdir(), "zenflow-google-auth-"));
   const evidencePath = join(directory, "evidence.json");
   writeFileSync(evidencePath, JSON.stringify(evidence));
+  const isolatedEnv = { ...process.env };
+  delete isolatedEnv.VITE_GOOGLE_WEB_CLIENT_ID;
+  delete isolatedEnv.ZENFLOW_GOOGLE_WEB_CLIENT_REQUIRED;
 
   return spawnSync(process.execPath, [script, "--strict"], {
     cwd: process.cwd(),
     env: {
-      ...process.env,
+      ...isolatedEnv,
       ZENFLOW_GOOGLE_NATIVE_AUTH_EVIDENCE_FILE: evidencePath,
       ZENFLOW_GOOGLE_NATIVE_AUTH_NOW: now,
       ...envOverrides,

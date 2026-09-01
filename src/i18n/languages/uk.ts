@@ -4095,12 +4095,6 @@ export const uk: Translations = {
   orbSkip: "Пізніше",
   orbUndo: "Скасувати",
   orbMoodSaved: "Настрій збережено",
-  orbFirstRunTitle: "Три кроки до твого першого запису",
-  orbFirstRunStep1: "Пересунь повзунок відповідно до свого настрою",
-  orbFirstRunStep2: "Обери, коли ти так почувався: зараз, у певний час або весь день",
-  orbFirstRunStep3:
-    "За бажанням додай емоцію або нотатку, а потім збережи настрій і почни сьогоднішній запис",
-  orbFirstRunGotIt: "Зрозуміло",
   featureUnavailableTitle: "Функція тимчасово недоступна",
   featureUnavailableChecking:
     "ZenFlow перевіряє збережені записи щоденника. Залиште цей екран відкритим і спробуйте ще раз за мить.",

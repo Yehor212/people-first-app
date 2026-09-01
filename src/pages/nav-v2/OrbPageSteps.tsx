@@ -309,6 +309,7 @@ export function OrbRefineStep({
               onChange={(event) => handleNoteChange(event.target.value)}
               maxLength={280}
               rows={4}
+              aria-label={tx.journalContinueWriting || "Continue writing"}
               placeholder={tx.howAreYouFeeling || "How are you feeling?"}
               className="min-h-[120px] w-full rounded-[28px] border border-border/60 bg-card/65 px-4 py-3 text-sm text-foreground shadow-sm outline-none backdrop-blur-md transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20 md:text-base"
             />

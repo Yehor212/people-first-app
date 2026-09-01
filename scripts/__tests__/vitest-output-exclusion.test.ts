@@ -17,4 +17,13 @@ describe("package Vitest script isolation", () => {
 
     expect(unsafeScripts).toEqual([]);
   });
+
+  it("keeps local recovery copies outside every Vitest discovery path", () => {
+    const config = readFileSync(
+      resolve(process.cwd(), "vitest.config.ts"),
+      "utf8"
+    );
+
+    expect(config).toContain('".codex-recovery/**"');
+  });
 });

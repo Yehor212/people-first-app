@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X, Check } from "lucide-react";
@@ -26,6 +26,9 @@ export function AddEventModal({
 }) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const eventDateSelectId = useId();
+  const eventTitleInputId = useId();
+  const eventNoteInputId = useId();
   const { modalRef, handleKeyDown } = useModalA11y(true, onClose);
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
@@ -98,6 +101,7 @@ export function AddEventModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-event-title"
+      data-testid="add-event-modal"
       className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] sm:items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -140,11 +144,11 @@ export function AddEventModal({
 
           {/* Date picker */}
           <div className="mb-4">
-            <label htmlFor="schedule-event-date" className="mb-1 block text-xs text-muted-foreground">
+            <label htmlFor={eventDateSelectId} className="mb-1 block text-xs text-muted-foreground">
               {t.scheduleDate || "Date"}
             </label>
             <select
-              id="schedule-event-date"
+              id={eventDateSelectId}
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none"
@@ -202,16 +206,17 @@ export function AddEventModal({
 
           {/* Custom title */}
           <div className="mb-4">
-            <label htmlFor="schedule-event-title" className="mb-1 block text-xs text-muted-foreground">
+            <label htmlFor={eventTitleInputId} className="mb-1 block text-xs text-muted-foreground">
               {t.scheduleCustomTitle || "Custom title (optional)"}
             </label>
             <input
-              id="schedule-event-title"
+              id={eventTitleInputId}
               type="text"
               dir="auto"
               value={customTitle}
               onChange={(e) => setCustomTitle(e.target.value)}
               placeholder={t.scheduleCustomTitle || "Custom title (optional)"}
+              aria-label={t.scheduleCustomTitle || "Event title"}
               className="min-h-11 w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onFocus={(e) => {
                 const el = e.target;
@@ -324,14 +329,15 @@ export function AddEventModal({
 
           {/* Note */}
           <div className="mb-4">
-            <label htmlFor="schedule-event-note" className="mb-1 block text-xs text-muted-foreground">
+            <label htmlFor={eventNoteInputId} className="mb-1 block text-xs text-muted-foreground">
               {t.scheduleNote || "Note (optional)"}
             </label>
             <textarea
-              id="schedule-event-note"
+              id={eventNoteInputId}
               dir="auto"
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              aria-label={t.scheduleNote || "Note (optional)"}
               placeholder={t.scheduleNotePlaceholder || "Add details or reminders..."}
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/60"
               rows={2}

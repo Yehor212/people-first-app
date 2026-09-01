@@ -87,7 +87,6 @@ async function seedApp(page) {
       }),
     );
     localStorage.setItem("zenflow-theme", "dark");
-    localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     localStorage.setItem(
       "zenflow-privacy",
       JSON.stringify({ noTracking: false, analytics: false, consentShown: true }),

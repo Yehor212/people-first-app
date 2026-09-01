@@ -34,11 +34,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalPrompt6: "How are you feeling right now?",
       orbUndo: "Undo",
       orbMoodSaved: "Mood saved",
-      orbFirstRunTitle: "Three steps",
-      orbFirstRunStep1: "Step one",
-      orbFirstRunStep2: "Step two",
-      orbFirstRunStep3: "Step three",
-      orbFirstRunGotIt: "Got it",
       emotionMorePrecise: "More precise",
       moodSupportLink: "Need support?",
     },
@@ -205,7 +200,6 @@ describe("OrbPage — sensitive emotion integrity", () => {
     mockAppliedTheme = "ink";
     useMoodEntryDraftStore.getState().reset();
     useDiaryDraftStore.getState().clearPendingMoodContext();
-    window.localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
   });
 
   afterEach(() => {

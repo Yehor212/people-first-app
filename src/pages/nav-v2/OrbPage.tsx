@@ -27,7 +27,6 @@ import { OrbAmbienceControl } from "./OrbAmbienceControl";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
 import { useCosmicParallax } from "./useCosmicParallax";
 import { ShootingStar } from "./ShootingStar";
-import { MoodFirstRunHint } from "./MoodFirstRunHint";
 import { OrbDayFlourish } from "./OrbDayFlourish";
 import { OrbRefineStep, OrbSelectStep } from "./OrbPageSteps";
 import { useOrbMoodFlow } from "./useOrbMoodFlow";
@@ -100,7 +99,10 @@ interface OrbPageProps {
   onAddMood?: (entry: MoodEntry) => void | Promise<void>;
 }
 
-export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbPageProps) {
+export const OrbPage = memo(function OrbPage({
+  navigateToPage,
+  onAddMood,
+}: OrbPageProps) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const mainRef = useRef<HTMLElement>(null);
@@ -136,7 +138,6 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     canOpenDiary,
     isSavingMood,
     moodSaveFailed,
-    firstRunEligible,
     handleSliderCommit,
     handleEmotionToggle,
     handleNoteChange,
@@ -597,8 +598,6 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
       ) : null}
 
       {visualReady ? <OrbAmbienceControl audioSrc={ORB_AMBIENCE_AUDIO_SRC} tx={tx} /> : null}
-
-      {visualReady ? <MoodFirstRunHint eligible={firstRunEligible} /> : null}
     </>
   );
 });

@@ -274,16 +274,24 @@ describe("DayCosmicBackground", () => {
     expect(dayCosmicCss).toContain("mix-blend-mode: multiply");
   });
 
-  it("scopes the occluded global paper-grain release to the Android day Orb surface", () => {
+  it("folds the global paper overlays into the existing Android day Orb surface", () => {
     expect(dayCosmicCss).toContain(
       ':root[data-theme="paper"] body.android-day-orb-opaque-surface::before'
     );
     expect(dayCosmicCss).toMatch(
       /body\.android-day-orb-opaque-surface::before\s*\{\s*display: none;/
     );
-    expect(dayCosmicCss).not.toContain(
+    expect(dayCosmicCss).toContain(
       ':root[data-theme="paper"] body.android-day-orb-opaque-surface::after'
     );
+    expect(dayCosmicCss).toMatch(
+      /body\.android-day-orb-opaque-surface::after\s*\{\s*display: none;/
+    );
+    expect(dayCosmicCss).toContain("--day-body-vignette-layer:");
+    expect(dayCosmicCss).toMatch(
+      /radial-gradient\(\s*ellipse at center,\s*transparent 45%,\s*hsl\(var\(--zf-trace\) \/ 0\.1\) 100%\s*\)/
+    );
+    expect(dayCosmicCss).toContain("var(--day-body-vignette-layer, none)");
   });
 
   it("limits Settings motion CSS to transform and opacity allowlists with stop fallbacks", () => {

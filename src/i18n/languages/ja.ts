@@ -4061,11 +4061,6 @@ export const ja: Translations = {
   orbSkip: "あとで",
   orbUndo: "取り消す",
   orbMoodSaved: "気分を保存しました",
-  orbFirstRunTitle: "最初の記録まで3ステップ",
-  orbFirstRunStep1: "気分に合わせてスライダーを動かす",
-  orbFirstRunStep2: "いつの気分かを選ぶ（今、特定の時刻、または一日全体）",
-  orbFirstRunStep3: "必要なら感情やメモを追加して、気分を保存し、今日の記録を始める",
-  orbFirstRunGotIt: "わかった",
   featureUnavailableTitle: "この機能は一時的に利用できません",
   featureUnavailableChecking:
     "ZenFlow が保存済みの日記の進み具合を確認しています。この画面を開いたまま、少し待ってからもう一度お試しください。",

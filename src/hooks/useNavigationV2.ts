@@ -166,6 +166,8 @@ function getRouteSnapshot(): RouteSnapshot {
 export interface UseNavigationV2Return {
   /** Currently active page (one of Orb/Habits/Diary/Planning/Settings). */
   activePage: NavV2Page;
+  /** Page whose React surface is mounted while a phone drawer route is closing. */
+  renderedPage: NavV2Page;
   /** Unknown app path that should render the user-facing Not Found state. */
   unknownPath: string | null;
   /** Wrapped page change: writes URL, persists to localStorage, runs via morph(). */
@@ -201,6 +203,7 @@ export interface UseNavigationV2Return {
 export function useNavigationV2(): UseNavigationV2Return {
   const [initialRoute] = useState<RouteSnapshot>(getRouteSnapshot);
   const [activePage, setActivePageState] = useState<NavV2Page>(initialRoute.page);
+  const [renderedPage, setRenderedPage] = useState<NavV2Page>(initialRoute.page);
   const [unknownPath, setUnknownPath] = useState<string | null>(initialRoute.unknownPath);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
@@ -211,26 +214,33 @@ export function useNavigationV2(): UseNavigationV2Return {
   // Ref avoids stale closures inside the popstate listener
   const activePageRef = useRef(activePage);
   activePageRef.current = activePage;
+  const renderedPageRef = useRef(renderedPage);
+  renderedPageRef.current = renderedPage;
   const drawerRouteRequestIdRef = useRef(0);
+  const drawerRouteCommitAfterPaintRef = useRef<(() => void) | null>(null);
   const drawerRouteCloseAfterPaintRef = useRef<(() => void) | null>(null);
   const pendingDrawerRouteRef = useRef<{
     commit: () => void;
-    preloadReady: boolean;
+    commitScheduled: boolean;
+    drawerExited: boolean;
     requestId: number;
   } | null>(null);
 
   const tryCommitPendingDrawerRoute = useCallback(() => {
     const pending = pendingDrawerRouteRef.current;
-    if (!pending?.preloadReady) return;
+    if (!pending?.drawerExited) return;
     if (pending.requestId !== drawerRouteRequestIdRef.current) return;
+    if (pending.commitScheduled) return;
 
-    pendingDrawerRouteRef.current = null;
-    flushSync(pending.commit);
-    drawerRouteCloseAfterPaintRef.current?.();
-    drawerRouteCloseAfterPaintRef.current = scheduleAfterNextPaint(() => {
+    pending.commitScheduled = true;
+    drawerRouteCommitAfterPaintRef.current?.();
+    drawerRouteCommitAfterPaintRef.current = scheduleAfterNextPaint(() => {
+      drawerRouteCommitAfterPaintRef.current = null;
+      if (pendingDrawerRouteRef.current !== pending) return;
       if (pending.requestId !== drawerRouteRequestIdRef.current) return;
-      drawerRouteCloseAfterPaintRef.current = null;
-      setDrawerOpen(false);
+
+      pendingDrawerRouteRef.current = null;
+      flushSync(pending.commit);
     });
   }, []);
 
@@ -238,6 +248,8 @@ export function useNavigationV2(): UseNavigationV2Return {
     return () => {
       drawerRouteRequestIdRef.current += 1;
       pendingDrawerRouteRef.current = null;
+      drawerRouteCommitAfterPaintRef.current?.();
+      drawerRouteCommitAfterPaintRef.current = null;
       drawerRouteCloseAfterPaintRef.current?.();
       drawerRouteCloseAfterPaintRef.current = null;
     };
@@ -250,14 +262,14 @@ export function useNavigationV2(): UseNavigationV2Return {
   }, [activePage]);
 
   useEffect(() => {
-    if (routePendingPage !== activePage) return undefined;
+    if (routePendingPage !== renderedPage) return undefined;
 
     let cancelAfterPaint: (() => void) | null = null;
     const elapsed = nowMs() - routePendingStartedAtRef.current;
     const remaining = Math.max(0, ROUTE_PENDING_MIN_VISIBLE_MS - elapsed);
     const timerId = globalThis.setTimeout(() => {
       cancelAfterPaint = scheduleAfterNextPaint(() => {
-        setRoutePendingPage((pending) => (pending === activePage ? null : pending));
+        setRoutePendingPage((pending) => (pending === renderedPage ? null : pending));
       });
     }, remaining);
 
@@ -265,12 +277,21 @@ export function useNavigationV2(): UseNavigationV2Return {
       globalThis.clearTimeout(timerId);
       cancelAfterPaint?.();
     };
-  }, [activePage, routePendingPage]);
+  }, [renderedPage, routePendingPage]);
 
   // Browser back/forward -> derive page from URL
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onPopState = () => {
+      drawerRouteRequestIdRef.current += 1;
+      pendingDrawerRouteRef.current = null;
+      drawerRouteCommitAfterPaintRef.current?.();
+      drawerRouteCommitAfterPaintRef.current = null;
+      drawerRouteCloseAfterPaintRef.current?.();
+      drawerRouteCloseAfterPaintRef.current = null;
+      setDrawerOpen(false);
+      setRoutePendingPage(null);
+
       const next = getRouteSnapshot();
       setUnknownPath(next.unknownPath);
       if (next.unknownPath) {
@@ -279,6 +300,7 @@ export function useNavigationV2(): UseNavigationV2Return {
       if (next.page !== activePageRef.current) {
         setActivePageState(next.page);
       }
+      setRenderedPage(next.page);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -291,11 +313,14 @@ export function useNavigationV2(): UseNavigationV2Return {
     ) => {
       drawerRouteRequestIdRef.current += 1;
       pendingDrawerRouteRef.current = null;
+      drawerRouteCommitAfterPaintRef.current?.();
+      drawerRouteCommitAfterPaintRef.current = null;
       drawerRouteCloseAfterPaintRef.current?.();
       drawerRouteCloseAfterPaintRef.current = null;
 
       const wasDrawerOpen = drawerOpen;
-      const isCurrentPage = page === activePageRef.current && !unknownPath;
+      const isCurrentPage =
+        page === activePageRef.current && page === renderedPageRef.current && !unknownPath;
       const preparesBehindOpenDrawer = options.skipTransition && wasDrawerOpen && !isCurrentPage;
       const publishImmediateNavigationFeedback = () => {
         if (isCurrentPage) {
@@ -307,8 +332,32 @@ export function useNavigationV2(): UseNavigationV2Return {
         setRoutePendingPage(page);
       };
 
+      const publishRoute = () => {
+        setActivePageState(page);
+        setUnknownPath(null);
+        if (typeof window !== "undefined") {
+          const base = getNavV2BasePath(window.location.pathname);
+          const path = PAGE_TO_PATH[page];
+          const params = new URLSearchParams(window.location.search);
+          if (page !== "settings") {
+            params.delete("settingsSection");
+          }
+          const search = params.toString();
+          // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
+          const newUrl = `${base}${path}${search ? `?${search}` : ""}${window.location.hash}`;
+          try {
+            window.history.pushState({ navV2Page: page }, "", newUrl);
+          } catch {
+            // Some environments block history (sandbox iframes) — state still moves.
+          }
+        }
+      };
+
       if (preparesBehindOpenDrawer) {
-        flushSync(publishImmediateNavigationFeedback);
+        flushSync(() => {
+          publishImmediateNavigationFeedback();
+          publishRoute();
+        });
       } else if (options.skipTransition) {
         flushSync(() => {
           setDrawerOpen(false);
@@ -324,47 +373,33 @@ export function useNavigationV2(): UseNavigationV2Return {
       }
 
       const run = () => {
-        const updateRoute = () => {
-          setActivePageState(page);
-          setUnknownPath(null);
-          if (typeof window !== "undefined") {
-            const base = getNavV2BasePath(window.location.pathname);
-            const path = PAGE_TO_PATH[page];
-            const params = new URLSearchParams(window.location.search);
-            if (page !== "settings") {
-              params.delete("settingsSection");
-            }
-            const search = params.toString();
-            // Prepend Vite base so GH Pages deploys keep /people-first-app/ prefix.
-            const newUrl = `${base}${path}${search ? `?${search}` : ""}${window.location.hash}`;
-            try {
-              window.history.pushState({ navV2Page: page }, "", newUrl);
-            } catch {
-              // Some environments block history (sandbox iframes) — state still moves.
-            }
-          }
-        };
-
-        updateRoute();
+        publishRoute();
+        setRenderedPage(page);
       };
 
-      // Publish a prepared phone destination while the modal drawer still masks
-      // the page, wait for two real paint opportunities, then start the accepted
-      // drawer exit. This gives Android WebView's compositor a destination frame
-      // before reveal instead of exposing a stale source frame after the panel.
+      // Paint immediate feedback, finish and unmount the retained phone drawer,
+      // then publish the destination after another paint boundary. Route
+      // preloading remains opportunistic: a cold or failed chunk request must
+      // not trap navigation behind the closed drawer; Suspense owns that late
+      // loading state after the retained compositor surface is gone.
+      // Serializing those compositor surfaces prevents a heavy Orb/page mount
+      // from overlapping the drawer's blur layers on Android WebView.
       if (options.skipTransition) {
         if (wasDrawerOpen) {
           const requestId = drawerRouteRequestIdRef.current;
           const pending = {
-            commit: run,
-            preloadReady: options.preload === undefined,
+            commit: () => setRenderedPage(page),
+            commitScheduled: false,
+            drawerExited: false,
             requestId,
           };
           pendingDrawerRouteRef.current = pending;
-          void options.preload?.then(() => {
+          void options.preload?.catch(() => undefined);
+          drawerRouteCloseAfterPaintRef.current = scheduleAfterNextPaint(() => {
             if (pendingDrawerRouteRef.current !== pending) return;
-            pending.preloadReady = true;
-            tryCommitPendingDrawerRoute();
+            if (pending.requestId !== drawerRouteRequestIdRef.current) return;
+            drawerRouteCloseAfterPaintRef.current = null;
+            setDrawerOpen(false);
           });
           tryCommitPendingDrawerRoute();
           return;
@@ -380,9 +415,12 @@ export function useNavigationV2(): UseNavigationV2Return {
   );
 
   const completeDrawerExit = useCallback(() => {
-    // Route publication now happens behind the still-open drawer. Exit
-    // completion remains an explicit lifecycle hook for focus restoration.
-  }, []);
+    const pending = pendingDrawerRouteRef.current;
+    if (!pending) return;
+    if (pending.requestId !== drawerRouteRequestIdRef.current) return;
+    pending.drawerExited = true;
+    tryCommitPendingDrawerRoute();
+  }, [tryCommitPendingDrawerRoute]);
 
   useEffect(() => {
     const openReminderSettings = (event: Event) => {
@@ -430,6 +468,7 @@ export function useNavigationV2(): UseNavigationV2Return {
 
   return {
     activePage,
+    renderedPage,
     unknownPath,
     setActivePage,
     routePendingPage,

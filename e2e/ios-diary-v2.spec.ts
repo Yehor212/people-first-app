@@ -25,7 +25,6 @@ test.use({
           { name: "zenflow_last_seen_version", value: "2.0.0" },
           { name: "zenflow_last_active", value: "2026-06-17" },
           { name: "zenflow-last-weekly-report", value: "2026-06-17T12:00:00.000Z" },
-          { name: "zenflow-orb-first-run-dismissed", value: "1" },
           { name: "zenflow-privacy-acknowledged", value: JSON.stringify(true) },
           {
             name: "zenflow-privacy",

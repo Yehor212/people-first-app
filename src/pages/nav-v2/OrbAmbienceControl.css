@@ -29,17 +29,22 @@
   white-space: normal;
 }
 
-/* A clipped 1px fixed element becomes a full-viewport composited layer in
- * Android WebView. Keep the hidden state local; restore fixed safe-area
- * placement only while the keyboard-accessible control is actually visible. */
+/* Android is touch-first and exposes clipped focusable controls as undersized
+ * accessibility targets. Keep the compact control inside the logical safe
+ * edge instead of shipping an invisible 1px action. Other platforms retain
+ * the focus-reveal treatment above. */
 :root[data-platform="android"] .orb-ambience-focus-control {
-  position: absolute;
-  contain: strict;
-}
-
-:root[data-platform="android"] .orb-ambience-focus-control:focus-within {
   position: fixed;
   contain: none;
+  display: flex;
+  align-items: center;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
 }
 
 @media (min-width: 768px) {

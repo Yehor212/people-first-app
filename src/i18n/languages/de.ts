@@ -4165,13 +4165,6 @@ export const de: Translations = {
   orbSkip: "Später",
   orbUndo: "Rückgängig",
   orbMoodSaved: "Stimmung gespeichert",
-  orbFirstRunTitle: "Drei Schritte zu deinem ersten Eintrag",
-  orbFirstRunStep1: "Schiebe den Regler passend zu deinem Gefühl",
-  orbFirstRunStep2:
-    "Wähle, wann du dich so gefühlt hast: jetzt, zu einer bestimmten Zeit oder den ganzen Tag",
-  orbFirstRunStep3:
-    "Füge bei Bedarf eine Emotion oder Notiz hinzu, speichere dann deine Stimmung und starte den heutigen Eintrag",
-  orbFirstRunGotIt: "Verstanden",
   featureUnavailableTitle: "Funktion vorübergehend nicht verfügbar",
   featureUnavailableChecking:
     "ZenFlow prüft deinen gespeicherten Tagebuchfortschritt. Lass diesen Bildschirm geöffnet und versuche es gleich noch einmal.",

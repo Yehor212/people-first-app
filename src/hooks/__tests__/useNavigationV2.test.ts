@@ -110,7 +110,7 @@ describe("useNavigationV2", () => {
   });
 
   describe("setActivePage", () => {
-    it("paints a preloaded phone route behind the drawer before starting its exit", async () => {
+    it("unmounts the phone drawer before mounting a preloaded destination", async () => {
       let resolvePreload!: () => void;
       const preload = new Promise<void>((resolve) => {
         resolvePreload = resolve;
@@ -138,9 +138,10 @@ describe("useNavigationV2", () => {
       });
 
       expect(result.current.drawerOpen).toBe(true);
-      expect(result.current.activePage).toBe<NavV2Page>("orb");
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
       expect(result.current.routePendingPage).toBe<NavV2Page>("habits");
-      expect(window.location.pathname).toBe("/");
+      expect(window.location.pathname).toBe("/habits");
 
       await act(async () => {
         resolvePreload();
@@ -148,14 +149,72 @@ describe("useNavigationV2", () => {
       });
 
       expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
       expect(result.current.drawerOpen).toBe(true);
+      expect(result.current.routePendingPage).toBe<NavV2Page>("habits");
+      expect(window.location.pathname).toBe("/habits");
+
+      act(() => frameCallbacks.shift()?.(performance.now()));
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
+      expect(result.current.drawerOpen).toBe(true);
+      act(() => frameCallbacks.shift()?.(performance.now()));
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
+      expect(result.current.drawerOpen).toBe(false);
       expect(window.location.pathname).toBe("/habits");
       expect(morph).not.toHaveBeenCalled();
 
+      act(() => result.current.completeDrawerExit());
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
+
       act(() => frameCallbacks.shift()?.(performance.now()));
-      expect(result.current.drawerOpen).toBe(true);
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
+      act(() => frameCallbacks.shift()?.(performance.now()));
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("habits");
+      expect(result.current.drawerOpen).toBe(false);
+      expect(window.location.pathname).toBe("/habits");
+
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+    });
+
+    it("does not block drawer navigation on a slow preload after the drawer exits", () => {
+      const preload = new Promise<void>(() => undefined);
+      const frameCallbacks: FrameRequestCallback[] = [];
+      const requestFrame = vi
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((callback) => {
+          frameCallbacks.push(callback);
+          return frameCallbacks.length;
+        });
+      const cancelFrame = vi
+        .spyOn(window, "cancelAnimationFrame")
+        .mockImplementation(() => undefined);
+      const { result } = renderHook(() => useNavigationV2());
+
+      act(() => result.current.openDrawer());
+      act(() => {
+        result.current.setActivePage("habits", {
+          skipTransition: true,
+          preload,
+        });
+      });
+
+      act(() => frameCallbacks.shift()?.(performance.now()));
       act(() => frameCallbacks.shift()?.(performance.now()));
       expect(result.current.drawerOpen).toBe(false);
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("orb");
+
+      act(() => result.current.completeDrawerExit());
+      act(() => frameCallbacks.shift()?.(performance.now()));
+      act(() => frameCallbacks.shift()?.(performance.now()));
+
+      expect(result.current.activePage).toBe<NavV2Page>("habits");
+      expect(result.current.renderedPage).toBe<NavV2Page>("habits");
+      expect(window.location.pathname).toBe("/habits");
 
       requestFrame.mockRestore();
       cancelFrame.mockRestore();
@@ -344,6 +403,7 @@ describe("useNavigationV2", () => {
         window.dispatchEvent(new PopStateEvent("popstate"));
       });
       expect(result.current.activePage).toBe<NavV2Page>("diary");
+      expect(result.current.renderedPage).toBe<NavV2Page>("diary");
     });
 
     it("keeps active page but exposes Not Found state when URL is not a V2 page", async () => {

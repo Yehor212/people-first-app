@@ -33,7 +33,7 @@ export function PlanningModeRail({ activeMode, onModeChange, labels }: PlanningM
             aria-pressed={active}
             onClick={() => onModeChange(item.id)}
             className={cn(
-              "inline-flex min-h-[44px] min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-semibold whitespace-normal motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-w-[44px] sm:shrink-0",
+              "inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-sm font-semibold whitespace-normal motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-w-[48px] sm:shrink-0",
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground",

@@ -42,7 +42,6 @@ export interface UseOrbMoodFlowReturn {
   canOpenDiary: boolean;
   isSavingMood: boolean;
   moodSaveFailed: boolean;
-  firstRunEligible: boolean;
   handleSliderCommit: (valence: number) => void;
   handleEmotionToggle: (tag: string) => void;
   handleNoteChange: (note: string) => void;
@@ -67,12 +66,7 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
   const [moodSaveFailed, setMoodSaveFailed] = useState(false);
   const saveInFlightRef = useRef(false);
 
-  const { moods, userName } = useUserDataStore(
-    useShallow((s) => ({
-      moods: s.moods,
-      userName: s.userName,
-    }))
-  );
+  const userName = useUserDataStore((s) => s.userName);
 
   const {
     draftValence,
@@ -263,7 +257,6 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
     canOpenDiary,
     isSavingMood,
     moodSaveFailed,
-    firstRunEligible: moods.length === 0,
     handleSliderCommit,
     handleEmotionToggle,
     handleNoteChange,

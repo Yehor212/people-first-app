@@ -94,7 +94,6 @@ async function primePage(page) {
     localStorage.setItem("zenflow-notification-permission-checked", json(true));
     localStorage.setItem("zenflow_last_active", today);
     localStorage.setItem("zenflow-last-weekly-report", new Date().toISOString());
-    localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
     localStorage.setItem("zenflow-privacy-acknowledged", json(true));
     localStorage.setItem(
       "zenflow-privacy",

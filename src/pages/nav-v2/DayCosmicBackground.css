@@ -29,13 +29,24 @@
   overflow: clip;
 }
 
-/* The Android day Orb paints an opaque full-viewport scene above the paper
- * theme's global body grain. Keeping that occluded pseudo-element composited
- * still consumes three full-screen tile surfaces in WebView, even though a
- * phase-locked capture proves it contributes no visible pixels here. The body
- * class is owned by the mounted Orb lifecycle; the visible body vignette stays. */
+/* The Android day Orb already owns a full-viewport paper scene. Keep the exact
+ * visible body vignette by folding it into the existing base background, while
+ * releasing both redundant global paper pseudo-element surfaces. A frozen
+ * phase A/B capture of the folded gradient is pixel-identical (SSIM 1.0). */
 :root[data-theme="paper"] body.android-day-orb-opaque-surface::before {
   display: none;
+}
+
+:root[data-theme="paper"] body.android-day-orb-opaque-surface::after {
+  display: none;
+}
+
+:root[data-theme="paper"] body.android-day-orb-opaque-surface .day-cosmic {
+  --day-body-vignette-layer: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    hsl(var(--zf-trace) / 0.1) 100%
+  );
 }
 
 /* Android keeps the canonical dynamic DOM tree as an immediate CSS fallback.
@@ -210,6 +221,7 @@
   position: absolute;
   inset: 0;
   background:
+    var(--day-body-vignette-layer, none),
     radial-gradient(ellipse 92% 54% at 50% 115%, var(--day-horizon) 0%, transparent 68%),
     radial-gradient(ellipse 84% 48% at 50% 40%, hsl(56 100% 90% / 0.22) 0%, transparent 60%),
     radial-gradient(

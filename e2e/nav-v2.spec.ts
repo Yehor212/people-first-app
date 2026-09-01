@@ -138,9 +138,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
       testInfo.setTimeout(60_000);
       await primeApp(page, { paperTheme: "paper" });
       await freezeTimeToDay(page);
-      await page.addInitScript(() => {
-        localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-      });
       await page.setViewportSize(viewport);
       await page.goto("?nav=v2");
       await page.evaluate(() => document.fonts.ready);
@@ -283,9 +280,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
     // Mark first-run hint as dismissed so it doesn't block the screenshot
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -339,9 +333,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     testInfo.setTimeout(60_000);
     await primeApp(page, { paperTheme: "ink" });
     await freezeTimeToDay(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -395,9 +386,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
   ) {
     await primeApp(page, { paperTheme: opts.theme });
     await freezeTimeToDay(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     await page.setViewportSize(opts.viewport);
     await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -583,9 +571,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     testInfo.setTimeout(60_000);
     await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -652,9 +637,6 @@ test.describe("Nav V2 Infrastructure Baselines", () => {
     testInfo.setTimeout(60_000);
     await primeApp(page, { paperTheme: "paper" });
     await freezeTimeToDay(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("?nav=v2");
     await page.evaluate(() => document.fonts.ready);
@@ -764,9 +746,6 @@ test.describe.skip("MoodSliderV2 Baselines (Phase 3-A.4c-ii-d-d)", () => {
     }
     await primeApp(page, { paperTheme: opts.theme });
     await freezeTimeToDay(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     if (!opts.preserveMotion) {
       // Hide stochastic ShootingStar + freeze all CSS animations/transitions.
       await page.addInitScript(() => {
@@ -1159,9 +1138,6 @@ test.describe("SidebarV2 Theme Coverage (Phase 3-A.4c-ii-d-c)", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await primeApp(page, { paperTheme: opts.theme });
     await freezeTimeToDay(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
-    });
     // Hide stochastic flourishes + freeze animations (same recipe as mood-orb).
     await page.addInitScript(() => {
       const s = document.createElement("style");

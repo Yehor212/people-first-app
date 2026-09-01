@@ -4087,11 +4087,6 @@ const arabicOverrides: Partial<Translations> = {
   orbSkip: "لاحقاً",
   orbUndo: "تراجع",
   orbMoodSaved: "تم حفظ المزاج",
-  orbFirstRunTitle: "ثلاث خطوات لأول إدخال",
-  orbFirstRunStep1: "حرّك شريط التمرير ليلائم شعورك",
-  orbFirstRunStep2: "اختر متى شعرت بهذا: الآن، في وقت محدد، أو طوال اليوم",
-  orbFirstRunStep3: "أضف شعورًا أو ملاحظة إن شئت، ثم احفظ مزاجك وابدأ مدخل اليوم",
-  orbFirstRunGotIt: "فهمت",
   featureUnavailableTitle: "الميزة غير متاحة مؤقتًا",
   featureUnavailableChecking:
     "يتحقق ZenFlow من تقدم اليوميات المحفوظ. أبقِ هذه الشاشة مفتوحة وحاول مرة أخرى بعد قليل.",

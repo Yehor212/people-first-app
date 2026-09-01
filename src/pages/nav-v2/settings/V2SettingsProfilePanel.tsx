@@ -209,6 +209,7 @@ export function ProfilePanel({
           tone={nameValidationMessage ? "danger" : "neutral"}
           ariaInvalid={Boolean(nameValidationMessage)}
           ariaDescribedBy={nameDescriptionIds || undefined}
+          ariaLabel={tx.yourName || "Your name"}
         />
         <SettingsInlineButton
           icon={isSavingName ? Loader2 : Save}

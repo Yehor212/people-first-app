@@ -94,4 +94,11 @@ describe("DiaryPage ambience audio", () => {
     expect(screen.queryByTestId("diary-page-ambience-toggle")).toBeNull();
   });
 
+  it("does not start a second full-page fade after route transition", async () => {
+    render(<DiaryPage />);
+
+    const diary = await screen.findByTestId("diary-page");
+    expect(diary.parentElement).not.toHaveClass("motion-safe:animate-fade-in");
+  });
+
 });

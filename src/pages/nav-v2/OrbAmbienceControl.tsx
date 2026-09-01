@@ -82,7 +82,7 @@ export function OrbAmbienceControl({ audioSrc, tx }: OrbAmbienceControlProps) {
           title={ambienceToggleLabel}
           onClick={ambiencePlayback.toggle}
           disabled={!canPlayOrbAmbience}
-          className="inline-flex min-h-[44px] max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-border/50 bg-background/40 px-3 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur-xl transition-all hover:bg-background/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-55 md:px-4 md:text-sm"
+          className="inline-flex min-h-[48px] min-w-[48px] max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-border/50 bg-background/40 px-3 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur-xl transition-all hover:bg-background/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-55 md:px-4 md:text-sm"
         >
           {ambiencePlayback.isPlaying ? (
             <Volume2 className="h-4 w-4 text-primary" aria-hidden="true" />
