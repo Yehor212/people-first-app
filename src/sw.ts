@@ -242,7 +242,7 @@ registerRoute(
     (url.hostname === "supabase.co" || url.hostname.endsWith(".supabase.co") || url.hostname === "api.zenflowapp.online") &&
     url.pathname.includes("/storage/v1/object/public/"),
   new CacheFirst({
-    cacheName: "supabase-storage",
+    cacheName: "zenflow-supabase-public-assets",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 100,
@@ -257,7 +257,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname === "cdn.jsdelivr.net" && url.pathname.includes("fluent-emoji"),
   new CacheFirst({
-    cacheName: "fluent-emoji-stickers",
+    cacheName: "zenflow-fluent-emoji-stickers",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 200,
@@ -272,7 +272,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname === "fonts.googleapis.com",
   new CacheFirst({
-    cacheName: "google-fonts-stylesheets",
+    cacheName: "zenflow-google-fonts-stylesheets",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 10,
@@ -287,7 +287,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.hostname === "fonts.gstatic.com",
   new CacheFirst({
-    cacheName: "google-fonts-webfonts",
+    cacheName: "zenflow-google-fonts-webfonts",
     plugins: [
       new ExpirationPlugin({
         maxEntries: 20,

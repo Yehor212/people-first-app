@@ -1,61 +1,71 @@
-import { useState, useEffect, useCallback } from 'react';
-import { logger } from '@/lib/logger';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { logger } from "@/lib/logger";
+import { IS_DESKTOP_RUNTIME } from "@/lib/env";
+import { isNative } from "@/lib/platform";
+import {
+  consumePwaInstallPrompt,
+  getPwaInstallPromptSnapshot,
+  getServerPwaInstallPromptSnapshot,
+  initializePwaInstallPromptCapture,
+  subscribeToPwaInstallPrompt,
+} from "@/lib/pwaInstallPrompt";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+export type PwaInstallKind = "installed" | "prompt" | "macos-safari-manual" | "unavailable";
+
+function isMacOsSafari(): boolean {
+  if (typeof window === "undefined") return false;
+  const { maxTouchPoints, platform, userAgent, vendor } = window.navigator;
+  const isIPadDesktopMode = platform === "MacIntel" && maxTouchPoints > 1;
+  const isMac = /Mac/.test(platform) || /Macintosh/.test(userAgent);
+  const isSafari =
+    /Safari\//.test(userAgent) &&
+    /Apple Computer/.test(vendor) &&
+    !/(?:Chrome|Chromium|CriOS|Edg|EdgiOS|FxiOS|OPR|OPiOS)\//.test(userAgent);
+
+  return isMac && !isIPadDesktopMode && !/(?:iPhone|iPad|iPod)/.test(userAgent) && isSafari;
 }
 
 export function usePwaInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const browserPwaDisabled = isNative || IS_DESKTOP_RUNTIME;
 
   useEffect(() => {
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
-    }
+    if (!browserPwaDisabled) initializePwaInstallPromptCapture();
+  }, [browserPwaDisabled]);
 
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
+  const { deferredPrompt, isInstalled } = useSyncExternalStore(
+    subscribeToPwaInstallPrompt,
+    getPwaInstallPromptSnapshot,
+    getServerPwaInstallPromptSnapshot,
+  );
 
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const canInstall = deferredPrompt !== null && !isInstalled;
+  const installKind = useMemo<PwaInstallKind>(() => {
+    if (browserPwaDisabled) return "unavailable";
+    if (isInstalled) return "installed";
+    if (deferredPrompt) return "prompt";
+    if (isMacOsSafari()) return "macos-safari-manual";
+    return "unavailable";
+  }, [browserPwaDisabled, deferredPrompt, isInstalled]);
 
   const promptInstall = useCallback(async () => {
-    if (!deferredPrompt) return false;
+    if (browserPwaDisabled) return false;
+    const prompt = consumePwaInstallPrompt();
+    if (!prompt) return false;
 
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-        setDeferredPrompt(null);
-        return true;
-      }
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      if (outcome === "accepted") return true;
     } catch (error) {
-      logger.error('[PWA] Error prompting install:', error);
+      logger.error("Error prompting install:", error);
     }
 
     return false;
-  }, [deferredPrompt]);
+  }, [browserPwaDisabled]);
 
-  return { canInstall, isInstalled, promptInstall };
+  return {
+    canInstall: installKind === "prompt",
+    installKind,
+    isInstalled: browserPwaDisabled ? false : isInstalled,
+    promptInstall,
+  };
 }

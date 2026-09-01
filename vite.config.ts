@@ -219,6 +219,7 @@ export default defineConfig(({ mode }) => {
               "pwa-192.png",
               "pwa-512.png",
               "pwa-maskable-512.png",
+              "pwa-maskable-1024.png",
               "pwa-windows-44.png",
               "pwa-windows-50.png",
               "pwa-windows-71.png",
@@ -236,14 +237,14 @@ export default defineConfig(({ mode }) => {
             manifest: {
               name: "ZenFlow - Daily Wellness",
               short_name: "ZenFlow",
-              description: "Habit, mood and productivity tracker. Works offline.",
+              description:
+                "Habit, mood and productivity tracker. Previously opened areas can work offline; some features need internet.",
 
               id: base,
               start_url: base,
               scope: base,
 
               display: "standalone",
-              orientation: "portrait-primary",
 
               theme_color: "#4a9d7c",
               background_color: "#071513",
@@ -350,6 +351,12 @@ export default defineConfig(({ mode }) => {
                   type: "image/png",
                   purpose: "maskable",
                 },
+                {
+                  src: pwaIconSrc("pwa-maskable-1024.png"),
+                  sizes: "1024x1024",
+                  type: "image/png",
+                  purpose: "maskable",
+                },
               ],
 
               // Quick actions shortcuts
@@ -358,15 +365,19 @@ export default defineConfig(({ mode }) => {
                   name: "Log Mood",
                   short_name: "Mood",
                   description: "Quickly log your mood",
-                  url: `${base}orb/?nav=v2&navLayout=phone`,
-                  icons: [{ src: pwaIconSrc("pwa-192.png"), sizes: "192x192" }],
+                  url: `${base}orb/?nav=v2`,
+                  icons: [
+                    { src: pwaIconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" },
+                  ],
                 },
                 {
                   name: "Track Habit",
                   short_name: "Habit",
                   description: "Mark a habit as completed",
-                  url: `${base}habits/?nav=v2&navLayout=phone`,
-                  icons: [{ src: pwaIconSrc("pwa-192.png"), sizes: "192x192" }],
+                  url: `${base}habits/?nav=v2`,
+                  icons: [
+                    { src: pwaIconSrc("pwa-192.png"), sizes: "192x192", type: "image/png" },
+                  ],
                 },
               ],
             },

@@ -54,11 +54,17 @@ import { retireLegacyQuickActions } from "./lib/legacyQuickActionsRetirement";
 import { applyDocumentLanguage, loadLanguage, resolveInitialLanguage } from "./i18n";
 import { dispatchNativeReminderReconcile } from "./lib/notificationLifecycle";
 import { resumePendingJournalPasswordRemoval } from "./features/journal/journalSecurityRemovalLifecycle";
+import { initializePwaInstallPromptCapture } from "./lib/pwaInstallPrompt";
+import { IS_DESKTOP_RUNTIME } from "./lib/env";
 
 // Drop legacy raw records and enforce the current retention window before any
 // new runtime failure can be recorded.
 pruneRetainedBoundaryDiagnostics();
 pruneRetainedCrashReports();
+
+// Capture Chromium's single-use install event before lazy Settings code mounts.
+// Native and desktop shells do not participate in browser PWA installation.
+if (!isNative && !IS_DESKTOP_RUNTIME) initializePwaInstallPromptCapture();
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors

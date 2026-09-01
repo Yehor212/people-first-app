@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
 const require = createRequire(import.meta.url);
+const prepareScriptPath = join(process.cwd(), "scripts", "prepare-pages-artifact.cjs");
 const { stageReleaseArtifact } = require("../stage-release-artifact.cjs") as {
   stageReleaseArtifact: (
     source: string,
@@ -21,8 +23,19 @@ const { stageReleaseArtifact } = require("../stage-release-artifact.cjs") as {
 const { findDuplicateArtifactCandidates } = require("../prune-duplicate-artifacts.cjs") as {
   findDuplicateArtifactCandidates: (root: string, options: { allowedRoot: string }) => string[];
 };
+const { computeWorkboxRevision } = require("../check-release-artifact-integrity.cjs") as {
+  computeWorkboxRevision: (content: string | Uint8Array) => string;
+};
 
 const tempRoots: string[] = [];
+const { pwaInstallIconRevision } = JSON.parse(
+  readFileSync("config/brand-logo-assets.json", "utf8")
+) as { pwaInstallIconRevision: string };
+const directRoutes = ["orb", "habits", "diary", "planning", "settings", "desktop"];
+const preparedIndexHtml =
+  "<!doctype html><html><head>" +
+  `<link rel="manifest" href="/people-first-app/manifest.webmanifest?v=${pwaInstallIconRevision}">` +
+  '</head><body><div id="root"></div></body></html>';
 
 function fixtureRoot() {
   const root = mkdtempSync(join(tmpdir(), "zenflow-stage-release-"));
@@ -38,14 +51,26 @@ function writeFixture(root: string, relPath: string, content = relPath) {
 }
 
 function writeMinimalPwaArtifact(root: string) {
-  writeFixture(root, "index.html");
+  writeFixture(root, "index.html", preparedIndexHtml);
+  for (const route of directRoutes) {
+    writeFixture(root, `${route}/index.html`, preparedIndexHtml);
+  }
   writeFixture(root, "manifest.webmanifest");
   writeFixture(root, "registerSW.js");
+  const indexRevision = computeWorkboxRevision(preparedIndexHtml);
   writeFixture(
     root,
     "sw.js",
-    'precacheAndRoute([{url:"/people-first-app/index.html",revision:"1"}],{});'
+    `precacheAndRoute([{url:"/people-first-app/index.html",revision:"${indexRevision}"}],{});`
   );
+}
+
+function prepareArtifact(repositoryRoot: string) {
+  const result = spawnSync(process.execPath, [prepareScriptPath], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  });
+  expect(result.status, result.stderr).toBe(0);
 }
 
 afterEach(() => {
@@ -78,6 +103,7 @@ describe("stageReleaseArtifact", () => {
       ".zenflow-ratchet-production-web-manifest.json",
       "{}"
     );
+    prepareArtifact(root);
 
     const result = stageReleaseArtifact(source, target, { allowedRoot: root, ...onePassOptions });
 
@@ -88,26 +114,27 @@ describe("stageReleaseArtifact", () => {
     expect(existsSync(join(target, "assets", "index.js"))).toBe(true);
     expect(existsSync(join(target, ".nojekyll"))).toBe(true);
     expect(existsSync(join(target, ".zenflow-ratchet-production-web-manifest.json"))).toBe(false);
+    expect(existsSync(join(target, ".zenflow-prepared-pages-artifact-manifest.json"))).toBe(false);
     expect(findDuplicateArtifactCandidates(target, { allowedRoot: root })).toEqual([]);
   });
 
-  it("settles dirty generated source artifacts before staging", () => {
+  it("rejects a generated source artifact changed after preparation", () => {
     const root = fixtureRoot();
     const source = join(root, "dist");
     const target = join(root, "output", "pages-artifact.nosync");
     writeMinimalPwaArtifact(source);
-    const duplicate = writeFixture(source, "assets/index 2.js", "same bytes");
     writeFixture(source, "assets/index.js", "same bytes");
+    prepareArtifact(root);
+    const duplicate = writeFixture(source, "assets/index 2.js", "same bytes");
 
-    stageReleaseArtifact(source, target, {
-      allowedRoot: root,
-      ...settleAfterMutationOptions,
-    });
-
-    expect(existsSync(duplicate)).toBe(false);
-    expect(existsSync(join(target, "assets", "index.js"))).toBe(true);
-    expect(findDuplicateArtifactCandidates(source, { allowedRoot: root })).toEqual([]);
-    expect(findDuplicateArtifactCandidates(target, { allowedRoot: root })).toEqual([]);
+    expect(() =>
+      stageReleaseArtifact(source, target, {
+        allowedRoot: root,
+        ...settleAfterMutationOptions,
+      })
+    ).toThrow("Prepared Pages artifact manifest does not match current artifact files");
+    expect(existsSync(duplicate)).toBe(true);
+    expect(existsSync(target)).toBe(false);
   });
 
   it("replaces stale staged artifacts before copying", () => {
@@ -115,12 +142,47 @@ describe("stageReleaseArtifact", () => {
     const source = join(root, "dist");
     const target = join(root, "output", "pages-artifact.nosync");
     writeMinimalPwaArtifact(source);
+    prepareArtifact(root);
     writeFixture(target, "stale.js");
 
     stageReleaseArtifact(source, target, { allowedRoot: root, ...onePassOptions });
 
     expect(existsSync(join(target, "index.html"))).toBe(true);
     expect(existsSync(join(target, "stale.js"))).toBe(false);
+  });
+
+  it("rejects a same-path mutation of a revision-null precache asset", () => {
+    const root = fixtureRoot();
+    const source = join(root, "dist");
+    const target = join(root, "output", "pages-artifact.nosync");
+    writeMinimalPwaArtifact(source);
+    const originalAsset = "original hashed asset";
+    writeFixture(source, "assets/index-hash.js", originalAsset);
+    const indexRevision = computeWorkboxRevision(preparedIndexHtml);
+    writeFixture(
+      source,
+      "sw.js",
+      `precacheAndRoute([{url:"/people-first-app/index.html",revision:"${indexRevision}"},{url:"assets/index-hash.js",revision:null}],{});`
+    );
+    prepareArtifact(root);
+    writeFixture(source, "assets/index-hash.js", "mutated hashed asset!");
+
+    expect(() =>
+      stageReleaseArtifact(source, target, { allowedRoot: root, ...onePassOptions })
+    ).toThrow("Prepared Pages artifact byte mismatch: assets/index-hash.js");
+    expect(existsSync(target)).toBe(false);
+  });
+
+  it("rejects a source that was never sealed by Pages preparation", () => {
+    const root = fixtureRoot();
+    const source = join(root, "dist");
+    const target = join(root, "output", "pages-artifact.nosync");
+    writeMinimalPwaArtifact(source);
+
+    expect(() =>
+      stageReleaseArtifact(source, target, { allowedRoot: root, ...onePassOptions })
+    ).toThrow("Prepared Pages artifact manifest is missing");
+    expect(existsSync(target)).toBe(false);
   });
 
   it("rejects staging from inside the target before deleting anything", () => {

@@ -32,6 +32,8 @@ const IMAGE_EXPECTATIONS = [
   })),
   { file: "public/pwa-maskable-512.png", width: 512, height: 512, alpha: "opaque" },
   { file: "docs/pwa-maskable-512.png", width: 512, height: 512, alpha: "opaque" },
+  { file: "public/pwa-maskable-1024.png", width: 1024, height: 1024, alpha: "opaque" },
+  { file: "docs/pwa-maskable-1024.png", width: 1024, height: 1024, alpha: "opaque" },
   ...[
     ["pwa-windows-44.png", 44, 44, "allowed"],
     ["pwa-windows-50.png", 50, 50, "allowed"],
@@ -170,6 +172,8 @@ const WHITE_MARK_SAFE_ZONE_EXPECTATIONS = [
   "public/pwa-192.png",
   "public/pwa-maskable-512.png",
   "docs/pwa-maskable-512.png",
+  "public/pwa-maskable-1024.png",
+  "docs/pwa-maskable-1024.png",
   "public/pwa-windows-44.png",
   "public/pwa-windows-50.png",
   "docs/pwa-192.png",
@@ -986,7 +990,8 @@ function assertPwaInstallLogoContract() {
   const icons = docsManifest.icons || [];
   const iconPath = (icon) => (icon.src || "").split("?")[0];
   const iconRevision = (icon) => (icon.src || "").split("?")[1] || "";
-  const hasMaskable = icons.some((icon) => iconPath(icon) === "pwa-maskable-512.png" && /\bmaskable\b/.test(icon.purpose || ""));
+  const hasMaskable512 = icons.some((icon) => iconPath(icon) === "pwa-maskable-512.png" && icon.sizes === "512x512" && /\bmaskable\b/.test(icon.purpose || ""));
+  const hasMaskable1024 = icons.some((icon) => iconPath(icon) === "pwa-maskable-1024.png" && icon.sizes === "1024x1024" && /\bmaskable\b/.test(icon.purpose || ""));
   const hasAny192 = icons.some((icon) => iconPath(icon) === "pwa-192.png" && icon.sizes === "192x192");
   const hasAny512 = icons.some((icon) => iconPath(icon) === "pwa-512.png" && icon.sizes === "512x512");
   const requiredWindowsSizes = new Set(["44x44", "50x50", "71x71", "150x150", "310x310", "310x150", "620x300"]);
@@ -1018,8 +1023,8 @@ function assertPwaInstallLogoContract() {
   ) {
     fail("docs/manifest.webmanifest must keep the canonical GitHub Pages PWA id, scope, start URL, and English store-facing install language");
   }
-  if (!hasMaskable || !hasAny192 || !hasAny512) {
-    fail("docs/manifest.webmanifest must expose 192, 512, and maskable ZenFlow install icons");
+  if (!hasMaskable512 || !hasMaskable1024 || !hasAny192 || !hasAny512) {
+    fail("docs/manifest.webmanifest must expose 192, 512, 512-maskable, and 1024-maskable ZenFlow install icons");
   }
 }
 
