@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "project": "ZenFlow clean-room Kimi audio reconstruction",
+  "project": "ZenFlow first-party procedural audio production",
   "status": "REVIEW_ONLY",
   "runtimeReplacementAuthorized": false,
   "generatorVersion": "1.0.0",
@@ -22,7 +22,7 @@
     "stockRecordings": false,
     "voices": false,
     "aiGeneratedAudioInputs": false,
-    "recoveredKimiBinaryInputs": false,
+    "recoveredExternalBinaryInputs": false,
     "externalAudioDownloads": false,
     "ownerLicenseDecision": "UNVERIFIED",
     "legalReview": "UNVERIFIED"

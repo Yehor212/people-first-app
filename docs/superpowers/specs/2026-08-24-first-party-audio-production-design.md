@@ -1,4 +1,4 @@
-# First-Party Kimi Audio Reconstruction Design
+# First-Party Procedural Audio Production Design
 
 ## Status
 
@@ -6,7 +6,7 @@
 
 ## Goal
 
-Reconstruct the useful 26-role Kimi audio concept without using any recovered Kimi binary, decoded derivative, third-party recording, stock sample, voice, or AI-generated audio input.
+Produce the required 26-role audio set without using any recovered external binary, decoded derivative, third-party recording, stock sample, voice, or AI-generated audio input.
 
 ## Scope
 
@@ -20,8 +20,8 @@ The review inventory is exactly:
 
 The generator uses deterministic mathematical synthesis from fixed numerical seeds. It must not read or transform:
 
-- recovered Kimi MP3 or WAV files;
-- Kimi spectrograms or decoded measurements as signal inputs;
+- recovered external MP3 or WAV files;
+- external spectrograms or decoded measurements as signal inputs;
 - third-party field recordings or stock libraries;
 - voices, speech, MIDI files, or model-generated audio.
 

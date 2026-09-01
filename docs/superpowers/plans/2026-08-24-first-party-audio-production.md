@@ -1,4 +1,4 @@
-# First-Party Kimi Audio Reconstruction Implementation Plan
+# First-Party Procedural Audio Production Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,13 +8,13 @@
 
 **Tech Stack:** Python 3, NumPy, FFmpeg/ffprobe, `unittest`, JSON evidence.
 
-**Spec:** `docs/superpowers/specs/2026-08-24-first-party-kimi-audio-reconstruction-design.md`
+**Spec:** `docs/superpowers/specs/2026-08-24-first-party-audio-production-design.md`
 
 ## Global Constraints
 
 - Inventory is exactly 26 MP3 files.
 - Every waveform is first-party deterministic procedural synthesis.
-- No recovered Kimi binary or derivative is an input.
+- No recovered external binary or derivative is an input.
 - No third-party recording, sample, voice, MIDI, or AI-generated audio input is allowed.
 - Output is 48 kHz stereo MP3 at 128 kbps.
 - Runtime replacement is forbidden in this change.
@@ -25,8 +25,8 @@
 ### Task 1: Lock the exact review contract
 
 **Files:**
-- Create: `docs/audio/first-party-kimi-audio-reconstruction-spec.json`
-- Create: `docs/superpowers/specs/2026-08-24-first-party-kimi-audio-reconstruction-design.md`
+- Create: `docs/audio/first-party-audio-production-spec.json`
+- Create: `docs/superpowers/specs/2026-08-24-first-party-audio-production-design.md`
 
 - [ ] Define the six Hyperfocus families, three levels, three ambience files, and five feedback files.
 - [ ] Encode the 48 kHz/stereo/duration/peak/intensity requirements.

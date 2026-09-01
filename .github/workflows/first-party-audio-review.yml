@@ -6,9 +6,9 @@ on:
       - codex/first-party-audio-reconstruction-v5
     paths:
       - "scripts/audio-review/**"
-      - "docs/audio/first-party-kimi-audio-reconstruction-spec.json"
-      - "docs/superpowers/specs/2026-08-24-first-party-kimi-audio-reconstruction-design.md"
-      - "docs/superpowers/plans/2026-08-24-first-party-kimi-audio-reconstruction.md"
+      - "docs/audio/first-party-audio-production-spec.json"
+      - "docs/superpowers/specs/2026-08-24-first-party-audio-production-design.md"
+      - "docs/superpowers/plans/2026-08-24-first-party-audio-production.md"
       - ".github/workflows/first-party-audio-review.yml"
   workflow_dispatch:
 
@@ -144,7 +144,7 @@ jobs:
             scripts/audio-review/generate-first-party-review-pack.mjs
             scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs
             scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs
-            docs/audio/first-party-kimi-audio-reconstruction-spec.json
+            docs/audio/first-party-audio-production-spec.json
           if-no-files-found: error
           retention-days: 30
           compression-level: 0

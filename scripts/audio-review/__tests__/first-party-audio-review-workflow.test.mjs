@@ -39,7 +39,12 @@ test("review workflow is least-privileged and publishes the exact 26-file pack",
   const uploadPaths = uploadPathMatch[1];
   assert.match(uploadPaths, /scripts\/audio-review\/generate-first-party-review-pack\.mjs/);
   assert.match(uploadPaths, /scripts\/audio-review\/__tests__\/generate-first-party-review-pack\.test\.mjs/);
-  assert.match(uploadPaths, /docs\/audio\/first-party-kimi-audio-reconstruction-spec\.json/);
+  assert.match(uploadPaths, /docs\/audio\/first-party-audio-production-spec\.json/);
+  assert.doesNotMatch(
+    source,
+    /kimi/i,
+    "first-party review workflow must not depend on Kimi-named inputs or metadata"
+  );
   assert.match(source, /actions\/upload-artifact@[0-9a-f]{40}/);
   assert.match(source, /if-no-files-found:\s*error/);
   assert.match(source, /retention-days:\s*30/);

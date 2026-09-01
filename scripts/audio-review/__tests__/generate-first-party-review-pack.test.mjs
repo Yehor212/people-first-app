@@ -80,7 +80,7 @@ test(
         assert.equal(item.stockRecordings, false);
         assert.equal(item.voices, false);
         assert.equal(item.aiGeneratedAudioInputs, false);
-        assert.equal(item.recoveredKimiBinaryInputs, false);
+        assert.equal(item.recoveredExternalBinaryInputs, false);
         const file = path.join(output, item.relativePath);
         assert.equal(fs.existsSync(file), true, item.fileName);
         const hash = crypto
