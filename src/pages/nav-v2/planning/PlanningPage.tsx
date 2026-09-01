@@ -2,7 +2,7 @@ import { memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock3, Sparkles } from "lucide-react";
 import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { cn, formatDate, getToday } from "@/lib/utils";
+import { cn, getToday } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUIStore, useUserDataStore } from "@/stores";
 import { generateHabitScheduleEvents, mergeScheduleEvents } from "@/lib/habitScheduleSync";
@@ -17,6 +17,7 @@ import { PlanningDayPulse } from "./PlanningDayPulse";
 import { PlanningModeRail } from "./PlanningModeRail";
 import { PlanningReviewLane } from "./PlanningReviewLane";
 import { derivePlanningFeatureModel, type PlanningMode } from "./planningFeatureModel";
+import { alignPlanningNow, resolveInitialPlanningDate } from "./planningDates";
 
 const ScheduleTimeline = lazyWithRetry(
   () => import("@/components/ScheduleTimeline").then((m) => ({ default: m.ScheduleTimeline })),
@@ -70,22 +71,6 @@ export function getLatestCompletedFocusSession(
   return latest;
 }
 
-function getTomorrowDate(): string {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return formatDate(date);
-}
-
-function getInitialScheduleDate(): string | undefined {
-  if (typeof window === "undefined") return undefined;
-
-  const value = new URLSearchParams(window.location.search).get("planningDate");
-  if (!value) return undefined;
-  if (value === "tomorrow") return getTomorrowDate();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  return undefined;
-}
-
 export const PlanningPage = memo(function PlanningPage({
   onCompleteFocusSession,
 }: PlanningPageProps) {
@@ -96,7 +81,13 @@ export const PlanningPage = memo(function PlanningPage({
   const focusSectionRef = useRef<HTMLElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const [activeMode, setActiveMode] = useState<PlanningMode>("today");
-  const initialScheduleDate = useMemo(getInitialScheduleDate, []);
+  const initialScheduleDate = useMemo(
+    () =>
+      resolveInitialPlanningDate(
+        typeof window === "undefined" ? undefined : window.location.search,
+      ),
+    [],
+  );
 
   const scheduleEvents = useUserDataStore((s) => s.scheduleEvents);
   const publishDurableScheduleEvents = useUserDataStore(
@@ -127,7 +118,7 @@ export const PlanningPage = memo(function PlanningPage({
   const planningFeatureModel = useMemo(
     () =>
       derivePlanningFeatureModel({
-        now: new Date(),
+        now: alignPlanningNow(initialScheduleDate ?? getToday()),
         events: allScheduleEvents,
         focusSessions,
         focusBridge: {
@@ -147,6 +138,7 @@ export const PlanningPage = memo(function PlanningPage({
       focusLabel,
       focusSessions,
       habits,
+      initialScheduleDate,
       moods,
     ]
   );

@@ -32,7 +32,7 @@ export const FocusTimer = memo(function FocusTimer({
   isPrimaryCTA = false,
   onExpandToJournal,
 }: FocusTimerProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const {
     preset,
@@ -63,6 +63,8 @@ export const FocusTimer = memo(function FocusTimer({
     handleFocusInputBlur,
     handleBreakInputBlur,
   } = useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate });
+  const numberLocale = language === "ar" ? "ar-u-nu-arab" : language;
+  const formattedTotalMinutes = new Intl.NumberFormat(numberLocale).format(totalMinutesToday);
 
   return (
     <div className="lg:max-w-xl lg:mx-auto">
@@ -210,7 +212,7 @@ export const FocusTimer = memo(function FocusTimer({
           >
             <Coffee className="h-4 w-4 shrink-0" />
             <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
-              {totalMinutesToday} {t.todayMinutes}
+              <bdi dir="auto">{formattedTotalMinutes}</bdi> {t.todayMinutes}
             </span>
           </div>
         </div>

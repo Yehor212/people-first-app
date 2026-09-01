@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/components/ThemeToggle";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useShareFlow } from "@/hooks/useShareFlow";
 import {
@@ -35,6 +36,11 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
   const { open, onOpenChange, username, mode } = props;
   const { t, language } = useLanguage();
   const { effectiveTheme } = useTheme();
+  const closeModal = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const { modalProps } = useModalKeyboard({
+    isOpen: open,
+    onClose: closeModal,
+  });
 
   // All state declarations BEFORE hooks that reference them (TDZ)
   const cardTranslations = useMemo(
@@ -83,7 +89,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
     });
 
   // Hooks that use state (after all declarations)
-  useBackHandler(open, () => onOpenChange(false));
+  useBackHandler(open, closeModal);
   useScrollLock(open);
 
   // Derived state
@@ -116,26 +122,19 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
   return createPortal(
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
-        onClick={() => onOpenChange(false)}
-        role="button"
-        tabIndex={0}
-        aria-label={t.close || "Close"}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onOpenChange(false);
-          }
-        }}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
+        onClick={closeModal}
       />
 
       {/* Bottom sheet */}
       <div
-        role="dialog"
-        aria-modal="true"
+        {...modalProps}
         aria-labelledby="share-dialog-title"
-        className="fixed bottom-0 start-0 end-0 z-[70] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-safe md:max-w-lg md:mx-auto md:my-6 md:rounded-2xl md:shadow-2xl md:bottom-auto md:inset-x-0 md:top-1/2 md:-translate-y-1/2"
+        className="fixed bottom-0 start-0 end-0 z-[110] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-safe md:max-w-lg md:mx-auto md:my-6 md:rounded-2xl md:shadow-2xl md:bottom-auto md:inset-x-0 md:top-1/2 md:-translate-y-1/2"
       >
         {/* Header */}
         <div className="px-6 pt-5 pb-3 text-center relative">
@@ -146,7 +145,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
           />
 
           <button
-            onClick={() => onOpenChange(false)}
+            onClick={closeModal}
             className="absolute top-3 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted motion-safe:transition-colors"
             aria-label={t.close || "Close"}
           >
