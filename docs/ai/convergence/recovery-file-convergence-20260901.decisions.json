@@ -364,6 +364,68 @@
         "scripts/__tests__/production-data-integrity-hook.test.ts#current production-data hook passes",
         "scripts/__tests__/android-visual-runtime-hook.test.ts#current Android visual hook passes"
       ]
+    },
+    {
+      "id": "a092-safe-privacy-and-journal-recovery",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?:src/contexts/(?:AICoachContext\\.tsx|__tests__/AICoachContext\\.privacyStatic\\.test\\.ts)|src/lib/storageKeys\\.ts|src/features/journal/(?:JournalPhotoPicker\\.tsx|JournalTemplatePicker\\.tsx|useJournalEditorState\\.ts|__tests__/(?:JournalPhotoPicker\\.iosFileTypes|useJournalEditorState(?:\\.recordingSave)?)\\.test\\.(?:ts|tsx)))$"
+      },
+      "disposition": "MERGED",
+      "evidence": [
+        "0a76f286#recovered journal and coach privacy contracts merged into current owners",
+        "src/contexts/__tests__/AICoachContext.privacyStatic.test.ts#separate diary-to-coach consent gate passes",
+        "src/features/journal/__tests__/RecoveredA092JournalContracts.static.test.ts#five recovered journal contracts pass",
+        "a092-current-owner-suite#66 files and 1553 tests pass",
+        "typecheck#pass",
+        "lint#zero errors and zero warnings",
+        "gitleaks-staged#no leaks found"
+      ]
+    },
+    {
+      "id": "a092-rewarded-ad-and-legacy-removal-conflicts",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?:src/components/ads/__tests__/rewardedAdPlacementContract\\.test\\.ts|src/contexts/__tests__/AdContext\\.rewardContract\\.test\\.ts|src/features/journal/OrbDiaryReflectionRewardCard\\.tsx|src/lib/(?:adRewards\\.ts|__tests__/(?:adRewards|noLegacyRewardsContract)\\.test\\.ts))$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "docs/release/google-play/ADMOB_OWNER_FINALIZATION_RUNBOOK.md#current scope is one Android Habits banner only",
+        "scripts/__tests__/admob-production-readiness.test.ts#current banner-only release contract passes",
+        "current-product-owners#rewarded, interstitial, app-open, and legacy feature deletion variants remain disabled"
+      ]
+    },
+    {
+      "id": "a092-obsolete-governance-orchestra",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?:docs/ai/(?:AGENT_GOVERNANCE_SOURCE_LEDGER|PERSISTENT_AGENT_ORCHESTRA)\\.md|scripts/check-agent-governance-security-scope\\.mjs)$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "scripts/recovery-file-convergence.mjs#current deterministic recovery owner",
+        "scripts/__tests__/agent-workspace-git-hook.test.ts#current locked-lane governance passes",
+        "governance-policy#no custom persistent orchestra or automatic delegation is reintroduced"
+      ]
+    },
+    {
+      "id": "a092-current-composition-supersedes-broad-refactor",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?!(?:src/contexts/(?:AICoachContext\\.tsx|__tests__/AICoachContext\\.privacyStatic\\.test\\.ts)|src/lib/storageKeys\\.ts|src/features/journal/(?:JournalPhotoPicker\\.tsx|JournalTemplatePicker\\.tsx|useJournalEditorState\\.ts|__tests__/(?:JournalPhotoPicker\\.iosFileTypes|useJournalEditorState(?:\\.recordingSave)?)\\.test\\.(?:ts|tsx))|src/components/ads/__tests__/rewardedAdPlacementContract\\.test\\.ts|src/contexts/__tests__/AdContext\\.rewardContract\\.test\\.ts|src/features/journal/OrbDiaryReflectionRewardCard\\.tsx|src/lib/(?:adRewards\\.ts|__tests__/(?:adRewards|noLegacyRewardsContract)\\.test\\.ts)|docs/ai/(?:AGENT_GOVERNANCE_SOURCE_LEDGER|PERSISTENT_AGENT_ORCHESTRA)\\.md|scripts/check-agent-governance-security-scope\\.mjs|src/features/journal/(?:JournalAudioPlayer|useAudioRecorder|JournalStickerPackManager|JournalStickerPicker|StickerRenderer|stickerUtils)\\.(?:ts|tsx)|src/features/journal/__tests__/(?:JournalEntryEditor\\.audioErrorStatic|useAudioRecorder|stickerUtils)\\.test\\.(?:ts|tsx)|src/lib/appAudioAssets\\.ts|src/pages/__tests__/IndexV2NoXpAudioContract\\.test\\.ts)$).+"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "a092-source-audit#9127-file snapshot is dominated by generated Xcode output and includes 69 destructive source deletions",
+        "0a76f286#safe privacy and journal contracts recovered semantically",
+        "a092-current-owner-suite#66 files and 1553 tests pass",
+        "src/components/state-of-mind/__tests__/ValenceOrb.motion.test.ts#current orb cadence and recovery suite passes",
+        "src/features/journal/__tests__/journalStyleFields.test.ts#current visual-state owner passes",
+        "src/lib/__tests__/offlineQueue.accountBoundary.test.ts#current owner-fenced compaction contracts supersede the older test variant",
+        "supabase/migrations/20260713063712_add_journal_visual_state.sql#current constrained journal visual-state migration supersedes two unconstrained migrations",
+        "src/stores/__tests__/themeCustomization.test.ts#current simplified accessible theme contract passes",
+        "current-product-composition#legacy gamification and mood owners remain intentionally present"
+      ]
     }
   ]
 }
