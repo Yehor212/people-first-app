@@ -235,6 +235,56 @@ function buildVariantGroups(records) {
     });
 }
 
+function applyDecisionRules(records, rules) {
+  const normalizedRules = (Array.isArray(rules) ? rules : []).map((rule) => {
+    const id = String(rule?.id || "");
+    if (!id) throw new Error("decision rule requires an id");
+    validateDecision(rule);
+    return { ...rule, id };
+  });
+  if (new Set(normalizedRules.map((rule) => rule.id)).size !== normalizedRules.length) {
+    throw new Error("decision rule ids must be unique");
+  }
+
+  return (Array.isArray(records) ? records : []).map((record) => {
+    if (record?.disposition !== "REVIEW_REQUIRED") return record;
+    const matches = normalizedRules.filter((rule) => selectorMatches(record, rule.selector));
+    if (matches.length > 1) {
+      throw new Error(`multiple decision rules matched ${record.sourceId || "UNKNOWN"}`);
+    }
+    if (matches.length === 0) return record;
+    const selected = matches[0];
+    return {
+      ...record,
+      disposition: selected.disposition,
+      evidence: [...selected.evidence],
+      decisionRule: selected.id,
+    };
+  });
+}
+
+function selectorMatches(record, selector) {
+  if (!selector || typeof selector !== "object") return false;
+  if (selector.sourceKind && record?.sourceKind !== selector.sourceKind) return false;
+  if (selector.commit && record?.commit !== selector.commit) return false;
+  if (selector.pathPattern && !new RegExp(selector.pathPattern).test(String(record?.path || ""))) {
+    return false;
+  }
+  if (
+    selector.packetPattern &&
+    !new RegExp(selector.packetPattern).test(String(record?.packet || ""))
+  ) {
+    return false;
+  }
+  if (
+    selector.sourceIdPattern &&
+    !new RegExp(selector.sourceIdPattern).test(String(record?.sourceId || ""))
+  ) {
+    return false;
+  }
+  return Object.keys(selector).length > 0;
+}
+
 function validateDecision(record) {
   const disposition = String(record?.disposition || "");
   if (disposition !== "REVIEW_REQUIRED" && !CLOSED_DISPOSITIONS.has(disposition)) {
@@ -344,6 +394,7 @@ function visitStrings(value, visitor) {
 }
 
 module.exports = {
+  applyDecisionRules,
   buildVariantGroups,
   classifyMechanicalPolicy,
   collectPacketRecords,

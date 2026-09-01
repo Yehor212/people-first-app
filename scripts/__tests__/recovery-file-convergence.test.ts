@@ -30,6 +30,15 @@ function loadCore() {
       conflict: boolean;
       variants: Array<{ sha256: string; sourceIds: string[] }>;
     }>;
+    applyDecisionRules(
+      records: Array<RecoveryRecord & { disposition: string; evidence?: string[] }>,
+      rules: Array<{
+        id: string;
+        selector: { pathPattern?: string; commit?: string; sourceKind?: string };
+        disposition: string;
+        evidence: string[];
+      }>,
+    ): Array<RecoveryRecord & { disposition: string; evidence?: string[]; decisionRule?: string }>;
     collectPacketRecords(
       manifest: unknown,
       mainHashes: Record<string, string | null>,
@@ -294,6 +303,78 @@ describe("recovery ledger validation", () => {
       },
       open: 1,
     });
+  });
+
+  it("applies one evidence-backed rule only to open matching records", () => {
+    const { applyDecisionRules } = loadCore();
+    const records = [
+      {
+        sourceId: "historical-file:a:src/audio/old.ts",
+        sourceKind: "historical-file" as const,
+        path: "src/audio/old.ts",
+        disposition: "REVIEW_REQUIRED",
+      },
+      {
+        sourceId: "historical-file:b:src/other.ts",
+        sourceKind: "historical-file" as const,
+        path: "src/other.ts",
+        disposition: "REVIEW_REQUIRED",
+      },
+      {
+        sourceId: "dirty-file:kimi",
+        sourceKind: "dirty-file" as const,
+        packet: "kimi-untracked",
+        path: "src/audio/kimi.ts",
+        disposition: "EXCLUDED_KIMI",
+      },
+    ];
+
+    expect(
+      applyDecisionRules(records, [
+        {
+          id: "audio-superseded",
+          selector: { pathPattern: "^src/audio/" },
+          disposition: "SUPERSEDED_WITH_EVIDENCE",
+          evidence: ["src/audio/current.ts#current owner"],
+        },
+      ]),
+    ).toEqual([
+      {
+        ...records[0],
+        disposition: "SUPERSEDED_WITH_EVIDENCE",
+        evidence: ["src/audio/current.ts#current owner"],
+        decisionRule: "audio-superseded",
+      },
+      records[1],
+      records[2],
+    ]);
+  });
+
+  it("fails closed when two semantic rules match one open record", () => {
+    const { applyDecisionRules } = loadCore();
+    const record = {
+      sourceId: "historical-file:a:src/audio/old.ts",
+      sourceKind: "historical-file" as const,
+      path: "src/audio/old.ts",
+      disposition: "REVIEW_REQUIRED",
+    };
+
+    expect(() =>
+      applyDecisionRules([record], [
+        {
+          id: "broad-audio",
+          selector: { pathPattern: "audio" },
+          disposition: "SUPERSEDED_WITH_EVIDENCE",
+          evidence: ["src/audio/current.ts#owner"],
+        },
+        {
+          id: "exact-audio",
+          selector: { pathPattern: "^src/audio/old\\.ts$" },
+          disposition: "MERGED",
+          evidence: ["src/audio/old.ts#merged"],
+        },
+      ]),
+    ).toThrow(/multiple decision rules/i);
   });
 });
 

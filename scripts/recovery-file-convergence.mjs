@@ -8,6 +8,7 @@ import path from "node:path";
 
 const require = createRequire(import.meta.url);
 const {
+  applyDecisionRules,
   classifyMechanicalPolicy,
   collectPacketRecords,
   collectSpecialRecords,
@@ -28,17 +29,28 @@ const outputPath = path.resolve(requireOption(options, "output"));
 
 const manifest = readJson(manifestPath);
 const inventory = readJson(inventoryPath);
+const decisions = options.decisions ? readJson(options.decisions) : { rules: [] };
+const decisionRules = Array.isArray(decisions?.rules) ? decisions.rules : [];
 const mainHashes = collectMainHashes({ manifest, mainSha, repo });
-const packetRecords = collectPacketRecords(manifest, mainHashes).map(sanitizeLedgerRecord);
-const specialRecords = collectSpecialRecords(manifest, mainHashes).map(sanitizeLedgerRecord);
+const packetRecords = applyDecisionRules(
+  collectPacketRecords(manifest, mainHashes),
+  decisionRules,
+).map(sanitizeLedgerRecord);
+const specialRecords = applyDecisionRules(
+  collectSpecialRecords(manifest, mainHashes),
+  decisionRules,
+).map(sanitizeLedgerRecord);
 const historicalRecords = collectHistoricalRecords({ baseSha, inventory, repo }).map(
   sanitizeLedgerRecord,
 );
-const historicalFileRecords = collectHistoricalFileRecords({
-  historicalRecords,
-  mainSha,
-  repo,
-}).map(sanitizeLedgerRecord);
+const historicalFileRecords = applyDecisionRules(
+  collectHistoricalFileRecords({
+    historicalRecords,
+    mainSha,
+    repo,
+  }),
+  decisionRules,
+).map(sanitizeLedgerRecord);
 const allRecords = [...packetRecords, ...historicalFileRecords, ...specialRecords];
 const ledgerSummary = summarizeLedger(allRecords);
 
@@ -56,6 +68,7 @@ const ledger = {
     specialArchiveFiles: specialRecords
       .filter((record) => record.sourceKind === "special-archive")
       .reduce((total, record) => total + record.extractedRegularFiles, 0),
+    decisionRules: decisionRules.length,
     records: ledgerSummary.total,
     byDisposition: ledgerSummary.byDisposition,
     open: ledgerSummary.open,

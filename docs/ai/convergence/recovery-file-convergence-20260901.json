@@ -1,7 +1,7 @@
 {
   "schema": "zenflow-recovery-file-convergence-v1",
   "baseSha": "9ec698be381fc2b3f2e98f4e30291fed7660c350",
-  "mainSha": "38f1dcdfecd8baccad950ac0667b554acd218c36",
+  "mainSha": "90a6bd6d6b68e9fd1fe2644cbaee499074bcf5c7",
   "summary": {
     "dirtyVariants": 900,
     "deletionIntents": 11,
@@ -9,16 +9,18 @@
     "historicalFileChanges": 12068,
     "specialRecords": 6,
     "specialArchiveFiles": 32565,
+    "decisionRules": 7,
     "records": 12985,
     "byDisposition": {
-      "ALREADY_CURRENT": 954,
+      "ALREADY_CURRENT": 1003,
       "EXCLUDED_DUPLICATE_COPY": 3,
       "EXCLUDED_GENERATED_CACHE": 8969,
       "EXCLUDED_KIMI": 65,
       "EXCLUDED_SECRET_PRIVATE": 3,
-      "REVIEW_REQUIRED": 2991
+      "REVIEW_REQUIRED": 2899,
+      "SUPERSEDED_WITH_EVIDENCE": 43
     },
-    "open": 2991
+    "open": 2899
   },
   "packetRecords": [
     {
@@ -2159,7 +2161,14 @@
       "sourceSha256": "96f2a56278fe133fe00f0bf0cef34ecc8d581aa146e72758104d4cedaac45321",
       "mainSha256": "f5f4936cb910117b5219f7358b019f0d81cd242039c73fa060d5d39e5d3ef0d1",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "dirty-file:experience-quality-deep-audit-20260728-f5aa4a98be81029e:src/components/hyperfocus/HyperfocusMode.tsx:7077dc1f0041",
@@ -2179,7 +2188,14 @@
       "sourceSha256": "2b4c14596d83c729f3e9f9d7f101af544fee1bc1150f74990461d04577b19412",
       "mainSha256": "ef9c44ea33e7323a055e565ab505da9d29060b71839e3868e17d3a4b0ae473ca",
       "changeKind": "file-variant",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "dirty-file:experience-quality-deep-audit-20260728-f5aa4a98be81029e:src/components/LanguageSelector.tsx:5f084b60911c",
@@ -11084,7 +11100,13 @@
       "changeKind": "modify",
       "sourceGitOid": "f567932f6b74ec6903dac1375cdfbb2e0c8b29ad",
       "mainGitOid": "139827753da9545b4d3d0033a3df7c52acb2deb6",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "docs/audio/hyperfocus-generated-audio-provenance.json#current runtime provenance",
+        "docs/audio/non-hyperfocus-generated-audio-provenance.json#current ambience provenance",
+        "scripts/check-app-audio-assets.cjs#current source and runtime gate"
+      ],
+      "decisionRule": "audio-current-provenance-docs"
     },
     {
       "sourceId": "historical-file:06cd9d1610330b6765a0680a93d05b2eb38255e0:M:docs/product/planning-feature-layer.md",
@@ -11172,7 +11194,13 @@
       "changeKind": "modify",
       "sourceGitOid": "f5858621e50f27d6cc42609901ae7948593aece9",
       "mainGitOid": "f9dab4915f6c4466b1f8a78e7e4d306cd9e31c74",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "docs/audio/hyperfocus-generated-audio-provenance.json#current runtime provenance",
+        "docs/audio/non-hyperfocus-generated-audio-provenance.json#current ambience provenance",
+        "scripts/check-app-audio-assets.cjs#current source and runtime gate"
+      ],
+      "decisionRule": "audio-current-provenance-docs"
     },
     {
       "sourceId": "historical-file:06cd9d1610330b6765a0680a93d05b2eb38255e0:M:docs/superpowers/plans/2026-06-19-hyperfocus-three-level-audio.md",
@@ -11183,7 +11211,13 @@
       "changeKind": "modify",
       "sourceGitOid": "c10d472e6228bf47b8844a4225846a70db5dc1c3",
       "mainGitOid": "7999a4354b0701cb7dfdb7e4042c70af31e53463",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "docs/audio/hyperfocus-generated-audio-provenance.json#current runtime provenance",
+        "docs/audio/non-hyperfocus-generated-audio-provenance.json#current ambience provenance",
+        "scripts/check-app-audio-assets.cjs#current source and runtime gate"
+      ],
+      "decisionRule": "audio-current-provenance-docs"
     },
     {
       "sourceId": "historical-file:06cd9d1610330b6765a0680a93d05b2eb38255e0:M:docs/superpowers/plans/2026-06-19-telegram-auth-completion.md",
@@ -11205,7 +11239,13 @@
       "changeKind": "modify",
       "sourceGitOid": "46cef2b0d964d46e201d77ce4513ddde4d0c7f74",
       "mainGitOid": "4918e1086a36179603aaa2e08fd2ae10645ed60e",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/habit-pictogram/__tests__/habitCelebrationAssets.test.ts#current hash-bound TGS inventory",
+        "src/components/habit-pictogram/habitCelebrationAssets.ts#current runtime owner",
+        "android-build#six approved TGS assets reachable with drink-water inline"
+      ],
+      "decisionRule": "habit-animation-plan-current-owner"
     },
     {
       "sourceId": "historical-file:06cd9d1610330b6765a0680a93d05b2eb38255e0:M:docs/superpowers/plans/2026-06-19-v2-page-coverage.md",
@@ -11282,7 +11322,13 @@
       "changeKind": "modify",
       "sourceGitOid": "21a9f1a0c3e3e535d6eb6c813557597cacb6af7a",
       "mainGitOid": "e32674c70c4636c8b7906bed154b3bf2e661a48f",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "docs/audio/hyperfocus-generated-audio-provenance.json#current runtime provenance",
+        "docs/audio/non-hyperfocus-generated-audio-provenance.json#current ambience provenance",
+        "scripts/check-app-audio-assets.cjs#current source and runtime gate"
+      ],
+      "decisionRule": "audio-current-provenance-docs"
     },
     {
       "sourceId": "historical-file:06cd9d1610330b6765a0680a93d05b2eb38255e0:M:docs/superpowers/plans/2026-07-09-production-data-integrity-enforcement.md",
@@ -12151,7 +12197,14 @@
       "changeKind": "modify",
       "sourceGitOid": "ff74c7a019f2185d20154ca90619dfaea2a3a135",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:09b0cd2154f849972ff3154e3d31e26c14024141:M:src/pages/Index.tsx",
@@ -13415,7 +13468,7 @@
       "path": "docs/superpowers/specs/2026-08-24-first-party-kimi-audio-reconstruction-design.md",
       "changeKind": "add",
       "sourceGitOid": "f61b6c7d2bb2a959afba297b02998a2809799c01",
-      "mainGitOid": null,
+      "mainGitOid": "f61b6c7d2bb2a959afba297b02998a2809799c01",
       "disposition": "EXCLUDED_KIMI"
     },
     {
@@ -14021,7 +14074,14 @@
       "changeKind": "modify",
       "sourceGitOid": "37a7abd29032d49bab1dfc781190f4d5616e42cf",
       "mainGitOid": "5d8a9a4f09b11b3fa8af29be1e6b077083752895",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:1c8cc3d9a4d460c473e0b69f9435808717e66ee8:M:src/hooks/useAuthSession.ts",
@@ -14153,7 +14213,14 @@
       "changeKind": "modify",
       "sourceGitOid": "d79a52e268a2cdf9d266763977eb0247cd3be549",
       "mainGitOid": "b8fef51a61399d4347e5d03299db819d9f9ea3ec",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:1c8cc3d9a4d460c473e0b69f9435808717e66ee8:M:src/hooks/useWidgetSync.ts",
@@ -15265,7 +15332,14 @@
       "changeKind": "modify",
       "sourceGitOid": "f411fd9da127e027c42738bdb66aac784c8acc31",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:1de81b00084481f6d300a3c3e8ee4b8c86d273f6:M:src/pages/Index.tsx",
@@ -16365,7 +16439,13 @@
       "changeKind": "modify",
       "sourceGitOid": "8a978a99d5a954c68d503a767172a5f983350065",
       "mainGitOid": "28d2ca968d365c8aa0c827719f3f3e8dea9500d9",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:3aa27e64632ee5540b25923bde11f8b078a3b908:M:src/features/journal/JournalTemplatePicker.tsx",
@@ -16430,8 +16510,8 @@
       "path": "scripts/audio-review/generate-first-party-review-pack.mjs",
       "changeKind": "add",
       "sourceGitOid": "fd2e661217dbf50fac81d9f344865041b3b15c30",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "fd2e661217dbf50fac81d9f344865041b3b15c30",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:3dc95d2811ace8613b3ea5e0f0c078e04afb46a1:M:src/__tests__/IntentionalSingleLineTextContract.test.ts",
@@ -17178,8 +17258,8 @@
       "path": "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs",
       "changeKind": "add",
       "sourceGitOid": "1138e2865d2797b318d0c141f2ebbc30cb1a7f34",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "1138e2865d2797b318d0c141f2ebbc30cb1a7f34",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:51f21beb9dd5ecf8df2c95604141ee5c2bb0dcdb:M:scripts/__tests__/hyperfocus-nature-soundscape-contract.test.ts",
@@ -17190,7 +17270,13 @@
       "changeKind": "modify",
       "sourceGitOid": "d3ac303b7897c3cda53e2bb2af5aad9037f28e00",
       "mainGitOid": "6f13907d1266bb8fc02d2bfecf7053a8197e76cd",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/check-app-audio-assets.cjs#current app audio gate",
+        "scripts/check-hyperfocus-audio-assets.cjs#current generated audio gate",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-current-contract-tests"
     },
     {
       "sourceId": "historical-file:51f21beb9dd5ecf8df2c95604141ee5c2bb0dcdb:M:scripts/check-ratchet.ts",
@@ -17277,8 +17363,14 @@
       "path": ".github/workflows/first-party-audio-review.yml",
       "changeKind": "add",
       "sourceGitOid": "a09836d586db7ce438875d3441b13d08abadd7f0",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "cc11ed972d3c4f8c9235ec329e436d75aaa627b4",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ],
+      "decisionRule": "audio-first-party-review-current-owner"
     },
     {
       "sourceId": "historical-file:53740ec1295007ae1bf9bb3a7bef568e5e71312b:A:scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
@@ -17288,8 +17380,14 @@
       "path": "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
       "changeKind": "add",
       "sourceGitOid": "be34264c45e7dccda4ecb7c5219c4003f0a0e269",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "9d61d3e5879218ef3ad64ad479488627427978b5",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ],
+      "decisionRule": "audio-first-party-review-current-owner"
     },
     {
       "sourceId": "historical-file:54caba1a97e923325aafb16e5db1bd01814d9ba6:M:.codex/hooks/spec-kit-safety-gate.cjs",
@@ -22437,7 +22535,14 @@
       "changeKind": "modify",
       "sourceGitOid": "ae2f31d72b24fcdfce0c8347cffc02459c2625cd",
       "mainGitOid": "7515ea629cb2ffce68735644a229264b910af7f9",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:798bea7f0dfa9a837f25996446aabe801122d1ab:M:src/features/journal/__tests__/journalCrypto.test.ts",
@@ -22536,7 +22641,14 @@
       "changeKind": "modify",
       "sourceGitOid": "9b32c01b48c5e82303ddbde6b4d8072e4d7e5bac",
       "mainGitOid": "8c77a90f20e3b24ecd2d6339334195ed3aed7cad",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:798bea7f0dfa9a837f25996446aabe801122d1ab:A:src/features/journal/journalAutomationVaultGuard.ts",
@@ -23097,7 +23209,14 @@
       "changeKind": "add",
       "sourceGitOid": "ee9ce2b2ff1f2867b27d4d85ac12df1c3d0a9194",
       "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:798bea7f0dfa9a837f25996446aabe801122d1ab:M:src/lib/__tests__/ambientSounds.test.ts",
@@ -23108,7 +23227,14 @@
       "changeKind": "modify",
       "sourceGitOid": "d5e92d382887a167d3d1fe891569f2d49826caee",
       "mainGitOid": "d96fc0ad49c7b6a0d074195879111552998de006",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:798bea7f0dfa9a837f25996446aabe801122d1ab:A:src/lib/__tests__/android16NativeContract.test.ts",
@@ -23405,7 +23531,14 @@
       "changeKind": "modify",
       "sourceGitOid": "f32dfcee165baf458ca4e964501f513161e97908",
       "mainGitOid": "7d0861c63f8a8a5c206d9e32e7e7fb1dfdea3e87",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:798bea7f0dfa9a837f25996446aabe801122d1ab:A:src/lib/androidBackBridge.ts",
@@ -23658,7 +23791,14 @@
       "changeKind": "modify",
       "sourceGitOid": "304f06305aeec1b3464d09165b7ac8458d4ecfec",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:798bea7f0dfa9a837f25996446aabe801122d1ab:M:src/pages/Index.tsx",
@@ -25924,7 +26064,14 @@
       "changeKind": "modify",
       "sourceGitOid": "37a7abd29032d49bab1dfc781190f4d5616e42cf",
       "mainGitOid": "5d8a9a4f09b11b3fa8af29be1e6b077083752895",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:870686c05a8abd4a02aea839f3266b4b90d31784:M:src/hooks/useAuthSession.ts",
@@ -26111,7 +26258,14 @@
       "changeKind": "modify",
       "sourceGitOid": "d79a52e268a2cdf9d266763977eb0247cd3be549",
       "mainGitOid": "b8fef51a61399d4347e5d03299db819d9f9ea3ec",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:870686c05a8abd4a02aea839f3266b4b90d31784:M:src/hooks/useWidgetSync.ts",
@@ -27949,7 +28103,14 @@
       "changeKind": "modify",
       "sourceGitOid": "f411fd9da127e027c42738bdb66aac784c8acc31",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:888a68301789700c27fcd2e701baa9bb8968ccdd:M:src/pages/Index.tsx",
@@ -28377,7 +28538,7 @@
       "path": "docs/superpowers/plans/2026-08-24-first-party-kimi-audio-reconstruction.md",
       "changeKind": "add",
       "sourceGitOid": "a1a9d963d99b38dc3ef6deea2f7ff4f29bc9fc60",
-      "mainGitOid": null,
+      "mainGitOid": "a1a9d963d99b38dc3ef6deea2f7ff4f29bc9fc60",
       "disposition": "EXCLUDED_KIMI"
     },
     {
@@ -29081,8 +29242,8 @@
       "path": "scripts/audio-review/README.md",
       "changeKind": "add",
       "sourceGitOid": "54dc3534dc4742890695f9d597f7294333dde24b",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "54dc3534dc4742890695f9d597f7294333dde24b",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:M:.specify/feature.json",
@@ -29103,8 +29264,8 @@
       "path": "docs/superpowers/plans/2026-08-09-pwa-quality.md",
       "changeKind": "add",
       "sourceGitOid": "e981a7ae4dabd4f39fa5f9b48e1cfb7f0af599c6",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "e981a7ae4dabd4f39fa5f9b48e1cfb7f0af599c6",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/checklists/requirements.md",
@@ -29114,8 +29275,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/checklists/requirements.md",
       "changeKind": "add",
       "sourceGitOid": "08da6ad88ef4aca6c9890f0c90b2ec4042447377",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "08da6ad88ef4aca6c9890f0c90b2ec4042447377",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/checklists/ux-security.md",
@@ -29125,8 +29286,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/checklists/ux-security.md",
       "changeKind": "add",
       "sourceGitOid": "37e3d1ab06ab20e754a6af8c40c1b95efecf9256",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "37e3d1ab06ab20e754a6af8c40c1b95efecf9256",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/contracts/ui-lifecycle-contract.md",
@@ -29136,8 +29297,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/contracts/ui-lifecycle-contract.md",
       "changeKind": "add",
       "sourceGitOid": "1cf5a5e3f8eec782197361d04f9511054e6291ed",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "1cf5a5e3f8eec782197361d04f9511054e6291ed",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/data-model.md",
@@ -29147,8 +29308,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/data-model.md",
       "changeKind": "add",
       "sourceGitOid": "0697808d57d69139031bbe68ae6295efc0d17677",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "0697808d57d69139031bbe68ae6295efc0d17677",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/evidence/artifact-manifest.sha256",
@@ -29158,8 +29319,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/evidence/artifact-manifest.sha256",
       "changeKind": "add",
       "sourceGitOid": "51132f4073c59a4ac38990a4a7d23a3e37a5731c",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "51132f4073c59a4ac38990a4a7d23a3e37a5731c",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/evidence/preimplementation-analysis.md",
@@ -29169,8 +29330,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/evidence/preimplementation-analysis.md",
       "changeKind": "add",
       "sourceGitOid": "97060cfef35dc372472117f5fa827a602a33e5fd",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "97060cfef35dc372472117f5fa827a602a33e5fd",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/plan.md",
@@ -29180,8 +29341,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/plan.md",
       "changeKind": "add",
       "sourceGitOid": "a6e973c8037db1466aa6af07002e05b892447408",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "a6e973c8037db1466aa6af07002e05b892447408",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/quickstart.md",
@@ -29191,8 +29352,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/quickstart.md",
       "changeKind": "add",
       "sourceGitOid": "35f92ace17a1a8b225d8385408f46932882b467a",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "35f92ace17a1a8b225d8385408f46932882b467a",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/research.md",
@@ -29202,8 +29363,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/research.md",
       "changeKind": "add",
       "sourceGitOid": "1179bf37ad49cb7c3f5dc97addf41b8db06e52d1",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "1179bf37ad49cb7c3f5dc97addf41b8db06e52d1",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/spec.md",
@@ -29213,8 +29374,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/spec.md",
       "changeKind": "add",
       "sourceGitOid": "55475c735a4e19b11cd1e46bfd22161773dbe612",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "55475c735a4e19b11cd1e46bfd22161773dbe612",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103558-pwa-shell-lifecycle/tasks.md",
@@ -29224,8 +29385,8 @@
       "path": "specs/20260809-103558-pwa-shell-lifecycle/tasks.md",
       "changeKind": "add",
       "sourceGitOid": "1fc0f7e8e93ba0b7a5fbb7ee658c5c1b98d17e4a",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "1fc0f7e8e93ba0b7a5fbb7ee658c5c1b98d17e4a",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/checklists/audio-security.md",
@@ -29235,8 +29396,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/checklists/audio-security.md",
       "changeKind": "add",
       "sourceGitOid": "4965b9467d2f8f286a401c08b696fbb525202088",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "4965b9467d2f8f286a401c08b696fbb525202088",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/checklists/requirements.md",
@@ -29246,8 +29407,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/checklists/requirements.md",
       "changeKind": "add",
       "sourceGitOid": "35eade9e9a876b7e6ee7f24670d9d9893f3f0d62",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "35eade9e9a876b7e6ee7f24670d9d9893f3f0d62",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/contracts/audio-offline-contract.md",
@@ -29257,8 +29418,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/contracts/audio-offline-contract.md",
       "changeKind": "add",
       "sourceGitOid": "90ac840fa33ff83e9bcaa996dfe1cb2e031e05db",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "90ac840fa33ff83e9bcaa996dfe1cb2e031e05db",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/data-model.md",
@@ -29268,8 +29429,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/data-model.md",
       "changeKind": "add",
       "sourceGitOid": "5b2c0ac41ce43c85ca858f909aba00af841111c5",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "5b2c0ac41ce43c85ca858f909aba00af841111c5",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/evidence/preimplementation-analysis.md",
@@ -29279,8 +29440,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/evidence/preimplementation-analysis.md",
       "changeKind": "add",
       "sourceGitOid": "0eecb09b2f4de44a61bba2eeffbef750cbbb6919",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "0eecb09b2f4de44a61bba2eeffbef750cbbb6919",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/plan.md",
@@ -29290,8 +29451,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/plan.md",
       "changeKind": "add",
       "sourceGitOid": "447dc080fa030b310b390914221722f151c4fb15",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "447dc080fa030b310b390914221722f151c4fb15",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/quickstart.md",
@@ -29301,8 +29462,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/quickstart.md",
       "changeKind": "add",
       "sourceGitOid": "a0b77cea4b2d592ae0d0f43df16140a05add5dc8",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "a0b77cea4b2d592ae0d0f43df16140a05add5dc8",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/research.md",
@@ -29312,8 +29473,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/research.md",
       "changeKind": "add",
       "sourceGitOid": "44b65e1a83996d16dc7f17867b76726b84c910ba",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "44b65e1a83996d16dc7f17867b76726b84c910ba",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/spec.md",
@@ -29323,8 +29484,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/spec.md",
       "changeKind": "add",
       "sourceGitOid": "e57529defec844a9b638d1c9e3def1720a0f378b",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "e57529defec844a9b638d1c9e3def1720a0f378b",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103559-pwa-audio-offline/tasks.md",
@@ -29334,8 +29495,8 @@
       "path": "specs/20260809-103559-pwa-audio-offline/tasks.md",
       "changeKind": "add",
       "sourceGitOid": "8a44aed0a712a289efb2470262bd5f9305bdabac",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "8a44aed0a712a289efb2470262bd5f9305bdabac",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/checklists/accessibility-visual.md",
@@ -29345,8 +29506,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/checklists/accessibility-visual.md",
       "changeKind": "add",
       "sourceGitOid": "3b929f7e92fe4943816a8006e3d84f359dcfa652",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "3b929f7e92fe4943816a8006e3d84f359dcfa652",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/checklists/requirements.md",
@@ -29356,8 +29517,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/checklists/requirements.md",
       "changeKind": "add",
       "sourceGitOid": "55430c5a83531bc6305e9f3098b215ab8f416d6b",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "55430c5a83531bc6305e9f3098b215ab8f416d6b",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/contracts/motion-navigation-contract.md",
@@ -29367,8 +29528,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/contracts/motion-navigation-contract.md",
       "changeKind": "add",
       "sourceGitOid": "2d039ac0d7da63b8da40fadebd545fcb21f7e61a",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "2d039ac0d7da63b8da40fadebd545fcb21f7e61a",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/data-model.md",
@@ -29378,8 +29539,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/data-model.md",
       "changeKind": "add",
       "sourceGitOid": "439063119b4d0d2fa74549886d88b6687a7a7fbf",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "439063119b4d0d2fa74549886d88b6687a7a7fbf",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/evidence/preimplementation-analysis.md",
@@ -29389,8 +29550,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/evidence/preimplementation-analysis.md",
       "changeKind": "add",
       "sourceGitOid": "79f7a800ea875bf3714a7bed259c7c389043363c",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "79f7a800ea875bf3714a7bed259c7c389043363c",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/plan.md",
@@ -29400,8 +29561,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/plan.md",
       "changeKind": "add",
       "sourceGitOid": "69449bf91c4ccca6cef7853e6bf5514f936e5cd7",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "69449bf91c4ccca6cef7853e6bf5514f936e5cd7",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/quickstart.md",
@@ -29411,8 +29572,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/quickstart.md",
       "changeKind": "add",
       "sourceGitOid": "74838f08e9f3582373cb6e83c06ef7c7e83696d1",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "74838f08e9f3582373cb6e83c06ef7c7e83696d1",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/research.md",
@@ -29422,8 +29583,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/research.md",
       "changeKind": "add",
       "sourceGitOid": "604beb867df7bc830a7cc4d7ce36852ce54c0d9c",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "604beb867df7bc830a7cc4d7ce36852ce54c0d9c",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/spec.md",
@@ -29433,8 +29594,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/spec.md",
       "changeKind": "add",
       "sourceGitOid": "eb1b88dff82336e7952f8faa8f73105c4b391fa1",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "eb1b88dff82336e7952f8faa8f73105c4b391fa1",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-motion-navigation/tasks.md",
@@ -29444,8 +29605,8 @@
       "path": "specs/20260809-103601-pwa-motion-navigation/tasks.md",
       "changeKind": "add",
       "sourceGitOid": "eb19e9186250e7bb45da0d85d4e02bb6b7284664",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "eb19e9186250e7bb45da0d85d4e02bb6b7284664",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/checklists/requirements.md",
@@ -29455,8 +29616,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/checklists/requirements.md",
       "changeKind": "add",
       "sourceGitOid": "bf82cfa931ebe64adeaf803e30a0de3bfdc02cc4",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "bf82cfa931ebe64adeaf803e30a0de3bfdc02cc4",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/checklists/security-privacy.md",
@@ -29466,8 +29627,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/checklists/security-privacy.md",
       "changeKind": "add",
       "sourceGitOid": "bf38904fee66b96b9a43840c3f856410da4388b6",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "bf38904fee66b96b9a43840c3f856410da4388b6",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/contracts/sync-continuity-contract.md",
@@ -29477,8 +29638,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/contracts/sync-continuity-contract.md",
       "changeKind": "add",
       "sourceGitOid": "acfd91563367f81ba27b02f8f941d1add8f1afdd",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "acfd91563367f81ba27b02f8f941d1add8f1afdd",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/data-model.md",
@@ -29488,8 +29649,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/data-model.md",
       "changeKind": "add",
       "sourceGitOid": "944bff4a890fd4a84b2c5adcb5d96c6576a8117b",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "944bff4a890fd4a84b2c5adcb5d96c6576a8117b",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/evidence/preimplementation-analysis.md",
@@ -29499,8 +29660,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/evidence/preimplementation-analysis.md",
       "changeKind": "add",
       "sourceGitOid": "2f48f07fa9d58191821e35f96aa35c2e07d58e59",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "2f48f07fa9d58191821e35f96aa35c2e07d58e59",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/plan.md",
@@ -29510,8 +29671,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/plan.md",
       "changeKind": "add",
       "sourceGitOid": "a418e986268ef4867a8fe759d425e023b8dd5dba",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "a418e986268ef4867a8fe759d425e023b8dd5dba",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/quickstart.md",
@@ -29521,8 +29682,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/quickstart.md",
       "changeKind": "add",
       "sourceGitOid": "6cf454b0ac27c78ab56b6e8bceb8b16fa2f27251",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "6cf454b0ac27c78ab56b6e8bceb8b16fa2f27251",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/research.md",
@@ -29532,8 +29693,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/research.md",
       "changeKind": "add",
       "sourceGitOid": "b5f79aee2cad31f1bc4530c0606715cbc2b65c25",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "b5f79aee2cad31f1bc4530c0606715cbc2b65c25",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/spec.md",
@@ -29543,8 +29704,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/spec.md",
       "changeKind": "add",
       "sourceGitOid": "2d6066ab5b0df1f4709d5d933f55771509ec9f6e",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "2d6066ab5b0df1f4709d5d933f55771509ec9f6e",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:specs/20260809-103601-pwa-sync-continuity/tasks.md",
@@ -29554,8 +29715,8 @@
       "path": "specs/20260809-103601-pwa-sync-continuity/tasks.md",
       "changeKind": "add",
       "sourceGitOid": "d34c11d0984624e28dcee162fcf3ee36180b4a2f",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "d34c11d0984624e28dcee162fcf3ee36180b4a2f",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:src/lib/__tests__/pwaShellLifecycle.test.ts",
@@ -29565,8 +29726,8 @@
       "path": "src/lib/__tests__/pwaShellLifecycle.test.ts",
       "changeKind": "add",
       "sourceGitOid": "b14b1785fbe96ab35e4477a2ef8c8c433cb83a8c",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "b14b1785fbe96ab35e4477a2ef8c8c433cb83a8c",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9951c2ba4453dc674dd4190f5f869b540fd8925b:A:src/lib/pwaShellLifecycle.ts",
@@ -29576,8 +29737,8 @@
       "path": "src/lib/pwaShellLifecycle.ts",
       "changeKind": "add",
       "sourceGitOid": "b569c08c04c37d76da844d5b287afb4874556790",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "b569c08c04c37d76da844d5b287afb4874556790",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:9b89931a10db29f654dd9239b266f530d55fa4a8:M:.github/workflows/deploy.yml",
@@ -31337,8 +31498,14 @@
       "path": ".github/workflows/first-party-audio-review.yml",
       "changeKind": "modify",
       "sourceGitOid": "fb53373440f99a7098c839c4f75ede5ba004f647",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "cc11ed972d3c4f8c9235ec329e436d75aaa627b4",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ],
+      "decisionRule": "audio-first-party-review-current-owner"
     },
     {
       "sourceId": "historical-file:9d2c9f9af7e21074dbf3de79279cfc3c002636d0:M:scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
@@ -31348,8 +31515,14 @@
       "path": "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
       "changeKind": "modify",
       "sourceGitOid": "1ec5bae9a59babb3cffc533f8d2fc574dff00414",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "9d61d3e5879218ef3ad64ad479488627427978b5",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ],
+      "decisionRule": "audio-first-party-review-current-owner"
     },
     {
       "sourceId": "historical-file:9db36e776021ecf55e03f6f091a0078f5d494bf9:M:scripts/__tests__/agent-workspace-command-guard.test.ts",
@@ -129876,7 +130049,14 @@
       "changeKind": "modify",
       "sourceGitOid": "4e00698c6e87b054f417ec1c71f3fed9c4f0ae76",
       "mainGitOid": "8c9304c39ade9e196aced5a31868a26182b59bb8",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/__tests__/JournalEntryEditor.iosTouchTargets.test.ts",
@@ -130019,7 +130199,13 @@
       "changeKind": "modify",
       "sourceGitOid": "c08eb3b4fbbe00e239d1148643bb9aace778d58b",
       "mainGitOid": "80bbc574146dc404f67441628e90d22a09317635",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/__tests__/useAudioRecorder.test.ts",
@@ -130030,7 +130216,14 @@
       "changeKind": "modify",
       "sourceGitOid": "728584f02351926d14dde4faa5b6b8411d629598",
       "mainGitOid": "bac619706e612561a98902d71759b09269ca6921",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/__tests__/useJournalEditorState.recordingSave.test.tsx",
@@ -130129,7 +130322,14 @@
       "changeKind": "modify",
       "sourceGitOid": "6a6965f286030f4a1320ed67b50a48e397f4a6c0",
       "mainGitOid": "8c77a90f20e3b24ecd2d6339334195ed3aed7cad",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/journalDisplay.ts",
@@ -130272,7 +130472,13 @@
       "changeKind": "modify",
       "sourceGitOid": "5f083a5722c6acc50c2b170e738b407778655673",
       "mainGitOid": "a91bc1ba37792645a5bdf4e75a803c43060caa60",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/JournalStickerPicker.tsx",
@@ -130283,7 +130489,13 @@
       "changeKind": "modify",
       "sourceGitOid": "7b57d6db8445a3bda022ef3cd72cfce82f914e29",
       "mainGitOid": "28d2ca968d365c8aa0c827719f3f3e8dea9500d9",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/journalStorage.ts",
@@ -130393,7 +130605,13 @@
       "changeKind": "modify",
       "sourceGitOid": "c9e397e5ad175c60794998994eff0821c68df0e7",
       "mainGitOid": "17c951f2e3b0c7879c2f94b53da3a582ee2d541c",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/stickerUtils.ts",
@@ -130404,7 +130622,13 @@
       "changeKind": "modify",
       "sourceGitOid": "009e344abe045d74856ad95752ff4542385ba867",
       "mainGitOid": "5fd7fca93cd9c8275d80c44f90d8b233a6880930",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/types.ts",
@@ -130426,7 +130650,14 @@
       "changeKind": "modify",
       "sourceGitOid": "8a1fec797a44271b4ec03a64f5900a7ce1ba138f",
       "mainGitOid": "584f6c7244293cf5b4fb4307384ab4b1308c31d7",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/features/journal/useDiaryCanvas.ts",
@@ -131163,7 +131394,14 @@
       "changeKind": "modify",
       "sourceGitOid": "6eca5e5006ee328799f6b1eae5707d674495980f",
       "mainGitOid": "b1a17ede2117f5880ba0758685e6a7ed2141a77f",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:D:src/lib/comebackChallenge.ts",
@@ -131405,7 +131643,14 @@
       "changeKind": "modify",
       "sourceGitOid": "6250ed5e79506ce1d99181cd3e4bb0db7e078c4d",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a09249c32c87ab2d11b55013aa6796fccb2f5e0d:M:src/pages/__tests__/IndexV2RuntimeBridgeContract.test.ts",
@@ -133595,7 +133840,14 @@
       "changeKind": "modify",
       "sourceGitOid": "d25b91748a29349f0cb42b8fc8d06ca31d908fef",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:a36837b3c2b9604dcac308410a562e5677dbd0e3:M:src/pages/Index.tsx",
@@ -134617,8 +134869,8 @@
       "path": ".github/workflows/first-party-audio-review.yml",
       "changeKind": "modify",
       "sourceGitOid": "cc11ed972d3c4f8c9235ec329e436d75aaa627b4",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "cc11ed972d3c4f8c9235ec329e436d75aaa627b4",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:bef29b538891695e56adf90a12567bef74fbf2c5:M:scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
@@ -134628,8 +134880,8 @@
       "path": "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
       "changeKind": "modify",
       "sourceGitOid": "9d61d3e5879218ef3ad64ad479488627427978b5",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "9d61d3e5879218ef3ad64ad479488627427978b5",
+      "disposition": "ALREADY_CURRENT"
     },
     {
       "sourceId": "historical-file:c0210492c3df7d79e2aec52254cf4959286ca37d:M:package-lock.json",
@@ -135058,7 +135310,13 @@
       "changeKind": "modify",
       "sourceGitOid": "e52b3730722b4ad26156377bf494154a182e8039",
       "mainGitOid": "28d2ca968d365c8aa0c827719f3f3e8dea9500d9",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "sticker-current-accessible-owners"
     },
     {
       "sourceId": "historical-file:d0c26e532c358f35c68c145422e1d267a8bb47d2:M:src/features/journal/PhotoGridLayout.tsx",
@@ -138480,7 +138738,14 @@
       "changeKind": "modify",
       "sourceGitOid": "304f06305aeec1b3464d09165b7ac8458d4ecfec",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:d5ced54fe01f6229211a3fc627474b14c0a7177c:M:src/pages/Index.tsx",
@@ -139140,7 +139405,14 @@
       "changeKind": "modify",
       "sourceGitOid": "ff74c7a019f2185d20154ca90619dfaea2a3a135",
       "mainGitOid": "a99f20a3bc3cc9b86949b265274868bb3d779fb1",
-      "disposition": "REVIEW_REQUIRED"
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ],
+      "decisionRule": "audio-runtime-current-owners"
     },
     {
       "sourceId": "historical-file:de45414b3e849d60e21e050790f6005da42306de:M:src/pages/Index.tsx",
@@ -141108,8 +141380,14 @@
       "path": ".github/workflows/first-party-audio-review.yml",
       "changeKind": "modify",
       "sourceGitOid": "e81274c1d107275e1f82774e4068250d77db382f",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "cc11ed972d3c4f8c9235ec329e436d75aaa627b4",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ],
+      "decisionRule": "audio-first-party-review-current-owner"
     },
     {
       "sourceId": "historical-file:f50470312670513ad9cfa8748eb21b1117fec583:M:scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
@@ -141119,8 +141397,14 @@
       "path": "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs",
       "changeKind": "modify",
       "sourceGitOid": "ba657e98ac7d4fdb930a19f7977f91bf1a7b1f0d",
-      "mainGitOid": null,
-      "disposition": "REVIEW_REQUIRED"
+      "mainGitOid": "9d61d3e5879218ef3ad64ad479488627427978b5",
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ],
+      "decisionRule": "audio-first-party-review-current-owner"
     },
     {
       "sourceId": "historical-file:f5f6f439b072e7555e90f74ddd7e630202545866:A:.agents/skills/ruflow-plus-orchestration/SKILL.md",
@@ -143066,7 +143350,7 @@
       "path": "docs/audio/first-party-kimi-audio-reconstruction-spec.json",
       "changeKind": "add",
       "sourceGitOid": "aa3f9986fc0c10918eb551f22748831d118f61cc",
-      "mainGitOid": null,
+      "mainGitOid": "aa3f9986fc0c10918eb551f22748831d118f61cc",
       "disposition": "EXCLUDED_KIMI"
     }
   ],

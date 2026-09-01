@@ -1,0 +1,90 @@
+{
+  "schema": "zenflow-recovery-file-convergence-decisions-v1",
+  "rules": [
+    {
+      "id": "audio-first-party-review-current-owner",
+      "selector": {
+        "pathPattern": "^(?:scripts/audio-review/(?:README\\.md|generate-first-party-review-pack\\.mjs|__tests__/(?:generate-first-party-review-pack|first-party-audio-review-workflow)\\.test\\.mjs)|\\.github/workflows/first-party-audio-review\\.yml|docs/audio/first-party-kimi-audio-reconstruction-spec\\.json|docs/superpowers/(?:specs|plans)/2026-08-24-first-party-kimi-audio-reconstruction(?:-design)?\\.md)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ]
+    },
+    {
+      "id": "audio-legacy-mjs-cc0-superseded-by-python-review-tool",
+      "selector": {
+        "pathPattern": "^scripts/audio-review/(?:CC0_KIMI_REVIEW_README\\.md|cc0-kimi-audio-(?:config|core|ffmpeg)\\.mjs|generate-cc0-kimi-review-pack\\.mjs|__tests__/(?:cc0-kimi-audio-review-workflow|generate-cc0-kimi-review-pack)\\.test\\.mjs)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio_review/build.py#current bounded review-package builder",
+        "scripts/audio_review/verify.py#current independent verifier",
+        "scripts/audio_review/tests/test_review_tool.py#current review-tool contract"
+      ]
+    },
+    {
+      "id": "audio-runtime-current-owners",
+      "selector": {
+        "pathPattern": "^src/(?:components/hyperfocus/(?:HyperfocusSoundSelector\\.tsx|__tests__/HyperfocusSoundSelector\\.test\\.tsx)|hooks/(?:useUserStartedAmbienceAudio\\.ts|__tests__/useUserStartedAmbienceAudio\\.test\\.tsx)|features/journal/(?:JournalAudioPlayer\\.tsx|useAudioRecorder\\.ts|__tests__/(?:JournalAudioPlayer\\.lifecycle|JournalEntryEditor\\.audioErrorStatic|useAudioRecorder)\\.test\\.(?:ts|tsx))|lib/(?:ambientSounds\\.ts|appAudioAssets\\.ts|__tests__/(?:ambientSounds(?:\\.androidEagerUnlock)?|appAudioAssets)\\.test\\.ts)|pages/__tests__/IndexV2NoXpAudioContract\\.test\\.ts)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ]
+    },
+    {
+      "id": "audio-current-contract-tests",
+      "selector": {
+        "pathPattern": "^scripts/__tests__/(?:hyperfocus-nature-soundscape-contract|audio-blind-spots-contract|check-app-audio-assets|check-hyperfocus-audio-assets)\\.test\\.(?:ts|mjs)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/check-app-audio-assets.cjs#current app audio gate",
+        "scripts/check-hyperfocus-audio-assets.cjs#current generated audio gate",
+        "baseline#9848 tests pass"
+      ]
+    },
+    {
+      "id": "audio-current-provenance-docs",
+      "selector": {
+        "pathPattern": "^docs/(?:audio/(?:hyperfocus-.*|audio-product-ops-policy\\.md|non-hyperfocus-.*)|superpowers/plans/2026-06-(?:17-cross-platform-audio-contract|19-hyperfocus-three-level-audio|29-hyperfocus-rain-wind-audio-approval)\\.md)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "docs/audio/hyperfocus-generated-audio-provenance.json#current runtime provenance",
+        "docs/audio/non-hyperfocus-generated-audio-provenance.json#current ambience provenance",
+        "scripts/check-app-audio-assets.cjs#current source and runtime gate"
+      ]
+    },
+    {
+      "id": "sticker-current-accessible-owners",
+      "selector": {
+        "pathPattern": "^src/features/journal/(?:JournalStickerPackManager|JournalStickerPicker|StickerRenderer|stickerUtils)\\.(?:ts|tsx)$|^src/features/journal/__tests__/stickerUtils\\.test\\.ts$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ]
+    },
+    {
+      "id": "habit-animation-plan-current-owner",
+      "selector": {
+        "pathPattern": "^docs/superpowers/plans/2026-06-19-v2-habit-icon-animation-system\\.md$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/habit-pictogram/__tests__/habitCelebrationAssets.test.ts#current hash-bound TGS inventory",
+        "src/components/habit-pictogram/habitCelebrationAssets.ts#current runtime owner",
+        "android-build#six approved TGS assets reachable with drink-water inline"
+      ]
+    }
+  ]
+}
