@@ -388,9 +388,6 @@ export default defineConfig(({ mode }) => {
               // Large/lazy route chunks and social graphics are cached on demand by sw.ts.
               globPatterns: [
                 "index.html",
-                "manifest.webmanifest",
-                "runtime-perf-bootstrap.js",
-                "registerSW.js",
                 "assets/index-*.js",
                 "assets/index-*.css",
                 "assets/state-vendor-*.js",

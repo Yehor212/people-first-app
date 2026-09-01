@@ -81,4 +81,16 @@ describe("public web manifest contract", () => {
     expect(iconGenerator).not.toContain("?tab=home");
     expect(iconGenerator).not.toContain("navLayout=phone");
   });
+
+  it("does not list plugin-managed PWA shell files again in injectManifest globs", () => {
+    const viteConfig = readFileSync("vite.config.ts", "utf8");
+    const globPatterns = viteConfig.match(
+      /globPatterns:\s*\[([\s\S]*?)\],\s*\n\s*\/\/ version-check\.js/,
+    )?.[1];
+
+    expect(globPatterns).toBeDefined();
+    expect(globPatterns).not.toContain('"manifest.webmanifest"');
+    expect(globPatterns).not.toContain('"runtime-perf-bootstrap.js"');
+    expect(globPatterns).not.toContain('"registerSW.js"');
+  });
 });
