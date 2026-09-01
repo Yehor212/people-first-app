@@ -178,11 +178,11 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
         ) {
           durableEntry = error.committedValue;
           logger.warn(
-            "[OrbMoodFlow] Mood persisted; mounted-state finalization remains incomplete:",
+            "[OrbPage] Mood persisted; mounted-state finalization remains incomplete:",
             error.issueKinds,
           );
         } else {
-          logger.error("[OrbMoodFlow] Mood persistence failed before transition:", error);
+          logger.error("[OrbPage] Mood persistence failed before transition:", error);
           setMoodSaveFailed(true);
           return false;
         }
@@ -199,7 +199,7 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
           });
         }
       } catch (error) {
-        logger.error("[OrbMoodFlow] Mood post-commit side effect failed:", error);
+        logger.error("[OrbPage] Mood post-commit side effect failed:", error);
       }
 
       if (prepareDiaryHandoff) {

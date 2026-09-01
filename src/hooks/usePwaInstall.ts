@@ -56,7 +56,7 @@ export function usePwaInstall() {
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") return true;
     } catch (error) {
-      logger.error("Error prompting install:", error);
+      logger.error("[PWA] Install prompt failed:", error);
     }
 
     return false;
