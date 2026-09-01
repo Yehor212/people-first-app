@@ -27,9 +27,9 @@ describe("Playwright local server port contract", () => {
     expect(config).toContain("npm run dev -- --host 127.0.0.1");
   });
 
-  it("keys visual approval paths by browser project and host platform", () => {
+  it("keeps visual approval paths OS-agnostic for cross-platform CI reuse", () => {
     expect(playwrightConfig.snapshotPathTemplate).toBe(
-      "{testDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}",
+      "{testDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}",
     );
   });
 
