@@ -101,7 +101,8 @@ describe("scrollable data accessibility contract", () => {
 
   it("keeps the empty schedule timeline reachable and named for keyboard scrolling", () => {
     const timelineScroller =
-      /ref=\{timelineRef\}[\s\S]*?<div\n\s+className="relative h-28"/.exec(scheduleTimeline)?.[0] ?? "";
+      /ref=\{timelineRef\}[\s\S]*?<div\s+className="relative h-28"/.exec(scheduleTimeline)?.[0] ??
+      "";
 
     expect(timelineScroller).toContain('role="region"');
     expect(timelineScroller).toContain('aria-label={t.scheduleTitle || "Your Schedule"}');

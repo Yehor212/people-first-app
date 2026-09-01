@@ -234,8 +234,8 @@ export const SettingsPage = memo(function SettingsPage({ controls }: SettingsPag
       ) : null}
       <Bloom
         key="settings-page"
+        initial={false}
         className="relative z-10"
-        initial={{ opacity: 0, scale: 1, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 1, y: 8 }}
         transition={staggerDelay("primary")}

@@ -18,30 +18,37 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { BASE_URL } from '@/lib/env';
 import { plural } from '@/lib/plural';
+import {
+  buildConnectivityProbeUrl,
+  CONNECTIVITY_EVIDENCE_SOURCE,
+  CONNECTIVITY_PROBE_QUERY_PARAM,
+  CONNECTIVITY_PROBE_QUERY_VALUE,
+  CONNECTIVITY_PROBE_TIMEOUT_MS,
+} from '@/lib/connectivityProbe';
 
-const CONNECTIVITY_PROBE_TIMEOUT_MS = 5000;
 type DataDropReason = 'storage-limit';
 
 export function getConnectivityProbeUrl(): string {
   if (typeof window === 'undefined') {
-    return '/favicon.ico';
+    return `/version.json?${CONNECTIVITY_PROBE_QUERY_PARAM}=${CONNECTIVITY_PROBE_QUERY_VALUE}`;
   }
 
   try {
     if (BASE_URL === './') {
-      return new URL('favicon.ico', window.location.href).href;
+      return buildConnectivityProbeUrl(window.location.href);
     }
 
-    return new URL('favicon.ico', new URL(BASE_URL || '/', window.location.origin)).href;
+    return buildConnectivityProbeUrl(new URL(BASE_URL || '/', window.location.origin));
   } catch {
-    return '/favicon.ico';
+    return `/version.json?${CONNECTIVITY_PROBE_QUERY_PARAM}=${CONNECTIVITY_PROBE_QUERY_VALUE}`;
   }
 }
 
 async function probeConnectivity(signal?: AbortSignal): Promise<boolean> {
   const response = await fetch(getConnectivityProbeUrl(), {
-    method: 'HEAD',
-    cache: 'no-cache',
+    method: 'GET',
+    cache: 'no-store',
+    credentials: 'same-origin',
     signal,
   });
 
@@ -192,7 +199,7 @@ export function OfflineBanner() {
           try {
             await processQueue({
               verifiedConnectivity: {
-                source: 'same-origin-app-asset',
+                source: CONNECTIVITY_EVIDENCE_SOURCE,
                 signal: controller.signal,
               },
             });

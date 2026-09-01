@@ -5,6 +5,7 @@
  *   - empty-state quick-picks
  *   - first weekly cell after template setup
  *   - weekly-card statistics button
+ *   - explicit weekly-card actions button and focus restoration
  */
 
 import { test, expect, type Locator, type Page } from "@playwright/test";
@@ -153,6 +154,28 @@ test.describe("§11 #1 — Habits touch targets ≥ 44×44 px", () => {
 
     const statsButton = card.getByRole("button", { name: /statistics/i }).first();
     await expectTouchTarget(statsButton, "weekly card statistics button");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const actionsButton = card.locator('[data-slot="weekly-actions"]');
+    await expectTouchTarget(actionsButton, "weekly card actions button");
+    await expect(actionsButton).toHaveAttribute("aria-haspopup", "dialog");
+    await expect(actionsButton).toHaveAccessibleName(/actions for/i);
+
+    await actionsButton.focus();
+    await page.keyboard.press("Enter");
+    const actionSheet = page.getByRole("dialog", { name: /^actions$/i });
+    await expect(actionSheet).toBeVisible();
+    await expect
+      .poll(() => actionSheet.evaluate((sheet) => sheet.contains(document.activeElement)))
+      .toBe(true);
+
+    await page.keyboard.press("Escape");
+    await expect(actionSheet).toBeHidden();
+    await expect(actionsButton).toBeFocused();
+
+    await card.locator('[data-slot="weekly-collapse"]').click();
+    await expect(card).toHaveAttribute("data-collapsed", "true");
+    await expectTouchTarget(actionsButton, "collapsed weekly card actions button");
   });
 
   test("advanced setup navigation chips move focus to the matching section", async ({

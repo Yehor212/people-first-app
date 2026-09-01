@@ -45,11 +45,15 @@ const PRUNE = [
   // icon-512.png: alt-size output, manifest uses pwa-512.png exclusively.
   // Verified: 0 refs in src/ or vite.config.ts manifest.
   "icon-512.png",
+  // Browser-PWA metadata and fallback document are copied from public/ even
+  // when the VitePWA plugin is disabled for Capacitor. Native WebViews neither
+  // register the browser worker nor reference these files.
+  "manifest.webmanifest",
+  "offline.html",
   // PWA manifest icons — consumed by browser when installing as PWA via
   // manifest.webmanifest. Capacitor Android/iOS use NATIVE launcher icons
   // from android/app/src/main/res/mipmap-*/ and ios/App/App/Assets.xcassets/
-  // so these PNGs are dead weight in the APK. VitePWA plugin is also gated
-  // `!isCapacitor` so no manifest is generated in native builds.
+  // so these PNGs are dead weight in native bundles.
   // Keep pwa-192.png: index.html references it as a favicon, and removing it
   // produces a broken native WebKit asset request.
   "pwa-72.png",
@@ -60,6 +64,14 @@ const PRUNE = [
   "pwa-384.png",
   "pwa-512.png",
   "pwa-maskable-512.png",
+  "pwa-maskable-1024.png",
+  "pwa-windows-44.png",
+  "pwa-windows-50.png",
+  "pwa-windows-71.png",
+  "pwa-windows-150.png",
+  "pwa-windows-310.png",
+  "pwa-windows-wide-310x150.png",
+  "pwa-windows-splash-620x300.png",
 ];
 
 function resolveChildInsideRoot(root, childName) {

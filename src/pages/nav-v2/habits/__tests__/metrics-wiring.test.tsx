@@ -91,7 +91,6 @@ type HeroZoneProps = {
   onUnskipHabit?: (habitId: string, date: string) => void;
   onArchiveHabit?: (habitId: string) => void;
   onUnarchiveHabit?: (habitId: string) => void;
-  onDeleteHabit: (habitId: string) => void;
 };
 type CreateSheetProps = {
   onAddHabit: (h: Habit) => void;

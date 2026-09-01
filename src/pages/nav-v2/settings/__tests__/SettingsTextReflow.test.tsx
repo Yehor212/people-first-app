@@ -9,6 +9,7 @@ import {
 } from "../components/SettingsPageComponents";
 import { DEFAULT_THEME_CUSTOMIZATION } from "@/stores/themeCustomization";
 import { AppearanceAccent } from "../V2SettingsAppearanceAccent";
+import { de } from "@/i18n/languages/de";
 import { SettingsModuleCard } from "../components/SettingsModuleCard";
 import {
   PanelFrame,
@@ -38,9 +39,7 @@ describe("Settings text reflow contracts", () => {
     expect(shell.className).toContain(
       "pe-[max(var(--v2-phone-content-inline-end),var(--safe-inline-end))]"
     );
-    expect(shell.className).toContain(
-      "pt-[calc(var(--safe-top)+var(--v2-phone-drawer-top-rail))]"
-    );
+    expect(shell.className).toContain("pt-[calc(var(--safe-top)+var(--v2-phone-drawer-top-rail))]");
     expect(shell.className).toContain("md:ps-[max(1.5rem,var(--safe-inline-start))]");
     expect(shell.className).toContain("md:pe-[max(1.5rem,var(--safe-inline-end))]");
     expect(shell.className).not.toContain("4.25rem");
@@ -106,6 +105,11 @@ describe("Settings text reflow contracts", () => {
     expect(lead).toHaveClass("max-w-[15rem]", "min-[360px]:max-w-[24rem]");
   });
 
+  it("provides a translator-authored German break opportunity without changing the visible word", () => {
+    expect(de.navV2Settings).toBe("Ein\u00adstellungen");
+    expect(de.navV2Settings.split("\u00ad").join("")).toBe("Einstellungen");
+  });
+
   it("lets shared choice and field labels wrap without expanding their grid tracks", () => {
     render(
       <>
@@ -133,9 +137,6 @@ describe("Settings text reflow contracts", () => {
       '[data-slot="settings-choice-label"]'
     );
     const selectedChoice = screen.getByTestId("selected-settings-choice");
-    const selectionMarker = selectedChoice.querySelector<HTMLElement>(
-      '[data-slot="settings-choice-selection"]'
-    );
     const title = screen.getByText("Benachrichtigungsberechtigung");
     const description = screen.getByText("Benachrichtigungsberechtigung erforderlich.");
 
@@ -151,9 +152,6 @@ describe("Settings text reflow contracts", () => {
     expect(choiceLabel?.className).toContain("[hyphens:manual]");
     expect(choiceLabel?.className).not.toContain("[overflow-wrap:anywhere]");
     expect(selectedChoice).toHaveAttribute("aria-pressed", "true");
-    expect(selectionMarker).not.toBeNull();
-    expect(selectionMarker).toHaveAttribute("aria-hidden", "true");
-    expect(selectionMarker?.querySelector("svg")).not.toBeNull();
     expect(title).toHaveClass("min-w-0", "break-words");
     expect(title.className).toContain("[overflow-wrap:break-word]");
     expect(title.className).toContain("[hyphens:manual]");
@@ -200,11 +198,13 @@ describe("Settings text reflow contracts", () => {
 
     expect(title.className).toContain("[overflow-wrap:break-word]");
     expect(title.className).toContain("[hyphens:manual]");
-    expect(title).toHaveClass("col-start-2", "col-end-3", "row-start-1");
-    expect(description).toHaveClass("col-start-2", "col-end-4", "row-start-2");
+    expect(title).toHaveClass("col-start-1", "col-end-3", "row-start-2");
+    expect(title).toHaveClass("min-[520px]:col-start-2", "min-[520px]:row-start-1");
+    expect(description).toHaveClass("col-start-1", "col-end-3", "row-start-3");
+    expect(description).toHaveClass("min-[520px]:col-start-2", "min-[520px]:row-start-2");
     expect(description.className).toContain("[overflow-wrap:break-word]");
     expect(description.className).toContain("[hyphens:manual]");
-    expect(row).toHaveClass("rounded-none", "border-x-0", "border-t-0", "bg-transparent");
+    expect(row).toHaveAttribute("data-containment", "row");
     expect(row.className).not.toContain("shadow-");
     expect(icon).not.toBeNull();
     expect(icon?.className).not.toContain("rounded-[8px]");
@@ -236,8 +236,8 @@ describe("Settings text reflow contracts", () => {
 
     const row = screen.getByTestId("flat-settings-row");
     expect(row).toHaveAttribute("data-inset-presentation", "flat-row");
-    expect(row).toHaveClass("rounded-none", "border-b", "bg-transparent");
-    expect(row).not.toHaveClass("rounded-[8px]", "border", "p-2");
+    expect(row).toHaveAttribute("data-containment", "row");
+    expect(row).not.toHaveClass("rounded-[8px]", "border");
     expect(row.className).not.toContain("bg-[hsl(var(--settings-v2-shell)");
   });
 
@@ -270,8 +270,8 @@ describe("Settings text reflow contracts", () => {
     const copy = panel.querySelector<HTMLElement>('[data-slot="settings-panel-copy"]');
 
     expect(header).toBeInTheDocument();
-    expect(header).toHaveClass("flex-col", "min-[360px]:flex-row");
-    expect(copy).toHaveClass("w-full", "min-[360px]:w-auto");
+    expect(header).toHaveClass("grid", "grid-cols-[2.25rem_minmax(0,1fr)]", "items-start");
+    expect(copy).toHaveClass("min-w-0", "[overflow-wrap:break-word]");
     expect(panel.querySelector('[data-slot="settings-panel-icon"]')).toBeInTheDocument();
     expect(copy).toBeInTheDocument();
   });
@@ -300,11 +300,11 @@ describe("Settings text reflow contracts", () => {
     const description = screen.getByText("Benachrichtigungsberechtigung erforderlich.");
 
     expect(moduleButton).toBeInTheDocument();
-    expect(moduleButton.className).toContain("grid-cols-[auto_minmax(0,1fr)_auto]");
-    expect(moduleButton.className).not.toContain("min-[420px]:grid-cols");
-    expect(description).toHaveClass("col-start-2", "col-end-3", "row-start-2");
-    expect(moduleButton.parentElement?.className).toContain("before:start-16");
-    expect(moduleButton.parentElement?.className).not.toContain("min-[420px]:before:start-16");
+    expect(moduleButton.className).toContain("grid-cols-[minmax(0,1fr)_auto]");
+    expect(moduleButton.className).toContain("min-[420px]:grid-cols-[auto_minmax(0,1fr)_auto]");
+    expect(description).toHaveClass("col-span-2", "row-start-3");
+    expect(description).toHaveClass("min-[420px]:col-start-2", "min-[420px]:row-start-2");
+    expect(moduleButton.parentElement).toHaveAttribute("data-containment", "row");
     expect(description.style.hyphens).toBe("manual");
     expect(description.style.overflowWrap).toBe("break-word");
   });
@@ -345,29 +345,20 @@ describe("Settings text reflow contracts", () => {
     const accountRow = screen.getByTestId("settings-module-account");
     const appearanceRow = screen.getByTestId("settings-module-appearance");
     const accountButton = screen.getByTestId("settings-module-card-account");
-    const accountIcon = accountRow.querySelector<HTMLElement>(
-      '[data-slot="settings-module-icon"]'
-    );
-
-    expect(group).toHaveAttribute("data-visual-role", "settings-group");
-    expect(group).toHaveClass("overflow-hidden", "rounded-[8px]", "border");
+    expect(group).toHaveAttribute("role", "list");
+    expect(group).toHaveAttribute("data-containment", "group");
+    expect(group).toHaveClass("rounded-[8px]", "border", "p-1");
     expect(group).not.toHaveClass("divide-y");
     expect(accountRow).not.toHaveClass("rounded-[8px]", "border");
     expect(appearanceRow).not.toHaveClass("rounded-[8px]", "border");
     expect(accountRow.className).not.toContain("shadow-");
     expect(appearanceRow.className).not.toContain("shadow-");
-    expect(accountRow).toHaveClass(
-      "before:start-16",
-      "before:end-3",
-      "first:before:hidden"
-    );
-    expect(accountRow.className).not.toContain("min-[420px]:before:start-16");
-    expect(accountButton).not.toHaveClass("rounded-[8px]");
+    expect(accountRow).toHaveAttribute("role", "listitem");
+    expect(appearanceRow.querySelector('[data-slot="settings-module-separator"]')).not.toBeNull();
+    expect(accountButton).toHaveClass("rounded-[6px]");
     expect(accountButton.className).not.toContain("hover:-translate-y");
     expect(accountButton.className).not.toContain("shadow-");
-    expect(accountButton).toHaveClass("focus-visible:ring-inset");
-    expect(accountIcon).not.toBeNull();
-    expect(accountIcon).not.toHaveClass("border");
+    expect(accountButton).toHaveClass("focus-visible:ring-2");
     expect(accountButton).toHaveClass("min-h-[72px]");
     expect(accountButton).toHaveAttribute("aria-current", "page");
   });

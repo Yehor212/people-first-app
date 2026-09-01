@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   encodeJournalPhotoWithinLimit,
   getDataUrlDecodedByteLength,
+  JOURNAL_PHOTO_TOO_DETAILED_ERROR,
 } from "../journalPhotoEncoding";
 
 const jpegDataUrl = (decodedBytes: number) => {
@@ -72,7 +73,7 @@ describe("journal photo adaptive encoding", () => {
     }));
 
     await expect(encodeJournalPhotoWithinLimit(encode, 1_048_576)).rejects.toThrow(
-      "Photo could not be prepared within the storage limit",
+      JOURNAL_PHOTO_TOO_DETAILED_ERROR,
     );
   });
 });

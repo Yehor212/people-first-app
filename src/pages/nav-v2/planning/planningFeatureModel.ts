@@ -1,4 +1,5 @@
 import { ENTRY, type FocusSession, type Habit, type MoodEntry, type ScheduleEvent } from "@/types";
+import { isHabitDueOnDate } from "@/lib/habitScheduling";
 import { formatDate } from "@/lib/utils";
 
 export type PlanningMode = "today" | "schedule" | "focus" | "review";
@@ -174,7 +175,10 @@ export function derivePlanningFeatureModel({
       session.date === today && session.status === "completed" && session.reflection == null,
   );
   const pendingHabitCount = habits.filter(
-    (habit) => !habit.isArchived && !isHabitHandledToday(habit, today),
+    (habit) =>
+      !habit.isArchived &&
+      isHabitDueOnDate(habit, today) &&
+      !isHabitHandledToday(habit, today),
   ).length;
   const moodLoggedToday = moodEntries.some((entry) => entry.date === today);
 

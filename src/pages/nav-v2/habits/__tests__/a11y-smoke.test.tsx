@@ -62,6 +62,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       navV2HabitsKeepGoing: "Momentum is yours",
       navV2HabitsOneHabitLeft: "One habit left",
       navV2HabitsHabitsLeft: "{count} habits left",
+      navV2HabitsActions: "Actions",
+      navV2HabitsActionsFor: "Actions for {habit}",
     },
     language: "en",
   }),
@@ -195,19 +197,24 @@ describe("Habits a11y smoke (converts §11 🟡 rows to ✅)", () => {
     });
   });
 
-  describe("§11 #13 — habit row carries aria-label (chain moved to detail sheet per revolution-ergonomics 2026-04-19)", () => {
-    it("HeroHabitRow has role=group with aria-label equal to habit name", () => {
+  describe("§11 #13 — habit row names its group and exposes secondary actions as a button", () => {
+    it("keeps the group non-interactive and provides a named 44px dialog trigger", () => {
       const today = new Date().toISOString().slice(0, 10);
       render(
         <HeroHabitRow
           habit={habit({ entries: { [today]: { value: 1 } } })}
           onToggle={vi.fn()}
-          onDelete={vi.fn()}
+          onSkip={vi.fn()}
         />
       );
       const row = screen.getByTestId("hero-habit-row-h1");
       expect(row.getAttribute("role")).toBe("group");
       expect(row.getAttribute("aria-label")).toBe("Hydrate");
+      expect(row).not.toHaveAttribute("tabindex");
+      const actions = screen.getByRole("button", { name: /Actions for.*Hydrate/ });
+      expect(actions).toHaveAccessibleName("Actions for \u2068Hydrate\u2069");
+      expect(actions).toHaveAttribute("aria-haspopup", "dialog");
+      expect(actions).toHaveClass("min-h-[44px]", "min-w-[44px]");
       // Chain dots were removed from the row surface; the 7-day history
       // lives inside V1 HabitDetailSheet, opened via the action sheet's
       // "Open details" item.

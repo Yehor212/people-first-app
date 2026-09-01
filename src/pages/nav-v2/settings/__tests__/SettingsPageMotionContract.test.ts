@@ -51,8 +51,11 @@ describe("Settings mobile transition contract", () => {
     expect(motionPresets.fadeIn.animate).not.toHaveProperty("x");
   });
 
-  it("keeps the whole Settings page at full scale while its entrance motion runs", () => {
-    expect(settingsPageSource).toContain("initial={{ opacity: 0, scale: 1, y: 8 }}");
+  it("keeps the Settings route visible at mount and full-scale through settle and exit", () => {
+    expect(settingsPageSource).toMatch(/<Bloom\s+key="settings-page"\s+initial=\{false\}/);
+    expect(settingsPageSource).not.toContain(
+      "initial={{ opacity: 0, scale: 1, y: 8 }}",
+    );
     expect(settingsPageSource).toContain("animate={{ opacity: 1, scale: 1, y: 0 }}");
     expect(settingsPageSource).toContain("exit={{ opacity: 0, scale: 1, y: 8 }}");
   });

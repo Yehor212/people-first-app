@@ -11,7 +11,12 @@ import {
   resumeAccountNotifications,
 } from '@/lib/localNotifications';
 import { reconcilePersistedMasterReminders } from '@/lib/persistedReminderReconciliation';
-import { initializePushNotifications, removePushToken } from '@/lib/pushNotifications';
+import {
+  cancelPendingPushRegistration,
+  initializePushNotifications,
+  readPushRegistrationEvidence,
+  removePushToken,
+} from '@/lib/pushNotifications';
 import { buildNotificationChannelCopy } from '@/lib/notificationSounds';
 import { buildReminderCopy } from '@/lib/reminderCopy';
 import type { MoodEntry } from '@/types';
@@ -43,7 +48,6 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
   const habits = useUserDataStore(s => s.habits);
   const isUserDataLoading = useUserDataStore(s => s.isLoading);
   const pushNotificationsEnabled = useUserDataStore(s => s.privacy.pushNotifications === true);
-  const pushConsentWasShown = useUserDataStore(s => s.privacy.consentShown === true);
   const hasValidSession = useAppStore(s => s.hasValidSession);
   const isAccountBoundaryInProgress = useAppStore(s => s.isAccountBoundaryInProgress);
   const previousPushConsentRef = useRef<boolean | null>(null);
@@ -286,12 +290,11 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
       return;
     }
 
-    if (previousPushConsentRef.current !== true && !pushConsentWasShown) {
-      previousPushConsentRef.current = false;
-      return;
-    }
-
-    const shouldRemoveRemoteToken = previousPushConsentRef.current !== false;
+    cancelPendingPushRegistration();
+    const shouldRemoveRemoteToken =
+      previousPushConsentRef.current === true ||
+      (previousPushConsentRef.current === null &&
+        readPushRegistrationEvidence() !== 'absent');
     previousPushConsentRef.current = false;
     if (!shouldRemoveRemoteToken) return;
 
@@ -355,7 +358,6 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
   }, [
     hasValidSession,
     isAccountBoundaryInProgress,
-    pushConsentWasShown,
     pushNotificationsEnabled,
   ]);
 

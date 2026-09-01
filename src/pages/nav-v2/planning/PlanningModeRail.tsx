@@ -19,7 +19,7 @@ export function PlanningModeRail({ activeMode, onModeChange, labels }: PlanningM
   return (
     <div
       data-testid="planning-mode-rail"
-      className="grid grid-cols-1 gap-2 rounded-2xl border border-border/45 bg-card/70 p-1 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)] min-[520px]:grid-cols-2 sm:flex sm:overflow-x-auto"
+      className="grid grid-cols-1 gap-2 rounded-2xl border border-border/45 bg-card p-1 min-[520px]:grid-cols-2 sm:flex sm:overflow-x-auto"
       role="group"
     >
       {MODE_ITEMS.map((item) => {

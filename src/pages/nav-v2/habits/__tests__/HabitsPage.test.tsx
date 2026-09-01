@@ -4,6 +4,7 @@
  */
 import { render, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { useState } from "react";
 import type { Challenge } from "@/types";
 
 vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
@@ -180,10 +181,31 @@ vi.mock("@/components/habit-creation-form/HabitCreationForm", () => ({
 
 vi.mock("@/lib/haptics", () => ({ hapticTap: vi.fn() }));
 
-// V1 HabitDetailSheet is lazy-loaded; mock its dynamic import so jsdom
-// doesn't try to evaluate the canvas/d3 deep chunk at parse time.
+// V1 HabitDetailSheet is lazy-loaded; keep the page-to-detail callback real
+// while isolating the canvas/d3 chunk. The double requires the same explicit
+// open-confirm action before it invokes the deletion callback.
 vi.mock("@/components/habit-hub/HabitDetailSheet", () => ({
-  HabitDetailSheet: () => <div data-testid="habit-detail-sheet-stub" />,
+  HabitDetailSheet: ({
+    habit,
+    onDelete,
+  }: {
+    habit: { id: string };
+    onDelete: (habitId: string) => void;
+  }) => {
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    return (
+      <div data-testid="habit-detail-sheet-stub">
+        <button type="button" onClick={() => setShowDeleteConfirm(true)}>
+          Open delete confirmation
+        </button>
+        {showDeleteConfirm && (
+          <button type="button" onClick={() => onDelete(habit.id)}>
+            Confirm delete habit
+          </button>
+        )}
+      </div>
+    );
+  },
 }));
 
 vi.mock("../hero/HeroInsightStrip", () => ({
@@ -291,7 +313,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(page).toHaveStyle({ "--android-ad-banner-height": "50px" });
     expect(page).toHaveAttribute("data-android-banner-height", "50");
 
-    fireEvent.keyDown(screen.getByTestId("hero-habit-row-h1"), { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: /Actions for.*Hydrate/ }));
     await waitFor(() => {
       expect(adPlacement.setHabitsBannerActive).toHaveBeenLastCalledWith(false);
     });
@@ -350,7 +372,7 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
     expect(screen.queryByTestId("vaul-root")).not.toBeInTheDocument();
   });
 
-  it("tracks V2 destructive habit deletes before cloud/backups can resurrect them", async () => {
+  it("tracks a confirmed detail-sheet delete before cloud/backups can resurrect it", async () => {
     mockHabits = [
       {
         id: "h1",
@@ -369,11 +391,12 @@ describe("HabitsPage (Phase 3-C single-zone)", () => {
 
     render(<HabitsPage />);
 
-    fireEvent.keyDown(screen.getByTestId("hero-habit-row-h1"), { key: "Enter" });
-    await screen.findByTestId("habit-action-sheet-h1-delete");
-    fireEvent.click(screen.getByTestId("habit-action-sheet-h1-delete"));
+    fireEvent.click(screen.getByRole("button", { name: /Actions for.*Hydrate/ }));
+    fireEvent.click(await screen.findByTestId("habit-action-sheet-h1-details"));
+    fireEvent.click(await screen.findByRole("button", { name: "Open delete confirmation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delete habit" }));
 
-    expect(syncMocks.trackDeletedHabitId).toHaveBeenCalledWith("h1");
+    await waitFor(() => expect(syncMocks.trackDeletedHabitId).toHaveBeenCalledWith("h1"));
     expect(syncMocks.deleteHabitFromCloud).toHaveBeenCalledWith("h1");
     expect(syncMocks.triggerSync).toHaveBeenCalled();
     expect(syncMocks.saveChallenges).toHaveBeenCalledWith([makeChallenge("challenge-2", "other")]);

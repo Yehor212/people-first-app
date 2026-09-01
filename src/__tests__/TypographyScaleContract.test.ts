@@ -7,7 +7,7 @@ const tailwindSource = read("tailwind.config.ts");
 const realHeadingSources = [
   read("src/components/auth-screen/AuthScreen.tsx"),
   read("src/components/LanguageSelector.tsx"),
-  read("src/pages/nav-v2/planning/PlanningPage.tsx"),
+  read("src/pages/nav-v2/planning/PlanningOverview.tsx"),
   read("src/pages/nav-v2/habits/HabitsPage.tsx"),
 ];
 

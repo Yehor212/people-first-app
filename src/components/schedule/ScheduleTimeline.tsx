@@ -5,15 +5,20 @@
  * This file: ~390L, 2 useState, delegates data to useScheduleData hook.
  */
 
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+  useEffect,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Home, Sparkles, Calendar } from "lucide-react";
-import { getToday } from "@/lib/utils";
+import { Plus, Home, Calendar } from "lucide-react";
+import { getToday, parseLocalDate } from "@/lib/utils";
 import { ScheduleEvent } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
-import { ParticleBackground } from "@/components/stats";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { zenTap } from "@/lib/animationUtils";
 
 import {
@@ -21,7 +26,7 @@ import {
   HOURS_PER_DAY,
   DAY_WIDTH_PX,
 } from "./constants";
-import { AnimatedClockRing, PremiumDayPill } from "./ScheduleVisuals";
+import { ScheduleClock, ScheduleDayButton } from "./ScheduleVisuals";
 import { TimelineDayColumn } from "./TimelineDayColumn";
 import { useScheduleData } from "./useScheduleData";
 import { AddEventModal } from "./AddEventModal";
@@ -40,8 +45,6 @@ export function ScheduleTimeline({
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(
     null,
   );
-  const motionAllowed = useShouldAnimate();
-
   const timelineRef = useRef<HTMLDivElement>(null);
   const daySelectorRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +73,8 @@ export function ScheduleTimeline({
     setSelectedDate,
     tasks,
     isLoadingGoogle,
+    googleCalendarStatus,
+    retryGoogleCalendar,
     safeEvents,
     allDates,
     filteredEvents,
@@ -121,6 +126,37 @@ export function ScheduleTimeline({
     [setSelectedDate, scrollTimelineToDate],
   );
 
+  const handleDayKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLButtonElement>, date: string) => {
+      const currentIndex = allDates.indexOf(date);
+      if (currentIndex < 0) return;
+
+      let nextIndex: number | null = null;
+      if (event.key === "ArrowRight") {
+        nextIndex = currentIndex + (isRTL ? -1 : 1);
+      } else if (event.key === "ArrowLeft") {
+        nextIndex = currentIndex + (isRTL ? 1 : -1);
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = allDates.length - 1;
+      }
+
+      if (nextIndex === null) return;
+      event.preventDefault();
+      const nextDate = allDates[Math.max(0, Math.min(nextIndex, allDates.length - 1))];
+      if (!nextDate) return;
+
+      setSelectedDate(nextDate);
+      scrollTimelineToDate(nextDate, nextDate === getToday());
+      scrollDaySelectorToDate(nextDate);
+      daySelectorRef.current
+        ?.querySelector<HTMLElement>(`[data-schedule-date="${nextDate}"]`)
+        ?.focus();
+    },
+    [allDates, isRTL, scrollDaySelectorToDate, scrollTimelineToDate, setSelectedDate],
+  );
+
   const goToToday = useCallback(() => {
     const today = getToday();
     setSelectedDate(today);
@@ -163,96 +199,64 @@ export function ScheduleTimeline({
   // --- JSX ---
 
   return (
-    <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-3xl motion-safe:animate-fade-in">
-      {/* Cosmic background - Theme-aware */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-sky-50/60 to-indigo-50/40 dark:bg-none" />
-      <div
-        className="absolute inset-0 hidden dark:block"
-        style={{
-          background: `linear-gradient(135deg,
-            #0f0f23 0%,
-            #1a1a3e 25%,
-            #2d1b4e 50%,
-            #1a1a3e 75%,
-            #0f0f23 100%)`,
-        }}
-      />
-
-      {/* Floating particles */}
-      <ParticleBackground count={15} color="purple" animated={motionAllowed} />
-
-      {/* Nebula glow effects */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{ opacity: motionAllowed ? [0.3, 0.5, 0.3] : 0.3 }}
-        transition={{ duration: 6, repeat: motionAllowed ? Infinity : 0 }}
-        style={{
-          background: `
-            radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 40%)
-          `,
-        }}
-      />
-
-      {/* Content container */}
-      <div className="relative z-10 min-w-0 p-4">
-        {/* Premium Header */}
-        <motion.div
-          className="mb-4 flex min-w-0 flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+    <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-3xl border border-border/50 bg-card text-card-foreground">
+      <div className="min-w-0 p-4">
+        <div className="mb-4 flex min-w-0 flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            {/* Animated Clock Ring */}
-            <AnimatedClockRing
+            <ScheduleClock
               currentHour={currentHour}
               currentMinute={currentMinute}
-              motionAllowed={motionAllowed}
+              language={language}
             />
 
             <div className="min-w-0 flex-1">
-              {/* Title with sparkle */}
-              <motion.h3 className="flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-slate-800 [text-shadow:0_0_10px_rgba(139,92,246,0.3)] dark:text-white">
-                <motion.span
-                  className="shrink-0"
-                  animate={{ rotate: motionAllowed ? [0, 15, -15, 0] : 0 }}
-                  transition={{ duration: 2, repeat: motionAllowed ? Infinity : 0 }}
-                >
-                  <Sparkles className="w-5 h-5 text-purple-400" />
-                </motion.span>
+              <h2 className="flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-foreground">
                 <span className="min-w-0 break-words [overflow-wrap:normal]">{t.myWorld}</span>
-              </motion.h3>
+              </h2>
 
               {/* Current event badge */}
               {currentEvent && (
-                <motion.div
-                  className="mt-1 inline-flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-full bg-secondary px-3 py-1 backdrop-blur-sm"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <span className="shrink-0">{currentEvent.emoji}</span>
-                  <span className="min-w-0 break-words text-sm text-slate-600 [overflow-wrap:anywhere] dark:text-white/80">
+                <div className="mt-1 inline-flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-full bg-muted px-3 py-1">
+                  <span aria-hidden="true" className="shrink-0">{currentEvent.emoji}</span>
+                  <bdi dir="auto" className="min-w-0 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                     {currentEvent.title}
-                  </span>
-                </motion.div>
+                  </bdi>
+                </div>
               )}
 
               {/* Google Calendar sync indicator */}
               {isLoadingGoogle && (
-                <motion.div
-                  className="mt-1 inline-flex max-w-full min-w-0 flex-wrap items-center gap-1.5 rounded-full bg-blue-500/10 px-2 py-0.5 backdrop-blur-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mt-1 inline-flex max-w-full min-w-0 flex-wrap items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-muted-foreground"
                 >
-                  <motion.div
-                    className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
-                    animate={{ scale: motionAllowed ? [1, 1.3, 1] : 1 }}
-                    transition={{ duration: 1, repeat: motionAllowed ? Infinity : 0 }}
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-2 shrink-0 rounded-full bg-primary motion-safe:animate-pulse"
                   />
-                  <span className="min-w-0 whitespace-normal break-words text-xs text-blue-600 [hyphens:manual] [overflow-wrap:normal] dark:text-blue-400">
-                    {t.googleCalendar || "Google Calendar"}...
+                  <span className="min-w-0 whitespace-normal break-words text-xs [hyphens:manual] [overflow-wrap:normal]">
+                    {t.googleCalendarEventsLoading}
                   </span>
-                </motion.div>
+                </div>
+              )}
+
+              {googleCalendarStatus === "error" && (
+                <div
+                  role="alert"
+                  className="mt-2 flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                    {t.googleCalendarEventsUnavailable}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={retryGoogleCalendar}
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-current/35 px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+                  >
+                    {t.retry}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -262,12 +266,11 @@ export function ScheduleTimeline({
             {selectedDate !== getToday() && (
               <motion.button
                 onClick={goToToday}
-                whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border motion-safe:transition-colors"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-secondary p-2.5 text-secondary-foreground motion-safe:transition-colors hover:bg-secondary/80"
                 aria-label={t.today || "Today"}
               >
-                <Home className="w-5 h-5 text-slate-600 dark:text-white/80" />
+                <Home className="h-5 w-5" aria-hidden="true" />
               </motion.button>
             )}
 
@@ -275,34 +278,43 @@ export function ScheduleTimeline({
             {onAddEvent && (
               <motion.button
                 onClick={() => setShowAddModal(true)}
-                whileHover={{ scale: 1.1 }}
                 whileTap={zenTap.button}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 motion-safe:transition-all shadow-lg shadow-primary/20"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-primary p-2.5 text-primary-foreground motion-safe:transition-colors hover:bg-primary/90"
                 aria-label={t.scheduleAddEvent || "Add event"}
               >
-                <Plus className="w-5 h-5 text-white" />
+                <Plus className="h-5 w-5" aria-hidden="true" />
               </motion.button>
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Premium Day Selector */}
         <div
           ref={daySelectorRef}
+          role="toolbar"
+          aria-label={t.scheduleDate || t.scheduleTitle || "Date"}
           className="-mx-1 mb-4 flex min-w-0 max-w-full snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2 scrollbar-hide"
         >
-          {allDates.map((date) => (
-            <PremiumDayPill
-              key={date}
-              date={date}
-              isSelected={date === selectedDate}
-              isToday={date === getToday()}
-              hasEvents={dateHasEvents(date)}
-              onClick={() => handleDayClick(date)}
-              language={language}
-              motionAllowed={motionAllowed}
-            />
-          ))}
+          {allDates.map((date) => {
+            const hasEvents = dateHasEvents(date);
+            return (
+              <ScheduleDayButton
+                key={date}
+                date={date}
+                isSelected={date === selectedDate}
+                isToday={date === getToday()}
+                hasEvents={hasEvents}
+                onClick={() => handleDayClick(date)}
+                onKeyDown={(event) => handleDayKeyDown(event, date)}
+                tabIndex={date === selectedDate ? 0 : -1}
+                language={language}
+                accessibleDateLabel={new Intl.DateTimeFormat(language, {
+                  dateStyle: "full",
+                }).format(parseLocalDate(date))}
+                eventPresenceLabel={hasEvents ? t.scheduleDayHasEvents : undefined}
+              />
+            );
+          })}
         </div>
 
         {/* Cosmic Timeline */}
@@ -333,19 +345,17 @@ export function ScheduleTimeline({
                   t={t}
                   onEventClick={setSelectedEvent}
                   isEventCurrent={isEventCurrent}
-                  motionAllowed={motionAllowed}
                 />
               ))}
             </div>
           </div>
 
-          {/* Scroll fade indicators - Theme-aware */}
-          <div className="absolute start-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
-          <div className="absolute end-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
         </div>
 
         {/* Empty state */}
-        {filteredEvents.length === 0 && (
+        {filteredEvents.length === 0 &&
+          googleCalendarStatus !== "loading" &&
+          googleCalendarStatus !== "error" && (
           <div className="mt-3">
             <EmptyState
               icon={<Calendar className="w-5 h-5 text-primary" />}
@@ -353,11 +363,6 @@ export function ScheduleTimeline({
                 isToday
                   ? t.scheduleEmpty || "No events planned"
                   : t.scheduleEmptyDay || "No events for this day"
-              }
-              message={
-                isToday
-                  ? t.scheduleAddEvent || "Tap + to add your first event"
-                  : undefined
               }
               size="compact"
               action={
@@ -371,14 +376,11 @@ export function ScheduleTimeline({
               }
             />
           </div>
-        )}
+          )}
 
         {/* Task Focus Panel */}
-        <TaskFocusPanel tasks={tasks} t={t} />
+        <TaskFocusPanel tasks={tasks} t={t} language={language} />
       </div>
-
-      {/* Bottom glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.15)_0%,transparent_70%)]" />
 
       {/* Modals */}
       <AnimatePresence>

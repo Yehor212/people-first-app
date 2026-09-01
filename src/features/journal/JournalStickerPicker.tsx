@@ -72,7 +72,7 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
         aria-hidden={showPackManager || undefined}
         aria-labelledby={stickerPickerTitleId}
         className={cn(
-          "fixed bottom-0 inset-x-0 z-[65] pb-safe",
+          "fixed bottom-0 inset-x-0 z-[65] pb-safe lg:start-[var(--sidebar-width,256px)]",
           "bg-card/95 backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg motion-safe:animate-slide-up",
           "max-h-[55dvh] flex flex-col",

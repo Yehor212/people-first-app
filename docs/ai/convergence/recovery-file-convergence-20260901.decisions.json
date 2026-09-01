@@ -1,0 +1,431 @@
+{
+  "schema": "zenflow-recovery-file-convergence-decisions-v1",
+  "rules": [
+    {
+      "id": "audio-first-party-review-current-owner",
+      "selector": {
+        "pathPattern": "^(?:scripts/audio-review/(?:README\\.md|generate-first-party-review-pack\\.mjs|__tests__/(?:generate-first-party-review-pack|first-party-audio-review-workflow)\\.test\\.mjs)|\\.github/workflows/first-party-audio-review\\.yml|docs/audio/first-party-kimi-audio-reconstruction-spec\\.json|docs/superpowers/(?:specs|plans)/2026-08-24-first-party-kimi-audio-reconstruction(?:-design)?\\.md)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio-review/__tests__/generate-first-party-review-pack.test.mjs#3 tests pass",
+        "scripts/audio-review/__tests__/first-party-audio-review-workflow.test.mjs#least-privilege workflow passes",
+        "scripts/audio-review/generate-first-party-review-pack.mjs#current restored non-Kimi clean-room owner"
+      ]
+    },
+    {
+      "id": "audio-legacy-mjs-cc0-superseded-by-python-review-tool",
+      "selector": {
+        "pathPattern": "^scripts/audio-review/(?:CC0_KIMI_REVIEW_README\\.md|cc0-kimi-audio-(?:config|core|ffmpeg)\\.mjs|generate-cc0-kimi-review-pack\\.mjs|__tests__/(?:cc0-kimi-audio-review-workflow|generate-cc0-kimi-review-pack)\\.test\\.mjs)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/audio_review/build.py#current bounded review-package builder",
+        "scripts/audio_review/verify.py#current independent verifier",
+        "scripts/audio_review/tests/test_review_tool.py#current review-tool contract"
+      ]
+    },
+    {
+      "id": "audio-runtime-current-owners",
+      "selector": {
+        "pathPattern": "^src/(?:components/hyperfocus/(?:HyperfocusSoundSelector\\.tsx|__tests__/HyperfocusSoundSelector\\.test\\.tsx)|hooks/(?:useUserStartedAmbienceAudio\\.ts|__tests__/useUserStartedAmbienceAudio\\.test\\.tsx)|features/journal/(?:JournalAudioPlayer\\.tsx|useAudioRecorder\\.ts|__tests__/(?:JournalAudioPlayer\\.lifecycle|JournalEntryEditor\\.audioErrorStatic|useAudioRecorder)\\.test\\.(?:ts|tsx))|lib/(?:ambientSounds\\.ts|appAudioAssets\\.ts|__tests__/(?:ambientSounds(?:\\.androidEagerUnlock)?|appAudioAssets)\\.test\\.ts)|pages/__tests__/IndexV2NoXpAudioContract\\.test\\.ts)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/appAudioAssets.ts#current production runtime catalog",
+        "src/lib/__tests__/appAudioAssets.test.ts#current catalog and reachability contract",
+        "scripts/check-hyperfocus-audio-assets.cjs#current Android package verifier",
+        "baseline#9848 tests pass"
+      ]
+    },
+    {
+      "id": "audio-current-contract-tests",
+      "selector": {
+        "pathPattern": "^scripts/__tests__/(?:hyperfocus-nature-soundscape-contract|audio-blind-spots-contract|check-app-audio-assets|check-hyperfocus-audio-assets)\\.test\\.(?:ts|mjs)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/check-app-audio-assets.cjs#current app audio gate",
+        "scripts/check-hyperfocus-audio-assets.cjs#current generated audio gate",
+        "baseline#9848 tests pass"
+      ]
+    },
+    {
+      "id": "audio-current-provenance-docs",
+      "selector": {
+        "pathPattern": "^docs/(?:audio/(?:hyperfocus-.*|audio-product-ops-policy\\.md|non-hyperfocus-.*)|superpowers/plans/2026-06-(?:17-cross-platform-audio-contract|19-hyperfocus-three-level-audio|29-hyperfocus-rain-wind-audio-approval)\\.md)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "docs/audio/hyperfocus-generated-audio-provenance.json#current runtime provenance",
+        "docs/audio/non-hyperfocus-generated-audio-provenance.json#current ambience provenance",
+        "scripts/check-app-audio-assets.cjs#current source and runtime gate"
+      ]
+    },
+    {
+      "id": "sticker-current-accessible-owners",
+      "selector": {
+        "pathPattern": "^src/features/journal/(?:JournalStickerPackManager|JournalStickerPicker|StickerRenderer|stickerUtils)\\.(?:ts|tsx)$|^src/features/journal/__tests__/stickerUtils\\.test\\.ts$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/JournalStickerPicker.tsx#44px controls, dialog semantics, labels, and current pack behavior",
+        "src/features/journal/__tests__/stickerUtils.test.ts#current sticker contract",
+        "baseline#9848 tests pass"
+      ]
+    },
+    {
+      "id": "habit-animation-plan-current-owner",
+      "selector": {
+        "pathPattern": "^docs/superpowers/plans/2026-06-19-v2-habit-icon-animation-system\\.md$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/habit-pictogram/__tests__/habitCelebrationAssets.test.ts#current hash-bound TGS inventory",
+        "src/components/habit-pictogram/habitCelebrationAssets.ts#current runtime owner",
+        "android-build#six approved TGS assets reachable with drink-water inline"
+      ]
+    },
+    {
+      "id": "pwa-desktop-modernization-current-composition",
+      "selector": {
+        "commit": "f7fd550efe15ef6bf93b8bfd20088031d5069ed5"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/pwaDesktopModernization.contract.test.ts#4 desktop PWA contracts pass",
+        "scripts/__tests__/prepare-pages-artifact.test.ts#prepared artifact contract passes",
+        "focused-pwa-suite#103 tests pass",
+        "typecheck#pass"
+      ]
+    },
+    {
+      "id": "pwa-quality-feature-pointer-current",
+      "selector": {
+        "commit": "9951c2ba4453dc674dd4190f5f869b540fd8925b",
+        "pathPattern": "^\\.specify/feature\\.json$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".specify/feature.json#current integration feature pointer preserved",
+        "src/lib/__tests__/pwaShellLifecycle.test.ts#recovered PWA shell contract passes"
+      ]
+    },
+    {
+      "id": "product-coherence-remediation-current-ui-owners",
+      "selector": {
+        "packetPattern": "^product-coherence-remediation-e5016-8a9492aefdc2cc08$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/__tests__/ProgressStoriesViewer.a11y.test.tsx#5 recovered accessibility contracts pass",
+        "src/components/focus-timer/__tests__/FocusTimer.i18n.test.tsx#Arabic number isolation passes",
+        "src/pages/nav-v2/planning/__tests__/planningDates.test.ts#2 civil-date contracts pass",
+        "src/pages/nav-v2/__tests__/challengeDeepLinkLayerContract.test.ts#current progression layer contract passes",
+        "focused-ui-suite#279 tests pass"
+      ]
+    },
+    {
+      "id": "language-selector-current-large-text-owner",
+      "selector": {
+        "packetPattern": "^(?:entry-radiogroup-a11y-e5016-5ca7a0e4f6412ac6|product-coherence-p1-remediation-r1-2fb1c82b3e0d4485)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/components/LanguageSelector.tsx#radiogroup plus dynamic single-column large-text layout",
+        "src/components/__tests__/LanguageSelector.test.tsx#current language selector suite passes",
+        "src/lib/__tests__/pushNotifications.test.ts#current notification contract passes"
+      ]
+    },
+    {
+      "id": "focus-abort-current-owner",
+      "selector": {
+        "packetPattern": "^product-coherence-focus-aborted-fix-4595eff1ed2f9a3d$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/hooks/__tests__/useFocusHandlers.test.ts#current focus completion and abort suite passes",
+        "src/hooks/useFocusHandlers.ts#current owner"
+      ]
+    },
+    {
+      "id": "settings-local-recovery-current-owner",
+      "selector": {
+        "packetPattern": "^(?:local-only-backup-recovery-e5016-eb87e7297a105905|product-coherence-p1-local-import-r1-6a99a50b9064a49a|product-coherence-p1-local-reset-r1-d32ebeca0f7f9b52)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/SettingsPage.test.tsx#current local import, reset, and recovery suite passes",
+        "src/pages/nav-v2/settings/V2SettingsDataPanels.tsx#current owner"
+      ]
+    },
+    {
+      "id": "report-export-current-owner",
+      "selector": {
+        "packetPattern": "^report-export-state-integrity-e5016-dc13a29d6dc1d143$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/lib/__tests__/exportService.test.ts#current export state suite passes"
+      ]
+    },
+    {
+      "id": "orb-ambience-current-owner",
+      "selector": {
+        "packetPattern": "^product-coherence-p1-orb-ambience-r1-434a41abb3fc41f1$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/pages/nav-v2/__tests__/OrbPage.test.tsx#current Orb ambience and interaction suite passes",
+        "src/lib/appAudioAssets.ts#current ambience catalog"
+      ]
+    },
+    {
+      "id": "reduced-motion-index-current-composition",
+      "selector": {
+        "packetPattern": "^candidate-reduced-motion-handoff-e5016-c2cb40a19e558e42$"
+      },
+      "disposition": "MERGED",
+      "evidence": [
+        "14a27e29#reduced-motion bootstrap batch merged",
+        "src/__tests__/animationContracts.static.test.ts#current motion contract"
+      ]
+    },
+    {
+      "id": "experience-quality-safe-decision-register",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^docs/audits/experience-quality/ui-decision-register-2026-07-28\\.md$"
+      },
+      "disposition": "MERGED",
+      "evidence": [
+        "bf96a07a#safe decision register merged without local machine locators",
+        "scripts/__tests__/ui-system-contract.test.ts#canonical contract alignment passes"
+      ]
+    },
+    {
+      "id": "experience-quality-private-or-stale-audit-artifacts",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^docs/audits/experience-quality/(?!ui-decision-register-2026-07-28\\.md$).+"
+      },
+      "disposition": "EXCLUDED_SECRET_PRIVATE",
+      "evidence": [
+        "packet-audit#source registry contains a local Downloads locator",
+        "ledger-policy#generated runtime receipts and machine-local evidence remain outside main"
+      ]
+    },
+    {
+      "id": "experience-quality-obsolete-audit-generator",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^(?:scripts/__tests__/ui-audit-artifacts\\.test\\.ts|scripts/ui-audit/(?:render-task4-artifacts|validate-ui-audit-artifacts)\\.mjs)$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "scripts/__tests__/collect-ui-inventory.test.ts#current inventory remains deterministic without excluded historical outputs",
+        "focused-experience-suite#923 tests pass",
+        "output-policy#no generated audit output enters main"
+      ]
+    },
+    {
+      "id": "experience-quality-current-semantic-composition",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^(?!docs/audits/experience-quality/)(?!scripts/__tests__/ui-audit-artifacts\\.test\\.ts$)(?!scripts/ui-audit/(?:render-task4-artifacts|validate-ui-audit-artifacts)\\.mjs$)(?!src/components/hyperfocus/(?:HyperfocusSoundSelector\\.tsx|__tests__/HyperfocusSoundSelector\\.test\\.tsx)$).+"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "bf96a07a#semantic three-way recovery of experience quality work",
+        "focused-experience-suite#69 files and 923 tests pass",
+        "typecheck#pass",
+        "lint#zero errors and zero warnings",
+        "gitleaks-staged#no leaks found",
+        "src/hooks/__tests__/useDeepLinkHandler.test.ts#current encoded invite contract supersedes unsupported short codes",
+        "src/lib/__tests__/crashReporting.test.ts#current privacy-hardened crash boundary supersedes weaker logger variant"
+      ]
+    },
+    {
+      "id": "product-coherence-legacy-audit-tooling-and-receipts",
+      "selector": {
+        "packetPattern": "^(?:product-coherence-deep-audit-v2-6f4ef1ad3fba5771|product-coherence-task1-forensics-v2-2762e9d65a14c02b|product-coherence-task2-pdi-verify\\.nosync-6b03f0ab6fade9c6|product-coherence-remediation-verify\\.nosync-ccec13641e0f37b2)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "scripts/recovery-file-convergence.mjs#current deterministic per-file recovery ledger",
+        "scripts/__tests__/recovery-file-convergence.test.ts#31 convergence policy tests pass",
+        "scripts/__tests__/production-data-integrity-hook.test.ts#current production-data enforcement contract passes",
+        "output-policy#historical audit JSONL, rendered receipts, local locators, and synthetic credential fixtures stay outside main"
+      ]
+    },
+    {
+      "id": "product-coherence-current-runtime-owners",
+      "selector": {
+        "packetPattern": "^(?:product-coherence-deep-audit-v2-main-29c96b8337f459cc|product-coherence-p1-a11y-verify\\.nosync-0333a466b3616a09)$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "b16c26cd#current recovered runtime and test composition",
+        "focused-recovery-integrity-suite#21 files and 175 tests pass",
+        "src/__tests__/AppAnimationGate.static.test.ts#current global animation gate passes",
+        "src/components/__tests__/FocusReflectionModal.adSafety.test.tsx#current focus-reflection contract passes",
+        "src/hooks/__tests__/useFocusTimer.persistence.test.tsx#current durable timer contract passes"
+      ]
+    },
+    {
+      "id": "supabase-integrity-current-journal-owners",
+      "selector": {
+        "packetPattern": "^supabase-integrity-schema-2e8281c948c17a0d$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/storage/sync/journalMediaParentIntegrityMigration.ts#current authoritative parent-integrity owner",
+        "src/storage/sync/journalMediaDeletionAdmissionMigration.ts#current deletion admission owner",
+        "src/storage/sync/__tests__/journalMediaParentIntegrityMigration.test.ts#current parent-integrity suite passes",
+        "src/storage/sync/__tests__/journalMediaDeletionAdmissionMigration.test.ts#current deletion admission suite passes",
+        "focused-recovery-integrity-suite#21 files and 175 tests pass"
+      ]
+    },
+    {
+      "id": "private-receipt-transport-remains-fail-closed",
+      "selector": {
+        "packetPattern": "^governance-private-receipt-adapter-r1-7aa11141b96e1e2d$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "scripts/codex-governance/export-private-receipt.cjs#current least-privilege fail-closed owner",
+        "scripts/__tests__/private-receipt-export.test.mjs#TRUST_ANCHOR_REQUIRED contract passes",
+        "permission-boundary#external signed receipt transport is not authorized by repository convergence"
+      ]
+    },
+    {
+      "id": "governance-hooks-current-stronger-composition",
+      "selector": {
+        "packetPattern": "^required-check-context-uniqueness-900d60f960d8e03f$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".codex/hooks.json#current additive hook composition preserves Android visual and subagent guards",
+        "scripts/__tests__/agent-workspace-git-hook.test.ts#current workspace hook passes",
+        "scripts/__tests__/android-visual-runtime-hook.test.ts#current Android visual guard passes",
+        "focused-recovery-integrity-suite#21 files and 175 tests pass"
+      ]
+    },
+    {
+      "id": "sync-retry-current-vault-fenced-owner",
+      "selector": {
+        "packetPattern": "^product-coherence-p1-sync-retry-r1-8ad6f813ba759db6$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "src/features/journal/journalVaultEpoch.ts#current vault-epoch fencing owner",
+        "src/features/journal/__tests__/journalVaultEpoch.test.ts#current epoch validation passes",
+        "src/storage/__tests__/cloudSync.accountBoundary.test.ts#current account-boundary retry contract passes"
+      ]
+    },
+    {
+      "id": "style-dictionary-security-current-dependency-owner",
+      "selector": {
+        "packetPattern": "^style-dictionary-security-fix-5d7828195b3a97ab$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "package.json#current style-dictionary 5.5 line and security overrides retained",
+        "package-lock.json#current resolved dependency graph",
+        "baseline-install#npm ci reports zero vulnerabilities",
+        "dependency-policy#older package variants and removed scripts are not reintroduced"
+      ]
+    },
+    {
+      "id": "special-worktree-archives-are-commit-represented-copies",
+      "selector": {
+        "sourceKind": "special-archive",
+        "sourceIdPattern": "^special-archive:(?:epic002-patch-lane|original-vscode-untracked-transport)$"
+      },
+      "disposition": "EXCLUDED_DUPLICATE_COPY",
+      "evidence": [
+        "archive-blob-audit#original transport has 3104 commit-represented safe files; remaining source variants are weaker current PDI copies and private marker files",
+        "archive-blob-audit#epic002 has 231 of 232 safe non-generated files represented by d35c74ea; the remainder is generated Capacitor config",
+        "archive-policy#node_modules, packaged web assets, build output, reports, and whole-worktree copies stay outside main",
+        "historical-ledger#commit-represented changes remain individually reviewed"
+      ]
+    },
+    {
+      "id": "original-vscode-current-enforcement-owners",
+      "selector": {
+        "sourceKind": "special-file",
+        "packetPattern": "^original-vscode-dirty$"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        ".codex/hooks.json#current hooks retain Android visual, production-data, and subagent guards",
+        "docs/ai/PRODUCTION_DATA_INTEGRITY_POLICY.md#current PDI008 trigger-reachability explanation retained",
+        "scripts/check-enforcement-health.ts#current enforcement health includes Android visual runtime gate",
+        "scripts/__tests__/production-data-integrity-hook.test.ts#current production-data hook passes",
+        "scripts/__tests__/android-visual-runtime-hook.test.ts#current Android visual hook passes"
+      ]
+    },
+    {
+      "id": "a092-safe-privacy-and-journal-recovery",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?:src/contexts/(?:AICoachContext\\.tsx|__tests__/AICoachContext\\.privacyStatic\\.test\\.ts)|src/lib/storageKeys\\.ts|src/features/journal/(?:JournalPhotoPicker\\.tsx|JournalTemplatePicker\\.tsx|useJournalEditorState\\.ts|__tests__/(?:JournalPhotoPicker\\.iosFileTypes|useJournalEditorState(?:\\.recordingSave)?)\\.test\\.(?:ts|tsx)))$"
+      },
+      "disposition": "MERGED",
+      "evidence": [
+        "0a76f286#recovered journal and coach privacy contracts merged into current owners",
+        "src/contexts/__tests__/AICoachContext.privacyStatic.test.ts#separate diary-to-coach consent gate passes",
+        "src/features/journal/__tests__/RecoveredA092JournalContracts.static.test.ts#five recovered journal contracts pass",
+        "a092-current-owner-suite#66 files and 1553 tests pass",
+        "typecheck#pass",
+        "lint#zero errors and zero warnings",
+        "gitleaks-staged#no leaks found"
+      ]
+    },
+    {
+      "id": "a092-rewarded-ad-and-legacy-removal-conflicts",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?:src/components/ads/__tests__/rewardedAdPlacementContract\\.test\\.ts|src/contexts/__tests__/AdContext\\.rewardContract\\.test\\.ts|src/features/journal/OrbDiaryReflectionRewardCard\\.tsx|src/lib/(?:adRewards\\.ts|__tests__/(?:adRewards|noLegacyRewardsContract)\\.test\\.ts))$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "docs/release/google-play/ADMOB_OWNER_FINALIZATION_RUNBOOK.md#current scope is one Android Habits banner only",
+        "scripts/__tests__/admob-production-readiness.test.ts#current banner-only release contract passes",
+        "current-product-owners#rewarded, interstitial, app-open, and legacy feature deletion variants remain disabled"
+      ]
+    },
+    {
+      "id": "a092-obsolete-governance-orchestra",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?:docs/ai/(?:AGENT_GOVERNANCE_SOURCE_LEDGER|PERSISTENT_AGENT_ORCHESTRA)\\.md|scripts/check-agent-governance-security-scope\\.mjs)$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "scripts/recovery-file-convergence.mjs#current deterministic recovery owner",
+        "scripts/__tests__/agent-workspace-git-hook.test.ts#current locked-lane governance passes",
+        "governance-policy#no custom persistent orchestra or automatic delegation is reintroduced"
+      ]
+    },
+    {
+      "id": "a092-current-composition-supersedes-broad-refactor",
+      "selector": {
+        "commit": "a09249c32c87ab2d11b55013aa6796fccb2f5e0d",
+        "pathPattern": "^(?!(?:src/contexts/(?:AICoachContext\\.tsx|__tests__/AICoachContext\\.privacyStatic\\.test\\.ts)|src/lib/storageKeys\\.ts|src/features/journal/(?:JournalPhotoPicker\\.tsx|JournalTemplatePicker\\.tsx|useJournalEditorState\\.ts|__tests__/(?:JournalPhotoPicker\\.iosFileTypes|useJournalEditorState(?:\\.recordingSave)?)\\.test\\.(?:ts|tsx))|src/components/ads/__tests__/rewardedAdPlacementContract\\.test\\.ts|src/contexts/__tests__/AdContext\\.rewardContract\\.test\\.ts|src/features/journal/OrbDiaryReflectionRewardCard\\.tsx|src/lib/(?:adRewards\\.ts|__tests__/(?:adRewards|noLegacyRewardsContract)\\.test\\.ts)|docs/ai/(?:AGENT_GOVERNANCE_SOURCE_LEDGER|PERSISTENT_AGENT_ORCHESTRA)\\.md|scripts/check-agent-governance-security-scope\\.mjs|src/features/journal/(?:JournalAudioPlayer|useAudioRecorder|JournalStickerPackManager|JournalStickerPicker|StickerRenderer|stickerUtils)\\.(?:ts|tsx)|src/features/journal/__tests__/(?:JournalEntryEditor\\.audioErrorStatic|useAudioRecorder|stickerUtils)\\.test\\.(?:ts|tsx)|src/lib/appAudioAssets\\.ts|src/pages/__tests__/IndexV2NoXpAudioContract\\.test\\.ts)$).+"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "a092-source-audit#9127-file snapshot is dominated by generated Xcode output and includes 69 destructive source deletions",
+        "0a76f286#safe privacy and journal contracts recovered semantically",
+        "a092-current-owner-suite#66 files and 1553 tests pass",
+        "src/components/state-of-mind/__tests__/ValenceOrb.motion.test.ts#current orb cadence and recovery suite passes",
+        "src/features/journal/__tests__/journalStyleFields.test.ts#current visual-state owner passes",
+        "src/lib/__tests__/offlineQueue.accountBoundary.test.ts#current owner-fenced compaction contracts supersede the older test variant",
+        "supabase/migrations/20260713063712_add_journal_visual_state.sql#current constrained journal visual-state migration supersedes two unconstrained migrations",
+        "src/stores/__tests__/themeCustomization.test.ts#current simplified accessible theme contract passes",
+        "current-product-composition#legacy gamification and mood owners remain intentionally present"
+      ]
+    }
+  ]
+}

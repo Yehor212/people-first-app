@@ -37,6 +37,9 @@ const t = {
   hyperfocusSoundLevelSoft: "Soft",
   hyperfocusSoundLevelDeep: "Deep",
   hyperfocusSoundLevelIntense: "Intense",
+  hyperfocusSoundFireplaceSoft: "Embers",
+  hyperfocusSoundFireplaceDeep: "Hearth",
+  hyperfocusSoundFireplaceIntense: "Full Hearth",
   hyperfocusToneLabel: "Tone",
   hyperfocusToneHelp: "High-frequency cutoff; pitch and speed stay unchanged.",
   hyperfocusToneSofter: "Softer",
@@ -44,6 +47,9 @@ const t = {
   hyperfocusToneUnavailable: "Tone control is unavailable on this device.",
   muteSound: "Mute sound",
   unmuteSound: "Unmute sound",
+  audioLoading: "Loading ambient sound...",
+  audioTapToEnable: "Tap to enable",
+  audioRetry: "Retry",
 };
 
 function renderSelector(props: Partial<React.ComponentProps<typeof HyperfocusSoundSelector>> = {}) {
@@ -52,7 +58,7 @@ function renderSelector(props: Partial<React.ComponentProps<typeof HyperfocusSou
   const onPlaySound = vi.fn();
   const onToneCutoffChange = vi.fn(() => true);
 
-  render(
+  const view = render(
     <HyperfocusSoundSelector
       selectedSoundId={null}
       isSoundPlaying={false}
@@ -68,10 +74,79 @@ function renderSelector(props: Partial<React.ComponentProps<typeof HyperfocusSou
     />,
   );
 
-  return { onSoundSelect, onToggleSound, onPlaySound, onToneCutoffChange };
+  return { ...view, onSoundSelect, onToggleSound, onPlaySound, onToneCutoffChange };
 }
 
 describe("HyperfocusSoundSelector three-level audio", () => {
+  it("announces the localized loading state as one polite status", () => {
+    renderSelector({
+      selectedSoundId: "rain:deep",
+      audioStatus: { state: "loading", soundId: "rain:deep", isUnlocked: true },
+      t: {
+        ...t,
+        audioLoading: "Cargando sonido ambiental...",
+      },
+    });
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveAttribute("aria-atomic", "true");
+    expect(status).toHaveTextContent("Cargando sonido ambiental...");
+  });
+
+  it("keeps blocked and error recovery actions wired to the selected sound", () => {
+    const blocked = renderSelector({
+      selectedSoundId: "rain:deep",
+      audioStatus: { state: "blocked", soundId: "rain:deep", isUnlocked: false },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Tap to enable" }));
+    expect(blocked.onPlaySound).toHaveBeenCalledWith("rain:deep");
+    blocked.unmount();
+
+    const failed = renderSelector({
+      selectedSoundId: "rain:deep",
+      audioStatus: { state: "error", soundId: "rain:deep", isUnlocked: true },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(failed.onPlaySound).toHaveBeenCalledWith("rain:deep");
+  });
+
+  it("uses one semantic selection layer without gradient, glow, or nested tile borders", () => {
+    const { container } = renderSelector({ selectedSoundId: "fireplace:deep" });
+    const classTokens = Array.from(container.querySelectorAll<HTMLElement>("[class]")).flatMap(
+      (element) => (element.getAttribute("class") ?? "").split(/\s+/),
+    );
+    const forbiddenTokens = classTokens.filter(
+      (token) =>
+        token.startsWith("bg-gradient-") ||
+        token.startsWith("from-") ||
+        token.startsWith("to-") ||
+        token.startsWith("backdrop-blur") ||
+        token.startsWith("shadow-") ||
+        /^(?:bg|text|border)-(?:violet|purple|blue|amber|red|slate|white)-/.test(token),
+    );
+
+    expect(forbiddenTokens).toEqual([]);
+    expect(screen.getByText("Ambient sound").parentElement?.parentElement).not.toHaveClass(
+      "border",
+      "bg-secondary",
+      "rounded-2xl",
+    );
+    expect(screen.getByRole("button", { name: /fireplace/i })).toHaveClass(
+      "border-primary",
+      "bg-primary/10",
+      "text-foreground",
+    );
+
+    const intensity = screen.getByRole("group", { name: "Sound intensity" });
+    expect(intensity).toHaveClass("rounded-xl", "bg-muted", "p-1");
+    for (const level of ["Embers", "Hearth", "Full Hearth"]) {
+      expect(screen.getByRole("button", { name: level })).not.toHaveClass("border");
+    }
+  });
+
   it("renders a clear nature-first set of unique sound families", () => {
     renderSelector();
 
@@ -88,10 +163,10 @@ describe("HyperfocusSoundSelector three-level audio", () => {
   it("shows three intensity levels for the selected sound family", () => {
     const { onSoundSelect } = renderSelector({ selectedSoundId: "fireplace:deep" });
 
-    const softButton = screen.getByRole("button", { name: "Soft" });
+    const softButton = screen.getByRole("button", { name: "Embers" });
     expect(softButton.className).toContain("min-h-[44px]");
-    expect(screen.getByRole("button", { name: "Deep" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Intense" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hearth" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Full Hearth" })).toBeInTheDocument();
 
     fireEvent.click(softButton);
 
@@ -112,9 +187,9 @@ describe("HyperfocusSoundSelector three-level audio", () => {
       t: {
         ...t,
         hyperfocusSoundIntensity: "Intensidad del sonido",
-        hyperfocusSoundLevelSoft: "Suave",
-        hyperfocusSoundLevelDeep: "Profundo",
-        hyperfocusSoundLevelIntense: "Intenso",
+        hyperfocusSoundFireplaceSoft: "Suave",
+        hyperfocusSoundFireplaceDeep: "Profundo",
+        hyperfocusSoundFireplaceIntense: "Intenso",
       },
     });
 

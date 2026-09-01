@@ -32,7 +32,13 @@ import {
 } from "./components/V2SettingsControlPrimitives";
 import type { V2SettingsControls } from "./types";
 
-export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
+export function ProfilePanel({
+  controls,
+  interactionBlocked = false,
+}: {
+  controls: V2SettingsControls;
+  interactionBlocked?: boolean;
+}) {
   const { t } = useLanguage();
   const tx = t as unknown as Record<string, string>;
   const visibleName =
@@ -49,6 +55,7 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
   const nameSaveGenerationRef = useRef(0);
   const visibleNameRef = useRef(visibleName);
   const nameErrorId = useId();
+  const interactionBlockedId = useId();
   visibleNameRef.current = visibleName;
 
   useEffect(
@@ -90,12 +97,19 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
         : tx.invalidNameFormat || "Enter a name between 1 and 100 characters."
       : null;
 
-  const isNameSaveDisabled = isSavingName || !isNameValid || sanitizedName === sanitizedCurrentName;
+  const isNameSaveDisabled =
+    interactionBlocked || isSavingName || !isNameValid || sanitizedName === sanitizedCurrentName;
+  const nameDescriptionIds = [
+    nameValidationMessage ? nameErrorId : null,
+    interactionBlocked ? interactionBlockedId : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
 
   const handleNameSave = async () => {
     const trimmed = name.trim();
     const sanitized = sanitizeUserName(trimmed);
-    if (isSavingName || !sanitized) return;
+    if (interactionBlocked || isSavingName || !sanitized) return;
 
     try {
       userNameSchema.parse(trimmed);
@@ -188,12 +202,13 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
             setNameSaveError(null);
           }}
           autoComplete="name"
+          disabled={isSavingName || interactionBlocked}
           placeholder={tx.profileNamePlaceholder || "Enter your name"}
           fill
           onKeyDown={handleNameKeyDown}
           tone={nameValidationMessage ? "danger" : "neutral"}
           ariaInvalid={Boolean(nameValidationMessage)}
-          ariaDescribedBy={nameValidationMessage ? nameErrorId : undefined}
+          ariaDescribedBy={nameDescriptionIds || undefined}
         />
         <SettingsInlineButton
           icon={isSavingName ? Loader2 : Save}
@@ -204,6 +219,7 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
           disabled={isNameSaveDisabled}
           testId="settings-v2-profile-save"
           variant="primary"
+          width="content"
         >
           {isSavingName ? tx.saving || "Saving..." : tx.saveName || "Save name"}
         </SettingsInlineButton>
@@ -211,6 +227,14 @@ export function ProfilePanel({ controls }: { controls: V2SettingsControls }) {
       {nameValidationMessage ? (
         <p id={nameErrorId} role="alert" className="text-sm text-destructive">
           {nameValidationMessage}
+        </p>
+      ) : null}
+      {interactionBlocked ? (
+        <p
+          id={interactionBlockedId}
+          className="min-w-0 break-words text-sm text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
+        >
+          {tx.authSignOutRecoveryTitle || "Finish signing out"}
         </p>
       ) : null}
       {nameSaveError ? (

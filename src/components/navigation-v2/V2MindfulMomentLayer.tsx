@@ -40,6 +40,7 @@ export const V2MindfulMomentLayer = memo(function V2MindfulMomentLayer({
           onClose={() => setShowMindfulMoment(false)}
           onComplete={onComplete ?? (() => setShowMindfulMoment(false))}
           trigger="focus"
+          rewardsEnabled={false}
         />
       </Suspense>
     </LazyErrorBoundary>

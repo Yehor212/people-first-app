@@ -1,5 +1,4 @@
 import { useId } from "react";
-import { Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type {
@@ -23,11 +22,11 @@ export {
 
 const ACTION_BUTTON_VARIANT_CLASS: Record<NonNullable<ActionButtonProps["variant"]>, string> = {
   primary:
-    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] shadow-[0_12px_28px_-22px_hsl(var(--settings-v2-accent)/0.52)] hover:bg-[hsl(var(--settings-v2-accent)/0.2)]",
+    "border border-[hsl(var(--settings-v2-accent)/0.45)] bg-[hsl(var(--settings-v2-accent)/0.14)] text-[hsl(var(--settings-v2-accent))] hover:bg-[hsl(var(--settings-v2-accent)/0.2)]",
   secondary:
-    "border border-[hsl(var(--settings-v2-border)/0.64)] bg-[hsl(var(--settings-v2-panel)/0.78)] text-foreground shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.42)] hover:bg-[hsl(var(--settings-v2-panel)/0.92)]",
+    "border border-[hsl(var(--settings-v2-border)/0.64)] bg-[hsl(var(--settings-v2-panel)/0.78)] text-foreground hover:bg-[hsl(var(--settings-v2-panel)/0.92)]",
   danger:
-    "border border-destructive/48 bg-destructive/14 text-destructive shadow-[0_10px_22px_-18px_hsl(var(--destructive)/0.54)] hover:bg-destructive/20",
+    "border border-destructive/48 bg-destructive/14 text-destructive hover:bg-destructive/20",
 };
 
 const SETTINGS_INSET_TONE_CLASS: Record<NonNullable<SettingsInsetProps["tone"]>, string> = {
@@ -63,11 +62,11 @@ const SETTINGS_CHOICE_SELECTED_CLASS: Record<
   string
 > = {
   solid:
-    "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-foreground shadow-[0_10px_22px_-22px_hsl(var(--settings-v2-accent)/0.28)]",
+    "border-[hsl(var(--settings-v2-accent)/0.46)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-foreground",
   subtle:
-    "border-[hsl(var(--settings-v2-accent)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.08)] text-foreground shadow-[0_10px_22px_-24px_hsl(var(--settings-v2-accent)/0.24)]",
+    "border-[hsl(var(--settings-v2-accent)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.08)] text-foreground",
   danger:
-    "border-destructive/45 bg-destructive/10 text-destructive shadow-[0_10px_22px_-22px_hsl(var(--destructive)/0.42)]",
+    "border-destructive/45 bg-destructive/10 text-destructive",
 };
 
 export function PanelFrame({
@@ -84,41 +83,31 @@ export function PanelFrame({
 
   return (
     <section
-      className={cn(
-        "relative w-full min-w-0 max-w-full overflow-hidden rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-card)/0.62)] shadow-[var(--zen-shadow-card)]",
-        variant === "studio"
-          ? "p-2 min-[360px]:p-3.5 sm:p-4 md:p-5"
-          : "p-2.5 min-[360px]:p-3 md:p-3.5"
-      )}
+      className="relative w-full min-w-0 max-w-full"
       data-testid={testId}
       data-panel-variant={variant}
       aria-labelledby={showHeader ? titleId : undefined}
       aria-describedby={showHeader ? descriptionId : undefined}
     >
-      <span
-        aria-hidden="true"
-        className="absolute inset-x-4 top-0 h-px rounded-b-full bg-[hsl(var(--settings-v2-rim-light)/0.22)]"
-      />
       {showHeader && (
         <div
           className={cn(
-            "mb-2.5 flex flex-col items-start gap-2.5 min-[360px]:flex-row min-[360px]:gap-3",
+            "mb-2.5 grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-3 px-1",
             variant === "studio" && "mb-3.5"
           )}
           data-slot="settings-panel-header"
         >
           <span
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-accent)/0.1)] text-[hsl(var(--settings-v2-accent))]",
-              variant === "studio" &&
-                "h-10 w-10 bg-[hsl(var(--settings-v2-accent)/0.12)] shadow-[inset_0_1px_0_hsl(var(--settings-v2-rim-light)/0.24)]"
+              "flex h-9 w-9 shrink-0 items-center justify-center text-[hsl(var(--settings-v2-accent))]",
+              variant === "studio" && "h-10 w-10"
             )}
             data-slot="settings-panel-icon"
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
           </span>
           <span
-            className="w-full min-w-0 [hyphens:manual] [overflow-wrap:break-word] min-[360px]:w-auto"
+            className="min-w-0 [hyphens:manual] [overflow-wrap:break-word]"
             data-slot="settings-panel-copy"
           >
             <h3
@@ -139,7 +128,13 @@ export function PanelFrame({
           </span>
         </div>
       )}
-      <div className="min-w-0 space-y-2.5">{children}</div>
+      <div
+        className="min-w-0 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.42)] bg-[hsl(var(--settings-v2-card)/0.62)] p-1"
+        data-slot="settings-group"
+        data-containment="group"
+      >
+        {children}
+      </div>
     </section>
   );
 }
@@ -159,18 +154,17 @@ export function ToggleRow({
   return (
     <div
       className={cn(
-        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.36)] bg-transparent px-1 py-3 last:border-b-0",
-        surfaceWeight === "quiet" &&
-          "border-transparent focus-within:border-[hsl(var(--settings-v2-accent)/0.34)]",
+        "grid min-h-[58px] grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 p-2 min-[360px]:p-3 min-[520px]:grid-cols-[2.25rem_minmax(0,1fr)_auto] md:p-3.5",
         disabled && "opacity-60"
       )}
+      data-containment="row"
       data-surface-weight={surfaceWeight}
       data-testid={testId}
     >
       <span className="col-start-1 row-start-1 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center text-[hsl(var(--settings-v2-accent))]">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
-      <span className="col-start-2 col-end-3 row-start-1 min-w-0 self-center break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
+      <span className="col-start-1 col-end-3 row-start-2 min-w-0 self-center break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word] min-[520px]:col-start-2 min-[520px]:col-end-3 min-[520px]:row-start-1">
         {title}
       </span>
       <Switch
@@ -179,11 +173,11 @@ export function ToggleRow({
         disabled={disabled}
         aria-label={title}
         aria-describedby={descriptionId}
-        className="col-start-3 row-start-1 mt-0.5 shrink-0 justify-self-end"
+        className="col-start-2 row-start-1 mt-1 shrink-0 justify-self-end min-[520px]:col-start-3 min-[520px]:mt-0.5 min-[520px]:justify-self-auto"
       />
       <span
         id={descriptionId}
-        className="col-start-2 col-end-4 row-start-2 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]"
+        className="col-start-1 col-end-3 row-start-3 min-w-0 break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word] min-[520px]:col-start-2 min-[520px]:col-end-4 min-[520px]:row-start-2"
       >
         {description}
       </span>
@@ -213,8 +207,8 @@ export function ActionButton({
       data-button-tone={variant}
       data-testid={testId}
       className={cn(
-        "flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[8px] px-4 py-3 text-sm font-semibold motion-safe:transition-[opacity,transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
+        "flex min-h-[48px] w-full min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[8px] px-4 py-3 text-sm font-semibold motion-safe:transition-[opacity,transform,background-color,border-color,color] motion-safe:duration-200 motion-safe:ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px]",
         ACTION_BUTTON_VARIANT_CLASS[variant]
       )}
     >
@@ -233,7 +227,8 @@ export function SettingsInset({
   children,
   containerRef,
   tone = "neutral",
-  presentation = "contained",
+  presentation,
+  emphasis = "row",
   testId,
   className,
   tabIndex,
@@ -242,18 +237,22 @@ export function SettingsInset({
   ariaLabelledBy,
   ariaDescribedBy,
 }: SettingsInsetProps) {
+  const containment =
+    emphasis === "callout" || tone !== "neutral" || presentation === "contained"
+      ? "callout"
+      : "row";
+
   return (
     <div
       ref={containerRef}
       className={cn(
-        "w-full min-w-0 max-w-full space-y-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]",
-        presentation === "flat-row"
-          ? "rounded-none border-x-0 border-t-0 border-b border-[hsl(var(--settings-v2-border)/0.42)] bg-transparent px-1 py-3 focus-visible:ring-inset focus-visible:ring-offset-0 md:py-3.5"
-          : "rounded-[8px] border p-2 min-[360px]:p-3 focus-visible:ring-offset-2 md:p-3.5",
-        presentation === "contained" && SETTINGS_INSET_TONE_CLASS[tone],
+        "w-full min-w-0 max-w-full space-y-2.5 p-2 min-[360px]:p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] focus-visible:ring-offset-2 md:p-3.5",
+        containment === "callout" && "rounded-[8px] border",
+        containment === "callout" && SETTINGS_INSET_TONE_CLASS[tone],
         className
       )}
       data-inset-presentation={presentation}
+      data-containment={containment}
       data-testid={testId}
       tabIndex={tabIndex}
       role={role}
@@ -310,7 +309,7 @@ export function SettingsChoiceButton({
       lang={lang}
       dir={dir}
       className={cn(
-        "relative min-w-0 whitespace-normal break-words border font-semibold [hyphens:manual] [overflow-wrap:break-word] shadow-[0_8px_18px_-16px_hsl(var(--settings-v2-shadow)/0.38)] motion-safe:transition-[transform,background-color,border-color,box-shadow,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
+        "min-w-0 whitespace-normal break-words border font-semibold [hyphens:manual] [overflow-wrap:break-word] motion-safe:transition-[transform,background-color,border-color,color] motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
         SETTINGS_CHOICE_PRESENTATION_CLASS[presentation],
         selected
           ? SETTINGS_CHOICE_SELECTED_CLASS[selectedTone]
@@ -325,18 +324,6 @@ export function SettingsChoiceButton({
       >
         {children}
       </span>
-      {selected ? (
-        <span
-          aria-hidden="true"
-          className={cn(
-            "flex h-4 w-4 shrink-0 items-center justify-center",
-            presentation === "stacked" && "absolute end-2 top-2"
-          )}
-          data-slot="settings-choice-selection"
-        >
-          <Check className="h-4 w-4" />
-        </span>
-      ) : null}
     </button>
   );
 }

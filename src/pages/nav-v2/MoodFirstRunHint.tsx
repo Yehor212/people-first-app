@@ -96,9 +96,7 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
   if (!visible || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal={isAndroid ? true : undefined}
+    <section
       aria-labelledby="mood-first-run-title"
       data-testid="mood-first-run-hint"
       className="mood-first-run-backdrop"
@@ -144,7 +142,7 @@ export const MoodFirstRunHint = memo(function MoodFirstRunHint({
           {tx.orbFirstRunGotIt || "Got it"}
         </button>
       </div>
-    </div>,
+    </section>,
     document.body,
   );
 });

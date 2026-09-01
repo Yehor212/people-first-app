@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -11,46 +10,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
 import { VALENCE_GRADIENT, valenceToColor } from './colorUtils';
-import type { Translations } from '@/i18n/types';
+import {
+  KEYBOARD_COMMIT_DELAY_MS,
+  nearestSnapIndex,
+  SNAP_LABELS,
+  SNAP_POSITIONS,
+  THUMB_SIZE,
+  TOUCH_PADDING,
+  TRACK_HEIGHT,
+  type ValenceSliderProps,
+  useValenceLabelAnimation,
+} from './valenceSliderRuntime';
 import './ValenceSlider.css';
-
-interface ValenceSliderProps {
-  value: number;
-  onChange: (value: number) => void;
-}
-
-const TRACK_HEIGHT = 8;
-const THUMB_SIZE = 28;
-const TOUCH_PADDING = 10; // Extra padding for 44px+ touch target
-const KEYBOARD_COMMIT_DELAY_MS = 90;
-
-/** 7 discrete snap positions matching Apple Health */
-const SNAP_POSITIONS = [-1.0, -0.667, -0.333, 0.0, 0.333, 0.667, 1.0] as const;
-
-/** Map snap index to i18n key */
-const SNAP_LABELS: (keyof Translations)[] = [
-  'somVeryUnpleasant',
-  'somUnpleasant',
-  'somSlightlyUnpleasant',
-  'somNeutral',
-  'somSlightlyPleasant',
-  'somPleasant',
-  'somVeryPleasant',
-];
-
-/** Find the nearest snap position index */
-function nearestSnapIndex(v: number): number {
-  let best = 0;
-  let bestDist = Math.abs(v - SNAP_POSITIONS[0]);
-  for (let i = 1; i < SNAP_POSITIONS.length; i++) {
-    const dist = Math.abs(v - SNAP_POSITIONS[i]);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = i;
-    }
-  }
-  return best;
-}
 
 /**
  * Custom valence slider with 7 discrete snap positions.
@@ -63,8 +34,6 @@ function nearestSnapIndex(v: number): number {
 export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const { t } = useLanguage();
   const trackRef = useRef<HTMLDivElement>(null);
-  const labelSurfaceRef = useRef<HTMLSpanElement>(null);
-  const previousLabelRef = useRef<string | null>(null);
   const [isPressed, setIsPressed] = useState(false);
   const [displayValue, setDisplayValue] = useState(value);
   const prevSnapRef = useRef(nearestSnapIndex(displayValue));
@@ -317,30 +286,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const snapIdx = nearestSnapIndex(displayValue);
   const valenceLabel = t[SNAP_LABELS[snapIdx]] as string;
   const valenceColor = valenceToColor(displayValue);
-
-  useLayoutEffect(() => {
-    if (previousLabelRef.current === null) {
-      previousLabelRef.current = valenceLabel;
-      return;
-    }
-    if (previousLabelRef.current === valenceLabel) return;
-    previousLabelRef.current = valenceLabel;
-
-    const labelSurface = labelSurfaceRef.current;
-    const reducedMotion =
-      document.body.classList.contains('reduce-motion') ||
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!labelSurface || reducedMotion || typeof labelSurface.animate !== 'function') return;
-
-    // Keep the backdrop-filter surface mounted under Android tile pressure.
-    // Replaying the same opacity-only transition avoids reallocating the
-    // filtered layer while preserving the existing 200 ms label fade.
-    const animation = labelSurface.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration: 200,
-      easing: 'ease-out',
-    });
-    return () => animation.cancel();
-  }, [valenceLabel]);
+  const labelSurfaceRef = useValenceLabelAnimation(valenceLabel);
 
   return (
     <div className="w-full px-5">

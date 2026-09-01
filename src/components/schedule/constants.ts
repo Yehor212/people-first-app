@@ -1,5 +1,6 @@
 import { ScheduleEvent } from '@/types';
 import { formatDate, parseLocalDate, getToday } from '@/lib/utils';
+import { formatScheduleDayNumber } from './scheduleFormatting';
 
 export interface ScheduleTimelineProps {
   events: ScheduleEvent[];
@@ -27,7 +28,7 @@ export function formatDayShort(dateStr: string, language: string): { day: string
   const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });
 
   return {
-    day: date.getDate().toString(),
+    day: formatScheduleDayNumber(dateStr, language),
     weekday: formatter.format(date),
     isToday,
   };
@@ -46,33 +47,12 @@ export const EVENT_COLORS = {
   google: 'hsl(var(--event-google))',
 } as const;
 
-// Event gradient mappings for premium cards
-export const EVENT_GRADIENTS = {
-  work: 'from-blue-500/40 to-blue-600/30',
-  meal: 'from-green-500/40 to-green-600/30',
-  rest: 'from-purple-500/40 to-purple-600/30',
-  exercise: 'from-orange-500/40 to-orange-600/30',
-  study: 'from-cyan-500/40 to-cyan-600/30',
-  meeting: 'from-pink-500/40 to-pink-600/30',
-  break: 'from-amber-500/40 to-amber-600/30',
-  urgent: 'from-red-500/40 to-red-600/30',
-  google: 'from-blue-500/40 to-indigo-500/30',
-} as const;
-
 export const getEventColor = (colorVar?: string, isUrgent?: boolean): string => {
   if (isUrgent) return EVENT_COLORS.urgent;
   if (colorVar && colorVar in EVENT_COLORS) {
     return EVENT_COLORS[colorVar as keyof typeof EVENT_COLORS];
   }
   return EVENT_COLORS.work;
-};
-
-export const getEventGradient = (colorVar?: string, isUrgent?: boolean): string => {
-  if (isUrgent) return EVENT_GRADIENTS.urgent;
-  if (colorVar && colorVar in EVENT_GRADIENTS) {
-    return EVENT_GRADIENTS[colorVar as keyof typeof EVENT_GRADIENTS];
-  }
-  return EVENT_GRADIENTS.work;
 };
 
 // Event presets
@@ -91,5 +71,5 @@ export const HOURS = Array.from({ length: HOURS_PER_DAY }, (_, i) => i);
 // The timeline is intentionally a one-axis scroller. A 96px cell keeps the
 // complete `HH:00` label readable at ZenFlow's 150% text scale plus WCAG text
 // spacing without shrinking or clipping the user's chosen typography.
-export const HOUR_WIDTH_PX = 96;
+export const HOUR_WIDTH_PX = 144;
 export const DAY_WIDTH_PX = HOURS_PER_DAY * HOUR_WIDTH_PX;

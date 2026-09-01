@@ -1617,6 +1617,30 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("renders peer Settings destinations as flat rows in one grouped surface", () => {
+    render(<SettingsPage controls={createSettingsControls()} />);
+
+    const moduleList = screen.getByTestId("settings-module-list");
+    const rows = Array.from(moduleList.querySelectorAll<HTMLElement>('[data-containment="row"]'));
+
+    expect(moduleList).toHaveAttribute("role", "list");
+    expect(moduleList).toHaveAttribute("data-containment", "group");
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      expect(row).toHaveAttribute("role", "listitem");
+      expect(row).toHaveAttribute("data-containment", "row");
+      expect(row.className).not.toContain("shadow-[var(--zen-shadow-card)]");
+      const action = within(row).getByRole("button");
+      expect(action.className).not.toContain("shadow-[");
+    }
+    expect(
+      moduleList.querySelectorAll('[data-slot="settings-module-separator"]')
+    ).toHaveLength(rows.length - 1);
+    expect(screen.getByTestId("settings-module-card-appearance").className).toContain(
+      "forced-colors:outline-[Highlight]"
+    );
+  });
+
   it("shows only actionable settings groups on web", () => {
     render(<SettingsPage controls={createSettingsControls()} />);
 
@@ -2017,39 +2041,10 @@ describe("SettingsPage", () => {
     const accountPanel = screen.getByTestId("settings-v2-panel-account");
     const linkedMethodsHeading = within(accountPanel).getByText("Connected sign-in methods");
     const linkedProvider = within(accountPanel).getByText("Google");
-    const linkedMethodsRow = linkedMethodsHeading.closest("[data-inset-presentation]");
+    const linkedMethodsRow = linkedMethodsHeading.closest("[data-containment]");
     expect(linkedMethodsHeading).toBeInTheDocument();
     expect(linkedProvider).toBeInTheDocument();
-    expect(linkedMethodsRow).toHaveAttribute("data-inset-presentation", "flat-row");
-    expect(linkedMethodsRow).toHaveClass("rounded-none", "border-b", "bg-transparent");
-  });
-
-  it("isolates mixed RTL prose, dates, URLs, handles, punctuation, emoji, and LTR IDs", () => {
-    const accountLabel =
-      "حساب سارة — @Avery_2026, 12/07/2026; https://example.test/a?b=1 — ABC-123 🙂 — avery.very.long.identifier@example.invalid";
-    accountAuthMock.sessionAccountLabel = accountLabel;
-    languageContextMock.language = "ar";
-
-    render(
-      <SettingsPage controls={{ ...createSettingsControls(), initialOpenSection: "account" }} />
-    );
-
-    const identity = screen.getByTestId("settings-v2-session-account-label");
-    const identityRow = identity.closest("[data-inset-presentation]");
-    expect(identity.tagName).toBe("BDI");
-    expect(identity).toHaveAttribute("dir", "auto");
-    expect(identity).toHaveTextContent(accountLabel);
-    expect(identity).toHaveClass("min-w-0", "max-w-full", "break-words");
-    expect(identity.className).toContain("[overflow-wrap:anywhere]");
-    expect(identity).not.toHaveClass("truncate");
-    expect(identityRow).toHaveAttribute("data-inset-presentation", "flat-row");
-    expect(identityRow).toHaveClass("rounded-none", "border-b", "bg-transparent");
-
-    const nameInput = screen.getByLabelText("Your name");
-    const mixedName = "سارة @Avery_2026 — ABC-123 🙂";
-    fireEvent.change(nameInput, { target: { value: mixedName } });
-    expect(nameInput).toHaveAttribute("dir", "auto");
-    expect(nameInput).toHaveValue(mixedName);
+    expect(linkedMethodsRow).toHaveAttribute("data-containment", "row");
   });
 
   it("isolates mixed RTL prose, dates, URLs, handles, punctuation, emoji, and LTR IDs", () => {
@@ -2097,8 +2092,8 @@ describe("SettingsPage", () => {
 
     const accountPanel = screen.getByTestId("settings-v2-panel-account");
     expect(screen.getByTestId("settings-v2-account-checking")).toHaveAttribute(
-      "data-inset-presentation",
-      "contained"
+      "data-containment",
+      "callout"
     );
     expect(accountPanel).toHaveTextContent("Checking your account…");
     expect(accountPanel).toHaveTextContent(
@@ -2127,8 +2122,8 @@ describe("SettingsPage", () => {
 
     const accountPanel = screen.getByTestId("settings-v2-panel-account");
     expect(screen.getByTestId("settings-v2-account-check-error")).toHaveAttribute(
-      "data-inset-presentation",
-      "contained"
+      "data-containment",
+      "callout"
     );
     expect(accountPanel).toHaveTextContent("We couldn’t check your account");
     expect(accountPanel).toHaveTextContent(
@@ -2226,8 +2221,8 @@ describe("SettingsPage", () => {
       "Your account is signed out, but this device still needs cleanup."
     );
     expect(screen.getByTestId("settings-v2-sign-out-recovery")).toHaveAttribute(
-      "data-inset-presentation",
-      "contained"
+      "data-containment",
+      "callout"
     );
     expect(screen.queryByRole("button", { name: "Continue with Google" })).not.toBeInTheDocument();
   });
@@ -2315,8 +2310,8 @@ describe("SettingsPage", () => {
         .getByText(
           "You can use ZenFlow without an account. Sign in to save new changes online and use them on your other devices."
         )
-        .closest("[data-inset-presentation]")
-    ).toHaveAttribute("data-inset-presentation", "flat-row");
+        .closest("[data-containment]")
+    ).toHaveAttribute("data-containment", "row");
     expect(accountPanel).not.toHaveTextContent(/expired|again/i);
     expect(screen.getByTestId("auth-provider-button")).toBeInTheDocument();
     expect(screen.queryByTestId("settings-status-overview")).not.toBeInTheDocument();
@@ -2715,7 +2710,7 @@ describe("SettingsPage", () => {
     );
   });
 
-  it("uses quiet tokenized surfaces for real privacy controls and import options", () => {
+  it("keeps quiet privacy controls as flat rows while preserving import-option separation", () => {
     adContextMock.adsSupported = true;
     appStoreMock.hasValidSession = false;
     accountAuthMock.hasSession = false;
@@ -2727,7 +2722,9 @@ describe("SettingsPage", () => {
     for (const testId of ["settings-v2-ad-consent"]) {
       const row = screen.getByTestId(testId);
       expect(row).toHaveAttribute("data-surface-weight", "quiet");
-      expect(row.className).toContain("border-transparent");
+      expect(row).toHaveAttribute("data-containment", "row");
+      expect(row).not.toHaveClass("border", "border-transparent", "rounded-[8px]");
+      expect(row.className).not.toContain("bg-[");
       expect(within(row).getByRole("switch")).toHaveAccessibleName();
     }
 
@@ -3331,7 +3328,7 @@ describe("SettingsPage", () => {
     expect(themeStoreMock.undoThemeCustomization).toHaveBeenCalledTimes(1);
   });
 
-  it("gives settings navigation and actions a tactile affordance contract", () => {
+  it("gives flat navigation rows and discrete actions distinct pressed affordances", () => {
     render(
       <SettingsPage
         controls={{
@@ -3348,8 +3345,11 @@ describe("SettingsPage", () => {
 
     expect(appearanceArticle).toHaveAttribute("data-active", "true");
     expect(appearanceModule).toHaveAttribute("data-interaction-surface", "settings-module");
-    expect(appearanceModule.className).toContain("focus-visible:ring-inset");
     expect(appearanceModule.className).not.toContain("active:translate-y-[1px]");
+    expect(appearanceModule.className).toContain(
+      "active:bg-[hsl(var(--settings-v2-panel)/0.88)]"
+    );
+    expect(appearanceModule.className).not.toContain("active:translate-y");
     expect(blueChoice).toHaveAttribute("data-interaction-surface", "settings-choice");
     expect(blueChoice.className).toContain("active:translate-y-[1px]");
     expect(screen.queryByTestId("settings-v2-style-reset")).toBeNull();
@@ -3599,7 +3599,12 @@ describe("SettingsPage", () => {
     render(<SettingsPage controls={{ ...controls, initialOpenSection: "notifications" }} />);
 
     const panel = screen.getByTestId("settings-v2-panel-notifications");
-    expect(panel).toHaveClass("w-full", "min-w-0", "max-w-full", "overflow-hidden");
+    expect(panel).toHaveClass("w-full", "min-w-0", "max-w-full");
+    expect(panel).not.toHaveClass("overflow-hidden");
+    expect(panel.querySelector('[data-slot="settings-group"]')).toHaveAttribute(
+      "data-containment",
+      "group"
+    );
 
     fireEvent.click(
       within(screen.getByTestId("settings-v2-reminders-toggle")).getByRole("switch", {
@@ -4816,7 +4821,10 @@ describe("SettingsPage", () => {
     const privacy = within(footer).getByRole("button", { name: "Privacy" });
     const terms = within(footer).getByRole("button", { name: "Terms" });
     expect(within(footer).getByRole("button", { name: "Licenses" })).toBeInTheDocument();
-    expect(within(footer).getByRole("button", { name: "Check for updates" })).toBeInTheDocument();
+    expect(within(footer).getByRole("button", { name: "Check for updates" })).toHaveClass(
+      "w-full",
+      "min-[360px]:w-auto"
+    );
     for (const legalAction of [privacy, terms]) {
       const label = legalAction.querySelector('[data-slot="settings-footer-legal-label"]');
       expect(legalAction).toHaveAttribute("data-slot", "settings-footer-legal-action");

@@ -70,7 +70,7 @@ describe('SheetMotion', () => {
     expect(close.className).toMatch(/min-h-\[44px\]/);
   });
 
-  it('bottom side applies safe-area positioning (z-80, fixed)', () => {
+  it('bottom side applies safe-area positioning with the named sheet layer', () => {
     useShouldAnimateMock.mockReturnValue(true);
     render(<OpenSheet side="bottom">Body</OpenSheet>);
     // Radix Portal renders outside container — query document.body
@@ -81,7 +81,8 @@ describe('SheetMotion', () => {
     const style = content?.getAttribute('style') ?? '';
     // jsdom drops env() strings on parse; assert positioning fingerprint instead.
     expect(style).toContain('position: fixed');
-    expect(style).toContain('z-index: 80');
+    expect(style).not.toContain('z-index');
+    expect(content?.className).toContain('z-[var(--z-sheet)]');
   });
 
   it('renders all side variants without crashing', () => {

@@ -11,7 +11,7 @@ const offlineQueueMock = vi.hoisted(() => ({
   processQueue: vi.fn<
     (options?: {
       verifiedConnectivity: {
-        source: "same-origin-app-asset";
+        source: "network-only-version-endpoint";
         signal: AbortSignal;
       };
     }) => Promise<void>
@@ -120,7 +120,7 @@ describe("OfflineBanner", () => {
     vi.useRealTimers();
   });
 
-  it("clears a false offline state after a successful app asset probe", async () => {
+  it("clears a stale offline state only after a successful network-only probe", async () => {
     setNavigatorOnline(false);
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
 
@@ -143,8 +143,10 @@ describe("OfflineBanner", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("favicon.ico"),
-      expect.objectContaining({ method: "HEAD", cache: "no-cache" })
+      expect.stringContaining(
+        "version.json?zenflow-connectivity-probe=network-only",
+      ),
+      expect.objectContaining({ method: "GET", cache: "no-store" }),
     );
   });
 
@@ -189,7 +191,7 @@ describe("OfflineBanner", () => {
     expect(retry.querySelector("svg")).toHaveClass("motion-safe:animate-spin");
     expect(offlineQueueMock.processQueue).toHaveBeenCalledWith({
       verifiedConnectivity: {
-        source: "same-origin-app-asset",
+        source: "network-only-version-endpoint",
         signal: expect.any(AbortSignal),
       },
     });

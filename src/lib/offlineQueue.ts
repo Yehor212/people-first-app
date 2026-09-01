@@ -34,6 +34,7 @@ declare global {
 
 import { logger } from "./logger";
 import { generateSecureRandom } from "./validation";
+import { CONNECTIVITY_EVIDENCE_SOURCE } from "./connectivityProbe";
 import { safeLocalStorageSet, storageReadRaw, storageRemove } from "./safeJson";
 import { SK } from "./storageKeys";
 import { db, getLocalDataOwnerId, OfflineQueueItem } from "@/storage/db";
@@ -100,7 +101,7 @@ export interface OfflineQueueProcessOptions {
    * boundary: a newer retry or a real offline event revokes this evidence.
    */
   verifiedConnectivity?: {
-    source: "same-origin-app-asset";
+    source: typeof CONNECTIVITY_EVIDENCE_SOURCE;
     signal: AbortSignal;
   };
 }
@@ -1038,7 +1039,7 @@ class OfflineQueue {
    */
   private canAttemptNetwork(options?: OfflineQueueProcessOptions): boolean {
     const evidence = options?.verifiedConnectivity;
-    if (evidence?.source === "same-origin-app-asset") {
+    if (evidence?.source === CONNECTIVITY_EVIDENCE_SOURCE) {
       return !evidence.signal.aborted;
     }
     return navigator.onLine;

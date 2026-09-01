@@ -1,12 +1,49 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 
 import { validateProductionWebBundleManifest } from "./ratchet-bundle-manifest";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(SCRIPT_PATH), "..");
+
+function readPwaManifest(rootDir: string, relativePath: string): Record<string, unknown> {
+  const filePath = path.join(rootDir, relativePath);
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch {
+    throw new Error(
+      `PRODUCTION WEB BUILD VALIDATION: PWA manifest parity could not read ${relativePath}`,
+    );
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(
+      `PRODUCTION WEB BUILD VALIDATION: PWA manifest parity requires an object at ${relativePath}`,
+    );
+  }
+  return value as Record<string, unknown>;
+}
+
+export function validatePwaManifestParity(rootDir: string = REPO_ROOT): void {
+  const publicManifest = readPwaManifest(rootDir, "public/manifest.webmanifest");
+  const docsManifest = readPwaManifest(rootDir, "docs/manifest.webmanifest");
+  const distManifest = readPwaManifest(rootDir, "dist/manifest.webmanifest");
+
+  if (!isDeepStrictEqual(publicManifest, docsManifest)) {
+    throw new Error(
+      "PRODUCTION WEB BUILD VALIDATION: PWA manifest parity failed for docs/manifest.webmanifest",
+    );
+  }
+  if (!isDeepStrictEqual(publicManifest, distManifest)) {
+    throw new Error(
+      "PRODUCTION WEB BUILD VALIDATION: PWA manifest parity failed for dist/manifest.webmanifest",
+    );
+  }
+}
 
 export function validateCompletedProductionWebBuild(
   rootDir: string = REPO_ROOT,
@@ -18,6 +55,7 @@ export function validateCompletedProductionWebBuild(
     );
   }
   validateProductionWebBundleManifest({ rootDir, env });
+  validatePwaManifestParity(rootDir);
 }
 
 function main(): void {
@@ -25,7 +63,9 @@ function main(): void {
     throw new Error("PRODUCTION WEB BUILD VALIDATION: this command does not accept arguments");
   }
   validateCompletedProductionWebBuild();
-  console.log("PRODUCTION WEB BUILD VALIDATION: manifest and artifact hashes are valid");
+  console.log(
+    "PRODUCTION WEB BUILD VALIDATION: bundle hashes and PWA manifest parity are valid",
+  );
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === SCRIPT_PATH) {

@@ -70,6 +70,7 @@ import {
   type JournalDraftCommitContext,
 } from "./journalStorage";
 import { isSupportedJournalPhotoFile, MAX_JOURNAL_PHOTO_FILE_SIZE } from "./JournalPhotoPicker";
+import { JOURNAL_PHOTO_TOO_DETAILED_ERROR } from "./journalPhotoEncoding";
 import { normalizeJournalStyleFields } from "./journalStyleFields";
 import {
   APP_RELOAD_PREPARE_EVENT,
@@ -282,6 +283,7 @@ export interface JournalEditorStateProps {
     audioIds?: string[];
     mood?: MoodType;
     tags: string[];
+    templateId?: string;
     date?: string;
     habitSnapshot?: {
       habitId: string;
@@ -410,6 +412,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     }[]
   >(entry?.habitSnapshot || []);
   const [tagInput, setTagInput] = useState("");
+  const [templateId, setTemplateId] = useState<string | undefined>(entry?.templateId);
 
   // === Save State (state machine replaces boolean) ===
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -1293,6 +1296,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           audioIds: audioIdsForSave.length > 0 ? audioIdsForSave : undefined,
           mood,
           tags,
+          templateId: templateId || undefined,
           date,
           habitSnapshot: habitSnapshot.length > 0 ? habitSnapshot : undefined,
           theme: diaryTheme.theme,
@@ -1372,6 +1376,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     photoIds,
     mood,
     tags,
+    templateId,
     date,
     onSave,
     onBack,
@@ -1402,9 +1407,10 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, [handleSave]);
 
   const handleSaveAndClose = useCallback(async () => {
+    if (!hasContent) return;
     setShowUnsavedDialog(false);
     await handleSave();
-  }, [handleSave]);
+  }, [handleSave, hasContent]);
 
   const persistDraftNow = useCallback(async (audioIdsForDraft = audioIdsRef.current) => {
     if (draftLoadState !== "ready") return false;
@@ -1657,8 +1663,16 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           setShowTags(false);
           return;
         }
+        if (showPromptsDropdown) {
+          setShowPromptsDropdown(false);
+          return;
+        }
         if (showVoicePrivacyConfirm) {
           setShowVoicePrivacyConfirm(false);
+          return;
+        }
+        if (showStyleBar) {
+          setShowStyleBar(false);
           return;
         }
         if (showRecordingOverlay) {
@@ -1709,7 +1723,9 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showPhotos,
     showMood,
     showTags,
+    showPromptsDropdown,
     showVoicePrivacyConfirm,
+    showStyleBar,
     showRecordingOverlay,
     recordingDiscardPending,
     showTemplatePicker,
@@ -1754,6 +1770,16 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
         setShowTags(false);
         return true;
       });
+    if (showPromptsDropdown)
+      return registerModalCloseCallback(() => {
+        setShowPromptsDropdown(false);
+        return true;
+      });
+    if (showStyleBar)
+      return registerModalCloseCallback(() => {
+        setShowStyleBar(false);
+        return true;
+      });
     // JournalModule owns the editor exit, including the lazy-loading gap.
     // This hook registers only inline states that render inside the editor.
   }, [
@@ -1766,6 +1792,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
     showPhotos,
     showMood,
     showTags,
+    showPromptsDropdown,
+    showStyleBar,
     showSettingsConfirm,
     audioRemovalPendingId,
     panicLocked,
@@ -2363,7 +2391,12 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
           })
           .catch((error) => {
             logger.error("[Journal] Dropped photo upload failed:", error);
-            announceError(ts.journalPhotoError || "Failed to add photo. Try again.");
+            announceError(
+              error instanceof Error && error.message === JOURNAL_PHOTO_TOO_DETAILED_ERROR
+                ? ts.journalPhotoTooDetailed ||
+                    "This photo has too much detail to sync safely. Choose a smaller image or crop it first."
+                : ts.journalPhotoError || "Failed to add photo. Try again."
+            );
           });
         return;
       }
@@ -2408,7 +2441,8 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   }, []);
 
   const handleTemplateSelect = useCallback(
-    (templateContent: string, _templateId: string | null) => {
+    (templateContent: string, selectedTemplateId: string | null) => {
+      setTemplateId(selectedTemplateId ?? undefined);
       setEditorContent(templateContent);
       setShowTemplatePicker(false);
       focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);

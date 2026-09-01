@@ -559,7 +559,7 @@ export const HabitsPage = memo(function HabitsPage() {
   } as CSSProperties;
 
   return (
-    <Bloom key="habits-page" transition={staggerDelay("primary")}>
+    <Bloom key="habits-page" initial={false} transition={staggerDelay("primary")}>
       <main
         ref={mainRef}
         id="main-content-v2"
@@ -596,7 +596,6 @@ export const HabitsPage = memo(function HabitsPage() {
             onToggleHabit={handleToggleHabit}
             onAdjustHabit={handleAdjustHabit}
             onNumericalAction={handleNumericalAction}
-            onDeleteHabit={handleDeleteHabit}
             onSkipHabit={handleSkipHabit}
             onUnskipHabit={handleUnskipHabit}
             onArchiveHabit={handleArchiveHabit}

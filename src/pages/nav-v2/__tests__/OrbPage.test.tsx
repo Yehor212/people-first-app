@@ -19,6 +19,9 @@ const orbVisualControl = vi.hoisted(() => ({
 const androidBackControl = vi.hoisted(() => ({
   callback: null as null | (() => boolean),
 }));
+const moodPersistenceMocks = vi.hoisted(() => ({
+  persistMoodEntry: vi.fn(() => Promise.resolve()),
+}));
 
 const platformControl = vi.hoisted(() => ({
   isAndroid: false,
@@ -27,6 +30,10 @@ const platformControl = vi.hoisted(() => ({
 import { OrbPage } from "../OrbPage";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
+
+vi.mock("@/storage/repositories/moodsRepo", () => ({
+  persistMoodEntryBeforeTransition: moodPersistenceMocks.persistMoodEntry,
+}));
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -346,6 +353,8 @@ describe("OrbPage progressive flow", () => {
     appAudioSettingsState.canPlayFeedback = true;
     setMoodsSpy.mockClear();
     onAddMoodMock.mockClear();
+    moodPersistenceMocks.persistMoodEntry.mockReset();
+    moodPersistenceMocks.persistMoodEntry.mockResolvedValue(undefined);
     setActivePageMock.mockClear();
     themeState.appliedTheme = "ink";
     mockUseShouldAnimate.mockReset();
@@ -398,9 +407,7 @@ describe("OrbPage progressive flow", () => {
     expect(raf.pendingCount()).toBe(1);
 
     act(() => raf.flushNext());
-    await waitFor(() =>
-      expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
-    );
+    await waitFor(() => expect(main).toHaveAttribute("data-orb-visual-status", "ready"));
     expect(screen.queryByTestId("orb-cold-loading-screen")).toBeNull();
     expect(main).not.toHaveAttribute("aria-hidden");
     expect(main).not.toHaveAttribute("inert");
@@ -418,9 +425,7 @@ describe("OrbPage progressive flow", () => {
 
     act(() => firstReady?.());
     act(() => raf.flushNext());
-    await waitFor(() =>
-      expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
-    );
+    await waitFor(() => expect(main).toHaveAttribute("data-orb-visual-status", "ready"));
 
     act(() => setViewport(1024, 760));
 
@@ -437,9 +442,7 @@ describe("OrbPage progressive flow", () => {
     act(() => orbVisualControl.readyCallbacks.at(-1)?.());
     expect(raf.pendingCount()).toBe(1);
     act(() => raf.flushNext());
-    await waitFor(() =>
-      expect(main).toHaveAttribute("data-orb-visual-status", "ready"),
-    );
+    await waitFor(() => expect(main).toHaveAttribute("data-orb-visual-status", "ready"));
   });
 
   it("coalesces transient Android resume heights before remounting the orb renderer", async () => {
@@ -490,27 +493,18 @@ describe("OrbPage progressive flow", () => {
 
       act(() => orbVisualControl.readyCallbacks[0]?.());
       expect(raf.pendingCount()).toBe(0);
-      expect(screen.getByTestId("orb-page")).toHaveAttribute(
-        "data-orb-visual-status",
-        "pending",
-      );
+      expect(screen.getByTestId("orb-page")).toHaveAttribute("data-orb-visual-status", "pending");
 
       Object.defineProperty(document, "hidden", { configurable: true, value: false });
       act(() => {
         document.dispatchEvent(new Event("visibilitychange"));
       });
       expect(raf.pendingCount()).toBe(1);
-      expect(screen.getByTestId("orb-page")).toHaveAttribute(
-        "data-orb-visual-status",
-        "pending",
-      );
+      expect(screen.getByTestId("orb-page")).toHaveAttribute("data-orb-visual-status", "pending");
 
       act(() => raf.flushNext());
       await waitFor(() =>
-        expect(screen.getByTestId("orb-page")).toHaveAttribute(
-          "data-orb-visual-status",
-          "ready",
-        ),
+        expect(screen.getByTestId("orb-page")).toHaveAttribute("data-orb-visual-status", "ready")
       );
     } finally {
       if (hiddenDescriptor) {
@@ -531,7 +525,7 @@ describe("OrbPage progressive flow", () => {
 
     act(() => firstError?.());
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't open your mood check-in. Try again.",
+      "We couldn't open your mood check-in. Try again."
     );
     expect(screen.getByTestId("orb-page-retry")).toHaveAccessibleName("Try again");
     expect(screen.getByTestId("orb-page-error-back")).toHaveAccessibleName("Back");
@@ -546,19 +540,13 @@ describe("OrbPage progressive flow", () => {
 
     act(() => firstReady?.());
     expect(raf.pendingCount()).toBe(0);
-    expect(screen.getByTestId("orb-page")).toHaveAttribute(
-      "data-orb-visual-status",
-      "pending",
-    );
+    expect(screen.getByTestId("orb-page")).toHaveAttribute("data-orb-visual-status", "pending");
 
     act(() => orbVisualControl.readyCallbacks.at(-1)?.());
     expect(raf.pendingCount()).toBe(1);
     act(() => raf.flushNext());
     await waitFor(() =>
-      expect(screen.getByTestId("orb-page")).toHaveAttribute(
-        "data-orb-visual-status",
-        "ready",
-      ),
+      expect(screen.getByTestId("orb-page")).toHaveAttribute("data-orb-visual-status", "ready")
     );
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -603,10 +591,7 @@ describe("OrbPage progressive flow", () => {
 
     fireEvent.click(screen.getByTestId("orb-page-retry"));
     await waitFor(() =>
-      expect(screen.getByTestId("orb-page")).toHaveAttribute(
-        "data-orb-visual-status",
-        "ready",
-      ),
+      expect(screen.getByTestId("orb-page")).toHaveAttribute("data-orb-visual-status", "ready")
     );
     expect(screen.getByTestId("valence-orb")).toHaveAttribute("data-valence", "0.5");
     expect(screen.getByTestId("mood-orb-picker")).toHaveAttribute("data-value", "0.5");
@@ -667,10 +652,7 @@ describe("OrbPage progressive flow", () => {
   });
 
   it("keeps overflowing orb steps reachable and resets their scroll position", () => {
-    const scrollTopDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "scrollTop",
-    );
+    const scrollTopDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollTop");
     const setScrollTop = vi.fn();
 
     Object.defineProperty(HTMLElement.prototype, "scrollTop", {
@@ -683,8 +665,7 @@ describe("OrbPage progressive flow", () => {
       render(<OrbPage onAddMood={onAddMoodMock} />);
 
       const selectScroller = screen.getByTestId("orb-page-select").closest(".overflow-y-auto");
-      expect(selectScroller).toHaveStyle({ justifyContent: "safe center" });
-      expect(selectScroller).not.toHaveClass("[justify-content:safe_center]");
+      expect(selectScroller).toHaveClass("orb-step-scroll-safe-center");
       expect(selectScroller).not.toHaveClass("justify-center");
       expect(setScrollTop).toHaveBeenCalledWith(0);
 
@@ -719,17 +700,13 @@ describe("OrbPage progressive flow", () => {
     expect(screen.getByTestId("orb-page-note")).toHaveClass("px-0");
     expect(copyColumn).toHaveClass("w-full", "max-w-full", "min-w-0");
     expect(heading).toHaveClass("min-w-0", "max-w-full", "break-words");
-    expect(heading).toHaveClass(
-      "text-[1.0625rem]",
-      "min-[360px]:text-2xl",
-      "md:text-3xl",
-    );
+    expect(heading).toHaveClass("text-[1.0625rem]", "min-[360px]:text-2xl", "md:text-3xl");
     expect(heading.className).toContain("[hyphens:manual]");
     expect(heading.className).toContain("[overflow-wrap:normal]");
     expect(noteLabel).toHaveClass(
       "[hyphens:auto]",
       "[overflow-wrap:normal]",
-      "[word-break:normal]",
+      "[word-break:normal]"
     );
   });
 
@@ -915,23 +892,15 @@ describe("OrbPage progressive flow", () => {
     expect(media.pause).toHaveBeenCalled();
   });
 
-  it("requires an explicit mood choice before leaving the select step", () => {
+  it("allows Next from the neutral center on first render", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     const next = screen.getByTestId("orb-page-next");
-    expect(next).toBeDisabled();
-    expect(next).toHaveClass("bg-muted", "text-muted-foreground");
-
-    fireEvent.click(next);
-    expect(screen.queryByTestId("orb-page-refine")).not.toBeInTheDocument();
-    expect(useMoodEntryDraftStore.getState().valence).toBeNull();
-
-    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(next).not.toBeDisabled();
     expect(next).toHaveClass("bg-primary", "text-primary-foreground");
-    fireEvent.click(next);
 
+    fireEvent.click(next);
     expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
-    expect(useMoodEntryDraftStore.getState().valence).toBe(0.5);
+    expect(useMoodEntryDraftStore.getState().valence).toBe(0);
   });
 
   it("retains the outgoing Orb step while the refine scene blooms in", () => {
@@ -1028,7 +997,7 @@ describe("OrbPage progressive flow", () => {
     });
   });
 
-  it("requires both a mood choice and time before leaving the select step when scope is specific", () => {
+  it("requires a time before leaving the select step when scope is specific", () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
 
     fireEvent.click(screen.getByTestId("mood-scope-chip-specific"));
@@ -1037,9 +1006,6 @@ describe("OrbPage progressive flow", () => {
     fireEvent.change(screen.getByTestId("mood-scope-time-input"), {
       target: { value: "14:30" },
     });
-    expect(screen.getByTestId("orb-page-next")).toBeDisabled();
-
-    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     expect(screen.getByTestId("orb-page-next")).not.toBeDisabled();
   });
 
@@ -1083,12 +1049,10 @@ describe("OrbPage progressive flow", () => {
 
     fireEvent.click(screen.getByTestId("mood-orb-option-good"));
     fireEvent.click(screen.getByTestId("orb-page-next"));
-    expect(screen.getByTestId("orb-page-runtime-content")).toHaveClass(
-      "px-3",
-      "md:px-6",
-    );
+    expect(screen.getByTestId("orb-page-runtime-content")).toHaveClass("px-3", "md:px-6");
     const refineScroller = screen.getByTestId("orb-page-refine-scroll");
     const backToSelect = screen.getByTestId("orb-page-back");
+    const saveMood = screen.getByTestId("orb-page-save-mood");
     const saveAndOpen = screen.getByTestId("orb-page-open-diary");
     expect(refineScroller).toHaveClass(
       "overflow-y-auto",
@@ -1103,9 +1067,10 @@ describe("OrbPage progressive flow", () => {
       "flex-col",
       "items-stretch",
       "px-0",
-      "sm:flex-row",
+      "sm:flex-row"
     );
     expect(saveAndOpen).toHaveAccessibleName("Save mood and start today's entry");
+    expect(saveMood).toHaveAccessibleName("Save mood");
     expect(saveAndOpen).toHaveClass(
       "min-w-0",
       "max-w-full",
@@ -1114,16 +1079,15 @@ describe("OrbPage progressive flow", () => {
       "text-center",
       "px-3",
       "sm:px-5",
-      "sm:w-auto",
+      "sm:w-auto"
     );
-    expect(saveAndOpen).toHaveStyle({ borderRadius: "clamp(24px, 8vw, 44px)" });
-    expect(saveAndOpen).not.toHaveClass("rounded-[clamp(24px,8vw,44px)]");
+    expect(saveAndOpen).toHaveClass("orb-page-continuation-button");
     expect(backToSelect).toHaveClass("px-3", "sm:px-5");
     expect(saveAndOpen.querySelector("span")).toHaveClass(
       "min-w-0",
       "flex-1",
       "[overflow-wrap:normal]",
-      "[word-break:normal]",
+      "[word-break:normal]"
     );
     expect(saveAndOpen.querySelector("span")).not.toHaveClass("break-words");
     expect(saveAndOpen.querySelector("svg")).toHaveClass("orb-page-save-arrow");
@@ -1160,7 +1124,7 @@ describe("OrbPage progressive flow", () => {
     expect(saveMood).toHaveClass("min-h-[44px]");
     fireEvent.click(saveMood);
 
-    expect(onAddMoodMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onAddMoodMock).toHaveBeenCalledTimes(1));
     expect(onAddMoodMock).toHaveBeenCalledWith(
       expect.objectContaining({
         valence: 0.5,
@@ -1184,10 +1148,14 @@ describe("OrbPage progressive flow", () => {
   it("keeps the Diary arrow decorative and hidden only below 360px through route-local CSS", () => {
     const stepsCss = readFileSync("src/pages/nav-v2/OrbPageSteps.css", "utf8");
 
-    expect(stepsCss).toMatch(/@media\s*\(max-width:\s*359px\)/);
     expect(stepsCss).toMatch(
-      /\.orb-page-save-arrow\s*\{[\s\S]*?display:\s*none;?[\s\S]*?\}/
+      /\.orb-step-scroll-safe-center\s*\{[\s\S]*?justify-content:\s*safe center;?[\s\S]*?\}/
     );
+    expect(stepsCss).toMatch(
+      /\.orb-page-continuation-button\s*\{[\s\S]*?border-radius:\s*clamp\(24px,\s*8vw,\s*44px\);?[\s\S]*?\}/
+    );
+    expect(stepsCss).toMatch(/@media\s*\(max-width:\s*359px\)/);
+    expect(stepsCss).toMatch(/\.orb-page-save-arrow\s*\{[\s\S]*?display:\s*none;?[\s\S]*?\}/);
   });
 
   it("releases the nested refine gutter below 360px so long emotion words stay inside their chip", () => {
@@ -1201,7 +1169,7 @@ describe("OrbPage progressive flow", () => {
     expect(refineScroller).toHaveClass("orb-page-refine-scroll", "px-2", "md:px-4");
     expect(stepsCss).toMatch(/@media\s*\(max-width:\s*359px\)/);
     expect(stepsCss).toMatch(
-      /\.orb-page-refine-scroll\s*\{[\s\S]*?padding-inline:\s*0;?[\s\S]*?\}/,
+      /\.orb-page-refine-scroll\s*\{[\s\S]*?padding-inline:\s*0;?[\s\S]*?\}/
     );
   });
 
@@ -1217,16 +1185,14 @@ describe("OrbPage progressive flow", () => {
     });
     fireEvent.click(screen.getByTestId("orb-page-open-diary"));
 
-    expect(onAddMoodMock).toHaveBeenCalledTimes(1);
-    await waitFor(() =>
-      expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
-        valence: 0.5,
-        mood: "good",
-        scope: "now",
-        emotion: "hopeful",
-        note: "I want to remember this calm shift.",
-      }),
-    );
+    await waitFor(() => expect(onAddMoodMock).toHaveBeenCalledTimes(1));
+    expect(useDiaryDraftStore.getState().pendingMoodContext).toMatchObject({
+      valence: 0.5,
+      mood: "good",
+      scope: "now",
+      emotion: "hopeful",
+      note: "I want to remember this calm shift.",
+    });
   });
 
   it("prefers the orchestrator navigation callback for the final Diary transfer", async () => {

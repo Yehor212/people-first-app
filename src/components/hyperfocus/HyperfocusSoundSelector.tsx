@@ -1,9 +1,7 @@
 /**
- * HyperfocusSoundSelector — ambient sound picker with status indicators
- * Pure component, 0 useState.
+ * HyperfocusSoundSelector — ambient sound picker with status indicators.
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertCircle,
   CloudRain,
@@ -17,19 +15,17 @@ import {
   Waves,
   Wind,
   type LucideIcon,
-} from 'lucide-react';
-import { SOUNDS, AudioStatus, type ToneFilterStatus } from '@/lib/ambientSounds';
+} from "lucide-react";
+import { SOUNDS, type AudioStatus, type ToneFilterStatus } from "@/lib/ambientSounds";
 import {
   HYPERFOCUS_AUDIO_FAMILIES,
   getHyperfocusAudioFamily,
   getHyperfocusVariantId,
   parseHyperfocusVariantId,
   type HyperfocusAudioFamilyId,
-} from '@/lib/hyperfocusAudioCatalog';
-import { cn } from '@/lib/utils';
-import { zenTap } from '@/lib/animationUtils';
-import { useShouldAnimate } from '@/hooks/useShouldAnimate';
-import { formatHyperfocusToneKhz } from '@/lib/hyperfocusTone';
+} from "@/lib/hyperfocusAudioCatalog";
+import { formatHyperfocusToneKhz } from "@/lib/hyperfocusTone";
+import { cn } from "@/lib/utils";
 
 const soundMeta: Record<HyperfocusAudioFamilyId, { Icon: LucideIcon }> = {
   forest: { Icon: TreePine },
@@ -54,198 +50,172 @@ interface HyperfocusSoundSelectorProps {
   t: Record<string, string>;
 }
 
+const selectorButtonClass =
+  "flex h-auto min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-xl border px-2 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors";
+
 export function HyperfocusSoundSelector({
-  selectedSoundId, isSoundPlaying, audioStatus,
-  onSoundSelect, onToggleSound, onPlaySound,
-  toneCutoffKhz, toneFilterStatus, onToneCutoffChange,
-  audioMuted = false, t,
+  selectedSoundId,
+  isSoundPlaying,
+  audioStatus,
+  onSoundSelect,
+  onToggleSound,
+  onPlaySound,
+  toneCutoffKhz,
+  toneFilterStatus,
+  onToneCutoffChange,
+  audioMuted = false,
+  t,
 }: HyperfocusSoundSelectorProps) {
-  const motionAllowed = useShouldAnimate({ respectRuntimePerformance: false });
   const selectedVariant = selectedSoundId ? parseHyperfocusVariantId(selectedSoundId) : null;
-  const activeFamily = selectedVariant ? getHyperfocusAudioFamily(selectedVariant.familyId) : undefined;
+  const activeFamily = selectedVariant
+    ? getHyperfocusAudioFamily(selectedVariant.familyId)
+    : undefined;
   const activeLevelId = selectedVariant?.levelId;
 
   return (
-    <div className="w-full max-w-sm sm:max-w-md lg:max-w-3xl mx-auto bg-secondary backdrop-blur-md rounded-2xl p-4 border border-border">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-slate-600 dark:text-white/70 font-medium">
+    <section className="mx-auto w-full max-w-sm sm:max-w-md lg:max-w-3xl">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-medium text-muted-foreground">
           {t.hyperfocusAmbientSound}
         </span>
 
         <div className="flex items-center gap-2">
-          {/* Audio status indicator */}
-          <AnimatePresence mode="wait">
-            {audioStatus.state === 'loading' && selectedSoundId && (
-              <motion.div
-                key="loading"
-                initial={motionAllowed ? { opacity: 0, scale: 0.8 } : false}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={motionAllowed ? { opacity: 0, scale: 0.8 } : undefined}
-                className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg"
-              >
-                <Loader2 className={cn("w-4 h-4 text-blue-500", motionAllowed && "animate-spin")} aria-hidden="true" />
-                <span className="text-xs text-blue-600 dark:text-blue-400">
-                  {t.audioLoading || 'Loading...'}
-                </span>
-              </motion.div>
-            )}
-            {audioStatus.state === 'blocked' && selectedSoundId && (
-              <motion.button
-                key="blocked"
-                type="button"
-                initial={motionAllowed ? { opacity: 0, scale: 0.8 } : false}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={motionAllowed ? { opacity: 0, scale: 0.8 } : undefined}
-                className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg cursor-pointer min-h-[44px]"
-                onClick={() => selectedSoundId && !audioMuted && onPlaySound(selectedSoundId)}
-              >
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-                <span className="text-xs text-amber-600 dark:text-amber-400">
-                  {t.audioTapToEnable || 'Tap to enable'}
-                </span>
-              </motion.button>
-            )}
-            {audioStatus.state === 'error' && selectedSoundId && (
-              <motion.button
-                key="error"
-                type="button"
-                initial={motionAllowed ? { opacity: 0, scale: 0.8 } : false}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={motionAllowed ? { opacity: 0, scale: 0.8 } : undefined}
-                className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-lg cursor-pointer min-h-[44px]"
-                onClick={() => selectedSoundId && !audioMuted && onPlaySound(selectedSoundId)}
-              >
-                <RotateCcw className="w-4 h-4 text-red-500" />
-                <span className="text-xs text-red-600 dark:text-red-400">
-                  {t.audioRetry || 'Retry'}
-                </span>
-              </motion.button>
-            )}
-          </AnimatePresence>
-
-          {selectedSoundId && audioStatus.state !== 'loading' && (
-            <motion.button
+          {audioStatus.state === "loading" && selectedSoundId && (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="flex items-center gap-1.5 text-muted-foreground"
+            >
+              <Loader2 className="h-4 w-4 text-primary motion-safe:animate-spin" aria-hidden="true" />
+              <span className="text-xs">{t.audioLoading || "Loading..."}</span>
+            </div>
+          )}
+          {audioStatus.state === "blocked" && selectedSoundId && (
+            <button
+              type="button"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-secondary px-2 py-1 text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors"
+              onClick={() => !audioMuted && onPlaySound(selectedSoundId)}
+            >
+              <AlertCircle className="h-4 w-4 text-primary" aria-hidden="true" />
+              <span className="text-xs">{t.audioTapToEnable || "Tap to enable"}</span>
+            </button>
+          )}
+          {audioStatus.state === "error" && selectedSoundId && (
+            <button
+              type="button"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors"
+              onClick={() => !audioMuted && onPlaySound(selectedSoundId)}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              <span className="text-xs">{t.audioRetry || "Retry"}</span>
+            </button>
+          )}
+          {selectedSoundId && audioStatus.state !== "loading" && (
+            <button
+              type="button"
               onClick={onToggleSound}
               disabled={audioMuted}
               aria-label={isSoundPlaying ? t.muteSound : t.unmuteSound}
               className={cn(
-                "p-2.5 min-w-[44px] min-h-[44px] rounded-xl motion-safe:transition-all flex items-center justify-center",
+                "flex min-h-11 min-w-11 items-center justify-center rounded-xl border p-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors",
                 isSoundPlaying
-                  ? "bg-violet-500/30 border border-violet-500/50"
-                  : "bg-secondary border border-border",
-                audioMuted && "cursor-not-allowed opacity-55"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-secondary text-muted-foreground hover:bg-muted hover:text-foreground",
+                audioMuted && "cursor-not-allowed opacity-55",
               )}
-              whileTap={motionAllowed ? zenTap.button : undefined}
             >
               {isSoundPlaying ? (
-                <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
+                <Volume2 className="h-5 w-5" aria-hidden="true" />
               ) : (
-                <VolumeX className="w-5 h-5 text-slate-500 dark:text-white/60" />
+                <VolumeX className="h-5 w-5" aria-hidden="true" />
               )}
-            </motion.button>
+            </button>
           )}
         </div>
       </div>
 
-      {/* Sound selector grid */}
       <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-7">
-        {/* None button */}
-        <motion.button
+        <button
+          type="button"
           onClick={() => onSoundSelect(null)}
           aria-pressed={!selectedSoundId}
           className={cn(
-            'h-auto min-h-[52px] min-w-0 whitespace-normal px-2 py-3 rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
+            selectorButtonClass,
             !selectedSoundId
-              ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
-              : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
+              ? "border-primary bg-primary/10 text-foreground"
+              : "border-border bg-secondary text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
-          style={!selectedSoundId ? {
-            boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
-          } : {}}
-          whileHover={motionAllowed ? { scale: 1.03 } : undefined}
-          whileTap={motionAllowed ? zenTap.card : undefined}
         >
           <VolumeX className="h-5 w-5 shrink-0" aria-hidden="true" />
           <span className="break-words text-center">{t.hyperfocusSoundNone}</span>
-        </motion.button>
+        </button>
 
-        {/* All available sounds */}
         {HYPERFOCUS_AUDIO_FAMILIES.map((family) => {
           const sound = SOUNDS.find((candidate) => candidate.id === family.legacyId);
           const isSelected = activeFamily?.id === family.id;
           const { Icon } = soundMeta[family.id];
           const localizedName = t[family.labelKey] || sound?.nameEn || family.id;
-
           return (
-            <motion.button
+            <button
               key={family.id}
-              onClick={() => onSoundSelect(getHyperfocusVariantId(family.id, 'deep'))}
+              type="button"
+              onClick={() => onSoundSelect(getHyperfocusVariantId(family.id, "deep"))}
               aria-pressed={isSelected}
               className={cn(
-                'h-auto min-h-[52px] min-w-0 whitespace-normal px-2 py-3 rounded-xl text-xs font-medium motion-safe:transition-all flex flex-col items-center justify-center gap-1',
+                selectorButtonClass,
                 isSelected
-                  ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
-                  : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border bg-secondary text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
-              style={isSelected ? {
-                boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
-              } : {}}
-              whileHover={motionAllowed ? { scale: 1.03 } : undefined}
-              whileTap={motionAllowed ? zenTap.card : undefined}
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               <span className="break-words text-center">{localizedName}</span>
-            </motion.button>
+            </button>
           );
         })}
       </div>
 
       {activeFamily && (
         <>
-          <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3" role="group" aria-label={t.hyperfocusSoundIntensity || 'Sound intensity'}>
+          <div
+            className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 rounded-xl bg-muted p-1"
+            role="group"
+            aria-label={t.hyperfocusSoundIntensity || "Sound intensity"}
+          >
             {activeFamily.levels.map((level) => {
               const isSelected = activeLevelId === level.id;
-              const localizedLevelName = t[level.labelKey] || level.label;
-
+              const familyLevelKey = `${activeFamily.labelKey}${level.id[0].toUpperCase()}${level.id.slice(1)}`;
               return (
-                <motion.button
+                <button
                   key={level.id}
                   type="button"
                   onClick={() => onSoundSelect(level.variantId)}
                   aria-pressed={isSelected}
                   className={cn(
-                    'h-auto min-h-[44px] min-w-0 whitespace-normal break-words px-2 py-2 rounded-xl text-xs font-medium motion-safe:transition-all flex items-center justify-center text-center',
+                    "flex min-h-[44px] min-w-0 items-center justify-center rounded-lg px-2 py-2 text-center text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors",
                     isSelected
-                      ? 'bg-violet-500/30 border border-violet-500/50 text-violet-700 dark:text-violet-100'
-                      : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
+                      ? "bg-background text-foreground"
+                      : "bg-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground",
                   )}
-                  whileTap={motionAllowed ? zenTap.button : undefined}
                 >
-                  {localizedLevelName}
-                </motion.button>
+                  {t[familyLevelKey] || t[level.labelKey] || level.label}
+                </button>
               );
             })}
           </div>
 
-          <div className="mt-3 rounded-xl border border-emerald-500/25 bg-slate-950/20 p-3 text-start">
+          <div className="mt-3 rounded-xl border border-border bg-card p-3 text-start">
             <div className="flex items-baseline justify-between gap-3">
-              <label
-                htmlFor="hyperfocus-tone-cutoff"
-                className="text-xs font-semibold text-slate-700 dark:text-white/85"
-              >
-                {t.hyperfocusToneLabel || 'Tone'}
+              <label htmlFor="hyperfocus-tone-cutoff" className="text-xs font-semibold text-foreground">
+                {t.hyperfocusToneLabel || "Tone"}
               </label>
-              <span
-                className="shrink-0 text-xs font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
-              >
+              <span className="shrink-0 text-xs font-bold tabular-nums text-primary">
                 {formatHyperfocusToneKhz(toneCutoffKhz)}
               </span>
             </div>
-            <p
-              id="hyperfocus-tone-help"
-              className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-white/55"
-            >
-              {t.hyperfocusToneHelp || 'High-frequency cutoff; pitch and speed stay unchanged.'}
+            <p id="hyperfocus-tone-help" className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              {t.hyperfocusToneHelp || "High-frequency cutoff; pitch and speed stay unchanged."}
             </p>
             <input
               id="hyperfocus-tone-cutoff"
@@ -255,23 +225,23 @@ export function HyperfocusSoundSelector({
               step="0.5"
               value={toneCutoffKhz}
               onChange={(event) => onToneCutoffChange(Number(event.currentTarget.value))}
-              aria-label={t.hyperfocusToneLabel || 'Tone'}
+              aria-label={t.hyperfocusToneLabel || "Tone"}
               aria-valuetext={formatHyperfocusToneKhz(toneCutoffKhz)}
               aria-describedby="hyperfocus-tone-help"
-              className="h-11 w-full cursor-pointer accent-violet-500"
+              className="h-11 w-full cursor-pointer accent-primary"
             />
-            <div className="-mt-1 flex justify-between gap-4 text-[10px] text-slate-500 dark:text-white/50">
-              <span>{t.hyperfocusToneSofter || 'Softer'} · 3 kHz</span>
-              <span className="text-end">{t.hyperfocusToneFullSpectrum || 'Full spectrum'} · 16 kHz</span>
+            <div className="-mt-1 flex justify-between gap-4 text-[10px] text-muted-foreground">
+              <span>{t.hyperfocusToneSofter || "Softer"} · 3 kHz</span>
+              <span className="text-end">{t.hyperfocusToneFullSpectrum || "Full spectrum"} · 16 kHz</span>
             </div>
-            {toneFilterStatus.state === 'degraded' && (
-              <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-300" role="status">
-                {t.hyperfocusToneUnavailable || 'Tone control is unavailable on this device.'}
+            {toneFilterStatus.state === "degraded" && (
+              <p className="mt-2 text-[11px] text-destructive" role="status">
+                {t.hyperfocusToneUnavailable || "Tone control is unavailable on this device."}
               </p>
             )}
           </div>
         </>
       )}
-    </div>
+    </section>
   );
 }

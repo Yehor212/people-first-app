@@ -111,7 +111,7 @@ async function waitForApp(page: import("@playwright/test").Page) {
   const nav = page.locator('[role="navigation"]');
   await expect(nav.first()).toBeVisible({ timeout: 30000 });
   await expect(page.getByTestId("background-music-toggle")).toBeVisible({ timeout: 30000 });
-  await expect(page.getByTestId("orb-page-next")).toBeDisabled({ timeout: 30000 });
+  await expect(page.getByTestId("orb-page-next")).toBeEnabled({ timeout: 30000 });
   const canonicalOrbs = page.locator('[data-orb-renderer-policy]');
   await expect.poll(
     async () => {

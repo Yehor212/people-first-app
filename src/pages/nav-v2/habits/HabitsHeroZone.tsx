@@ -36,7 +36,6 @@ interface HabitsHeroZoneProps {
   onToggleHabit: (habitId: string, date: string) => void;
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
-  onDeleteHabit: (habitId: string) => void;
   onCreateHabit: () => void;
   onEditHabit?: (habit: Habit) => void;
   onSkipHabit?: (habitId: string, date: string) => void;
@@ -57,7 +56,6 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
   onToggleHabit,
   onAdjustHabit,
   onNumericalAction,
-  onDeleteHabit,
   onCreateHabit,
   onEditHabit,
   onSkipHabit,
@@ -213,7 +211,6 @@ export const HabitsHeroZone = memo(function HabitsHeroZone({
                 onToggleHabit={onToggleHabit}
                 onAdjustHabit={onAdjustHabit}
                 onNumericalAction={onNumericalAction}
-                onDeleteHabit={onDeleteHabit}
                 onEditHabit={onEditHabit}
                 onSkipHabit={onSkipHabit}
                 onUnskipHabit={onUnskipHabit}

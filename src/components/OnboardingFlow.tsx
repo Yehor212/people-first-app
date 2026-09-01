@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import {
   ChevronRight,
-  Sparkles,
   Check,
   Timer,
   Wind,
@@ -29,29 +28,6 @@ interface OnboardingFlowProps {
 interface ModuleItem {
   id: ToggleableFeature;
   icon: React.ReactNode;
-  emoji: string;
-  gradient: string;
-}
-
-// Floating particles component
-function FloatingParticles() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 20 }).map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-2 h-2 rounded-full motion-safe:animate-float-particle opacity-30"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            backgroundColor: ["#4a9d7c", "#e8a849", "#6366f1", "#ec4899", "#22c55e"][i % 5],
-            animationDelay: `${Math.random() * 5}s`,
-            animationDuration: `${8 + Math.random() * 4}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
 }
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -76,74 +52,65 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   // Fallback: If user clicks multiple times and nothing happens, force complete
   useEffect(() => {
-    if (clickAttempts >= 3) {
-      logger.log("[OnboardingFlow] Multiple click attempts detected, forcing completion");
-      // Clear any pending timeout
-      if (completionTimeoutRef.current) {
-        clearTimeout(completionTimeoutRef.current);
-      }
-      // Force complete after 1 second
-      completionTimeoutRef.current = setTimeout(() => {
-        logger.log("[OnboardingFlow] Force completing onboarding");
-        onComplete({ modules: selectedModules });
-      }, 1000);
+    if (clickAttempts < 3) return;
+    logger.log("[OnboardingFlow] Multiple click attempts detected, forcing completion");
+    if (completionTimeoutRef.current) {
+      clearTimeout(completionTimeoutRef.current);
     }
+    completionTimeoutRef.current = setTimeout(() => {
+      logger.log("[OnboardingFlow] Force completing onboarding");
+      onComplete({ modules: selectedModules });
+    }, 1000);
     return () => {
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current);
-      }
-      if (animatingTimerRef.current) {
-        clearTimeout(animatingTimerRef.current);
-      }
-      if (lockResetTimeoutRef.current) {
-        clearTimeout(lockResetTimeoutRef.current);
+        completionTimeoutRef.current = null;
       }
     };
   }, [clickAttempts, onComplete, selectedModules]);
+
+  useEffect(() => {
+    return () => {
+      if (animatingTimerRef.current) {
+        clearTimeout(animatingTimerRef.current);
+        animatingTimerRef.current = null;
+      }
+      if (lockResetTimeoutRef.current) {
+        clearTimeout(lockResetTimeoutRef.current);
+        lockResetTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Module definitions
   const modules: ModuleItem[] = [
     {
       id: "focusTimer",
       icon: <Timer className="w-5 h-5" />,
-      emoji: "🕐",
-      gradient: "from-orange-500 to-red-500",
     },
     {
       id: "breathingExercise",
       icon: <Wind className="w-5 h-5" />,
-      emoji: "💨",
-      gradient: "from-sky-400 to-blue-500",
     },
     {
       id: "gratitudeJournal",
       icon: <Heart className="w-5 h-5" />,
-      emoji: "❤️",
-      gradient: "from-pink-500 to-rose-500",
     },
     {
       id: "quests",
       icon: <Target className="w-5 h-5" />,
-      emoji: "🎯",
-      gradient: "from-yellow-500 to-amber-500",
     },
     {
       id: "tasks",
       icon: <ClipboardList className="w-5 h-5" />,
-      emoji: "📋",
-      gradient: "from-blue-500 to-indigo-500",
     },
     {
       id: "challenges",
       icon: <Trophy className="w-5 h-5" />,
-      emoji: "🏆",
-      gradient: "from-amber-500 to-yellow-600",
     },
     {
       id: "innerWorld",
       icon: <Flower2 className="w-5 h-5" />,
-      emoji: "🌸",
-      gradient: "from-green-500 to-emerald-500",
     },
   ];
 
@@ -185,7 +152,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const toggleModule = (moduleId: ToggleableFeature) => {
     setAnimatingModule(moduleId);
     if (animatingTimerRef.current) clearTimeout(animatingTimerRef.current);
-    animatingTimerRef.current = setTimeout(() => setAnimatingModule(null), 400);
+    animatingTimerRef.current = setTimeout(() => {
+      setAnimatingModule(null);
+      animatingTimerRef.current = null;
+    }, 400);
 
     setSelectedModules((prev) =>
       prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
@@ -211,10 +181,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }, 2000);
 
     try {
-      logger.log("[OnboardingFlow] Setting flags for all modules...");
-      modules.forEach((m) => setFlag(m.id, true));
-      logger.log("[OnboardingFlow] Calling onComplete with skipped=true");
-      onComplete({ skipped: true, modules: modules.map((m) => m.id) });
+      logger.log("[OnboardingFlow] Skipping without changing feature preferences");
+      onComplete({ skipped: true, modules: [] });
       logger.log("[OnboardingFlow] onComplete called successfully");
     } catch (error) {
       logger.error("[OnboardingFlow] Error in handleSkip:", error);
@@ -259,16 +227,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="screen-overlay overflow-y-auto overscroll-contain bg-gradient-to-br from-background via-primary/5 to-accent/5">
-      <FloatingParticles />
-
+    <div className="screen-overlay overflow-y-auto overscroll-contain bg-background">
       <div className="flex-1 flex flex-col items-center justify-start pt-6 sm:pt-10 px-3 sm:px-4 pb-4">
         <div className="w-full max-w-md relative z-10">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 mb-4">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
             <h2 className="break-words text-2xl font-bold text-foreground [hyphens:manual] [overflow-wrap:break-word] mb-2">
               {t.modulesOnboardingTitle || "Choose Features"}
             </h2>
@@ -278,7 +241,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </div>
 
           {/* Modules Grid */}
-          <div className="bg-card/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-primary/10 border border-primary/10">
+          <div>
             <div className="grid max-h-[45dvh] grid-cols-[repeat(auto-fit,minmax(min(100%,calc(10rem*var(--font-scale,1))),1fr))] gap-3 overflow-y-auto overscroll-contain pe-1">
               {modules.map((module, index) => {
                 const isSelected = selectedModules.includes(module.id);
@@ -292,45 +255,41 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     aria-label={getModuleName(module.id)}
                     onClick={() => toggleModule(module.id)}
                     className={cn(
-                      "relative flex h-auto min-h-12 min-w-0 flex-col items-center gap-2 overflow-hidden rounded-xl p-4 text-center motion-safe:transition-all motion-safe:duration-200",
+                      "relative flex h-auto min-h-12 min-w-0 flex-col items-center gap-2 overflow-hidden rounded-xl border p-4 text-center text-foreground motion-safe:transition-colors motion-safe:duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                       isSelected
-                        ? `bg-gradient-to-br ${module.gradient} shadow-lg`
-                        : "bg-secondary/50 hover:bg-secondary",
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:bg-muted",
                       isAnimating && "motion-safe:animate-selection-pop"
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* Emoji */}
+                    {/* Module identity */}
                     <span
-                      className={cn("text-3xl motion-safe:transition-transform", isSelected && "scale-110")}
+                      aria-hidden="true"
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center motion-safe:transition-transform",
+                        isSelected ? "scale-110 text-primary" : "text-muted-foreground",
+                      )}
                     >
-                      {module.emoji}
+                      {module.icon}
                     </span>
 
                     {/* Name */}
                     <span
-                      className={cn(
-                        "min-w-0 whitespace-normal break-words text-sm font-semibold [hyphens:manual] [overflow-wrap:break-word]",
-                        isSelected ? "text-white" : "text-foreground"
-                      )}
+                      className="min-w-0 whitespace-normal break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]"
                     >
                       {getModuleName(module.id)}
                     </span>
 
                     {/* Description */}
-                    <span
-                      className={cn(
-                        "min-w-0 whitespace-normal break-words text-xs leading-relaxed [hyphens:manual] [overflow-wrap:break-word]",
-                        isSelected ? "text-white/80" : "text-muted-foreground"
-                      )}
-                    >
+                    <span className="min-w-0 whitespace-normal break-words text-xs leading-relaxed text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                       {getModuleDesc(module.id)}
                     </span>
 
                     {/* Check mark */}
                     {isSelected && (
-                      <div className="absolute top-2 end-2 w-5 h-5 rounded-full bg-foreground/30 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" aria-hidden="true" />
+                      <div className="absolute end-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -339,8 +298,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             </div>
 
             {/* Selection count */}
-            <div className="mt-4 flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl">
-              <span className="min-w-0 break-words text-center text-sm font-medium text-primary [hyphens:manual] [overflow-wrap:break-word]">
+            <div className="mt-4 flex items-center justify-center gap-2 py-1">
+              <span aria-live="polite" className="min-w-0 break-words text-center text-sm font-medium text-muted-foreground [hyphens:manual] [overflow-wrap:break-word]">
                 {selectedModules.length} {t.modulesSelected || "features selected"}
               </span>
             </div>
@@ -359,7 +318,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 logger.log("[OnboardingFlow] Skip button clicked");
                 handleSkip();
               }}
-              className="h-auto min-h-12 w-full min-w-0 flex-1 whitespace-normal break-words rounded-xl bg-secondary/50 py-3 text-sm font-semibold text-secondary-foreground backdrop-blur-sm [hyphens:manual] [overflow-wrap:break-word] hover:bg-secondary active:scale-95 motion-safe:transition-colors sm:rounded-2xl sm:py-4 sm:text-base"
+              className="h-auto min-h-12 w-full min-w-0 flex-1 whitespace-normal break-words rounded-xl border border-border bg-card py-3 text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors sm:rounded-2xl sm:py-4 sm:text-base"
             >
               {t.skip || "Skip"}
             </button>
@@ -369,7 +328,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 logger.log("[OnboardingFlow] Start button clicked");
                 handleComplete();
               }}
-              className="flex h-auto min-h-12 w-full min-w-0 flex-1 items-center justify-center gap-2 whitespace-normal break-words rounded-xl bg-gradient-to-r from-primary to-accent py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 [hyphens:manual] [overflow-wrap:break-word] hover:opacity-90 active:scale-95 motion-safe:transition-all sm:rounded-2xl sm:py-4 sm:text-base"
+              className="flex h-auto min-h-12 w-full min-w-0 flex-1 items-center justify-center gap-2 whitespace-normal break-words rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground [hyphens:manual] [overflow-wrap:break-word] hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors sm:rounded-2xl sm:py-4 sm:text-base"
             >
               {t.getStarted || "Start"}
               <ChevronRight className="h-4 w-4 shrink-0 rtl:scale-x-[-1] sm:h-5 sm:w-5" aria-hidden="true" />

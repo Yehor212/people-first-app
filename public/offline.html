@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#4a9d7c">
   <meta property="og:image" content="https://yehor212.github.io/people-first-app/og-image.png">
   <meta name="twitter:image" content="https://yehor212.github.io/people-first-app/og-image.png">
-      <link rel="icon" type="image/png" sizes="16x16" href="/people-first-app/favicon-16.png?v=zenflow-browser-leaf-20260627-r7">
-      <link rel="icon" type="image/png" sizes="32x32" href="/people-first-app/favicon-32.png?v=zenflow-browser-leaf-20260627-r7">
-      <link rel="icon" type="image/png" sizes="48x48" href="/people-first-app/favicon-48.png?v=zenflow-browser-leaf-20260627-r7">
-      <link rel="icon" type="image/png" sizes="64x64" href="/people-first-app/favicon-64.png?v=zenflow-browser-leaf-20260627-r7">
-  <link rel="icon" href="/people-first-app/favicon.ico?v=zenflow-browser-leaf-20260627-r7" sizes="any">
-  <link rel="icon" type="image/png" sizes="192x192" href="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260627-r7">
-  <link rel="apple-touch-icon" href="/people-first-app/apple-touch-icon.png?v=zenflow-browser-leaf-20260627-r7">
+      <link rel="icon" type="image/png" sizes="16x16" href="/people-first-app/favicon-16.png?v=zenflow-browser-leaf-20260804-r8">
+      <link rel="icon" type="image/png" sizes="32x32" href="/people-first-app/favicon-32.png?v=zenflow-browser-leaf-20260804-r8">
+      <link rel="icon" type="image/png" sizes="48x48" href="/people-first-app/favicon-48.png?v=zenflow-browser-leaf-20260804-r8">
+      <link rel="icon" type="image/png" sizes="64x64" href="/people-first-app/favicon-64.png?v=zenflow-browser-leaf-20260804-r8">
+  <link rel="icon" href="/people-first-app/favicon.ico?v=zenflow-browser-leaf-20260804-r8" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260804-r8">
+  <link rel="apple-touch-icon" href="/people-first-app/apple-touch-icon.png?v=zenflow-browser-leaf-20260804-r8">
   <title>Offline - ZenFlow</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,10 +24,11 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      min-height: 100dvh;
+      padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
       text-align: center;
     }
-    .container { max-width: 400px; }
+    .container { width: min(100%, 440px); }
     .brand-logo {
       width: 96px;
       height: 96px;
@@ -38,6 +39,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .brand-logo { animation: none; }
+      .btn { transition: none; }
     }
     @keyframes float {
       0%, 100% { transform: translateY(0); }
@@ -56,41 +58,60 @@
       color: inherit;
       text-decoration: none;
       font-weight: 600;
-      transition: all 0.3s;
+      transition: background-color 0.2s ease;
       cursor: pointer;
     }
     .btn:hover { background: hsla(0, 0%, 100%, 0.35); }
     .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+    @media (forced-colors: active) {
+      body { background: Canvas; color: CanvasText; }
+      .brand-logo { box-shadow: none; }
+      .btn { background: Canvas; color: ButtonText; }
+    }
   </style>
 </head>
 <body>
-  <div class="container" role="main">
-    <img class="brand-logo" src="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260627-r7" width="96" height="96" alt="" aria-hidden="true">
+  <main class="container">
+    <img class="brand-logo" src="/people-first-app/pwa-192.png?v=zenflow-browser-leaf-20260804-r8" width="96" height="96" alt="" aria-hidden="true">
     <h1 id="offline-title">You are offline</h1>
-    <p id="offline-desc">ZenFlow works in offline mode. All your data is saved locally and will sync when you reconnect.</p>
+    <p id="offline-desc">ZenFlow couldn’t open this page without a connection. Reconnect, then try again.</p>
     <button class="btn" onclick="window.location.reload();" id="offline-retry" aria-label="Try again">Try again</button>
-  </div>
+  </main>
   <script>
-    // Detect language from localStorage (same key as app uses)
+    // Read the app's JSON-encoded preference while retaining compatibility
+    // with older plain-string language values.
     try {
-      var lang = localStorage.getItem('zenflow-language') || navigator.language.slice(0, 2);
+      var supported = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+      var stored = localStorage.getItem('zenflow-language');
+      var storedLanguage = stored;
+      if (stored !== null) {
+        try { storedLanguage = JSON.parse(stored); } catch (_) { /* legacy plain string */ }
+      }
+      var preferredLanguage = stored !== null && typeof storedLanguage !== 'string'
+        ? 'en'
+        : (typeof storedLanguage === 'string'
+          ? storedLanguage
+          : ((navigator.languages && navigator.languages[0]) || navigator.language || 'en'));
+      var candidate = preferredLanguage.toLowerCase().split('-')[0];
+      var lang = supported.indexOf(candidate) >= 0 ? candidate : 'en';
       var t = {
-        en: { title: 'You are offline', desc: 'ZenFlow works in offline mode. All your data is saved locally and will sync when you reconnect.', btn: 'Try again' },
-        uk: { title: 'Ви офлайн', desc: 'ZenFlow працює в автономному режимі. Усі ваші дані збережені локально та синхронізуються після підключення.', btn: 'Повторити з'єднання' },
-        es: { title: 'Estás sin conexión', desc: 'ZenFlow funciona sin conexión. Todos tus datos se guardan localmente y se sincronizarán cuando vuelvas a conectarte.', btn: 'Reintentar conexión' },
-        de: { title: 'Du bist offline', desc: 'ZenFlow funktioniert offline. Alle Daten werden lokal gespeichert und synchronisiert, sobald du wieder verbunden bist.', btn: 'Verbindung erneut versuchen' },
-        fr: { title: 'Vous êtes hors ligne', desc: 'ZenFlow fonctionne hors ligne. Toutes vos données sont enregistrées localement et se synchroniseront à la reconnexion.', btn: 'Réessayer la connexion' },
-        ja: { title: 'オフラインです', desc: 'ZenFlowはオフラインでも動作します。すべてのデータは端末に保存され、再接続時に同期されます。', btn: '再接続' },
-        ar: { title: 'أنت غير متصل', desc: 'يعمل ZenFlow دون اتصال. تُحفظ كل بياناتك محليًا وتتم مزامنتها عند إعادة الاتصال.', btn: 'إعادة محاولة الاتصال' },
-        he: { title: 'את/ה אופליין', desc: 'ZenFlow עובד גם ללא חיבור. כל הנתונים שלך נשמרים מקומית ויסונכרנו כשתתחבר/י מחדש.', btn: 'נסה חיבור מחדש' }
+        en: { pageTitle: 'Offline - ZenFlow', title: 'You are offline', desc: 'ZenFlow couldn’t open this page without a connection. Reconnect, then try again.', btn: 'Try again' },
+        uk: { pageTitle: 'Немає з’єднання — ZenFlow', title: 'Немає з’єднання', desc: 'ZenFlow не вдалося відкрити цю сторінку без з’єднання. Відновіть підключення та спробуйте ще раз.', btn: 'Повторити' },
+        es: { pageTitle: 'Sin conexión - ZenFlow', title: 'Estás sin conexión', desc: 'ZenFlow no pudo abrir esta página sin conexión. Vuelve a conectarte e inténtalo de nuevo.', btn: 'Reintentar' },
+        de: { pageTitle: 'Offline – ZenFlow', title: 'Du bist offline', desc: 'ZenFlow konnte diese Seite ohne Verbindung nicht öffnen. Stelle die Verbindung wieder her und versuche es erneut.', btn: 'Erneut versuchen' },
+        fr: { pageTitle: 'Hors ligne – ZenFlow', title: 'Vous êtes hors ligne', desc: 'ZenFlow n’a pas pu ouvrir cette page sans connexion. Reconnectez-vous, puis réessayez.', btn: 'Réessayer' },
+        ja: { pageTitle: 'オフライン - ZenFlow', title: 'オフラインです', desc: '接続がないため、このページを開けませんでした。再接続してから、もう一度お試しください。', btn: '再試行' },
+        ar: { pageTitle: 'غير متصل - ZenFlow', title: 'أنت غير متصل', desc: 'تعذّر على ZenFlow فتح هذه الصفحة دون اتصال. أعد الاتصال ثم حاول مرة أخرى.', btn: 'إعادة المحاولة' },
+        he: { pageTitle: 'אין חיבור – ZenFlow', title: 'אין חיבור', desc: 'ZenFlow לא הצליחה לפתוח את הדף הזה ללא חיבור. התחברו מחדש ונסו שוב.', btn: 'ניסיון חוזר' }
       };
-      var msgs = t[lang] || t.en;
+      var msgs = t[lang];
+      document.title = msgs.pageTitle;
       document.getElementById('offline-title').textContent = msgs.title;
       document.getElementById('offline-desc').textContent = msgs.desc;
       document.getElementById('offline-retry').textContent = msgs.btn;
       document.getElementById('offline-retry').setAttribute('aria-label', msgs.btn);
       document.documentElement.lang = lang;
-      if (lang === 'ar' || lang === 'he') document.documentElement.dir = 'rtl';
+      document.documentElement.dir = lang === 'ar' || lang === 'he' ? 'rtl' : 'ltr';
     } catch(e) { /* fallback to English */ }
 
     window.addEventListener('online', function() {

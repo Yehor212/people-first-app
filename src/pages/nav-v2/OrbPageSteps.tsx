@@ -1,10 +1,5 @@
-import {
-  useLayoutEffect,
-  useRef,
-  type CSSProperties,
-  type RefObject,
-} from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { type CSSProperties, type RefObject } from "react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
 import { cn } from "@/lib/utils";
@@ -18,19 +13,10 @@ import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
 import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
 import { ValenceSlider } from "@/components/state-of-mind/ValenceSlider";
 import { MoodScopeSelector } from "./MoodScopeSelector";
+import { useStepScrollerReset } from "./useStepScrollerReset";
 import "./OrbPageSteps.css";
 
 type Tx = Record<string, string>;
-
-function useStepScrollerReset() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (ref.current) ref.current.scrollTop = 0;
-  }, []);
-
-  return ref;
-}
 
 interface OrbSelectStepProps {
   tx: Tx;
@@ -91,10 +77,9 @@ export function OrbSelectStep({
     <>
       <div
         ref={scrollRef}
-        className={cn(selectContentLayoutClass, contentGapClass)}
-        style={{ justifyContent: "safe center" }}
+        className={cn(selectContentLayoutClass, contentGapClass, "orb-step-scroll-safe-center")}
       >
-        <Bloom key="orb-hero" transition={staggerDelay("primary")}>
+        <Bloom key="orb-hero" initial={false} transition={staggerDelay("primary")}>
           <div className="flex items-center justify-center" data-testid="orb-page-select">
             <div
               className="relative orb-page-rim-glow"
@@ -148,7 +133,7 @@ export function OrbSelectStep({
         </Bloom>
 
         {!(isDenseSelectStep && draftScope === "specific") && (
-          <Bloom key="orb-whisper" transition={staggerDelay("secondary")}>
+          <Bloom key="orb-whisper" initial={false} transition={staggerDelay("secondary")}>
             <p
               data-testid="orb-page-whisper"
               data-whisper-key={whisperKey}
@@ -168,13 +153,13 @@ export function OrbSelectStep({
           </Bloom>
         )}
 
-        <Bloom key="orb-scope" transition={staggerDelay("secondary")}>
+        <Bloom key="orb-scope" initial={false} transition={staggerDelay("secondary")}>
           <div data-testid="orb-page-scope">
             <MoodScopeSelector density={isDenseSelectStep ? "compact" : "default"} />
           </div>
         </Bloom>
 
-        <Bloom key="orb-picker" transition={staggerDelay("cta")}>
+        <Bloom key="orb-picker" initial={false} transition={staggerDelay("cta")}>
           <div className="mx-auto w-full" data-testid="orb-page-picker">
             <div data-testid="orb-page-slider">
               <ValenceSlider
@@ -186,7 +171,7 @@ export function OrbSelectStep({
         </Bloom>
       </div>
 
-      <Bloom key="orb-select-actions" transition={staggerDelay("cta")}>
+      <Bloom key="orb-select-actions" initial={false} transition={staggerDelay("cta")}>
         <div
           className="pointer-events-none relative z-20 shrink-0 pt-3 md:pt-4"
           data-testid="orb-page-footer"
@@ -226,11 +211,13 @@ interface OrbRefineStepProps {
   draftEmotion: string | null;
   draftNote: string;
   canOpenDiary: boolean;
+  isSavingMood: boolean;
+  saveErrorMessage: string | null;
   handleEmotionToggle: (tag: string) => void;
   handleNoteChange: (value: string) => void;
   handleBackStep: () => void;
-  handleSaveMood: () => void;
-  handleOpenDiary: () => void;
+  handleSaveMood: () => Promise<void>;
+  handleOpenDiary: () => Promise<void>;
 }
 
 export function OrbRefineStep({
@@ -242,6 +229,8 @@ export function OrbRefineStep({
   draftEmotion,
   draftNote,
   canOpenDiary,
+  isSavingMood,
+  saveErrorMessage,
   handleEmotionToggle,
   handleNoteChange,
   handleBackStep,
@@ -262,7 +251,7 @@ export function OrbRefineStep({
       )}
       data-testid="orb-page-refine-scroll"
     >
-        <Bloom key="orb-refine-header" transition={staggerDelay("primary")}>
+        <Bloom key="orb-refine-header" initial={false} transition={staggerDelay("primary")}>
           <section
             className="mx-auto flex max-w-2xl flex-col items-center gap-5 px-0 text-center md:flex-row md:items-start md:text-left"
             data-testid="orb-page-refine"
@@ -294,7 +283,7 @@ export function OrbRefineStep({
           </section>
         </Bloom>
 
-        <Bloom key="orb-refine-emotion" transition={staggerDelay("secondary")}>
+        <Bloom key="orb-refine-emotion" initial={false} transition={staggerDelay("secondary")}>
           <div className="mx-auto max-w-2xl px-0" data-testid="orb-page-emotion-spectrum">
             <EmotionTagGrid
               valence={resolvedValence}
@@ -305,7 +294,7 @@ export function OrbRefineStep({
           </div>
         </Bloom>
 
-        <Bloom key="orb-refine-note" transition={staggerDelay("cta")}>
+        <Bloom key="orb-refine-note" initial={false} transition={staggerDelay("cta")}>
           <div className="mx-auto max-w-2xl px-0" data-testid="orb-page-note">
               <label
                 htmlFor="orb-refine-note-input"
@@ -326,7 +315,7 @@ export function OrbRefineStep({
           </div>
         </Bloom>
 
-      <Bloom key="orb-refine-actions" transition={staggerDelay("cta")}>
+      <Bloom key="orb-refine-actions" initial={false} transition={staggerDelay("cta")}>
         <div
           className="pointer-events-none relative z-20 mt-auto shrink-0 pt-3 md:pt-4"
           data-testid="orb-page-footer"
@@ -338,6 +327,7 @@ export function OrbRefineStep({
             <button
               type="button"
               onClick={handleBackStep}
+              disabled={isSavingMood}
               className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-2.5 text-sm font-medium text-foreground backdrop-blur-md transition-colors hover:bg-[hsl(var(--zf-memory)/0.14)] sm:w-auto sm:px-5"
               data-testid="orb-page-back"
             >
@@ -347,24 +337,32 @@ export function OrbRefineStep({
 
             <button
               type="button"
-              onClick={handleSaveMood}
-              disabled={!canOpenDiary}
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-border/60 bg-background/70 px-3 py-2.5 text-sm font-medium text-foreground backdrop-blur-md transition-colors hover:bg-[hsl(var(--zf-memory)/0.14)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-5"
+              onClick={() => {
+                void handleSaveMood();
+              }}
+              disabled={!canOpenDiary || isSavingMood}
+              className="orb-page-continuation-button inline-flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal bg-primary px-3 py-2.5 text-center text-sm font-medium leading-snug text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:flex-1 sm:px-5"
               data-testid="orb-page-save-mood"
             >
-              {tx.saveMood || "Save mood"}
+              <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 [hyphens:manual] [overflow-wrap:normal] [word-break:normal]">
+                {isSavingMood ? tx.saving || "Saving…" : tx.saveMood || "Save mood"}
+              </span>
             </button>
 
             <button
               type="button"
-              onClick={handleOpenDiary}
-              disabled={!canOpenDiary}
-              className="inline-flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal bg-primary px-3 py-2.5 text-center text-sm font-medium leading-snug text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:flex-1 sm:px-5"
-              style={{ borderRadius: "clamp(24px, 8vw, 44px)" }}
+              onClick={() => {
+                void handleOpenDiary();
+              }}
+              disabled={!canOpenDiary || isSavingMood}
+              className="orb-page-continuation-button inline-flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-center gap-2 whitespace-normal border border-border/60 bg-background/70 px-3 py-2.5 text-center text-sm font-medium leading-snug text-foreground backdrop-blur-md transition-colors hover:bg-[hsl(var(--zf-memory)/0.14)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:flex-1 sm:px-5"
               data-testid="orb-page-open-diary"
             >
               <span className="min-w-0 flex-1 [hyphens:manual] [overflow-wrap:normal] [word-break:normal]">
-                {tx.orbSaveMoodAndStartEntry || "Save mood and start today's entry"}
+                {isSavingMood
+                  ? tx.saving || "Saving…"
+                  : tx.orbSaveMoodAndStartEntry || "Save mood and start today's entry"}
               </span>
               <ArrowRight
                 className="orb-page-save-arrow h-4 w-4 shrink-0 rtl:scale-x-[-1]"
@@ -372,6 +370,15 @@ export function OrbRefineStep({
               />
             </button>
           </div>
+          {saveErrorMessage ? (
+            <p
+              role="alert"
+              className="mx-auto mt-3 max-w-2xl text-center text-sm text-destructive"
+              data-testid="orb-page-save-error"
+            >
+              {saveErrorMessage}
+            </p>
+          ) : null}
         </div>
       </Bloom>
     </div>

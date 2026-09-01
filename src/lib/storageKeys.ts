@@ -69,6 +69,7 @@ export const SK = {
   JOURNAL_SCREENSHOT_BLOCK: "journal_screenshot_block",
   JOURNAL_PRIVATE_MODE: "journal_private_mode",
   JOURNAL_AI_SEARCH_CONSENT: "journal_ai_search_consent",
+  JOURNAL_AI_COACH_CONTEXT_CONSENT: "journal_ai_coach_context_consent",
   JOURNAL_AI_REVOCATION_PREFIX: "journal_ai_revocation_pending:",
   JOURNAL_LOCK_TIMEOUT: "zenflow-journal-lock-timeout",
   JOURNAL_PASSWORD_RESET: "journal_password_reset_pending",

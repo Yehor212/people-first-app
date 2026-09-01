@@ -134,6 +134,8 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
     draftNote,
     canProceedFromSelect,
     canOpenDiary,
+    isSavingMood,
+    moodSaveFailed,
     firstRunEligible,
     handleSliderCommit,
     handleEmotionToggle,
@@ -420,7 +422,7 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
 
   return (
     <>
-      <Bloom key="orb-page" transition={staggerDelay("primary")}>
+      <Bloom key="orb-page" initial={false} transition={staggerDelay("primary")}>
         <main
           ref={mainRef}
           id="main-content-v2"
@@ -505,6 +507,12 @@ export const OrbPage = memo(function OrbPage({ navigateToPage, onAddMood }: OrbP
                       draftEmotion={draftEmotion}
                       draftNote={draftNote}
                       canOpenDiary={canOpenDiary}
+                      isSavingMood={isSavingMood}
+                      saveErrorMessage={
+                        moodSaveFailed
+                          ? tx.syncTransactionFailedDesc || "Could not save data. Please try again."
+                          : null
+                      }
                       handleEmotionToggle={handleEmotionToggle}
                       handleNoteChange={handleNoteChange}
                       handleBackStep={handleBackToSelect}

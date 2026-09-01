@@ -25,6 +25,7 @@ import { WeeklyProgressData } from "@/lib/shareCards";
 import { UnifiedShareModal } from "@/components/share";
 import { Badge } from "@/types";
 import { hapticTap } from "@/lib/haptics";
+import { useModalKeyboard } from "@/hooks/useModalKeyboard";
 
 // Import premium slide components
 import {
@@ -66,7 +67,10 @@ function StoryProgressBar({
   accentColor?: string;
 }) {
   return (
-    <div className="flex gap-1.5 px-4 pt-4">
+    <div
+      aria-hidden="true"
+      className="flex gap-1.5 px-4 pt-[max(1rem,var(--safe-top))]"
+    >
       {Array.from({ length: total }).map((_, i) => (
         <div
           key={i}
@@ -116,6 +120,11 @@ export function ProgressStoriesViewer({
   const [showShareModal, setShowShareModal] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const wasPausedBeforeShareRef = useRef(false);
+  const { modalProps } = useModalKeyboard({
+    isOpen: true,
+    onClose,
+    trapFocus: !showShareModal,
+  });
 
   const SLIDE_DURATION = 5000; // 5 seconds per slide
   const PROGRESS_INTERVAL = 50; // Update progress every 50ms
@@ -230,25 +239,6 @@ export function ProgressStoriesViewer({
     }
   }, []);
 
-  // Handle touch/click navigation
-  const handleTap = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const x = clientX - rect.left;
-      const width = rect.width;
-
-      if (x < width * 0.3) {
-        goToPrevious();
-      } else if (x > width * 0.7) {
-        goToNext();
-      } else {
-        togglePause();
-      }
-    },
-    [goToPrevious, goToNext, togglePause]
-  );
-
   // Render slide content based on type
   const renderSlideContent = () => {
     switch (currentSlide.type) {
@@ -275,25 +265,17 @@ export function ProgressStoriesViewer({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      {...modalProps}
       aria-label={t.weeklyStory || "Weekly Story"}
+      aria-modal={showShareModal ? undefined : true}
+      aria-hidden={showShareModal || undefined}
+      {...(showShareModal ? { inert: "" } : {})}
       className="fixed inset-0 z-[100] bg-black dark:bg-black"
     >
       {/* Story container */}
       <div
-        // VISUAL-VERIFIED: no style change, only adding a11y role/tabIndex/onKeyDown attributes
         className="relative w-full h-full"
         style={{ background: currentSlide.gradient }}
-        onClick={handleTap}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleTap(e as unknown as React.MouseEvent);
-          }
-        }}
       >
         {/* Progress bars */}
         <StoryProgressBar
@@ -303,50 +285,84 @@ export function ProgressStoriesViewer({
           accentColor={currentSlide.accentColor}
         />
 
+        <div
+          className="absolute inset-0 z-[1] grid grid-cols-[30%_40%_30%]"
+          aria-label={t.weeklyStory || "Weekly Story"}
+        >
+          <button
+            type="button"
+            className="h-full w-full bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80 disabled:cursor-default"
+            aria-label={t.previous || "Previous"}
+            disabled={currentIndex === 0}
+            onClick={goToPrevious}
+          />
+          <button
+            type="button"
+            className="h-full w-full bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80"
+            aria-label={isPaused ? t.play || "Play" : t.pause || "Pause"}
+            onClick={togglePause}
+          />
+          <button
+            type="button"
+            data-testid="story-next-control"
+            className="h-full w-full bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80"
+            aria-label={
+              currentIndex === slides.length - 1 ? t.close || "Close" : t.next || "Next"
+            }
+            onClick={goToNext}
+          />
+        </div>
+
         {/* Header controls */}
-        <div className="absolute top-8 left-0 right-0 flex items-center justify-between px-4 z-10">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                void hapticTap();
-                onClose();
-              }}
-              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white"
-              aria-label={t.close || "Close"}
-            >
-            <X className="w-5 h-5" />
+        <div className="absolute top-[max(2rem,calc(var(--safe-top)+1.5rem))] left-0 right-0 flex items-center justify-between px-4 z-10">
+          <button
+            type="button"
+            onClick={() => {
+              void hapticTap();
+              onClose();
+            }}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/20 p-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 dark:bg-black/20"
+            aria-label={t.close || "Close"}
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
 
           <div className="flex gap-2">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePause();
-              }}
-              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white"
+              type="button"
+              onClick={togglePause}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/20 p-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 dark:bg-black/20"
               aria-label={isPaused ? t.play || "Play" : t.pause || "Pause"}
             >
               {isPaused ? <Play className="w-5 h-5" aria-hidden="true" /> : <Pause className="w-5 h-5" aria-hidden="true" />}
             </button>
 
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleShare();
-              }}
-              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+              type="button"
+              onClick={handleShare}
+              className="p-2 rounded-full bg-black/20 dark:bg-black/20 text-white min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               aria-label={t.shareButton || "Share"}
             >
-              <Share2 className="w-5 h-5" />
+              <Share2 className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        {/* Slide content */}
-        <div className="absolute inset-0 pt-20 pb-16">{renderSlideContent()}</div>
+        <div role="list" aria-label={t.weeklyStory || "Weekly Story"}>
+          <div
+            role="listitem"
+            aria-roledescription={t.weeklyStory || "Weekly Story"}
+            aria-label={currentSlide.title}
+            aria-posinset={currentIndex + 1}
+            aria-setsize={slides.length}
+            className="absolute inset-0 pt-[calc(5rem+var(--safe-top))] pb-[calc(4rem+var(--safe-bottom))]"
+          >
+            {renderSlideContent()}
+          </div>
+        </div>
 
         {/* Navigation hints */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 text-white/40 text-xs">
+        <div className="pointer-events-none absolute bottom-[max(1rem,var(--safe-bottom))] left-0 right-0 flex justify-center gap-4 text-white/40 text-xs">
           <span>{t.storyTapLeft || "← Tap left"}</span>
           <span>{t.storyTapCenter || "Tap center to pause"}</span>
           <span>{t.storyTapRight || "Tap right →"}</span>
@@ -354,7 +370,7 @@ export function ProgressStoriesViewer({
 
         {/* Pause indicator */}
         {isPaused && !showShareModal && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 dark:bg-black/30">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 dark:bg-black/30">
             <div className="bg-white/20 dark:bg-white/20 rounded-full p-4">
               <Pause className="w-12 h-12 text-white" />
             </div>

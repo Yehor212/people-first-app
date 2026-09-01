@@ -16,6 +16,7 @@ import {
   LibraryBig,
   MapPinned,
   Menu,
+  MoreHorizontal,
   NotebookPen,
   OctagonAlert,
   PaintbrushVertical,
@@ -69,6 +70,7 @@ export const V2_HABIT_JOURNEY_ICONS = {
   reminder: AlarmClockCheck,
   focus: Goal,
   route: Route,
+  actions: MoreHorizontal,
 } satisfies Record<string, LucideIcon>;
 
 const V2_HABIT_TEMPLATE_IDS = [

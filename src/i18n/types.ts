@@ -85,6 +85,9 @@ export interface Translations {
   scheduleAddEvent: string;
   scheduleEmpty: string;
   scheduleEmptyDay: string;
+  scheduleDayHasEvents: string;
+  googleCalendarEventsLoading: string;
+  googleCalendarEventsUnavailable: string;
   scheduleStart: string;
   scheduleEnd: string;
   scheduleAdd: string;
@@ -2785,6 +2788,7 @@ export interface Translations {
   journalEntryDeleted: string;
   journalCompressing: string;
   journalPhotoError: string;
+  journalPhotoTooDetailed: string;
   journalPhotoProcessingTimeout: string;
   journalPhotoLoadError: string;
   journalPhotoLoadRetry: string;
@@ -3886,6 +3890,7 @@ export interface Translations {
   navV2HabitsQuickPick: string;
   navV2HabitsAlreadyAdded: string;
   navV2HabitsActions: string;
+  navV2HabitsActionsFor: string;
   navV2HabitsOpenDetails: string;
   navV2HabitsDayCompleteHero: string;
 

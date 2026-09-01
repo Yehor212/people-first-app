@@ -182,6 +182,52 @@ describe("derivePlanningFeatureModel", () => {
     });
   });
 
+  it("counts only incomplete habits that are due on the model date", () => {
+    const modelDate = "2026-07-29";
+    const model = derivePlanningFeatureModel({
+      now: new Date(`${modelDate}T14:00:00`),
+      events: [],
+      focusSessions: [],
+      focusBridge: { endTime: null, isRunning: false, isBreak: false, label: "" },
+      habits: [
+        habit({
+          id: "due-wednesday",
+          schedule: {
+            mode: "specificDays",
+            period: "week",
+            targetCount: 1,
+            dueDays: [3],
+          },
+          entries: {},
+        }),
+        habit({
+          id: "not-due-thursday",
+          schedule: {
+            mode: "specificDays",
+            period: "week",
+            targetCount: 1,
+            dueDays: [4],
+          },
+          entries: {},
+        }),
+        habit({
+          id: "completed-wednesday",
+          schedule: {
+            mode: "specificDays",
+            period: "week",
+            targetCount: 1,
+            dueDays: [3],
+          },
+          entries: { [modelDate]: { value: ENTRY.YES_MANUAL } },
+        }),
+      ],
+      moodEntries: [],
+    });
+
+    expect(model.dayPulse.pendingHabitCount).toBe(1);
+    expect(model.bridgeActions.map((action) => action.kind)).toContain("complete_habits");
+  });
+
   it("suggests cross-tab bridge actions only when they help the next user step", () => {
     const model = derivePlanningFeatureModel({
       now: new Date(`${today}T20:30:00`),

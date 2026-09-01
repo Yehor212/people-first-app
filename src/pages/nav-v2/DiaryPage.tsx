@@ -161,7 +161,7 @@ export const DiaryPage = memo(function DiaryPage({
   }, [pendingMoodContext, tx]);
 
   return (
-    <div className="motion-safe:animate-fade-in">
+    <div>
       <main
         id="main-content-v2"
         role="main"

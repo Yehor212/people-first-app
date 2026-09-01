@@ -6,6 +6,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePwaInstall } from '../usePwaInstall';
+import {
+  initializePwaInstallPromptCapture,
+  resetPwaInstallPromptCaptureForTests,
+} from '@/lib/pwaInstallPrompt';
+
+const desktopRuntimeMock = vi.hoisted(() => ({ enabled: false }));
+
+vi.mock('@/lib/env', () => ({
+  get IS_DESKTOP_RUNTIME() {
+    return desktopRuntimeMock.enabled;
+  },
+}));
 
 // Mock logger
 vi.mock('@/lib/logger', () => ({
@@ -23,8 +35,17 @@ Object.defineProperty(window, 'matchMedia', {
   value: mockMatchMedia,
 });
 
+function setNavigatorValue(name: string, value: unknown) {
+  Object.defineProperty(window.navigator, name, {
+    configurable: true,
+    value,
+  });
+}
+
 describe('usePwaInstall', () => {
   beforeEach(() => {
+    resetPwaInstallPromptCaptureForTests();
+    desktopRuntimeMock.enabled = false;
     vi.clearAllMocks();
     // Default: not in standalone mode
     mockMatchMedia.mockReturnValue({
@@ -32,9 +53,15 @@ describe('usePwaInstall', () => {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     });
+    setNavigatorValue('standalone', false);
+    setNavigatorValue('userAgent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36');
+    setNavigatorValue('vendor', 'Google Inc.');
+    setNavigatorValue('platform', 'Linux x86_64');
+    setNavigatorValue('maxTouchPoints', 0);
   });
 
   afterEach(() => {
+    resetPwaInstallPromptCaptureForTests();
     vi.restoreAllMocks();
   });
 
@@ -44,6 +71,7 @@ describe('usePwaInstall', () => {
 
       expect(result.current.isInstalled).toBe(false);
       expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('unavailable');
     });
 
     it('detects standalone mode as installed', () => {
@@ -57,6 +85,55 @@ describe('usePwaInstall', () => {
 
       expect(result.current.isInstalled).toBe(true);
       expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('installed');
+    });
+
+    it('detects Safari standalone mode as installed even without display-mode support', () => {
+      setNavigatorValue('standalone', true);
+      setNavigatorValue('userAgent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 Version/17.6 Safari/605.1.15');
+      setNavigatorValue('vendor', 'Apple Computer, Inc.');
+      setNavigatorValue('platform', 'MacIntel');
+
+      const { result } = renderHook(() => usePwaInstall());
+
+      expect(result.current.isInstalled).toBe(true);
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('installed');
+    });
+
+    it('offers truthful manual guidance for Safari on macOS outside installed mode', () => {
+      setNavigatorValue('userAgent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 Version/17.6 Safari/605.1.15');
+      setNavigatorValue('vendor', 'Apple Computer, Inc.');
+      setNavigatorValue('platform', 'MacIntel');
+
+      const { result } = renderHook(() => usePwaInstall());
+
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('macos-safari-manual');
+    });
+
+    it('does not classify an iPad desktop user agent as macOS Safari', () => {
+      setNavigatorValue('userAgent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/17.6 Mobile/15E148 Safari/604.1');
+      setNavigatorValue('vendor', 'Apple Computer, Inc.');
+      setNavigatorValue('platform', 'MacIntel');
+      setNavigatorValue('maxTouchPoints', 5);
+
+      const { result } = renderHook(() => usePwaInstall());
+
+      expect(result.current.installKind).toBe('unavailable');
+    });
+
+    it('does not expose browser-PWA installation inside the Tauri desktop runtime', () => {
+      desktopRuntimeMock.enabled = true;
+      setNavigatorValue('userAgent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 Version/17.6 Safari/605.1.15');
+      setNavigatorValue('vendor', 'Apple Computer, Inc.');
+      setNavigatorValue('platform', 'MacIntel');
+
+      const { result } = renderHook(() => usePwaInstall());
+
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.isInstalled).toBe(false);
+      expect(result.current.installKind).toBe('unavailable');
     });
 
     it('sets up event listeners', () => {
@@ -76,6 +153,22 @@ describe('usePwaInstall', () => {
   });
 
   describe('beforeinstallprompt event', () => {
+    it('retains a prompt fired before the lazy settings hook mounts', () => {
+      initializePwaInstallPromptCapture();
+      const event = new Event('beforeinstallprompt') as any;
+      event.prompt = vi.fn();
+      event.userChoice = Promise.resolve({ outcome: 'accepted' as const });
+
+      act(() => {
+        window.dispatchEvent(event);
+      });
+
+      const { result } = renderHook(() => usePwaInstall());
+
+      expect(result.current.canInstall).toBe(true);
+      expect(result.current.installKind).toBe('prompt');
+    });
+
     it('captures deferred prompt from beforeinstallprompt event', () => {
       const { result } = renderHook(() => usePwaInstall());
 
@@ -92,11 +185,27 @@ describe('usePwaInstall', () => {
       });
 
       expect(result.current.canInstall).toBe(true);
+      expect(result.current.installKind).toBe('prompt');
     });
 
     it('prevents default on beforeinstallprompt event', () => {
       renderHook(() => usePwaInstall());
 
+      const preventDefault = vi.fn();
+      const event = new Event('beforeinstallprompt') as any;
+      event.preventDefault = preventDefault;
+      event.prompt = vi.fn();
+      event.userChoice = Promise.resolve({ outcome: 'accepted' as const });
+
+      act(() => {
+        window.dispatchEvent(event);
+      });
+
+      expect(preventDefault).toHaveBeenCalled();
+    });
+
+    it('ignores malformed install events instead of exposing a broken action', () => {
+      const { result } = renderHook(() => usePwaInstall());
       const preventDefault = vi.fn();
       const event = new Event('beforeinstallprompt');
       event.preventDefault = preventDefault;
@@ -105,7 +214,9 @@ describe('usePwaInstall', () => {
         window.dispatchEvent(event);
       });
 
-      expect(preventDefault).toHaveBeenCalled();
+      expect(preventDefault).not.toHaveBeenCalled();
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('unavailable');
     });
   });
 
@@ -141,6 +252,29 @@ describe('usePwaInstall', () => {
 
       expect(result.current.canInstall).toBe(false);
     });
+
+    it('keeps installed terminal when a late install prompt arrives', () => {
+      const { result } = renderHook(() => usePwaInstall());
+
+      act(() => {
+        window.dispatchEvent(new Event('appinstalled'));
+      });
+
+      const preventDefault = vi.fn();
+      const event = new Event('beforeinstallprompt') as any;
+      event.preventDefault = preventDefault;
+      event.prompt = vi.fn();
+      event.userChoice = Promise.resolve({ outcome: 'accepted' as const });
+
+      act(() => {
+        window.dispatchEvent(event);
+      });
+
+      expect(result.current.isInstalled).toBe(true);
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('installed');
+      expect(preventDefault).not.toHaveBeenCalled();
+    });
   });
 
   describe('promptInstall', () => {
@@ -175,7 +309,7 @@ describe('usePwaInstall', () => {
       expect(mockPrompt).toHaveBeenCalled();
     });
 
-    it('returns true and sets installed when user accepts', async () => {
+    it('returns true on acceptance but waits for appinstalled before showing success', async () => {
       const mockPrompt = vi.fn();
       const mockUserChoice = Promise.resolve({ outcome: 'accepted' as const });
 
@@ -194,8 +328,16 @@ describe('usePwaInstall', () => {
       });
 
       expect(installResult).toBe(true);
-      expect(result.current.isInstalled).toBe(true);
+      expect(result.current.isInstalled).toBe(false);
       expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('unavailable');
+
+      act(() => {
+        window.dispatchEvent(new Event('appinstalled'));
+      });
+
+      expect(result.current.isInstalled).toBe(true);
+      expect(result.current.installKind).toBe('installed');
     });
 
     it('returns false when user dismisses', async () => {
@@ -218,6 +360,8 @@ describe('usePwaInstall', () => {
 
       expect(installResult).toBe(false);
       expect(result.current.isInstalled).toBe(false);
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('unavailable');
     });
 
     it('handles prompt errors gracefully', async () => {
@@ -240,9 +384,11 @@ describe('usePwaInstall', () => {
 
       expect(installResult).toBe(false);
       expect(logger.error).toHaveBeenCalledWith(
-        '[PWA] Error prompting install:',
+        '[PWA] Install prompt failed:',
         expect.any(Error)
       );
+      expect(result.current.canInstall).toBe(false);
+      expect(result.current.installKind).toBe('unavailable');
     });
   });
 
@@ -287,18 +433,18 @@ describe('usePwaInstall', () => {
   });
 
   describe('cleanup', () => {
-    it('removes event listeners on unmount', () => {
+    it('keeps page-lifetime capture active when a lazy consumer unmounts', () => {
       const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
       const { unmount } = renderHook(() => usePwaInstall());
 
       unmount();
 
-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      expect(removeEventListenerSpy).not.toHaveBeenCalledWith(
         'beforeinstallprompt',
         expect.any(Function)
       );
-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      expect(removeEventListenerSpy).not.toHaveBeenCalledWith(
         'appinstalled',
         expect.any(Function)
       );

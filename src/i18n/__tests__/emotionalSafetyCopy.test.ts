@@ -99,6 +99,132 @@ const activitySoundRecoveryCopy = {
   },
 } as const;
 
+const notificationPermissionCapabilityCopy = {
+  en: {
+    title: "Allow reminders?",
+    description:
+      "ZenFlow can send the mood, focus, and habit reminders you turn on.",
+    moodTitle: "Mood reminders",
+    moodDescription: "On the days and at the time you choose",
+    habitTitle: "Habit reminders",
+    habitDescription: "On each habit’s saved days and time",
+    focusTitle: "Focus timer",
+    focusDescription: "When a timed focus session finishes",
+    allow: "Allow reminders",
+    deny: "Not now",
+    privacy:
+      "These reminders are scheduled on this device. You can change them in Settings.",
+  },
+  uk: {
+    title: "Дозволити нагадування?",
+    description:
+      "ZenFlow може надсилати нагадування про настрій, фокус і звички, які ви вмикаєте.",
+    moodTitle: "Нагадування про настрій",
+    moodDescription: "У вибрані вами дні та час",
+    habitTitle: "Нагадування про звички",
+    habitDescription: "У збережені для кожної звички дні та час",
+    focusTitle: "Таймер фокусу",
+    focusDescription: "Коли завершиться фокус-сесія з таймером",
+    allow: "Дозволити нагадування",
+    deny: "Не зараз",
+    privacy:
+      "Ці нагадування заплановані на цьому пристрої. Їх можна змінити в Налаштуваннях.",
+  },
+  es: {
+    title: "¿Permitir recordatorios?",
+    description:
+      "ZenFlow puede enviar los recordatorios de ánimo, concentración y hábitos que actives.",
+    moodTitle: "Recordatorios de ánimo",
+    moodDescription: "En los días y a la hora que elijas",
+    habitTitle: "Recordatorios de hábitos",
+    habitDescription: "En los días y a la hora guardados para cada hábito",
+    focusTitle: "Temporizador de concentración",
+    focusDescription: "Cuando termina una sesión de concentración cronometrada",
+    allow: "Permitir recordatorios",
+    deny: "Ahora no",
+    privacy:
+      "Estos recordatorios se programan en este dispositivo. Puedes cambiarlos en Ajustes.",
+  },
+  de: {
+    title: "Erinnerungen erlauben?",
+    description:
+      "ZenFlow kann die Stimmungs-, Fokus- und Gewohnheitserinnerungen senden, die du einschaltest.",
+    moodTitle: "Stimmungserinnerungen",
+    moodDescription: "An den Tagen und zu der Uhrzeit, die du auswählst",
+    habitTitle: "Gewohnheitserinnerungen",
+    habitDescription:
+      "An den für jede Gewohnheit gespeicherten Tagen und Uhrzeiten",
+    focusTitle: "Fokus-Timer",
+    focusDescription: "Wenn eine zeitgesteuerte Fokussitzung endet",
+    allow: "Erinnerungen erlauben",
+    deny: "Jetzt nicht",
+    privacy:
+      "Diese Erinnerungen werden auf diesem Gerät geplant. Du kannst sie in den Einstellungen ändern.",
+  },
+  fr: {
+    title: "Autoriser les rappels ?",
+    description:
+      "ZenFlow peut envoyer les rappels d’humeur, de concentration et d’habitudes que vous activez.",
+    moodTitle: "Rappels d’humeur",
+    moodDescription: "Aux jours et à l’heure que vous choisissez",
+    habitTitle: "Rappels d’habitudes",
+    habitDescription:
+      "Aux jours et à l’heure enregistrés pour chaque habitude",
+    focusTitle: "Minuteur de concentration",
+    focusDescription:
+      "À la fin d’une session de concentration chronométrée",
+    allow: "Autoriser les rappels",
+    deny: "Pas maintenant",
+    privacy:
+      "Ces rappels sont programmés sur cet appareil. Vous pouvez les modifier dans les paramètres.",
+  },
+  ja: {
+    title: "リマインダーを許可しますか？",
+    description:
+      "ZenFlowは、設定でオンにした気分・集中・習慣のリマインダーを通知できます。",
+    moodTitle: "気分リマインダー",
+    moodDescription: "選んだ曜日と時刻に通知します",
+    habitTitle: "習慣リマインダー",
+    habitDescription: "各習慣に保存した曜日と時刻に通知します",
+    focusTitle: "集中タイマー",
+    focusDescription: "時間を設定した集中セッションの終了時に通知します",
+    allow: "リマインダーを許可",
+    deny: "今はしない",
+    privacy:
+      "これらのリマインダーはこのデバイスでスケジュールされます。設定から変更できます。",
+  },
+  ar: {
+    title: "هل تريد السماح بالتذكيرات؟",
+    description:
+      "يمكن لتطبيق ZenFlow إرسال تذكيرات المزاج والتركيز والعادات التي تشغّلها.",
+    moodTitle: "تذكيرات المزاج",
+    moodDescription: "في الأيام التي تختارها وفي الوقت الذي تحدده",
+    habitTitle: "تذكيرات العادات",
+    habitDescription: "في الأيام المحددة والوقت المحفوظ لكل عادة",
+    focusTitle: "مؤقت التركيز",
+    focusDescription: "عند انتهاء جلسة تركيز محددة الوقت",
+    allow: "السماح بالتذكيرات",
+    deny: "ليس الآن",
+    privacy:
+      "تُجدول هذه التذكيرات على هذا الجهاز. يمكنك تغييرها من الإعدادات.",
+  },
+  he: {
+    title: "לאפשר תזכורות?",
+    description:
+      "ZenFlow יכול לשלוח את תזכורות מצב הרוח, המיקוד וההרגלים שמפעילים בהגדרות.",
+    moodTitle: "תזכורות מצב רוח",
+    moodDescription: "בימים ובשעה שבוחרים",
+    habitTitle: "תזכורות הרגלים",
+    habitDescription: "בימים ובשעה שנשמרו לכל הרגל",
+    focusTitle: "טיימר מיקוד",
+    focusDescription: "כשמסתיים מפגש מיקוד מתוזמן",
+    allow: "לאפשר תזכורות",
+    deny: "לא עכשיו",
+    privacy:
+      "התזכורות האלה מתוזמנות במכשיר הזה. אפשר לשנות אותן בהגדרות.",
+  },
+} as const;
+
 const reminderKeys = [
   "reminderMoodTitle",
   "reminderMoodBody",
@@ -199,6 +325,35 @@ describe("emotionally safe runtime copy", () => {
         expected.description,
       );
       expect(translations.settingsSoundActivityRestoreAction, language).toBe(expected.action);
+    }
+  });
+
+  it("describes only the reminder capabilities that the native permission enables", () => {
+    for (const [language, translations] of Object.entries(locales)) {
+      const expected =
+        notificationPermissionCapabilityCopy[
+          language as keyof typeof notificationPermissionCapabilityCopy
+        ];
+
+      expect(translations.notificationPermissionTitle, language).toBe(expected.title);
+      expect(translations.notificationPermissionDescription, language).toBe(
+        expected.description,
+      );
+      expect(translations.notificationFeature1Title, language).toBe(expected.moodTitle);
+      expect(translations.notificationFeature1Desc, language).toBe(
+        expected.moodDescription,
+      );
+      expect(translations.notificationFeature2Title, language).toBe(expected.habitTitle);
+      expect(translations.notificationFeature2Desc, language).toBe(
+        expected.habitDescription,
+      );
+      expect(translations.notificationFeature3Title, language).toBe(expected.focusTitle);
+      expect(translations.notificationFeature3Desc, language).toBe(
+        expected.focusDescription,
+      );
+      expect(translations.notificationAllow, language).toBe(expected.allow);
+      expect(translations.notificationDeny, language).toBe(expected.deny);
+      expect(translations.notificationPrivacyNote, language).toBe(expected.privacy);
     }
   });
 

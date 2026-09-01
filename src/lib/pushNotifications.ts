@@ -443,6 +443,23 @@ export type PushRevocationResult =
       native: "unregistered" | "not-applicable" | "owner-changed" | "failed";
     };
 
+export type PushRegistrationEvidence = "present" | "absent" | "unavailable";
+
+export function readPushRegistrationEvidence(): PushRegistrationEvidence {
+  const tokenRead = storageReadRaw(SK.PUSH_TOKEN);
+  const installRead = pushInstallId
+    ? ({ ok: true, value: pushInstallId } as const)
+    : storageReadRaw(SK.PUSH_INSTALL_ID);
+
+  if (
+    (tokenRead.ok && Boolean(tokenRead.value)) ||
+    (installRead.ok && Boolean(installRead.value))
+  ) {
+    return "present";
+  }
+  return tokenRead.ok && installRead.ok ? "absent" : "unavailable";
+}
+
 async function removePushTokenNow(
   expectedOwnerUserId?: string,
 ): Promise<PushRevocationResult> {
@@ -555,11 +572,16 @@ async function removePushTokenNow(
   return { status: "partial", remote, native };
 }
 
+export function cancelPendingPushRegistration(): void {
+  pushRegistrationGeneration += 1;
+  latestPushTokenSaveRequestId += 1;
+  activePushListenerEpoch += 1;
+}
+
 function enqueuePushRevocation(expectedOwnerUserId?: string): Promise<PushRevocationResult> {
   // Invalidate an older registration immediately. Cleanup itself is serialized so
   // a later enable operation can wait until every already-started revoke settles.
-  pushRegistrationGeneration += 1;
-  latestPushTokenSaveRequestId += 1;
+  cancelPendingPushRegistration();
   const revocation = pushRevocationTail.then(() => removePushTokenNow(expectedOwnerUserId));
   pushRevocationTail = revocation.then(
     () => undefined,

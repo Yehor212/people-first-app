@@ -144,7 +144,7 @@ export function SettingsSupportFooter() {
           {updateCapability.kind !== "unavailable" ? (
             <button
               type="button"
-              className={footerButtonClass}
+              className={`${footerButtonClass} w-full min-[360px]:w-auto`}
               disabled={updateCheckStatus === "checking" || isRestartingUpdate}
               onClick={() => void handleCheckForUpdates()}
               data-testid="settings-v2-check-updates"

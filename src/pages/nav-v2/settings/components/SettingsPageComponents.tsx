@@ -183,14 +183,16 @@ export function SettingsModuleList({
         }
       }}
       className={cn(
-        "order-2 grid min-w-0 overflow-hidden rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.52)] bg-[hsl(var(--settings-v2-card)/0.76)] lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]",
+        "order-2 grid min-w-0 rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.52)] bg-[hsl(var(--settings-v2-card)/0.76)] p-1 lg:order-1 lg:sticky lg:top-[calc(var(--safe-top)+1rem)]",
         controlsWired && mobileDetailOpen && "lg:grid"
       )}
+      role="list"
+      data-containment="group"
       id="settings-module-list"
       data-testid="settings-module-list"
       data-visual-role="settings-group"
     >
-      {items.map((item) => {
+      {items.map((item, index) => {
         const expanded = detailVisible && activeItem?.id === item.id;
         const panelId = `settings-module-panel-${item.id}`;
         const buttonId = `settings-module-card-${item.id}`;
@@ -205,6 +207,7 @@ export function SettingsModuleList({
             panelId={panelId}
             panelMounted={expanded}
             onOpen={onOpen}
+            showSeparator={index > 0}
           />
         );
       })}

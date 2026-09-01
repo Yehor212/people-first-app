@@ -6,6 +6,7 @@ interface PlanningReviewLaneProps {
   focusMinutesToday: number;
   lastFocusSession: FocusSession | null;
   labels: Record<string, string>;
+  language: string;
   onModeChange: (mode: PlanningMode) => void;
 }
 
@@ -13,12 +14,15 @@ export function PlanningReviewLane({
   focusMinutesToday,
   lastFocusSession,
   labels,
+  language,
   onModeChange,
 }: PlanningReviewLaneProps) {
+  const numberFormatter = new Intl.NumberFormat(language, { useGrouping: false });
+
   return (
     <section
       data-testid="planning-review-lane"
-      className="rounded-2xl border border-border/45 bg-card/72 p-4 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+      className="rounded-2xl border border-border/45 bg-card p-4"
     >
       <div className="flex items-start gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary/80 text-primary">
@@ -27,8 +31,16 @@ export function PlanningReviewLane({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">{labels.planningModeReview}</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            <span className="font-semibold text-foreground">{focusMinutesToday}</span> {labels.todayMinutes}
-            {lastFocusSession?.label ? ` · ${lastFocusSession.label}` : ""}
+            <span className="font-semibold text-foreground">
+              {numberFormatter.format(focusMinutesToday)}
+            </span>{" "}
+            {labels.todayMinutes}
+            {lastFocusSession?.label ? (
+              <>
+                <span aria-hidden="true"> · </span>
+                <bdi dir="auto">{lastFocusSession.label}</bdi>
+              </>
+            ) : null}
           </p>
         </div>
       </div>

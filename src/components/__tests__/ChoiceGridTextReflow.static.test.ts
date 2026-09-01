@@ -31,10 +31,10 @@ describe("localized choice-grid text reflow contract", () => {
 
   it("reflows schedule preset labels without changing preset selection behavior", () => {
     expect(sources.addEvent).toContain(
-      'className="grid grid-cols-1 gap-2 mb-4 min-[420px]:grid-cols-3"'
+      'className="mb-4 grid grid-cols-2 gap-2 min-[420px]:grid-cols-3"'
     );
     expect(sources.addEvent).toContain(
-      'className="break-words text-center text-xs text-slate-600 dark:text-white/80"'
+      'className="break-words text-center text-xs text-muted-foreground"'
     );
     expect(sources.addEvent).not.toContain('className="grid grid-cols-3 gap-2 mb-4"');
   });

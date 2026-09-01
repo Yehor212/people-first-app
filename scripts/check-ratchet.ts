@@ -25,6 +25,7 @@ import {
   runRatchetBundleManifestCli,
   validateProductionWebBundleManifest,
 } from "./ratchet-bundle-manifest";
+import { isDebtMarkerComment } from "./ratchet-metrics";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -379,7 +380,7 @@ function countConsoleLogs(): number {
 function countTodoFixme(): number {
   return countLines(
     walkFiles("src", SOURCE_EXTENSIONS, { excludeTests: true }),
-    (line) => /TODO|FIXME|HACK|XXX/.test(line)
+    (line) => isDebtMarkerComment(line)
   );
 }
 

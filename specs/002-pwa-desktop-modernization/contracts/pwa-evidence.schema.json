@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenflow.local/specs/002-pwa-desktop-modernization/pwa-evidence.schema.json",
+  "title": "ZenFlow Installed PWA Evidence Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "subjectCommit",
+    "subjectStateSha256",
+    "platform",
+    "environment",
+    "scenario",
+    "result",
+    "observedAt",
+    "locator",
+    "artifactSha256",
+    "privacyClass"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "subjectCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "subjectStateSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "platform": {
+      "enum": [
+        "web-vite",
+        "pwa-macos",
+        "pwa-windows",
+        "pwa-mobile-browser",
+        "android-capacitor",
+        "ios-wkwebview",
+        "desktop-tauri",
+        "store-release"
+      ]
+    },
+    "environment": { "type": "string", "minLength": 3, "maxLength": 240 },
+    "scenario": { "type": "string", "minLength": 3, "maxLength": 240 },
+    "result": { "enum": ["PASS", "FAIL", "N/A", "UNVERIFIED"] },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "locator": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "artifactSha256": {
+      "oneOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "privacyClass": { "enum": ["PUBLIC_SOURCE", "SANITIZED_LOCAL", "PRIVATE_REDACTED"] },
+    "limitations": { "type": "array", "items": { "type": "string", "minLength": 3 }, "uniqueItems": true },
+    "unverifiedReason": { "type": "string", "minLength": 3, "maxLength": 1000 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "result": { "const": "PASS" } } },
+      "then": { "properties": { "artifactSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } } }
+    },
+    {
+      "if": { "properties": { "result": { "const": "UNVERIFIED" } } },
+      "then": { "required": ["unverifiedReason"] }
+    }
+  ]
+}

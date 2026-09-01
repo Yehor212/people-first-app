@@ -38,6 +38,7 @@ export interface SettingsInsetProps {
   containerRef?: Ref<HTMLDivElement>;
   tone?: "neutral" | "danger" | "success";
   presentation?: "contained" | "flat-row";
+  emphasis?: "row" | "callout";
   testId?: string;
   className?: string;
   tabIndex?: number;
@@ -130,6 +131,7 @@ export interface SettingsInlineButtonProps {
   isLoading?: boolean;
   testId?: string;
   variant?: "primary" | "secondary" | "danger";
+  width?: "full" | "content";
 }
 
 export interface SettingsDialogProps {

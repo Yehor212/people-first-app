@@ -1,5 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  CONNECTIVITY_PROBE_QUERY_PARAM,
+  CONNECTIVITY_PROBE_QUERY_VALUE,
+} from "../src/lib/connectivityProbe";
 import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 
 async function openPrimedDiary(page: Page) {
@@ -97,6 +101,27 @@ async function waitForServiceWorkerControl(page: Page) {
   });
 }
 
+async function installOfflineConnectivityProbeFailure(page: Page) {
+  await page.addInitScript(
+    ({ queryParam, queryValue }) => {
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+        const rawUrl =
+          typeof input === "string" || input instanceof URL ? input.toString() : input.url;
+        const requestUrl = new URL(rawUrl, window.location.href);
+        if (requestUrl.searchParams.get(queryParam) === queryValue) {
+          return Promise.reject(new TypeError("Simulated offline connectivity probe failure"));
+        }
+        return nativeFetch(input, init);
+      };
+    },
+    {
+      queryParam: CONNECTIVITY_PROBE_QUERY_PARAM,
+      queryValue: CONNECTIVITY_PROBE_QUERY_VALUE,
+    },
+  );
+}
+
 test.describe("PWA offline V2 Diary", () => {
   test("boots the visited diary route offline from the production service worker", async ({
     browserName,
@@ -146,6 +171,7 @@ test.describe("PWA offline V2 Diary", () => {
       shellVisible: boolean;
       wallpaperTone: string | null;
     };
+    await installOfflineConnectivityProbeFailure(page);
     await context.setOffline(true);
     try {
       await page.reload({

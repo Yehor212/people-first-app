@@ -17,8 +17,8 @@ interface SectionHeaderProps {
 const iconColorMap: Record<GradientType, string> = {
   primary: "text-primary",
   warm: "text-accent",
-  calm: "text-blue-500",
-  sunset: "text-rose-500",
+  calm: "text-[hsl(var(--zf-role-focus))]",
+  sunset: "text-[hsl(var(--zf-role-release))]",
 };
 
 const sizeConfig = {

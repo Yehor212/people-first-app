@@ -14,6 +14,8 @@ const DEFAULT_DIMENSIONS = [2560, 2048, 1600, 1280, 960] as const;
 const FULL_RESOLUTION_QUALITIES = [0.9, 0.86, 0.82, 0.78, 0.74] as const;
 const REDUCED_RESOLUTION_QUALITIES = [0.9, 0.82, 0.74] as const;
 
+export const JOURNAL_PHOTO_TOO_DETAILED_ERROR = "JOURNAL_PHOTO_TOO_DETAILED";
+
 export function getDataUrlDecodedByteLength(dataUrl: string): number {
   const commaIndex = dataUrl.indexOf(",");
   if (commaIndex < 0 || !/;base64(?:;|,)/i.test(dataUrl.slice(0, commaIndex + 1))) {
@@ -46,5 +48,5 @@ export async function encodeJournalPhotoWithinLimit(
     }
   }
 
-  throw new Error("Photo could not be prepared within the storage limit");
+  throw new Error(JOURNAL_PHOTO_TOO_DETAILED_ERROR);
 }

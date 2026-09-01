@@ -92,7 +92,7 @@ export function SettingsTextInput({
       aria-describedby={ariaDescribedBy}
       dir="auto"
       className={cn(
-        "min-h-[48px] w-full rounded-[8px] px-4 text-base text-foreground outline-none ltr:placeholder:text-left rtl:placeholder:text-right focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
+        "min-h-[48px] min-w-0 w-full rounded-[8px] px-4 text-base text-foreground outline-none ltr:placeholder:text-left rtl:placeholder:text-right focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
         fill && "flex-1",
         tone === "danger"
           ? "border border-destructive/20 bg-background"
@@ -138,6 +138,7 @@ export function SettingsInlineButton({
   disabled,
   testId,
   variant = "secondary",
+  width = "full",
 }: SettingsInlineButtonProps) {
   const isDisabled = disabled || isLoading;
 
@@ -151,7 +152,8 @@ export function SettingsInlineButton({
       data-button-tone={variant}
       data-testid={testId}
       className={cn(
-        "inline-flex min-h-[48px] w-full max-w-full min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[8px] px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
+        "inline-flex min-h-[48px] max-w-full min-w-0 items-center justify-center gap-2 whitespace-normal rounded-[8px] px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
+        width === "content" ? "w-auto" : "w-full",
         "motion-safe:transition-[transform,background-color,border-color,box-shadow,color,opacity] motion-safe:duration-200 motion-safe:ease-out",
         "motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-[1px] active:shadow-none",
         SETTINGS_INLINE_BUTTON_CLASS[variant]

@@ -19,8 +19,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
 
 import {
   HeroIdentityPrompt,
-  parseDailyIdentityIntentions,
-  pickDailyIdentityForDay,
   pickIdentityForDay,
 } from "../HeroIdentityPrompt";
 import type { Habit } from "@/types";
@@ -64,40 +62,15 @@ describe("pickIdentityForDay", () => {
   });
 });
 
-describe("daily default identity prompts", () => {
-  it("parses the localized monthly phrase bank", () => {
-    expect(parseDailyIdentityIntentions(" first | second || third ")).toEqual([
-      "first",
-      "second",
-      "third",
-    ]);
-  });
-
-  it("rotates fallback phrases by one-based calendar day", () => {
-    const phrases = "someone who keeps their word|someone who starts small|someone who returns";
-    expect(pickDailyIdentityForDay(phrases, 1)?.verb).toBe("someone who keeps their word");
-    expect(pickDailyIdentityForDay(phrases, 2)?.verb).toBe("someone who starts small");
-    expect(pickDailyIdentityForDay(phrases, 4)?.verb).toBe("someone who keeps their word");
-  });
-});
-
 describe("HeroIdentityPrompt", () => {
   afterEach(() => cleanup());
-  it("falls back to the daily identity phrase when no habit has identityVerb", () => {
+  it("does not author an identity statement when the user has not configured one", () => {
     render(<HeroIdentityPrompt habits={[habit({})]} dayOfMonth={1} />);
-    expect(screen.getByTestId("hero-identity-verb")).toHaveTextContent(
-      "someone who keeps their word",
-    );
-    expect(screen.getByTestId("hero-identity-prompt")).toHaveTextContent(
-      "Today you choose to be",
-    );
+
+    expect(screen.queryByTestId("hero-identity-prompt")).not.toBeInTheDocument();
+    expect(screen.queryByText("someone who keeps their word")).not.toBeInTheDocument();
   });
-  it("changes the generic identity phrase across calendar days", () => {
-    render(<HeroIdentityPrompt habits={[habit({})]} dayOfMonth={2} />);
-    expect(screen.getByTestId("hero-identity-verb")).toHaveTextContent(
-      "someone who starts small",
-    );
-  });
+
   it("shows the picked identity when configured", () => {
     const h = habit({ identityVerb: "a writer", identityIcon: "✍️" });
     render(<HeroIdentityPrompt habits={[h]} dayOfMonth={5} />);
