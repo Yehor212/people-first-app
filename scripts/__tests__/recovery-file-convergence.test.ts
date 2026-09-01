@@ -73,16 +73,21 @@ describe("recovery file convergence policy", () => {
         mainSha256: null,
       }),
     ).toBe("EXCLUDED_KIMI");
+  });
+
+  it("does not confuse a Codex clean-room file name with Kimi-origin work", () => {
+    const { classifyMechanicalPolicy } = loadCore();
+
     expect(
       classifyMechanicalPolicy({
-        sourceId: "file:kimi-review",
+        sourceId: "file:codex-clean-room-review",
         sourceKind: "dirty-file",
-        packet: "audio-review",
+        packet: "codex-first-party-clean-room",
         path: "scripts/audio-review/cc0-kimi-audio-core.mjs",
         sourceSha256: "b".repeat(64),
         mainSha256: null,
       }),
-    ).toBe("EXCLUDED_KIMI");
+    ).toBe("REVIEW_REQUIRED");
   });
 
   it.each([

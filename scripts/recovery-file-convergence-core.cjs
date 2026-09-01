@@ -25,7 +25,7 @@ function classifyMechanicalPolicy(record) {
   const packet = String(record?.packet || "");
   const sourceId = String(record?.sourceId || "");
   const relativePath = normalizeRelativePath(record?.path);
-  const searchable = `${packet}\n${sourceId}\n${relativePath}`;
+  const searchable = `${packet}\n${sourceId}`;
 
   if (/(^|[^a-z])kimi([^a-z]|$)/i.test(searchable)) return "EXCLUDED_KIMI";
   if (isSecretPath(relativePath) || Number(record?.secretMatches || 0) > 0) {
