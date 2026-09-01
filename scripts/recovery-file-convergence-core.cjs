@@ -37,10 +37,22 @@ function classifyMechanicalPolicy(record) {
   if (record?.sourceKind === "deletion-intent" && record?.mainSha256 == null) {
     return "ALREADY_CURRENT";
   }
+  if (
+    record?.changeKind === "delete" &&
+    Object.hasOwn(record, "mainGitOid") &&
+    record.mainGitOid == null
+  ) {
+    return "ALREADY_CURRENT";
+  }
 
   const sourceSha256 = String(record?.sourceSha256 || "");
   const mainSha256 = record?.mainSha256 == null ? null : String(record.mainSha256);
   if (isSha256(sourceSha256) && mainSha256 === sourceSha256) return "ALREADY_CURRENT";
+  const sourceGitOid = String(record?.sourceGitOid || "");
+  const mainGitOid = record?.mainGitOid == null ? null : String(record.mainGitOid);
+  if (/^[0-9a-f]{40,64}$/i.test(sourceGitOid) && mainGitOid === sourceGitOid) {
+    return "ALREADY_CURRENT";
+  }
   return "REVIEW_REQUIRED";
 }
 
@@ -107,6 +119,88 @@ function collectUniqueHeadShas(inventory) {
         .filter((head) => /^[0-9a-f]{40,64}$/i.test(head)),
     ),
   ].sort((left, right) => left.localeCompare(right));
+}
+
+function collectSpecialRecords(manifest, mainHashes = {}) {
+  const records = [];
+  const archives = Array.isArray(manifest?.special?.archives) ? manifest.special.archives : [];
+  for (const archive of archives) {
+    const packet = String(archive?.name || "");
+    if (!packet) continue;
+    const record = {
+      sourceId: `special-archive:${packet}`,
+      sourceKind: "special-archive",
+      packet,
+      changeKind: "archive",
+      extractedRegularFiles: Number(archive?.extractedRegularFiles || 0),
+    };
+    records.push({ ...record, disposition: classifyMechanicalPolicy(record) });
+  }
+
+  const originalEntries = Array.isArray(manifest?.special?.originalPatch?.entries)
+    ? manifest.special.originalPatch.entries
+    : [];
+  for (const entry of originalEntries) {
+    const entryDisposition = String(entry?.disposition || "");
+    if (entryDisposition !== "exported-non-main-variant") continue;
+    const relativePath = normalizeRelativePath(entry?.path);
+    const sourceSha256 = String(entry?.sha256 || "");
+    if (!isSha256(sourceSha256)) {
+      throw new Error(`special exported file requires sha256: ${relativePath}`);
+    }
+    const record = {
+      sourceId: `special-file:original-vscode-dirty:${relativePath}:${sourceSha256.slice(0, 12)}`,
+      sourceKind: "special-file",
+      packet: "original-vscode-dirty",
+      path: relativePath,
+      sourceSha256,
+      mainSha256: Object.hasOwn(mainHashes, relativePath) ? mainHashes[relativePath] : null,
+      changeKind: "file-variant",
+    };
+    records.push({ ...record, disposition: classifyMechanicalPolicy(record) });
+  }
+  return records.sort((left, right) => left.sourceId.localeCompare(right.sourceId));
+}
+
+function parseNameStatusZ(text) {
+  const tokens = String(text || "").split("\0");
+  if (tokens.at(-1) === "") tokens.pop();
+  const records = [];
+  for (let index = 0; index < tokens.length; ) {
+    const status = tokens[index++];
+    if (!/^[A-Z][0-9]*$/.test(status || "")) {
+      throw new Error(`invalid Git name-status token: ${status || "EMPTY"}`);
+    }
+    if (/^[RC]/.test(status)) {
+      const previousPath = normalizeRelativePath(tokens[index++]);
+      const relativePath = normalizeRelativePath(tokens[index++]);
+      if (!previousPath || !relativePath) throw new Error("rename/copy record requires two paths");
+      records.push({ status, path: relativePath, previousPath });
+      continue;
+    }
+    const relativePath = normalizeRelativePath(tokens[index++]);
+    if (!relativePath) throw new Error("Git name-status record requires a path");
+    records.push({ status, path: relativePath });
+  }
+  return records;
+}
+
+function parseLsTreeZ(text) {
+  const entries = [];
+  for (const token of String(text || "").split("\0")) {
+    if (!token) continue;
+    const tabIndex = token.indexOf("\t");
+    if (tabIndex < 0) throw new Error("invalid Git ls-tree record");
+    const metadata = token.slice(0, tabIndex).split(" ");
+    const relativePath = normalizeRelativePath(token.slice(tabIndex + 1));
+    const [, objectType, objectId] = metadata;
+    if (objectType !== "blob") continue;
+    if (!/^[0-9a-f]{40,64}$/i.test(objectId || "")) {
+      throw new Error("Git ls-tree blob requires an object id");
+    }
+    entries.push([relativePath, objectId]);
+  }
+  return Object.fromEntries(entries.sort(([left], [right]) => left.localeCompare(right)));
 }
 
 function buildVariantGroups(records) {
@@ -253,7 +347,10 @@ module.exports = {
   buildVariantGroups,
   classifyMechanicalPolicy,
   collectPacketRecords,
+  collectSpecialRecords,
   collectUniqueHeadShas,
+  parseNameStatusZ,
+  parseLsTreeZ,
   sanitizeLedgerRecord,
   summarizeLedger,
   validateDecision,

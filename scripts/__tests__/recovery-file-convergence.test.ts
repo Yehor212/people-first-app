@@ -9,7 +9,13 @@ const require = createRequire(import.meta.url);
 
 type RecoveryRecord = {
   sourceId: string;
-  sourceKind: "dirty-file" | "deletion-intent" | "historical-commit";
+  sourceKind:
+    | "dirty-file"
+    | "deletion-intent"
+    | "historical-commit"
+    | "historical-file"
+    | "special-file"
+    | "special-archive";
   packet?: string;
   path?: string;
   sourceSha256?: string;
@@ -29,6 +35,16 @@ function loadCore() {
       mainHashes: Record<string, string | null>,
     ): Array<RecoveryRecord & { disposition: string; changeKind: string }>;
     collectUniqueHeadShas(inventory: unknown): string[];
+    collectSpecialRecords(
+      manifest: unknown,
+      mainHashes: Record<string, string | null>,
+    ): Array<RecoveryRecord & { disposition: string; changeKind: string }>;
+    parseNameStatusZ(text: string): Array<{
+      status: string;
+      path: string;
+      previousPath?: string;
+    }>;
+    parseLsTreeZ(text: string): Record<string, string>;
     classifyMechanicalPolicy(record: RecoveryRecord): string;
     sanitizeLedgerRecord(record: RecoveryRecord): RecoveryRecord;
     summarizeLedger(records: Array<{ disposition: string }>): {
@@ -389,6 +405,107 @@ describe("recovery source collection", () => {
       }),
     ).toEqual(["a".repeat(40), "b".repeat(40)]);
   });
+
+  it("collects special file variants and excludes the Kimi archive", () => {
+    const { collectSpecialRecords } = loadCore();
+    const sha = "9".repeat(64);
+
+    expect(
+      collectSpecialRecords(
+        {
+          special: {
+            originalPatch: {
+              entries: [
+                {
+                  path: "scripts/current.mjs",
+                  disposition: "exported-non-main-variant",
+                  sha256: sha,
+                  output: "special/original/files/scripts/current.mjs",
+                },
+              ],
+            },
+            archives: [
+              { name: "kimi-untracked", extractedRegularFiles: 23 },
+              { name: "epic002-patch-lane", extractedRegularFiles: 25721 },
+            ],
+          },
+        },
+        { "scripts/current.mjs": null },
+      ),
+    ).toEqual([
+      {
+        sourceId: "special-archive:epic002-patch-lane",
+        sourceKind: "special-archive",
+        packet: "epic002-patch-lane",
+        changeKind: "archive",
+        extractedRegularFiles: 25721,
+        disposition: "REVIEW_REQUIRED",
+      },
+      {
+        sourceId: "special-archive:kimi-untracked",
+        sourceKind: "special-archive",
+        packet: "kimi-untracked",
+        changeKind: "archive",
+        extractedRegularFiles: 23,
+        disposition: "EXCLUDED_KIMI",
+      },
+      {
+        sourceId: `special-file:original-vscode-dirty:scripts/current.mjs:${sha.slice(0, 12)}`,
+        sourceKind: "special-file",
+        packet: "original-vscode-dirty",
+        path: "scripts/current.mjs",
+        sourceSha256: sha,
+        mainSha256: null,
+        changeKind: "file-variant",
+        disposition: "REVIEW_REQUIRED",
+      },
+    ]);
+  });
+
+  it("parses add, delete, and rename records from nul-delimited Git output", () => {
+    const { parseNameStatusZ } = loadCore();
+
+    expect(
+      parseNameStatusZ(
+        [
+          "A",
+          "src/added.ts",
+          "D",
+          "src/deleted.ts",
+          "R098",
+          "src/old name.ts",
+          "src/new name.ts",
+          "",
+        ].join("\0"),
+      ),
+    ).toEqual([
+      { status: "A", path: "src/added.ts" },
+      { status: "D", path: "src/deleted.ts" },
+      {
+        status: "R098",
+        path: "src/new name.ts",
+        previousPath: "src/old name.ts",
+      },
+    ]);
+  });
+
+  it("maps Git tree paths to blob ids without per-file subprocesses", () => {
+    const { parseLsTreeZ } = loadCore();
+
+    expect(
+      parseLsTreeZ(
+        [
+          `100644 blob ${"a".repeat(40)}\tsrc/alpha.ts`,
+          `100755 blob ${"b".repeat(40)}\tscripts/run.mjs`,
+          `160000 commit ${"c".repeat(40)}\tvendor/submodule`,
+          "",
+        ].join("\0"),
+      ),
+    ).toEqual({
+      "scripts/run.mjs": "b".repeat(40),
+      "src/alpha.ts": "a".repeat(40),
+    });
+  });
 });
 
 describe("recovery convergence CLI", () => {
@@ -479,6 +596,7 @@ describe("recovery convergence CLI", () => {
           dirtyVariants: number;
           deletionIntents: number;
           historicalCommits: number;
+          historicalFileChanges: number;
           open: number;
         };
         packetRecords: Array<{ disposition: string; path: string }>;
@@ -489,7 +607,8 @@ describe("recovery convergence CLI", () => {
         dirtyVariants: 1,
         deletionIntents: 1,
         historicalCommits: 1,
-        open: 1,
+        historicalFileChanges: 2,
+        open: 0,
       });
       expect(ledger.packetRecords).toEqual([
         expect.objectContaining({ path: "current.txt", disposition: "ALREADY_CURRENT" }),

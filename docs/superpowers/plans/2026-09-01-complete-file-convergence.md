@@ -34,25 +34,25 @@
 - Consumes: recovery `manifest.json`, Git inventory, repository root, base SHA, current `main` SHA, and reviewed decision records.
 - Produces: stable JSON records keyed by source, logical path, content hash, change kind, domain, mechanical policy, semantic disposition, and evidence.
 
-- [ ] **Step 1: Add RED policy tests**
+- [x] **Step 1: Add RED policy tests**
 
 Cover exact-current files, Kimi packet/path exclusion, secret-like paths and content, generated/cache paths, duplicate-copy names, conflicting variants, deletion intents, missing files, absolute-path stripping, and deterministic ordering.
 
-- [ ] **Step 2: Run the focused test and confirm RED**
+- [x] **Step 2: Run the focused test and confirm RED**
 
 Run: `npx vitest run scripts/__tests__/recovery-file-convergence.test.ts --maxWorkers=1`
 
 Expected: FAIL because the new core module does not exist.
 
-- [ ] **Step 3: Implement the pure classifier and bounded CLI**
+- [x] **Step 3: Implement the pure classifier and bounded CLI**
 
 The classifier exposes `classifyMechanicalPolicy(record)`, `buildVariantGroups(records)`, `validateDecision(record)`, and `summarizeLedger(records)`. The CLI reads explicit files, invokes Git with argument arrays, hashes regular files, strips absolute locators, and refuses incomplete or secret-bearing output.
 
-- [ ] **Step 4: Run GREEN and generate the initial ledger**
+- [x] **Step 4: Run GREEN and generate the initial ledger**
 
 Run the focused test, then generate the real ledger from the verified external recovery manifest and post-PR91 Git inventory supplied through local CLI arguments. The durable output stores source IDs and hashes, never local locators.
 
-- [ ] **Step 5: Verify source counts and commit the ledger foundation**
+- [x] **Step 5: Verify source counts and commit the ledger foundation**
 
 Require 900 dirty variants, 11 deletion intents, 149 historical commits, zero raw absolute paths, zero embedded file content, and zero unclassified mechanical exclusions.
 

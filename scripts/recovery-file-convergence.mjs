@@ -10,7 +10,10 @@ const require = createRequire(import.meta.url);
 const {
   classifyMechanicalPolicy,
   collectPacketRecords,
+  collectSpecialRecords,
   collectUniqueHeadShas,
+  parseNameStatusZ,
+  parseLsTreeZ,
   sanitizeLedgerRecord,
   summarizeLedger,
 } = require("./recovery-file-convergence-core.cjs");
@@ -27,10 +30,16 @@ const manifest = readJson(manifestPath);
 const inventory = readJson(inventoryPath);
 const mainHashes = collectMainHashes({ manifest, mainSha, repo });
 const packetRecords = collectPacketRecords(manifest, mainHashes).map(sanitizeLedgerRecord);
+const specialRecords = collectSpecialRecords(manifest, mainHashes).map(sanitizeLedgerRecord);
 const historicalRecords = collectHistoricalRecords({ baseSha, inventory, repo }).map(
   sanitizeLedgerRecord,
 );
-const allRecords = [...packetRecords, ...historicalRecords];
+const historicalFileRecords = collectHistoricalFileRecords({
+  historicalRecords,
+  mainSha,
+  repo,
+}).map(sanitizeLedgerRecord);
+const allRecords = [...packetRecords, ...historicalFileRecords, ...specialRecords];
 const ledgerSummary = summarizeLedger(allRecords);
 
 const ledger = {
@@ -42,12 +51,19 @@ const ledger = {
     deletionIntents: packetRecords.filter((record) => record.sourceKind === "deletion-intent")
       .length,
     historicalCommits: historicalRecords.length,
+    historicalFileChanges: historicalFileRecords.length,
+    specialRecords: specialRecords.length,
+    specialArchiveFiles: specialRecords
+      .filter((record) => record.sourceKind === "special-archive")
+      .reduce((total, record) => total + record.extractedRegularFiles, 0),
     records: ledgerSummary.total,
     byDisposition: ledgerSummary.byDisposition,
     open: ledgerSummary.open,
   },
   packetRecords,
   historicalRecords,
+  historicalFileRecords,
+  specialRecords,
 };
 
 const serialized = `${JSON.stringify(ledger, null, 2)}\n`;
@@ -69,6 +85,13 @@ function collectMainHashes({ manifest, mainSha: currentMain, repo: repository })
       ) {
         paths.add(String(entry.path || ""));
       }
+    }
+  }
+  for (const entry of Array.isArray(manifest?.special?.originalPatch?.entries)
+    ? manifest.special.originalPatch.entries
+    : []) {
+    if (entry?.disposition === "exported-non-main-variant") {
+      paths.add(String(entry.path || ""));
     }
   }
   for (const relativePath of [...paths].sort((left, right) => left.localeCompare(right))) {
@@ -112,6 +135,69 @@ function collectHistoricalRecords({ baseSha: base, inventory, repo: repository }
     };
     return { ...record, disposition: classifyMechanicalPolicy(record) };
   });
+}
+
+function collectHistoricalFileRecords({ historicalRecords, mainSha: currentMain, repo: repository }) {
+  const records = [];
+  const mainTreeOids = collectTreeOids(repository, currentMain);
+  for (const commitRecord of historicalRecords) {
+    const sourceTreeOids = collectTreeOids(repository, commitRecord.commit);
+    const output = execFileSync(
+      "git",
+      [
+        "-C",
+        repository,
+        "diff-tree",
+        "--root",
+        "--no-commit-id",
+        "--name-status",
+        "-r",
+        "-M",
+        "-z",
+        commitRecord.commit,
+      ],
+      { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    );
+    for (const change of parseNameStatusZ(output)) {
+      const changeKind = change.status.startsWith("D")
+        ? "delete"
+        : change.status.startsWith("R")
+          ? "rename"
+          : change.status.startsWith("A")
+            ? "add"
+            : "modify";
+      const sourceGitOid = changeKind === "delete"
+        ? null
+        : sourceTreeOids[change.path] || null;
+      const mainGitOid = mainTreeOids[change.path] || null;
+      const record = {
+        sourceId: `historical-file:${commitRecord.commit}:${change.status}:${change.path}`,
+        sourceKind: "historical-file",
+        commit: commitRecord.commit,
+        packet: commitRecord.subject,
+        path: change.path,
+        ...(change.previousPath ? { previousPath: change.previousPath } : {}),
+        changeKind,
+        sourceGitOid,
+        mainGitOid,
+      };
+      records.push({ ...record, disposition: classifyMechanicalPolicy(record) });
+    }
+  }
+  return records.sort((left, right) =>
+    left.commit.localeCompare(right.commit) ||
+    left.path.localeCompare(right.path) ||
+    left.sourceId.localeCompare(right.sourceId),
+  );
+}
+
+function collectTreeOids(repository, treeish) {
+  const output = execFileSync(
+    "git",
+    ["-C", repository, "ls-tree", "-r", "-z", "--full-tree", treeish],
+    { encoding: "utf8", maxBuffer: 128 * 1024 * 1024 },
+  );
+  return parseLsTreeZ(output);
 }
 
 function gitObjectExists(repository, objectSpec) {
