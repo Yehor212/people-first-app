@@ -190,6 +190,60 @@
         "14a27e29#reduced-motion bootstrap batch merged",
         "src/__tests__/animationContracts.static.test.ts#current motion contract"
       ]
+    },
+    {
+      "id": "experience-quality-safe-decision-register",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^docs/audits/experience-quality/ui-decision-register-2026-07-28\\.md$"
+      },
+      "disposition": "MERGED",
+      "evidence": [
+        "bf96a07a#safe decision register merged without local machine locators",
+        "scripts/__tests__/ui-system-contract.test.ts#canonical contract alignment passes"
+      ]
+    },
+    {
+      "id": "experience-quality-private-or-stale-audit-artifacts",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^docs/audits/experience-quality/(?!ui-decision-register-2026-07-28\\.md$).+"
+      },
+      "disposition": "EXCLUDED_SECRET_PRIVATE",
+      "evidence": [
+        "packet-audit#source registry contains a local Downloads locator",
+        "ledger-policy#generated runtime receipts and machine-local evidence remain outside main"
+      ]
+    },
+    {
+      "id": "experience-quality-obsolete-audit-generator",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^(?:scripts/__tests__/ui-audit-artifacts\\.test\\.ts|scripts/ui-audit/(?:render-task4-artifacts|validate-ui-audit-artifacts)\\.mjs)$"
+      },
+      "disposition": "EXCLUDED_OBSOLETE_CONFLICT",
+      "evidence": [
+        "scripts/__tests__/collect-ui-inventory.test.ts#current inventory remains deterministic without excluded historical outputs",
+        "focused-experience-suite#923 tests pass",
+        "output-policy#no generated audit output enters main"
+      ]
+    },
+    {
+      "id": "experience-quality-current-semantic-composition",
+      "selector": {
+        "packetPattern": "^experience-quality-deep-audit-20260728-f5aa4a98be81029e$",
+        "pathPattern": "^(?!docs/audits/experience-quality/)(?!scripts/__tests__/ui-audit-artifacts\\.test\\.ts$)(?!scripts/ui-audit/(?:render-task4-artifacts|validate-ui-audit-artifacts)\\.mjs$)(?!src/components/hyperfocus/(?:HyperfocusSoundSelector\\.tsx|__tests__/HyperfocusSoundSelector\\.test\\.tsx)$).+"
+      },
+      "disposition": "SUPERSEDED_WITH_EVIDENCE",
+      "evidence": [
+        "bf96a07a#semantic three-way recovery of experience quality work",
+        "focused-experience-suite#69 files and 923 tests pass",
+        "typecheck#pass",
+        "lint#zero errors and zero warnings",
+        "gitleaks-staged#no leaks found",
+        "src/hooks/__tests__/useDeepLinkHandler.test.ts#current encoded invite contract supersedes unsupported short codes",
+        "src/lib/__tests__/crashReporting.test.ts#current privacy-hardened crash boundary supersedes weaker logger variant"
+      ]
     }
   ]
 }
