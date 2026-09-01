@@ -2963,6 +2963,7 @@ export const fr: Translations = {
   journalEntryDeleted: "Entrée supprimée",
   journalCompressing: "Préparation de la photo...",
   journalPhotoError: "Impossible d’ajouter cette photo. Réessayez.",
+  journalPhotoTooDetailed: "Cette photo contient trop de détails pour une synchronisation fiable. Choisissez une image plus petite ou recadrez-la d’abord.",
   journalPhotoProcessingTimeout:
     "Le traitement prend trop de temps. Essayez une photo plus petite.",
   journalPhotoLoadError:

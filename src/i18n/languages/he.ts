@@ -2858,6 +2858,7 @@ const hebrewOverrides: Partial<Translations> = {
   journalEntryDeleted: "הרשומה נמחקה",
   journalCompressing: "מכינים את התמונה...",
   journalPhotoError: "לא ניתן להוסיף את התמונה הזאת. נסו שוב.",
+  journalPhotoTooDetailed: "בתמונה יש יותר מדי פרטים לסנכרון אמין. בחרו תמונה קטנה יותר או חתכו אותה קודם.",
   journalPhotoProcessingTimeout: "עיבוד התמונה נמשך זמן רב מדי. נסו תמונה קטנה יותר.",
   journalPhotoLoadError: "לא ניתן היה להציג חלק מהתמונות. הרשומה לא השתנתה.",
   journalPhotoLoadRetry: "לנסות לטעון את התמונות שוב",

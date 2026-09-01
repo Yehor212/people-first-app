@@ -7,6 +7,7 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { logger } from "@/lib/logger";
 import { formatLocalizedCount } from "./journalWordCount";
+import { JOURNAL_PHOTO_TOO_DETAILED_ERROR } from "./journalPhotoEncoding";
 
 interface JournalPhotoPickerProps {
   onSelectFile: (file: File, signal?: AbortSignal) => Promise<void>;
@@ -153,6 +154,9 @@ export function JournalPhotoPicker({
           : isJournalPhotoStorageQuotaError(err)
           ? ts.journalPhotoStorageFull ||
               "There is not enough space on this device. Free some space, then try again."
+          : err instanceof Error && err.message === JOURNAL_PHOTO_TOO_DETAILED_ERROR
+          ? ts.journalPhotoTooDetailed ||
+              "This photo has too much detail to sync safely. Choose a smaller image or crop it first."
           : ts.journalPhotoError || "Couldn't add this photo. Try again."
       );
     } finally {
@@ -201,7 +205,7 @@ export function JournalPhotoPicker({
         aria-label={t.ariaPhotoPicker}
         aria-busy={loading}
         className={cn(
-          "fixed bottom-0 inset-x-0 z-[65] max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] overflow-y-auto overscroll-contain lg:max-w-4xl lg:mx-auto",
+          "fixed bottom-0 inset-x-0 z-[65] max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] overflow-y-auto overscroll-contain lg:start-[var(--sidebar-width,256px)] lg:max-w-4xl lg:mx-auto",
           "bg-card backdrop-blur-xl border-t border-border/40",
           "rounded-t-2xl shadow-lg motion-safe:animate-slide-up"
         )}

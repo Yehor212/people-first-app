@@ -2947,6 +2947,7 @@ export const es: Translations = {
   journalEntryDeleted: "Entrada eliminada",
   journalCompressing: "Preparando la foto...",
   journalPhotoError: "No se pudo añadir esta foto. Inténtalo de nuevo.",
+  journalPhotoTooDetailed: "Esta foto tiene demasiados detalles para sincronizarse con seguridad. Elige una imagen más pequeña o recórtala primero.",
   journalPhotoProcessingTimeout:
     "La foto tarda demasiado en procesarse. Prueba con una más pequeña.",
   journalPhotoLoadError: "No se pudieron mostrar algunas fotos. La entrada no se modificó.",

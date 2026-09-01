@@ -2883,6 +2883,7 @@ export const ja: Translations = {
   journalEntryDeleted: "エントリーが削除されました",
   journalCompressing: "写真を準備しています...",
   journalPhotoError: "この写真を追加できませんでした。もう一度お試しください。",
+  journalPhotoTooDetailed: "この写真は細部が多すぎるため、安全に同期できません。小さい画像を選ぶか、先にトリミングしてください。",
   journalPhotoProcessingTimeout:
     "写真の処理に時間がかかりすぎています。より小さい写真をお試しください。",
   journalPhotoLoadError: "一部の写真を表示できませんでした。日記の内容は変更されていません。",

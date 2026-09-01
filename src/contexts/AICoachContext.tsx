@@ -19,6 +19,7 @@ import { MoodEntry, Habit, InnerWorld } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 import { SK } from "@/lib/storageKeys";
+import { storageGetRaw } from "@/lib/safeJson";
 import { getToday } from "@/lib/utils";
 import { sendAICoachMessage } from "@/lib/aiCoachService";
 
@@ -172,21 +173,25 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     const { moods, habits, innerWorld } = userDataRef.current;
     const today = getToday();
 
-    // Fetch recent journal entries for coach context
+    // Diary text may leave the device through the coach edge function; require separate consent.
     let journalEntries: UserContext["journalEntries"];
-    try {
-      const { getAllEntries } = await import("@/features/journal/journalStorage");
-      const entries = await getAllEntries();
-      const recent = entries.sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
-      if (recent.length > 0) {
-        journalEntries = recent.map((e) => ({
-          date: e.date,
-          mood: e.mood,
-          snippet: e.content.slice(0, 100),
-        }));
+    const canUseJournalEntriesForCoach =
+      storageGetRaw(SK.JOURNAL_AI_COACH_CONTEXT_CONSENT) === "true";
+    if (canUseJournalEntriesForCoach) {
+      try {
+        const { getAllEntries } = await import("@/features/journal/journalStorage");
+        const entries = await getAllEntries();
+        const recent = entries.sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
+        if (recent.length > 0) {
+          journalEntries = recent.map((e) => ({
+            date: e.date,
+            mood: e.mood,
+            snippet: e.content.slice(0, 100),
+          }));
+        }
+      } catch {
+        /* graceful: journal data enriches AI context only after consent, but is not required */
       }
-    } catch {
-      /* graceful: journal data enriches AI context but is not required */
     }
 
     return {

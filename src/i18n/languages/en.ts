@@ -2916,6 +2916,7 @@ export const en: Translations = {
   journalEntryDeleted: "Entry deleted",
   journalCompressing: "Preparing photo...",
   journalPhotoError: "Couldn't add this photo. Try again.",
+  journalPhotoTooDetailed: "This photo has too much detail to sync safely. Choose a smaller image or crop it first.",
   journalPhotoProcessingTimeout: "Photo processing took too long. Try a smaller photo.",
   journalPhotoLoadError: "Some photos could not be shown. Your entry was not changed.",
   journalPhotoLoadRetry: "Try loading photos again",

@@ -2921,6 +2921,7 @@ export const uk: Translations = {
   journalEntryDeleted: "Запис видалено",
   journalCompressing: "Готуємо фото...",
   journalPhotoError: "Не вдалося додати це фото. Спробуйте ще раз.",
+  journalPhotoTooDetailed: "У фото забагато деталей для надійної синхронізації. Виберіть менше зображення або спершу обріжте його.",
   journalPhotoProcessingTimeout: "Обробка фото триває надто довго. Спробуйте менше фото.",
   journalPhotoLoadError: "Деякі фото не вдалося показати. Запис не змінено.",
   journalPhotoLoadRetry: "Спробувати завантажити фото ще раз",

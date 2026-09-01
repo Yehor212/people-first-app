@@ -46,7 +46,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
         role="dialog"
         aria-modal="true"
         aria-label={ts.ariaTemplatePicker || "Template picker"}
-        className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up"
+        className="fixed bottom-0 inset-x-0 z-[65] flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col overflow-hidden motion-safe:animate-slide-up lg:start-[var(--sidebar-width,256px)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle bar */}

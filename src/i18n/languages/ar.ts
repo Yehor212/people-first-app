@@ -2796,6 +2796,7 @@ const arabicOverrides: Partial<Translations> = {
   journalEntryDeleted: "تم حذف المدخل",
   journalCompressing: "جارٍ تجهيز الصورة...",
   journalPhotoError: "تعذّرت إضافة هذه الصورة. حاول مرة أخرى.",
+  journalPhotoTooDetailed: "تحتوي هذه الصورة على تفاصيل كثيرة جدًا للمزامنة بأمان. اختر صورة أصغر أو قصّها أولًا.",
   journalPhotoProcessingTimeout: "استغرقت معالجة الصورة وقتًا طويلًا. جرّب صورة أصغر.",
   journalPhotoLoadError: "تعذّر عرض بعض الصور. لم يتغير الإدخال.",
   journalPhotoLoadRetry: "إعادة محاولة تحميل الصور",

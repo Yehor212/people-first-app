@@ -2788,6 +2788,7 @@ export interface Translations {
   journalEntryDeleted: string;
   journalCompressing: string;
   journalPhotoError: string;
+  journalPhotoTooDetailed: string;
   journalPhotoProcessingTimeout: string;
   journalPhotoLoadError: string;
   journalPhotoLoadRetry: string;
