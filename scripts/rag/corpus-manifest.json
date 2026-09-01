@@ -38,6 +38,8 @@
         "docs/ai/TEST_FIRST_AGENT_POLICY.md",
         "docs/ai/SKILL_ROUTING_AGENT_POLICY.md",
         "docs/ai/AGENT_CHANGE_GOVERNANCE.md",
+        "docs/ai/VISUAL_MODEL_ANIMATION_QUALITY_GATE.md",
+        "docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md",
         "docs/ai/AGENT_CONTEXT_PERSISTENCE.md",
         "docs/ai/FREE_RAG_AND_COACH_LITE.md"
       ]

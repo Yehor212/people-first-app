@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "packetType": "approved-baseline",
+  "id": "contact-v8-layered",
+  "coveredPaths": [],
+  "contract": "docs/ai/VISUAL_MODEL_ANIMATION_QUALITY_GATE.md",
+  "baseline": {
+    "id": "contact-v8-layered",
+    "comparisonRequired": true
+  },
+  "brief": {
+    "goal": "Preserve the user-approved, high-detail bedtime bear model and its coherent phone-to-sleep event as the minimum ZenFlow craft baseline.",
+    "nonGoals": [
+      "Do not treat layer count, shape count, compressed bytes, or tool choice as an artistic quality score.",
+      "Do not grant approval to a compact Telegram export or any derivative that the user did not separately view.",
+      "Do not claim application, native runtime, public deployment, store, or release parity from the standalone preview."
+    ]
+  },
+  "provenance": {
+    "classification": "project-original-owner-authorized",
+    "ownerAuthorization": true,
+    "evidence": [
+      "Direct user approval in the active Codex conversation after viewing the exact MP4 on an iPhone.",
+      "Source manifest identity copied into the critic report and bound to the master SHA-256.",
+      "The inspected source audit describes the candidate as an original teddy bear rather than a reproduction of the earlier reference character."
+    ],
+    "limitations": [
+      "No standalone license file or independent legal opinion was found in the source visualization workspace.",
+      "The 3,270,243-byte master remains outside the repository and is preserved here by exact path, size, and SHA-256.",
+      "Approval is evidence- and artifact-bound; it is not a blanket license or approval for future derivatives."
+    ]
+  },
+  "target": {
+    "format": "TGS with MP4 review proxy",
+    "deliveryProfile": "quality-master",
+    "width": 512,
+    "height": 512,
+    "fps": 60,
+    "frames": 180,
+    "durationMs": 3000,
+    "loop": true,
+    "codec": "gzip-compressed Lottie JSON; review proxy H.264/yuv420p",
+    "alpha": true
+  },
+  "artifacts": [
+    {
+      "role": "master",
+      "path": "/Users/yehor/.codex/visualizations/2026/08/30/people-first-bedtime-organic-v3/out/contact-v8-layered/bedtime-bear-contact-v8-layered-master.tgs",
+      "sha256": "1d9ec0fe08bbeea17e2a513e54e2abf10054e6ac861f1390ff9c712556508a9a",
+      "bytes": 3270243,
+      "portable": false
+    },
+    {
+      "role": "preview",
+      "path": "docs/ai/visual-quality/evidence/contact-v8-layered-preview.mp4",
+      "sha256": "53f357a59b6ae64018ba9ec02da889f366428caa7e6a788d5dbdecc7f32f0ee5",
+      "bytes": 275932,
+      "portable": true
+    },
+    {
+      "role": "frame-board",
+      "path": "docs/ai/visual-quality/evidence/contact-v8-layered-contact-sheet.png",
+      "sha256": "cffe1c1e101ff8f6fcc916e8920778558bcfd81787ae1efec2635b2aa63da107",
+      "bytes": 900996,
+      "portable": true
+    },
+    {
+      "role": "critic-report",
+      "path": "docs/ai/visual-quality/approved-baselines/contact-v8-layered-critic.md",
+      "sha256": "ef3b89fe7591b5a38c284c568a1d7ca25cfc883e5777e75f75249badaddcdbab",
+      "bytes": 5176,
+      "portable": true
+    }
+  ],
+  "technicalReceipts": [
+    {
+      "check": "schema-parse",
+      "status": "PASS",
+      "evidence": "The source TGS manifest reports valid JSON/gzip output with SHA-256 1d9ec0fe08bbeea17e2a513e54e2abf10054e6ac861f1390ff9c712556508a9a."
+    },
+    {
+      "check": "dimensions",
+      "status": "PASS",
+      "evidence": "Source manifest and fresh ffprobe evidence both report 512 x 512."
+    },
+    {
+      "check": "fps",
+      "status": "PASS",
+      "evidence": "Source manifest and fresh ffprobe evidence both report 60 FPS."
+    },
+    {
+      "check": "duration",
+      "status": "PASS",
+      "evidence": "Fresh ffprobe evidence reports 3.000000 seconds."
+    },
+    {
+      "check": "frame-count",
+      "status": "PASS",
+      "evidence": "Source manifest and fresh ffprobe evidence both report 180 frames."
+    },
+    {
+      "check": "loop",
+      "status": "PASS",
+      "evidence": "Source manifest loop gate records frame 0 and frame 179 using foreground_20; the target is a three-second loop."
+    },
+    {
+      "check": "target-size",
+      "status": "PASS",
+      "evidence": "Quality-master profile records 3,270,243 bytes without a master ceiling; Telegram compact is explicitly separate and unapproved."
+    },
+    {
+      "check": "codec-alpha",
+      "status": "PASS",
+      "evidence": "Master is gzip-compressed vector Lottie with no raster assets; preview is H.264/yuv420p."
+    },
+    {
+      "check": "supported-features",
+      "status": "PASS",
+      "evidence": "Source technical audit records zero structural violations, zero raster assets, and zero text layers for the master profile."
+    },
+    {
+      "check": "bounds",
+      "status": "PASS",
+      "evidence": "The master composition and portable evidence are bounded to a 512 x 512 canvas."
+    },
+    {
+      "check": "render-decode",
+      "status": "PASS",
+      "evidence": "The exact MP4 decodes under ffprobe and the complete preview was viewed by the user; cross-engine app runtime remains separately UNVERIFIED."
+    }
+  ],
+  "visualIntegrityCritic": {
+    "status": "PASS",
+    "reviewer": "visual-integrity-critic-inline-solo",
+    "evidence": "docs/ai/visual-quality/approved-baselines/contact-v8-layered-critic.md",
+    "artifactRole": "critic-report",
+    "dimensions": {
+      "briefFit": "PASS",
+      "visualClarity": "PASS",
+      "craftNeatness": "PASS",
+      "modelIntegrity": "PASS",
+      "motionIntegrity": "PASS",
+      "styleMatch": "PASS",
+      "evidenceQuality": "PASS",
+      "templateAudit": "PASS"
+    }
+  },
+  "statuses": {
+    "Technical": {
+      "status": "PASS",
+      "evidence": "Exact artifact hashes/sizes and MP4 media facts were freshly verified; master structural facts are hash-bound to its source manifest."
+    },
+    "Visual Runtime": {
+      "status": "UNVERIFIED",
+      "evidence": "The MP4 was viewed on iPhone, but ZenFlow Web/PWA/Capacitor/WKWebView/Tauri and Telegram engine parity were not tested."
+    },
+    "Artistic-Craft": {
+      "status": "PASS",
+      "evidence": "Direct user approval bound to the exact viewed preview SHA-256."
+    },
+    "Motion": {
+      "status": "PASS",
+      "evidence": "Direct user approval covered the complete 180-frame MP4 animation."
+    },
+    "Model": {
+      "status": "PASS",
+      "evidence": "Direct user approval covered the high-detail contact-v8-layered bear model shown in the MP4."
+    },
+    "Plan": {
+      "status": "PASS",
+      "evidence": "The user directly authorized the durable baseline, proof schema, routing, tests, CI integration, and documented rollback."
+    }
+  },
+  "humanApproval": {
+    "status": "PASS",
+    "source": "direct-user",
+    "approvedArtifactRole": "preview",
+    "artifactSha256": "53f357a59b6ae64018ba9ec02da889f366428caa7e6a788d5dbdecc7f32f0ee5",
+    "statement": "Превосходно. Я полностью одобряю эту модель и анимацию. Впредь все модели и анимации ZenFlow должны делаться в таком же или более высоком качестве.",
+    "scope": ["Artistic-Craft", "Motion", "Model"],
+    "reviewedOn": "Complete MP4 preview viewed by the user on an iPhone"
+  },
+  "telegram": {
+    "masterQualityArtifactRole": "master",
+    "compactDelivery": {
+      "technicalStatus": "UNVERIFIED",
+      "artisticParityStatus": "UNVERIFIED",
+      "artifactRole": null,
+      "humanApprovalInherited": false,
+      "reason": "The user viewed the master-derived MP4, not a compact Telegram TGS; no compact artifact may inherit this approval."
+    }
+  },
+  "platformMatrix": [
+    {
+      "platform": "Web/Vite",
+      "status": "UNVERIFIED",
+      "evidence": "No ZenFlow Vite runtime integration or browser playback was part of the approval evidence."
+    },
+    {
+      "platform": "PWA",
+      "status": "UNVERIFIED",
+      "evidence": "No installed PWA, offline cache, or asset-update behavior was tested."
+    },
+    {
+      "platform": "Android/Capacitor",
+      "status": "UNVERIFIED",
+      "evidence": "No Android WebView emulator or device runtime was tested for this artifact."
+    },
+    {
+      "platform": "iOS/WKWebView",
+      "status": "UNVERIFIED",
+      "evidence": "The MP4 was viewed on an iPhone, but not inside the ZenFlow WKWebView runtime."
+    },
+    {
+      "platform": "Desktop/Tauri",
+      "status": "UNVERIFIED",
+      "evidence": "No Tauri renderer or packaged desktop runtime was tested."
+    },
+    {
+      "platform": "Telegram/export",
+      "status": "UNVERIFIED",
+      "evidence": "The quality master is 3,270,243 bytes and not Telegram-upload-ready; compact technical and artistic parity remain unverified."
+    },
+    {
+      "platform": "Accessibility/reduced motion",
+      "status": "UNVERIFIED",
+      "evidence": "No reduced-motion fallback or accessibility runtime was integrated or reviewed."
+    },
+    {
+      "platform": "Performance",
+      "status": "UNVERIFIED",
+      "evidence": "No app bundle, decode, memory, frame-pacing, or low-end target benchmark was run."
+    },
+    {
+      "platform": "Security/Privacy",
+      "status": "UNVERIFIED",
+      "evidence": "The source manifest reports local vectors without raster/text assets, but no independent provenance/legal or packaged-metadata audit was performed."
+    },
+    {
+      "platform": "Testing",
+      "status": "PASS",
+      "evidence": "A fresh RED-to-GREEN focused validator suite covers missing evidence, false artistic PASS, compact approval inheritance, and changed-asset packet coverage."
+    },
+    {
+      "platform": "Operations",
+      "status": "UNVERIFIED",
+      "evidence": "The baseline is portable and hash-bound, but the original generation pipeline remains outside this repository."
+    }
+  ]
+}

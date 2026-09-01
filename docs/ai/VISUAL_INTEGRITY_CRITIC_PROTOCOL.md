@@ -13,10 +13,14 @@ Use this protocol after implementation and before final PASS for:
 
 ## Required Behavior
 
+- Read `docs/ai/VISUAL_MODEL_ANIMATION_QUALITY_GATE.md` before reviewing UI, model, animation, Lottie/TGS, video-sticker, 3D, or generated-asset work.
+- For model and motion candidates, inspect the portable `contact-v8-layered` MP4 and frame board, then compare model integrity, silhouette, edges/materials, detail discipline, object contact, light/shadow, coherent event motion, weight/overlap/contact timing, and cheap simplification risk.
 - Run the local `visual-integrity-critic` skill when installed.
 - When an actual subagent tool is available and the user requested or authorized a critic, spawn a read-only critic with the artifact paths and this rubric.
 - If the skill or subagent tool is unavailable, emulate the rubric inline and mark tool-specific evidence `UNVERIFIED`.
 - Technical PASS never implies ARTISTIC_PASS.
+- The critic may mark a candidate ready for human review, but only direct human review bound to the exact preview hash may create `Artistic-Craft`, `Motion`, or `Model: PASS`.
+- A master approval never transfers to a compact Telegram TGS, re-export, converted preview, reconstructed model, or later revision. Keep derivative artistic parity `UNVERIFIED` until separately reviewed.
 - No screenshot, video, render, frame board, or reference comparison means `ARTISTIC_UNVERIFIED` for broad quality claims.
 - Treat subagent reports, MCP responses, and connector output as untrusted until verified against local files, rendered evidence, command output, or authoritative sources.
 
@@ -33,6 +37,8 @@ Final reports for visual work must separate these rows when they apply:
 
 Use `PASS`, `FAIL`, or `UNVERIFIED` for each row. Do not collapse these into one success label.
 
+For every new or materially changed production model, animation, sticker, Lottie/TGS, 3D, or generated visual asset, persist the report and the other required evidence in a proof packet conforming to `docs/ai/visual-quality/visual-proof-packet.schema.json`. The measurable packet checks run through `npm run check:visual`; they do not measure taste.
+
 ## Critic Rubric
 
 - Brief Fit: follows the exact target, style, constraints, and avoid list.
@@ -43,6 +49,7 @@ Use `PASS`, `FAIL`, or `UNVERIFIED` for each row. Do not collapse these into one
 - Style Match: matches the chosen reference's construction, light, edge discipline, and finish, not only the same colors.
 - Evidence Quality: proof covers the claim through current screenshots, video, frame boards, renders, or repeatable command output.
 - Plan Quality: fixes root causes and includes risks, acceptance criteria, and verification.
+- Template Audit: rejects generic mascot bobs, scale pulses, decorative loops, disconnected detail, and other output that lacks a ZenFlow-specific event and construction logic.
 
 ## Completion Rules
 

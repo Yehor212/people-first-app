@@ -246,11 +246,13 @@ describe("pre-React reduce-motion bootstrap", () => {
   it("applies the in-app preference via runtime-perf-bootstrap.js", () => {
     const bootstrap = readFileSync(join("src", "runtime-perf-bootstrap.js"), "utf8");
     expect(bootstrap).toContain("zenflow_reduce_motion");
-    expect(bootstrap).toContain("dataset.reduceMotion");
+    expect(bootstrap).toContain("dataset.reducedMotion");
+    expect(bootstrap).not.toContain("dataset.reduceMotion");
   });
 
-  it("has a pre-React CSS kill-switch for data-reduce-motion", () => {
+  it("has a pre-React CSS kill-switch for data-reduced-motion", () => {
     const source = readFileSync(join("src", "index.css"), "utf8");
-    expect(source).toContain('html[data-reduce-motion="true"] [class*="animate-"]');
+    expect(source).toContain('html[data-reduced-motion="true"] [class*="animate-"]');
+    expect(source).not.toContain('html[data-reduce-motion="true"]');
   });
 });

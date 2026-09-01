@@ -154,9 +154,11 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 
 ## Visual Integrity Critic Gate
 
+- Before UI, animation, 3D/model, Lottie/TGS/video-sticker, or generated-asset work, read `docs/ai/VISUAL_MODEL_ANIMATION_QUALITY_GATE.md`. Compare model and motion candidates with the hash-bound `contact-v8-layered` approved baseline; file size, layer count, shape count, and tool choice are never quality scores.
 - For UI, visual polish, animation, 3D/model, Lottie/TGS/video sticker, generated image, product render, or motion work, run the local `visual-integrity-critic` skill after implementation and before final success claims.
+- New or materially changed production model, animation, sticker, Lottie/TGS, 3D, or generated visual assets require a valid proof packet under `docs/ai/visual-quality/proofs/`, including portable preview and frame-board evidence, exact hashes, technical receipts, critic findings, platform rows, and direct human-approval provenance or explicit `UNVERIFIED` status. `npm run check:visual` enforces the measurable portion.
 - When the user explicitly asks for a subagent or independent opinion and `multi_agent_v1.spawn_agent` is available, spawn a read-only visual critic with artifact paths and the rubric from `docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md`; otherwise emulate it inline and mark unavailable subagent evidence `UNVERIFIED`.
-- Technical checks, tests, audits, file-size gates, or successful renders never imply `ARTISTIC_PASS`.
+- Technical checks, tests, audits, file-size gates, successful renders, MCP output, or a master-artifact approval never imply `ARTISTIC_PASS` for another artifact. Compact Telegram output requires its own hash-bound human review; otherwise artistic parity stays `UNVERIFIED`.
 - Final responses for visual work must separately state `Technical`, `Visual Runtime`, `Artistic/Craft`, `Motion`, `Model`, and `Plan` as `PASS`, `FAIL`, or `UNVERIFIED` when those dimensions apply.
 
 ## Safety

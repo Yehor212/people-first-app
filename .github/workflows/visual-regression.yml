@@ -15,9 +15,17 @@ name: Visual Regression
 on:
   pull_request:
     paths:
+      - "AGENTS.md"
       - "src/**"
       - "public/**"
       - "e2e/**"
+      - "docs/ai/VISUAL_INTEGRITY_CRITIC_PROTOCOL.md"
+      - "docs/ai/VISUAL_MODEL_ANIMATION_QUALITY_GATE.md"
+      - "docs/ai/visual-quality/**"
+      - "scripts/check-visual-guards.ts"
+      - "scripts/visual-quality-*.ts"
+      - "scripts/rag/corpus-manifest.json"
+      - "test/check-visual-guards.test.ts"
       - "tailwind.config.ts"
       - "vite.config.ts"
       - "package.json"
@@ -43,6 +51,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node.js
@@ -54,6 +63,14 @@ jobs:
       - name: Install dependencies
         # Mirrors deploy.yml install step so visual proof uses the same locked dependency graph.
         run: npm ci
+
+      - name: Verify visual guards and proof packets
+        run: npm run check:visual
+        env:
+          ZENFLOW_VISUAL_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+      - name: Test visual proof enforcement
+        run: npx vitest run test/check-visual-guards.test.ts
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
