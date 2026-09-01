@@ -6,6 +6,8 @@
  *   1. backdrop-filter without -webkit-backdrop-filter (Safari/iOS)
  *   2. Animations missing prefers-reduced-motion / motion-safe guards
  *   3. Theme-blind patterns (light-only colors without dark: variant)
+ *   4. V2 route focus that can scroll the first paint
+ *   5. Missing or invalid model/animation proof packets and baseline drift
  *
  * Usage: npx tsx scripts/check-visual-guards.ts
  * Exit: 0 = pass, 1 = violations found
@@ -15,8 +17,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
+import { validateRepositoryVisualQualityGate } from "./visual-quality-repository-gate";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.join(__dirname, "..");
 const SRC_DIR = path.join(__dirname, "../src");
 
 export interface Violation {
@@ -306,6 +311,8 @@ function main() {
     );
   }
 
+  allViolations.push(...validateRepositoryVisualQualityGate(ROOT_DIR));
+
   const byRule = new Map<string, Violation[]>();
   for (const violation of allViolations) {
     const list = byRule.get(violation.rule) || [];
@@ -318,6 +325,15 @@ function main() {
     "motion-safe": "Animation without prefers-reduced-motion guard",
     "theme-blind": "Theme-blind color (missing dark: variant)",
     "v2-focus-scroll": "V2 route focus can scroll/clamp the first paint",
+    "visual-proof-routing": "Visual quality contract routing drift",
+    "visual-proof-baseline-drift": "Approved visual baseline trust-anchor drift",
+    "visual-proof-missing-packet": "Changed visual artifact lacks a valid proof packet",
+    "visual-proof-malformed": "Malformed visual proof packet",
+    "visual-proof-missing-file": "Visual proof evidence is missing",
+    "visual-proof-integrity": "Visual proof evidence hash or size drift",
+    "visual-proof-human-approval": "Artistic PASS lacks artifact-bound human approval",
+    "visual-proof-scope": "Master and delivery approval scopes are conflated",
+    "visual-proof-tgs-feature": "TGS contains a target-hostile feature",
   };
 
   let totalCritical = 0;

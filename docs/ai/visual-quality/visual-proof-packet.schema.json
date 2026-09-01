@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenflow.local/schemas/visual-proof-packet.schema.json",
+  "title": "ZenFlow visual model and animation proof packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packetType",
+    "id",
+    "coveredPaths",
+    "contract",
+    "baseline",
+    "brief",
+    "provenance",
+    "target",
+    "artifacts",
+    "technicalReceipts",
+    "visualIntegrityCritic",
+    "statuses",
+    "humanApproval",
+    "telegram",
+    "platformMatrix"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "packetType": { "enum": ["approved-baseline", "candidate-proof"] },
+    "id": { "type": "string", "minLength": 3, "pattern": "^[a-z0-9][a-z0-9-]+$" },
+    "coveredPaths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/repositoryPath" }
+    },
+    "contract": { "const": "docs/ai/VISUAL_MODEL_ANIMATION_QUALITY_GATE.md" },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "comparisonRequired"],
+      "properties": {
+        "id": { "const": "contact-v8-layered" },
+        "comparisonRequired": { "const": true }
+      }
+    },
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["goal", "nonGoals"],
+      "properties": {
+        "goal": { "type": "string", "minLength": 12 },
+        "nonGoals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 8 }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "ownerAuthorization", "evidence", "limitations"],
+      "properties": {
+        "classification": { "type": "string", "minLength": 3 },
+        "ownerAuthorization": { "const": true },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "deliveryProfile",
+        "width",
+        "height",
+        "fps",
+        "frames",
+        "durationMs",
+        "loop",
+        "codec",
+        "alpha"
+      ],
+      "properties": {
+        "format": { "type": "string", "minLength": 2 },
+        "deliveryProfile": {
+          "enum": [
+            "quality-master",
+            "telegram-compact",
+            "app-runtime",
+            "video-preview",
+            "3d-runtime"
+          ]
+        },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "fps": { "type": "number", "exclusiveMinimum": 0 },
+        "frames": { "type": "number", "exclusiveMinimum": 0 },
+        "durationMs": { "type": "number", "exclusiveMinimum": 0 },
+        "loop": { "type": "boolean" },
+        "codec": { "type": "string", "minLength": 2 },
+        "alpha": { "type": "boolean" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "technicalReceipts": {
+      "type": "array",
+      "minItems": 11,
+      "items": { "$ref": "#/$defs/receipt" }
+    },
+    "visualIntegrityCritic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewer", "evidence", "artifactRole", "dimensions"],
+      "properties": {
+        "status": { "$ref": "#/$defs/statusName" },
+        "reviewer": { "type": "string", "minLength": 3 },
+        "evidence": { "type": "string", "minLength": 3 },
+        "artifactRole": { "const": "critic-report" },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "briefFit",
+            "visualClarity",
+            "craftNeatness",
+            "modelIntegrity",
+            "motionIntegrity",
+            "styleMatch",
+            "evidenceQuality",
+            "templateAudit"
+          ],
+          "properties": {
+            "briefFit": { "$ref": "#/$defs/statusName" },
+            "visualClarity": { "$ref": "#/$defs/statusName" },
+            "craftNeatness": { "$ref": "#/$defs/statusName" },
+            "modelIntegrity": { "$ref": "#/$defs/statusName" },
+            "motionIntegrity": { "$ref": "#/$defs/statusName" },
+            "styleMatch": { "$ref": "#/$defs/statusName" },
+            "evidenceQuality": { "$ref": "#/$defs/statusName" },
+            "templateAudit": { "$ref": "#/$defs/statusName" }
+          }
+        }
+      }
+    },
+    "statuses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Technical", "Visual Runtime", "Artistic-Craft", "Motion", "Model", "Plan"],
+      "properties": {
+        "Technical": { "$ref": "#/$defs/statusRow" },
+        "Visual Runtime": { "$ref": "#/$defs/statusRow" },
+        "Artistic-Craft": { "$ref": "#/$defs/statusRow" },
+        "Motion": { "$ref": "#/$defs/statusRow" },
+        "Model": { "$ref": "#/$defs/statusRow" },
+        "Plan": { "$ref": "#/$defs/statusRow" }
+      }
+    },
+    "humanApproval": { "$ref": "#/$defs/humanApproval" },
+    "telegram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["masterQualityArtifactRole", "compactDelivery"],
+      "properties": {
+        "masterQualityArtifactRole": { "const": "master" },
+        "compactDelivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "technicalStatus",
+            "artisticParityStatus",
+            "artifactRole",
+            "humanApprovalInherited",
+            "reason"
+          ],
+          "properties": {
+            "technicalStatus": { "$ref": "#/$defs/statusName" },
+            "artisticParityStatus": { "$ref": "#/$defs/statusName" },
+            "artifactRole": { "type": ["string", "null"] },
+            "humanApprovalInherited": { "const": false },
+            "reason": { "type": "string", "minLength": 8 },
+            "humanApproval": { "$ref": "#/$defs/humanApproval" }
+          }
+        }
+      }
+    },
+    "platformMatrix": {
+      "type": "array",
+      "minItems": 11,
+      "items": { "$ref": "#/$defs/platformRow" }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "packetType": { "const": "candidate-proof" } },
+        "required": ["packetType"]
+      },
+      "then": {
+        "properties": { "coveredPaths": { "minItems": 1 } }
+      }
+    }
+  ],
+  "$defs": {
+    "statusName": {
+      "enum": ["PASS", "FAIL", "UNVERIFIED", "SKIP"]
+    },
+    "statusRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidence"],
+      "properties": {
+        "status": { "$ref": "#/$defs/statusName" },
+        "evidence": { "type": "string", "minLength": 3 }
+      }
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "sha256", "bytes", "portable"],
+      "properties": {
+        "role": { "type": "string", "minLength": 3 },
+        "path": { "type": "string", "minLength": 3 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "portable": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "portable": { "const": true } },
+            "required": ["portable"]
+          },
+          "then": {
+            "properties": { "path": { "$ref": "#/$defs/repositoryPath" } }
+          }
+        }
+      ]
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check", "status", "evidence"],
+      "properties": {
+        "check": {
+          "enum": [
+            "schema-parse",
+            "dimensions",
+            "fps",
+            "duration",
+            "frame-count",
+            "loop",
+            "target-size",
+            "codec-alpha",
+            "supported-features",
+            "bounds",
+            "render-decode"
+          ]
+        },
+        "status": { "$ref": "#/$defs/statusName" },
+        "evidence": { "type": "string", "minLength": 3 }
+      }
+    },
+    "humanApproval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "source",
+        "approvedArtifactRole",
+        "artifactSha256",
+        "statement",
+        "scope",
+        "reviewedOn"
+      ],
+      "properties": {
+        "status": { "$ref": "#/$defs/statusName" },
+        "source": { "type": ["string", "null"] },
+        "approvedArtifactRole": { "type": ["string", "null"] },
+        "artifactSha256": {
+          "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^[a-f0-9]{64}$" }]
+        },
+        "statement": { "type": ["string", "null"] },
+        "scope": {
+          "type": ["array", "null"],
+          "items": { "enum": ["Artistic-Craft", "Motion", "Model"] },
+          "uniqueItems": true
+        },
+        "reviewedOn": { "type": ["string", "null"] }
+      }
+    },
+    "platformRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "status", "evidence"],
+      "properties": {
+        "platform": {
+          "enum": [
+            "Web/Vite",
+            "PWA",
+            "Android/Capacitor",
+            "iOS/WKWebView",
+            "Desktop/Tauri",
+            "Telegram/export",
+            "Accessibility/reduced motion",
+            "Performance",
+            "Security/Privacy",
+            "Testing",
+            "Operations"
+          ]
+        },
+        "status": { "$ref": "#/$defs/statusName" },
+        "evidence": { "type": "string", "minLength": 3 }
+      }
+    }
+  }
+}
