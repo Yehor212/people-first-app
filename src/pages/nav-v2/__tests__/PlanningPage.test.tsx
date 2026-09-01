@@ -520,6 +520,7 @@ describe("PlanningPage", () => {
     );
     expect(modeButtons[0]).toHaveAttribute("aria-pressed", "true");
     for (const button of modeButtons) {
+      expect(button.className).toContain("min-h-[48px]");
       expect(button.className).toContain("min-w-0");
       expect(button.className).toContain("sm:shrink-0");
       expect(button.querySelector("span")?.className).toContain("min-w-0");
@@ -531,6 +532,18 @@ describe("PlanningPage", () => {
 
     expect(screen.getByTestId("planning-mode-focus")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("planning-mode-today")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("keeps the schedule heading clear of the fixed phone drawer trigger", () => {
+    const source = readFileSync(
+      "src/pages/nav-v2/planning/PlanningPage.tsx",
+      "utf8",
+    );
+
+    expect(source).toContain(
+      "ps-[calc(var(--v2-phone-drawer-size)+var(--v2-phone-drawer-inset)+0.75rem)]",
+    );
+    expect(source).toContain("md:px-1");
   });
 
   it("moves mode changes into the real workspace instead of only changing the chip", async () => {

@@ -235,6 +235,7 @@ export function AddHabitCustomForm({
                 type="text"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
+                aria-label={ts.unit || 'Unit'}
                 placeholder={ts.unitPlaceholder || 'L, km, min...'}
                 maxLength={20}
                 className={cn(

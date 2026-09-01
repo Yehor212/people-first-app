@@ -254,7 +254,7 @@ describe("Android DayCosmicBackground compositor isolation", () => {
     expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(0);
 
     unmount();
-    expect(loseContext).not.toHaveBeenCalled();
+    expect(loseContext).toHaveBeenCalledTimes(1);
     expect(gl.deleteBuffer).toHaveBeenCalledTimes(4);
     expect(gl.deleteProgram).toHaveBeenCalledTimes(3);
     expect(gl.deleteShader).toHaveBeenCalledTimes(6);

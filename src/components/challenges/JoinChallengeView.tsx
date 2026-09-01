@@ -149,6 +149,7 @@ export function JoinChallengeView({
           type="text"
           value={code}
           onChange={(e) => handleCodeChange(e.target.value)}
+          aria-label={t.challengeCode || "Challenge Code"}
           placeholder="ZEN-XXXXXX"
           className={cn(
             "w-full px-4 py-4 rounded-xl border-2 text-center text-xl font-mono tracking-widest",

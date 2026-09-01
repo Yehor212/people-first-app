@@ -4628,6 +4628,7 @@ type ResetStep =
                                     </span>
                                     <input
                                       type="time"
+                                      aria-label={ts.journalReminderTime || "Time"}
                                       value={`${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`}
                                       onChange={(e) => {
                                         const [h, m] = e.target.value.split(":").map(Number);

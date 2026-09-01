@@ -52,12 +52,26 @@ export function useScheduleData(
   timelineRef: React.RefObject<HTMLDivElement | null>,
   daySelectorRef: React.RefObject<HTMLDivElement | null>,
   initialSelectedDate = getToday(),
+  timelineWindowStartIndexRef?: React.MutableRefObject<number>,
 ): UseScheduleDataReturn {
   const { t, language, isRTL } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const [tasks, setTasks] = useState<Task[]>([]);
   const isScrollingProgrammatically = useRef(false);
+  const timelineScrollFrameRef = useRef<number | null>(null);
+  const timelineScrollReleaseTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timelineScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(timelineScrollFrameRef.current);
+      }
+      if (timelineScrollReleaseTimerRef.current !== null) {
+        window.clearTimeout(timelineScrollReleaseTimerRef.current);
+      }
+    };
+  }, []);
 
   // Load tasks + time ticker (mount-only)
   useEffect(() => {
@@ -264,33 +278,45 @@ export function useScheduleData(
   }, [daySelectorRef, getDateIndex, isRTL]);
 
   const scrollTimelineToDate = useCallback((date: string, centerOnCurrentHour = false) => {
-    if (!timelineRef.current) return;
     const index = getDateIndex(date);
     if (index === -1) return;
 
-    isScrollingProgrammatically.current = true;
-
-    let scrollPosition = index * DAY_WIDTH_PX;
-
-    if (centerOnCurrentHour && date === getToday()) {
-      const currentHour = new Date().getHours();
-      scrollPosition += currentHour * HOUR_WIDTH_PX;
+    if (timelineScrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(timelineScrollFrameRef.current);
     }
 
-    const timeline = timelineRef.current;
-    scrollPosition -= timeline.clientWidth / 2;
-    const maxScroll = timeline.scrollWidth - timeline.clientWidth;
-    const domScrollLeft = physicalToDomScrollLeft(scrollPosition, maxScroll, isRTL);
+    timelineScrollFrameRef.current = window.requestAnimationFrame(() => {
+      timelineScrollFrameRef.current = null;
+      const timeline = timelineRef.current;
+      if (!timeline) return;
 
-    timeline.scrollTo({
-      left: domScrollLeft,
-      behavior: shouldAnimate() ? 'smooth' : 'auto',
+      isScrollingProgrammatically.current = true;
+      const windowStartIndex = timelineWindowStartIndexRef?.current ?? 0;
+      let scrollPosition = (index - windowStartIndex) * DAY_WIDTH_PX;
+
+      if (centerOnCurrentHour && date === getToday()) {
+        const currentHour = new Date().getHours();
+        scrollPosition += currentHour * HOUR_WIDTH_PX;
+      }
+
+      scrollPosition -= timeline.clientWidth / 2;
+      const maxScroll = timeline.scrollWidth - timeline.clientWidth;
+      const domScrollLeft = physicalToDomScrollLeft(scrollPosition, maxScroll, isRTL);
+
+      timeline.scrollTo({
+        left: domScrollLeft,
+        behavior: shouldAnimate() ? 'smooth' : 'auto',
+      });
+
+      if (timelineScrollReleaseTimerRef.current !== null) {
+        window.clearTimeout(timelineScrollReleaseTimerRef.current);
+      }
+      timelineScrollReleaseTimerRef.current = window.setTimeout(() => {
+        timelineScrollReleaseTimerRef.current = null;
+        isScrollingProgrammatically.current = false;
+      }, 500);
     });
-
-    setTimeout(() => {
-      isScrollingProgrammatically.current = false;
-    }, 500);
-  }, [timelineRef, getDateIndex, isRTL]);
+  }, [timelineRef, timelineWindowStartIndexRef, getDateIndex, isRTL]);
 
   // Initial scroll to the requested Planning date. Defaults to today for schedule callers.
   useEffect(() => {

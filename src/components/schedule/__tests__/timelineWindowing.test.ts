@@ -1,6 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { getTimelineRenderWindow } from "../timelineWindowing";
+import {
+  getTimelineRenderWindow,
+  getTimelineWindowPhysicalCenter,
+  getTimelineWindowPosition,
+} from "../timelineWindowing";
 
 const dates = Array.from({ length: 61 }, (_, index) => `2026-07-${String(index + 1).padStart(2, "0")}`);
 
@@ -22,4 +27,40 @@ describe("timeline windowing", () => {
     expect(getTimelineRenderWindow(dates, dates[0]).map((item) => item.index)).toEqual([0, 1, 2]);
     expect(getTimelineRenderWindow(dates, dates[60]).map((item) => item.index)).toEqual([58, 59, 60]);
   });
+
+  it("rebases one continuous physical position without changing its global day and hour", () => {
+    const dayWidth = 2_304;
+    const before = getTimelineRenderWindow(dates, dates[30]);
+    const position = getTimelineWindowPosition(before, 3 * dayWidth + 640, dayWidth);
+
+    expect(position).toEqual({
+      globalIndex: 31,
+      localIndex: 3,
+      withinDayOffset: 640,
+    });
+    if (!position) throw new Error("Expected a bounded timeline position");
+
+    const after = getTimelineRenderWindow(dates, dates[31]);
+    expect(
+      getTimelineWindowPhysicalCenter(
+        after,
+        position.globalIndex,
+        position.withinDayOffset,
+        dayWidth,
+      ),
+    ).toBe(2 * dayWidth + 640);
+  });
+
+  it("bounds the real Android scroll surface to the rendered date window", () => {
+    const source = readFileSync("src/components/schedule/ScheduleTimeline.tsx", "utf8");
+
+    expect(source).toContain("timelineRenderWindow.length * DAY_WIDTH_PX");
+    expect(source).toContain(
+      "dayOffset={(dayIndex - timelineWindowStartIndex) * DAY_WIDTH_PX}",
+    );
+    expect(source).not.toContain("allDates.length * DAY_WIDTH_PX");
+    expect(source).toContain("getTimelineWindowPosition");
+    expect(source).toContain("getTimelineWindowPhysicalCenter");
+  });
+
 });

@@ -11,6 +11,7 @@ import {
   useRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,8 +33,15 @@ import { useScheduleData } from "./useScheduleData";
 import { AddEventModal } from "./AddEventModal";
 import { EventDetailsModal } from "./EventDetailsModal";
 import { TaskFocusPanel } from "./TaskFocusPanel";
-import { getTimelineRenderWindow } from "./timelineWindowing";
-import { domToPhysicalScrollLeft } from "./timelineScrollCoordinates";
+import {
+  getTimelineRenderWindow,
+  getTimelineWindowPhysicalCenter,
+  getTimelineWindowPosition,
+} from "./timelineWindowing";
+import {
+  domToPhysicalScrollLeft,
+  physicalToDomScrollLeft,
+} from "./timelineScrollCoordinates";
 
 export function ScheduleTimeline({
   events,
@@ -47,6 +55,12 @@ export function ScheduleTimeline({
   );
   const timelineRef = useRef<HTMLDivElement>(null);
   const daySelectorRef = useRef<HTMLDivElement>(null);
+  const timelineWindowStartIndexRef = useRef(0);
+  const pendingTimelineRecenterRef = useRef<{
+    date: string;
+    globalIndex: number;
+    withinDayOffset: number;
+  } | null>(null);
 
   useScrollLock(showAddModal || selectedEvent !== null);
 
@@ -86,9 +100,50 @@ export function ScheduleTimeline({
     t,
     language,
     isRTL,
-  } = useScheduleData(events, timelineRef, daySelectorRef, initialSelectedDate);
+  } = useScheduleData(
+    events,
+    timelineRef,
+    daySelectorRef,
+    initialSelectedDate,
+    timelineWindowStartIndexRef,
+  );
 
   // --- Local derived state ---
+
+  const timelineRenderWindow = useMemo(
+    () => getTimelineRenderWindow(allDates, selectedDate),
+    [allDates, selectedDate],
+  );
+  const timelineWindowStartIndex = timelineRenderWindow[0]?.index ?? 0;
+  timelineWindowStartIndexRef.current = timelineWindowStartIndex;
+
+  useLayoutEffect(() => {
+    const pending = pendingTimelineRecenterRef.current;
+    const timeline = timelineRef.current;
+    if (!pending || !timeline || pending.date !== selectedDate) return undefined;
+
+    const physicalCenter = getTimelineWindowPhysicalCenter(
+      timelineRenderWindow,
+      pending.globalIndex,
+      pending.withinDayOffset,
+      DAY_WIDTH_PX,
+    );
+    if (physicalCenter === null) return undefined;
+
+    pendingTimelineRecenterRef.current = null;
+    isScrollingProgrammatically.current = true;
+    const maxScroll = timeline.scrollWidth - timeline.clientWidth;
+    timeline.scrollLeft = physicalToDomScrollLeft(
+      physicalCenter - timeline.clientWidth / 2,
+      maxScroll,
+      isRTL,
+    );
+
+    const frameId = window.requestAnimationFrame(() => {
+      isScrollingProgrammatically.current = false;
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isRTL, isScrollingProgrammatically, selectedDate, timelineRenderWindow]);
 
   const handleTimelineScroll = useCallback(() => {
     if (!timelineRef.current || isScrollingProgrammatically.current) return;
@@ -101,16 +156,27 @@ export function ScheduleTimeline({
       isRTL,
     );
     const viewportCenter = physicalScrollLeft + timeline.clientWidth / 2;
-    const dayIndex = Math.floor(viewportCenter / DAY_WIDTH_PX);
-    const clampedIndex = Math.max(0, Math.min(dayIndex, allDates.length - 1));
-    const newSelectedDate = allDates[clampedIndex];
+    const position = getTimelineWindowPosition(
+      timelineRenderWindow,
+      viewportCenter,
+      DAY_WIDTH_PX,
+    );
+    if (!position) return;
+
+    const newSelectedDate = allDates[position.globalIndex];
 
     if (newSelectedDate && newSelectedDate !== selectedDate) {
+      pendingTimelineRecenterRef.current = {
+        date: newSelectedDate,
+        globalIndex: position.globalIndex,
+        withinDayOffset: position.withinDayOffset,
+      };
       setSelectedDate(newSelectedDate);
       scrollDaySelectorToDate(newSelectedDate);
     }
   }, [
     allDates,
+    timelineRenderWindow,
     selectedDate,
     setSelectedDate,
     scrollDaySelectorToDate,
@@ -190,11 +256,6 @@ export function ScheduleTimeline({
     });
     return map;
   }, [safeEvents]);
-
-  const timelineRenderWindow = useMemo(
-    () => getTimelineRenderWindow(allDates, selectedDate),
-    [allDates, selectedDate],
-  );
 
   // --- JSX ---
 
@@ -329,13 +390,14 @@ export function ScheduleTimeline({
           >
             <div
               className="relative h-28"
-              style={{ width: `${allDates.length * DAY_WIDTH_PX}px` }}
+              data-timeline-window-start-index={timelineWindowStartIndex}
+              style={{ width: `${timelineRenderWindow.length * DAY_WIDTH_PX}px` }}
             >
               {timelineRenderWindow.map(({ date, index: dayIndex }) => (
                 <TimelineDayColumn
                   key={date}
                   date={date}
-                  dayOffset={dayIndex * DAY_WIDTH_PX}
+                  dayOffset={(dayIndex - timelineWindowStartIndex) * DAY_WIDTH_PX}
                   dayEvents={eventsByDate.get(date) || []}
                   isDayToday={date === getToday()}
                   isDaySelected={date === selectedDate}

@@ -177,7 +177,9 @@ describe("T182 focus-reflection Back ownership", () => {
     });
 
     await waitFor(() => expect(onCompleteSession).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole("dialog", { name: "Focus reflection" })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Focus reflection" })).not.toBeInTheDocument(),
+    );
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
@@ -191,7 +193,9 @@ describe("T182 focus-reflection Back ownership", () => {
     fireEvent.keyDown(dialog, { key: "Escape" });
 
     await waitFor(() => expect(onCompleteSession).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole("dialog", { name: "Focus reflection" })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Focus reflection" })).not.toBeInTheDocument(),
+    );
   });
 
   it("leaves Hyperfocus Back ownership to the mounted fullscreen layer", async () => {

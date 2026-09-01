@@ -65,6 +65,7 @@ export function SettingsTextInput({
   tone = "neutral",
   ariaInvalid,
   ariaDescribedBy,
+  ariaLabel,
 }: SettingsTextInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -90,6 +91,7 @@ export function SettingsTextInput({
       onKeyDown={onKeyDown}
       aria-invalid={ariaInvalid || undefined}
       aria-describedby={ariaDescribedBy}
+      aria-label={ariaLabel}
       dir="auto"
       className={cn(
         "min-h-[48px] min-w-0 w-full rounded-[8px] px-4 text-base text-foreground outline-none ltr:placeholder:text-left rtl:placeholder:text-right focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)] disabled:cursor-not-allowed disabled:opacity-60",
@@ -108,6 +110,7 @@ export function SettingsSelectField({
   options,
   onChange,
   ariaDescribedBy,
+  ariaLabel,
 }: SettingsSelectFieldProps) {
   return (
     <div className="relative">
@@ -115,6 +118,7 @@ export function SettingsSelectField({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        aria-label={ariaLabel}
         aria-describedby={ariaDescribedBy}
         className="min-h-[48px] w-full appearance-none rounded-[8px] border border-[hsl(var(--settings-v2-border)/0.5)] bg-[hsl(var(--settings-v2-shell)/0.46)] px-4 pe-11 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--settings-v2-accent)/0.55)]"
       >

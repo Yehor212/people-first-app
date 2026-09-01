@@ -1292,6 +1292,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
                 id={`journal-photo-description-${photo.id}`}
                 value={descriptionDraft}
                 onChange={(event) => setDescriptionDraft(event.target.value)}
+                aria-label={ts.diaryPhotoDescriptionLabel || "Photo description"}
                 maxLength={MAX_JOURNAL_PHOTO_DESCRIPTION_LENGTH}
                 rows={4}
                 dir="auto"

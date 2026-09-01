@@ -4023,11 +4023,6 @@ const hebrewOverrides: Partial<Translations> = {
   orbSkip: "אחר כך",
   orbUndo: "ביטול",
   orbMoodSaved: "מצב הרוח נשמר",
-  orbFirstRunTitle: "שלושה צעדים לרישום הראשון",
-  orbFirstRunStep1: "הזז את המחוון לפי התחושה שלך",
-  orbFirstRunStep2: "בחר מתי הרגשת כך: עכשיו, בשעה מסוימת או במשך כל היום",
-  orbFirstRunStep3: "אפשר להוסיף רגש או הערה, ואז לשמור את מצב הרוח ולהתחיל את הרשומה להיום",
-  orbFirstRunGotIt: "הבנתי",
   featureUnavailableTitle: "האפשרות אינה זמינה כרגע",
   featureUnavailableChecking:
     "ZenFlow בודק את ההתקדמות שנשמרה ביומן. השאירו את המסך פתוח ונסו שוב בעוד רגע.",

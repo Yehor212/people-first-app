@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 const readCss = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 const scopeCss = readCss("src/pages/nav-v2/MoodScopeSelector.css");
-const firstRunCss = readCss("src/pages/nav-v2/MoodFirstRunHint.css");
 const valenceCss = readCss("src/components/state-of-mind/ValenceSlider.css");
 const legacyConfirmCss = readCss("src/pages/nav-v2/MoodConfirmCta.css");
 const legacySliderCss = readCss("src/pages/nav-v2/MoodSliderV2.css");
@@ -44,19 +43,6 @@ describe("mood transient text reflow contracts", () => {
       /font-size:\s*calc\([^;]+var\(--font-scale[^;]+\)\s*!important/,
     );
     expectScaledFontDeclarations(scopeCss);
-  });
-
-  it("keeps first-run instructions reachable on a short safe-area viewport", () => {
-    const backdrop = cssBlock(firstRunCss, ".mood-first-run-backdrop");
-    const card = cssBlock(firstRunCss, ".mood-first-run-card");
-
-    expect(backdrop).toContain("var(--safe-top)");
-    expect(backdrop).toContain("var(--safe-left)");
-    expect(backdrop).toContain("var(--safe-right)");
-    expect(card).toMatch(/max-height:\s*calc\(100dvh/);
-    expect(card).toMatch(/overflow-y:\s*auto/);
-    expect(card).toMatch(/overscroll-behavior:\s*contain/);
-    expectScaledFontDeclarations(firstRunCss);
   });
 
   it("lets the reachable valence label grow and wrap with the user font scale", () => {

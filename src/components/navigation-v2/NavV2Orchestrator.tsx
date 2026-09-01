@@ -109,6 +109,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
 
   const {
     activePage,
+    renderedPage,
     setActivePage,
     sidebarCollapsed,
     toggleSidebar,
@@ -125,7 +126,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
   const effectiveSidebarCollapsed = sidebarCollapsed || forceCompactWebRail;
   const shouldShowDrawerTrigger = !isWebNavigation && !unknownPath && activePage !== "diary";
   const drawerTriggerRef = useRef<HTMLButtonElement>(null);
-  const previousPageRef = useRef(activePage);
+  const previousPageRef = useRef(renderedPage);
   const MenuIcon = V2_SHELL_ICONS.menu;
   const pendingRouteLabel = routePendingPage ? getNavV2RouteLabel(routePendingPage, tx) : null;
 
@@ -190,11 +191,11 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
 
   useLayoutEffect(() => {
     const previousPage = previousPageRef.current;
-    previousPageRef.current = activePage;
-    if (!isAndroid || previousPage === activePage) return;
+    previousPageRef.current = renderedPage;
+    if (!isAndroid || previousPage === renderedPage) return;
 
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [activePage]);
+  }, [renderedPage]);
 
   useEffect(() => {
     const cleanup = subscribeToDeepLinks((data) => {
@@ -313,18 +314,18 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       onGoBack={() => window.history.back()}
       onGoHome={() => handlePrimaryPageChange("orb")}
     />
-  ) : activePage === "orb" ? (
+  ) : renderedPage === "orb" ? (
     <OrbPage navigateToPage={handlePrimaryPageChange} onAddMood={onAddMood} />
-  ) : activePage === "habits" ? (
+  ) : renderedPage === "habits" ? (
     <HabitsPage />
-  ) : activePage === "diary" ? (
+  ) : renderedPage === "diary" ? (
     <DiaryPage
       onOpenNavMenu={handleOpenDrawer}
       navMenuOpen={drawerOpen}
       showAppNavMenu={!isWebNavigation}
       onAddGratitude={onAddGratitude}
     />
-  ) : activePage === "planning" ? (
+  ) : renderedPage === "planning" ? (
     <PlanningPage onCompleteFocusSession={onCompleteFocusSession} />
   ) : (
     <SettingsPage controls={settingsControls} />
@@ -341,6 +342,7 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
       data-testid="nav-v2-open-drawer"
       className={cn(
         shouldShowDrawerTrigger ? "md:hidden flex" : "hidden",
+        activePage === "planning" ? "dark" : null,
         "fixed start-[calc(var(--safe-inline-start)_+_var(--v2-phone-drawer-inset))] top-[calc(var(--safe-top)+var(--v2-phone-drawer-inset))] z-[58]",
         "h-[var(--v2-phone-drawer-size)] w-[var(--v2-phone-drawer-size)] items-center justify-center rounded-full",
         "bg-card/62 backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]",

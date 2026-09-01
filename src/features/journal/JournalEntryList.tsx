@@ -2628,6 +2628,11 @@ export const JournalEntryList = memo(function JournalEntryList({
                                 <input
                                   value={folderName}
                                   data-testid="journal-space-name-input"
+                                  aria-label={
+                                    ts.journalFolderNamePlaceholder ||
+                                    ts.journalSpaceNamePlaceholder ||
+                                    "Folder name"
+                                  }
                                   onChange={(event) => {
                                     setFolderName(event.target.value);
                                     if (folderError) setFolderError(null);
@@ -2671,6 +2676,9 @@ export const JournalEntryList = memo(function JournalEntryList({
                               <textarea
                                 value={folderDescription}
                                 data-testid="journal-space-description-input"
+                                aria-label={
+                                  ts.journalFolderDescriptionPlaceholder || "Description"
+                                }
                                 onChange={(event) => setFolderDescription(event.target.value)}
                                 placeholder={
                                   ts.journalFolderDescriptionPlaceholder || "Description"
@@ -2959,6 +2967,7 @@ export const JournalEntryList = memo(function JournalEntryList({
                                             <textarea
                                               data-testid={`journal-capture-field-${index}`}
                                               value={values[index] || ""}
+                                              aria-label={prompt}
                                               onChange={(event) =>
                                                 handleStudioFieldChange(
                                                   activeStudio.id,

@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback, useState, useRef, useLayoutEffect, useMemo } from "react";
+import { memo, useEffect, useCallback, useState, useRef, useLayoutEffect, useMemo, useId } from "react";
 import {
   ArrowLeft,
   AlertCircle,
@@ -394,6 +394,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onDirtyStateChange,
 }: JournalEntryEditorProps) {
   const themeTransition = useThemeTransition();
+  const journalTitleInputId = useId();
   const paperRef = useRef<HTMLDivElement>(null);
   const [floatingFocusPhotoId, setFloatingFocusPhotoId] = useState<string | null>(null);
   const desktopPhotoInputRef = useRef<HTMLInputElement>(null);
@@ -1915,7 +1916,9 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
             </AnimatePresence>
 
             {/* Title */}
+            <label htmlFor={journalTitleInputId} className="sr-only">{ts.journalEntryTitle || "Entry title"}</label>
             <input
+              id={journalTitleInputId}
               type="text"
               disabled={!draftReady || saveInteractionLocked}
               value={title}

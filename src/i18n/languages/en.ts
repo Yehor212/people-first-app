@@ -4092,12 +4092,6 @@ export const en: Translations = {
   orbSkip: "Later",
   orbUndo: "Undo",
   orbMoodSaved: "Mood saved",
-  orbFirstRunTitle: "Three steps to your first entry",
-  orbFirstRunStep1: "Move the slider to match how you feel",
-  orbFirstRunStep2: "Choose when you felt this way: now, at a specific time, or all day",
-  orbFirstRunStep3:
-    "Add an emotion or note if you want, then save your mood and start today's entry",
-  orbFirstRunGotIt: "Got it",
   featureUnavailableTitle: "Feature temporarily unavailable",
   featureUnavailableChecking:
     "ZenFlow is checking your saved diary progress. Keep this screen open and try again in a moment.",

@@ -176,6 +176,7 @@ export function FeedbackButton({ position = "bottom-right", className }: Feedbac
                   setMessage(e.target.value);
                   setDeliveryFailed(false);
                 }}
+                aria-label={feedbackMessageLabel}
                 placeholder={feedbackMessageLabel}
                 className="w-full h-32 p-3 rounded-xl border bg-background resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 maxLength={1000}

@@ -49,7 +49,6 @@ export async function primeZenflowV2(page: Page, options: PrimeZenflowV2Options 
       localStorage.setItem("zenflow_last_seen_version", appVersion);
       localStorage.setItem("zenflow_last_active", today);
       localStorage.setItem("zenflow-last-weekly-report", new Date().toISOString());
-      localStorage.setItem("zenflow-orb-first-run-dismissed", "1");
       localStorage.setItem("zenflow-privacy-acknowledged", JSON.stringify(true));
       localStorage.setItem(
         "zenflow-privacy",

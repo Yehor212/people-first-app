@@ -63,5 +63,6 @@ describe("Planning legacy surface reflow", () => {
     expect(source).toContain('htmlFor="focus-session-label"');
     expect(source).toContain('id="focus-session-label"');
     expect(source).toContain('name="focus-session-label"');
+    expect(source).toContain('aria-label={t.focusLabelPrompt}');
   });
 });

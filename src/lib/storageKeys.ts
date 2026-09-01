@@ -38,7 +38,6 @@ export const SK = {
   FEATURE_FLAGS: "zenflow-feature-flags",
   ANON_ID: "zen-anon-id",
   NAV_V2_LAST_PAGE: "zen-nav-v2-last-page",
-  ORB_FIRST_RUN_DISMISSED: "zenflow-orb-first-run-dismissed",
   MOOD_SLIDER_V2_LAST_COMMIT: "zen.moodSliderV2.lastCommit",
 
   // ─── ADHD Gamification ───

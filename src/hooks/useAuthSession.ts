@@ -130,6 +130,7 @@ export function useAuthSession(isLoading: boolean): void {
   isLoadingUserDataRef.current = isLoadingUserData;
   const isLoadingRef = useRef(isLoading);
   isLoadingRef.current = isLoading;
+  const hydrationWasLoadingRef = useRef(isLoading);
   const userNameCustomRef = useRef(userNameCustom);
   userNameCustomRef.current = userNameCustom;
   const userNameRef = useRef(userName);
@@ -1115,6 +1116,21 @@ export function useAuthSession(isLoading: boolean): void {
           }
         }
 
+        // The authenticated shell is safe as soon as the current session owns
+        // the local realm and all account/journal security fences above have
+        // settled. The initial cloud merge is recovery/convergence work: it may
+        // be slow or offline, so it must not hold the user on the sign-in gate.
+        // Later owner changes and writer-suspension checks still close the gate
+        // immediately through scheduleSync.
+        if (!isCurrentTransition(userId, generation) || hasWriterSuspension()) {
+          gateSessionForWriterSuspension();
+          return;
+        }
+        setWebOAuthError(null);
+        setAuthGateChecked(true);
+        setAccountBoundaryInProgress(false);
+        setHasValidSession(true);
+
         // Use 'replace' on account switch to avoid merging different users' data
         if (!journalProtectionMigrationRan) {
           await syncWithCloud(isAccountSwitch ? "replace" : "merge", userId);
@@ -1924,6 +1940,49 @@ export function useAuthSession(isLoading: boolean): void {
     setUserNameCustom,
     setWebOAuthError,
   ]);
+
+  // Auth events can arrive before IndexedDB and the rest of the local realm
+  // finish hydrating. The account-boundary coordinator intentionally defers
+  // owner binding in that state, so retry the current cached session exactly
+  // when hydration releases. Re-reading the current session prevents a stale
+  // SIGNED_IN event from admitting an account that has already signed out or
+  // been replaced while hydration was in progress.
+  useEffect(() => {
+    const wasLoading = hydrationWasLoadingRef.current;
+    hydrationWasLoadingRef.current = isLoading;
+    if (isLoading || !wasLoading || !supabase) return;
+
+    let active = true;
+
+    const resumeCurrentSessionAfterHydration = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!active) return;
+        if (error) throw error;
+
+        const syncCurrentSession = syncIfNeededRef.current;
+        if (!data.session) {
+          await syncCurrentSession?.(null);
+          if (active) setHasValidSession(false);
+          return;
+        }
+        if (!syncCurrentSession) return;
+
+        await syncCurrentSession(data.session.user.id);
+        if (!active) return;
+        await finalizeAdmittedSessionRef.current?.(data.session, true);
+      } catch (error) {
+        if (!active) return;
+        logger.warn("[Auth] Session retry after hydration failed:", error);
+        setHasValidSession(null);
+      }
+    };
+
+    void resumeCurrentSessionAfterHydration();
+    return () => {
+      active = false;
+    };
+  }, [isLoading, setHasValidSession]);
 
   // Session expired handler - listens for 401 errors from API/sync
   // Verify actual session state before resetting auth

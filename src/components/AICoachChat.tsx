@@ -181,6 +181,7 @@ export function AICoachChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
+              aria-label={t.aiCoachPlaceholder || "Type a message..."}
               placeholder={t.aiCoachPlaceholder || "Type a message..."}
               className={cn(
                 "flex-1 px-4 py-3.5 rounded-xl motion-safe:transition-all",

@@ -116,6 +116,7 @@ describe("Settings persist-first runtime wiring", () => {
   it("keeps UI, Zustand, IndexedDB, and cold hydration on the previous profile when the commit rejects", async () => {
     const firstMount = render(<PersistenceHarness />);
     const nameInput = await screen.findByLabelText("Your name");
+    expect(nameInput).toHaveAttribute("aria-label", "Your name");
     await waitFor(() => expect(nameInput).toHaveValue("Avery"));
     await waitFor(() => expect(useUserDataStore.getState().isLoading).toBe(false));
 

@@ -4162,13 +4162,6 @@ export const fr: Translations = {
   orbSkip: "Plus tard",
   orbUndo: "Annuler",
   orbMoodSaved: "Humeur enregistrée",
-  orbFirstRunTitle: "Trois étapes pour ta première entrée",
-  orbFirstRunStep1: "Déplace le curseur selon ton ressenti",
-  orbFirstRunStep2:
-    "Choisis le moment concerné : maintenant, une heure précise ou toute la journée",
-  orbFirstRunStep3:
-    "Si tu veux, ajoute une émotion ou une note, puis enregistre ton humeur et commence l’entrée du jour",
-  orbFirstRunGotIt: "Compris",
   featureUnavailableTitle: "Fonction temporairement indisponible",
   featureUnavailableChecking:
     "ZenFlow vérifie la progression enregistrée de ton journal. Garde cet écran ouvert et réessaie dans un instant.",

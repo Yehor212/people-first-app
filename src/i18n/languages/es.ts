@@ -4131,12 +4131,6 @@ export const es: Translations = {
   orbSkip: "Más tarde",
   orbUndo: "Deshacer",
   orbMoodSaved: "Estado de ánimo guardado",
-  orbFirstRunTitle: "Tres pasos para tu primera entrada",
-  orbFirstRunStep1: "Mueve el control según cómo te sientes",
-  orbFirstRunStep2: "Elige cuándo te sentías así: ahora, a una hora concreta o durante todo el día",
-  orbFirstRunStep3:
-    "Si quieres, añade una emoción o una nota; luego guarda tu estado de ánimo y empieza la entrada de hoy",
-  orbFirstRunGotIt: "Entendido",
   featureUnavailableTitle: "Función no disponible temporalmente",
   featureUnavailableChecking:
     "ZenFlow está comprobando el progreso guardado de tu diario. Mantén esta pantalla abierta y vuelve a intentarlo en un momento.",

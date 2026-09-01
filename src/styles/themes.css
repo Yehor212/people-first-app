@@ -740,14 +740,6 @@
   box-shadow: 0 30px 88px -60px hsl(var(--foreground) / 0.42);
 }
 
-:root[data-theme="paper"] .mood-first-run-backdrop {
-  background: hsl(var(--foreground) / 0.24);
-}
-
-:root[data-theme="paper"] .mood-first-run-step {
-  background: hsl(var(--muted) / 0.72);
-}
-
 /* Phase 3-A.4c-ii-d-c Task #39 TAKE 2 — Un-layered ink/oled shadcn-bridge.
  *
  * EMPIRICAL ROOT CAUSE (Task #41 test-engineer verified at runtime):

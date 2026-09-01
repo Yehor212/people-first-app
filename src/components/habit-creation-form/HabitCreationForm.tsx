@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode, type Ref } from "react";
+import { useId, useRef, useState, type ReactNode, type Ref } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
@@ -263,6 +263,7 @@ export function HabitCreationForm({
 }: HabitCreationFormProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const habitNameInputId = useId();
   const trackingPanelRef = useRef<HTMLElement | null>(null);
   const rhythmPanelRef = useRef<HTMLElement | null>(null);
   const appearancePanelRef = useRef<HTMLElement | null>(null);
@@ -773,7 +774,9 @@ export function HabitCreationForm({
         </motion.div>
       )}
 
+      <label htmlFor={habitNameInputId} className="sr-only">{ts.habitName}</label>
       <input
+        id={habitNameInputId}
         type="text"
         value={newHabitName}
         onChange={(e) => setNewHabitName(e.target.value)}
@@ -1024,6 +1027,7 @@ export function HabitCreationForm({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                aria-label={ts.habitDescription || "Habit description"}
                 placeholder={ts.habitDescriptionPlaceholder}
                 rows={2}
                 className={cn(

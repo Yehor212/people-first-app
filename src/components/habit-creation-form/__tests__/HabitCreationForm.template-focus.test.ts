@@ -16,4 +16,11 @@ describe("HabitCreationForm template focus ownership", () => {
       'el.scrollIntoView({ behavior: "smooth", block: "center" })',
     );
   });
+
+  it("binds the habit-name field to a real label for Android accessibility", () => {
+    expect(formSource).toContain("const habitNameInputId = useId();");
+    expect(formSource).toContain('htmlFor={habitNameInputId}');
+    expect(formSource).toContain('id={habitNameInputId}');
+    expect(formSource).toContain('{ts.habitName}</label>');
+  });
 });

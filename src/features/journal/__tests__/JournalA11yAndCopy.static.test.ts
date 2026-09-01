@@ -88,6 +88,13 @@ const requiredJournalKeys = [
 ];
 
 describe("Journal accessibility, copy, and wallpaper static contracts", () => {
+  it("binds the optional entry title to a real label for Android accessibility", () => {
+    expect(source.editor).toContain("const journalTitleInputId = useId();");
+    expect(source.editor).toContain("htmlFor={journalTitleInputId}");
+    expect(source.editor).toContain("id={journalTitleInputId}");
+    expect(source.editor).toContain("{ts.journalEntryTitle || \"Entry title\"}</label>");
+  });
+
   it("describes concealed previews and text deletion truthfully in every locale", () => {
     const expected = {
       en: {

@@ -99,6 +99,7 @@ export interface SettingsTextInputProps {
   tone?: "neutral" | "danger";
   ariaInvalid?: boolean;
   ariaDescribedBy?: string;
+  ariaLabel?: string;
 }
 
 export interface SettingsSelectFieldProps {
@@ -107,6 +108,7 @@ export interface SettingsSelectFieldProps {
   options: Array<{ value: string | number; label: string }>;
   onChange: (value: string) => void;
   ariaDescribedBy?: string;
+  ariaLabel: string;
 }
 
 export interface SettingsStatusProps {

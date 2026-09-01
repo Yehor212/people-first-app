@@ -812,7 +812,10 @@ export function useAndroidDayLargeEffects(
       if (probe && ownerWindow.__zenAndroidDayMotionProbe === probe) {
         delete ownerWindow.__zenAndroidDayMotionProbe;
       }
-      if (gl) deleteRenderer(gl, renderer);
+      if (gl) {
+        deleteRenderer(gl, renderer);
+        gl.getExtension("WEBGL_lose_context")?.loseContext();
+      }
       renderer = null;
       gl = null;
       root.dataset.androidDayAmbience = "fallback";

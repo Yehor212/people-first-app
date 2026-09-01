@@ -2916,6 +2916,108 @@ describe("useAuthSession", () => {
       await waitFor(() => expect(mockStartAutoSync).toHaveBeenCalled());
     });
 
+    it("opens the auth gate after owner binding without waiting for the initial cloud merge", async () => {
+      usePlainAuthRoute();
+      let releaseCloudMerge!: () => void;
+      const cloudMergeGate = new Promise<void>((resolve) => {
+        releaseCloudMerge = resolve;
+      });
+      mockSyncWithCloud.mockImplementationOnce(() => cloudMergeGate);
+
+      try {
+        renderHook(() => useAuthSession(false));
+        emitAuthEvent("SIGNED_IN", telegramSession);
+
+        await waitFor(() =>
+          expect(mockSetLocalDataOwnerId).toHaveBeenCalledWith(telegramSession.user.id)
+        );
+        await waitFor(() =>
+          expect(mockSyncWithCloud).toHaveBeenCalledWith("merge", telegramSession.user.id)
+        );
+
+        expect(useAppStore.getState().hasValidSession).toBe(true);
+        expect(useUserDataStore.getState().authGateChecked).toBe(true);
+        expect(useAppStore.getState().isAccountBoundaryInProgress).toBe(false);
+        expect(mockStartAutoSync).not.toHaveBeenCalled();
+      } finally {
+        releaseCloudMerge();
+      }
+    });
+
+    it("retries the current signed-in session after user-data hydration finishes", async () => {
+      usePlainAuthRoute();
+      useUserDataStore.setState({ isLoading: true });
+
+      const { rerender } = renderHook(
+        ({ isLoading }) => useAuthSession(isLoading),
+        { initialProps: { isLoading: true } }
+      );
+
+      await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(2));
+      const reconciliationCallsBeforeSignIn =
+        mockReconcilePendingAccountSignOutCleanup.mock.calls.length;
+
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockReconcilePendingAccountSignOutCleanup).toHaveBeenCalledTimes(
+          reconciliationCallsBeforeSignIn + 1
+        )
+      );
+      expect(mockSyncWithCloud).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(false);
+      expect(useUserDataStore.getState().authGateChecked).toBe(false);
+
+      mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
+      act(() => {
+        useUserDataStore.setState({ isLoading: false });
+        rerender({ isLoading: false });
+      });
+
+      await waitFor(() =>
+        expect(mockSyncWithCloud).toHaveBeenCalledWith("merge", telegramSession.user.id)
+      );
+      await waitFor(() => expect(useAppStore.getState().hasValidSession).toBe(true));
+
+      expect(mockSetLocalDataOwnerId).toHaveBeenCalledWith(telegramSession.user.id);
+      expect(useUserDataStore.getState().authGateChecked).toBe(true);
+      expect(mockClearLocalUserData).not.toHaveBeenCalled();
+    });
+
+    it("does not admit the stale signed-in event when the session is gone after hydration", async () => {
+      usePlainAuthRoute();
+      useUserDataStore.setState({ isLoading: true });
+
+      const { rerender } = renderHook(
+        ({ isLoading }) => useAuthSession(isLoading),
+        { initialProps: { isLoading: true } }
+      );
+
+      await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(2));
+      const reconciliationCallsBeforeSignIn =
+        mockReconcilePendingAccountSignOutCleanup.mock.calls.length;
+
+      emitAuthEvent("SIGNED_IN", telegramSession);
+
+      await waitFor(() =>
+        expect(mockReconcilePendingAccountSignOutCleanup).toHaveBeenCalledTimes(
+          reconciliationCallsBeforeSignIn + 1
+        )
+      );
+      mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+      act(() => {
+        useUserDataStore.setState({ isLoading: false });
+        rerender({ isLoading: false });
+      });
+      await waitFor(() => expect(mockGetSession).toHaveBeenCalledTimes(3));
+
+      expect(mockSyncWithCloud).not.toHaveBeenCalled();
+      expect(mockSetLocalDataOwnerId).not.toHaveBeenCalled();
+      expect(useAppStore.getState().hasValidSession).toBe(false);
+      expect(useUserDataStore.getState().authGateChecked).toBe(false);
+    });
+
     it("keeps the session valid without claiming backup startup after initial sync fails", async () => {
       usePlainAuthRoute();
       mockGetSession.mockResolvedValue({ data: { session: telegramSession }, error: null });
