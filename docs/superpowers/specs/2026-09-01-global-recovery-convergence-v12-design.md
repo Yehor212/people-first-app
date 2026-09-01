@@ -7,9 +7,9 @@ Status: approved direction; implementation planning pending owner review of this
 ## Goal
 
 Converge every recoverable ZenFlow product change into the canonical `main`
-without regressing the newer implementation, while shipping the owner-approved
-bedtime-bear motion as the built-in `sleep` habit animation in a vector TGS no
-larger than 64 KB.
+without regressing the newer implementation, while shipping an owner-directed
+bedtime-bear completion animation for the built-in `sleep` habit in a vector
+TGS no larger than 64 KB.
 
 ## Explicit Requirements
 
@@ -20,11 +20,15 @@ larger than 64 KB.
   must not disappear silently.
 - The final history must contain real reviewable merge commits visible in the
   VS Code Git graph. An `ours` merge or an ancestry-only marker is not accepted.
-- The exact approved motion candidate is
+- The exact approved motion base is
   `bedtime-bear-contact-v12-high-detail-smooth.tgs`, SHA-256
   `a98ebb8bf4ec8b0d39590b421f8cd9311e03af8a4c88a3a90ade4e1dceeb9309`.
 - The animation must preserve the approved `contact-v8-layered` model quality,
   use smoother continuous motion, and remain no larger than 64,000 bytes.
+- The delivery candidate adds a carefully modeled night cap. Its fold carries
+  one round ZenFlow badge with a green field and the unchanged canonical
+  `LEAF_BODY` and `LEAF_STEM` mark. The cap and badge must look integrated with
+  the character rather than pasted over the rendered frame.
 - No additional clone may be created. At most one temporary locked worktree is
   active at a time, and the temporary lane is removed only after its exact tip
   is merged and recoverability is proven.
@@ -119,7 +123,7 @@ rollback unit:
 
 1. Convergence ledger and deterministic inventory support.
 2. UI controls, button behavior, accessibility, i18n, and RTL.
-3. Motion smoothness, canonical visual runtime, and the compact V12 `sleep`
+3. Motion smoothness, canonical visual runtime, and the compact V13 `sleep`
    asset.
 4. Journal privacy, media, persistence, and recovery.
 5. IndexedDB, sync, tombstones, backup/import, and lifecycle ordering.
@@ -134,10 +138,11 @@ Only one batch is writable at a time. Each batch is pushed to a same-named
 commit. The next batch starts from the new exact `origin/main` tip. This keeps
 the VS Code graph explicit and avoids a single unreviewable mega-commit.
 
-### 4. V12 sleep animation integration
+### 4. V13 night-cap sleep animation integration
 
-The compact V12 bedtime bear maps to the existing built-in pictogram ID
-`sleep`. This is grounded in:
+The owner-approved compact V12 is the immutable motion and model base for a new
+V13 night-cap delivery candidate. The candidate maps to the existing built-in
+pictogram ID `sleep`. This is grounded in:
 
 - `src/lib/habitTemplates.ts`, where `sleep` is the built-in sleep-routine
   template;
@@ -146,13 +151,27 @@ The compact V12 bedtime bear maps to the existing built-in pictogram ID
 - the V12 narrative and artwork, which depict a sleeping bear ignoring a
   bedside phone.
 
-The implementation stores the exact approved artifact under
-`src/assets/habit-icons/v2/sleep/` and keeps a reduced-motion SVG fallback.
-The asset manifest and TypeScript registry bind its SHA-256, byte size,
-dimensions, FPS, duration, renderer, source provenance, and direct user
-approval. The runtime loads compressed TGS only for the approved `sleep` ID;
-it must not implicitly enable the existing multi-megabyte `drink-water` or
-`read` Lottie assets.
+The implementation stores the generated delivery artifact as
+`src/assets/habit-icons/v2/sleep/completion.tgs` with a hash-bound
+`completion-first-frame.svg` poster. It registers `sleep` in the existing
+Android habit-completion celebration map; it does not enable the currently
+disabled idle-Lottie runtime or change the existing multi-megabyte
+`drink-water` and `read` idle assets. Web/PWA, iOS, Desktop, reduced-motion,
+low-power, and runtime-failure paths retain the current static `sleep` SVG.
+
+The cap uses a deep night-blue fabric with a soft light trim and pom. It is
+anchored to the bear head so breathing and reaction motion remain coherent.
+The badge sits on the visible cap fold as one small circular medallion: ZenFlow
+green background, light canonical leaf, preserved body/stem geometry, and no
+glow, filter, raster image, or alternate leaf silhouette. Its visual scale must
+keep the leaf readable in the large completion presentation without competing
+with the bear's face.
+
+The asset manifest and TypeScript registry bind the final V13 SHA-256, byte
+size, dimensions, FPS, duration, renderer, source provenance, V12 base hash,
+canonical leaf paths, and direct user request. V12 approval proves only the
+base model and motion; V13 Technical, Visual Runtime, Artistic-Craft, Motion,
+and Model statuses are recorded independently.
 
 The TGS path uses the existing bounded decompression and validation pattern:
 
@@ -167,19 +186,23 @@ The TGS path uses the existing bounded decompression and validation pattern:
 - the loop does not steal focus, announce decorative content, or block the
   habit control's 48 dp interaction target.
 
-The exact V12 approval applies to the reviewed MP4 and bound TGS. Any change to
-the TGS bytes, generator output, palette, timing, geometry, or export settings
-creates a new candidate and returns Artistic-Craft, Motion, and Model to
-`UNVERIFIED` until the user reviews that exact revision.
+The exact V12 approval applies to the reviewed MP4 and bound base TGS. Adding
+the night cap and logo creates V13, so Artistic-Craft, Motion, and Model return
+to `UNVERIFIED` until the user reviews that exact generated MP4. The canonical
+leaf geometry itself is not a new logo design and must remain byte-equivalent
+to the path tokens in `scripts/generate-icons.cjs`.
 
 ### 5. Reproducibility and provenance
 
-The external V12 generator and the minimum first-party source inputs required
-to reproduce the compact TGS are copied into a repository-owned tooling area.
-Generated frames, rlottie dumps, `.pam` files, caches, and the 3.27 MB V8 master
-remain outside production source. The repository retains:
+The exact compact V12 TGS is retained as an immutable generator input, and a
+repository-owned deterministic V13 generator injects the semantic night-cap
+rig and canonical leaf badge. Generated frames, rlottie dumps, `.pam` files,
+caches, and the 3.27 MB V8 master remain outside production source. The
+repository retains:
 
-- generator source;
+- generator source and focused tests;
+- the immutable V12 input with its approved hash;
+- exact canonical leaf-path equality checks;
 - immutable source hashes and owner authorization;
 - deterministic export command;
 - compact TGS;
@@ -211,11 +234,11 @@ remains at
 
 | Surface | Required result | Verification |
 | --- | --- | --- |
-| Web/Vite | Reconciled UI and data behaviors; sleep TGS loads only when approved motion is enabled; static fallback otherwise. | Typecheck, focused Vitest, production build, Playwright route proof, console/network inspection. |
-| Installed PWA | Same behavior offline; asset revision is precached or fails safely without stale mixed versions. | PWA/offline Playwright flow, service-worker asset inspection, cache-revision test. |
-| Android/Capacitor | Buttons, back handling, safe areas, lifecycle, smooth sleep animation, and signed package originate from merged source. | Gradle build, Capacitor sync checks, API 36 emulator flow, frame evidence, package/signature verification. |
-| iOS/WKWebView | No WebView, safe-area, lifecycle, or motion regression; static fallback remains available. | iOS sync/build where available; simulator/device runtime otherwise `UNVERIFIED`. |
-| Desktop/Tauri | Current desktop flows and static fallback remain intact; no browser-only assumption enters storage or motion. | Tauri checks/build where available; packaged runtime otherwise `UNVERIFIED`. |
+| Web/Vite | Reconciled UI and data behaviors; sleep retains its static pictogram outside Android completion playback. | Typecheck, focused Vitest, production build, Playwright route proof, console/network inspection. |
+| Installed PWA | Same behavior offline; no new completion runtime or stale mixed asset version is introduced. | PWA/offline Playwright flow and service-worker asset inspection. |
+| Android/Capacitor | Buttons, back handling, safe areas, lifecycle, smooth V13 sleep completion, and signed package originate from merged source. | Gradle build, Capacitor sync checks, API 36 emulator completion flow, frame evidence, package/signature verification. |
+| iOS/WKWebView | No WebView, safe-area, lifecycle, or motion regression; static sleep pictogram remains available. | iOS sync/build where available; simulator/device runtime otherwise `UNVERIFIED`. |
+| Desktop/Tauri | Current desktop flows and static sleep pictogram remain intact; no browser-only assumption enters storage or motion. | Tauri checks/build where available; packaged runtime otherwise `UNVERIFIED`. |
 | Telegram/TGS | Exact artifact is valid gzip Lottie, 512 by 512, 60 FPS, 180 frames, three seconds, loop-safe, and no larger than 64,000 bytes. | Hash/size validator, JSON contract, Glaxnimate, rlottie, lottie-web, and exact user approval record. |
 | Accessibility | 48 dp targets, labels, keyboard/focus, reduced motion, non-motion outcome, and ar/he RTL remain correct. | Testing Library, a11y checks, reduced-motion browser proof, RTL viewport screenshots. |
 | Performance | No startup regression; V12 playback is continuously smooth and bounded; visual fidelity is not reduced to make metrics pass. | Bundle report, Chrome performance smoke, Android frame data, before/after long-task and frame evidence. |
@@ -227,7 +250,7 @@ remains at
 - A recovered variant that cannot be proved safe remains `UNVERIFIED`; it is
   not silently copied and not falsely marked merged.
 - A failing domain gate stops that batch without weakening tests or guards.
-- A V12 load, decode, validation, timeout, or renderer error returns to the
+- A V13 load, decode, validation, timeout, or renderer error returns to the
   static `sleep` SVG and records only bounded non-PII diagnostics.
 - Storage, auth, sync, deletion, and migration changes fail closed and preserve
   IndexedDB local truth, owner generation, tombstones, and retryable recovery.
@@ -243,12 +266,15 @@ remains at
 - `main` does not contain dependency folders, build outputs, recovery wrappers,
   secrets, local logs, mock production records, or duplicate historical file
   variants.
-- V12 TGS SHA-256 equals
+- Immutable V12 base SHA-256 equals
   `a98ebb8bf4ec8b0d39590b421f8cd9311e03af8a4c88a3a90ade4e1dceeb9309`
   and its size is exactly 63,207 bytes.
-- Sleep motion uses the reviewed V12 model, remains smooth across all 179
-  adjacent frame pairs, preserves the exact loop, and degrades to the static
-  sleep SVG under reduced motion or runtime failure.
+- V13 is generated deterministically from that exact base, contains the night
+  cap and a single green canonical-leaf medallion, records its exact final hash
+  in the manifest, and remains no larger than 64,000 bytes.
+- Sleep motion retains the reviewed V12 model and timing, remains smooth across
+  all 179 adjacent frame pairs, preserves the exact loop, and degrades to the
+  static sleep SVG under reduced motion or runtime failure.
 - All affected locale keys remain structurally equal across en, uk, es, de,
   fr, ja, ar, and he; ar/he RTL layouts have rendered evidence.
 - Focused tests, bounded-worker full Vitest, typecheck, lint, i18n, PDI, build,
@@ -290,10 +316,11 @@ It remains the immutable visual-quality reference, not the delivery artifact.
 ## Rollback
 
 - Revert one thematic merge commit through a protected pull request.
-- Restore the previous static `sleep` manifest entry and remove the V12 runtime
-  registration if the animation causes a runtime or accessibility regression.
-- Keep the exact V12 asset and proof packet available for diagnosis even when
-  runtime registration is reverted.
+- Restore the previous static `sleep` manifest entry and remove the V13 runtime
+  registration if the V13 completion causes a runtime or accessibility
+  regression.
+- Keep the exact V12 base, V13 asset, generator, and proof packet available for
+  diagnosis even when runtime registration is reverted.
 - Never use force-push, history rewrite, destructive clean, or unbound stash
   operations for rollback.
 
