@@ -1,9 +1,4 @@
-import {
-  useLayoutEffect,
-  useRef,
-  type CSSProperties,
-  type RefObject,
-} from "react";
+import { type CSSProperties, type RefObject } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
@@ -18,19 +13,10 @@ import { EmotionTagGrid } from "@/components/state-of-mind/EmotionTagGrid";
 import { getLocalizedEmotionLabel } from "@/components/state-of-mind/emotionI18n";
 import { ValenceSlider } from "@/components/state-of-mind/ValenceSlider";
 import { MoodScopeSelector } from "./MoodScopeSelector";
+import { useStepScrollerReset } from "./useStepScrollerReset";
 import "./OrbPageSteps.css";
 
 type Tx = Record<string, string>;
-
-function useStepScrollerReset() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (ref.current) ref.current.scrollTop = 0;
-  }, []);
-
-  return ref;
-}
 
 interface OrbSelectStepProps {
   tx: Tx;

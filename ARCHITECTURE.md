@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
-| Source files                 |   **963** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **620** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Source files                 | **1,037** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
+| Test files                   |   **707** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
-| React.memo                   |   **123** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
-| index.css LOC                | **7,715** | `readFileSync(...).split("\\n").length` (constitution guard) |
-| Inline style={{}}            |   **322** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
+| React.memo                   |   **124** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
+| index.css LOC                | **7,717** | `readFileSync(...).split("\\n").length` (constitution guard) |
+| Inline style={{}}            |   **312** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
 | exhaustive-deps suppressions |    **17** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
-| Hook coverage                |   **66%** | `51/77 hook tests`                                           |
+| Hook coverage                |   **72%** | `56/78 hook tests`                                           |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 

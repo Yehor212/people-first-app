@@ -1,6 +1,5 @@
 import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Clock3 } from "lucide-react";
-import { GlobalScheduleBar } from "@/components/GlobalScheduleBar";
+import { CalendarDays } from "lucide-react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { cn, formatDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -16,6 +15,7 @@ import { PlanningActionPanel } from "./PlanningActionPanel";
 import { PlanningBridgeActions } from "./PlanningBridgeActions";
 import { PlanningDayPulse } from "./PlanningDayPulse";
 import { PlanningModeRail } from "./PlanningModeRail";
+import { PlanningOverview } from "./PlanningOverview";
 import { PlanningReviewLane } from "./PlanningReviewLane";
 import { derivePlanningFeatureModel, type PlanningMode } from "./planningFeatureModel";
 import { resolveInitialPlanningDate } from "./planningDates";
@@ -293,43 +293,11 @@ export const PlanningPage = memo(function PlanningPage({
       )}
     >
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-5 md:gap-6">
-        <header className="flex min-w-0 flex-col gap-3">
-          <div className="inline-flex w-fit max-w-full min-w-0 items-center gap-2 whitespace-normal text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
-            <span className="min-w-0 break-words [hyphens:manual] [overflow-wrap:normal]">
-              {t.navV2Planning}
-            </span>
-          </div>
-          <div className="min-w-0 max-w-3xl space-y-2">
-            <h1
-              id="planning-page-heading"
-              className="min-w-0 break-words font-display text-xl font-semibold leading-[1.02] text-foreground [hyphens:manual] [overflow-wrap:normal] min-[420px]:text-3xl md:text-display-5xl"
-            >
-              {t.navV2PlanningHeading}
-            </h1>
-            <p className="min-w-0 max-w-2xl break-words text-base leading-7 text-muted-foreground [hyphens:manual] [overflow-wrap:normal] md:text-lg">
-              {t.navV2PlanningSubcopy}
-            </p>
-          </div>
-        </header>
-
-        <section aria-label={t.viewSchedule} className="space-y-3">
-          {todayScheduleEvents.length > 0 ? (
-            <GlobalScheduleBar events={todayScheduleEvents} onTap={scrollToTimeline} />
-          ) : (
-            <button
-              type="button"
-              onClick={scrollToTimeline}
-              data-testid="planning-empty-schedule"
-              className="flex min-h-[64px] w-full min-w-0 items-center gap-3 whitespace-normal rounded-2xl border border-border/50 bg-card px-4 py-3 text-start text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Clock3 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-              <span className="min-w-0 flex-1 break-words [hyphens:manual] [overflow-wrap:normal]">
-                {t.navV2PlanningEmpty}
-              </span>
-            </button>
-          )}
-        </section>
+        <PlanningOverview
+          labels={t}
+          todayScheduleEvents={todayScheduleEvents}
+          onOpenSchedule={scrollToTimeline}
+        />
 
         <PlanningDayPulse
           pulse={planningFeatureModel.dayPulse}
