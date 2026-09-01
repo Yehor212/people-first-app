@@ -64,6 +64,15 @@ function getLocalizedMoodLabel(mood: MoodType | null | undefined, ts: Translatio
   return moodLabels[mood] || getLocalizedEmotionLabel(mood, ts);
 }
 
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AbortError"
+  );
+}
+
 type AuraColor = (opacity: number) => string;
 
 const MOOD_HERO_SHEEN_STYLE: CSSProperties = {
@@ -198,9 +207,19 @@ function renderContent(content: string): React.ReactNode[] {
     return parts.length > 0 ? <>{parts}</> : text;
   };
 
-  lines.forEach((line, i) => {
+  const getListItemText = (line: string): string | null => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ") || (trimmed.startsWith("* ") && !trimmed.startsWith("**"))) {
+      return trimmed.slice(2);
+    }
+    return null;
+  };
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     const trimmed = line.trim();
     const key = `line-${i}`;
+    const listText = getListItemText(line);
 
     if (trimmed.startsWith("### ")) {
       elements.push(
@@ -225,18 +244,19 @@ function renderContent(content: string): React.ReactNode[] {
       );
     } else if (trimmed === "---" || trimmed === "***") {
       elements.push(<hr key={key} className="my-3 border-border/30" />);
-    } else if (
-      trimmed.startsWith("- ") ||
-      (trimmed.startsWith("* ") && !trimmed.startsWith("**"))
-    ) {
-      const listText = trimmed.slice(2);
+    } else if (listText !== null) {
+      const listItems = [<li key={key}>{renderInline(listText, key)}</li>];
+      while (i + 1 < lines.length) {
+        const nextListText = getListItemText(lines[i + 1]);
+        if (nextListText === null) break;
+        i += 1;
+        const nextKey = `line-${i}`;
+        listItems.push(<li key={nextKey}>{renderInline(nextListText, nextKey)}</li>);
+      }
       elements.push(
-        <div key={key} className="flex gap-2 my-0.5">
-          <span className="text-[var(--journal-paper-muted)] select-none" aria-hidden="true">
-            {"\u2022"}
-          </span>
-          <span>{renderInline(listText, key)}</span>
-        </div>
+        <ul key={`list-${key}`} className="my-0.5 list-disc space-y-0.5 ps-5">
+          {listItems}
+        </ul>
       );
     } else if (trimmed === "") {
       elements.push(<div key={key} className="h-2" />);
@@ -247,7 +267,7 @@ function renderContent(content: string): React.ReactNode[] {
         </p>
       );
     }
-  });
+  }
 
   return elements;
 }
@@ -273,6 +293,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
   const ts = t;
   const isFavorite = isFavoriteJournalEntry(entry);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const closeDeleteConfirm = useCallback(() => setDeleteConfirmOpen(false), []);
   const confirmDelete = useCallback(() => {
     setDeleteConfirmOpen(false);
@@ -390,6 +411,7 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
 
   const handleShare = async () => {
     const text = [entry.title, entry.content].filter(Boolean).join("\n\n");
+    setShareError(false);
     if (!text) return;
     try {
       if (navigator.share) {
@@ -397,8 +419,10 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
       } else {
         await navigator.clipboard.writeText(text);
       }
-    } catch {
-      // User cancelled share
+    } catch (error) {
+      if (!isAbortError(error)) {
+        setShareError(true);
+      }
     }
   };
 
@@ -496,6 +520,15 @@ export const JournalEntryViewer = memo(function JournalEntryViewer({
           </button>
         </div>
       </div>
+
+      {shareError && (
+        <div
+          role="alert"
+          className="relative z-[1] mx-4 mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {ts.shareFailed}
+        </div>
+      )}
 
       {/* Content */}
       <motion.div

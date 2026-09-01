@@ -155,7 +155,7 @@ describe("useDeleteAccount owner-bound coordinator adapter", () => {
     expect(hook.result.current.deleteStatus).toBe(copy.deleteAccountError);
   });
 
-  it("keeps an in-progress account A request visible until the coordinator resolves", async () => {
+  it("keeps an in-progress account A request visible, then clears it without publishing into B", async () => {
     let resolveDeletion!: (value: {
       status: "session-changed";
       remoteDeletion: "not-confirmed";
@@ -192,8 +192,98 @@ describe("useDeleteAccount owner-bound coordinator adapter", () => {
     });
 
     expect(hook.result.current.showDeleteConfirm).toBe(false);
-    expect(hook.result.current.deleteStatus).toBe(copy.deleteAccountError);
+    expect(hook.result.current.deleteStatus).toBeNull();
   });
+
+  it.each([
+    {
+      label: "confirmed deletion",
+      result: {
+        status: "deleted" as const,
+        remoteDeletion: "confirmed" as const,
+      },
+    },
+    {
+      label: "confirmed deletion with pending local cleanup",
+      result: {
+        status: "cleanup-failed" as const,
+        remoteDeletion: "confirmed" as const,
+      },
+    },
+  ])("does not publish account A $label after account B becomes active", async ({ result }) => {
+    let resolveDeletion!: (value: typeof result) => void;
+    mocks.performOwnerSafeAccountDeletion.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDeletion = resolve;
+        }),
+    );
+    const hook = renderSubject("account-a");
+
+    let deletion!: Promise<void>;
+    act(() => {
+      deletion = hook.result.current.handleDeleteAccount();
+    });
+    await waitFor(() => expect(hook.result.current.isDeletingAccount).toBe(true));
+
+    hook.rerender({ owner: "account-b" });
+    await act(async () => {
+      resolveDeletion(result);
+      await deletion;
+    });
+
+    expect(mocks.performOwnerSafeAccountDeletion).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.showDeleteConfirm).toBe(false);
+    expect(hook.result.current.deleteStatus).toBeNull();
+    expect(hook.result.current.deleteStatus).not.toBe(copy.deleteAccountSuccess);
+    expect(hook.result.current.deleteStatus).not.toBe(copy.deleteAccountDeletedCleanupFailed);
+  });
+
+  it.each([
+    {
+      label: "confirmed deletion",
+      result: {
+        status: "deleted" as const,
+        remoteDeletion: "confirmed" as const,
+      },
+      expectedStatus: copy.deleteAccountSuccess,
+    },
+    {
+      label: "confirmed deletion with pending local cleanup",
+      result: {
+        status: "cleanup-failed" as const,
+        remoteDeletion: "confirmed" as const,
+      },
+      expectedStatus: copy.deleteAccountDeletedCleanupFailed,
+    },
+  ])(
+    "publishes $label when the expected deletion clears the active session",
+    async ({ result, expectedStatus }) => {
+      let resolveDeletion!: (value: typeof result) => void;
+      mocks.performOwnerSafeAccountDeletion.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveDeletion = resolve;
+          }),
+      );
+      const hook = renderSubject("account-a");
+
+      let deletion!: Promise<void>;
+      act(() => {
+        deletion = hook.result.current.handleDeleteAccount();
+      });
+      await waitFor(() => expect(hook.result.current.isDeletingAccount).toBe(true));
+
+      hook.rerender({ owner: null });
+      await act(async () => {
+        resolveDeletion(result);
+        await deletion;
+      });
+
+      expect(hook.result.current.showDeleteConfirm).toBe(false);
+      expect(hook.result.current.deleteStatus).toBe(expectedStatus);
+    },
+  );
 
   it("fails closed when the coordinator throws", async () => {
     mocks.performOwnerSafeAccountDeletion.mockRejectedValueOnce(

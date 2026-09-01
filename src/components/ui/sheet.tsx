@@ -20,7 +20,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-[var(--z-sheet-overlay)] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -29,7 +29,7 @@ const SheetOverlay = React.forwardRef<
 ));
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
-const sheetVariants = cva("fixed z-[60] flex flex-col gap-4 bg-background p-6 shadow-lg isolate", {
+const sheetVariants = cva("fixed z-[var(--z-sheet)] flex flex-col gap-4 bg-background p-6 shadow-lg isolate", {
   variants: {
     side: {
       top: "inset-x-0 top-0 border-b",
@@ -66,7 +66,6 @@ const SheetContent = React.forwardRef<
                 bottom: 0,
                 left: 0,
                 right: 0,
-                zIndex: 80,
                 paddingBottom: "env(safe-area-inset-bottom, 0px)",
               }
             : undefined
@@ -93,10 +92,9 @@ const SheetContent = React.forwardRef<
         <SheetPrimitive.Close
           aria-label={t.close}
           className={cn(
-            "absolute right-4 top-4 rounded-xl p-2 z-50 min-w-[44px] min-h-[44px] flex items-center justify-center motion-safe:transition-all",
-            "bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10",
-            "opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "absolute end-4 top-4 z-10 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border bg-secondary/80 p-2 text-secondary-foreground backdrop-blur-sm motion-safe:transition-all",
+            "opacity-70 hover:bg-secondary hover:opacity-100",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             "disabled:pointer-events-none"
           )}
         >

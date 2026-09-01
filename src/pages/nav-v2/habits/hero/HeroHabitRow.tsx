@@ -22,7 +22,6 @@ interface HeroHabitRowProps {
   onToggle: (habitId: string, date: string) => void;
   onAdjust?: (habitId: string, date: string, delta: number) => void;
   onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
-  onDelete?: (habitId: string) => void;
   onEdit?: (habit: Habit) => void;
   onOpenDetail?: (habit: Habit) => void;
   onSkip?: (habitId: string, date: string) => void;
@@ -42,7 +41,6 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   onToggle,
   onAdjust,
   onNumericalAction,
-  onDelete,
   onEdit,
   onOpenDetail,
   onSkip,
@@ -59,10 +57,11 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   const isSkippedToday = habit.entries?.[today]?.value === ENTRY.SKIP;
   const isArchived = Boolean(habit.isArchived);
   const hasActions = Boolean(
-    onSkip || onUnskip || onArchive || onUnarchive || onEdit || onDelete,
+    onSkip || onUnskip || onArchive || onUnarchive || onEdit,
   );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const closeActionSheet = useCallback(() => setActionSheetOpen(false), []);
+  const actionTriggerRef = useRef<HTMLButtonElement>(null);
   const openActionSheet = useCallback(() => {
     const suppression = onBeforeActionSheetOpen?.();
     if (!suppression) {
@@ -132,22 +131,6 @@ export const HeroHabitRow = memo(function HeroHabitRow({
     pointerOriginRef.current = null;
   }, [cancelLongPress]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (!hasActions && !onOpenDetail) return;
-      if (e.target !== e.currentTarget) return;
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        if (hasActions) {
-          void openActionSheet();
-        } else if (onOpenDetail) {
-          onOpenDetail(habit);
-        }
-      }
-    },
-    [habit, hasActions, onOpenDetail, openActionSheet],
-  );
-
   const reminderTime = habit.reminders?.find((r) => r.enabled !== false)?.time;
   const showCueRow = Boolean(reminderTime);
 
@@ -164,20 +147,21 @@ export const HeroHabitRow = memo(function HeroHabitRow({
   const overdueHours = Math.floor(overdueMinutes / 60);
   const isOverdue = overdueMinutes >= 30;
   const ReminderIcon = V2_HABIT_JOURNEY_ICONS.reminder;
+  const actionsLabel = (tx.navV2HabitsActionsFor || "Actions for {habit}").replace(
+    "{habit}",
+    `\u2068${habit.name}\u2069`,
+  );
 
   return (
     <div
       role="group"
       aria-label={habit.name}
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={hasActions || onOpenDetail ? 0 : -1}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onPointerLeave={handlePointerUp}
-      onKeyDown={handleKeyDown}
-      className="relative rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="relative rounded-2xl"
       data-testid={`hero-habit-row-${habit.id}`}
     >
       <HeroWeeklyHabitCard
@@ -186,6 +170,9 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         onAdjust={onAdjust}
         onNumericalAction={onNumericalAction}
         onOpenDetail={onOpenDetail}
+        onOpenActions={hasActions ? openActionSheet : undefined}
+        actionsLabel={hasActions ? actionsLabel : undefined}
+        actionsTriggerRef={actionTriggerRef}
         initiallyCollapsed={initiallyCollapsed}
       />
 
@@ -193,6 +180,7 @@ export const HeroHabitRow = memo(function HeroHabitRow({
         <HabitActionSheet
           open={actionSheetOpen}
           onClose={closeActionSheet}
+          restoreFocusTo={actionTriggerRef}
           habit={habit}
           today={today}
           isSkippedToday={isSkippedToday}
@@ -206,7 +194,6 @@ export const HeroHabitRow = memo(function HeroHabitRow({
             unarchive: tx.unarchiveHabit,
             edit: tx.edit,
             openDetails: tx.statistics || tx.navV2HabitsOpenDetails,
-            delete: tx.delete,
           }}
           onSkip={onSkip}
           onUnskip={onUnskip}
@@ -214,7 +201,6 @@ export const HeroHabitRow = memo(function HeroHabitRow({
           onUnarchive={onUnarchive}
           onEdit={onEdit}
           onOpenDetail={onOpenDetail}
-          onDelete={onDelete}
         />
       )}
 

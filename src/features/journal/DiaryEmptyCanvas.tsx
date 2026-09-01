@@ -124,7 +124,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
 
       {/* Layer 3: Time-aware greeting */}
       <motion.h2
-        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.35 }}
         className="relative z-[1] text-center font-display text-2xl font-medium tracking-tight text-foreground [@media(max-height:700px)]:text-xl"
@@ -134,7 +134,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
 
       {/* Layer 4: stable first-party reflection prompt */}
       <motion.p
-        initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.4 }}
         className="relative z-[1] w-full max-w-lg px-8 text-center text-lg font-normal italic leading-relaxed text-foreground [@media(max-height:700px)]:px-2 [@media(max-height:700px)]:text-base"
@@ -144,7 +144,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
 
       {/* Layer 5: quiet first-party quote */}
       <motion.figure
-        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.43, duration: 0.35 }}
         className="relative z-[1] w-full max-w-md rounded-lg border border-border/60 bg-card/80 px-5 py-3 text-center shadow-sm backdrop-blur-sm [-webkit-backdrop-filter:blur(8px)] [@media(max-height:700px)]:hidden"
@@ -164,7 +164,7 @@ export const DiaryEmptyCanvas = memo(function DiaryEmptyCanvas({
 
       {/* Layer 6: focused actions */}
       <motion.div
-        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.3 }}
         className="zf-auto-fit-grid-10 relative z-[1] grid w-full max-w-lg gap-3"

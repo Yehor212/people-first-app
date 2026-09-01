@@ -46,6 +46,21 @@ function sanitizeChunkKind(value: unknown): string {
   return typeof value === "string" && SAFE_CHUNK_KINDS.has(value) ? value : "unknown";
 }
 
+let pendingChunkKind: string | null = null;
+let activeChunkErrorConsumers = 0;
+let chunkErrorHandlerSetup = false;
+
+function capturePendingChunkLoadIncident(event: Event): void {
+  if (activeChunkErrorConsumers > 0 || pendingChunkKind !== null) return;
+  pendingChunkKind = sanitizeChunkKind((event as CustomEvent).detail?.chunk);
+}
+
+function consumePendingChunkKind(): string | null {
+  const chunk = pendingChunkKind;
+  pendingChunkKind = null;
+  return chunk;
+}
+
 export function UpdateRequiredDialog() {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -104,10 +119,20 @@ export function UpdateRequiredDialog() {
   }, []);
 
   useEffect(() => {
+    activeChunkErrorConsumers += 1;
     window.addEventListener(CHUNK_LOAD_ERROR_EVENT, handleChunkError);
+    const pendingChunk = consumePendingChunkKind();
+    if (pendingChunk !== null) {
+      handleChunkError(
+        new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
+          detail: { chunk: pendingChunk },
+        })
+      );
+    }
 
     return () => {
       window.removeEventListener(CHUNK_LOAD_ERROR_EVENT, handleChunkError);
+      activeChunkErrorConsumers = Math.max(0, activeChunkErrorConsumers - 1);
     };
   }, [handleChunkError]);
 
@@ -230,6 +255,10 @@ export function UpdateRequiredDialog() {
  * Should be called once in main.tsx before app renders.
  */
 export function setupChunkErrorHandler(): void {
+  if (chunkErrorHandlerSetup) return;
+  chunkErrorHandlerSetup = true;
+  window.addEventListener(CHUNK_LOAD_ERROR_EVENT, capturePendingChunkLoadIncident);
+
   // Handle errors from dynamic imports
   window.addEventListener("error", (event) => {
     const message = getErrorMessage(event.message);

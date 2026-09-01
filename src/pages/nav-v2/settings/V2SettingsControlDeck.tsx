@@ -43,7 +43,12 @@ export const V2SettingsControlDeck = memo(function V2SettingsControlDeck({
     case "account":
       return (
         <>
-          <ProfilePanel controls={controls} />
+          <ProfilePanel
+            controls={controls}
+            interactionBlocked={Boolean(
+              accountAuth.signOutBlockReason || accountAuth.isSigningOut
+            )}
+          />
           <AccountPanel controls={controls} auth={accountAuth} accountViewState={accountViewState} />
         </>
       );

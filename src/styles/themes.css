@@ -74,7 +74,7 @@
   :where(
     [data-interaction-surface],
     [data-testid^="settings-module-"],
-    [data-testid^="settings-v2-panel-"],
+    [data-testid^="settings-v2-panel-"] > [data-slot="settings-group"],
     [data-testid="settings-theme-strip"]
   ) {
   border-color: hsl(var(--settings-v2-border) / 0.82);
@@ -1105,19 +1105,7 @@
 
 :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-:root[data-theme="paper"]
-  [data-v2-readable-page="settings"]
-  [data-testid="settings-v2-style-customization"],
-:root[data-theme="ink"]
-  [data-v2-readable-page="settings"]
-  [data-testid="settings-v2-style-customization"],
-:root[data-theme="oled"]
-  [data-v2-readable-page="settings"]
-  [data-testid="settings-v2-style-customization"] {
+:root[data-theme="oled"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
   background: linear-gradient(
     145deg,
     hsl(var(--settings-v2-rim-light) / 0.1),
@@ -1153,7 +1141,8 @@
 }
 
 [data-v2-readable-page="settings"]
-  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"] {
+  [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
+  > [data-slot="settings-group"] {
   background:
     radial-gradient(circle at 8% 0%, hsl(var(--settings-v2-rim-light) / 0.12), transparent 17rem),
     radial-gradient(circle at 88% 6%, hsl(var(--settings-v2-accent) / 0.1), transparent 18rem),
@@ -1164,15 +1153,11 @@
       hsl(var(--settings-v2-panel) / var(--settings-v2-panel-alpha, 0.52))
     );
   border-color: hsl(var(--settings-v2-rim-light) / 0.18);
-  box-shadow:
-    inset 0 1px 0 hsl(var(--settings-v2-rim-light) / 0.38),
-    inset 0 -1px 0 hsl(var(--settings-v2-border) / 0.14),
-    0 22px 62px -50px hsl(var(--settings-v2-shadow) / 0.72);
 }
 
 [data-v2-readable-page="settings"]
   [data-testid="settings-v2-panel-appearance"][data-panel-variant="studio"]
-  > div:last-child {
+  > [data-slot="settings-group"] {
   display: grid;
   gap: 0.7rem;
 }
@@ -1318,11 +1303,7 @@
 :root[data-theme="paper"]
   [data-v2-readable-page="settings"]
   [data-testid^="settings-module-panel-"],
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
-:root[data-theme="paper"]
-  [data-v2-readable-page="settings"]
-  [data-testid="settings-v2-style-customization"] {
+:root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
   background: hsl(var(--settings-v2-card));
   border-color: hsl(var(--settings-v2-border) / 0.52);
   box-shadow:
@@ -1378,11 +1359,7 @@
   :root[data-theme="paper"]
     [data-v2-readable-page="settings"]
     [data-testid^="settings-module-panel-"],
-  :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-  :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
-  :root[data-theme="paper"]
-    [data-v2-readable-page="settings"]
-    [data-testid="settings-v2-style-customization"] {
+  :root[data-theme="paper"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
     background: linear-gradient(
       145deg,
       hsl(var(--settings-v2-rim-light) / 0.93),
@@ -1669,7 +1646,6 @@
   [data-v2-readable-page="settings"]
   [data-visual-role][data-testid^="settings-module-"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
-:root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
 :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
   background: hsl(var(--settings-v2-card));
   border-color: hsl(var(--settings-v2-border));
@@ -1690,7 +1666,6 @@
   :root[data-theme="ink"]
     [data-v2-readable-page="settings"]
     [data-testid^="settings-module-panel-"],
-  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
   :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"] {
     background: hsl(var(--settings-v2-card) / var(--settings-v2-card-alpha, 0.92));
     -webkit-backdrop-filter: none;
@@ -1728,7 +1703,8 @@
   [data-testid^="settings-module-panel-"],
 :root[data-theme="ink"][data-theme-contrast="high"]
   [data-v2-readable-page="settings"]
-  [data-testid^="settings-v2-panel-"],
+  [data-testid^="settings-v2-panel-"]
+  > [data-slot="settings-group"],
 :root[data-theme="ink"][data-theme-contrast="high"]
   [data-v2-readable-page="settings"]
   [data-testid="settings-theme-strip"] {
@@ -2046,7 +2022,10 @@
   :root[data-theme="ink"]
     [data-v2-readable-page="settings"]
     [data-testid^="settings-module-panel-"],
-  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"] {
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid^="settings-v2-panel-"]
+    > [data-slot="settings-group"] {
     background: hsl(var(--settings-v2-card));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -2068,8 +2047,9 @@
   [data-v2-readable-page="settings"] [data-visual-role][data-testid^="settings-module-"],
   [data-v2-readable-page="settings"] [data-testid^="settings-module-panel-"],
   [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
-  [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
-  [data-v2-readable-page="settings"] [data-testid="settings-v2-style-customization"],
+  [data-v2-readable-page="settings"]
+    [data-testid^="settings-v2-panel-"]
+    > [data-slot="settings-group"],
   .v2-edge-to-edge-surface[data-active-page="settings"] [data-testid="nav-v2-open-drawer"] {
     background: hsl(var(--settings-v2-card)) !important;
     -webkit-backdrop-filter: none !important;
@@ -2099,7 +2079,10 @@
     [data-v2-readable-page="settings"]
     [data-testid^="settings-module-panel-"],
   :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid="settings-theme-strip"],
-  :root[data-theme="ink"] [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"] {
+  :root[data-theme="ink"]
+    [data-v2-readable-page="settings"]
+    [data-testid^="settings-v2-panel-"]
+    > [data-slot="settings-group"] {
     background: hsl(var(--settings-v2-card));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -2127,7 +2110,9 @@
 
   [data-v2-readable-page="settings"] [data-testid="settings-page-control-card"],
   [data-v2-readable-page="settings"] [data-testid^="settings-module-"],
-  [data-v2-readable-page="settings"] [data-testid^="settings-v2-panel-"],
+  [data-v2-readable-page="settings"]
+    [data-testid^="settings-v2-panel-"]
+    > [data-slot="settings-group"],
   [data-v2-readable-page="settings"] [data-testid="settings-v2-appearance-feedback"],
   [data-theme-region="drawer-v2"],
   [data-theme-region="drawer-v2"] [data-testid^="drawer-v2-destination-"] {

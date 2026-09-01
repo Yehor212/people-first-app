@@ -3461,7 +3461,7 @@ type ResetStep =
                   >
                     <motion.div
                       key="sidebar-header"
-                      initial={reducedMotion ? false : { opacity: 0, x: isRTL ? 8 : -8 }}
+                      initial={false}
                       animate={{ opacity: 1, x: 0 }}
                       exit={reducedMotion ? undefined : { opacity: 0, x: isRTL ? 8 : -8 }}
                       transition={springs.quick}
@@ -3520,7 +3520,7 @@ type ResetStep =
 
                     <motion.div
                       key="sidebar-calendar"
-                      initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                      initial={false}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={reducedMotion ? undefined : { opacity: 0, scale: 0.95 }}
                       transition={{ ...springs.smooth, delay: 0.1 }}
@@ -3559,7 +3559,7 @@ type ResetStep =
 
                     <motion.div
                       key="sidebar-entries"
-                      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
                       exit={reducedMotion ? undefined : { opacity: 0, y: 6 }}
                       transition={{ ...springs.quick, delay: 0.15 }}

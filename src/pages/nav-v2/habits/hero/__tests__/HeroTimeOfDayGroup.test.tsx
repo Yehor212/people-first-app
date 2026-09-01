@@ -70,7 +70,6 @@ describe("HeroTimeOfDayGroup", () => {
         bucket="anytime"
         habits={habits}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
       />,
     );
 
@@ -102,7 +101,6 @@ describe("HeroTimeOfDayGroup", () => {
         bucket="anytime"
         habits={habits}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
       />,
     );
 
@@ -117,7 +115,6 @@ describe("HeroTimeOfDayGroup", () => {
         bucket="anytime"
         habits={habits}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
       />,
     );
 
@@ -134,7 +131,6 @@ describe("HeroTimeOfDayGroup", () => {
         bucket="anytime"
         habits={habits}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
       />,
     );
 
@@ -149,7 +145,6 @@ describe("HeroTimeOfDayGroup", () => {
         bucket="anytime"
         habits={habits}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
       />,
     );
     expect(screen.getAllByTestId(/^mock-hero-row-/)).toHaveLength(20);
@@ -160,7 +155,6 @@ describe("HeroTimeOfDayGroup", () => {
         bucket="anytime"
         habits={habits}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
       />,
     );
 

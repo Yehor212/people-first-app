@@ -1,6 +1,9 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { PushRevocationResult } from "@/lib/pushNotifications";
+import type {
+  PushRegistrationEvidence,
+  PushRevocationResult,
+} from "@/lib/pushNotifications";
 import { ar } from "@/i18n/languages/ar";
 import { de } from "@/i18n/languages/de";
 import { en } from "@/i18n/languages/en";
@@ -47,7 +50,9 @@ const localNotificationMocks = vi.hoisted(() => ({
   resumeAccountNotifications: vi.fn(),
 }));
 const pushNotificationMocks = vi.hoisted(() => ({
+  cancelPendingPushRegistration: vi.fn(),
   initializePushNotifications: vi.fn(() => Promise.resolve()),
+  readPushRegistrationEvidence: vi.fn<() => PushRegistrationEvidence>(() => "absent"),
   removePushToken: vi.fn<() => Promise<PushRevocationResult>>(() => Promise.resolve({
     status: "revoked" as const,
     remote: "not-registered" as const,
@@ -144,6 +149,7 @@ describe("useNotificationSetup push consent", () => {
     notificationRealmMocks.assertVerifiedNotificationRealmCurrent
       .mockReset()
       .mockResolvedValue(undefined);
+    pushNotificationMocks.readPushRegistrationEvidence.mockReturnValue("absent");
     pushNotificationMocks.removePushToken.mockResolvedValue({
       status: "revoked",
       remote: "not-registered",
@@ -229,6 +235,24 @@ describe("useNotificationSetup push consent", () => {
     expect(pushNotificationMocks.removePushToken).not.toHaveBeenCalled();
   });
 
+  it("does not revoke an absent push registration on a clean native start", async () => {
+    renderHook(() => useNotificationSetup({ handleQuickMood: vi.fn() }));
+
+    await act(async () => Promise.resolve());
+
+    expect(pushNotificationMocks.cancelPendingPushRegistration).toHaveBeenCalledTimes(1);
+    expect(pushNotificationMocks.removePushToken).not.toHaveBeenCalled();
+  });
+
+  it("retries startup cleanup when persisted push registration evidence remains", async () => {
+    pushNotificationMocks.readPushRegistrationEvidence.mockReturnValue("present");
+
+    renderHook(() => useNotificationSetup({ handleQuickMood: vi.fn() }));
+
+    await waitFor(() =>
+      expect(pushNotificationMocks.removePushToken).toHaveBeenCalledTimes(1),
+    );
+  });
   it("waits for hydrated user data before reconciling native reminder state", async () => {
     useUserDataStore.setState({ isLoading: true });
     renderHook(() => useNotificationSetup({ handleQuickMood: vi.fn() }));

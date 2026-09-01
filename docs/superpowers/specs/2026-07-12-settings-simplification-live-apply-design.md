@@ -6,6 +6,11 @@ grouped-list remediation is source- and test-verified; complete native,
 packaged-runtime, public-deployment, and human acceptance remain `UNVERIFIED`.
 Scope: V2 Settings information architecture, Appearance, Sound, Reminders, Privacy/Data, About, shared Settings primitives, local preference persistence, Settings motion, and all eight supported locales.
 
+The shared visual foundations and component grammar are defined by
+`docs/superpowers/specs/2026-07-28-ui-system-conformance-contract.md`, which
+governs foundations and shared components while this document remains the
+bounded authority for Settings behavior and information architecture.
+
 ## 1. Goal
 
 Make Settings useful, predictable, and calm for ordinary ZenFlow users:

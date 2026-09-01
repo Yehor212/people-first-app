@@ -2,9 +2,8 @@
  * TimerRing - SVG circular timer with progress ring and time display
  */
 
-import { motion } from 'framer-motion';
-import { formatTime } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { formatTime } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface TimerRingProps {
   timeLeft: number;
@@ -25,121 +24,53 @@ export function TimerRing({
   concentrateLabel,
   takeRestLabel,
 }: TimerRingProps) {
-  return (
-    <div className="relative w-44 h-44 sm:w-52 sm:h-52 mx-auto mb-6">
-      {/* Premium multi-layer timer */}
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        {/* Layer 1: Orbit path (dashed) */}
-        {isPrimaryCTA && (
-          <circle
-            cx="50"
-            cy="50"
-            r="47"
-            fill="none"
-            stroke="hsl(0 0% 100% / 0.1)"
-            strokeWidth="1"
-            strokeDasharray="3 3"
-          />
-        )}
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const boundedProgress = Math.min(100, Math.max(0, progress));
+  const strokeDashoffset = circumference * (1 - boundedProgress / 100);
+  const strokeWidth = isPrimaryCTA ? 7 : 6;
 
-        {/* Layer 2: Background track */}
+  return (
+    <div className="relative mx-auto mb-6 h-44 w-44 sm:h-52 sm:w-52">
+      <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
         <circle
           cx="50"
           cy="50"
-          r="42"
+          r={radius}
           fill="none"
-          stroke={isPrimaryCTA ? "hsl(0 0% 100% / 0.1)" : "hsl(var(--secondary))"}
-          strokeWidth="6"
+          stroke="hsl(var(--border))"
+          strokeWidth={strokeWidth}
         />
-
-        {/* Layer 3: Progress ring with glow */}
-        <motion.circle
+        <circle
           cx="50"
           cy="50"
-          r="42"
+          r={radius}
           fill="none"
-          stroke={isPrimaryCTA
-            ? isBreak ? "url(#breakGradient)" : "url(#focusGradient)"
-            : isBreak ? "hsl(var(--accent))" : "hsl(var(--primary))"
-          }
-          strokeWidth="6"
+          stroke="hsl(var(--primary))"
+          strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray={`${2 * Math.PI * 42}`}
-          strokeDashoffset={`${2 * Math.PI * 42 * (1 - progress / 100)}`}
-          style={isPrimaryCTA ? {
-            filter: `drop-shadow(0 0 8px ${isBreak ? 'hsl(var(--focus-pink) / 0.6)' : 'hsl(var(--focus-violet) / 0.6)'})`
-          } : {}}
-          initial={false}
-          animate={{ strokeDashoffset: `${2 * Math.PI * 42 * (1 - progress / 100)}` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-500 motion-safe:ease-out"
         />
-
-        {/* Gradient definitions */}
-        <defs>
-          <linearGradient id="focusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--focus-violet))" />
-            <stop offset="50%" stopColor="hsl(var(--focus-purple))" />
-            <stop offset="100%" stopColor="hsl(var(--focus-pink))" />
-          </linearGradient>
-          <linearGradient id="breakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--focus-pink))" />
-            <stop offset="50%" stopColor="hsl(var(--focus-pink-mid))" />
-            <stop offset="100%" stopColor="hsl(var(--focus-rose))" />
-          </linearGradient>
-        </defs>
       </svg>
-
-      {/* Inner breathing glow */}
-      {isPrimaryCTA && isRunning && (
-        <motion.div
-          className={cn(
-            "absolute inset-6 rounded-full pointer-events-none",
-            isBreak
-              ? "bg-[radial-gradient(circle,hsl(var(--focus-pink)/0.15)_0%,transparent_70%)]"
-              : "bg-[radial-gradient(circle,hsl(var(--focus-violet)/0.15)_0%,transparent_70%)]"
-          )}
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.5, 0.8, 0.5],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      )}
 
       <div
         role="timer"
         aria-label={isBreak ? takeRestLabel : concentrateLabel}
         className="absolute inset-0 flex flex-col items-center justify-center"
       >
-        <motion.span
-          aria-live="polite"
+        <span
+          aria-live={isRunning ? "off" : "polite"}
           aria-atomic="true"
           className={cn(
             "text-5xl font-bold tracking-tight",
-            isPrimaryCTA
-              ? "text-violet-700 dark:text-white"
-              : isBreak ? "text-accent" : "text-primary"
+            isBreak ? "text-foreground" : "text-primary"
           )}
-          style={isPrimaryCTA ? {
-            textShadow: isBreak
-              ? '0 0 20px hsl(var(--focus-pink) / 0.5)'
-              : '0 0 20px hsl(var(--focus-violet) / 0.5)'
-          } : {}}
-          key={timeLeft}
-          initial={{ scale: 0.95, opacity: 0.8 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.2 }}
         >
           {formatTime(timeLeft)}
-        </motion.span>
-        <span className={cn(
-          "text-sm mt-2",
-          isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
-        )} aria-hidden="true">
+        </span>
+        <span className="mt-2 text-sm text-muted-foreground" aria-hidden="true">
           {isBreak ? takeRestLabel : concentrateLabel}
         </span>
       </div>

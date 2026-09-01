@@ -4,6 +4,78 @@ import { primeZenflowV2, type ZenflowV2Language } from "./helpers/zenflowV2State
 
 const WEB_SECTION_IDS = ["account", "appearance", "sound", "privacy"] as const;
 type SettingsDeepLinkSection = (typeof WEB_SECTION_IDS)[number] | "notifications";
+const AUTH_FIXTURE = process.env.ZENFLOW_E2E_AUTH_FIXTURE ?? "signed-out";
+const USE_LOOPBACK_AUTH_FIXTURE = process.env.ZENFLOW_E2E_LOOPBACK_AUTH_FIXTURE === "true";
+
+if (!["signed-out", "unavailable"].includes(AUTH_FIXTURE)) {
+  throw new Error("ZENFLOW_E2E_AUTH_FIXTURE must be either signed-out or unavailable.");
+}
+if (USE_LOOPBACK_AUTH_FIXTURE && AUTH_FIXTURE !== "signed-out") {
+  throw new Error("The loopback auth fixture is valid only for the signed-out account state.");
+}
+if (
+  USE_LOOPBACK_AUTH_FIXTURE &&
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY !== "e2e-public-nonsecret"
+) {
+  throw new Error("The loopback auth fixture requires the isolated non-secret E2E key.");
+}
+
+const EXPECT_AUTH_UNAVAILABLE = AUTH_FIXTURE === "unavailable";
+const blockedExternalRequests = new WeakMap<Page, string[]>();
+
+test.beforeEach(async ({ page, baseURL }) => {
+  if (!USE_LOOPBACK_AUTH_FIXTURE) return;
+  if (!baseURL) throw new Error("The loopback auth fixture requires a local baseURL.");
+
+  const appUrl = new URL(baseURL);
+  const supabaseUrl = new URL(process.env.VITE_SUPABASE_URL || "");
+  if (!["127.0.0.1", "localhost"].includes(appUrl.hostname)) {
+    throw new Error("The loopback auth fixture requires a loopback app host.");
+  }
+  if (
+    supabaseUrl.origin !== appUrl.origin ||
+    supabaseUrl.pathname !== "/people-first-app/__e2e_supabase"
+  ) {
+    throw new Error("The loopback Supabase URL must stay on the isolated local app origin.");
+  }
+
+  const blocked: string[] = [];
+  blockedExternalRequests.set(page, blocked);
+  await page.route("**/*", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (!["http:", "https:"].includes(requestUrl.protocol)) {
+      await route.continue();
+      return;
+    }
+    if (requestUrl.origin !== appUrl.origin) {
+      blocked.push(`${requestUrl.origin}${requestUrl.pathname}`);
+      await route.abort("blockedbyclient");
+      return;
+    }
+    if (requestUrl.pathname.includes("/__e2e_supabase/rest/v1/design_flags")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
+      return;
+    }
+    if (requestUrl.pathname.includes("/__e2e_supabase/")) {
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: '{"message":"isolated E2E endpoint not implemented"}',
+      });
+      return;
+    }
+    await route.continue();
+  });
+});
+
+test.afterEach(async ({ page }) => {
+  if (!USE_LOOPBACK_AUTH_FIXTURE) return;
+  expect(blockedExternalRequests.get(page) ?? []).toEqual([]);
+});
 
 async function openSettings(
   page: Page,
@@ -52,12 +124,26 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(overflow).toBe(0);
 }
 
+async function expectAccountFixtureAndOpenPrivacy(page: Page) {
+  await page.getByTestId("settings-mobile-back").click();
+  await expect(page.getByTestId("settings-module-card-account")).toContainText(
+    EXPECT_AUTH_UNAVAILABLE ? "Backup isn’t available in this version" : "You’re not signed in"
+  );
+  await page.getByTestId("settings-module-card-privacy").click();
+  await expect(page.getByTestId("settings-module-panel-privacy")).toBeVisible();
+}
+
 async function expectPhoneOverview(page: Page, focusedSection?: string) {
   await expect(page.getByTestId("settings-page-workspace")).toHaveAttribute(
     "data-mobile-view",
     "overview"
   );
   await expect(page.getByTestId("settings-selected-panel")).toHaveCount(0);
+  const moduleList = page.getByTestId("settings-module-list");
+  await expect(moduleList).toHaveAttribute("role", "list");
+  await expect(moduleList).toHaveAttribute("data-containment", "group");
+  await expect(moduleList.locator('[role="listitem"][data-containment="row"]')).toHaveCount(4);
+  await expect(moduleList.locator('[data-slot="settings-module-separator"]')).toHaveCount(3);
   await expect(page.locator('[data-testid^="settings-module-card-"]')).toHaveCount(4);
   for (const sectionId of WEB_SECTION_IDS) {
     const card = page.getByTestId(`settings-module-card-${sectionId}`);
@@ -204,13 +290,21 @@ test.describe("V2 Settings current information architecture", () => {
     await expect(page.getByTestId("settings-v2-push-notifications")).toHaveCount(0);
   });
 
-  test("Privacy separates restorable backups from reports", async ({ page }) => {
+  test("Privacy separates the available backup actions from reports", async ({ page }) => {
     await openSettings(page, { section: "privacy" });
+    await expectAccountFixtureAndOpenPrivacy(page);
 
-    const backup = page.getByRole("region", { name: "Backup & restore", exact: true });
+    const backup = page.getByRole("region", {
+      name: EXPECT_AUTH_UNAVAILABLE ? "Save backup" : "Backup & restore",
+      exact: true,
+    });
     const reports = page.getByRole("region", { name: "Reports", exact: true });
     await expect(backup.getByTestId("settings-v2-export-json")).toHaveAccessibleName("Save backup");
-    await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName("Import backup");
+    if (EXPECT_AUTH_UNAVAILABLE) {
+      await expect(backup.getByTestId("settings-v2-import")).toHaveCount(0);
+    } else {
+      await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName("Import backup");
+    }
     await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
     await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
     await expect(reports).toContainText("Reports are not backups.");
@@ -230,13 +324,28 @@ test.describe("V2 Settings current information architecture", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("largest text keeps the import confirmation inside a compact viewport", async ({ page }) => {
+  test("largest text keeps the available backup flow inside a compact viewport", async ({
+    page,
+  }) => {
     await openSettings(page, {
       section: "privacy",
       width: 320,
       height: 568,
       textScale: 1.5,
     });
+    await expectAccountFixtureAndOpenPrivacy(page);
+
+    if (EXPECT_AUTH_UNAVAILABLE) {
+      const backup = page.getByRole("region", { name: "Save backup", exact: true });
+      const reports = page.getByRole("region", { name: "Reports", exact: true });
+      await expect(backup.getByTestId("settings-v2-import")).toHaveCount(0);
+      await expect(backup.getByTestId("settings-v2-export-json")).toBeVisible();
+      await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
+      await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      return;
+    }
+
     const trigger = page.getByTestId("settings-v2-import");
     await trigger.scrollIntoViewIfNeeded();
     await page.locator('input[type="file"][accept="application/json"]').setInputFiles({

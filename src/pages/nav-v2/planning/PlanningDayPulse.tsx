@@ -4,31 +4,41 @@ import type { PlanningDayPulse } from "./planningFeatureModel";
 interface PlanningDayPulseProps {
   pulse: PlanningDayPulse;
   labels: Record<string, string>;
+  language: string;
 }
 
-function interpolateCount(template: string, count: number): string {
-  return template.replace("{count}", String(count));
+function interpolateCount(
+  template: string,
+  count: number,
+  numberFormatter: Intl.NumberFormat,
+): string {
+  return template.replace("{count}", numberFormatter.format(count));
 }
 
-export function PlanningDayPulse({ pulse, labels }: PlanningDayPulseProps) {
+export function PlanningDayPulse({ pulse, labels, language }: PlanningDayPulseProps) {
+  const numberFormatter = new Intl.NumberFormat(language, { useGrouping: false });
   const items = [
     {
       id: "events",
       icon: CalendarDays,
       label: labels.planningPulseEvents,
-      value: String(pulse.eventCount),
+      value: numberFormatter.format(pulse.eventCount),
     },
     {
       id: "focus",
       icon: Timer,
       label: labels.planningPulseFocus,
-      value: String(pulse.focusMinutesToday),
+      value: numberFormatter.format(pulse.focusMinutesToday),
     },
     {
       id: "habits",
       icon: CheckCircle2,
       label: labels.planningPulseHabits,
-      value: interpolateCount(labels.planningPulseHabitCount, pulse.pendingHabitCount),
+      value: interpolateCount(
+        labels.planningPulseHabitCount,
+        pulse.pendingHabitCount,
+        numberFormatter,
+      ),
     },
     {
       id: "mood",
@@ -42,7 +52,11 @@ export function PlanningDayPulse({ pulse, labels }: PlanningDayPulseProps) {
             id: "conflicts",
             icon: AlertTriangle,
             label: labels.planningPulseConflicts,
-            value: interpolateCount(labels.planningPulseConflictCount, pulse.conflictCount),
+            value: interpolateCount(
+              labels.planningPulseConflictCount,
+              pulse.conflictCount,
+              numberFormatter,
+            ),
           },
         ]
       : []),
@@ -52,7 +66,7 @@ export function PlanningDayPulse({ pulse, labels }: PlanningDayPulseProps) {
     <section
       data-testid="planning-day-pulse"
       aria-label={labels.planningPulseTitle}
-      className="rounded-2xl border border-border/45 bg-card/72 p-3 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+      className="py-1"
     >
       <p className="break-words px-1 text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:normal]">
         {labels.planningPulseTitle}
@@ -64,7 +78,7 @@ export function PlanningDayPulse({ pulse, labels }: PlanningDayPulseProps) {
             <div
               key={item.id}
               data-testid={`planning-pulse-${item.id}`}
-              className="min-h-[64px] min-w-0 rounded-xl border border-border/40 bg-secondary/45 px-3 py-2"
+              className="min-h-[64px] min-w-0 px-1 py-2"
             >
               <div className="flex min-w-0 items-start gap-2 text-xs font-semibold text-muted-foreground">
                 <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />

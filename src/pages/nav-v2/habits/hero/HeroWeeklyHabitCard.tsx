@@ -7,6 +7,7 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
 } from "react";
 import { AnimatedFire } from "@/components/compact-habit-card/AnimatedFire";
 import { MiniWeekRow } from "@/components/habit-hub/MiniWeekRow";
@@ -36,6 +37,7 @@ import {
 } from "@/lib/habitNumericalInteraction";
 import { isHabitDueOnDate, normalizeHabitSchedule } from "@/lib/habitScheduling";
 import { isAndroid } from "@/lib/platform";
+import { V2_HABIT_JOURNEY_ICONS } from "@/lib/v2IconSystem";
 import type { Habit } from "@/types";
 import { formatLocalizedCount } from "@/features/journal";
 import { ChevronDown } from "lucide-react";
@@ -136,6 +138,9 @@ interface HeroWeeklyHabitCardProps {
   onAdjust?: (habitId: string, date: string, delta: number) => void;
   onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
   onOpenDetail?: (habit: Habit) => void;
+  onOpenActions?: () => void;
+  actionsLabel?: string;
+  actionsTriggerRef?: RefObject<HTMLButtonElement>;
   initiallyCollapsed?: boolean;
 }
 
@@ -145,6 +150,9 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   onAdjust,
   onNumericalAction,
   onOpenDetail,
+  onOpenActions,
+  actionsLabel,
+  actionsTriggerRef,
   initiallyCollapsed = false,
 }: HeroWeeklyHabitCardProps) {
   const { t, language } = useLanguage();
@@ -337,6 +345,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
   const contentId = `hero-weekly-card-${habit.id}-content`;
   const collapseLabel = isCollapsed ? t.expand || "Expand" : t.collapse || "Collapse";
   const collapsedCueLabel = t.expand || "Expand";
+  const ActionsIcon = V2_HABIT_JOURNEY_ICONS.actions;
 
   const handleIconCheckIn = () => {
     if (!isDueToday) return;
@@ -390,7 +399,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
       <div
         className={
           isCollapsed
-            ? "grid min-h-[72px] grid-cols-[48px_minmax(0,1fr)_44px] items-center gap-3 px-3 py-2.5"
+            ? "grid min-h-[72px] grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5"
             : "grid grid-cols-[44px_minmax(0,1fr)] min-[420px]:grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-3 px-4 pt-4"
         }
       >
@@ -479,7 +488,7 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
         <div
           className={
             isCollapsed
-              ? "flex h-12 items-center justify-center"
+              ? "flex min-h-12 items-center justify-end gap-1"
               : "col-span-2 flex flex-wrap items-start justify-end gap-1 min-[420px]:col-span-1 min-[420px]:shrink-0"
           }
         >
@@ -500,6 +509,21 @@ export const HeroWeeklyHabitCard = memo(function HeroWeeklyHabitCard({
             >
               {planLabel}
             </span>
+          ) : null}
+          {onOpenActions && actionsLabel ? (
+            <button
+              ref={actionsTriggerRef}
+              type="button"
+              aria-label={actionsLabel}
+              aria-haspopup="dialog"
+              dir="auto"
+              onClick={onOpenActions}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-border/55 bg-background/70 text-foreground/75 motion-safe:transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              data-testid={`hero-weekly-card-${habit.id}-actions`}
+              data-slot="weekly-actions"
+            >
+              <ActionsIcon className="h-4 w-4" aria-hidden="true" />
+            </button>
           ) : null}
           <button
             type="button"

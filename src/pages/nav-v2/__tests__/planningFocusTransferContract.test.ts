@@ -29,9 +29,11 @@ describe("Planning V2 focus transfer contract", () => {
     expect(timerControls).toContain("disabled={isRunning}");
     expect(timerControls).toContain("{labels.hyperfocusMode}");
     expect(timerControls).toContain("import { Play, Pause, RotateCcw, Focus }");
-    expect(timerControls).toContain("useShouldAnimate");
-    expect(timerControls).toContain("motionAllowed && !isRunning");
-    expect(timerControls).toContain("whileHover={motionAllowed ?");
+    expect(timerControls).not.toContain("useShouldAnimate");
+    expect(timerControls).not.toContain("whileHover=");
+    expect(timerControls).not.toContain("whileTap=");
+    expect(timerControls).toContain('variant="default"');
+    expect(timerControls).toContain('variant="secondary"');
     expect(timerControls).toContain("<Focus");
     expect(timerControls).not.toContain("Zap");
 
@@ -65,8 +67,9 @@ describe("Planning V2 focus transfer contract", () => {
     expect(hyperfocusMode).toContain("Play, Pause, Shield, Music, Leaf");
     expect(hyperfocusMode).toContain("useShouldAnimate");
     expect(hyperfocusMode).toContain("motionAllowed");
-    expect(hyperfocusMode).toContain("motionAllowed && (");
-    expect(hyperfocusMode).toContain("motionAllowed ? { height:");
+    expect(hyperfocusMode).not.toContain("animate-pulse");
+    expect(hyperfocusMode).not.toContain("animate-glow");
+    expect(hyperfocusMode).not.toContain("repeat: Infinity");
     expect(hyperfocusMode).toContain("<Leaf");
     expect(hyperfocusMode).not.toContain("💡");
     expect(hyperfocusMode).not.toContain("Sparkles");
@@ -74,7 +77,10 @@ describe("Planning V2 focus transfer contract", () => {
     expect(hyperfocusMode).toContain('text-[hsl(var(--zf-text-strong))]');
     expect(hyperfocusMode).toContain('min-h-[var(--app-viewport-height)]');
     expect(hyperfocusMode).toContain('var(--safe-top)');
-    expect(hyperfocusMode).toContain('var(--safe-right)');
+    expect(hyperfocusMode).toContain('var(--safe-inline-end)');
+    expect(hyperfocusMode).not.toContain(
+      'insetInlineEnd: "max(1rem, calc(var(--safe-right)',
+    );
     expect(hyperfocusMode).toContain('var(--safe-bottom)');
     expect(hyperfocusMode).toContain('pt-[calc(var(--safe-top)_+_4.75rem)]');
     expect(hyperfocusMode).toContain('pb-[calc(var(--safe-bottom)_+_2rem)]');
@@ -103,9 +109,10 @@ describe("Planning V2 focus transfer contract", () => {
 
     expect(hyperfocusSoundSelector).toContain("lg:max-w-3xl");
     expect(hyperfocusSoundSelector).toContain("lg:grid-cols-7");
-    expect(hyperfocusSoundSelector).toContain("useShouldAnimate");
-    expect(hyperfocusSoundSelector).toContain('motionAllowed && "animate-spin"');
-    expect(hyperfocusSoundSelector).toContain("whileHover={motionAllowed ?");
+    expect(hyperfocusSoundSelector).not.toContain("useShouldAnimate");
+    expect(hyperfocusSoundSelector).toContain("motion-safe:animate-spin");
+    expect(hyperfocusSoundSelector).not.toContain("whileHover=");
+    expect(hyperfocusSoundSelector).not.toContain("whileTap=");
   });
 
   it("keeps V2 post-focus mindful moment out of V1 stats navigation", () => {
@@ -127,12 +134,14 @@ describe("Planning V2 focus transfer contract", () => {
     expect(addEventModal).toContain("const { modalRef, handleKeyDown } = useModalA11y(true, onClose);");
     expect(addEventModal).toContain("ref={modalRef}");
     expect(addEventModal).toContain("onKeyDown={handleKeyDown}");
-    expect(addEventModal).toContain("z-[60]");
+    expect(addEventModal).toContain("z-[var(--z-modal)]");
+    expect(addEventModal).not.toContain("z-[60]");
 
     expect(eventDetailsModal).toContain("const { modalRef, handleKeyDown } = useModalA11y(true, onClose);");
     expect(eventDetailsModal).toContain("ref={modalRef}");
     expect(eventDetailsModal).toContain("onKeyDown={handleKeyDown}");
-    expect(eventDetailsModal).toContain("z-[60]");
+    expect(eventDetailsModal).toContain("z-[var(--z-modal)]");
+    expect(eventDetailsModal).not.toContain("z-[60]");
   });
 
   it("keeps Planning review lane local to V2 Planning without V1 stats navigation", () => {

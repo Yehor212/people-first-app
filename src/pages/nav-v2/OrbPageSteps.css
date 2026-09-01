@@ -1,3 +1,12 @@
+/* Semantic layout contracts kept outside JSX so static presentation does not drift into inline style. */
+.orb-step-scroll-safe-center {
+  justify-content: safe center;
+}
+
+.orb-page-continuation-button {
+  border-radius: clamp(24px, 8vw, 44px);
+}
+
 /* Route-local narrow-width safeguards for the reflowed refine step. */
 @media (max-width: 359px) {
   .orb-page-refine-scroll {

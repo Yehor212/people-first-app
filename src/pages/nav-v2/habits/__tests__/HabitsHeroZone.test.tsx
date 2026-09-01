@@ -82,6 +82,8 @@ const baseHabit: Habit = {
   unit: "",
   entries: {},
   reminders: [],
+  identityVerb: "someone who keeps their word",
+  identityIcon: "Sparkles",
 };
 
 describe("HabitsHeroZone", () => {
@@ -94,7 +96,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[]}
         dailyProgress={{ completed: 0, total: 0, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={onCreate}
       />
     );
@@ -110,7 +111,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[baseHabit]}
         dailyProgress={{ completed: 1, total: 3, ratio: 1 / 3 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
       />
     );
@@ -125,7 +125,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[baseHabit]}
         dailyProgress={{ completed: 1, total: 3, ratio: 1 / 3 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
       />
     );
@@ -161,7 +160,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[morning, evening]}
         dailyProgress={{ completed: 0, total: 2, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
       />
     );
@@ -177,7 +175,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[baseHabit]}
         dailyProgress={{ completed: 0, total: 1, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
       />
     );
@@ -193,7 +190,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[]}
         dailyProgress={{ completed: 0, total: 0, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
         onPickTemplate={vi.fn()}
       />
@@ -210,7 +206,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[]}
         dailyProgress={{ completed: 0, total: 0, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
         onPickTemplate={vi.fn()}
       />
@@ -240,7 +235,6 @@ describe("HabitsHeroZone", () => {
         hasActiveHabits
         dailyProgress={{ completed: 0, total: 0, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
         onPickTemplate={vi.fn()}
       />
@@ -256,7 +250,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[baseHabit]}
         dailyProgress={{ completed: 0, total: 1, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={onCreate}
       />
     );
@@ -264,13 +257,12 @@ describe("HabitsHeroZone", () => {
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
 
-  it("renders identity prompt when habits are present", () => {
+  it("renders the identity prompt when a habit has a user-configured identity", () => {
     render(
       <HabitsHeroZone
         todaysHabits={[baseHabit]}
         dailyProgress={{ completed: 0, total: 1, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
       />
     );
@@ -285,7 +277,6 @@ describe("HabitsHeroZone", () => {
         todaysHabits={[baseHabit]}
         dailyProgress={{ completed: 0, total: 1, ratio: 0 }}
         onToggleHabit={vi.fn()}
-        onDeleteHabit={vi.fn()}
         onCreateHabit={vi.fn()}
       />
     );

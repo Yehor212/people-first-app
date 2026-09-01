@@ -200,6 +200,7 @@ export function useFocusHandlers({
         if (
           committed.primaryInserted &&
           committed.session.status !== "aborted" &&
+          rewardsEnabled &&
           committed.session.duration >= 5
         ) {
           mindfulTimeoutRef.current = setTimeout(() => {

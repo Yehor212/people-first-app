@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { performOwnerSafeAccountDeletion } from "@/lib/accountSignOutCleanup";
 import { logger } from "@/lib/logger";
 import { initializePushNotifications } from "@/lib/pushNotifications";
@@ -17,6 +17,8 @@ export function useDeleteAccount({ t, activeUserId }: UseDeleteAccountOptions) {
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const activeUserIdRef = useRef(activeUserId);
+  activeUserIdRef.current = activeUserId;
   const pushNotificationsEnabled = useUserDataStore(
     (state) => state.privacy.pushNotifications === true,
   );
@@ -88,6 +90,18 @@ export function useDeleteAccount({ t, activeUserId }: UseDeleteAccountOptions) {
         },
       );
 
+      const activeOwnerAfterDeletion = activeUserIdRef.current;
+      const expectedSessionClearedAfterConfirmedDeletion =
+        activeOwnerAfterDeletion === null && result.remoteDeletion === "confirmed";
+      if (
+        activeOwnerAfterDeletion !== expectedOwnerUserId &&
+        !expectedSessionClearedAfterConfirmedDeletion
+      ) {
+        clearDeleteConfirmation();
+        setDeleteStatus(null);
+        return;
+      }
+
       if (result.status === "deleted") {
         clearDeleteConfirmation();
         setDeleteStatus(t.deleteAccountSuccess);
@@ -122,6 +136,11 @@ export function useDeleteAccount({ t, activeUserId }: UseDeleteAccountOptions) {
 
       setDeleteStatus(t.deleteAccountError);
     } catch (error) {
+      if (activeUserIdRef.current !== expectedOwnerUserId) {
+        clearDeleteConfirmation();
+        setDeleteStatus(null);
+        return;
+      }
       logger.error("[AccountSection] Delete account failed:", error);
       setDeleteStatus(
         t.deleteAccountOutcomeUnknown ||

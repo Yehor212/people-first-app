@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, useCallback, useEffect, Suspense } from "react";
+import { memo, useState, useMemo, useCallback, useEffect, useRef, Suspense } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   CalendarDays,
@@ -40,6 +40,8 @@ import { getHabitPlanState } from "@/lib/habitPlan";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatLocalizedCount } from "@/features/journal";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { HabitIconVisual } from "@/pages/nav-v2/habits/hero/HabitIconVisual";
 import { ENTRY } from "@/types";
 import type { Habit } from "@/types";
 
@@ -261,16 +263,44 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   const today = getToday();
   const planDurationFallback = "day plan";
   const reduceMotion = useReducedMotion();
+  const shouldAnimate = useShouldAnimate();
 
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isDeletingRef = useRef(false);
+  const shouldRestoreDeleteTriggerFocusRef = useRef(false);
 
-  useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
+  const setDeleteTriggerRef = useCallback((node: HTMLButtonElement | null) => {
+    if (!node || !shouldRestoreDeleteTriggerFocusRef.current) return;
+    shouldRestoreDeleteTriggerFocusRef.current = false;
+    requestAnimationFrame(() => {
+      if (node.isConnected) node.focus({ preventScroll: true });
+    });
+  }, []);
+
+  const setCancelDeleteRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      if (!node || !showDeleteConfirm) return;
+      requestAnimationFrame(() => {
+        if (node.isConnected) node.focus({ preventScroll: true });
+      });
+    },
+    [showDeleteConfirm]
+  );
+
+  const closeDeleteConfirm = useCallback(() => {
+    shouldRestoreDeleteTriggerFocusRef.current = true;
+    setShowDeleteConfirm(false);
+  }, []);
+
+  useBackHandler(showDeleteConfirm, closeDeleteConfirm);
   useBackHandler(!!habit && !showDeleteConfirm, onClose);
 
   useEffect(() => {
     setIsDeleting(false);
+    isDeletingRef.current = false;
+    shouldRestoreDeleteTriggerFocusRef.current = false;
     setShowDeleteConfirm(false);
     setActiveTab("overview");
   }, [habit?.id]);
@@ -295,13 +325,15 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   }, [habit, isSkippedToday, today, onSkip, onUnskip]);
 
   const handleDelete = useCallback(() => {
-    if (!habit || isDeleting) return;
+    if (!habit || isDeletingRef.current) return;
+    isDeletingRef.current = true;
     setIsDeleting(true);
     void hapticTap();
     onDelete(habit.id);
+    shouldRestoreDeleteTriggerFocusRef.current = false;
     setShowDeleteConfirm(false);
     onClose();
-  }, [habit, isDeleting, onDelete, onClose]);
+  }, [habit, onDelete, onClose]);
 
   const handleNoteUpdate = useCallback(
     (updatedHabit: Habit) => {
@@ -333,6 +365,8 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
       onOpenChange={(open) => {
         if (!open) {
           setIsDeleting(false);
+          isDeletingRef.current = false;
+          shouldRestoreDeleteTriggerFocusRef.current = false;
           setShowDeleteConfirm(false);
           onClose();
         }
@@ -340,6 +374,12 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     >
       <SheetContent
         side="bottom"
+        aria-describedby={undefined}
+        onEscapeKeyDown={(event) => {
+          if (!showDeleteConfirm) return;
+          event.preventDefault();
+          closeDeleteConfirm();
+        }}
         className={cn(
           "max-h-[90dvh] rounded-t-3xl overflow-y-auto",
           "bg-card border-t border-border",
@@ -375,11 +415,15 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   backgroundColor: `${habitColor}24`,
                 }}
               >
-                {habit.icon}
+                <HabitIconVisual
+                  value={habit.icon}
+                  iconClassName="h-8 w-8"
+                  textClassName="text-2xl leading-none"
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <SheetTitle className="whitespace-normal break-words [overflow-wrap:anywhere] text-xl font-semibold text-foreground">
-                  {habit.name}
+                  <bdi dir="auto">{habit.name}</bdi>
                 </SheetTitle>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   {habit.category && <span className="capitalize">{habit.category}</span>}
@@ -468,7 +512,11 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 <div className={cn("rounded-3xl border p-4", getToneClasses(snapshot.today.tone))}>
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-current/20 bg-background/45 text-2xl">
-                      {habit.icon}
+                      <HabitIconVisual
+                        value={habit.icon}
+                        iconClassName="h-7 w-7"
+                        textClassName="text-2xl leading-none"
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold">{statusCopy.title}</div>
@@ -656,12 +704,14 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               {!showDeleteConfirm ? (
                 <motion.div
                   key="del-btn"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={zenMotion.exit}
+                  initial={shouldAnimate ? { opacity: 0 } : false}
+                  animate={shouldAnimate ? { opacity: 1 } : undefined}
+                  exit={shouldAnimate ? { opacity: 0 } : undefined}
+                  transition={shouldAnimate ? zenMotion.exit : zenMotion.instant}
                 >
                   <button
+                    ref={setDeleteTriggerRef}
+                    type="button"
                     onClick={() => {
                       void hapticTap();
                       setShowDeleteConfirm(true);
@@ -679,19 +729,27 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               ) : (
                 <motion.div
                   key="del-confirm"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={zenMotion.snappy}
+                  initial={shouldAnimate ? { opacity: 0, height: 0 } : false}
+                  animate={shouldAnimate ? { opacity: 1, height: "auto" } : undefined}
+                  exit={shouldAnimate ? { opacity: 0, height: 0 } : undefined}
+                  transition={shouldAnimate ? zenMotion.snappy : zenMotion.instant}
                   className="overflow-hidden"
                 >
                   <div className="space-y-2">
-                    <p className="px-2 text-center text-xs text-destructive">
+                    <p
+                      id={`habit-delete-confirmation-${habit.id}`}
+                      role="status"
+                      aria-live="polite"
+                      className="px-2 text-center text-xs text-destructive"
+                    >
                       {ts.confirmDeleteHabit || "Are you sure? This cannot be undone."}
                     </p>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setShowDeleteConfirm(false)}
+                        ref={setCancelDeleteRef}
+                        type="button"
+                        aria-describedby={`habit-delete-confirmation-${habit.id}`}
+                        onClick={closeDeleteConfirm}
                         className={cn(
                           "min-h-[44px] flex-1 rounded-xl border border-border bg-secondary/35 px-4 py-3 text-sm font-medium text-muted-foreground motion-safe:transition",
                           "hover:bg-secondary/55",
@@ -701,6 +759,8 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                         {ts.cancel || "Cancel"}
                       </button>
                       <button
+                        type="button"
+                        aria-describedby={`habit-delete-confirmation-${habit.id}`}
                         onClick={handleDelete}
                         disabled={isDeleting}
                         className={cn(

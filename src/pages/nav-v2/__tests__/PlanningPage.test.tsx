@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PlanningPage } from "../planning/PlanningPage";
 import { buildPlanningBridgeHref } from "../planning/PlanningBridgeActions";
 import { ENTRY, type FocusSession, type Habit, type MoodEntry, type ScheduleEvent } from "@/types";
@@ -8,6 +8,7 @@ import { useUserDataStore } from "@/stores/userDataStore";
 import { useUIStore } from "@/stores/uiStore";
 import { formatDate, getToday } from "@/lib/utils";
 import { persistManualScheduleEvents } from "@/features/automation";
+import * as animationUtils from "@/lib/animationUtils";
 
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
@@ -23,8 +24,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       planningModeReview: "Review",
       todayMinutes: "min today",
       planningActionTitle: "Next step",
-      planningActionAddEvent: "Add to schedule",
-      planningActionStartFocus: "Start focus",
+      planningActionAddEvent: "Open schedule to add an event",
+      planningActionStartFocus: "Open focus timer",
       planningActionReview: "Review",
       planningActionOpenSchedule: "Open schedule",
       planningIntent_add_first_event: "Add the first anchor for today.",
@@ -242,6 +243,176 @@ describe("PlanningPage", () => {
     useUIStore.setState({ currentFocusMinutes: undefined });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("renders only a truthful loading shell while user data is hydrating", () => {
+    useUserDataStore.setState({
+      scheduleEvents: [manualEvent()],
+      habits: [pendingHabit()],
+      focusSessions: [
+        {
+          id: "loading-session",
+          duration: 25,
+          completedAt: Date.now(),
+          date: getToday(),
+          status: "completed",
+        },
+      ],
+      isLoading: true,
+    });
+
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    const page = screen.getByTestId("planning-page");
+    expect(screen.getByRole("status")).toHaveTextContent("Preparing planning...");
+    expect(page).toHaveTextContent("Preparing planning...");
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("planning-empty-schedule")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("planning-day-pulse")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("planning-action-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("planning-schedule-timeline")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("planning-focus-timer")).not.toBeInTheDocument();
+  });
+
+  it("refreshes time-derived Planning guidance on a bounded minute clock", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T09:45:00"));
+    const setIntervalSpy = vi.spyOn(window, "setInterval");
+
+    useUserDataStore.setState({
+      scheduleEvents: [
+        {
+          ...manualEvent(),
+          date: "2026-07-29",
+          startHour: 10,
+          startMinute: 0,
+          endHour: 10,
+          endMinute: 30,
+        },
+      ],
+    });
+    useUIStore.setState({
+      focusEndTime: null,
+      focusIsRunning: false,
+      focusIsBreak: false,
+      focusLabel: "",
+    });
+
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
+      "Prepare for what is next.",
+    );
+    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
+
+    act(() => {
+      vi.setSystemTime(new Date("2026-07-29T10:00:00"));
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
+      "Stay with the current event.",
+    );
+  });
+
+  it("recomputes wall-clock guidance when hydration finishes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T09:45:00"));
+    useUserDataStore.setState({
+      scheduleEvents: [
+        {
+          ...manualEvent(),
+          date: "2026-07-29",
+          startHour: 10,
+          startMinute: 0,
+          endHour: 10,
+          endMinute: 30,
+        },
+      ],
+      isLoading: true,
+    });
+    useUIStore.setState({
+      focusEndTime: null,
+      focusIsRunning: false,
+      focusIsBreak: false,
+      focusLabel: "",
+    });
+
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Preparing planning...");
+
+    vi.setSystemTime(new Date("2026-07-29T10:05:00"));
+    act(() => {
+      useUserDataStore.setState({ isLoading: false });
+    });
+
+    expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
+      "Stay with the current event.",
+    );
+  });
+
+  it("refreshes time-derived guidance on focus and visible resume and cleans up listeners", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T09:45:00"));
+    const clearIntervalSpy = vi.spyOn(window, "clearInterval");
+    const removeWindowListenerSpy = vi.spyOn(window, "removeEventListener");
+    const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
+    const visibilityStateSpy = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("visible");
+
+    useUserDataStore.setState({
+      scheduleEvents: [
+        {
+          ...manualEvent(),
+          date: "2026-07-29",
+          startHour: 10,
+          startMinute: 0,
+          endHour: 10,
+          endMinute: 30,
+        },
+      ],
+    });
+    useUIStore.setState({
+      focusEndTime: null,
+      focusIsRunning: false,
+      focusIsBreak: false,
+      focusLabel: "",
+    });
+
+    const { unmount } = render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+
+    vi.setSystemTime(new Date("2026-07-29T10:05:00"));
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
+      "Stay with the current event.",
+    );
+
+    vi.setSystemTime(new Date("2026-07-29T10:31:00"));
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
+      "Use this open space for focus.",
+    );
+
+    unmount();
+
+    expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
+    expect(removeWindowListenerSpy).toHaveBeenCalledWith("focus", expect.any(Function));
+    expect(removeDocumentListenerSpy).toHaveBeenCalledWith(
+      "visibilitychange",
+      expect.any(Function),
+    );
+    visibilityStateSpy.mockRestore();
+  });
+
   it("keeps the empty-schedule action fully readable at narrow widths", () => {
     render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
 
@@ -393,6 +564,21 @@ describe("PlanningPage", () => {
       "data-active-planning-mode",
       "false",
     );
+  });
+
+  it("uses instant programmatic scrolling when motion is reduced", () => {
+    vi.spyOn(animationUtils, "shouldAnimate").mockReturnValue(false);
+    render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
+    const focusSection = screen.getByTestId("planning-focus-section");
+    const scrollIntoView = vi.fn();
+    focusSection.scrollIntoView = scrollIntoView;
+
+    fireEvent.click(screen.getByTestId("planning-mode-focus"));
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "auto",
+      block: "center",
+    });
   });
 
   it("routes the primary Planning action to the schedule mode on an empty day", () => {

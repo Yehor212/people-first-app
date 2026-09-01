@@ -4,7 +4,7 @@
  * Covers:
  *   - Long-press (>=450ms) opens detail sheet, short tap doesn't.
  *   - Long-press on inner toggle button is NOT intercepted (tap wins).
- *   - Enter / Space keyboard equivalent mirrors long-press semantics.
+ *   - Explicit named action button replaces hidden Enter / Space group activation.
  *   - Reminder cue renders when configured.
  */
 import { render, cleanup, screen, fireEvent, act } from "@testing-library/react";
@@ -23,7 +23,6 @@ vi.mock("@/contexts/LanguageContext", () => ({
       unskip: "Unskip today",
       archiveHabit: "Archive",
       unarchiveHabit: "Unarchive",
-      delete: "Delete",
     },
     language: "en",
   }),
@@ -33,15 +32,32 @@ vi.mock("../HeroWeeklyHabitCard", () => ({
   HeroWeeklyHabitCard: ({
     habit,
     initiallyCollapsed,
+    onOpenActions,
+    actionsLabel,
+    actionsTriggerRef,
   }: {
     habit: { id: string; name: string };
     initiallyCollapsed?: boolean;
+    onOpenActions?: () => void;
+    actionsLabel?: string;
+    actionsTriggerRef?: { current: HTMLButtonElement | null };
   }) => (
     <div
       data-testid={`mock-weekly-card-${habit.id}`}
       data-initially-collapsed={initiallyCollapsed ? "true" : "false"}
     >
       {habit.name}
+      {onOpenActions && (
+        <button
+          ref={actionsTriggerRef}
+          type="button"
+          aria-label={actionsLabel}
+          onClick={onOpenActions}
+          data-testid={`hero-weekly-card-${habit.id}-actions`}
+        >
+          Actions
+        </button>
+      )}
       <div
         role="checkbox"
         aria-checked="false"
@@ -65,16 +81,7 @@ vi.mock("../HabitActionSheet", () => ({
   }) => {
     actionSheetMocks.render(props);
     if (!props.open) return null;
-    return (
-      <div data-testid={`habit-action-sheet-${props.habit.id}`}>
-        <button
-          type="button"
-          data-testid={`habit-action-sheet-${props.habit.id}-delete`}
-        >
-          Delete
-        </button>
-      </div>
-    );
+    return <div data-testid={`habit-action-sheet-${props.habit.id}`}>Action sheet</div>;
   },
 }));
 
@@ -147,31 +154,35 @@ describe("HeroHabitRow", () => {
     expect(open).not.toHaveBeenCalled();
   });
 
-  it("Enter key opens the detail sheet", () => {
+  it("does not expose the non-interactive row group as a hidden keyboard action", () => {
     const open = vi.fn();
     render(
       <HeroHabitRow habit={habit()} onToggle={vi.fn()} onOpenDetail={open} />,
     );
     const row = screen.getByTestId("hero-habit-row-h1");
+    expect(row).toHaveAttribute("role", "group");
+    expect(row).not.toHaveAttribute("tabindex");
     row.focus();
     fireEvent.keyDown(row, { key: "Enter" });
-    expect(open).toHaveBeenCalledTimes(1);
+    expect(open).not.toHaveBeenCalled();
   });
 
-  it("Enter key opens the action sheet when row actions are wired", () => {
+  it("opens the action sheet from an explicitly named button when row actions are wired", () => {
     render(
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
         onOpenDetail={vi.fn()}
         onSkip={vi.fn()}
       />,
     );
-    const row = screen.getByTestId("hero-habit-row-h1");
-    row.focus();
-    fireEvent.keyDown(row, { key: "Enter" });
+    const trigger = screen.getByRole("button", { name: /Actions for.*Meditate/ });
+    expect(trigger).toHaveAccessibleName("Actions for \u2068Meditate\u2069");
+    fireEvent.click(trigger);
     expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
+    expect(
+      actionSheetMocks.render.mock.lastCall?.[0]?.restoreFocusTo?.current,
+    ).toBe(trigger);
   });
 
   it("notifies the native banner gate while the action sheet is open", () => {
@@ -180,16 +191,13 @@ describe("HeroHabitRow", () => {
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
         onOpenDetail={vi.fn()}
         onSkip={vi.fn()}
         onActionSheetOpenChange={onActionSheetOpenChange}
       />,
     );
 
-    const row = screen.getByTestId("hero-habit-row-h1");
-    row.focus();
-    fireEvent.keyDown(row, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: /Actions for.*Meditate/ }));
 
     expect(onActionSheetOpenChange).toHaveBeenLastCalledWith(true);
     view.unmount();
@@ -207,14 +215,14 @@ describe("HeroHabitRow", () => {
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
+        onSkip={vi.fn()}
         onBeforeActionSheetOpen={onBeforeActionSheetOpen}
       />,
     );
 
-    const row = screen.getByTestId("hero-habit-row-h1");
-    row.focus();
-    fireEvent.keyDown(row, { key: "Enter" });
+    const trigger = screen.getByRole("button", { name: /Actions for.*Meditate/ });
+    trigger.focus();
+    fireEvent.click(trigger);
 
     expect(onBeforeActionSheetOpen).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("habit-action-sheet-h1")).not.toBeInTheDocument();
@@ -224,7 +232,7 @@ describe("HeroHabitRow", () => {
       await Promise.resolve();
     });
     expect(screen.getByTestId("habit-action-sheet-h1")).toBeInTheDocument();
-    expect(row).not.toHaveFocus();
+    expect(trigger).not.toHaveFocus();
   });
 
   it("keeps the action sheet closed when native banner suppression is not acknowledged", async () => {
@@ -233,14 +241,12 @@ describe("HeroHabitRow", () => {
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
+        onSkip={vi.fn()}
         onBeforeActionSheetOpen={onBeforeActionSheetOpen}
       />,
     );
 
-    const row = screen.getByTestId("hero-habit-row-h1");
-    row.focus();
-    fireEvent.keyDown(row, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: /Actions for.*Meditate/ }));
 
     await act(async () => {
       await Promise.resolve();
@@ -268,7 +274,6 @@ describe("HeroHabitRow", () => {
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
         onOpenDetail={vi.fn()}
         onSkip={vi.fn()}
       />,
@@ -277,20 +282,18 @@ describe("HeroHabitRow", () => {
     expect(actionSheetMocks.render).not.toHaveBeenCalled();
   });
 
-  it("passes delete through to the action sheet when destructive fallback is needed", () => {
+  it("does not make a stale one-tap delete callback reachable from the row", () => {
     render(
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
+        // @ts-expect-error one-tap deletion is intentionally outside the row action contract
         onDelete={vi.fn()}
         onOpenDetail={vi.fn()}
-        onSkip={vi.fn()}
       />,
     );
-    const row = screen.getByTestId("hero-habit-row-h1");
-    row.focus();
-    fireEvent.keyDown(row, { key: "Enter" });
-    expect(screen.getByTestId("habit-action-sheet-h1-delete")).toBeInTheDocument();
+    expect(screen.queryByTestId("hero-weekly-card-h1-actions")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("habit-action-sheet-h1")).not.toBeInTheDocument();
   });
 
   it("renders reminder pill when reminder is configured", () => {
@@ -315,7 +318,6 @@ describe("HeroHabitRow", () => {
       <HeroHabitRow
         habit={habit()}
         onToggle={vi.fn()}
-        onDelete={vi.fn()}
         onOpenDetail={vi.fn()}
         onSkip={onSkip}
       />,

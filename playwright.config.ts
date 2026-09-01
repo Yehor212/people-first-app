@@ -62,7 +62,7 @@ export default defineConfig({
      Phase 2-B.2: switched {testFileDir} → {testDir}/{testFilePath.dir} to
      force snapshots into e2e/ on Windows (Playwright 1.46 resolves
      {testFileDir} as cwd on POSIX-normalised paths). */
-  snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
+  snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}',
 
   use: {
     baseURL: USE_LOCAL_WEBSERVER ? LOCAL_APP_URL : PUBLIC_APP_URL,

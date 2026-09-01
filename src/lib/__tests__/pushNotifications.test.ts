@@ -98,7 +98,9 @@ vi.mock("@/storage/accountBoundaryRuntime", () => ({
 }));
 
 import {
+  cancelPendingPushRegistration,
   initializePushNotifications,
+  readPushRegistrationEvidence,
   removePushToken,
   revokePushForAccountBoundary,
   savePushToken,
@@ -146,6 +148,31 @@ describe("push notification token lifecycle", () => {
       upsert: mocks.upsert,
       delete: mocks.deleteFn,
     });
+  });
+
+  it("reports absent registration evidence on a clean install", () => {
+    expect(readPushRegistrationEvidence()).toBe("absent");
+  });
+
+  it.each([
+    [PUSH_TOKEN_KEY, "token-a"],
+    [PUSH_INSTALL_ID_KEY, "install-a"],
+  ])("reports present registration evidence from %s", (key, value) => {
+    localStorage.setItem(key, value);
+
+    expect(readPushRegistrationEvidence()).toBe("present");
+  });
+
+  it("fails closed when registration storage cannot be read", () => {
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+
+    try {
+      expect(readPushRegistrationEvidence()).toBe("unavailable");
+    } finally {
+      getItem.mockRestore();
+    }
   });
 
   it("saves the current push token with a per-install id rather than the native app build id", async () => {
@@ -589,6 +616,28 @@ describe("push notification token lifecycle", () => {
     await initialization;
 
     expect(mocks.register).not.toHaveBeenCalled();
+  });
+
+  it("cancels an in-flight clean-start registration without starting remote cleanup", async () => {
+    let resolvePermission!: (value: { receive: "granted" }) => void;
+    mocks.checkPermissions.mockResolvedValueOnce({ receive: "prompt" });
+    mocks.requestPermissions.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePermission = resolve;
+      }),
+    );
+
+    const initialization = initializePushNotifications();
+    await Promise.resolve();
+    cancelPendingPushRegistration();
+    resolvePermission({ receive: "granted" });
+    await initialization;
+
+    expect(mocks.register).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalledWith(
+      "revoke_push_install",
+      expect.any(Object),
+    );
   });
 
   it("re-registers only after an in-flight revocation when enable is the newest intent", async () => {

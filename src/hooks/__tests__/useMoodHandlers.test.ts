@@ -133,6 +133,26 @@ describe("useMoodHandlers", () => {
     expect(updater([])).toEqual([expect.objectContaining(entry)]);
   });
 
+  it("keeps a durable mood idempotent when mounted state already refreshed it", async () => {
+    const { result } = renderMoodHandlers();
+    const entry = {
+      id: "durable-1",
+      mood: "good" as const,
+      date: "2026-02-19",
+      timestamp: 1000,
+      updatedAt: 1000,
+    };
+
+    await act(async () => {
+      await result.current.handleAddMood(entry);
+    });
+
+    const updater = mockSetMoods.mock.calls[0][0];
+    const updated = updater([{ ...entry }]);
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toEqual(expect.objectContaining(entry));
+  });
+
   it("handleAddMood calls rewardUser with mood treats", async () => {
     const { result } = renderMoodHandlers();
 

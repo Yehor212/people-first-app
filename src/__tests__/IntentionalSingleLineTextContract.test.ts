@@ -85,7 +85,7 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
   {
     path: "src/components/schedule/ScheduleVisuals.tsx",
     token: "truncate",
-    anchor: '<span className="truncate px-1">{event.title}</span>',
+    anchor: '<bdi dir="auto" className="truncate">',
     reason: "Timeline-card preview constrained by the event duration.",
     fullValuePath: "Activating the event card opens the complete event details.",
   },
@@ -93,42 +93,47 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
     path: "src/components/schedule/ScheduleVisuals.tsx",
     token: "whitespace-nowrap",
     anchor:
-      'className="min-w-0 max-w-full whitespace-nowrap text-center text-sm font-bold leading-none tracking-tight [font-variant-numeric:tabular-nums] [text-shadow:0_0_10px_rgba(139,92,246,0.5)] md:text-base"',
-    reason: "Atomic numeric timer value.",
-    fullValuePath: "The complete numeric value is rendered; no user text is shortened.",
+      'className="absolute inset-0 flex min-w-0 max-w-full items-center justify-center whitespace-nowrap text-center text-xs font-semibold leading-none tracking-tight text-foreground [font-variant-numeric:tabular-nums]"',
+    reason: "Complete locale-formatted clock value kept on one line.",
+    fullValuePath: "The complete localized time value is rendered; no user text is shortened.",
   },
   {
     path: "src/components/schedule/TimelineDayColumn.tsx",
     token: "whitespace-nowrap",
-    anchor: '"whitespace-nowrap text-sm font-medium tabular-nums",',
+    anchor: '"whitespace-nowrap text-sm font-medium tabular-nums text-muted-foreground",',
     reason: "Atomic complete HH:00 label in the named horizontal timeline.",
-    fullValuePath: "Every full label is rendered in a 96px cell and runtime collision proof is required.",
+    fullValuePath:
+      "Every full label is rendered in the current 144px hour cell and runtime collision proof is required.",
   },
   {
     path: "src/components/WidgetPreview.tsx",
     token: "truncate",
     anchor: "'text-sm flex-1 truncate',",
     reason: "Legacy widget-preview simulation; its Settings entry is currently absent.",
-    fullValuePath: "SOURCE_DEFINED_UNREACHABLE; restoring the entry point requires a new reveal-path review.",
+    fullValuePath:
+      "SOURCE_DEFINED_UNREACHABLE; restoring the entry point requires a new reveal-path review.",
   },
   {
     path: "src/components/WidgetPreview.tsx",
     token: "truncate",
     anchor: '<span className="text-sm font-medium truncate" style={WIDGET_ACCENTS.amber.text}>',
     reason: "Legacy widget-preview simulation; its Settings entry is currently absent.",
-    fullValuePath: "SOURCE_DEFINED_UNREACHABLE; restoring the entry point requires a new reveal-path review.",
+    fullValuePath:
+      "SOURCE_DEFINED_UNREACHABLE; restoring the entry point requires a new reveal-path review.",
   },
   {
     path: "src/features/journal/JournalEntryCard.tsx",
     token: "line-clamp-2",
-    anchor: '<p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed" dir="auto">',
+    anchor:
+      '<p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed" dir="auto">',
     reason: "Bounded related-entry preview.",
     fullValuePath: "The keyboard/touch-activatable entry card opens the complete journal entry.",
   },
   {
     path: "src/features/journal/JournalModule.tsx",
     token: "line-clamp-3",
-    anchor: '<span className="mt-2 block line-clamp-3 text-sm leading-relaxed text-muted-foreground">',
+    anchor:
+      '<span className="mt-2 block line-clamp-3 text-sm leading-relaxed text-muted-foreground">',
     reason: "Bounded favorite-entry preview.",
     fullValuePath: "Activating the favorite opens the complete journal entry.",
   },
@@ -146,7 +151,8 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
     anchor:
       '<span className="font-medium">{title.length > 24 ? title.slice(0, 24) + "\\u2026" : title}</span>',
     reason: "Bounded hover preview beside a 44px journal dot.",
-    fullValuePath: "The full title is in the option accessible name and activating the dot opens the entry.",
+    fullValuePath:
+      "The full title is in the option accessible name and activating the dot opens the entry.",
   },
   {
     path: "src/features/journal/MoodDotStrip.tsx",
@@ -154,7 +160,8 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
     anchor:
       '"absolute z-50 px-2.5 py-1.5 rounded-lg bg-popover text-popover-foreground text-xs shadow-lg border border-border/30 whitespace-nowrap pointer-events-none backdrop-blur-sm",',
     reason: "Bounded hover preview paired with the reviewed manual ellipsis.",
-    fullValuePath: "The full title is in the option accessible name and activating the dot opens the entry.",
+    fullValuePath:
+      "The full title is in the option accessible name and activating the dot opens the entry.",
   },
   {
     path: "src/features/journal/OnThisDayCard.tsx",
@@ -173,7 +180,7 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
   {
     path: "src/features/journal/memoryPortal.ts",
     token: "manual-ellipsis",
-    anchor: 'return text.length > 38 ? `${text.slice(0, 38).trimEnd()}...` : text;',
+    anchor: "return text.length > 38 ? `${text.slice(0, 38).trimEnd()}...` : text;",
     reason: "Bounded canvas-node label derived only when an entry has no title.",
     fullValuePath: "Selecting the node opens the complete journal entry.",
   },
@@ -181,23 +188,27 @@ const APPROVED_OCCURRENCES: readonly ApprovedOccurrence[] = [
     path: "src/lib/exportService.ts",
     token: "manual-ellipsis",
     anchor:
-      'addText(`${entry.date}: "${entry.text.slice(0, 100)}${entry.text.length > 100 ? \'...\' : \'\'}"`);',
+      "addText(`${entry.date}: \"${entry.text.slice(0, 100)}${entry.text.length > 100 ? '...' : ''}\"`);",
     reason: "Bounded human-readable PDF summary row.",
-    fullValuePath: "Full-fidelity journal export remains available through the structured export path.",
+    fullValuePath:
+      "Full-fidelity journal export remains available through the structured export path.",
   },
   {
     path: "src/pages/nav-v2/CinematicHeading.css",
     token: "css-nowrap",
     anchor: "white-space: nowrap;",
-    reason: "Prevents a single animated word from breaking between its separately animated characters.",
-    fullValuePath: "The heading container may wrap between complete words; no characters are removed.",
+    reason:
+      "Prevents a single animated word from breaking between its separately animated characters.",
+    fullValuePath:
+      "The heading container may wrap between complete words; no characters are removed.",
   },
   {
     path: "src/pages/nav-v2/OrbAmbienceControl.css",
     token: "css-nowrap",
     anchor: "white-space: nowrap;",
     reason: "Standard visually-hidden control state before keyboard focus reveals it.",
-    fullValuePath: "The focus-within state explicitly restores normal wrapping and full control text.",
+    fullValuePath:
+      "The focus-within state explicitly restores normal wrapping and full control text.",
   },
   {
     path: "src/pages/nav-v2/OrbAmbienceControl.tsx",
@@ -251,7 +262,7 @@ function scanTypeScriptSource(path: string, source: string): ConstraintOccurrenc
     source,
     ts.ScriptTarget.Latest,
     true,
-    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   );
 
   const visit = (node: ts.Node): void => {
@@ -285,9 +296,7 @@ function scanTypeScriptSource(path: string, source: string): ConstraintOccurrenc
 }
 
 function scanSource(path: string, source: string): ConstraintOccurrence[] {
-  return path.endsWith(".css")
-    ? scanCssSource(path, source)
-    : scanTypeScriptSource(path, source);
+  return path.endsWith(".css") ? scanCssSource(path, source) : scanTypeScriptSource(path, source);
 }
 
 function fingerprint(occurrence: ConstraintOccurrence): string {
@@ -310,15 +319,15 @@ describe("intentional single-line text contract", () => {
     const path = "src/components/schedule/ScheduleVisuals.tsx";
     const source = readFileSync(path, "utf8");
     const relocated = source
-      .replace('className="truncate px-1"', 'className="px-1"')
+      .replace('<bdi dir="auto" className="truncate">', '<bdi dir="auto">')
       .replace(
-        'className="relative h-20 w-20 shrink-0"',
-        'className="relative h-20 w-20 shrink-0 truncate"',
+        'className="relative h-16 w-16 shrink-0"',
+        'className="relative h-16 w-16 shrink-0 truncate"'
       );
     const approved = APPROVED_OCCURRENCES.filter((entry) => entry.path === path);
 
     expect(sortedFingerprints(scanSource(path, relocated))).not.toEqual(
-      sortedFingerprints(approved),
+      sortedFingerprints(approved)
     );
   });
 
@@ -331,10 +340,7 @@ describe("intentional single-line text contract", () => {
       },
     ]);
     expect(
-      scanTypeScriptSource(
-        "src/example.ts",
-        'const preview = text.slice(0, 12) + "…";',
-      ),
+      scanTypeScriptSource("src/example.ts", 'const preview = text.slice(0, 12) + "…";')
     ).toContainEqual({
       path: "src/example.ts",
       token: "manual-ellipsis",
@@ -353,9 +359,7 @@ describe("intentional single-line text contract", () => {
     const observed = collectProductionOccurrences();
 
     expect(APPROVED_OCCURRENCES.every((entry) => entry.reason.trim().length > 0)).toBe(true);
-    expect(
-      APPROVED_OCCURRENCES.every((entry) => entry.fullValuePath.trim().length > 0),
-    ).toBe(true);
+    expect(APPROVED_OCCURRENCES.every((entry) => entry.fullValuePath.trim().length > 0)).toBe(true);
     expect(observed.filter((entry) => entry.token === "break-all")).toEqual([]);
     expect(sortedFingerprints(observed)).toEqual(sortedFingerprints(APPROVED_OCCURRENCES));
   }, 15_000);

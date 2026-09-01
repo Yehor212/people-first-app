@@ -1,15 +1,16 @@
 import { useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { X, Check, Sparkles } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { ScheduleEvent } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { zenTap } from "@/lib/animationUtils";
+import { shouldAnimate, zenTap } from "@/lib/animationUtils";
 import { parseLocalDate, getToday, formatDate } from "@/lib/utils";
 import { safeParseInt } from "@/lib/validation";
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { ParticleBackground } from "@/components/stats";
-import { EVENT_PRESETS, getEventColor, getEventGradient, HOURS } from "./constants";
+import { EVENT_PRESETS, getEventColor, HOURS } from "./constants";
+import { formatScheduleNumericPart } from "./scheduleFormatting";
 
 // Premium Add Event Modal
 export function AddEventModal({
@@ -90,14 +91,14 @@ export function AddEventModal({
     }
   }, [isSaving, customTitle, t, selectedPreset, time, onAdd, eventDate, note]);
 
-  return (
+  const modal = (
     <motion.div
       ref={modalRef}
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-event-title"
-      className="fixed inset-0 z-[60] mb-[var(--nav-height)] flex items-end justify-center p-4 sm:items-center"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center ps-[max(1rem,var(--safe-inline-start))] pe-[max(1rem,var(--safe-inline-end))] pb-[max(1rem,var(--safe-bottom))] pt-[max(1rem,var(--safe-top))] sm:items-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -113,41 +114,22 @@ export function AddEventModal({
 
       {/* Modal content */}
       <motion.div
-        className="relative w-full max-w-sm rounded-3xl max-h-[90dvh] overflow-y-auto overscroll-contain pb-[calc(var(--nav-height)+var(--safe-bottom))]"
+        className="relative max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl border border-border/60 bg-card text-card-foreground shadow-xl"
         initial={{ opacity: 0, scale: 0.9, y: 50 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 50 }}
       >
-        {/* Cosmic background - Theme-aware */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-sky-50/60 to-indigo-50/40 dark:bg-none" />
-        <div
-          className="absolute inset-0 hidden dark:block"
-          style={{
-            background: `linear-gradient(135deg,
-              #0f0f23 0%,
-              #1a1a3e 50%,
-              #2d1b4e 100%)`,
-          }}
-        />
-
-        <ParticleBackground count={10} color="purple" />
-
-        {/* Content */}
-        <div className="relative z-10 p-5">
+        <div className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3
               id="add-event-title"
-              className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"
+              className="min-w-0 break-words text-lg font-bold text-foreground"
             >
-              <Sparkles
-                className="w-5 h-5 text-purple-600 dark:text-purple-400"
-                aria-hidden="true"
-              />
               {t.scheduleAddEvent || "Add Event"}
             </h3>
             <motion.button
+              type="button"
               onClick={onClose}
-              whileHover={{ scale: 1.1 }}
               whileTap={zenTap.icon}
               className="p-2 hover:bg-secondary rounded-xl motion-safe:transition-colors"
               aria-label={t.close || "Close"}
@@ -158,10 +140,11 @@ export function AddEventModal({
 
           {/* Date picker */}
           <div className="mb-4">
-            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+            <label htmlFor="schedule-event-date" className="mb-1 block text-xs text-muted-foreground">
               {t.scheduleDate || "Date"}
             </label>
             <select
+              id="schedule-event-date"
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
               className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none"
@@ -181,46 +164,35 @@ export function AddEventModal({
 
           {/* Event type presets - 3D cards */}
           <div
-            className="grid grid-cols-1 gap-2 mb-4 min-[420px]:grid-cols-3"
+            className="mb-4 grid grid-cols-2 gap-2 min-[420px]:grid-cols-3"
             role="group"
             aria-label={t.scheduleEventType || "Event type"}
           >
             {EVENT_PRESETS.map((preset) => {
               const label = ts[preset.labelKey] || preset.id;
               const isSelected = selectedPreset.id === preset.id;
-              const gradient = getEventGradient(preset.colorVar);
+              const eventColor = getEventColor(preset.colorVar);
 
               return (
                 <motion.button
+                  type="button"
                   key={preset.id}
                   onClick={() => setSelectedPreset(preset)}
-                  whileHover={{ scale: 1.05, rotateY: 5 }}
                   whileTap={zenTap.button}
                   aria-pressed={isSelected}
                   aria-label={label}
                   className={cn(
-                    "h-auto min-h-[52px] min-w-0 whitespace-normal p-3 rounded-xl flex flex-col items-center gap-1 motion-safe:transition-all",
-                    "backdrop-blur-sm border",
+                    "h-auto min-h-[52px] min-w-0 whitespace-normal p-3 rounded-xl flex flex-col items-center gap-1 border motion-safe:transition-colors",
                     isSelected
-                      ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
+                      ? "border-primary bg-primary/10 text-foreground"
                       : "bg-muted border-border hover:bg-secondary"
                   )}
+                  style={{ borderInlineStartColor: eventColor }}
                 >
-                  <motion.span
-                    className="shrink-0 text-2xl"
-                    animate={isSelected ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 0.5 }}
-                    style={
-                      isSelected
-                        ? {
-                            filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))",
-                          }
-                        : {}
-                    }
-                  >
+                  <span aria-hidden="true" className="shrink-0 text-2xl">
                     {preset.emoji}
-                  </motion.span>
-                  <span className="break-words text-center text-xs text-slate-600 dark:text-white/80">
+                  </span>
+                  <span className="break-words text-center text-xs text-muted-foreground">
                     {label}
                   </span>
                 </motion.button>
@@ -229,25 +201,31 @@ export function AddEventModal({
           </div>
 
           {/* Custom title */}
-          <input
-            type="text"
-            value={customTitle}
-            onChange={(e) => setCustomTitle(e.target.value)}
-            placeholder={t.scheduleCustomTitle || "Custom title (optional)"}
-            aria-label={t.scheduleCustomTitle || "Event title"}
-            className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/60"
-            onFocus={(e) => {
-              const el = e.target;
-              setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
-            }}
-          />
+          <div className="mb-4">
+            <label htmlFor="schedule-event-title" className="mb-1 block text-xs text-muted-foreground">
+              {t.scheduleCustomTitle || "Custom title (optional)"}
+            </label>
+            <input
+              id="schedule-event-title"
+              type="text"
+              dir="auto"
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder={t.scheduleCustomTitle || "Custom title (optional)"}
+              className="min-h-11 w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onFocus={(e) => {
+                const el = e.target;
+                setTimeout(() => el.scrollIntoView({ behavior: shouldAnimate() ? "smooth" : "auto", block: "center" }), 300);
+              }}
+            />
+          </div>
 
           {/* Time pickers */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1">
-              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+            <fieldset className="min-w-0 flex-1">
+              <legend className="mb-1 block text-xs text-muted-foreground">
                 {t.scheduleStart || "Start"}
-              </label>
+              </legend>
               <div className="flex gap-1">
                 <select
                   value={time.startHour}
@@ -266,7 +244,7 @@ export function AddEventModal({
                       value={h}
                       className="bg-white dark:bg-slate-900 text-foreground"
                     >
-                      {h.toString().padStart(2, "0")}
+                      {formatScheduleNumericPart(language, h)}
                     </option>
                   ))}
                 </select>
@@ -287,16 +265,16 @@ export function AddEventModal({
                       value={m}
                       className="bg-white dark:bg-slate-900 text-foreground"
                     >
-                      {m.toString().padStart(2, "0")}
+                      {formatScheduleNumericPart(language, m)}
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
-            <div className="flex-1">
-              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+            </fieldset>
+            <fieldset className="min-w-0 flex-1">
+              <legend className="mb-1 block text-xs text-muted-foreground">
                 {t.scheduleEnd || "End"}
-              </label>
+              </legend>
               <div className="flex gap-1">
                 <select
                   value={time.endHour}
@@ -315,7 +293,7 @@ export function AddEventModal({
                       value={h}
                       className="bg-white dark:bg-slate-900 text-foreground"
                     >
-                      {h.toString().padStart(2, "0")}
+                      {formatScheduleNumericPart(language, h)}
                     </option>
                   ))}
                 </select>
@@ -336,20 +314,22 @@ export function AddEventModal({
                       value={m}
                       className="bg-white dark:bg-slate-900 text-foreground"
                     >
-                      {m.toString().padStart(2, "0")}
+                      {formatScheduleNumericPart(language, m)}
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
+            </fieldset>
           </div>
 
           {/* Note */}
           <div className="mb-4">
-            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">
+            <label htmlFor="schedule-event-note" className="mb-1 block text-xs text-muted-foreground">
               {t.scheduleNote || "Note (optional)"}
             </label>
             <textarea
+              id="schedule-event-note"
+              dir="auto"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t.scheduleNotePlaceholder || "Add details or reminders..."}
@@ -364,12 +344,12 @@ export function AddEventModal({
 
           {/* Add button */}
           <motion.button
+            type="button"
             onClick={handleAdd}
             disabled={isSaving}
-            whileHover={{ scale: 1.02 }}
             whileTap={zenTap.card}
             className={cn(
-              "w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30",
+              "flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-primary-foreground",
               isSaving && "opacity-50"
             )}
           >
@@ -380,4 +360,6 @@ export function AddEventModal({
       </motion.div>
     </motion.div>
   );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }

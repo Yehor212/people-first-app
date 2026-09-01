@@ -69,15 +69,12 @@ async function waitForVisibleHeroOrbCanvas(page: import("@playwright/test").Page
     () =>
       Array.from(
         document.querySelectorAll<HTMLElement>(
-          [
-            '[data-orb-renderer-policy="webgpu"][data-orb-visual-ready="true"]',
-            '[data-orb-transition-profile="input-soft"]',
-            '[data-orb-transition-profile="v1-soft"]',
-          ].join(", "),
+          '[data-orb-renderer-policy="webgpu"][data-orb-visual-ready="true"]',
         ),
       ).some((wrapper) =>
         Array.from(wrapper.querySelectorAll<HTMLCanvasElement>("canvas")).some(
           (canvas) =>
+            canvas.dataset.orbVisualReady === "true" &&
             canvas.width >= 200 &&
             canvas.height >= 200 &&
             canvas.offsetWidth > 0 &&

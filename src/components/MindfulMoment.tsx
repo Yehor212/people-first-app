@@ -25,6 +25,7 @@ interface MindfulMomentProps {
   onViewProgress?: () => void;
   trigger?: "focus" | "manual" | "random";
   prompt?: MindfulPrompt; // Optional specific prompt
+  rewardsEnabled?: boolean;
 }
 
 // Quick response options - use translation keys
@@ -41,6 +42,7 @@ export function MindfulMoment({
   onViewProgress,
   trigger = "manual",
   prompt: providedPrompt,
+  rewardsEnabled = true,
 }: MindfulMomentProps) {
   const { language, t } = useLanguage();
   useScrollLock(isOpen);
@@ -237,9 +239,11 @@ export function MindfulMoment({
           )}
 
           {/* XP hint */}
-          <p className="mt-4 break-words hyphens-manual text-center text-xs text-muted-foreground">
-            +3 XP • +1 {t.treat || "treat"}
-          </p>
+          {rewardsEnabled && (
+            <p className="mt-4 break-words hyphens-manual text-center text-xs text-muted-foreground">
+              +3 XP • +1 {t.treat || "treat"}
+            </p>
+          )}
         </div>
       </div>
     </>

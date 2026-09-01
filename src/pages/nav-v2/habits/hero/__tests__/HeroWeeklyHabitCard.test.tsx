@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRef } from "react";
 import { HeroWeeklyHabitCard } from "../HeroWeeklyHabitCard";
 import { toStoredValue } from "@/lib/habits";
 import { scheduleIdle } from "@/lib/scheduleIdle";
@@ -134,6 +135,29 @@ describe("HeroWeeklyHabitCard", () => {
       "data-slot",
       "weekly-stats"
     );
+  });
+
+  it("renders an explicit 44px semantic action trigger and exposes its focus target", () => {
+    const onOpenActions = vi.fn();
+    const actionsTriggerRef = createRef<HTMLButtonElement>();
+
+    render(
+      <HeroWeeklyHabitCard
+        habit={habit()}
+        onToggle={vi.fn()}
+        onOpenActions={onOpenActions}
+        actionsLabel="Actions for Drink water"
+        actionsTriggerRef={actionsTriggerRef}
+      />
+    );
+
+    const trigger = screen.getByRole("button", { name: "Actions for Drink water" });
+    expect(trigger).toHaveClass("min-h-[44px]", "min-w-[44px]");
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(actionsTriggerRef.current).toBe(trigger);
+
+    fireEvent.click(trigger);
+    expect(onOpenActions).toHaveBeenCalledTimes(1);
   });
 
   it("starts expanded and can collapse into a centered pictogram/name shell", () => {

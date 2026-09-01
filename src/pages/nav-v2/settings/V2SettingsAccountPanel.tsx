@@ -69,9 +69,11 @@ export function AccountPanel({
   });
 
   const closeDiscardConfirmation = useCallback(() => {
+    if (auth.isSigningOut) return false;
     shouldRestoreDiscardFocusRef.current = true;
     setShowDiscardSignOutConfirm(false);
-  }, []);
+    return true;
+  }, [auth.isSigningOut]);
 
   useBackHandler(showDiscardSignOutConfirm, closeDiscardConfirmation);
 
@@ -146,7 +148,7 @@ export function AccountPanel({
       showHeader={false}
     >
       {!auth.signOutBlockReason && (accountViewState === "unavailable" ? (
-        <SettingsInset>
+        <SettingsInset emphasis="callout">
           <SettingsStatus>
             {tx.settingsAccountBackupUnavailable || "Backup isn’t available in this version"}
           </SettingsStatus>
@@ -155,7 +157,7 @@ export function AccountPanel({
           </p>
         </SettingsInset>
       ) : accountViewState === "checking" ? (
-        <SettingsInset testId="settings-v2-account-checking">
+        <SettingsInset emphasis="callout" testId="settings-v2-account-checking">
           <p role="status" aria-live="polite" className="text-sm font-semibold text-foreground">
             {tx.settingsAccountBackupChecking || "Checking your account…"}
           </p>
@@ -165,7 +167,7 @@ export function AccountPanel({
           </p>
         </SettingsInset>
       ) : accountViewState === "error" ? (
-        <SettingsInset testId="settings-v2-account-check-error">
+        <SettingsInset emphasis="callout" testId="settings-v2-account-check-error">
           <p role="status" aria-live="polite" className="text-sm font-semibold text-foreground">
             {tx.settingsAccountCheckFailed || "We couldn’t check your account"}
           </p>
@@ -184,7 +186,7 @@ export function AccountPanel({
         </SettingsInset>
       ) : accountViewState === "signed-in" ? (
         <>
-          <SettingsInset presentation="flat-row">
+          <SettingsInset>
             <p className="min-w-0 text-sm text-muted-foreground">
               {tx.signedInAs || "Signed in as"}{" "}
               <bdi
@@ -198,7 +200,7 @@ export function AccountPanel({
           </SettingsInset>
 
           {linkedProviderLabels.length > 0 && (
-            <SettingsInset presentation="flat-row">
+            <SettingsInset>
               <SettingsFieldHeader title={tx.authLinkedProviders || "Connected sign-in methods"} />
               <div className="mb-3 flex flex-wrap gap-2">
                 {linkedProviderLabels.map((label) => (
@@ -235,7 +237,7 @@ export function AccountPanel({
         </>
       ) : (
         <div className="space-y-3">
-          <SettingsInset presentation="flat-row">
+          <SettingsInset>
             <p className="min-w-0 whitespace-normal break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:break-word]">
               {tx.settingsAccountSignedOut || "You’re not signed in"}
             </p>
@@ -297,7 +299,7 @@ export function AccountPanel({
                   {tx.cancel}
                 </SettingsInlineButton>
                 <SettingsInlineButton
-                  icon={Trash2}
+                  icon={auth.isSigningOut ? Loader2 : Trash2}
                   variant="danger"
                   onClick={() => {
                     void auth.handleDiscardPendingAndSignOut();
@@ -305,7 +307,9 @@ export function AccountPanel({
                   disabled={auth.isSigningOut}
                   isLoading={auth.isSigningOut}
                 >
-                  {tx.authDiscardAndSignOut || "Discard changes and sign out"}
+                  {auth.isSigningOut
+                    ? tx.signingOut || "Signing out..."
+                    : tx.authDiscardAndSignOut || "Discard changes and sign out"}
                 </SettingsInlineButton>
               </SettingsButtonGrid>
             </div>

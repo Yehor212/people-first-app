@@ -175,6 +175,17 @@ describe("useFocusHandlers", () => {
     expect(triggerXpPopup).not.toHaveBeenCalled();
   });
 
+  it("V2 neutral mode does not interrupt the user with a post-focus mindful moment", async () => {
+    const { result } = renderFocusHandlers({ rewardsEnabled: false });
+
+    await completeSession(() => result.current.handleCompleteFocusSession(makeSession(20)));
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(mockOpenModal).not.toHaveBeenCalled();
+  });
+
   it("handleCompleteFocusSession shows mindful moment for sessions >= 5min", async () => {
     const { result } = renderFocusHandlers();
     const session = makeSession(5);

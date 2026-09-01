@@ -78,6 +78,9 @@ vi.mock("../V2FocusMiniPlayer", () => ({
 vi.mock("../V2MindfulMomentLayer", () => ({
   V2MindfulMomentLayer: () => null,
 }));
+vi.mock("../V2ProgressionModalLayer", () => ({
+  V2ProgressionModalLayer: () => null,
+}));
 
 // Page shells as markers so we can assert active-page transitions.
 vi.mock("@/pages/nav-v2/OrbPage", () => ({

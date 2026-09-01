@@ -71,18 +71,15 @@ export const HeroIdentityPrompt = memo(function HeroIdentityPrompt({
   const { t } = useLanguage();
   const tx = t;
 
-  const choice = useMemo(
-    () =>
-      pickIdentityForDay(habits, dayOfMonth) ??
-      pickDailyIdentityForDay(tx.navV2HabitsIdentityIntentions, dayOfMonth),
-    [habits, dayOfMonth, tx.navV2HabitsIdentityIntentions],
-  );
+  const choice = useMemo(() => pickIdentityForDay(habits, dayOfMonth), [habits, dayOfMonth]);
 
-  const verb = choice?.verb ?? tx.navV2HabitsIdentityIntention ?? "";
+  if (!choice) return null;
+
+  const verb = choice.verb;
   const sentenceTemplate =
     tx.navV2HabitsIdentitySentence ?? `${tx.navV2HabitsIdentityToday} {identity}`;
   const [sentenceBefore, sentenceAfter = ""] = sentenceTemplate.split("{identity}");
-  const icon = choice?.icon ?? DEFAULT_IDENTITY_ICON;
+  const icon = choice.icon;
 
   return (
     <p

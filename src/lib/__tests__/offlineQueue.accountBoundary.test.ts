@@ -505,7 +505,7 @@ describe("offline queue account boundary", () => {
     const connectivityController = new AbortController();
     await offlineQueue.processQueue({
       verifiedConnectivity: {
-        source: "same-origin-app-asset",
+        source: "network-only-version-endpoint",
         signal: connectivityController.signal,
       },
     });
@@ -594,7 +594,7 @@ describe("offline queue account boundary", () => {
     const olderController = new AbortController();
     const olderPass = offlineQueue.processQueue({
       verifiedConnectivity: {
-        source: "same-origin-app-asset",
+        source: "network-only-version-endpoint",
         signal: olderController.signal,
       },
     });
@@ -604,7 +604,7 @@ describe("offline queue account boundary", () => {
     const newerController = new AbortController();
     const newerPass = offlineQueue.processQueue({
       verifiedConnectivity: {
-        source: "same-origin-app-asset",
+        source: "network-only-version-endpoint",
         signal: newerController.signal,
       },
     });
@@ -646,7 +646,7 @@ describe("offline queue account boundary", () => {
     const controller = new AbortController();
     const processing = offlineQueue.processQueue({
       verifiedConnectivity: {
-        source: "same-origin-app-asset",
+        source: "network-only-version-endpoint",
         signal: controller.signal,
       },
     });

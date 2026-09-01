@@ -1004,13 +1004,6 @@
     }
   }
 
-  /* ===== ACCESSIBILITY: Focus Visible ===== */
-  /* Visible focus ring for keyboard navigation */
-  :focus-visible {
-    outline: 2px solid hsl(var(--primary));
-    outline-offset: 2px;
-  }
-
   /* Remove default focus for mouse users */
   :focus:not(:focus-visible) {
     outline: none;
@@ -1415,7 +1408,7 @@
     background: rgba(0, 0, 0, 0.6);
     -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
-    z-index: var(--z-overlay);
+    z-index: var(--z-modal-overlay);
   }
 
   /* Modal content wrapper */
@@ -7530,7 +7523,6 @@ button.press-stable:active:not(:disabled),
 @media (min-width: 1024px) {
   :root {
     --base-font-size: 15px;
-    --touch-target-min: 32px;
     --line-height-body: 1.55;
     --content-density: compact;
   }

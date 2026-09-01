@@ -59,7 +59,7 @@ export function PlanningBridgeActions({ actions, labels }: PlanningBridgeActions
     <section
       data-testid="planning-bridge-actions"
       aria-label={labels.planningBridgeTitle}
-      className="rounded-2xl border border-border/45 bg-card/72 p-4 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+      className="py-1"
     >
       <p className="break-words text-sm font-semibold text-foreground [hyphens:manual] [overflow-wrap:normal]">
         {labels.planningBridgeTitle}

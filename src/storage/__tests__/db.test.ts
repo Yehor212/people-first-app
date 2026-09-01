@@ -44,6 +44,7 @@ import {
 import { SK, SSK } from "@/lib/storageKeys";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 import { useUserDataStore } from "@/stores/userDataStore";
+import { persistMoodEntryBeforeTransition } from "@/storage/repositories/moodsRepo";
 
 const EXPECTED_TABLES = [
   "moods",
@@ -92,6 +93,20 @@ describe("database instance", () => {
 describe("repository exports", () => {
   it("moodsRepo is db.moods", () => {
     expect(moodsRepo).toBe(db.moods);
+  });
+
+  it("durably persists a mood before a flow transition can continue", async () => {
+    const mood = {
+      id: "mood-before-transition",
+      mood: "good" as const,
+      date: "2026-07-30",
+      timestamp: 1_753_872_000_000,
+      updatedAt: 1_753_872_000_000,
+    };
+    await db.moods.clear();
+
+    await expect(persistMoodEntryBeforeTransition(mood)).resolves.toEqual(mood);
+    await expect(db.moods.get(mood.id)).resolves.toEqual(mood);
   });
 
   it("habitsRepo is db.habits", () => {

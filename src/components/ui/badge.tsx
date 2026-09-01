@@ -13,9 +13,9 @@ const badgeVariants = cva(
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground border-border",
         // Status variants (WCAG AA compliant - dark text in light mode, white in dark)
-        success: "border-transparent bg-[hsl(var(--mood-good))] text-green-950 dark:text-white hover:bg-[hsl(var(--mood-good))]/80",
-        warning: "border-transparent bg-[hsl(var(--mood-okay))] text-amber-950 dark:text-white hover:bg-[hsl(var(--mood-okay))]/80",
-        info: "border-transparent bg-blue-500 text-blue-950 dark:text-white hover:bg-blue-600",
+        success: "border-[hsl(var(--zf-growth)/0.28)] bg-[hsl(var(--zf-growth)/0.14)] text-foreground hover:bg-[hsl(var(--zf-growth)/0.22)]",
+        warning: "border-[hsl(var(--zf-warning)/0.32)] bg-[hsl(var(--zf-warning)/0.14)] text-foreground hover:bg-[hsl(var(--zf-warning)/0.22)]",
+        info: "border-[hsl(var(--zf-role-focus)/0.28)] bg-[hsl(var(--zf-role-focus)/0.14)] text-foreground hover:bg-[hsl(var(--zf-role-focus)/0.22)]",
         // Soft variants
         soft: "border-transparent bg-primary/15 text-primary hover:bg-primary/25",
         "soft-success": "border-transparent bg-[hsl(var(--mood-good))]/15 text-[hsl(var(--mood-good))] hover:bg-[hsl(var(--mood-good))]/25",

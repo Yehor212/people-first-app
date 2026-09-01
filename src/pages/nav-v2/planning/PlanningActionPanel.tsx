@@ -31,7 +31,7 @@ export function PlanningActionPanel({
   return (
     <section
       data-testid="planning-action-panel"
-      className="rounded-2xl border border-border/45 bg-card/72 p-4 shadow-sm backdrop-blur-xl [-webkit-backdrop-filter:blur(18px)]"
+      className="rounded-2xl border border-border/45 bg-card p-4"
     >
       <p className="text-sm font-semibold text-foreground">{labels.planningActionTitle}</p>
       <p className="mt-1 text-sm leading-6 text-muted-foreground">{intentLabel}</p>

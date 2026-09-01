@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JournalAudio, JournalEntry } from "../types";
 import { JournalEntryViewer } from "../JournalEntryViewer";
 import { JOURNAL_FAVORITE_TAG } from "../journalFavorite";
@@ -23,6 +23,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
       journalRemoveFavorite: "Прибрати з обраного",
       journalAudioLoadError: "Не вдалося завантажити аудіо цього запису.",
       journalAudioLoadRetry: "Повторити завантаження аудіо",
+      shareButton: "Поділитися",
+      shareFailed: "Не вдалося поділитися. Спробуйте ще раз.",
       mood: "Настрій",
       moodBad: "Поганий",
       journalWordCountOne: "{count} слово",
@@ -89,7 +91,130 @@ vi.mock("../StickerRenderer", () => ({
   StickerRenderer: () => <span data-testid="sticker-renderer" />,
 }));
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe("JournalEntryViewer", () => {
+  it("exposes consecutive markdown bullets as one list without changing the saved source", () => {
+    const source = "- First private thought\n- Second private thought";
+    const entry: JournalEntry = {
+      id: "entry-semantic-list",
+      date: "2026-07-29",
+      title: "Reflection",
+      content: source,
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+
+    render(
+      <JournalEntryViewer
+        entry={entry}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    const list = screen.getByRole("list");
+    expect(within(list).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(list).getByText("First private thought")).toBeInTheDocument();
+    expect(within(list).getByText("Second private thought")).toBeInTheDocument();
+    expect(entry.content).toBe(source);
+  });
+
+  it.each([
+    ["system share", true],
+    ["clipboard fallback", false],
+  ])("shows a localized private-safe alert when %s fails", async (_path, useSystemShare) => {
+    const rawError = "permission denied for First private thought";
+    const share = vi.fn().mockRejectedValue(new Error(rawError));
+    const writeText = vi.fn().mockRejectedValue(new Error(rawError));
+    const navigatorMock = Object.create(window.navigator) as Navigator;
+    Object.defineProperties(navigatorMock, {
+      share: {
+        configurable: true,
+        value: useSystemShare ? share : undefined,
+      },
+      clipboard: {
+        configurable: true,
+        value: { writeText },
+      },
+    });
+    vi.stubGlobal("navigator", navigatorMock);
+
+    const entry: JournalEntry = {
+      id: `entry-share-failure-${useSystemShare ? "system" : "clipboard"}`,
+      date: "2026-07-29",
+      title: "Private reflection",
+      content: "First private thought",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+
+    render(
+      <JournalEntryViewer
+        entry={entry}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Поділитися" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Не вдалося поділитися. Спробуйте ще раз.");
+    expect(alert).not.toHaveTextContent(entry.title);
+    expect(alert).not.toHaveTextContent(entry.content);
+    expect(alert).not.toHaveTextContent(rawError);
+  });
+
+  it("keeps an AbortError from system share silent", async () => {
+    const share = vi.fn().mockRejectedValue(new DOMException("cancelled", "AbortError"));
+    const navigatorMock = Object.create(window.navigator) as Navigator;
+    Object.defineProperty(navigatorMock, "share", {
+      configurable: true,
+      value: share,
+    });
+    vi.stubGlobal("navigator", navigatorMock);
+
+    const entry: JournalEntry = {
+      id: "entry-share-cancelled",
+      date: "2026-07-29",
+      title: "Private reflection",
+      content: "Private content",
+      stickers: [],
+      photoIds: [],
+      audioIds: [],
+      tags: [],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+
+    render(
+      <JournalEntryViewer
+        entry={entry}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Поділитися" }));
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("keeps a missing recording visible as a retryable load failure", async () => {
     journalStorageMocks.getAudioForEntry
       .mockRejectedValueOnce(new Error("offline"))

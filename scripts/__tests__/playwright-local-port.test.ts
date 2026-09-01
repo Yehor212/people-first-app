@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import {
+import playwrightConfig, {
   resolvePlaywrightLocalBaseUrl,
   resolvePlaywrightLocalPort,
   resolvePlaywrightPreviewOutDir,
@@ -25,6 +25,12 @@ describe("Playwright local server port contract", () => {
     const config = readFileSync("playwright.config.ts", "utf8");
 
     expect(config).toContain("npm run dev -- --host 127.0.0.1");
+  });
+
+  it("keys visual approval paths by browser project and host platform", () => {
+    expect(playwrightConfig.snapshotPathTemplate).toBe(
+      "{testDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}",
+    );
   });
 
   it("rejects values that could be interpreted by the shell", () => {

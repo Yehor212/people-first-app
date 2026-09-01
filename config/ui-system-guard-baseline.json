@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "fingerprint": "127a47bee426792f7ac2e77df6534807ae632cc1703f02b16f170d0544e8c3aa",
+      "path": "src/components/ui/badge.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"text-green-950\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "7ae34252ac540964f11b5a7d882ceb4f32b5ff492efaabe05e8d3227eca20d27",
+      "path": "src/components/ui/badge.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"text-amber-950\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "31283c6f079abde950cd22f56e61d32a035e81734eab22ccf53a937bc9e38493",
+      "path": "src/components/ui/badge.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"hover:bg-blue-600\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "56cadfabbb59059bbb64779cea9b91f4996a297d965af69b46bd3787cbb984cf",
+      "path": "src/components/ui/badge.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"text-blue-950\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "9df7edd37f801ca49b7820ff145d0e7653f4f7b604063f26a0b21bcc13abae48",
+      "path": "src/components/ui/badge.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"bg-blue-500\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "7a1a41e0f53098f86f06333204ad2015bd6418657afff972cf8828f524c0cd97",
+      "path": "src/components/ui/section-header.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"text-blue-500\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "1ed3d59fa7940f33282acfcdd10f4365c1e5473d3ffa08d9cfdec86c555dc996",
+      "path": "src/components/ui/section-header.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"text-rose-500\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "ebb3af3dd4329f33c00996a954db4df815d20898d6bc36602243de6d2122a7b5",
+      "path": "src/components/ui/sheet.tsx",
+      "rule": "layering",
+      "rationale": "One Sheet content node receives class layer z-[60] and conflicting inline zIndex 80.",
+      "owner": "Overlay and platform-layer owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the Sheet content has one canonical layer authority and the finding disappears."
+    },
+    {
+      "fingerprint": "28227a848806c38b44fee38663a387aee4c0049407a0a43cc5494ffa1d7ab419",
+      "path": "src/components/ui/sheet.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"bg-slate-200/80\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "ed187b6841888afb1299c32da89f991a935cb8d70fd5a7e3ed225a6ae867c94f",
+      "path": "src/components/ui/sheet.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"border-slate-300\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "1a0a8f381dc36c0dd96c0130fffe68d34d66964d2a5bf3a0e0c33d019507a432",
+      "path": "src/components/ui/sheet.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"hover:bg-slate-300/80\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "9eb663463cd5953762faf10cc7a06ac790d9703ddbdcd85977f99e05534c8228",
+      "path": "src/components/ui/sheet.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"focus-visible:ring-violet-500/50\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "b94e5944a51c98f9c4d64d21047f63ba35b2ad5ed48737af8dd392636476644c",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "layering",
+      "rationale": "One Sheet content node receives class layer z-[60] and conflicting inline zIndex 80.",
+      "owner": "Overlay and platform-layer owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the Sheet content has one canonical layer authority and the finding disappears."
+    },
+    {
+      "fingerprint": "23fd77905ff3d128365e93317355e13e60733b382c9d00977f86ba67f998c9a2",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"border-slate-300\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "8087b120719e4fce0adfa5562f223b531e8d6b327f7af87662a52c37ff4f63a1",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"bg-slate-200/80\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "35b573edfe7ae00e113cd4478360d9b4f666d5f766520fcd984206bdf7921a27",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"hover:bg-slate-300/80\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "e41a805d7e267debdcda9be717ccd1d93336d1ad0d9f76bcf38c1be0a0ad8dea",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"focus-visible:ring-violet-500/50\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "db46f0bd5a17eac7b555dd9e40701d67efd48956adff5deaa87f99fc9b55134a",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"bg-slate-200/80\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "f1188c6e9ca9a39496f201d7f0dae864337f98280da59aaee425315c0f1bc3ef",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"border-slate-300\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "4946a51fedf4672a571c961c1c5969fccb9f416c8ddf396559a0e4a4039c28a8",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"hover:bg-slate-300/80\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "0d467b56750e9992c65a9f73a994251f1954ad13fb6d22c0fff51d16006a1671",
+      "path": "src/components/ui/SheetMotion.tsx",
+      "rule": "token-drift",
+      "rationale": "Shared primitive uses numeric palette utility \"focus-visible:ring-violet-500/50\" instead of a semantic ZenFlow color role.",
+      "owner": "UI foundations and theme governance owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the shared primitive uses a reviewed semantic ZenFlow color role and the finding disappears."
+    },
+    {
+      "fingerprint": "f7ffddcc4c424247023ec2a7bbb9cda560f655204587536af781cd6c11afd536",
+      "path": "src/pages/nav-v2/settings/components/SettingsModuleCard.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "54b42a08d05c4e1e608a540ebd282eb77872d26b1ceb4fd0cd3e39a8dc299820",
+      "path": "src/pages/nav-v2/settings/components/SettingsModuleCard.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "8067560fccc9bfe49285140aa109eb6f24b6298400158b034ef7f4dbf12e68d9",
+      "path": "src/pages/nav-v2/settings/components/SettingsPageComponents.tsx",
+      "rule": "containment",
+      "rationale": "Ordinary section material contains another span material surface; verify that both containment levels are semantically necessary.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface migrates to necessary semantic containment and the finding disappears."
+    },
+    {
+      "fingerprint": "a580ab2c6cff467f7ea413d62a52183b1c636016326f33b8ae672a3f4b19ca09",
+      "path": "src/pages/nav-v2/settings/components/SettingsPageComponents.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "d5992f10092460f7183a586a940dac157b3fd50e5467b8f24ca2f8ed4dda3cd6",
+      "path": "src/pages/nav-v2/settings/components/SettingsPageComponents.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "7528cffd4d97e7626ba3fc0fc724f04c0002f0b2874c8ecb32ed3be92fe708c0",
+      "path": "src/pages/nav-v2/settings/components/V2SettingsControlPrimitives.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "2d2867e84840c79c78323b5d9fc0d214ceafc4a85ec1ccc135b63d68f3642843",
+      "path": "src/pages/nav-v2/settings/components/V2SettingsFormPrimitives.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "527604e82405bd0d03b5c364de47a7a8c03435c20fba9eb316e39d89679a4ebc",
+      "path": "src/pages/nav-v2/settings/components/V2SettingsFormPrimitives.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    },
+    {
+      "fingerprint": "b421e09d47930d4326f73d816260ae884da00360293c2dc79df1914f3056a8c9",
+      "path": "src/pages/nav-v2/settings/V2SettingsAccountPanel.tsx",
+      "rule": "containment",
+      "rationale": "Ordinary SettingsInset material contains another span material surface; verify that both containment levels are semantically necessary.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface migrates to necessary semantic containment and the finding disappears."
+    },
+    {
+      "fingerprint": "42e453697afb8648985c13808cb10e1b26dc32d6e669183b6a2aa6f384d0ca6a",
+      "path": "src/pages/nav-v2/settings/V2SettingsAppearanceAccent.tsx",
+      "rule": "material-overload",
+      "rationale": "Ordinary presentation combines border, background, and shadow on one surface; verify that every material cue carries distinct hierarchy or state information.",
+      "owner": "Settings experience primitives owner",
+      "reviewDate": "2026-07-28",
+      "removalCondition": "Remove after the owning Settings surface removes redundant material cues or documents a semantic exception and the finding disappears."
+    }
+  ]
+}

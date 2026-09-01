@@ -52,12 +52,15 @@ describe("MoodFirstRunHint", () => {
     ).toBeInTheDocument();
   });
 
-  it("has a11y attributes on dialog", () => {
+  it("exposes a labelled nonmodal landmark instead of dialog semantics", () => {
     render(<MoodFirstRunHint eligible={true} />);
-    const dialog = screen.getByTestId("mood-first-run-hint");
-    expect(dialog).toHaveAttribute("role", "dialog");
-    expect(dialog).not.toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAttribute(
+    const hint = screen.getByRole("region", {
+      name: "Three steps to your first entry",
+    });
+    expect(hint).toBe(screen.getByTestId("mood-first-run-hint"));
+    expect(hint).not.toHaveAttribute("role", "dialog");
+    expect(hint).not.toHaveAttribute("aria-modal");
+    expect(hint).toHaveAttribute(
       "aria-labelledby",
       "mood-first-run-title",
     );

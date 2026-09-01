@@ -23,7 +23,6 @@ interface HeroTimeOfDayGroupProps {
   /** +/- for numerical habits. Optional. */
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onNumericalAction?: (habitId: string, date: string, action: NumericalEntryAction) => void;
-  onDeleteHabit: (habitId: string) => void;
   onEditHabit?: (habit: Habit) => void;
   onSkipHabit?: (habitId: string, date: string) => void;
   onUnskipHabit?: (habitId: string, date: string) => void;
@@ -57,7 +56,6 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
   onToggleHabit,
   onAdjustHabit,
   onNumericalAction,
-  onDeleteHabit,
   onEditHabit,
   onSkipHabit,
   onUnskipHabit,
@@ -166,7 +164,6 @@ export const HeroTimeOfDayGroup = memo(function HeroTimeOfDayGroup({
                 onToggle={onToggleHabit}
                 onAdjust={onAdjustHabit}
                 onNumericalAction={onNumericalAction}
-                onDelete={onDeleteHabit}
                 onEdit={onEditHabit}
                 onSkip={onSkipHabit}
                 onUnskip={onUnskipHabit}

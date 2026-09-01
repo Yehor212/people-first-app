@@ -21,6 +21,8 @@ import {
   physicalToDomScrollLeft,
 } from './timelineScrollCoordinates';
 
+export type GoogleCalendarStatus = 'disabled' | 'loading' | 'ready' | 'error';
+
 export interface UseScheduleDataReturn {
   currentTime: Date;
   selectedDate: string;
@@ -29,6 +31,8 @@ export interface UseScheduleDataReturn {
   taskEvents: ScheduleEvent[];
   googleEvents: ScheduleEvent[];
   isLoadingGoogle: boolean;
+  googleCalendarStatus: GoogleCalendarStatus;
+  retryGoogleCalendar: () => void;
   safeEvents: ScheduleEvent[];
   allDates: string[];
   getDateIndex: (date: string) => number;
@@ -146,18 +150,23 @@ export function useScheduleData(
 
   // Google Calendar events
   const [googleEvents, setGoogleEvents] = useState<ScheduleEvent[]>([]);
-  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
+  const [googleCalendarStatus, setGoogleCalendarStatus] = useState<GoogleCalendarStatus>(
+    () => isCalendarEnabled() ? 'loading' : 'disabled',
+  );
+  const [googleCalendarRetryKey, setGoogleCalendarRetryKey] = useState(0);
+  const isLoadingGoogle = googleCalendarStatus === 'loading';
 
   useEffect(() => {
     if (!isCalendarEnabled()) {
       setGoogleEvents([]);
+      setGoogleCalendarStatus('disabled');
       return;
     }
 
     let cancelled = false;
 
     const loadGoogleEvents = async () => {
-      setIsLoadingGoogle(true);
+      setGoogleCalendarStatus('loading');
       try {
         const date = parseLocalDate(selectedDate);
         const calEvents = await fetchCalendarEventsWithCache(date);
@@ -183,16 +192,24 @@ export function useScheduleData(
           }));
 
         setGoogleEvents(mapped);
-      } catch (err) {
-        logger.error('[ScheduleTimeline] Failed to load Google Calendar events:', err);
-      } finally {
-        if (!cancelled) setIsLoadingGoogle(false);
+        setGoogleCalendarStatus('ready');
+      } catch {
+        logger.error(
+          '[ScheduleTimeline] Google Calendar event load failed',
+          { code: 'GOOGLE_CALENDAR_LOAD_FAILED' },
+        );
+        if (!cancelled) setGoogleCalendarStatus('error');
       }
     };
 
     void loadGoogleEvents();
     return () => { cancelled = true; };
-  }, [selectedDate]);
+  }, [selectedDate, googleCalendarRetryKey]);
+
+  const retryGoogleCalendar = useCallback(() => {
+    if (googleCalendarStatus !== 'error') return;
+    setGoogleCalendarRetryKey((retryKey) => retryKey + 1);
+  }, [googleCalendarStatus]);
 
   const safeEvents = useMemo(() => {
     const manual = Array.isArray(events) ? events : [];
@@ -291,6 +308,8 @@ export function useScheduleData(
     taskEvents,
     googleEvents,
     isLoadingGoogle,
+    googleCalendarStatus,
+    retryGoogleCalendar,
     safeEvents,
     allDates,
     getDateIndex,

@@ -87,6 +87,9 @@ const arabicOverrides: Partial<Translations> = {
   scheduleAddEvent: "إضافة حدث",
   scheduleEmpty: "لا أحداث مجدولة. اضغط + للإضافة!",
   scheduleEmptyDay: "لا أحداث لهذا اليوم",
+  scheduleDayHasEvents: "توجد أحداث مجدولة",
+  googleCalendarEventsLoading: "جارٍ تحميل أحداث تقويم Google…",
+  googleCalendarEventsUnavailable: "أحداث تقويم Google غير متاحة الآن.",
   scheduleStart: "البداية",
   scheduleEnd: "النهاية",
   scheduleAdd: "إضافة للجدول",
@@ -2548,18 +2551,19 @@ const arabicOverrides: Partial<Translations> = {
   reminderDismiss: "إغلاق",
 
   // Notification Permission
-  notificationPermissionTitle: "الإشعارات",
-  notificationPermissionDescription: "احصل على تذكيرات مفيدة",
+  notificationPermissionTitle: "هل تريد السماح بالتذكيرات؟",
+  notificationPermissionDescription:
+    "يمكن لتطبيق ZenFlow إرسال تذكيرات المزاج والتركيز والعادات التي تشغّلها.",
   notificationFeature1Title: "تذكيرات المزاج",
-  notificationFeature1Desc: "سجل مزاجك يومياً",
+  notificationFeature1Desc: "في الأيام التي تختارها وفي الوقت الذي تحدده",
   notificationFeature2Title: "تذكيرات العادات",
-  notificationFeature2Desc: "لا تنسى عاداتك",
-  notificationFeature3Title: "تذكيرات التركيز",
-  notificationFeature3Desc: "ابق منتجاً",
-  notificationAllow: "السماح",
-  notificationDeny: "الآن لا",
+  notificationFeature2Desc: "في الأيام المحددة والوقت المحفوظ لكل عادة",
+  notificationFeature3Title: "مؤقت التركيز",
+  notificationFeature3Desc: "عند انتهاء جلسة تركيز محددة الوقت",
+  notificationAllow: "السماح بالتذكيرات",
+  notificationDeny: "ليس الآن",
   notificationPrivacyNote:
-    "يمكنك تغيير ذلك في أي وقت من الإعدادات. تبقى الإشعارات خاصة على هذا الجهاز.",
+    "تُجدول هذه التذكيرات على هذا الجهاز. يمكنك تغييرها من الإعدادات.",
 
   // Onboarding Steps
   onboardingStep: "الخطوة",
@@ -3858,8 +3862,8 @@ const arabicOverrides: Partial<Translations> = {
   planningModeFocus: "التركيز",
   planningModeReview: "مراجعة",
   planningActionTitle: "الخطوة التالية",
-  planningActionAddEvent: "أضف إلى الجدول",
-  planningActionStartFocus: "ابدأ التركيز",
+  planningActionAddEvent: "افتح الجدول لإضافة حدث",
+  planningActionStartFocus: "افتح مؤقت التركيز",
   planningActionReview: "راجع",
   planningActionOpenSchedule: "افتح الجدول",
   planningIntent_add_first_event: "أضف أول نقطة ارتكاز لهذا اليوم.",
@@ -3932,6 +3936,7 @@ const arabicOverrides: Partial<Translations> = {
   navV2HabitsQuickPick: "بدايات ذكية",
   navV2HabitsAlreadyAdded: "مضاف",
   navV2HabitsActions: "إجراءات",
+  navV2HabitsActionsFor: "إجراءات لـ {habit}",
   navV2HabitsOpenDetails: "فتح التفاصيل",
   navV2HabitsDayCompleteHero: "اكتمل اليوم",
   // Global fallback fixes

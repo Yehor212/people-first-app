@@ -94,4 +94,47 @@ describe("V2 page coverage contract", () => {
       expect(source).toContain("main-content-v2");
     }
   });
+
+  it("keeps primary route content visible when the platform suspends animation clocks", () => {
+    const orbSource = read("src/pages/nav-v2/OrbPage.tsx");
+    const orbStepsSource = read("src/pages/nav-v2/OrbPageSteps.tsx");
+    const habitsSource = read("src/pages/nav-v2/habits/HabitsPage.tsx");
+    const diarySource = read("src/pages/nav-v2/DiaryPage.tsx");
+    const diaryEmptySource = read("src/features/journal/DiaryEmptyCanvas.tsx");
+    const journalModuleSource = read("src/features/journal/JournalModule.tsx");
+    const settingsSource = read("src/pages/nav-v2/SettingsPage.tsx");
+
+    expect(orbSource).toMatch(/<Bloom key="orb-page" initial=\{false\}/);
+    expect(habitsSource).toMatch(/<Bloom key="habits-page" initial=\{false\}/);
+    expect(settingsSource).toMatch(/<Bloom\s+key="settings-page"\s+initial=\{false\}/);
+    expect(diarySource).not.toContain('<div className="motion-safe:animate-fade-in">');
+
+    for (const key of [
+      "orb-hero",
+      "orb-whisper",
+      "orb-scope",
+      "orb-picker",
+      "orb-select-actions",
+      "orb-refine-header",
+      "orb-refine-emotion",
+      "orb-refine-note",
+      "orb-refine-actions",
+    ]) {
+      expect(orbStepsSource).toMatch(
+        new RegExp(`<Bloom key="${key}" initial=\\{false\\}`),
+      );
+    }
+
+    for (const element of ["h2", "p", "figure", "div"]) {
+      expect(diaryEmptySource).toMatch(
+        new RegExp(`<motion\\.${element}\\s+initial=\\{false\\}`),
+      );
+    }
+
+    for (const key of ["sidebar-header", "sidebar-calendar", "sidebar-entries"]) {
+      expect(journalModuleSource).toMatch(
+        new RegExp(`<motion\\.div\\s+key="${key}"\\s+initial=\\{false\\}`),
+      );
+    }
+  });
 });

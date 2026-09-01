@@ -43,9 +43,9 @@ describe("settings and planning text reflow contracts", () => {
   });
 
   it("keeps planning sync status auto-height with a scalable label", () => {
-    expect(scheduleTimelineSource).toContain(
-      "whitespace-normal break-words text-xs text-blue-600",
-    );
+    expect(scheduleTimelineSource).toContain("whitespace-normal break-words text-xs");
+    expect(scheduleTimelineSource).toContain("text-muted-foreground");
+    expect(scheduleTimelineSource).not.toContain("text-blue-600");
     expect(scheduleTimelineSource).not.toContain("text-[10px]");
   });
 });

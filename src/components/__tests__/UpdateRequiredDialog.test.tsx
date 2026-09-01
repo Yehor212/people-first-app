@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   CHUNK_LOAD_ERROR_EVENT,
+  setupChunkErrorHandler,
   UpdateRequiredDialog,
 } from "@/components/UpdateRequiredDialog";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -41,6 +42,42 @@ vi.mock("@/lib/versionCheck", () => ({
 describe("UpdateRequiredDialog", () => {
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("replays one chunk incident captured before the dialog mounts", async () => {
+    setupChunkErrorHandler();
+    window.dispatchEvent(
+      new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
+        detail: {
+          chunk: "Language-uk-old.js",
+          message: "Failed to fetch dynamically imported module",
+        },
+      }),
+    );
+
+    render(<UpdateRequiredDialog />);
+
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+  });
+
+  it("consumes a pre-mount chunk incident instead of replaying it after remount", async () => {
+    setupChunkErrorHandler();
+    window.dispatchEvent(
+      new CustomEvent(CHUNK_LOAD_ERROR_EVENT, {
+        detail: {
+          chunk: "Language-ar-old.js",
+          message: "Failed to fetch dynamically imported module",
+        },
+      }),
+    );
+
+    const firstMount = render(<UpdateRequiredDialog />);
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
+    firstMount.unmount();
+
+    render(<UpdateRequiredDialog />);
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("uses hard reload when the user accepts a stale chunk update", async () => {

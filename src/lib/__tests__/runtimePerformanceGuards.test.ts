@@ -59,6 +59,20 @@ describe("runtime performance guards", () => {
     expect(source).toContain('url.pathname.includes("/assets/")');
   });
 
+  it("routes connectivity evidence through NetworkOnly before the precache route", () => {
+    const serviceWorkerSource = readSource("src/sw.ts");
+    const viteSource = readSource("vite.config.ts");
+    const networkOnlyRouteIndex = serviceWorkerSource.indexOf("new NetworkOnly({");
+    const precacheRouteIndex = serviceWorkerSource.indexOf(
+      "precacheAndRoute(self.__WB_MANIFEST)",
+    );
+
+    expect(networkOnlyRouteIndex).toBeGreaterThanOrEqual(0);
+    expect(precacheRouteIndex).toBeGreaterThan(networkOnlyRouteIndex);
+    expect(serviceWorkerSource).toContain("isNetworkOnlyConnectivityProbeUrl");
+    expect(viteSource).toContain('"version.json"');
+  });
+
   it("scopes the service-worker precache to the app shell and canonical orb boot path", () => {
     const source = readSource("vite.config.ts");
 

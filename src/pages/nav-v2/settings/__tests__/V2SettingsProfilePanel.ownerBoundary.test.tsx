@@ -103,6 +103,18 @@ describe("V2 Settings profile owner boundary", () => {
     mocks.updateProfileName.mockResolvedValue(true);
   });
 
+  it("keeps the name field usable beside its content-width action on wide layouts", () => {
+    render(<ProfilePanel controls={createControls()} />);
+
+    const input = screen.getByLabelText("Your name");
+    const save = screen.getByTestId("settings-v2-profile-save");
+
+    expect(input.parentElement).toHaveClass("min-[520px]:flex-row");
+    expect(input).toHaveClass("min-w-0", "flex-1");
+    expect(save).toHaveClass("w-auto");
+    expect(save).not.toHaveClass("w-full");
+  });
+
   it.each(["session verification fails", "the confirmed session and durable owner do not match"])(
     "does not mutate the profile when %s",
     async () => {
@@ -182,6 +194,40 @@ describe("V2 Settings profile owner boundary", () => {
     expect(mocks.assertSettingsOwnerCurrent).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("Saved")).not.toBeInTheDocument();
     expect(screen.queryByText("Saved on this device")).not.toBeInTheDocument();
+  });
+
+  it("prevents a newer draft from being entered while the previous name save is pending", async () => {
+    let resolveLocalSave!: () => void;
+    const controls = createControls();
+    controls.onNameChange = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveLocalSave = resolve;
+        })
+    );
+    render(<ProfilePanel controls={controls} />);
+
+    const input = screen.getByLabelText("Your name");
+    fireEvent.change(input, { target: { value: "Avery Updated" } });
+    fireEvent.click(screen.getByTestId("settings-v2-profile-save"));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(controls.onNameChange).toHaveBeenCalledTimes(1);
+    expect(input).toHaveValue("Avery Updated");
+    expect(input).toBeDisabled();
+
+    await act(async () => {
+      resolveLocalSave();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(input).toBeEnabled();
+    expect(input).toHaveValue("Avery Updated");
+    expect(controls.onNameChange).toHaveBeenCalledTimes(1);
   });
 
   it("drops an unsaved draft when the owner generation changes even if the visible name is equal", () => {

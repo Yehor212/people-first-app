@@ -5,8 +5,11 @@ import { useGamificationStore, useUserDataStore } from "@/stores";
 import { useMoodEntryDraftStore } from "@/stores/moodEntryDraftStore";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { isDataWriteBarrierPostCommitError } from "@/hooks/useIndexedDB";
 import { commitMoodEntry } from "@/hooks/useMoodHandlers";
-import { generateUuid, getToday } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { generateId, getToday } from "@/lib/utils";
+import { persistMoodEntryBeforeTransition } from "@/storage/repositories/moodsRepo";
 import type { MoodEntry, MoodType } from "@/types";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 
@@ -37,8 +40,9 @@ export interface UseOrbMoodFlowReturn {
   draftNote: string;
   canProceedFromSelect: boolean;
   canOpenDiary: boolean;
+  isSavingMood: boolean;
+  moodSaveFailed: boolean;
   firstRunEligible: boolean;
-  commitPending: boolean;
   handleSliderCommit: (valence: number) => void;
   handleEmotionToggle: (tag: string) => void;
   handleNoteChange: (note: string) => void;
@@ -46,6 +50,7 @@ export interface UseOrbMoodFlowReturn {
   handleBackStep: () => void;
   handleSaveMood: () => Promise<void>;
   handleOpenDiary: () => Promise<void>;
+  handleSkip: () => void;
 }
 
 interface UseOrbMoodFlowOptions {
@@ -58,8 +63,9 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
   const navigateToPage = options.navigateToPage;
   const onAddMood = options.onAddMood;
   const [step, setStep] = useState<OrbFlowStep>("orb-select");
-  const [commitPending, setCommitPending] = useState(false);
-  const commitInFlightRef = useRef(false);
+  const [isSavingMood, setIsSavingMood] = useState(false);
+  const [moodSaveFailed, setMoodSaveFailed] = useState(false);
+  const saveInFlightRef = useRef(false);
 
   const { moods, userName } = useUserDataStore(
     useShallow((s) => ({
@@ -102,14 +108,11 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
     return 40 - (40 - 32) * Math.min(1, orbValence);
   }, [orbValence]);
 
-  const canProceedFromSelect =
-    draftValence !== null && (draftScope !== "specific" || Boolean(draftSpecificTime));
+  const canProceedFromSelect = draftScope !== "specific" || Boolean(draftSpecificTime);
 
   const canOpenDiary =
     step === "refine-for-diary" &&
-    draftValence !== null &&
-    (draftScope !== "specific" || Boolean(draftSpecificTime)) &&
-    !commitPending;
+    (draftScope !== "specific" || Boolean(draftSpecificTime));
 
   const handleSliderCommit = useCallback(
     (valence: number) => {
@@ -134,25 +137,26 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
 
   const handleNextStep = useCallback(() => {
     if (!canProceedFromSelect) return;
+    if (draftValence === null) {
+      setDraftValence(0);
+    }
     setStep("refine-for-diary");
-  }, [canProceedFromSelect]);
+  }, [canProceedFromSelect, draftValence, setDraftValence]);
 
   const handleBackStep = useCallback(() => {
     setStep("orb-select");
   }, []);
 
-  const commitDraftMood = useCallback(async () => {
-    if (!canOpenDiary || draftValence === null || commitInFlightRef.current) return;
-    commitInFlightRef.current = true;
-    setCommitPending(true);
+  const commitCurrentMood = useCallback(async (prepareDiaryHandoff: boolean) => {
+    if (!canOpenDiary || saveInFlightRef.current) return false;
 
     const now = Date.now();
-    const mood = valenceToMood(draftValence);
+    const mood = valenceToMood(draftValence ?? 0);
     const note = draftNote.trim();
     const entry: MoodEntry = {
-      id: generateUuid(),
+      id: generateId(),
       mood,
-      valence: draftValence,
+      valence: draftValence ?? 0,
       logType: draftScope === "day" ? "overall" : "momentary",
       emotionTags: draftEmotion ? [draftEmotion] : [],
       date: getToday(),
@@ -160,67 +164,87 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
       updatedAt: now,
     };
 
+    saveInFlightRef.current = true;
+    setIsSavingMood(true);
+    setMoodSaveFailed(false);
+    let durableEntry = entry;
     try {
-      if (onAddMood) {
-        await onAddMood(entry);
-      } else {
-        await commitMoodEntry(entry, {
-          setMoods: useUserDataStore.getState()._publishDurableMoods,
-          rewardUser: useGamificationStore.getState().rewardUser,
-          updateChallengeProgress: () => undefined,
+      try {
+        await persistMoodEntryBeforeTransition(entry);
+      } catch (error) {
+        if (
+          isDataWriteBarrierPostCommitError<MoodEntry>(error) &&
+          error.committedValue.id === entry.id
+        ) {
+          durableEntry = error.committedValue;
+          logger.warn(
+            "[OrbMoodFlow] Mood persisted; mounted-state finalization remains incomplete:",
+            error.issueKinds,
+          );
+        } else {
+          logger.error("[OrbMoodFlow] Mood persistence failed before transition:", error);
+          setMoodSaveFailed(true);
+          return false;
+        }
+      }
+
+      try {
+        if (onAddMood) {
+          await onAddMood(durableEntry);
+        } else {
+          await commitMoodEntry(durableEntry, {
+            setMoods: useUserDataStore.getState()._publishDurableMoods,
+            rewardUser: useGamificationStore.getState().rewardUser,
+            updateChallengeProgress: () => undefined,
+          });
+        }
+      } catch (error) {
+        logger.error("[OrbMoodFlow] Mood post-commit side effect failed:", error);
+      }
+
+      if (prepareDiaryHandoff) {
+        setPendingMoodContext({
+          valence: draftValence ?? 0,
+          mood,
+          scope: draftScope,
+          specificTime: draftSpecificTime,
+          emotion: draftEmotion,
+          note: note || null,
+          committedAt: now,
         });
       }
 
-      return {
-        mood,
-        note,
-        committedAt: now,
-      };
-    } catch {
-      return;
+      useMoodEntryDraftStore.getState().reset();
+      setStep("orb-select");
+      return true;
     } finally {
-      commitInFlightRef.current = false;
-      setCommitPending(false);
+      saveInFlightRef.current = false;
+      setIsSavingMood(false);
     }
-  }, [canOpenDiary, draftEmotion, draftNote, draftScope, draftValence, onAddMood]);
-
-  const resetFlow = useCallback(() => {
-    useMoodEntryDraftStore.getState().reset();
-    setStep("orb-select");
-  }, []);
-
-  const handleSaveMood = useCallback(async () => {
-    if (!(await commitDraftMood())) return;
-    resetFlow();
-  }, [commitDraftMood, resetFlow]);
-
-  const handleOpenDiary = useCallback(async () => {
-    if (draftValence === null) return;
-    const committedMood = await commitDraftMood();
-    if (!committedMood) return;
-
-    setPendingMoodContext({
-      valence: draftValence,
-      mood: committedMood.mood,
-      scope: draftScope,
-      specificTime: draftSpecificTime,
-      emotion: draftEmotion,
-      note: committedMood.note || null,
-      committedAt: committedMood.committedAt,
-    });
-
-    resetFlow();
-    navigateToPage?.("diary");
   }, [
-    commitDraftMood,
+    canOpenDiary,
     draftEmotion,
+    draftNote,
     draftScope,
     draftSpecificTime,
     draftValence,
-    navigateToPage,
-    resetFlow,
+    onAddMood,
     setPendingMoodContext,
   ]);
+
+  const handleSaveMood = useCallback(async () => {
+    await commitCurrentMood(false);
+  }, [commitCurrentMood]);
+
+  const handleOpenDiary = useCallback(async () => {
+    if (!(await commitCurrentMood(true))) return;
+    navigateToPage?.("diary");
+  }, [commitCurrentMood, navigateToPage]);
+
+  const handleSkip = useCallback(() => {
+    useMoodEntryDraftStore.getState().reset();
+    setStep("orb-select");
+  }, []);
 
   return {
     userName: userName || "Friend",
@@ -237,8 +261,9 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
     draftNote,
     canProceedFromSelect,
     canOpenDiary,
+    isSavingMood,
+    moodSaveFailed,
     firstRunEligible: moods.length === 0,
-    commitPending,
     handleSliderCommit,
     handleEmotionToggle,
     handleNoteChange,
@@ -246,5 +271,6 @@ export function useOrbMoodFlow(options: UseOrbMoodFlowOptions = {}): UseOrbMoodF
     handleBackStep,
     handleSaveMood,
     handleOpenDiary,
+    handleSkip,
   };
 }

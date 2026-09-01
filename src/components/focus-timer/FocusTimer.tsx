@@ -1,14 +1,12 @@
 import { memo } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
 import type { FocusSession } from "@/types";
 import type { FocusCommitBoundary } from "@/types/focusTimerTypes";
 import { cn } from "@/lib/utils";
-import { zenTap } from "@/lib/animationUtils";
 import { Coffee } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { HyperfocusMode } from "../HyperfocusMode";
-import { useFocusTimer, presetColors } from "@/hooks/useFocusTimer";
+import { useFocusTimer } from "@/hooks/useFocusTimer";
 import { FocusReflectionModal } from "../FocusReflectionModal";
 import { CosmicBackground } from "./CosmicBackground";
 import { TimerRing } from "./TimerRing";
@@ -70,13 +68,10 @@ export const FocusTimer = memo(function FocusTimer({
     <div className="lg:max-w-xl lg:mx-auto">
       <div
         className={cn(
-          "rounded-2xl p-6 motion-safe:animate-fade-in motion-safe:transition-all relative",
-          isPrimaryCTA
-            ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
-            : "bg-card zen-shadow-card"
+          "relative rounded-2xl border border-border bg-card p-6 motion-safe:animate-fade-in",
+          isPrimaryCTA && "border-primary/40"
         )}
       >
-        {/* Cosmic Background + CTA Header */}
         {isPrimaryCTA && <CosmicBackground startHereLabel={t.startHere} />}
 
         <div className="mb-4 space-y-3 relative">
@@ -84,7 +79,7 @@ export const FocusTimer = memo(function FocusTimer({
             htmlFor="focus-session-label"
             className={cn(
               "text-sm",
-              isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
+              "text-muted-foreground"
             )}
           >
             {t.focusLabelPrompt}
@@ -96,43 +91,26 @@ export const FocusTimer = memo(function FocusTimer({
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder={t.focusLabelPlaceholder}
-            className={cn(
-              "w-full p-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 motion-safe:transition-colors",
-              isPrimaryCTA
-                ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/60 focus-visible:ring-violet-500/50"
-                : "bg-secondary text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/30"
-            )}
+            className="min-h-11 w-full rounded-xl border border-input bg-background p-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors"
           />
           <div className="flex flex-wrap gap-2">
             {presets.map((item) => {
-              const colors = presetColors[item.key];
               const isSelected = preset === item.key;
               return (
-                <motion.button
+                <button
                   key={item.key}
+                  type="button"
+                  aria-pressed={isSelected}
                   onClick={() => handlePresetSelect(item.key)}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl text-xs font-semibold motion-safe:transition-all",
-                    isPrimaryCTA
-                      ? isSelected
-                        ? `bg-gradient-to-br ${colors.bg} backdrop-blur-sm border border-border text-slate-800 dark:text-white`
-                        : "bg-muted backdrop-blur-sm border border-border text-slate-600 dark:text-white/60 hover:bg-secondary hover:text-slate-800 dark:hover:text-white/80"
-                      : isSelected
-                        ? "bg-primary/10 ring-2 ring-primary text-foreground"
-                        : "bg-secondary text-muted-foreground hover:bg-muted"
+                    "min-h-11 rounded-xl border px-4 py-2.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors",
+                    isSelected
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-secondary text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
-                  style={
-                    isPrimaryCTA && isSelected
-                      ? {
-                          boxShadow: `0 0 16px ${colors.glow}`,
-                        }
-                      : {}
-                  }
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={zenTap.button}
                 >
                   {item.label}
-                </motion.button>
+                </button>
               );
             })}
           </div>
@@ -140,15 +118,18 @@ export const FocusTimer = memo(function FocusTimer({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label
+                  htmlFor="focus-custom-work-minutes"
                   className={cn(
                     "text-xs",
-                    isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
+                    "text-muted-foreground"
                   )}
                 >
                   {t.focusCustomWork}
                 </label>
                 <input
                   type="number"
+                  id="focus-custom-work-minutes"
+                  name="focus-custom-work-minutes"
                   inputMode="numeric"
                   min={5}
                   max={120}
@@ -157,24 +138,25 @@ export const FocusTimer = memo(function FocusTimer({
                   onBlur={(e) => handleFocusInputBlur(e.target.value)}
                   className={cn(
                     "w-full p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2",
-                    isPrimaryCTA
-                      ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus-visible:ring-amber-500/50"
-                      : "bg-secondary text-foreground focus-visible:ring-primary/30"
+                    "border border-border bg-secondary text-foreground focus-visible:ring-primary/30"
                   )}
                   aria-label={t.focusCustomWork || "Custom work minutes"}
                 />
               </div>
               <div>
                 <label
+                  htmlFor="focus-custom-break-minutes"
                   className={cn(
                     "text-xs",
-                    isPrimaryCTA ? "text-slate-600 dark:text-white/60" : "text-muted-foreground"
+                    "text-muted-foreground"
                   )}
                 >
                   {t.focusCustomBreak}
                 </label>
                 <input
                   type="number"
+                  id="focus-custom-break-minutes"
+                  name="focus-custom-break-minutes"
                   inputMode="numeric"
                   min={1}
                   max={60}
@@ -183,9 +165,7 @@ export const FocusTimer = memo(function FocusTimer({
                   onBlur={(e) => handleBreakInputBlur(e.target.value)}
                   className={cn(
                     "w-full p-2 rounded-lg focus-visible:outline-none focus-visible:ring-2",
-                    isPrimaryCTA
-                      ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus-visible:ring-amber-500/50"
-                      : "bg-secondary text-foreground focus-visible:ring-primary/30"
+                    "border border-border bg-secondary text-foreground focus-visible:ring-primary/30"
                   )}
                   aria-label={t.focusCustomBreak || "Custom break minutes"}
                 />
@@ -194,20 +174,18 @@ export const FocusTimer = memo(function FocusTimer({
           )}
         </div>
         <div className="mb-6 relative flex min-w-0 flex-col items-stretch gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-          <h3
+          <h2
             className={cn(
               "min-w-0 break-words text-lg font-semibold [hyphens:manual] [overflow-wrap:normal]",
-              isPrimaryCTA ? "text-slate-800 dark:text-white" : "text-foreground"
+              "text-foreground"
             )}
           >
             {isBreak ? t.breakTime : t.focus}
-          </h3>
+          </h2>
           <div
             className={cn(
-              "min-w-0 max-w-full flex flex-wrap items-center gap-2 whitespace-normal text-sm",
-              isPrimaryCTA
-                ? "self-start px-3 py-1.5 bg-secondary backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70 min-[420px]:self-auto"
-                : "text-muted-foreground"
+              "flex min-w-0 max-w-full flex-wrap items-center gap-2 whitespace-normal text-sm",
+              "text-muted-foreground"
             )}
           >
             <Coffee className="h-4 w-4 shrink-0" />
