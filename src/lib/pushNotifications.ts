@@ -65,6 +65,17 @@ interface OwnerBoundPushRevocationRpcClient {
   ): PromiseLike<{ data: unknown; error: unknown }>;
 }
 
+interface CurrentSessionPushRevocationRpcClient {
+  rpc(
+    functionName: "revoke_current_push_install",
+    args: {
+      p_expected_owner_user_id: string;
+      p_device_id: string | null;
+      p_token: string | null;
+    },
+  ): PromiseLike<{ data: unknown; error: unknown }>;
+}
+
 interface OwnerBoundPushClaimRpcClient {
   rpc(
     functionName: "claim_push_install",
@@ -106,8 +117,31 @@ function revokeOwnedPushInstall(
   );
 }
 
+function revokeCurrentPushInstall(
+  client: unknown,
+  args: {
+    p_expected_owner_user_id: string;
+    p_device_id: string | null;
+    p_token: string | null;
+  },
+): PromiseLike<{ data: unknown; error: unknown }> {
+  return (client as CurrentSessionPushRevocationRpcClient).rpc(
+    "revoke_current_push_install",
+    args,
+  );
+}
+
 function isValidRevocationCount(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function isFirebaseNotConfiguredError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "FIREBASE_NOT_CONFIGURED"
+  );
 }
 
 function getCurrentPushRealmPresentation(): {
@@ -572,22 +606,148 @@ async function removePushTokenNow(
   return { status: "partial", remote, native };
 }
 
+async function removeCurrentSessionPushTokenNow(
+  expectedOwnerUserId: string,
+): Promise<PushRevocationResult> {
+  await pushTokenSaveTail;
+  try {
+    await suspendNativePushRealm();
+  } catch (error) {
+    logger.error("[Push] Native push realm suspension failed:", error);
+    return {
+      status: "partial",
+      remote: "failed",
+      native: "failed",
+    };
+  }
+
+  const tokenRead = storageReadRaw(SK.PUSH_TOKEN);
+  const installRead = pushInstallId
+    ? ({ ok: true, value: pushInstallId } as const)
+    : storageReadRaw(SK.PUSH_INSTALL_ID);
+  const currentToken = tokenRead.ok ? tokenRead.value || null : null;
+  const currentInstallId = installRead.ok ? installRead.value || null : null;
+  const activeOwnerBeforeRemote = await getCurrentUserId();
+
+  if (activeOwnerBeforeRemote !== expectedOwnerUserId) {
+    return {
+      status: "partial",
+      remote: "owner-changed",
+      native: "owner-changed",
+    };
+  }
+
+  if (!currentToken && !currentInstallId) {
+    if (tokenRead.ok && installRead.ok) {
+      logger.log("[Push] Current installation has no push registration");
+      return {
+        status: "revoked",
+        remote: "not-registered",
+        native: "not-applicable",
+      };
+    }
+
+    logger.warn("[Push] Current installation identifiers are unavailable");
+    return {
+      status: "partial",
+      remote: "failed",
+      native: "not-applicable",
+    };
+  }
+
+  let remote: PushRevocationResult["remote"] = "failed";
+  let confirmedRemote: "deleted" | "not-registered" | null = null;
+  if (!supabase) {
+    logger.warn("[Push] Supabase is unavailable for current installation revocation");
+  } else {
+    try {
+      const { data, error } = await revokeCurrentPushInstall(supabase, {
+        p_expected_owner_user_id: expectedOwnerUserId,
+        p_device_id: currentInstallId,
+        p_token: currentToken,
+      });
+      if (error) {
+        logger.error("[Push] Failed to revoke the current push installation:", error);
+      } else if (!isValidRevocationCount(data)) {
+        logger.error("[Push] Current push revocation returned an invalid result");
+      } else {
+        const nextRemote = data > 0 ? "deleted" : "not-registered";
+        remote = nextRemote;
+        confirmedRemote = nextRemote;
+      }
+    } catch (error) {
+      logger.error("[Push] Current push installation revocation failed:", error);
+    }
+  }
+
+  const activeOwnerAfterRemote = await getCurrentUserId();
+  if (confirmedRemote !== null && activeOwnerAfterRemote !== expectedOwnerUserId) {
+    return {
+      status: "revoked",
+      remote: confirmedRemote,
+      native: "owner-changed",
+    };
+  }
+  if (activeOwnerAfterRemote !== expectedOwnerUserId) {
+    return {
+      status: "partial",
+      remote: "owner-changed",
+      native: "owner-changed",
+    };
+  }
+
+  let native: PushRevocationResult["native"] = "not-applicable";
+  if (isPushAvailable()) {
+    try {
+      await PushNotifications.unregister();
+      native = "unregistered";
+    } catch (error) {
+      if (isFirebaseNotConfiguredError(error)) {
+        native = "not-applicable";
+        logger.warn("[Push] Firebase is not configured for this Android build");
+      } else {
+        native = "failed";
+        logger.error("[Push] Native registration revocation failed:", error);
+      }
+    }
+  }
+
+  if (confirmedRemote !== null && native !== "failed") {
+    storageRemove(SK.PUSH_TOKEN);
+    storageRemove(SK.PUSH_INSTALL_ID);
+    pushInstallId = null;
+  }
+
+  if (confirmedRemote !== null && native !== "failed") {
+    logger.log("[Push] Current installation registration revoked");
+    return { status: "revoked", remote: confirmedRemote, native };
+  }
+
+  return { status: "partial", remote, native };
+}
+
 export function cancelPendingPushRegistration(): void {
   pushRegistrationGeneration += 1;
   latestPushTokenSaveRequestId += 1;
   activePushListenerEpoch += 1;
 }
 
-function enqueuePushRevocation(expectedOwnerUserId?: string): Promise<PushRevocationResult> {
+function enqueuePushRevocationOperation(
+  operation: () => Promise<PushRevocationResult>,
+): Promise<PushRevocationResult> {
   // Invalidate an older registration immediately. Cleanup itself is serialized so
   // a later enable operation can wait until every already-started revoke settles.
   cancelPendingPushRegistration();
-  const revocation = pushRevocationTail.then(() => removePushTokenNow(expectedOwnerUserId));
+  const revocation = pushRevocationTail.then(operation);
   pushRevocationTail = revocation.then(
     () => undefined,
     () => undefined,
   );
   return revocation;
+}
+
+function enqueuePushRevocation(expectedOwnerUserId?: string): Promise<PushRevocationResult> {
+  return enqueuePushRevocationOperation(() => removePushTokenNow(expectedOwnerUserId));
 }
 
 export function removePushToken(): Promise<PushRevocationResult> {
@@ -606,6 +766,22 @@ export function revokePushForAccountBoundary(
     return Promise.reject(new Error("Push account-boundary owner is required"));
   }
   return enqueuePushRevocation(expectedOwnerUserId);
+}
+
+/**
+ * Revokes only this installation while the expected account still owns the
+ * active session. A clean installation with no local registration evidence
+ * never enters Firebase, which keeps non-Firebase debug builds crash-safe.
+ */
+export function revokePushForCurrentSession(
+  expectedOwnerUserId: string,
+): Promise<PushRevocationResult> {
+  if (!expectedOwnerUserId.trim()) {
+    return Promise.reject(new Error("Current push session owner is required"));
+  }
+  return enqueuePushRevocationOperation(() =>
+    removeCurrentSessionPushTokenNow(expectedOwnerUserId),
+  );
 }
 
 type PushNotificationKind = "mood" | "habit" | "focus" | "test";

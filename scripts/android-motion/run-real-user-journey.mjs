@@ -19,8 +19,6 @@ const JOURNEY_SCENARIOS = new Set([
 const REFINE_JOURNEY_REQUIRED_TEXTS = [
   "How are you feeling right now?",
   "More precise",
-  "Back",
-  "Save mood",
 ];
 let uiDumpSequence = 0;
 
@@ -230,6 +228,10 @@ export function findVisibleUiNode(
     }
     return true;
   });
+}
+
+export function findVisibleClickableUiNode(nodes, criteria) {
+  return findVisibleUiNode(nodes, { ...criteria, clickable: true });
 }
 
 export function centerOfBounds(bounds) {
@@ -504,7 +506,20 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
   };
 
   const tapNode = async (criteria, label, settleMs = 800) => {
-    const node = await requireNode(criteria, label);
+    const deadline = Date.now() + 7000;
+    let node;
+    do {
+      try {
+        const { nodes } = await dumpUi(serial);
+        node = findVisibleClickableUiNode(nodes, criteria);
+        if (node?.bounds) break;
+      } catch {
+        // UIAutomator may return a transient null root during a native/WebView
+        // accessibility refresh. A fresh unique dump is the only safe retry.
+      }
+      await sleep(250);
+    } while (Date.now() < deadline);
+    if (!node?.bounds) throw new Error(`Visible clickable Android node not found: ${label}`);
     const point = centerOfBounds(node.bounds);
     await recordAction(
       { action: "tap", bounds: node.bounds, label, point },

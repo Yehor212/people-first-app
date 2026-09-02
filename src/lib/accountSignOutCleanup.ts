@@ -28,7 +28,10 @@ import { offlineQueue } from "@/lib/offlineQueue";
 import { runWithOriginExclusiveLock } from "@/lib/originExclusiveLock";
 import { signOutExpectedOwnerLocally } from "@/lib/ownerBoundAuthSession";
 import { leavePresenceForAccountBoundary } from "@/lib/presenceService";
-import { revokePushForAccountBoundary } from "@/lib/pushNotifications";
+import {
+  revokePushForAccountBoundary,
+  revokePushForCurrentSession,
+} from "@/lib/pushNotifications";
 import {
   safeLocalStorageSet,
   storageReadRaw,
@@ -1150,7 +1153,7 @@ async function performOwnerSafeSignOutUnlocked(
       : { status: "cleanup-failed", sessionEnded: true };
   }
 
-  const pushRevocation = await revokePushForAccountBoundary(ownerUserId);
+  const pushRevocation = await revokePushForCurrentSession(ownerUserId);
   if (pushRevocation.status !== "revoked") {
     await restorePushRegistrationSafely(options.restorePushRegistration);
     resumeAccountBoundary(true);

@@ -6,6 +6,20 @@ const backHandler = vi.hoisted(() => ({
   callback: null as null | (() => boolean),
   unregister: vi.fn(),
 }));
+const externalBrowser = vi.hoisted(() => ({
+  isNative: false,
+  open: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@capacitor/browser", () => ({
+  Browser: { open: externalBrowser.open },
+}));
+
+vi.mock("@/lib/platform", () => ({
+  get isNative() {
+    return externalBrowser.isNative;
+  },
+}));
 
 vi.mock("@/lib/androidBackHandler", () => ({
   registerModalCloseCallback: vi.fn((callback: () => boolean) => {
@@ -60,6 +74,8 @@ describe("SettingsDialog focus return", () => {
   beforeEach(() => {
     backHandler.callback = null;
     backHandler.unregister.mockClear();
+    externalBrowser.isNative = false;
+    externalBrowser.open.mockClear();
   });
 
   it("keeps the visual backdrop out of the accessibility and keyboard order", () => {
@@ -212,5 +228,20 @@ describe("Settings form text reflow", () => {
     expect(screen.getByRole("link", { name: "Benachrichtigungseinstellungen" })).toHaveClass(
       "min-h-[48px]"
     );
+  });
+
+  it("opens bundled settings disclosures in a recoverable browser on native Android", () => {
+    externalBrowser.isNative = true;
+    render(
+      <SettingsExternalLink href="/people-first-app/delete-account.html?lang=en">
+        Account deletion details
+      </SettingsExternalLink>
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: "Account deletion details" }));
+
+    expect(externalBrowser.open).toHaveBeenCalledWith({
+      url: "https://yehor212.github.io/people-first-app/delete-account.html?lang=en",
+    });
   });
 });

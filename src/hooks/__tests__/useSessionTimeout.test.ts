@@ -62,6 +62,8 @@ const mockInitializePushNotifications = vi.fn(() => Promise.resolve());
 vi.mock('@/lib/pushNotifications', () => ({
   revokePushForAccountBoundary: (ownerUserId: string) =>
     mockRevokePushForAccountBoundary(ownerUserId),
+  revokePushForCurrentSession: (ownerUserId: string) =>
+    mockRevokePushForAccountBoundary(ownerUserId),
   initializePushNotifications: () => mockInitializePushNotifications(),
 }));
 

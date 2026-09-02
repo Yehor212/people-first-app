@@ -124,6 +124,7 @@ vi.mock("@/lib/nativeGoogleAuth", () => ({
 vi.mock("@/lib/pushNotifications", () => ({
   removePushToken: mocks.removePushToken,
   revokePushForAccountBoundary: mocks.removePushToken,
+  revokePushForCurrentSession: mocks.removePushToken,
   initializePushNotifications: mocks.initializePushNotifications,
 }));
 

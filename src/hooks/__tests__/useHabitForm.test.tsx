@@ -45,6 +45,27 @@ describe("useHabitForm", () => {
     expect(result.current.quickEntryMode).toBe("incrementStep");
   });
 
+  it("clears stale template fields before starting a custom habit", () => {
+    const { result } = renderHook(() =>
+      useHabitForm({ onAddHabit, onUpdateHabit }),
+    );
+
+    act(() => {
+      result.current.setIsAdding(true);
+      result.current.handleQuickAdd("water");
+    });
+    act(() => {
+      result.current.beginCustomHabit();
+    });
+
+    expect(result.current.isAdding).toBe(true);
+    expect(result.current.showCustomForm).toBe(true);
+    expect(result.current.selectedTemplateId).toBeNull();
+    expect(result.current.newHabitName).toBe("");
+    expect(result.current.habitType).toBe("boolean");
+    expect(result.current.unit).toBe("");
+  });
+
   it("saves a template habit with templateId and edited goal", () => {
     const { result } = renderHook(() =>
       useHabitForm({ onAddHabit, onUpdateHabit }),

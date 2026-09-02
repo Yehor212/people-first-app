@@ -17,9 +17,7 @@ import {
 } from "@/storage/accountBoundaryRuntime";
 import { SplashScreen, type SplashThemePreference } from "@/components/SplashScreen";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { PremiumLoader } from "@/components/PremiumLoader";
-import { NotificationPermission } from "@/components/NotificationPermission";
 import { AuthGateInitErrorScreen } from "@/components/AuthGateInitErrorScreen";
 import { AuthGateSignInScreen } from "@/components/AuthGateSignInScreen";
 import {
@@ -47,17 +45,14 @@ export {
 } from "@/lib/authGateRuntime";
 
 /**
- * Orchestrates the app's initialization and onboarding gates.
- * Renders gate screens (splash, language, auth, onboarding, notifications)
- * or children when all gates pass.
+ * Orchestrates the app's initialization and account gates.
+ * Renders splash, language, and auth screens or children when those gates pass.
  *
  * Reads all gate state from Zustand stores directly.
  */
 export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
   const { t } = useLanguage();
   const [, setImportedBackupMarkerRevision] = useState(0);
-  const [notificationPermissionDismissedForSession, setNotificationPermissionDismissedForSession] =
-    useState(false);
   const importedBackupRecoveryRef = useRef<HTMLDivElement | null>(null);
   const importedBackupSettledRef = useRef<HTMLDivElement | null>(null);
   const searchParams =
@@ -87,8 +82,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     setWebOAuthError,
     hasValidSession,
     isAccountBoundaryInProgress,
-    onboardingBypassFlag,
-    setOnboardingBypassFlag,
   } = useAppStore(
     useShallow((s) => ({
       initializationState: s.initializationState,
@@ -100,8 +93,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       setWebOAuthError: s.setWebOAuthError,
       hasValidSession: s.hasValidSession,
       isAccountBoundaryInProgress: s.isAccountBoundaryInProgress,
-      onboardingBypassFlag: s.onboardingBypassFlag,
-      setOnboardingBypassFlag: s.setOnboardingBypassFlag,
     }))
   );
 
@@ -113,8 +104,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     setUserNameCustom,
     onboardingComplete,
     setOnboardingComplete,
-    notificationPermissionChecked,
-    setNotificationPermissionChecked,
     authGateChecked,
     setAuthGateChecked,
   } = useUserDataStore(
@@ -125,8 +114,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
       setUserNameCustom: s.setUserNameCustom,
       onboardingComplete: s.onboardingComplete,
       setOnboardingComplete: s.setOnboardingComplete,
-      notificationPermissionChecked: s.notificationPermissionChecked,
-      setNotificationPermissionChecked: s.setNotificationPermissionChecked,
       authGateChecked: s.authGateChecked,
       setAuthGateChecked: s.setAuthGateChecked,
     }))
@@ -149,23 +136,27 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
     setAuthGateChecked(true);
   };
 
-  const handleOnboardingComplete = (result: { skipped?: boolean; modules?: string[] }) => {
-    logger.log("[AuthGate] handleOnboardingComplete called", result);
-    // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
-    setOnboardingBypassFlag(true);
-    // Direct localStorage write (survives page refresh even if IndexedDB fails)
-    safeLocalStorageSet("zenflow-onboarding-complete", true);
-    // Zustand + IndexedDB persistence (normal async path)
+  useEffect(() => {
+    const accountGatePassed =
+      hasValidSession === true || authGateChecked || authBypassFlag;
+    if (!hasSelectedLanguage || !accountGatePassed || onboardingComplete) return;
+
+    if (!safeLocalStorageSet("zenflow-onboarding-complete", true)) {
+      logger.warn("[AuthGate] Failed to persist removed onboarding compatibility state");
+    }
     try {
       setOnboardingComplete(true);
     } catch (error) {
-      logger.error("[AuthGate] Error in handleOnboardingComplete:", error);
+      logger.error("[AuthGate] Failed to persist removed onboarding state:", error);
     }
-  };
-
-  const handleNotificationPermissionComplete = () => {
-    setNotificationPermissionChecked(true);
-  };
+  }, [
+    authBypassFlag,
+    authGateChecked,
+    hasSelectedLanguage,
+    hasValidSession,
+    onboardingComplete,
+    setOnboardingComplete,
+  ]);
 
   // ── Gate screens (order matters — first matching gate wins) ──
 
@@ -297,19 +288,6 @@ export function AuthGate({ isLoading, splashTheme, children }: AuthGateProps) {
         importedBackupLocalOnlyDecisionRevision={importedBackupLocalOnlyDecisionRevision}
         onAuthComplete={handleAuthComplete}
         onClearWebOAuthError={() => setWebOAuthError(null)}
-      />
-    );
-  }
-
-  if (!onboardingComplete && !onboardingBypassFlag) {
-    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
-  }
-
-  if (!notificationPermissionChecked && !notificationPermissionDismissedForSession) {
-    return (
-      <NotificationPermission
-        onComplete={handleNotificationPermissionComplete}
-        onCancel={() => setNotificationPermissionDismissedForSession(true)}
       />
     );
   }

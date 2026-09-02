@@ -110,10 +110,6 @@ vi.mock("@/components/AuthScreen", () => ({
   AuthScreen: authScreenMock,
 }));
 
-vi.mock("@/components/OnboardingFlow", () => ({
-  OnboardingFlow: () => <div data-testid="mock-onboarding-flow" />,
-}));
-
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -167,8 +163,6 @@ const setStandaloneDisplayMode = (matches: boolean) => {
 const storeCompletedInteractiveGates = () => {
   localStorage.setItem("zenflow-language-selected", "true");
   localStorage.setItem("zenflow-google-auth-checked", "true");
-  localStorage.setItem("zenflow-onboarding-complete", "true");
-  localStorage.setItem("zenflow-notification-permission-checked", "true");
 };
 
 vi.mock("@/stores", () => {
@@ -294,11 +288,9 @@ describe("AuthGate", () => {
     expect(screen.queryByTestId("mock-splash")).not.toBeInTheDocument();
   });
 
-  it("does not require the removed tutorial gate for installed web shell startup recovery", () => {
+  it("does not require removed onboarding or notification gates for installed shell recovery", () => {
     localStorage.setItem("zenflow-language-selected", "true");
     localStorage.setItem("zenflow-google-auth-checked", "true");
-    localStorage.setItem("zenflow-onboarding-complete", "true");
-    localStorage.setItem("zenflow-notification-permission-checked", "true");
 
     expect(hasStoredCompletedInteractiveGates()).toBe(true);
   });
@@ -689,12 +681,13 @@ describe("AuthGate", () => {
     dispatch.mockRestore();
   });
 
-  it("routes directly from completed auth to module onboarding without rendering WelcomeTutorial", () => {
+  it("opens V2 directly after auth without changing feature or notification consent", async () => {
     appState.initializationState = { isInitializing: false, error: null, wasUpdated: false };
     appState.hasValidSession = true;
     userState.authGateChecked = true;
     userState.googleAuthChecked = true;
     userState.onboardingComplete = false;
+    userState.notificationPermissionChecked = false;
 
     render(
       <AuthGate isLoading={false} splashTheme="ink">
@@ -702,7 +695,8 @@ describe("AuthGate", () => {
       </AuthGate>
     );
 
-    expect(screen.getByTestId("mock-onboarding-flow")).toBeInTheDocument();
-    expect(screen.queryByText("Welcome to ZenFlow")).not.toBeInTheDocument();
+    expect(screen.getByText("App")).toBeInTheDocument();
+    await waitFor(() => expect(userState.setOnboardingComplete).toHaveBeenCalledWith(true));
+    expect(userState.setNotificationPermissionChecked).not.toHaveBeenCalled();
   });
 });

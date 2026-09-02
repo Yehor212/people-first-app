@@ -2136,6 +2136,14 @@ export type Database = {
       };
       reset_monthly_leaderboard: { Args: never; Returns: undefined };
       reset_weekly_leaderboard: { Args: never; Returns: undefined };
+      revoke_current_push_install: {
+        Args: {
+          p_device_id?: string | null;
+          p_expected_owner_user_id: string;
+          p_token?: string | null;
+        };
+        Returns: number;
+      };
       revoke_journal_ai_consent: { Args: never; Returns: boolean };
       revoke_push_install: {
         Args: { p_device_id: string; p_token?: string | null };

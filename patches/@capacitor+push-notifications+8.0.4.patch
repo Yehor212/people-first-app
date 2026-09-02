@@ -1,0 +1,62 @@
+diff --git a/node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications/PushNotificationsPlugin.java b/node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications/PushNotificationsPlugin.java
+index f338f49..473f5ae 100644
+--- a/node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications/PushNotificationsPlugin.java
++++ b/node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications/PushNotificationsPlugin.java
+@@ -99,24 +99,40 @@ public class PushNotificationsPlugin extends Plugin {
+-
++
+     @PluginMethod
+     public void register(PluginCall call) {
+-        FirebaseMessaging.getInstance().setAutoInitEnabled(true);
+-        FirebaseMessaging.getInstance()
+-            .getToken()
+-            .addOnCompleteListener((task) -> {
+-                if (!task.isSuccessful()) {
+-                    sendError(task.getException().getLocalizedMessage());
+-                    return;
+-                }
+-                sendToken(task.getResult());
+-            });
+-        call.resolve();
++        try {
++            FirebaseMessaging.getInstance().setAutoInitEnabled(true);
++            FirebaseMessaging.getInstance()
++                .getToken()
++                .addOnCompleteListener((task) -> {
++                    if (!task.isSuccessful()) {
++                        sendError(task.getException().getLocalizedMessage());
++                        return;
++                    }
++                    sendToken(task.getResult());
++                });
++            call.resolve();
++        } catch (IllegalStateException exception) {
++            call.reject(
++                "Firebase is not configured for push notifications",
++                "FIREBASE_NOT_CONFIGURED",
++                exception
++            );
++        }
+     }
+-
++
+     @PluginMethod
+     public void unregister(PluginCall call) {
+-        FirebaseMessaging.getInstance().setAutoInitEnabled(false);
+-        FirebaseMessaging.getInstance().deleteToken();
+-        call.resolve();
++        try {
++            FirebaseMessaging.getInstance().setAutoInitEnabled(false);
++            FirebaseMessaging.getInstance().deleteToken();
++            call.resolve();
++        } catch (IllegalStateException exception) {
++            call.reject(
++                "Firebase is not configured for push notifications",
++                "FIREBASE_NOT_CONFIGURED",
++                exception
++            );
++        }
+     }
+-
++
+     @PluginMethod

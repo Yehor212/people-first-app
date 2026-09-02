@@ -4,12 +4,16 @@ import {
   useRef,
   type ChangeEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type RefObject,
 } from "react";
+import { Browser } from "@capacitor/browser";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { isNative } from "@/lib/platform";
 import type {
   SettingsButtonGridProps,
   SettingsDialogProps,
@@ -28,6 +32,12 @@ const SETTINGS_BUTTON_GRID_CLASS: Record<
   three: "grid w-full min-w-0 max-w-full gap-2 min-[520px]:grid-cols-3",
   confirm: "grid w-full min-w-0 max-w-full gap-2 min-[420px]:grid-cols-2",
 };
+
+const NATIVE_SETTINGS_PUBLIC_BASE_URL = "https://yehor212.github.io/people-first-app/";
+
+function resolveNativeSettingsLink(href: string): string {
+  return new URL(href, NATIVE_SETTINGS_PUBLIC_BASE_URL).toString();
+}
 
 const SETTINGS_INLINE_BUTTON_CLASS = {
   primary:
@@ -202,11 +212,20 @@ export function SettingsStatus({
 }
 
 export function SettingsExternalLink({ href, children, size = "xs" }: SettingsExternalLinkProps) {
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!isNative) return;
+    event.preventDefault();
+    void Browser.open({ url: resolveNativeSettingsLink(href) }).catch((error) => {
+      logger.warn("[Settings]", "External settings link failed:", error);
+    });
+  };
+
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
       className={cn(
         "inline-flex min-h-[48px] min-w-0 items-center whitespace-normal break-words rounded-[8px] px-1 text-primary underline [hyphens:manual] [overflow-wrap:break-word] hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         size === "sm" ? "text-sm" : "text-xs"

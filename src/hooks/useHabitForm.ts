@@ -148,6 +148,12 @@ export function useHabitForm({ onAddHabit, onUpdateHabit, useV2IconIds = false }
     setShowCustomForm(false);
   }, [useV2IconIds]);
 
+  const beginCustomHabit = useCallback(() => {
+    resetForm();
+    setIsAdding(true);
+    setShowCustomForm(true);
+  }, [resetForm]);
+
   const syncReminderDays = useCallback((
     nextFrequency: HabitFrequencyRatio,
     nextMode: HabitScheduleMode,
@@ -490,7 +496,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit, useV2IconIds = false }
     setTargetValue, setTargetType, setUnit, setQuickEntryMode,
     setHasDurationLimit, setDurationDays,
     setIdentityCluster, setIdentityVerb, setIdentityIcon,
-    resetForm, handleEditHabit, handleAddHabit, handleQuickAdd, handleTemplateUnitChange, startFromTemplate,
+    resetForm, beginCustomHabit, handleEditHabit, handleAddHabit, handleQuickAdd, handleTemplateUnitChange, startFromTemplate,
     handleAddReminder, handleRemoveReminder, handleReminderChange,
   };
 }

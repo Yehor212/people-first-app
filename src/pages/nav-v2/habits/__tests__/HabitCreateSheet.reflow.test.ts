@@ -6,6 +6,9 @@ const source = readFileSync("src/pages/nav-v2/habits/HabitCreateSheet.tsx", "utf
 describe("HabitCreateSheet viewport and text reflow contract", () => {
   it("uses the live app viewport and safe areas instead of raw vh", () => {
     expect(source).toContain(
+      "mt-24 flex !h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]",
+    );
+    expect(source).toContain(
       "max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)]",
     );
     expect(source).not.toContain("max-h-[92vh]");
