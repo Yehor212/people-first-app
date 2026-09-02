@@ -6,6 +6,7 @@ const migrationPath = resolve(
   process.cwd(),
   "supabase/migrations/20260902000013_revoke_current_push_install.sql",
 );
+const generatedTypesPath = resolve(process.cwd(), "src/types/supabase.ts");
 
 describe("current-install push revocation migration", () => {
   it("keeps the RPC invoker-scoped to the authenticated owner and one installation capability", () => {
@@ -43,5 +44,13 @@ describe("current-install push revocation migration", () => {
     expect(sql).not.toMatch(/\b(?:INSERT|COPY|TRUNCATE)\b/i);
     expect(sql).not.toMatch(/\bGRANT\s+EXECUTE\s+ON\s+FUNCTION[^;]+\s+TO\s+(?:anon|PUBLIC)\s*;/i);
     expect(sql).not.toMatch(/\bGRANT\s+(?:SELECT|INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\b/i);
+  });
+
+  it("keeps the generated Supabase client contract fresh for the current-install RPC", () => {
+    const types = readFileSync(generatedTypesPath, "utf8");
+
+    expect(types).toMatch(
+      /revoke_current_push_install:\s*\{\s*Args:\s*\{[\s\S]*?p_device_id\?: string \| null;[\s\S]*?p_expected_owner_user_id: string;[\s\S]*?p_token\?: string \| null;[\s\S]*?Returns: number;/,
+    );
   });
 });
