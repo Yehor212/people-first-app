@@ -85,6 +85,18 @@ describe("Android edge-to-edge native contract", () => {
     expect(styles).not.toContain("zenflow_edge_underlay");
   });
 
+  it("keeps splash drawables off the inherited widget background", () => {
+    const styles = read("android/app/src/main/res/values/styles.xml");
+
+    expect(styles).not.toContain('<item name="android:background">@drawable/splash</item>');
+    expect(styles).toContain(
+      '<item name="android:windowBackground">@color/zenflow_edge_bleed_window</item>'
+    );
+    expect(styles).toContain(
+      '<item name="android:windowBackground">@color/zenflow_splash_dark</item>'
+    );
+  });
+
   it("serves Capacitor Android assets from the native localhost root, not the GitHub Pages base", () => {
     const viteConfig = read("vite.config.ts");
 

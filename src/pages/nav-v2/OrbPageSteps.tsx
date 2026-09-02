@@ -2,6 +2,7 @@ import { type CSSProperties, type RefObject } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Bloom } from "@/lib/motion";
 import { staggerDelay } from "@/lib/motion/choreography";
+import { isAndroid } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import {
   CANONICAL_ORB_ANIMATION_SPEED,
@@ -17,6 +18,56 @@ import { useStepScrollerReset } from "./useStepScrollerReset";
 import "./OrbPageSteps.css";
 
 type Tx = Record<string, string>;
+
+const refineNoteAlignmentCleanup = new WeakMap<HTMLTextAreaElement, () => void>();
+
+function alignRefineNoteForAndroidIme(textarea: HTMLTextAreaElement) {
+  if (!isAndroid) return;
+  const note = textarea.closest<HTMLElement>('[data-testid="orb-page-note"]');
+  if (!note) return;
+
+  refineNoteAlignmentCleanup.get(textarea)?.();
+
+  const align = () => {
+    note.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+  };
+  align();
+
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  let cleanupTimer: number | null = null;
+  let frameId: number | null = null;
+  const cleanup = () => {
+    viewport.removeEventListener("resize", onResize);
+    if (cleanupTimer !== null) {
+      window.clearTimeout(cleanupTimer);
+      cleanupTimer = null;
+    }
+    if (frameId !== null) {
+      window.cancelAnimationFrame(frameId);
+      frameId = null;
+    }
+    if (refineNoteAlignmentCleanup.get(textarea) === cleanup) {
+      refineNoteAlignmentCleanup.delete(textarea);
+    }
+  };
+  const onResize = () => {
+    viewport.removeEventListener("resize", onResize);
+    if (cleanupTimer !== null) {
+      window.clearTimeout(cleanupTimer);
+      cleanupTimer = null;
+    }
+    if (frameId !== null) window.cancelAnimationFrame(frameId);
+    frameId = window.requestAnimationFrame(() => {
+      frameId = null;
+      align();
+      cleanup();
+    });
+  };
+  viewport.addEventListener("resize", onResize);
+  cleanupTimer = window.setTimeout(cleanup, 500);
+  refineNoteAlignmentCleanup.set(textarea, cleanup);
+}
 
 interface OrbSelectStepProps {
   tx: Tx;
@@ -298,7 +349,7 @@ export function OrbRefineStep({
           <div className="mx-auto max-w-2xl px-0" data-testid="orb-page-note">
               <label
                 htmlFor="orb-refine-note-input"
-                className="mb-2 block text-sm font-medium text-foreground/90 [hyphens:auto] [overflow-wrap:normal] [word-break:normal]"
+                className="mb-2 block text-sm font-medium text-foreground/90 [hyphens:auto] [overflow-wrap:normal] [word-break:normal] [@media(max-height:360px)]:px-16 [@media(max-height:360px)]:text-center"
               >
               {tx.journalContinueWriting || "Continue writing"}
             </label>
@@ -307,11 +358,12 @@ export function OrbRefineStep({
               data-testid="orb-page-note-input"
               value={draftNote}
               onChange={(event) => handleNoteChange(event.target.value)}
+              onFocus={(event) => alignRefineNoteForAndroidIme(event.currentTarget)}
               maxLength={280}
               rows={4}
               aria-label={tx.journalContinueWriting || "Continue writing"}
               placeholder={tx.howAreYouFeeling || "How are you feeling?"}
-              className="min-h-[120px] w-full rounded-[28px] border border-border/60 bg-card/65 px-4 py-3 text-sm text-foreground shadow-sm outline-none backdrop-blur-md transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20 md:text-base"
+              className="min-h-[120px] w-full rounded-[28px] border border-border/60 bg-card/65 px-4 py-3 text-sm text-foreground shadow-sm outline-none backdrop-blur-md transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20 [@media(max-height:360px)]:h-[96px] [@media(max-height:360px)]:min-h-[96px] md:text-base"
             />
           </div>
         </Bloom>

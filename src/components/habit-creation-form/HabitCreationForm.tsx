@@ -323,6 +323,7 @@ export function HabitCreationForm({
     setIdentityCluster,
     setIdentityVerb,
     resetForm,
+    beginCustomHabit,
     handleAddHabit,
     handleQuickAdd,
     handleTemplateUnitChange,
@@ -372,7 +373,10 @@ export function HabitCreationForm({
         language={language}
         t={ts}
         handleQuickAdd={handleQuickAdd}
-        setShowCustomForm={setShowCustomForm}
+        setShowCustomForm={(show) => {
+          if (show) beginCustomHabit();
+          else setShowCustomForm(false);
+        }}
       />
     );
   }

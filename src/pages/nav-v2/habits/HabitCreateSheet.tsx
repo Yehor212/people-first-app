@@ -111,7 +111,7 @@ export function HabitCreateSheet({
           data-testid="habits-create-sheet-overlay"
         />
         <Drawer.Content
-          className="fixed inset-x-0 bottom-0 z-[81] mt-24 flex max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col rounded-t-[1.75rem] border border-[hsl(var(--zf-role-energy)/0.30)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.12),transparent_32%),radial-gradient(circle_at_86%_6%,hsl(var(--zf-role-release)/0.09),transparent_30%),linear-gradient(160deg,hsl(var(--zf-night-0)/0.99)_0%,hsl(var(--zf-night-1)/0.98)_58%,hsl(var(--zf-night-0)/0.99)_100%)] text-[hsl(var(--zf-text-strong))] shadow-[0_-28px_90px_-52px_hsl(var(--zf-role-energy)/0.70)] outline-none md:mx-auto md:max-w-lg md:rounded-3xl"
+          className="fixed inset-x-0 bottom-0 z-[81] mt-24 flex !h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] max-h-[calc(var(--app-viewport-height)-var(--safe-top)-0.75rem)] flex-col rounded-t-[1.75rem] border border-[hsl(var(--zf-role-energy)/0.30)] bg-[radial-gradient(circle_at_16%_0%,hsl(var(--zf-role-energy)/0.12),transparent_32%),radial-gradient(circle_at_86%_6%,hsl(var(--zf-role-release)/0.09),transparent_30%),linear-gradient(160deg,hsl(var(--zf-night-0)/0.99)_0%,hsl(var(--zf-night-1)/0.98)_58%,hsl(var(--zf-night-0)/0.99)_100%)] text-[hsl(var(--zf-text-strong))] shadow-[0_-28px_90px_-52px_hsl(var(--zf-role-energy)/0.70)] outline-none md:mx-auto md:max-w-lg md:rounded-3xl"
           data-testid="habits-create-sheet"
           data-surface="habit-create-sheet"
           aria-describedby={undefined}

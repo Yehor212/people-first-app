@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Lock, Eye, EyeOff, AlertTriangle, Fingerprint } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { isAndroid } from "@/lib/platform";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatJournalDuration } from "./journalDateUtils";
 
@@ -55,6 +56,7 @@ export function JournalLockScreen({
     mode === "change" ? "current" : "enter"
   );
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const previousStepRef = useRef(step);
   const submitInFlightRef = useRef(false);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const glowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,6 +91,9 @@ export function JournalLockScreen({
   }, [cooldownRemaining]);
 
   useEffect(() => {
+    const stepChanged = previousStepRef.current !== step;
+    previousStepRef.current = step;
+    if (isAndroid && !stepChanged) return;
     inputRef.current?.focus();
   }, [step]);
 

@@ -1036,6 +1036,14 @@ describe("OrbPage progressive flow", () => {
       "aria-label",
       "Continue writing",
     );
+    expect(screen.getByTestId("orb-page-note-input")).toHaveClass(
+      "[@media(max-height:360px)]:h-[96px]",
+      "[@media(max-height:360px)]:min-h-[96px]",
+    );
+    expect(screen.getByText("Continue writing")).toHaveClass(
+      "[@media(max-height:360px)]:px-16",
+      "[@media(max-height:360px)]:text-center",
+    );
     fireEvent.click(screen.getByTestId("emotion-tag-mock-hopeful"));
     expect(screen.getByTestId("orb-page-refine-heading")).toHaveTextContent("Localized hopeful");
     fireEvent.change(screen.getByTestId("orb-page-note-input"), {
@@ -1048,6 +1056,59 @@ describe("OrbPage progressive flow", () => {
     fireEvent.click(screen.getByTestId("orb-page-next"));
     expect(screen.getByTestId("emotion-tag-mock-hopeful")).toHaveAttribute("data-selected", "true");
     expect(screen.getByTestId("orb-page-note-input")).toHaveValue("A little more grounded now.");
+  });
+
+  it("recenters the refine note when the Android IME opens", () => {
+    platformControl.isAndroid = true;
+    const originalVisualViewport = Object.getOwnPropertyDescriptor(window, "visualViewport");
+    const resizeListeners = new Set<EventListenerOrEventListenerObject>();
+    Object.defineProperty(window, "visualViewport", {
+      configurable: true,
+      value: {
+        addEventListener: vi.fn((type: string, listener: EventListenerOrEventListenerObject) => {
+          if (type === "resize") resizeListeners.add(listener);
+        }),
+        removeEventListener: vi.fn((type: string, listener: EventListenerOrEventListenerObject) => {
+          if (type === "resize") resizeListeners.delete(listener);
+        }),
+      },
+    });
+    const raf = installManualRaf();
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    try {
+      render(<OrbPage onAddMood={onAddMoodMock} />);
+      fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+      fireEvent.click(screen.getByTestId("orb-page-next"));
+      const note = screen.getByTestId("orb-page-note-input");
+      fireEvent.focus(note);
+
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: "auto",
+        block: "center",
+        inline: "nearest",
+      });
+
+      const pendingBeforeImeResize = raf.pendingCount();
+      for (const listener of resizeListeners) {
+        if (typeof listener === "function") listener(new Event("resize"));
+        else listener.handleEvent(new Event("resize"));
+      }
+      expect(raf.pendingCount()).toBe(pendingBeforeImeResize + 1);
+
+      fireEvent.focus(note);
+      expect(raf.pendingCount()).toBe(pendingBeforeImeResize);
+    } finally {
+      if (originalVisualViewport) {
+        Object.defineProperty(window, "visualViewport", originalVisualViewport);
+      } else {
+        Reflect.deleteProperty(window, "visualViewport");
+      }
+    }
   });
 
   it("preserves the in-progress orb mood when the Orb tab unmounts during V2 navigation", () => {

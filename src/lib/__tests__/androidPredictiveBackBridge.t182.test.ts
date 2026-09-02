@@ -88,7 +88,6 @@ describe("T182 Android 16 predictive Back bridge contract", () => {
 
   it("does not double-register components already covered by useModalA11y", () => {
     const files = [
-      "src/components/NotificationPermission.tsx",
       "src/components/schedule/AddEventModal.tsx",
       "src/components/schedule/EventDetailsModal.tsx",
       "src/components/challenges-panel/ChallengesPanel.tsx",

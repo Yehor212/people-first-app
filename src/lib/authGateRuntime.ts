@@ -24,8 +24,6 @@ export function isInstalledWebShell(): boolean {
 export function hasStoredCompletedInteractiveGates(): boolean {
   return (
     safeLocalStorageGet<boolean>("zenflow-language-selected", false) === true &&
-    safeLocalStorageGet<boolean>("zenflow-google-auth-checked", false) === true &&
-    safeLocalStorageGet<boolean>("zenflow-onboarding-complete", false) === true &&
-    safeLocalStorageGet<boolean>("zenflow-notification-permission-checked", false) === true
+    safeLocalStorageGet<boolean>("zenflow-google-auth-checked", false) === true
   );
 }

@@ -103,6 +103,7 @@ import {
   readPushRegistrationEvidence,
   removePushToken,
   revokePushForAccountBoundary,
+  revokePushForCurrentSession,
   savePushToken,
   sendTestPush,
 } from "../pushNotifications";
@@ -114,6 +115,8 @@ const CLAIM_INSTALLATION_ID = "9d38b63d-59e0-4a70-9ec6-91db88bd7074";
 describe("push notification token lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.unregister.mockReset();
+    mocks.rpc.mockReset();
     localStorage.clear();
     mocks.getCurrentUserId.mockResolvedValue("user-1");
     mocks.getCurrentChannelId.mockReturnValue("zenflow_default_v4");
@@ -139,7 +142,8 @@ describe("push notification token lifecycle", () => {
     mocks.upsert.mockResolvedValue({ error: null });
     mocks.rpc.mockImplementation((functionName: string) =>
       Promise.resolve(
-        functionName === "revoke_push_install"
+        functionName === "revoke_push_install" ||
+          functionName === "revoke_current_push_install"
           ? { data: 1, error: null }
           : { data: CLAIM_INSTALLATION_ID, error: null },
       ),
@@ -405,6 +409,123 @@ describe("push notification token lifecycle", () => {
       remote: "deleted",
       native: "unregistered",
     });
+  });
+
+  it("does not call Supabase or Firebase when the current installation has no push registration", async () => {
+    const result = await revokePushForCurrentSession("user-1");
+
+    expect(mocks.suspendNativePushRealm).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.unregister).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      status: "revoked",
+      remote: "not-registered",
+      native: "not-applicable",
+    });
+  });
+
+  it("revokes only the current installation when only its install id is available", async () => {
+    localStorage.setItem(PUSH_INSTALL_ID_KEY, "install-a");
+
+    const result = await revokePushForCurrentSession("user-1");
+
+    expect(mocks.rpc).toHaveBeenCalledWith("revoke_current_push_install", {
+      p_expected_owner_user_id: "user-1",
+      p_device_id: "install-a",
+      p_token: null,
+    });
+    expect(mocks.deleteBuilder.eq).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      status: "revoked",
+      remote: "deleted",
+      native: "unregistered",
+    });
+  });
+
+  it("uses the current installation token without broad account revocation when its id is unavailable", async () => {
+    localStorage.setItem(PUSH_TOKEN_KEY, "token-a");
+
+    const result = await revokePushForCurrentSession("user-1");
+
+    expect(mocks.rpc).toHaveBeenCalledWith("revoke_current_push_install", {
+      p_expected_owner_user_id: "user-1",
+      p_device_id: null,
+      p_token: "token-a",
+    });
+    expect(mocks.rpc).not.toHaveBeenCalledWith(
+      "revoke_current_push_install",
+      expect.objectContaining({ p_device_id: null, p_token: null }),
+    );
+    expect(result.status).toBe("revoked");
+  });
+
+  it("fails closed without guessing a registration when current push storage is unreadable", async () => {
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("storage unavailable", "SecurityError");
+    });
+
+    try {
+      const result = await revokePushForCurrentSession("user-1");
+
+      expect(mocks.rpc).not.toHaveBeenCalled();
+      expect(mocks.unregister).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        status: "partial",
+        remote: "failed",
+        native: "not-applicable",
+      });
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
+  it("does not revoke a replacement account when the current owner changes before cleanup", async () => {
+    localStorage.setItem(PUSH_INSTALL_ID_KEY, "install-a");
+    localStorage.setItem(PUSH_TOKEN_KEY, "token-a");
+    mocks.getCurrentUserId.mockResolvedValue("user-b");
+
+    const result = await revokePushForCurrentSession("user-a");
+
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.unregister).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      status: "partial",
+      remote: "owner-changed",
+      native: "owner-changed",
+    });
+  });
+
+  it("treats missing Firebase as not applicable only after current-install remote revoke succeeds", async () => {
+    localStorage.setItem(PUSH_INSTALL_ID_KEY, "install-a");
+    localStorage.setItem(PUSH_TOKEN_KEY, "token-a");
+    mocks.unregister.mockRejectedValueOnce({ code: "FIREBASE_NOT_CONFIGURED" });
+
+    const result = await revokePushForCurrentSession("user-1");
+
+    expect(result).toEqual({
+      status: "revoked",
+      remote: "deleted",
+      native: "not-applicable",
+    });
+    expect(localStorage.getItem(PUSH_INSTALL_ID_KEY)).toBeNull();
+    expect(localStorage.getItem(PUSH_TOKEN_KEY)).toBeNull();
+  });
+
+  it("keeps sign-out push cleanup partial when remote revoke fails even if Firebase is unavailable", async () => {
+    localStorage.setItem(PUSH_INSTALL_ID_KEY, "install-a");
+    localStorage.setItem(PUSH_TOKEN_KEY, "token-a");
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "offline" } });
+    mocks.unregister.mockRejectedValueOnce({ code: "FIREBASE_NOT_CONFIGURED" });
+
+    const result = await revokePushForCurrentSession("user-1");
+
+    expect(result).toEqual({
+      status: "partial",
+      remote: "failed",
+      native: "not-applicable",
+    });
+    expect(localStorage.getItem(PUSH_INSTALL_ID_KEY)).toBe("install-a");
+    expect(localStorage.getItem(PUSH_TOKEN_KEY)).toBe("token-a");
   });
 
   it("blocks remote cleanup and preserves retry identifiers when native suspension fails", async () => {

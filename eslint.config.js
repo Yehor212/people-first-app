@@ -23,6 +23,8 @@ export default tseslint.config(
       ".size-limit.json",
       // Agent worktrees (isolated branches) — not part of main lint/type scope.
       ".codex/worktrees/**",
+      // Preserved recovery snapshots are not part of the canonical source tree.
+      ".codex-recovery/**",
       // Build-time Vite plugins (Node CLI tooling, console.log allowed for build feedback).
       "vite-plugin-*.ts",
     ],

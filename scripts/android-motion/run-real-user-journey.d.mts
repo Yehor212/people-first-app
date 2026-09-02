@@ -74,6 +74,10 @@ export function findVisibleUiNode(
   nodes: UiAutomatorNode[],
   selector: UiNodeSelector,
 ): UiAutomatorNode | undefined;
+export function findVisibleClickableUiNode(
+  nodes: UiAutomatorNode[],
+  selector: Omit<UiNodeSelector, "clickable">,
+): UiAutomatorNode | undefined;
 export function centerOfBounds(bounds: UiAutomatorBounds): {
   x: number;
   y: number;

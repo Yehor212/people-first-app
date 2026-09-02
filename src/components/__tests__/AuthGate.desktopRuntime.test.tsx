@@ -56,14 +56,6 @@ vi.mock("@/components/AuthScreen", () => ({
   AuthScreen: () => <div data-testid="mock-auth-screen" />,
 }));
 
-vi.mock("@/components/OnboardingFlow", () => ({
-  OnboardingFlow: () => <div data-testid="mock-onboarding-flow" />,
-}));
-
-vi.mock("@/components/NotificationPermission", () => ({
-  NotificationPermission: () => <div data-testid="mock-notification-permission" />,
-}));
-
 vi.mock("@/components/PremiumLoader", () => ({
   PremiumLoader: () => <div data-testid="mock-premium-loader" />,
 }));

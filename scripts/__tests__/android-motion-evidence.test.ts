@@ -30,6 +30,7 @@ import {
   calculateClockSync,
   centerOfBounds,
   createClickableNodeInventory,
+  findVisibleClickableUiNode,
   findVisibleUiNode,
   findVisibleScrollableNode,
   getRefineJourneyRequiredTexts,
@@ -115,7 +116,7 @@ describe("Android motion evidence tooling", () => {
         <node class="android.widget.ToggleButton" text="Focus" content-desc="" bounds="[52,666][1029,794]" visible-to-user="true" enabled="true" clickable="true" />
       </hierarchy>`);
 
-    expect(findVisibleUiNode(nodes, { text: "Focus", clickable: true })?.className).toBe(
+    expect(findVisibleClickableUiNode(nodes, { text: "Focus" })?.className).toBe(
       "android.widget.ToggleButton"
     );
   });
@@ -638,8 +639,6 @@ describe("Android motion evidence tooling", () => {
     expect(getRefineJourneyRequiredTexts()).toEqual([
       "How are you feeling right now?",
       "More precise",
-      "Back",
-      "Save mood",
     ]);
     expect(sliderJourneyPoints({ bottom: 360, left: 100, right: 1000, top: 200 })).toEqual({
       negative: { x: 144, y: 280 },

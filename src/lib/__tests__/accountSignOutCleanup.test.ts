@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   hasPendingJournalSecurityRemovalForOwner: vi.fn(),
   getPendingJournalSecurityMigrationRevisionForOwner: vi.fn(),
   removePushToken: vi.fn(),
+  revokeCurrentPush: vi.fn(),
   clearAccountNotificationsForBoundary: vi.fn(),
   resumeAccountNotifications: vi.fn(),
   clearNativeJournalBiometricCredential: vi.fn(),
@@ -117,6 +118,7 @@ vi.mock("@/features/journal", () => ({
 
 vi.mock("@/lib/pushNotifications", () => ({
   revokePushForAccountBoundary: mocks.removePushToken,
+  revokePushForCurrentSession: mocks.revokeCurrentPush,
 }));
 
 vi.mock("@/lib/presenceService", () => ({
@@ -288,6 +290,11 @@ describe("owner-safe sign-out cleanup", () => {
       remote: "deleted",
       native: "unregistered",
     });
+    mocks.revokeCurrentPush.mockResolvedValue({
+      status: "revoked",
+      remote: "not-registered",
+      native: "not-applicable",
+    });
     mocks.clearAccountNotificationsForBoundary.mockResolvedValue(undefined);
     mocks.clearNativeJournalBiometricCredential.mockResolvedValue("removed");
     mocks.clearAccountDeviceSurfaces.mockResolvedValue(undefined);
@@ -416,7 +423,8 @@ describe("owner-safe sign-out cleanup", () => {
     const result = await performOwnerSafeSignOut();
 
     expect(mocks.leavePresenceForAccountBoundary).toHaveBeenCalledWith("account-a");
-    expect(mocks.removePushToken).toHaveBeenCalledWith("account-a");
+    expect(mocks.revokeCurrentPush).toHaveBeenCalledWith("account-a");
+    expect(mocks.removePushToken).not.toHaveBeenCalled();
     expect(result.status).toBe("signed-out");
     expect(markerAtSignOut).toContain("account-a");
     expect(markerAtPurge).toContain('"phase":"purging-local-data"');
@@ -434,7 +442,7 @@ describe("owner-safe sign-out cleanup", () => {
     const result = await performOwnerSafeSignOut();
 
     expect(result).toEqual({ status: "cleanup-failed", sessionEnded: false });
-    expect(mocks.removePushToken).not.toHaveBeenCalled();
+    expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
     expect(mocks.signOut).not.toHaveBeenCalled();
     expect(mocks.resumeCloudSync).toHaveBeenCalledTimes(1);
     expect(mocks.resumeAfterAccountBoundary).toHaveBeenCalledTimes(1);
@@ -707,7 +715,7 @@ describe("owner-safe sign-out cleanup", () => {
       remoteDeletion: "not-confirmed",
     });
     expect(mocks.quiesceCloudSync).not.toHaveBeenCalled();
-    expect(mocks.removePushToken).not.toHaveBeenCalled();
+    expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
     expect(mocks.deleteAccount).not.toHaveBeenCalled();
     expect(localStorage.getItem(PENDING_CLEANUP_KEY)).toBeNull();
   });
@@ -861,7 +869,7 @@ describe("owner-safe sign-out cleanup", () => {
     const result = await performOwnerSafeSignOut();
 
     expect(result.status).toBe("cleanup-failed");
-    expect(mocks.removePushToken).not.toHaveBeenCalled();
+    expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
     expect(mocks.signOut).not.toHaveBeenCalled();
     expect(mocks.clearLocalUserData).not.toHaveBeenCalled();
   });
@@ -884,7 +892,7 @@ describe("owner-safe sign-out cleanup", () => {
         status: "cleanup-failed",
         sessionEnded: false,
       });
-      expect(mocks.removePushToken).not.toHaveBeenCalled();
+      expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
       expect(mocks.signOutExpectedOwnerLocally).not.toHaveBeenCalled();
       expect(mocks.clearLocalUserData).not.toHaveBeenCalled();
     } finally {
@@ -1171,7 +1179,7 @@ describe("owner-safe sign-out cleanup", () => {
     const result = await performOwnerSafeSignOut();
 
     expect(result.status).toBe("session-changed");
-    expect(mocks.removePushToken).not.toHaveBeenCalled();
+    expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
     expect(mocks.signOut).not.toHaveBeenCalled();
     expect(mocks.clearLocalUserData).toHaveBeenCalledTimes(1);
   });
@@ -1193,7 +1201,7 @@ describe("owner-safe sign-out cleanup", () => {
     expect(mocks.quiesceCloudSync).not.toHaveBeenCalled();
     expect(mocks.suspendForAccountBoundary).not.toHaveBeenCalled();
     expect(mocks.discardSuspendedActionsForAccountBoundary).not.toHaveBeenCalled();
-    expect(mocks.removePushToken).not.toHaveBeenCalled();
+    expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
     expect(mocks.signOutExpectedOwnerLocally).not.toHaveBeenCalled();
     expect(mocks.clearLocalUserData).not.toHaveBeenCalled();
   });
@@ -1237,7 +1245,7 @@ describe("owner-safe sign-out cleanup", () => {
     const result = await performOwnerSafeSignOut();
 
     expect(result.status).toBe("pending-changes");
-    expect(mocks.removePushToken).not.toHaveBeenCalled();
+    expect(mocks.revokeCurrentPush).not.toHaveBeenCalled();
     expect(mocks.signOut).not.toHaveBeenCalled();
     expect(localStorage.getItem(PENDING_CLEANUP_KEY)).toBeNull();
     expect(mocks.resumeCloudSync).toHaveBeenCalledTimes(1);
@@ -1276,7 +1284,7 @@ describe("owner-safe sign-out cleanup", () => {
       trace.push("preflight:queue-empty");
       return false;
     });
-    mocks.removePushToken.mockImplementationOnce(async () => {
+    mocks.revokeCurrentPush.mockImplementationOnce(async () => {
       trace.push("cross-tab:enqueue-account-a");
       return {
         status: "revoked",
@@ -1319,7 +1327,7 @@ describe("owner-safe sign-out cleanup", () => {
         trace.push("final:journal-revision-new");
         return "journal-revision-new";
       });
-    mocks.removePushToken.mockImplementationOnce(async () => {
+    mocks.revokeCurrentPush.mockImplementationOnce(async () => {
       trace.push("cross-tab:new-journal-migration");
       return {
         status: "revoked",
