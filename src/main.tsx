@@ -448,11 +448,6 @@ async function handleAppResume(): Promise<void> {
 
   try {
     inspectRetainedLifecycleSnapshot();
-    try {
-      await resumePendingJournalPasswordRemoval();
-    } catch {
-      logger.warn("[Main] Diary protection cleanup remains pending after resume");
-    }
     if (isNative) {
       try {
         dispatchNativeReminderReconcile("app-resume");
@@ -460,11 +455,15 @@ async function handleAppResume(): Promise<void> {
         logger.warn("[Main] Reminder recovery wake failed:", error);
       }
     }
-
     await yieldToNextTask();
     await resumeAllAudio();
     await yieldToNextTask();
 
+    try {
+      await resumePendingJournalPasswordRemoval();
+    } catch {
+      logger.warn("[Main] Diary protection cleanup remains pending after resume");
+    }
     // Proactive version check on EVERY tab resume — prevents stale chunk errors.
     // When user returns to a tab left open across deploys, old JS in memory
     // tries to lazy-load chunks with old hashes (404). Check BEFORE that happens.

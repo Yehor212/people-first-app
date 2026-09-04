@@ -66,6 +66,16 @@ All notable changes to ZenFlow will be documented in this file.
 
 ## [Unreleased]
 
+### Added — Calm Evening Music
+- Added an optional ten-track first-party evening music collection with one icon-only control on account entry and navigation surfaces.
+- Kept first-run playback silent and cached only the current and next integrity-bound tracks after user intent.
+
+### Fixed — Theme And Audio Continuity
+- Softened light/dark changes with one pointer-transparent opacity veil while keeping theme persistence atomic and reduced-motion safe.
+- Scoped temporary Android drawer transition state to the affected nodes instead of invalidating the complete document tree.
+- Restored opted-in music when Android WebView becomes visible after a native resume race.
+- Increased account-entry legal-link touch targets for Android accessibility.
+
 ### Added — Google Calendar Integration
 - **ScheduleTimeline**: Google Calendar events shown with blue "G" badge in My World tab
 - **SettingsPanel**: Calendar toggle for Google-signed users (enable/disable)

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToString } from "react-dom/server";
 import {
   AppBackgroundMusicProvider,
   useAppBackgroundMusicControl,
@@ -68,16 +69,6 @@ const play = vi.fn<() => Promise<void>>();
 const pause = vi.fn();
 const load = vi.fn();
 
-function createDeferred() {
-  let resolve!: () => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<void>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve;
-    reject = promiseReject;
-  });
-  return { promise, resolve, reject };
-}
-
 function Consumer() {
   const music = useAppBackgroundMusicControl();
   return (
@@ -123,7 +114,7 @@ describe("AppBackgroundMusicProvider", () => {
       expect.stringContaining("/sounds/cloudlight-evening-loop.mp3")
     );
     expect(audio).toHaveAttribute("preload", "none");
-    expect(audio).toHaveAttribute("loop");
+    expect(audio).not.toHaveAttribute("loop");
     expect(audio).toHaveAttribute("playsinline");
     expect(screen.getByRole("button")).toHaveTextContent("off");
 
@@ -132,47 +123,29 @@ describe("AppBackgroundMusicProvider", () => {
     expect((audio as HTMLAudioElement).volume).toBeCloseTo(0.09, 5);
   });
 
-  it("throws when the controller is consumed outside its provider", () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    try {
-      expect(() => render(<Consumer />)).toThrow(/AppBackgroundMusicProvider/);
-    } finally {
-      consoleError.mockRestore();
-    }
-  });
-
-  it.each([
-    ["pointer", (button: HTMLElement) => fireEvent.pointerDown(button)],
-    ["keyboard", (button: HTMLElement) => fireEvent.keyDown(button, { key: "Enter" })],
-  ])("does not reload over the active blocked-state %s recovery attempt", async (_kind, beginGesture) => {
-    localStorage.setItem("zenflow-app-background-music-enabled", "true");
-    const deferred = createDeferred();
-    play
-      .mockRejectedValueOnce(new DOMException("gesture required", "NotAllowedError"))
-      .mockReturnValueOnce(deferred.promise);
-    load.mockImplementation(() => {
-      deferred.reject(new DOMException("play interrupted by load", "AbortError"));
-    });
-
+  it("advances one shared media element to the next collection master", async () => {
     render(
       <AppBackgroundMusicProvider>
-        <BackgroundMusicToggle presentation="sidebar-expanded" />
+        <Consumer />
       </AppBackgroundMusicProvider>,
     );
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("playing"));
 
-    const button = await screen.findByRole("button", { name: "Play evening music" });
-    await waitFor(() => expect(button).toHaveTextContent("Tap to resume"));
+    const audio = screen.getByTestId("app-background-music-audio");
+    fireEvent.ended(audio);
 
-    beginGesture(button);
-    fireEvent.click(button);
-    expect(load).not.toHaveBeenCalled();
-
-    deferred.resolve();
-    await waitFor(() => expect(button).toHaveTextContent("On"));
-    expect(play).toHaveBeenCalledTimes(2);
+    await waitFor(() =>
+      expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/music/lantern-air.mp3")),
+    );
+    expect(screen.getAllByTestId("app-background-music-audio")).toHaveLength(1);
   });
 
-  it("moves focus to the surviving primary control when blocked playback is turned off", async () => {
+  it("throws when the controller is consumed outside its provider", () => {
+    expect(() => renderToString(<Consumer />)).toThrow(/AppBackgroundMusicProvider/);
+  });
+
+  it("lets one blocked-state icon disable the saved preference without reloading", async () => {
     localStorage.setItem("zenflow-app-background-music-enabled", "true");
     play.mockRejectedValueOnce(new DOMException("gesture required", "NotAllowedError"));
 
@@ -182,15 +155,34 @@ describe("AppBackgroundMusicProvider", () => {
       </AppBackgroundMusicProvider>,
     );
 
-    const primary = await screen.findByRole("button", { name: "Play evening music" });
+    const button = await screen.findByRole("button", { name: "Pause evening music" });
+    await waitFor(() => expect(button).toHaveTextContent("Tap to resume"));
+
+    fireEvent.click(button);
+    expect(load).not.toHaveBeenCalled();
+    await waitFor(() => expect(button).toHaveAttribute("aria-pressed", "false"));
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("zenflow-app-background-music-enabled")).toBe("false");
+  });
+
+  it("keeps focus on the same icon when blocked playback is turned off", async () => {
+    localStorage.setItem("zenflow-app-background-music-enabled", "true");
+    play.mockRejectedValueOnce(new DOMException("gesture required", "NotAllowedError"));
+
+    render(
+      <AppBackgroundMusicProvider>
+        <BackgroundMusicToggle presentation="sidebar-expanded" />
+      </AppBackgroundMusicProvider>,
+    );
+
+    const primary = await screen.findByRole("button", { name: "Pause evening music" });
     await waitFor(() => expect(primary).toHaveTextContent("Tap to resume"));
-    const turnOff = screen.getByTestId("background-music-disable");
-    turnOff.focus();
-    expect(document.activeElement).toBe(turnOff);
+    primary.focus();
+    expect(document.activeElement).toBe(primary);
 
-    fireEvent.click(turnOff);
+    fireEvent.click(primary);
 
-    await waitFor(() => expect(primary).toHaveTextContent("Off"));
+    await waitFor(() => expect(primary).toHaveAttribute("aria-pressed", "false"));
     expect(screen.queryByTestId("background-music-disable")).not.toBeInTheDocument();
     expect(document.activeElement).toBe(primary);
     expect(localStorage.getItem("zenflow-app-background-music-enabled")).toBe("false");

@@ -150,6 +150,15 @@ export const APP_AUDIO_ASSETS = [
     undefined,
     false,
   ),
+  makeAsset("lantern-air", "entry", "sounds/music/lantern-air.mp3", "Lantern Air", "air", undefined, false),
+  makeAsset("rain-on-paper", "entry", "sounds/music/rain-on-paper.mp3", "Rain On Paper", "rain", undefined, false),
+  makeAsset("indigo-dusk", "entry", "sounds/music/indigo-dusk.mp3", "Indigo Dusk", "air", undefined, false),
+  makeAsset("quiet-courtyard", "entry", "sounds/music/quiet-courtyard.mp3", "Quiet Courtyard", "air", undefined, false),
+  makeAsset("moonlit-water", "entry", "sounds/music/moonlit-water.mp3", "Moonlit Water", "water", undefined, false),
+  makeAsset("cedar-mist", "entry", "sounds/music/cedar-mist.mp3", "Cedar Mist", "forest", undefined, false),
+  makeAsset("glass-bell-dawn", "entry", "sounds/music/glass-bell-dawn.mp3", "Glass Bell Dawn", "air", undefined, false),
+  makeAsset("moss-garden", "entry", "sounds/music/moss-garden.mp3", "Moss Garden", "forest", undefined, false),
+  makeAsset("after-rain", "entry", "sounds/music/after-rain.mp3", "After Rain", "rain", undefined, false),
   makeAsset("orb-ambience", "orb", "sounds/gentle-water-bed.mp3", "Gentle water", "water", "orbAmbienceLabel"),
   makeAsset("diary-reflection-loop", "diary", "sounds/soft-rain-veil.mp3", "Soft rain", "rain", "diaryAmbienceLabel"),
   makeAsset("focus-forest", "focus", "sounds/hyperfocus/hyperfocus-forest-deep.mp3", "Forest birds ambience", "forest"),
@@ -162,9 +171,55 @@ export const APP_AUDIO_ASSETS = [
 
 export type AppAudioAssetId = (typeof APP_AUDIO_ASSETS)[number]["id"];
 
+export const APP_BACKGROUND_MUSIC_ASSET_IDS = [
+  "cloudlight-evening-loop",
+  "lantern-air",
+  "rain-on-paper",
+  "indigo-dusk",
+  "quiet-courtyard",
+  "moonlit-water",
+  "cedar-mist",
+  "glass-bell-dawn",
+  "moss-garden",
+  "after-rain",
+] as const satisfies readonly AppAudioAssetId[];
+
+export type AppBackgroundMusicAssetId = (typeof APP_BACKGROUND_MUSIC_ASSET_IDS)[number];
+
+const backgroundMusicIdSet = new Set<string>(APP_BACKGROUND_MUSIC_ASSET_IDS);
+
+export const APP_BACKGROUND_MUSIC_COLLECTION: readonly AppAudioAsset[] = Object.freeze(
+  APP_BACKGROUND_MUSIC_ASSET_IDS.map((id) => {
+    const asset = APP_AUDIO_ASSETS.find((candidate) => candidate.id === id);
+    if (!asset) throw new Error("Missing background music asset: " + id);
+    return asset;
+  }),
+);
+
+export function normalizeBackgroundMusicAssetId(value: unknown): AppBackgroundMusicAssetId {
+  return typeof value === "string" && backgroundMusicIdSet.has(value)
+    ? (value as AppBackgroundMusicAssetId)
+    : APP_BACKGROUND_MUSIC_ASSET_IDS[0];
+}
+
+export function getNextBackgroundMusicAsset(id: unknown): AppAudioAsset {
+  const normalized = normalizeBackgroundMusicAssetId(id);
+  const index = APP_BACKGROUND_MUSIC_ASSET_IDS.indexOf(normalized);
+  return APP_BACKGROUND_MUSIC_COLLECTION[(index + 1) % APP_BACKGROUND_MUSIC_COLLECTION.length];
+}
+
 export const APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS = [
   "soft-air-veil",
   "cloudlight-evening-loop",
+  "lantern-air",
+  "rain-on-paper",
+  "indigo-dusk",
+  "quiet-courtyard",
+  "moonlit-water",
+  "cedar-mist",
+  "glass-bell-dawn",
+  "moss-garden",
+  "after-rain",
   "orb-ambience",
   "diary-reflection-loop",
 ] as const satisfies readonly AppAudioAssetId[];

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthScreen } from "../AuthScreen";
 
@@ -99,32 +99,6 @@ const themeState = vi.hoisted(() => {
   };
 });
 
-const media = vi.hoisted(() => ({
-  load: vi.fn(),
-  play: vi.fn(() => Promise.resolve()),
-  pause: vi.fn(),
-}));
-
-function createDeferred<T = void>() {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve;
-    reject = promiseReject;
-  });
-
-  return { promise, resolve, reject };
-}
-
-const appAudioSettingsState = vi.hoisted(() => ({
-  snapshot: {
-    muted: false,
-    volume: 0.3,
-    feedbackSoundsEnabled: true,
-    canPlayFeedback: true,
-  },
-}));
-
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: {
@@ -194,8 +168,26 @@ vi.mock("@/lib/animationUtils", () => ({
   },
 }));
 
+vi.mock("@/components/navigation-v2/BackgroundMusicToggle", () => ({
+  BackgroundMusicToggle: ({ presentation }: { presentation: string }) => (
+    <button
+      type="button"
+      data-testid="background-music-toggle"
+      data-presentation={presentation}
+      aria-label="Play evening music"
+      aria-pressed="false"
+      className="min-h-[48px] min-w-[48px]"
+    />
+  ),
+}));
+
 vi.mock("@/hooks/useAppAudioSettings", () => ({
-  useAppAudioSettings: () => appAudioSettingsState.snapshot,
+  useAppAudioSettings: () => ({
+    muted: false,
+    volume: 0.3,
+    feedbackSoundsEnabled: true,
+    canPlayFeedback: true,
+  }),
 }));
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -223,27 +215,6 @@ describe("AuthScreen provider buttons", () => {
     themeState.storageSetRaw.mockClear();
     handlers.handleProviderSignIn.mockClear();
     session.error = null;
-    media.play.mockClear();
-    media.pause.mockClear();
-    media.load.mockClear();
-    appAudioSettingsState.snapshot = {
-      muted: false,
-      volume: 0.3,
-      feedbackSoundsEnabled: true,
-      canPlayFeedback: true,
-    };
-    Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
-      configurable: true,
-      value: media.play,
-    });
-    Object.defineProperty(window.HTMLMediaElement.prototype, "pause", {
-      configurable: true,
-      value: media.pause,
-    });
-    Object.defineProperty(window.HTMLMediaElement.prototype, "load", {
-      configurable: true,
-      value: media.load,
-    });
   });
 
   it("renders enabled Facebook, Telegram, and Apple buttons beside Google", () => {
@@ -405,138 +376,27 @@ describe("AuthScreen provider buttons", () => {
     expect(handlers.handleProviderSignIn).toHaveBeenCalledWith("apple");
   });
 
-  it("offers the soft air track as user-started sign-in ambience", async () => {
+  it("uses the same icon-only evening music control on account entry", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
-    const audio = screen.getByTestId("auth-measured-breath-audio");
-    expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/soft-air-veil.mp3"));
-    expect(audio).toHaveAttribute("preload", "none");
-    expect(audio).toHaveAttribute("loop");
-    expect(media.play).not.toHaveBeenCalled();
-
-    const toggle = screen.getByTestId("auth-measured-breath-toggle");
-    expect(toggle).toHaveAttribute("type", "button");
+    const toggle = screen.getByTestId("background-music-toggle");
+    expect(toggle).toHaveAttribute("data-presentation", "auth");
+    expect(toggle).toHaveAccessibleName("Play evening music");
     expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(toggle).toHaveAccessibleName("Play soft air");
-
-    fireEvent.click(toggle);
-    expect(media.play).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-
-    fireEvent.click(toggle);
-    expect(media.pause).toHaveBeenCalled();
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
+    expect(toggle).toHaveClass("min-h-[48px]", "min-w-[48px]");
+    expect(screen.queryByTestId("auth-measured-breath-audio")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("auth-measured-breath-toggle")).not.toBeInTheDocument();
   });
 
-  it("keeps soft air off until the browser confirms playback", async () => {
-    const playback = createDeferred();
-    media.play.mockReturnValueOnce(playback.promise);
-
+  it("keeps both legal links at a device-safe Android touch height", () => {
     render(<AuthScreen onComplete={vi.fn()} />);
 
-    const toggle = screen.getByTestId("auth-measured-breath-toggle");
-    fireEvent.click(toggle);
-
-    expect(media.play).toHaveBeenCalledTimes(1);
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(toggle).toHaveAccessibleName("Loading...");
-
-    playback.resolve();
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-    expect(toggle).toHaveAccessibleName("Pause soft air");
-  });
-
-  it("keeps soft air retryable when the browser blocks the first play", async () => {
-    media.play.mockRejectedValueOnce(new Error("Audio blocked"));
-    media.play.mockResolvedValueOnce(undefined);
-
-    render(<AuthScreen onComplete={vi.fn()} />);
-
-    const toggle = screen.getByTestId("auth-measured-breath-toggle");
-    fireEvent.click(toggle);
-
-    await waitFor(() => expect(toggle).toHaveAccessibleName("Retry"));
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-
-    fireEvent.click(toggle);
-
-    expect(media.play).toHaveBeenCalledTimes(2);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-  });
-
-  it("keeps soft air retryable when the media element reports an error", async () => {
-    render(<AuthScreen onComplete={vi.fn()} />);
-
-    const toggle = screen.getByTestId("auth-measured-breath-toggle");
-    fireEvent.click(toggle);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-
-    fireEvent.error(screen.getByTestId("auth-measured-breath-audio"));
-
-    await waitFor(() => expect(toggle).toHaveAccessibleName("Retry"));
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-
-    media.load.mockClear();
-    media.play.mockClear();
-
-    fireEvent.click(toggle);
-
-    expect(media.load).toHaveBeenCalledTimes(1);
-    expect(media.play).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-  });
-
-  it("stops soft air on hidden and pagehide lifecycle events", async () => {
-    const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, "hidden");
-    try {
-      render(<AuthScreen onComplete={vi.fn()} />);
-      const toggle = screen.getByTestId("auth-measured-breath-toggle");
-
-      fireEvent.click(toggle);
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-      media.pause.mockClear();
-
-      Object.defineProperty(document, "hidden", { configurable: true, value: true });
-      document.dispatchEvent(new Event("visibilitychange"));
-
-      expect(media.pause).toHaveBeenCalled();
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
-
-      Object.defineProperty(document, "hidden", { configurable: true, value: false });
-      fireEvent.click(toggle);
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "true"));
-      media.pause.mockClear();
-
-      window.dispatchEvent(new Event("pagehide"));
-
-      expect(media.pause).toHaveBeenCalled();
-      await waitFor(() => expect(toggle).toHaveAttribute("aria-pressed", "false"));
-    } finally {
-      if (hiddenDescriptor) {
-        Object.defineProperty(document, "hidden", hiddenDescriptor);
-      } else {
-        Reflect.deleteProperty(document, "hidden");
-      }
-    }
-  });
-
-  it("does not start soft air when app sound is muted", () => {
-    appAudioSettingsState.snapshot = {
-      muted: true,
-      volume: 0.3,
-      feedbackSoundsEnabled: true,
-      canPlayFeedback: false,
-    };
-
-    render(<AuthScreen onComplete={vi.fn()} />);
-
-    const toggle = screen.getByTestId("auth-measured-breath-toggle");
-    expect(toggle).toBeDisabled();
-    expect(toggle).toHaveAccessibleName("Muted");
-    expect(toggle).toHaveTextContent("Muted");
-
-    fireEvent.click(toggle);
-    expect(media.play).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveClass(
+      "min-h-[56px]",
+    );
+    expect(screen.getByRole("link", { name: "Terms of Service" })).toHaveClass(
+      "min-h-[56px]",
+    );
   });
 
   it("keeps sign-in focused while preserving theme choice", () => {

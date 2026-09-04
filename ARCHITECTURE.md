@@ -41,7 +41,7 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
 | Source files                 | **1,037** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **707** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Test files                   |   **712** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
 | React.memo                   |   **124** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
 | index.css LOC                | **7,717** | `readFileSync(...).split("\\n").length` (constitution guard) |
@@ -986,7 +986,7 @@ On PR to main:
 | TD-17 | ~~HIGH~~ → DONE                   | ~~Silent `.catch(() => {})` swallowing errors~~                    | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback).                                                                              | Various                                                   |
 | TD-18 | ~~HIGH~~ → DONE                   | ~~Memory leaks: uncleaned setTimeout in contexts~~                 | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct).                                                                                                                                                             | src/contexts/MoodThemeContext.tsx                         |
 | TD-19 | ~~HIGH~~ → DONE                   | ~~Raw console.\* calls bypassing logger.ts~~                       | **Fixed 2026-02-16**: 16 calls replaced with logger.\* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation).                                                                         | Various                                                   |
-| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **37 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **19 current violations** remain by fresh `npm run constitution:check` evidence.                                                                                                        | See God Components table below                            |
+| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **37 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **20 current violations** remain by fresh `npm run constitution:check` evidence.                                                                                                        | See God Components table below                            |
 | TD-21 | ~~MEDIUM~~ → DONE                 | ~~Scattered Capacitor platform checks~~                            | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`.                                    | src/lib/platform.ts                                       |
 | TD-22 | ~~MEDIUM~~ → DONE                 | ~~Scattered import.meta.env access~~                               | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated.                                                                                                                               | src/lib/env.ts                                            |
 | TD-23 | ~~MEDIUM~~ → DONE                 | ~~Direct Supabase calls in UI components~~                         | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21.             | src/lib/feedbackService.ts, src/lib/accountService.ts     |
@@ -1003,9 +1003,9 @@ On PR to main:
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-08-30 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-09-02 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **19 current violations** remain.
+> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **20 current violations** remain.
 
 #### Resolved (37 components)
 
@@ -1069,29 +1069,30 @@ On PR to main:
 | ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
 | Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### New Violations (19 files >400L — verified 2026-08-30)
+#### New Violations (20 files >400L — verified 2026-09-02)
 
 | File                                                   | Lines     | Severity | Notes                                      |
 | ------------------------------------------------------ | --------- | -------- | ------------------------------------------ |
 | components/state-of-mind/ValenceOrb.tsx                | **3,708** | P2       | Shader/orb shell remains over 400L         |
-| components/habit-creation-form/HabitCreationForm.tsx   | **1,145** | P2       | Regressed above 400L after feature growth  |
-| components/habit-hub/HabitDetailSheet.tsx              | **726**   | P2       | Detail sheet remains over 400L             |
-| main.tsx                                               | **679**   | P2       | Bootstrap/root wiring remains over 400L    |
-| pages/nav-v2/habits/HabitsPage.tsx                     | **624**   | P2       | V2 habits page shell remains over 400L     |
-| components/ErrorBoundary.tsx                           | **622**   | P2       | Error boundary module remains over 400L    |
-| pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx       | **601**   | P2       | V2 habit hero card remains over 400L       |
-| pages/nav-v2/OrbPage.tsx                               | **596**   | P2       | V2 orb page shell remains over 400L        |
+| components/habit-creation-form/HabitCreationForm.tsx   | **1,153** | P2       | Regressed above 400L after feature growth  |
+| components/habit-hub/HabitDetailSheet.tsx              | **786**   | P2       | Detail sheet remains over 400L             |
+| main.tsx                                               | **725**   | P2       | Bootstrap/root wiring remains over 400L    |
+| pages/nav-v2/habits/HabitsPage.tsx                     | **647**   | P2       | V2 habits page shell remains over 400L     |
+| components/ErrorBoundary.tsx                           | **690**   | P2       | Error boundary module remains over 400L    |
+| pages/nav-v2/habits/hero/HeroWeeklyHabitCard.tsx       | **625**   | P2       | V2 habit hero card remains over 400L       |
+| pages/nav-v2/OrbPage.tsx                               | **604**   | P2       | V2 orb page shell remains over 400L        |
 | components/SplashScreen.tsx                            | **573**   | P2       | Startup shell remains over 400L            |
 | components/habit-creation-form/FormSelectors.tsx       | **558**   | P2       | Form selector shell remains over 400L      |
 | components/habit-tracker/HabitTracker.tsx              | **526**   | P2       | Habit tracker shell remains over 400L      |
 | components/navigation-v2/DrawerV2.tsx                  | **482**   | P3       | V2 navigation drawer remains over 400L     |
-| components/reflection/DailyRitualCard.tsx              | **472**   | P3       | Reflection ritual card remains over 400L   |
-| components/state-of-mind/ValenceSlider.tsx             | **452**   | P3       | Valence slider remains over 400L           |
-| components/hyperfocus/HyperfocusMode.tsx               | **445**   | P3       | Hyperfocus shell remains over 400L         |
+| components/reflection/DailyRitualCard.tsx              | **483**   | P3       | Reflection ritual card remains over 400L   |
+| components/navigation-v2/NavV2Orchestrator.tsx         | **456**   | P3       | Navigation orchestration remains over 400L |
+| pages/nav-v2/OrbPageSteps.tsx                          | **440**   | P3       | Orb step presentation remains over 400L    |
 | components/stats/ring-detail-sheet/RingDetailSheet.tsx | **445**   | P3       | Stats sheet shell remains over 400L        |
-| components/StorageErrorBanner.tsx                      | **432**   | P3       | Storage incident surface remains over 400L |
-| components/challenges-panel/ChallengesPanel.tsx        | **421**   | P3       | Challenges panel shell remains over 400L   |
-| components/schedule/ScheduleTimeline.tsx               | **418**   | P3       | Schedule timeline shell remains over 400L  |
+| components/StorageErrorBanner.tsx                      | **434**   | P3       | Storage incident surface remains over 400L |
+| components/challenges-panel/ChallengesPanel.tsx        | **418**   | P3       | Challenges panel shell remains over 400L   |
+| components/schedule/ScheduleTimeline.tsx               | **479**   | P3       | Schedule timeline shell remains over 400L  |
+| components/hyperfocus/HyperfocusMode.tsx               | **410**   | P3       | Hyperfocus shell remains over 400L          |
 
 #### Remaining — SKIP (1 file >400L)
 

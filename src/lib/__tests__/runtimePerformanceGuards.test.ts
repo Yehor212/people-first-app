@@ -293,6 +293,9 @@ describe("runtime performance guards", () => {
     expect(resumeBlock.indexOf("await yieldToNextTask();")).toBeLessThan(
       resumeBlock.indexOf("await resumeAllAudio();")
     );
+    expect(resumeBlock.indexOf("await resumeAllAudio();")).toBeLessThan(
+      resumeBlock.indexOf("await resumePendingJournalPasswordRemoval();")
+    );
     expect(resumeBlock.lastIndexOf("await yieldToNextTask();")).toBeLessThan(
       resumeBlock.indexOf("if (navigator.onLine)")
     );

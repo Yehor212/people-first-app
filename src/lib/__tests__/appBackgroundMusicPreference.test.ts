@@ -5,6 +5,7 @@ import {
   subscribeAppBackgroundMusicPreference,
   trySetAppBackgroundMusicEnabled,
 } from "../appBackgroundMusicPreference";
+import * as preferenceModule from "../appBackgroundMusicPreference";
 
 describe("app background music preference", () => {
   beforeEach(() => {
@@ -51,5 +52,27 @@ describe("app background music preference", () => {
       new CustomEvent(APP_BACKGROUND_MUSIC_PREFERENCE_CHANGE_EVENT, { detail: false }),
     );
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("persists only a normalized device-local collection cursor", () => {
+    const cursorPreference = preferenceModule as typeof preferenceModule & {
+      getAppBackgroundMusicCursor?: () => string;
+      trySetAppBackgroundMusicCursor?: (id: string) => { ok: boolean; cursor: string };
+    };
+
+    expect(cursorPreference.getAppBackgroundMusicCursor).toEqual(expect.any(Function));
+    expect(cursorPreference.trySetAppBackgroundMusicCursor).toEqual(expect.any(Function));
+    if (!cursorPreference.getAppBackgroundMusicCursor || !cursorPreference.trySetAppBackgroundMusicCursor) return;
+
+    expect(cursorPreference.getAppBackgroundMusicCursor()).toBe("cloudlight-evening-loop");
+    expect(cursorPreference.trySetAppBackgroundMusicCursor("moonlit-water")).toEqual({
+      ok: true,
+      cursor: "moonlit-water",
+    });
+    expect(cursorPreference.getAppBackgroundMusicCursor()).toBe("moonlit-water");
+    expect(cursorPreference.trySetAppBackgroundMusicCursor("unknown")).toEqual({
+      ok: true,
+      cursor: "cloudlight-evening-loop",
+    });
   });
 });

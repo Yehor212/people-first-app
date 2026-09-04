@@ -14,10 +14,20 @@ import {
   getAppAudioFeedbackEventSrc,
   resolveAppAudioAssetSrc,
 } from "../appAudioAssets";
+import * as appAudioAssetsModule from "../appAudioAssets";
 
 const expectedAssetIds = [
   "soft-air-veil",
   "cloudlight-evening-loop",
+  "lantern-air",
+  "rain-on-paper",
+  "indigo-dusk",
+  "quiet-courtyard",
+  "moonlit-water",
+  "cedar-mist",
+  "glass-bell-dawn",
+  "moss-garden",
+  "after-rain",
   "orb-ambience",
   "diary-reflection-loop",
   "focus-forest",
@@ -28,7 +38,48 @@ const expectedAssetIds = [
   "focus-wind",
 ];
 
+const expectedBackgroundMusicIds = [
+  "cloudlight-evening-loop",
+  "lantern-air",
+  "rain-on-paper",
+  "indigo-dusk",
+  "quiet-courtyard",
+  "moonlit-water",
+  "cedar-mist",
+  "glass-bell-dawn",
+  "moss-garden",
+  "after-rain",
+] as const;
+
 describe("app audio asset manifest", () => {
+  it("registers the exact ten-master evening music collection", () => {
+    const expectedIds = new Set<string>(expectedBackgroundMusicIds);
+    const musicAssets = APP_AUDIO_ASSETS.filter((asset) => expectedIds.has(asset.id));
+
+    expect(musicAssets.map((asset) => asset.id)).toEqual(expectedBackgroundMusicIds);
+    expect(musicAssets).toHaveLength(10);
+    expect(new Set(musicAssets.map((asset) => asset.publicPath)).size).toBe(10);
+    expect(musicAssets.every((asset) => asset.family === "entry")).toBe(true);
+    expect(musicAssets.every((asset) => asset.warmCacheOnStartup === false)).toBe(true);
+  });
+
+  it("advances the evening collection in a stable circular order", () => {
+    const catalog = appAudioAssetsModule as typeof appAudioAssetsModule & {
+      APP_BACKGROUND_MUSIC_COLLECTION?: ReadonlyArray<{ id: string }>;
+      getNextBackgroundMusicAsset?: (id: string) => { id: string };
+      normalizeBackgroundMusicAssetId?: (value: unknown) => string;
+    };
+
+    expect(catalog.APP_BACKGROUND_MUSIC_COLLECTION).toHaveLength(10);
+    expect(catalog.getNextBackgroundMusicAsset).toEqual(expect.any(Function));
+    expect(catalog.normalizeBackgroundMusicAssetId).toEqual(expect.any(Function));
+    if (!catalog.getNextBackgroundMusicAsset || !catalog.normalizeBackgroundMusicAssetId) return;
+
+    expect(catalog.getNextBackgroundMusicAsset("cloudlight-evening-loop").id).toBe("lantern-air");
+    expect(catalog.getNextBackgroundMusicAsset("after-rain").id).toBe("cloudlight-evening-loop");
+    expect(catalog.normalizeBackgroundMusicAssetId("missing")).toBe("cloudlight-evening-loop");
+  });
+
   it("registers every shipped app-owned audio file once", () => {
     const ids = APP_AUDIO_ASSETS.map((asset) => asset.id);
 
@@ -168,6 +219,15 @@ describe("app audio asset manifest", () => {
     expect(APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS).toEqual([
       "soft-air-veil",
       "cloudlight-evening-loop",
+      "lantern-air",
+      "rain-on-paper",
+      "indigo-dusk",
+      "quiet-courtyard",
+      "moonlit-water",
+      "cedar-mist",
+      "glass-bell-dawn",
+      "moss-garden",
+      "after-rain",
       "orb-ambience",
       "diary-reflection-loop",
     ]);

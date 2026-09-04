@@ -38,12 +38,13 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).toContain("purgeOnQuotaError: true");
   });
 
-  it("retires only the stale pre-v2 audio cache during service-worker activation", () => {
+  it("retires only the stale pre-v3 audio caches during service-worker activation", () => {
     const serviceWorker = read("src/sw.ts");
     const cacheContract = read("src/lib/runtimeAudioCache.ts");
 
-    expect(cacheContract).toContain('RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v2"');
+    expect(cacheContract).toContain('RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v3"');
     expect(cacheContract).toContain('"zenflow-runtime-audio"');
+    expect(cacheContract).toContain('"zenflow-runtime-audio-v2"');
     expect(serviceWorker).toContain("selectRetiredRuntimeAudioCaches");
     expect(serviceWorker).toContain("caches.delete(cacheName)");
     expect(serviceWorker).not.toContain('caches.delete("zenflow-runtime-assets")');
@@ -147,7 +148,7 @@ describe("audio blind-spot release contracts", () => {
 
   it("keeps first-party app audio elements compatible with service-worker cached media", () => {
     const audioSurfaces = [
-      read("src/components/auth-screen/AuthScreen.tsx"),
+      read("src/components/navigation-v2/AppBackgroundMusicProvider.tsx"),
       read("src/pages/nav-v2/OrbAmbienceControl.tsx"),
       read("src/features/journal/JournalAmbienceSetting.tsx"),
       read("src/lib/ambientSounds.ts"),

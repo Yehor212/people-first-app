@@ -165,10 +165,12 @@ describe("SidebarV2", () => {
     expect(musicToggle).toHaveClass("min-h-[44px]");
   });
 
-  it("keeps the localized music tooltip in collapsed mode", () => {
+  it("keeps the collapsed music icon accessible without a visible tooltip", () => {
     render(<SidebarV2 {...defaultProps} collapsed />);
 
-    expect(screen.getByTestId("background-music-toggle")).toHaveAttribute("title", "Evening music");
+    const music = screen.getByTestId("background-music-toggle");
+    expect(music).toHaveAccessibleName("Play evening music");
+    expect(music).not.toHaveAttribute("title");
   });
 
   it("keeps fixed actions visible while destinations scroll in a short adaptive window", () => {

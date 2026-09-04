@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { ThemeToggleV2 } from "../ThemeToggleV2";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -23,12 +23,34 @@ vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn().mockResolvedValue(undefined) },
 }));
 
+async function finishThemeTransition(): Promise<void> {
+  await act(async () => {
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  });
+  const veil = document.querySelector<HTMLElement>("[data-theme-transition-veil]");
+  expect(veil).toHaveAttribute("data-theme-transition-phase", "enter");
+  const enterEnd = new Event("transitionend", { bubbles: true });
+  Object.defineProperty(enterEnd, "propertyName", { value: "opacity" });
+  veil!.dispatchEvent(enterEnd);
+  await act(async () => {
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  });
+  const releaseEnd = new Event("transitionend", { bubbles: true });
+  Object.defineProperty(releaseEnd, "propertyName", { value: "opacity" });
+  veil!.dispatchEvent(releaseEnd);
+}
+
 describe("ThemeToggleV2", () => {
   beforeEach(() => {
     document.documentElement.dir = "ltr";
+    document.documentElement.style.setProperty("--background", "165 22% 96%");
     useThemeStore.setState({ theme: "paper", appliedTheme: "paper" });
+    document.querySelectorAll("[data-theme-transition-veil]").forEach((node) => node.remove());
     document.documentElement.removeAttribute("data-theme-swap");
     document.documentElement.removeAttribute("data-theme-swap-mode");
+    document.querySelectorAll(".theme-swap-instant").forEach((node) => {
+      node.classList.remove("theme-swap-instant");
+    });
     Object.defineProperty(document, "startViewTransition", {
       value: undefined,
       configurable: true,
@@ -96,22 +118,40 @@ describe("ThemeToggleV2", () => {
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("toggles paper → ink on click (fallback path without view transitions)", () => {
+  it("requests paper → ink immediately and applies it at fade-through midpoint", async () => {
     render(<ThemeToggleV2 />);
     const btn = screen.getByTestId("sidebar-v2-theme-toggle");
     expect(useThemeStore.getState().appliedTheme).toBe("paper");
     fireEvent.click(btn);
+    expect(useThemeStore.getState().theme).toBe("ink");
+    expect(useThemeStore.getState().appliedTheme).toBe("paper");
+    await finishThemeTransition();
     expect(useThemeStore.getState().appliedTheme).toBe("ink");
   });
 
-  it("toggles ink → paper on click", () => {
+  it("toggles ink → paper through the same midpoint", async () => {
     useThemeStore.setState({ theme: "ink", appliedTheme: "ink" });
     render(<ThemeToggleV2 />);
     fireEvent.click(screen.getByTestId("sidebar-v2-theme-toggle"));
+    expect(useThemeStore.getState().theme).toBe("paper");
+    expect(useThemeStore.getState().appliedTheme).toBe("ink");
+    await finishThemeTransition();
     expect(useThemeStore.getState().appliedTheme).toBe("paper");
   });
 
-  it("uses the reliable instant theme commit even when View Transitions are available", () => {
+  it("lets a second tap cancel a pending dark request before midpoint", () => {
+    render(<ThemeToggleV2 />);
+    const toggle = screen.getByTestId("sidebar-v2-theme-toggle");
+
+    fireEvent.click(toggle);
+    expect(useThemeStore.getState()).toMatchObject({ theme: "ink", appliedTheme: "paper" });
+
+    fireEvent.click(toggle);
+    expect(useThemeStore.getState()).toMatchObject({ theme: "paper", appliedTheme: "paper" });
+    expect(document.querySelector("[data-theme-transition-veil]")).not.toBeInTheDocument();
+  });
+
+  it("uses the bounded fade-through even when root View Transitions are available", async () => {
     const startViewTransition = vi.fn(() => ({
       ready: Promise.resolve(),
       finished: Promise.resolve(),
@@ -125,13 +165,19 @@ describe("ThemeToggleV2", () => {
     fireEvent.click(screen.getByTestId("sidebar-v2-theme-toggle"));
 
     expect(startViewTransition).not.toHaveBeenCalled();
+    expect(useThemeStore.getState().appliedTheme).toBe("paper");
+    expect(document.querySelector("[data-theme-transition-veil]")).toBeInTheDocument();
+    await finishThemeTransition();
     expect(useThemeStore.getState().appliedTheme).toBe("ink");
     expect(document.documentElement).not.toHaveAttribute("data-theme-swap");
+    expect(document.querySelector("[data-theme-transition-veil]")).not.toBeInTheDocument();
   });
 
   it("keeps only the live drawer-specific theme-swap CSS", () => {
     expect(rootCss).not.toContain('html[data-theme-swap="active"]');
-    expect(rootCss).toContain('html[data-theme-swap-mode="drawer-instant"]');
+    expect(rootCss).not.toContain("data-theme-swap-mode");
+    expect(rootCss).toContain(".theme-swap-instant");
+    expect(rootCss).toContain(".theme-transition-veil");
   });
 
   it("keeps the previous theme and explains a persistence failure", () => {
@@ -173,7 +219,7 @@ describe("ThemeToggleV2", () => {
     expect(screen.getByText("Dark")).toBeInTheDocument();
   });
 
-  it("skips the root view transition inside modal drawers", () => {
+  it("skips the root view transition inside modal drawers while retaining fade-through", async () => {
     const startViewTransition = vi.fn(() => ({
       ready: Promise.resolve(),
       finished: Promise.resolve(),
@@ -184,7 +230,7 @@ describe("ThemeToggleV2", () => {
     });
 
     render(
-      <div role="dialog" aria-modal="true">
+      <div role="dialog" aria-modal="true" data-testid="test-dialog">
         <ThemeToggleV2 testId="drawer-v2-theme-toggle" />
       </div>,
     );
@@ -192,11 +238,11 @@ describe("ThemeToggleV2", () => {
     fireEvent.click(screen.getByTestId("drawer-v2-theme-toggle"));
 
     expect(startViewTransition).not.toHaveBeenCalled();
+    expect(useThemeStore.getState().appliedTheme).toBe("paper");
+    await finishThemeTransition();
     expect(useThemeStore.getState().appliedTheme).toBe("ink");
     expect(document.documentElement).not.toHaveAttribute("data-theme-swap");
-    expect(document.documentElement).toHaveAttribute(
-      "data-theme-swap-mode",
-      "drawer-instant",
-    );
+    expect(document.documentElement).not.toHaveAttribute("data-theme-swap-mode");
+    expect(screen.getByTestId("test-dialog")).toHaveClass("theme-swap-instant");
   });
 });

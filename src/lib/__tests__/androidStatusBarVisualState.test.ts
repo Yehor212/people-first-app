@@ -26,9 +26,22 @@ describe("Android status-bar visual-state ownership", () => {
     );
   });
 
-  it("uses the same frame boundary when DEFAULT follows an Android configuration change", () => {
+  it("resolves an unchanged explicit style before requesting another WebView frame", () => {
+    expect(pluginSource).toMatch(
+      /if \(style\.equals\(lastAppliedStyle\)\) \{\s*resolveCall\(call\);\s*return;/,
+    );
+    const duplicateGuard = pluginSource.indexOf("if (style.equals(lastAppliedStyle))");
+    const visualStateRequest = pluginSource.indexOf("scheduleStatusBarStyleAfterVisualState(style, call)");
+    expect(duplicateGuard).toBeGreaterThanOrEqual(0);
+    expect(duplicateGuard).toBeLessThan(visualStateRequest);
+  });
+
+  it("reapplies the current style after every Android configuration change", () => {
     expect(pluginSource).toContain(
       "scheduleStatusBarStyleAfterVisualState(currentStyle, null)",
+    );
+    expect(pluginSource).not.toMatch(
+      /if \("DEFAULT"\.equals\(currentStyle\)\) \{\s*getBridge\(\)\.executeOnMainThread/,
     );
   });
 });

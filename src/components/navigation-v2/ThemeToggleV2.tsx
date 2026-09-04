@@ -19,8 +19,7 @@ import { haptics } from "@/lib/haptics";
  * keyboard activation (Enter/Space). Haptic feedback on native.
  */
 
-const DRAWER_THEME_SWAP_ATTR = "data-theme-swap-mode";
-const DRAWER_THEME_SWAP_VALUE = "drawer-instant";
+const DRAWER_THEME_SWAP_CLASS = "theme-swap-instant";
 const DRAWER_THEME_SWAP_RESET_MS = 140;
 
 function isInsideModalDialog(target: HTMLElement): boolean {
@@ -28,6 +27,7 @@ function isInsideModalDialog(target: HTMLElement): boolean {
 }
 
 function swapDrawerThemeInstantly(
+  target: HTMLElement,
   nextTheme: "paper" | "ink",
   commitTheme: (theme: "paper" | "ink") => boolean,
 ) {
@@ -36,16 +36,16 @@ function swapDrawerThemeInstantly(
     return;
   }
 
-  const root = document.documentElement;
-  root.setAttribute(DRAWER_THEME_SWAP_ATTR, DRAWER_THEME_SWAP_VALUE);
+  const drawer = target.closest<HTMLElement>(
+    '[data-theme-region="drawer-v2"], [role="dialog"][aria-modal="true"]',
+  );
+  drawer?.classList.add(DRAWER_THEME_SWAP_CLASS);
   if (!commitTheme(nextTheme)) {
-    root.removeAttribute(DRAWER_THEME_SWAP_ATTR);
+    drawer?.classList.remove(DRAWER_THEME_SWAP_CLASS);
     return;
   }
   window.setTimeout(() => {
-    if (root.getAttribute(DRAWER_THEME_SWAP_ATTR) === DRAWER_THEME_SWAP_VALUE) {
-      root.removeAttribute(DRAWER_THEME_SWAP_ATTR);
-    }
+    drawer?.classList.remove(DRAWER_THEME_SWAP_CLASS);
   }, DRAWER_THEME_SWAP_RESET_MS);
 }
 
@@ -81,6 +81,7 @@ export function ThemeToggleV2({
   testId = "sidebar-v2-theme-toggle",
 }: ThemeToggleV2Props) {
   const { t } = useLanguage();
+  const theme = useThemeStore((s) => s.theme);
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const setTheme = useThemeStore((s) => s.setTheme);
 
@@ -91,7 +92,10 @@ export function ThemeToggleV2({
     setMounted(true);
   }, []);
 
-  const isDark = appliedTheme === "ink" || appliedTheme === "oled";
+  const isDark =
+    theme === "ink" ||
+    theme === "oled" ||
+    (theme === "auto" && (appliedTheme === "ink" || appliedTheme === "oled"));
   const feedbackId = `${testId}-feedback`;
 
   const commitTheme = useCallback(
@@ -116,7 +120,7 @@ export function ThemeToggleV2({
       void haptics.tabChanged();
 
       if (isInsideModalDialog(e.currentTarget)) {
-        swapDrawerThemeInstantly(nextTheme, commitTheme);
+        swapDrawerThemeInstantly(e.currentTarget, nextTheme, commitTheme);
         return;
       }
       commitTheme(nextTheme);

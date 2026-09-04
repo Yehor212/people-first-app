@@ -94,6 +94,17 @@ describe("check-auth-providers public key readiness", () => {
     expect(result.stdout).toContain("Telegram Supabase discovery override is documented");
   });
 
+  it("requires the query-bound native OAuth callback used by Android PKCE attempts", () => {
+    const result = runReadiness({
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(
+      "Supabase allow-list includes attempt-bound native OAuth callback redirect",
+    );
+  });
+
   it("keeps Facebook public login behind the Meta readiness gate", () => {
     const result = runReadiness({
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture_key",

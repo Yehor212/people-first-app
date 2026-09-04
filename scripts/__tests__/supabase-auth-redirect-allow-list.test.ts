@@ -4,9 +4,16 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const redirectScript = "../apply-supabase-auth-redirect-allow-list.cjs";
-const { HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS, REQUIRED_JOURNAL_REDIRECT_URLS } = require("../check-journal-magic-link-live.cjs") as {
+const {
+  HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS,
+  HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS,
+  REQUIRED_JOURNAL_REDIRECT_URLS,
+  REQUIRED_NATIVE_OAUTH_REDIRECT_URLS,
+} = require("../check-journal-magic-link-live.cjs") as {
   HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS: string[];
+  HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS: string[];
   REQUIRED_JOURNAL_REDIRECT_URLS: string[];
+  REQUIRED_NATIVE_OAUTH_REDIRECT_URLS: string[];
 };
 
 describe("apply-supabase-auth-redirect-allow-list", () => {
@@ -49,7 +56,14 @@ describe("apply-supabase-auth-redirect-allow-list", () => {
     for (const hostedUrl of HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS) {
       expect(urls).toContain(hostedUrl);
     }
+    expect(HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS).toEqual([
+      "com.zenflow.app://login-callback?zenflowAuthAttempt=*",
+    ]);
+    for (const hostedUrl of HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS) {
+      expect(urls).toContain(hostedUrl);
+    }
     expect(urls).not.toEqual(expect.arrayContaining(REQUIRED_JOURNAL_REDIRECT_URLS));
+    expect(urls).not.toEqual(expect.arrayContaining(REQUIRED_NATIVE_OAUTH_REDIRECT_URLS));
     expect(new Set(urls).size).toBe(urls.length);
     expect(packet.patch.uri_allow_list.length).toBeLessThan(600);
   });
@@ -105,8 +119,45 @@ describe("apply-supabase-auth-redirect-allow-list", () => {
     expect(result.status).toBe("PASS");
     expect(calls.map((call) => call.method)).toEqual(["GET", "PATCH", "GET"]);
     expect(calls[1]?.body?.uri_allow_list).toContain("https://zenflow.app/*\\?*journalReset=*");
+    expect(calls[1]?.body?.uri_allow_list).toContain(
+      "com.zenflow.app://login-callback?zenflowAuthAttempt=*",
+    );
     expect(String(calls[1]?.body?.uri_allow_list || "").length).toBeLessThan(600);
     expect(result.lines.join("\n")).not.toContain("sbp_test_1234567890abcdef1234567890abcdef");
+  });
+
+  it("fails closed when hosted readback drops the attempt-bound native OAuth redirect", async () => {
+    const { applySupabaseAuthRedirectAllowList } = require(redirectScript) as {
+      applySupabaseAuthRedirectAllowList: (input: {
+        env: Record<string, string>;
+        dryRun: boolean;
+        fetchImpl: typeof fetch;
+      }) => Promise<{ status: string; lines: string[] }>;
+    };
+    let getCount = 0;
+    const fetchImpl = (async (_url: string | URL | Request, init?: RequestInit) => {
+      const method = init?.method || "GET";
+      if (method === "PATCH") {
+        return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      getCount += 1;
+      const uriAllowList = getCount === 1
+        ? "https://existing.example/auth-callback"
+        : HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS.join(",");
+      return new Response(JSON.stringify({ uri_allow_list: uriAllowList }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    const result = await applySupabaseAuthRedirectAllowList({
+      env: validEnv(),
+      dryRun: false,
+      fetchImpl,
+    });
+
+    expect(result.status).toBe("UNVERIFIED");
+    expect(result.lines.join("\n")).toContain("native OAuth redirect");
   });
 });
 

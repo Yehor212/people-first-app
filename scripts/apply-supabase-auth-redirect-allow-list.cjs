@@ -2,18 +2,21 @@
 "use strict";
 
 /**
- * Applies the journal Magic Link redirect allow-list to hosted Supabase Auth.
+ * Applies ZenFlow's journal recovery and native OAuth redirect allow-list to
+ * hosted Supabase Auth.
  *
- * The script reads the current hosted Auth config, appends the required journal
- * reset callback URLs, and never prints tokens, private inboxes, or callback
- * URLs from the hosted project.
+ * The script reads the current hosted Auth config, appends only the required
+ * callback patterns, and never prints tokens, private inboxes, or the hosted
+ * redirect inventory.
  */
 
 const DEFAULT_MANAGEMENT_API_BASE_URL = "https://api.supabase.com/v1";
 const {
   HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS,
+  HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS,
   REQUIRED_JOURNAL_REDIRECT_URLS,
   inspectHostedAuthConfig,
+  inspectHostedNativeOAuthRedirectConfig,
   normalizeCsvList,
 } = require("./check-journal-magic-link-live.cjs");
 
@@ -89,7 +92,11 @@ function buildRedirectAllowListPatch({ env = process.env, currentConfig = {} } =
   }
 
   const currentUrls = compactJournalRedirectUrls(getHostedRedirectUrls(currentConfig));
-  const mergedUrls = uniqueUrls([...currentUrls, ...HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS]);
+  const mergedUrls = uniqueUrls([
+    ...currentUrls,
+    ...HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS,
+    ...HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS,
+  ]);
   const patch = { uri_allow_list: mergedUrls.join(",") };
 
   return {
@@ -164,7 +171,7 @@ async function applySupabaseAuthRedirectAllowList({ env = process.env, dryRun = 
     return {
       status: "PASS",
       lines: [
-        line("DRY-RUN", "would add " + packet.addedCount + " hosted journal redirect URL(s); total allow-list size " + packet.totalCount),
+        line("DRY-RUN", "would add " + packet.addedCount + " hosted Auth redirect URL(s); total allow-list size " + packet.totalCount),
         line("PASS", "validated Supabase Auth redirect allow-list patch packet"),
       ],
     };
@@ -200,18 +207,38 @@ async function applySupabaseAuthRedirectAllowList({ env = process.env, dryRun = 
     return { status: "UNVERIFIED", lines: [line("UNVERIFIED", verifiedConfig.message)] };
   }
 
-  const failures = inspectHostedAuthConfig(verifiedConfig.body || {}, { requireCustomSmtp: false }).filter((failure) =>
+  const journalFailures = inspectHostedAuthConfig(verifiedConfig.body || {}, { requireCustomSmtp: false }).filter((failure) =>
     failure.includes("Missing hosted journal Magic Link redirect URL"),
   );
-  if (failures.length > 0) {
-    return { status: "UNVERIFIED", lines: [line("UNVERIFIED", "Supabase Auth redirect allow-list still misses " + failures.length + " journal URL(s)")] };
+  const nativeOAuthFailures = inspectHostedNativeOAuthRedirectConfig(
+    verifiedConfig.body || {},
+  );
+  if (journalFailures.length > 0 || nativeOAuthFailures.length > 0) {
+    const lines = [];
+    if (journalFailures.length > 0) {
+      lines.push(
+        line(
+          "UNVERIFIED",
+          "Supabase Auth redirect allow-list still misses " + journalFailures.length + " journal URL(s)",
+        ),
+      );
+    }
+    if (nativeOAuthFailures.length > 0) {
+      lines.push(
+        line(
+          "UNVERIFIED",
+          "Supabase Auth redirect allow-list still misses the attempt-bound native OAuth redirect",
+        ),
+      );
+    }
+    return { status: "UNVERIFIED", lines };
   }
 
   return {
     status: "PASS",
     lines: [
       line("APPLY", "patched Supabase Auth redirect allow-list"),
-      line("PASS", "verified hosted journal Magic Link redirect allow-list"),
+      line("PASS", "verified hosted journal and attempt-bound native OAuth redirect allow-list"),
     ],
   };
 }

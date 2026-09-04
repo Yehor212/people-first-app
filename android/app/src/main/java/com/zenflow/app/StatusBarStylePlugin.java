@@ -25,6 +25,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 public class StatusBarStylePlugin extends Plugin {
 
     private String currentStyle = "DEFAULT";
+    private String lastAppliedStyle = null;
     private long latestVisualStateRequestId = 0L;
 
     @PluginMethod
@@ -39,6 +40,10 @@ public class StatusBarStylePlugin extends Plugin {
                     return;
                 }
 
+                if (style.equals(lastAppliedStyle)) {
+                    resolveCall(call);
+                    return;
+                }
                 currentStyle = style;
                 scheduleStatusBarStyleAfterVisualState(style, call);
             } catch (Exception e) {
@@ -83,6 +88,7 @@ public class StatusBarStylePlugin extends Plugin {
                             }
 
                             applyStatusBarStyle(activity, style);
+                            lastAppliedStyle = style;
                             resolveCall(call);
                         } catch (Exception e) {
                             rejectCall(call, "ZF_STATUS_BAR_STYLE_FAILED");
@@ -129,10 +135,10 @@ public class StatusBarStylePlugin extends Plugin {
     @Override
     protected void handleOnConfigurationChanged(Configuration newConfig) {
         super.handleOnConfigurationChanged(newConfig);
-        // Re-apply style when system theme changes (only matters for DEFAULT)
-        if ("DEFAULT".equals(currentStyle)) {
-            getBridge().executeOnMainThread(
-                    () -> scheduleStatusBarStyleAfterVisualState(currentStyle, null));
-        }
+        // Configuration changes may recreate system-bar appearance even when
+        // the requested explicit style is unchanged. Reapply without passing
+        // through the duplicate-request fast path.
+        getBridge().executeOnMainThread(
+                () -> scheduleStatusBarStyleAfterVisualState(currentStyle, null));
     }
 }

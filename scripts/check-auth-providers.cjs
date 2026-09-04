@@ -701,6 +701,10 @@ for (const [url, label] of [
     "canonical V2 phone settings auth redirect",
   ],
   ["com.zenflow.app://login-callback", "native OAuth callback redirect"],
+  [
+    "com.zenflow.app://login-callback?zenflowAuthAttempt=*",
+    "attempt-bound native OAuth callback redirect",
+  ],
   ...loopbackRedirectUrls,
   ...journalResetRedirectUrls,
 ]) {
