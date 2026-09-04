@@ -6,18 +6,14 @@ import { EntryThemeSwitcher } from "@/components/EntryThemeSwitcher";
 import { AuthProviderButton } from "@/components/auth/AuthProviderButton";
 import { ZenFlowBrandMark } from "@/components/ZenFlowBrandMark";
 import { resetEntryGateScroll } from "@/components/entryGateScroll";
+import { BackgroundMusicToggle } from "@/components/navigation-v2/BackgroundMusicToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { shouldAnimate, zenMotion } from "@/lib/animationUtils";
-import { useAppAudioSettings } from "@/hooks/useAppAudioSettings";
-import { useAudioComfortSettings } from "@/hooks/useAudioComfortSettings";
-import { getAppAudioAssetSrc } from "@/lib/appAudioAssets";
-import { useUserStartedAmbienceAudio } from "@/hooks/useUserStartedAmbienceAudio";
 import { IS_DEV } from "@/lib/env";
 import { isAndroid } from "@/lib/platform";
 import { getEnabledAuthScreenProviders } from "@/lib/authProviders";
 import { supabase } from "@/lib/supabaseClient";
 import { useThemeStore } from "@/stores/themeStore";
-import { AuthMeasuredBreathToggle } from "./AuthMeasuredBreathToggle";
 import { AuthPhoneAuthPanel } from "./AuthPhoneAuthPanel";
 import type { AuthScreenProps } from "./types";
 import { useAuthHandlers } from "./useAuthHandlers";
@@ -40,8 +36,6 @@ const authProviderListVariants = {
   },
 };
 
-const MEASURED_BREATH_AUDIO_SRC = getAppAudioAssetSrc("soft-air-veil");
-
 const authProviderItemVariants = {
   hidden: { opacity: 0, y: 10, scale: 0.985 },
   visible: { opacity: 1, y: 0, scale: 1 },
@@ -58,28 +52,7 @@ export function AuthScreen({
   const ts = t as unknown as Record<string, string>;
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const animated = !isAndroid && shouldAnimate();
-  const breathAudioRef = useRef<HTMLAudioElement | null>(null);
   const recoveryChoiceRef = useRef<HTMLDivElement | null>(null);
-  const appAudioSettings = useAppAudioSettings();
-  const audioComfort = useAudioComfortSettings();
-  const canPlayBreathAudio =
-    !appAudioSettings.muted && audioComfort.canPlayAmbientAsset("soft-air-veil");
-  const breathAudioVolume = canPlayBreathAudio
-    ? Math.max(0, Math.min(1, appAudioSettings.volume * 0.18))
-    : 0;
-  const mutedAudioLabel = t.settingsSoundSummaryOff || "Muted";
-  const breathAudioUnavailableLabel = appAudioSettings.muted
-    ? mutedAudioLabel
-    : t.settingsSoundAmbientOff || t.soundOff;
-  const breathAudioDisabledStatusLabel = appAudioSettings.muted ? mutedAudioLabel : t.soundOff;
-  const breathAudioPlayback = useUserStartedAmbienceAudio({
-    audioRef: breathAudioRef,
-    ownerId: "auth-soft-air",
-    canPlay: canPlayBreathAudio,
-    volume: breathAudioVolume,
-    mediaSessionTitle: t.authMeasuredBreathLabel,
-    loggerScope: "[AuthScreen] Breath ambience",
-  });
 
   const session = useAuthSession({
     onComplete,
@@ -89,25 +62,6 @@ export function AuthScreen({
   });
   const handlers = useAuthHandlers(session, t as unknown as Record<string, string>);
   const socialProviders = getEnabledAuthScreenProviders();
-
-  const breathAudioToggleLabel = !canPlayBreathAudio
-    ? breathAudioUnavailableLabel
-    : breathAudioPlayback.isPlaying
-      ? t.authMeasuredBreathPause
-      : breathAudioPlayback.isPending
-        ? t.audioLoading
-        : breathAudioPlayback.hasError
-          ? t.audioRetry
-          : t.authMeasuredBreathPlay;
-  const breathAudioStatusLabel = !canPlayBreathAudio
-    ? breathAudioDisabledStatusLabel
-    : breathAudioPlayback.isPlaying
-      ? t.soundOn
-      : breathAudioPlayback.isPending
-        ? t.audioLoading
-        : breathAudioPlayback.hasError
-          ? t.audioRetry
-          : t.soundOff;
 
   useEffect(() => {
     resetEntryGateScroll("auth-screen");
@@ -127,21 +81,6 @@ export function AuthScreen({
       data-entry-theme={appliedTheme}
     >
       <EntryGateBackdrop animated={animated} />
-      {/* Ambient sign-in music has no spoken content; the adjacent button provides control. */}
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio
-        ref={breathAudioRef}
-        aria-hidden="true"
-        data-testid="auth-measured-breath-audio"
-        src={MEASURED_BREATH_AUDIO_SRC}
-        crossOrigin="anonymous"
-        preload="none"
-        loop
-        playsInline
-        onPlay={breathAudioPlayback.handleMediaPlay}
-        onPause={breathAudioPlayback.handleMediaPause}
-        onError={breathAudioPlayback.handleMediaError}
-      />
 
       <motion.section
         className="entry-gate-content relative z-10 flex w-full max-w-lg flex-col gap-4 md:max-w-2xl md:gap-5 lg:max-w-3xl"
@@ -165,14 +104,9 @@ export function AuthScreen({
 
         <div className="space-y-2">
           <EntryThemeSwitcher />
-          <AuthMeasuredBreathToggle
-            isPlaying={breathAudioPlayback.isPlaying}
-            isMuted={!canPlayBreathAudio}
-            label={t.authMeasuredBreathLabel}
-            statusLabel={breathAudioStatusLabel}
-            toggleLabel={breathAudioToggleLabel}
-            onToggle={breathAudioPlayback.toggle}
-          />
+          <div className="flex justify-center">
+            <BackgroundMusicToggle presentation="auth" />
+          </div>
         </div>
 
         <section
@@ -316,7 +250,7 @@ export function AuthScreen({
                 href="https://yehor212.github.io/people-first-app/privacy.html"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] items-center underline hover:text-foreground motion-safe:transition-colors"
+                className="inline-flex min-h-[56px] items-center underline hover:text-foreground motion-safe:transition-colors"
               >
                 {t.privacyPolicy}
               </a>
@@ -325,7 +259,7 @@ export function AuthScreen({
                 href="https://yehor212.github.io/people-first-app/terms.html"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] items-center underline hover:text-foreground motion-safe:transition-colors"
+                className="inline-flex min-h-[56px] items-center underline hover:text-foreground motion-safe:transition-colors"
               >
                 {t.termsOfService}
               </a>

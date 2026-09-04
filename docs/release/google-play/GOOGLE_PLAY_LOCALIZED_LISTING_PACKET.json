@@ -31,7 +31,7 @@
         "Optional Habits-list banner after consent",
         "A calm daily interface built for return use"
       ],
-      "whatsNew": "Android release with ZenFlow V2, mood, habits, private journal, refreshed brand assets, and an optional adaptive Habits-list banner."
+      "whatsNew": "Adds optional 10-track calm evening music with an icon-only control, softer theme changes, and more reliable audio resume."
     },
     "uk-UA": {
       "languageName": "Ukrainian",
@@ -45,7 +45,7 @@
         "Банер у списку звичок лише після згоди",
         "Спокійний інтерфейс на щодень"
       ],
-      "whatsNew": "Android-реліз із ZenFlow V2: настрій, звички, щоденник, оновлені бренд-матеріали та необов'язковий адаптивний банер у списку звичок."
+      "whatsNew": "Додано опційну спокійну колекцію з 10 треків, керування лише значком, м’якшу зміну теми й надійніше відновлення музики."
     },
     "es-ES": {
       "languageName": "Spanish (Spain)",
@@ -59,7 +59,7 @@
         "Banner de hábitos opcional tras consentimiento",
         "Interfaz tranquila para uso diario"
       ],
-      "whatsNew": "Versión Android con ZenFlow V2, ánimo, hábitos, diario, marca renovada y un banner adaptable opcional en la lista de hábitos."
+      "whatsNew": "Añade 10 pistas nocturnas opcionales, control solo con icono, cambios de tema más suaves y una reanudación de audio más fiable."
     },
     "de-DE": {
       "languageName": "German",
@@ -73,7 +73,7 @@
         "Optionales Gewohnheiten-Banner nach Zustimmung",
         "Ruhige Oberfläche für den Alltag"
       ],
-      "whatsNew": "Android-Version mit ZenFlow V2, Stimmung, Gewohnheiten, Journal, neuen Markenassets und optionalem adaptivem Banner in der Gewohnheitsliste."
+      "whatsNew": "Neu: 10 optionale ruhige Abendtitel, reine Symbolsteuerung, weichere Themenwechsel und zuverlässigere Audiowiedergabe nach Rückkehr."
     },
     "fr-FR": {
       "languageName": "French",
@@ -87,7 +87,7 @@
         "Bannière d'habitudes facultative après consentement",
         "Interface calme au quotidien"
       ],
-      "whatsNew": "Version Android avec ZenFlow V2, humeur, habitudes, journal, marque actualisée et bannière adaptative facultative dans la liste d'habitudes."
+      "whatsNew": "Ajoute 10 morceaux calmes facultatifs, une commande par icône, des changements de thème plus doux et une reprise audio plus fiable."
     },
     "ja-JP": {
       "languageName": "Japanese",
@@ -101,7 +101,7 @@
         "同意後の任意の習慣リストバナー",
         "毎日使いやすい静かな画面"
       ],
-      "whatsNew": "ZenFlow V2、気分、習慣、日記、更新されたブランド素材、習慣リストの任意のアダプティブバナーを含むAndroid版です。"
+      "whatsNew": "任意で楽しめる穏やかな夜向け10曲、アイコンのみの操作、より滑らかなテーマ切替、安定した音声再開を追加しました。"
     },
     "ar-SA": {
       "languageName": "Arabic",
@@ -115,7 +115,7 @@
         "لافتة عادات اختيارية بعد الموافقة",
         "واجهة هادئة للاستخدام اليومي"
       ],
-      "whatsNew": "إصدار Android مع ZenFlow V2 والمزاج والعادات والمذكرات والهوية الجديدة ولافتة متكيفة اختيارية في قائمة العادات."
+      "whatsNew": "يضيف 10 مقاطع مسائية هادئة اختيارية وتحكماً بالأيقونة فقط وانتقالاً ألطف بين السمات واستئنافاً أكثر موثوقية للصوت."
     },
     "he-IL": {
       "languageName": "Hebrew",
@@ -129,7 +129,7 @@
         "באנר הרגלים אופציונלי לאחר הסכמה",
         "ממשק רגוע לשימוש יומי"
       ],
-      "whatsNew": "גרסת Android עם ZenFlow V2, מצב רוח, הרגלים, יומן, נכסי מותג מעודכנים ובאנר אדפטיבי אופציונלי ברשימת ההרגלים."
+      "whatsNew": "נוספו 10 קטעי ערב רגועים לבחירה, שליטה בסמל בלבד, מעבר ערכות נושא רך יותר וחידוש שמע אמין יותר."
     }
   },
   "consoleDraftInstructions": [

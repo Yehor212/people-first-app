@@ -10,6 +10,10 @@ import { isAndroid, isNative } from "@/lib/platform";
 import { StatusBarStyle, Style } from "@/lib/statusBarStyle";
 import { SK } from "@/lib/storageKeys";
 import {
+  cancelActiveThemeTransition,
+  runThemeTransition,
+} from "@/lib/themeTransition";
+import {
   DEFAULT_THEME_CUSTOMIZATION,
   applyThemeCustomizationToDOM,
   normalizeThemeCustomization,
@@ -205,8 +209,21 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     const appliedTheme = resolvePreference(theme);
     storageSetRaw(SK.THEME, toLegacyThemePreference(theme));
     storageSetRaw(SK.OLED_MODE, String(theme === "oled"));
-    applyToDOM(theme, appliedTheme, current.themeCustomization);
-    set({ theme, appliedTheme });
+    set({ theme });
+
+    if (appliedTheme === current.appliedTheme) {
+      cancelActiveThemeTransition();
+      applyToDOM(theme, appliedTheme, current.themeCustomization);
+      set({ appliedTheme });
+      return { ok: true, changed: true };
+    }
+
+    runThemeTransition(() => {
+      const latest = get();
+      if (latest.theme !== theme) return;
+      applyToDOM(theme, appliedTheme, latest.themeCustomization);
+      set({ appliedTheme });
+    });
     return { ok: true, changed: true };
   },
   setThemeCustomization: (customization) => {
@@ -258,8 +275,20 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   _resolve: () => {
     const current = get();
     const appliedTheme = resolvePreference(current.theme);
-    applyToDOM(current.theme, appliedTheme, current.themeCustomization);
-    if (appliedTheme !== current.appliedTheme) set({ appliedTheme });
+    if (appliedTheme === current.appliedTheme) {
+      cancelActiveThemeTransition();
+      applyToDOM(current.theme, appliedTheme, current.themeCustomization);
+      return;
+    }
+
+    runThemeTransition(() => {
+      const latest = get();
+      if (latest.theme !== current.theme || resolvePreference(latest.theme) !== appliedTheme) {
+        return;
+      }
+      applyToDOM(latest.theme, appliedTheme, latest.themeCustomization);
+      set({ appliedTheme });
+    });
   },
 }));
 
@@ -292,13 +321,31 @@ export function bindThemeRuntimeListeners(): () => void {
     if (event.key !== STORAGE_KEY) return;
     const external = parseExternalPayload(event.newValue);
     if (!external) return;
+    const current = useThemeStore.getState();
     const appliedTheme = resolvePreference(external.theme);
-    applyToDOM(external.theme, appliedTheme, external.themeCustomization);
     useThemeStore.setState({
       theme: external.theme,
-      appliedTheme,
       themeCustomization: external.themeCustomization,
       previousThemeCustomization: null,
+    });
+
+    if (appliedTheme === current.appliedTheme) {
+      cancelActiveThemeTransition();
+      applyToDOM(external.theme, appliedTheme, external.themeCustomization);
+      useThemeStore.setState({ appliedTheme });
+      return;
+    }
+
+    runThemeTransition(() => {
+      const latest = useThemeStore.getState();
+      if (
+        latest.theme !== external.theme ||
+        !sameCustomization(latest.themeCustomization, external.themeCustomization)
+      ) {
+        return;
+      }
+      applyToDOM(external.theme, appliedTheme, external.themeCustomization);
+      useThemeStore.setState({ appliedTheme });
     });
   };
 

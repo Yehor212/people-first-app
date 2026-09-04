@@ -27,9 +27,28 @@ function makeValidCloudlightResponse(): Response {
 }
 
 describe("runtime audio cache contract", () => {
+  it("admits all ten music masters only through request-time integrity caching", () => {
+    const intentPaths = (
+      runtimeAudioCacheModule as typeof runtimeAudioCacheModule & {
+        APP_AUDIO_INTENT_CACHE_PATHS?: readonly string[];
+      }
+    ).APP_AUDIO_INTENT_CACHE_PATHS;
+
+    expect(intentPaths).toHaveLength(10);
+    expect(intentPaths).toContain("sounds/cloudlight-evening-loop.mp3");
+    expect(intentPaths).toContain("sounds/music/after-rain.mp3");
+    expect(new Set(intentPaths).size).toBe(10);
+    for (const path of intentPaths ?? []) {
+      expect(APP_AUDIO_SW_CACHE_PATHS).not.toContain(path);
+    }
+  });
+
   it("moves changed audio bytes to a new cache namespace", () => {
-    expect(RUNTIME_AUDIO_CACHE_NAME).toBe("zenflow-runtime-audio-v2");
-    expect(RETIRED_RUNTIME_AUDIO_CACHE_NAMES).toEqual(["zenflow-runtime-audio"]);
+    expect(RUNTIME_AUDIO_CACHE_NAME).toBe("zenflow-runtime-audio-v3");
+    expect(RETIRED_RUNTIME_AUDIO_CACHE_NAMES).toEqual([
+      "zenflow-runtime-audio",
+      "zenflow-runtime-audio-v2",
+    ]);
     expect(RETIRED_RUNTIME_AUDIO_CACHE_NAMES).not.toContain(RUNTIME_AUDIO_CACHE_NAME);
   });
 
@@ -39,10 +58,11 @@ describe("runtime audio cache contract", () => {
         "zenflow-runtime-audio",
         "zenflow-runtime-audio-v1",
         "zenflow-runtime-audio-v2",
+        "zenflow-runtime-audio-v3",
         "zenflow-runtime-assets",
         "third-party-cache",
       ]),
-    ).toEqual(["zenflow-runtime-audio"]);
+    ).toEqual(["zenflow-runtime-audio", "zenflow-runtime-audio-v2"]);
   });
 
   it("warms every opted-in app asset without eagerly downloading Cloudlight", () => {

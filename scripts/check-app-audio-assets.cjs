@@ -10,6 +10,7 @@ const publicSoundsDir = path.join(rootDir, 'public', 'sounds');
 const appAudioAssetsPath = path.join(rootDir, 'src', 'lib', 'appAudioAssets.ts');
 const appAudioPolicyPath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-sound-effects-policy.md');
 const generatedProvenancePath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-generated-audio-provenance.json');
+const eveningCollectionReviewPath = path.join(rootDir, 'docs', 'audio', 'zenflow-evening-collection-review.json');
 const cloudlightLicensePath = path.join(rootDir, 'docs', 'audio', 'cloudlight-evening-license.md');
 const thirdPartyNoticesPath = path.join(rootDir, 'THIRD_PARTY_NOTICES.md');
 const hyperfocusManifestPath = path.join(rootDir, 'src', 'lib', 'hyperfocusGeneratedAudioManifest.ts');
@@ -24,6 +25,23 @@ const APPROVED_ROOT_MP3S = new Map([
   ['gentle-water-bed.mp3', { gain: 0.36, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.05, rmsMax: 0.095, audibleRmsMin: 0.045, audibleBandEnergyRatioMin: 0.7, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.04, effectivePeakMax: 0.22, effectiveRmsMin: 0.017, effectiveRmsMax: 0.04, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { startEndRmsDeltaMax: 0.0175 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
   ['soft-rain-veil.mp3', { gain: 0.32, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.045, rmsMax: 0.09, audibleRmsMin: 0.04, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.035, effectivePeakMax: 0.2, effectiveRmsMin: 0.014, effectiveRmsMax: 0.035, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { boundaryDeltaMax: 0.013, boundarySlopeDeltaMax: 0.019 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
 ]);
+
+const EVENING_MUSIC_MASTERS = new Map([
+  ['lantern-air.mp3', { id: 'lantern-air', title: 'Lantern Air' }],
+  ['rain-on-paper.mp3', { id: 'rain-on-paper', title: 'Rain On Paper' }],
+  ['indigo-dusk.mp3', { id: 'indigo-dusk', title: 'Indigo Dusk' }],
+  ['quiet-courtyard.mp3', { id: 'quiet-courtyard', title: 'Quiet Courtyard' }],
+  ['moonlit-water.mp3', { id: 'moonlit-water', title: 'Moonlit Water' }],
+  ['cedar-mist.mp3', { id: 'cedar-mist', title: 'Cedar Mist' }],
+  ['glass-bell-dawn.mp3', { id: 'glass-bell-dawn', title: 'Glass Bell Dawn' }],
+  ['moss-garden.mp3', { id: 'moss-garden', title: 'Moss Garden' }],
+  ['after-rain.mp3', { id: 'after-rain', title: 'After Rain' }],
+]);
+const EXPECTED_EVENING_MUSIC_FILES = [...EVENING_MUSIC_MASTERS.keys()].sort();
+const EXPECTED_EVENING_COLLECTION_MASTER_IDS = [
+  'cloudlight-evening-loop',
+  ...[...EVENING_MUSIC_MASTERS.values()].map((master) => master.id),
+];
 
 const APPROVED_FEEDBACK_MP3S = new Map([
   ['feedback-complete.mp3', { id: 'feedback-complete', gain: 0.4, durationMin: 0.5, durationMax: 0.85 }],
@@ -108,6 +126,17 @@ const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
     deployDocsPath: 'docs/sounds/soft-rain-veil.mp3',
     runtimeGain: 0.32,
   }],
+  ...[...EVENING_MUSIC_MASTERS].map(([fileName, master]) => [
+    fileName,
+    {
+      id: master.id,
+      family: 'music',
+      publicPath: 'public/sounds/music/' + fileName,
+      deployDocsPath: 'docs/sounds/music/' + fileName,
+      runtimeGain: 0.18,
+      deterministicSpecPrefix: 'original-evening-collection-',
+    },
+  ]),
   ...[...APPROVED_FEEDBACK_MP3S].map(([fileName, thresholds]) => [
     fileName,
     {
@@ -140,6 +169,10 @@ const FORBIDDEN_ROOT_MP3S = [
 const EXPECTED_ASSETS = new Map([
   ['soft-air-veil', { family: 'entry', publicPath: 'sounds/soft-air-veil.mp3' }],
   ['cloudlight-evening-loop', { family: 'entry', publicPath: 'sounds/cloudlight-evening-loop.mp3' }],
+  ...[...EVENING_MUSIC_MASTERS].map(([fileName, master]) => [
+    master.id,
+    { family: 'entry', publicPath: 'sounds/music/' + fileName },
+  ]),
   ['orb-ambience', { family: 'orb', publicPath: 'sounds/gentle-water-bed.mp3' }],
   ['diary-reflection-loop', { family: 'diary', publicPath: 'sounds/soft-rain-veil.mp3' }],
   ['focus-forest', { family: 'focus', publicPath: 'sounds/hyperfocus/hyperfocus-forest-deep.mp3' }],
@@ -153,6 +186,7 @@ const EXPECTED_ASSETS = new Map([
 const EXPECTED_NON_HYPERFOCUS_ASSET_IDS = [
   'soft-air-veil',
   'cloudlight-evening-loop',
+  ...[...EVENING_MUSIC_MASTERS.values()].map((master) => master.id),
   'orb-ambience',
   'diary-reflection-loop',
 ];
@@ -371,6 +405,10 @@ function inspectGeneratedAudioProvenance(assets) {
     if (expected.deterministicSpec && asset.deterministicSpec !== expected.deterministicSpec) {
       fields.push('deterministicSpec');
     }
+    if (expected.deterministicSpecPrefix &&
+        !String(asset.deterministicSpec || '').startsWith(expected.deterministicSpecPrefix)) {
+      fields.push('deterministicSpec');
+    }
 
     if (expected.family === 'feedback') {
       const thresholds = APPROVED_FEEDBACK_MP3S.get(fileName);
@@ -379,6 +417,10 @@ function inspectGeneratedAudioProvenance(assets) {
           duration < thresholds.durationMin || duration > thresholds.durationMax) {
         fields.push('parameters.durationSeconds');
       }
+    }
+    if (expected.family === 'music' &&
+        (!asset.parameters || asset.parameters.durationSeconds !== 150)) {
+      fields.push('parameters.durationSeconds');
     }
     if (expected.nativeAndroidPath) {
       if (asset.nativeAndroidPath !== expected.nativeAndroidPath) fields.push('nativeAndroidPath');
@@ -444,6 +486,96 @@ function inspectGeneratedAudioRights(provenance, environment) {
   return violations;
 }
 
+function inspectEveningCollectionReview(review, provenanceAssets) {
+  const violations = [];
+  const addViolation = (field) => {
+    if (!violations.includes(field)) violations.push(field);
+  };
+  const provenanceById = new Map(
+    (Array.isArray(provenanceAssets) ? provenanceAssets : []).map((asset) => [asset.id, asset]),
+  );
+  const masters = Array.isArray(review && review.masters) ? review.masters : [];
+  const actualIds = masters.map((master) => master && master.id);
+  const releaseBoundary = review && review.releaseBoundary;
+  const promotionAllowed = releaseBoundary && releaseBoundary.promotionAllowed === true;
+  const status = String((releaseBoundary && releaseBoundary.status) || '');
+
+  if (!review || review.schemaVersion !== 1) addViolation('schemaVersion');
+  if (!review || review.collectionId !== 'zenflow-evening-collection-v1') addViolation('collectionId');
+  if (!review || !review.technicalQc || review.technicalQc.status !== 'PASS') {
+    addViolation('technicalQc.status');
+  }
+  if (!review || !review.technicalQc ||
+      review.technicalQc.command !== 'npm run check:app-audio -- --write-report') {
+    addViolation('technicalQc.command');
+  }
+  if (!review || !review.technicalQc ||
+      review.technicalQc.report !== 'output/audio-qc/app-audio-assets-report.json') {
+    addViolation('technicalQc.report');
+  }
+  if (!releaseBoundary || !Array.isArray(releaseBoundary.requiredContexts) ||
+      JSON.stringify(releaseBoundary.requiredContexts) !== JSON.stringify(['headphones', 'device-speaker'])) {
+    addViolation('releaseBoundary.requiredContexts');
+  }
+  if (!releaseBoundary || releaseBoundary.minimumLoopMinutesPerMaster !== 10) {
+    addViolation('releaseBoundary.minimumLoopMinutesPerMaster');
+  }
+  if (JSON.stringify(actualIds) !== JSON.stringify(EXPECTED_EVENING_COLLECTION_MASTER_IDS)) {
+    addViolation('masters.ids');
+  }
+
+  for (const expectedId of EXPECTED_EVENING_COLLECTION_MASTER_IDS) {
+    const master = masters.find((candidate) => candidate && candidate.id === expectedId);
+    const provenance = provenanceById.get(expectedId);
+    if (!master) {
+      addViolation('masters.' + expectedId);
+      continue;
+    }
+    if (!provenance) {
+      addViolation('provenance.' + expectedId);
+      continue;
+    }
+    if (master.path !== provenance.publicPath) addViolation('masters.' + expectedId + '.path');
+    if (master.bytes !== provenance.bytes) addViolation('masters.' + expectedId + '.bytes');
+    if (master.durationSeconds !== provenance.parameters.durationSeconds) {
+      addViolation('masters.' + expectedId + '.durationSeconds');
+    }
+    if (master.sha256 !== provenance.sha256) addViolation('masters.' + expectedId + '.sha256');
+    if (!['PENDING', 'APPROVED', 'REJECTED'].includes(master.decision)) {
+      addViolation('masters.' + expectedId + '.decision');
+    }
+    if (!Number.isFinite(master.listenedMinutes) || master.listenedMinutes < 0) {
+      addViolation('masters.' + expectedId + '.listenedMinutes');
+    }
+    if (!Array.isArray(master.contexts) ||
+        master.contexts.some((context) => !['headphones', 'device-speaker'].includes(context))) {
+      addViolation('masters.' + expectedId + '.contexts');
+    }
+  }
+
+  if (promotionAllowed) {
+    if (status !== 'HUMAN_AUDIO_REVIEW_COMPLETE') addViolation('releaseBoundary.status');
+    if (!review || typeof review.reviewer !== 'string' || review.reviewer.trim().length === 0) {
+      addViolation('reviewer');
+    }
+    if (!review || typeof review.reviewedAt !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt))) {
+      addViolation('reviewedAt');
+    }
+    for (const master of masters) {
+      if (master.decision !== 'APPROVED') addViolation('masters.' + master.id + '.decision');
+      if (master.listenedMinutes < 10) addViolation('masters.' + master.id + '.listenedMinutes');
+      if (!Array.isArray(master.contexts) ||
+          !['headphones', 'device-speaker'].every((context) => master.contexts.includes(context))) {
+        addViolation('masters.' + master.id + '.contexts');
+      }
+    }
+  } else if (status !== 'STOP_PENDING_HUMAN_AUDIO_REVIEW') {
+    addViolation('releaseBoundary.status');
+  }
+
+  return { violations, promotionAllowed, status };
+}
+
 function checkGeneratedProvenance() {
   assert(fs.existsSync(generatedProvenancePath), 'generated non-Hyperfocus audio provenance is missing', {
     path: path.relative(rootDir, generatedProvenancePath),
@@ -472,7 +604,7 @@ function checkGeneratedProvenance() {
 
   const provenanceInspection = inspectGeneratedAudioProvenance(provenance.assets || []);
   assert(provenanceInspection.exact,
-    'generated provenance asset list must contain exactly four root ambience and five feedback assets', {
+    'generated provenance asset list must contain four root ambience, nine collection masters, and five feedback assets', {
       expectedFiles: [...EXPECTED_GENERATED_AUDIO_PROVENANCE.keys()].sort(),
       ...provenanceInspection,
   });
@@ -514,10 +646,21 @@ function checkGeneratedProvenance() {
         });
     }
   }
+  assert(fs.existsSync(eveningCollectionReviewPath), 'evening collection human-review gate is missing', {
+    path: path.relative(rootDir, eveningCollectionReviewPath),
+  });
+  const eveningCollectionReview = JSON.parse(fs.readFileSync(eveningCollectionReviewPath, 'utf8'));
+  const reviewInspection = inspectEveningCollectionReview(eveningCollectionReview, provenance.assets || []);
+  assert(reviewInspection.violations.length === 0,
+    'evening collection review gate is inconsistent with generated master provenance', reviewInspection);
   return {
     rootLicensePresent,
     projectLicenseStatus: provenance.rights.projectLicense.status,
     referenceTitle: provenance.rights.referenceResearch.title,
+    eveningCollectionReview: {
+      status: reviewInspection.status,
+      promotionAllowed: reviewInspection.promotionAllowed,
+    },
   };
 }
 
@@ -716,6 +859,35 @@ function checkFeedbackInventory() {
       location.label + ' feedback',
     );
     checked.push({ location: location.label, feedbackMp3s: inventory.actualFiles });
+  }
+
+  return checked;
+}
+
+function checkMusicInventory() {
+  const checked = [];
+  const locations = [
+    { label: 'public', soundsDir: publicSoundsDir, required: true },
+    { label: 'docs', soundsDir: path.join(rootDir, 'docs', 'sounds'), required: true },
+    { label: 'dist', soundsDir: path.join(rootDir, 'dist', 'sounds'), required: false },
+    { label: 'android', soundsDir: path.join(rootDir, 'android', 'app', 'src', 'main', 'assets', 'public', 'sounds'), required: false },
+    { label: 'ios', soundsDir: path.join(rootDir, 'ios', 'App', 'App', 'public', 'sounds'), required: false },
+  ];
+
+  for (const location of locations) {
+    if (!fs.existsSync(location.soundsDir)) {
+      assert(!location.required, 'required sound inventory is missing', location);
+      continue;
+    }
+    const directory = path.join(location.soundsDir, 'music');
+    const inventory = inspectExactDirectoryInventory(directory, EXPECTED_EVENING_MUSIC_FILES);
+    assert(inventory.missing.length === 0 && inventory.unexpected.length === 0,
+      'unexpected evening music inventory', {
+        location: location.label,
+        expected: EXPECTED_EVENING_MUSIC_FILES,
+        ...inventory,
+      });
+    checked.push({ location: location.label, musicMp3s: inventory.actualFiles });
   }
 
   return checked;
@@ -1210,7 +1382,8 @@ function convertAndMeasure(relativePath, fileName = path.basename(relativePath))
     return {
       decoder,
       ...parseWavMetrics(wavPath, {
-        measureStrictLoopMetrics: fileName === 'cloudlight-evening-loop.mp3',
+        measureStrictLoopMetrics:
+          fileName === 'cloudlight-evening-loop.mp3' || EVENING_MUSIC_MASTERS.has(fileName),
       }),
     };
   } finally {
@@ -1455,6 +1628,23 @@ function checkFeedbackMetrics(feedbackMp3s) {
   return metrics;
 }
 
+function checkMusicMetrics(musicMp3s) {
+  const metrics = [];
+  for (const fileName of musicMp3s) {
+    const measured = convertAndMeasure(path.join('music', fileName), fileName);
+    const violations = inspectCloudlightLoopMetrics(measured);
+    metrics.push({ fileName, gain: 0.18, ...measured });
+    assert(violations.length === 0,
+      'evening music format or decoded metrics are outside the calm loop contract', {
+        fileName,
+        measured,
+        thresholds: CLOUDLIGHT_LOOP_METRIC_LIMITS,
+        violations,
+      });
+  }
+  return metrics;
+}
+
 function writeReportIfRequested(report, options, reportPath = appAudioAssetsReportPath) {
   if (!options.writeReport) return;
   const outputRoot = outputAudioQcDir;
@@ -1477,6 +1667,7 @@ function main(options = validateCommandLine()) {
   scanCurrentSourceForStaleStrings();
   const inventories = checkRootInventory();
   const feedbackInventories = checkFeedbackInventory();
+  const musicInventories = checkMusicInventory();
   const desktopTargets = scanDesktopTargetForStaleStrings();
   const docsAssets = scanDocsAssetsForStaleStrings();
   const outputArtifacts = scanOutputArtifactsForStaleStrings();
@@ -1484,8 +1675,11 @@ function main(options = validateCommandLine()) {
   const rootMp3s = publicInventory ? publicInventory.rootMp3s : [];
   const publicFeedbackInventory = feedbackInventories.find((inventory) => inventory.location === 'public');
   const feedbackMp3s = publicFeedbackInventory ? publicFeedbackInventory.feedbackMp3s : [];
+  const publicMusicInventory = musicInventories.find((inventory) => inventory.location === 'public');
+  const musicMp3s = publicMusicInventory ? publicMusicInventory.musicMp3s : [];
   const metrics = checkMetrics(rootMp3s);
   const feedbackMetrics = checkFeedbackMetrics(feedbackMp3s);
+  const musicMetrics = checkMusicMetrics(musicMp3s);
   const report = {
     generatedAt: new Date().toISOString(),
     status: 'PASS',
@@ -1496,6 +1690,9 @@ function main(options = validateCommandLine()) {
     feedbackMp3Count: feedbackMp3s.length,
     feedbackMp3s,
     shippedFeedbackInventories: feedbackInventories,
+    musicMp3Count: musicMp3s.length,
+    musicMp3s,
+    shippedMusicInventories: musicInventories,
     desktopTargetsScanned: desktopTargets,
     docsAssetsScanned: docsAssets,
     outputArtifactScanScope: {
@@ -1507,10 +1704,11 @@ function main(options = validateCommandLine()) {
     outputTextArtifactsScannedCount: outputArtifacts.textFiles.length,
     metrics,
     feedbackMetrics,
+    musicMetrics,
     rights,
   };
   writeReportIfRequested(report, options);
-  console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + feedbackMp3s.length + ' feedback MP3s checked across ' + feedbackInventories.length + ' inventories; generated duplicate sound artifacts are not allowed; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.files.length + ' output artifact filenames checked; ' + outputArtifacts.textFiles.length + ' text artifacts content-scanned');
+  console.log('[app-audio-qc] PASS - ' + assets.length + ' current app assets, ' + rootMp3s.length + ' non-Hyperfocus root MP3s checked across ' + inventories.length + ' inventories; ' + musicMp3s.length + ' evening music masters checked across ' + musicInventories.length + ' inventories; ' + feedbackMp3s.length + ' feedback MP3s checked across ' + feedbackInventories.length + ' inventories; generated duplicate sound artifacts are not allowed; ' + desktopTargets.length + ' Desktop/Tauri generated target files scanned; ' + docsAssets.length + ' docs/assets bundles scanned; ' + outputArtifacts.files.length + ' output artifact filenames checked; ' + outputArtifacts.textFiles.length + ' text artifacts content-scanned');
 }
 
 if (require.main === module) {
@@ -1528,6 +1726,7 @@ module.exports = {
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,
   inspectGeneratedAudioRights,
+  inspectEveningCollectionReview,
   inspectOutputArtifacts,
   isTextOutputArtifact,
   parseWavMetrics,

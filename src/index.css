@@ -7614,22 +7614,80 @@ button.press-stable:active:not(:disabled),
 }
 /* End Android drawer blur partition. */
 
-/* Drawer theme switches must not interpolate text and surface colors across
- * incompatible palettes. The panel still changes immediately; this only
- * prevents a short low-contrast cross-fade while a modal drawer is open. */
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] body,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] body > div,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .card,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .bg-card,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .bg-background,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] .bg-muted,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] nav,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] header,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] main,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] aside,
-html[data-platform="android"][data-theme-swap-mode="drawer-instant"] footer,
-html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"],
-html[data-theme-swap-mode="drawer-instant"] [data-theme-region="drawer-v2"] * {
+/* Theme transition veil start */
+.theme-transition-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  pointer-events: none;
+  background: hsl(var(--theme-transition-background, var(--background)));
+  opacity: 0;
+  transition-property: opacity;
+  will-change: opacity;
+}
+
+.theme-transition-veil--enter {
+  opacity: 0.96;
+  transition-duration: 96ms;
+  transition-timing-function: cubic-bezier(0.3, 0, 1, 1);
+}
+
+.theme-transition-veil--release {
+  opacity: 0;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition-veil {
+    display: none;
+    transition: none;
+  }
+}
+/* Theme transition veil end */
+
+/* Atomic theme palette start */
+html.theme-transition-palette-atomic body,
+html.theme-transition-palette-atomic body > div,
+html.theme-transition-palette-atomic .card,
+html.theme-transition-palette-atomic .bg-card,
+html.theme-transition-palette-atomic .bg-background,
+html.theme-transition-palette-atomic .bg-muted,
+html.theme-transition-palette-atomic nav,
+html.theme-transition-palette-atomic header,
+html.theme-transition-palette-atomic main,
+html.theme-transition-palette-atomic aside,
+html.theme-transition-palette-atomic footer {
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* The veil owns palette motion. Keep press feedback available, but prevent
+ * every themed button from starting separate color/shadow transitions when
+ * the root tokens commit at the midpoint. */
+html.theme-transition-palette-atomic button {
+  transition-property: transform, opacity !important;
+}
+/* Atomic theme palette end */
+
+/* The veil fully owns the short palette handoff. On Android, release the two
+ * bounded drawer blur surfaces during that handoff so WebView does not retain
+ * old-palette blur tiles while rasterizing the new theme. Steady-state drawer
+ * pixels and blur geometry remain unchanged. */
+:root[data-platform="android"]
+  .drawer-v2-backdrop-partitioned.theme-transition-blur-released::before,
+:root[data-platform="android"]
+  .drawer-v2-panel-partitioned.theme-transition-blur-released {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Drawer theme switches must not interpolate text and surfaces across
+ * incompatible palettes. Scope the temporary flag to the drawer itself so a
+ * theme tap never invalidates the complete document tree. */
+.theme-swap-instant,
+.theme-swap-instant * {
   transition: none !important;
 }
 

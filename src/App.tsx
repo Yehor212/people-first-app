@@ -25,6 +25,7 @@ import { setLowBatteryMirror } from "@/lib/animationUtils";
 import { isAndroid } from "@/lib/platform";
 import { useDesignFlagStore } from "@/stores/designFlagStore";
 import { scheduleIdle } from "@/lib/scheduleIdle";
+import { AppBackgroundMusicProvider } from "@/components/navigation-v2/AppBackgroundMusicProvider";
 
 const LOW_BATTERY_THRESHOLD = 0.15;
 
@@ -155,7 +156,9 @@ const App = () => {
                             <DatabaseRecoveryDialog />
                             <UpdateRequiredDialog />
                             <JournalMagicLinkConfirmGate>
-                              <Index />
+                              <AppBackgroundMusicProvider>
+                                <Index />
+                              </AppBackgroundMusicProvider>
                             </JournalMagicLinkConfirmGate>
                           </TooltipProvider>
                         </ErrorBoundary>

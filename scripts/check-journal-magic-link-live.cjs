@@ -46,6 +46,12 @@ const HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS = [
   ]),
   "com.zenflow.app://login-callback?journalReset=*",
 ];
+const REQUIRED_NATIVE_OAUTH_REDIRECT_URLS = [
+  "com.zenflow.app://login-callback?zenflowAuthAttempt=00000000-0000-4000-8000-000000000000",
+];
+const HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS = [
+  "com.zenflow.app://login-callback?zenflowAuthAttempt=*",
+];
 const MIN_EMAIL_SEND_RATE_LIMIT_PER_HOUR = 30;
 
 function line(status, message) {
@@ -274,6 +280,13 @@ function inspectHostedAuthConfig(config, { requireCustomSmtp = false } = {}) {
   }
 
   return failures;
+}
+
+function inspectHostedNativeOAuthRedirectConfig(config) {
+  const redirectUrls = getRedirectUrls(config);
+  return REQUIRED_NATIVE_OAUTH_REDIRECT_URLS
+    .filter((redirectUrl) => !isRedirectUrlAllowed(redirectUrl, redirectUrls))
+    .map(() => "Missing hosted attempt-bound native OAuth redirect URL");
 }
 
 function buildJournalMagicLinkRedirectTo({ baseUrl = DEFAULT_PUBLIC_APP_URL, nonce = SMOKE_NONCE } = {}) {
@@ -713,7 +726,9 @@ if (require.main === module) {
 
 module.exports = {
   HOSTED_JOURNAL_REDIRECT_ALLOW_LIST_URLS,
+  HOSTED_NATIVE_OAUTH_REDIRECT_ALLOW_LIST_URLS,
   REQUIRED_JOURNAL_REDIRECT_URLS,
+  REQUIRED_NATIVE_OAUTH_REDIRECT_URLS,
   SMOKE_NONCE,
   buildJournalMagicLinkRedirectTo,
   checkJournalMagicLinkLive,
@@ -722,6 +737,7 @@ module.exports = {
   getProjectRef,
   inspectCapturedMagicLinkUrl,
   inspectHostedAuthConfig,
+  inspectHostedNativeOAuthRedirectConfig,
   inspectHostedPublicSettings,
   normalizeCsvList,
   verifyCapturedMagicLinkRedirect,

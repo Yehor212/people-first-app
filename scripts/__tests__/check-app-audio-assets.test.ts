@@ -20,6 +20,7 @@ const {
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,
   inspectGeneratedAudioRights,
+  inspectEveningCollectionReview,
   inspectOutputArtifacts,
   parseWavMetrics,
   validateExactDirectoryInventory,
@@ -137,6 +138,16 @@ const {
     },
     environment: { rootLicensePresent: boolean },
   ) => string[];
+  inspectEveningCollectionReview?: (
+    review: Record<string, unknown>,
+    provenanceAssets: Array<{
+      id: string;
+      publicPath: string;
+      sha256: string;
+      bytes: number;
+      parameters: { durationSeconds: number };
+    }>,
+  ) => { violations: string[]; promotionAllowed: boolean; status: string };
   inspectOutputArtifacts: (options: {
     outputDir: string;
     reportPath: string;
@@ -207,6 +218,86 @@ function writeStereoPcm16Wav(filePath: string, frames: Array<[number, number]>):
 }
 
 describe("non-Hyperfocus app audio guard", () => {
+  it("binds provenance to exactly ten long-form music masters", () => {
+    const provenance = JSON.parse(
+      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
+    ) as {
+      assets: Array<{
+        id: string;
+        fileName: string;
+        publicPath: string;
+        sha256: string;
+        bytes: number;
+        parameters: { durationSeconds: number };
+      }>;
+    };
+    const expectedIds = [
+      "cloudlight-evening-loop",
+      "lantern-air",
+      "rain-on-paper",
+      "indigo-dusk",
+      "quiet-courtyard",
+      "moonlit-water",
+      "cedar-mist",
+      "glass-bell-dawn",
+      "moss-garden",
+      "after-rain",
+    ];
+    const expectedIdSet = new Set(expectedIds);
+    const musicAssets = provenance.assets.filter((asset) => expectedIdSet.has(asset.id));
+
+    expect(musicAssets.map((asset) => asset.id)).toEqual(expectedIds);
+    expect(musicAssets).toHaveLength(10);
+    expect(new Set(musicAssets.map((asset) => asset.sha256)).size).toBe(10);
+    expect(musicAssets.every((asset) => asset.bytes > 0)).toBe(true);
+    expect(musicAssets.every((asset) => asset.parameters.durationSeconds === 150)).toBe(true);
+    expect(musicAssets.slice(1).every((asset) => asset.publicPath.startsWith("public/sounds/music/"))).toBe(true);
+  });
+
+  it("binds the human review gate to the exact ten master hashes without fabricating approval", () => {
+    expect(inspectEveningCollectionReview).toEqual(expect.any(Function));
+    if (!inspectEveningCollectionReview) return;
+
+    const provenance = JSON.parse(
+      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
+    ) as {
+      assets: Parameters<NonNullable<typeof inspectEveningCollectionReview>>[1];
+    };
+    const review = JSON.parse(
+      readFileSync("docs/audio/zenflow-evening-collection-review.json", "utf8"),
+    ) as Record<string, unknown>;
+
+    expect(inspectEveningCollectionReview(review, provenance.assets)).toEqual({
+      violations: [],
+      promotionAllowed: false,
+      status: "STOP_PENDING_HUMAN_AUDIO_REVIEW",
+    });
+
+    const fabricatedApproval = structuredClone(review) as {
+      releaseBoundary: { status: string; promotionAllowed: boolean };
+      masters: Array<{ decision: string; listenedMinutes: number; contexts: string[] }>;
+    };
+    fabricatedApproval.releaseBoundary.status = "HUMAN_AUDIO_REVIEW_COMPLETE";
+    fabricatedApproval.releaseBoundary.promotionAllowed = true;
+    for (const master of fabricatedApproval.masters) {
+      master.decision = "APPROVED";
+      master.listenedMinutes = 10;
+      master.contexts = ["headphones", "device-speaker"];
+    }
+
+    expect(inspectEveningCollectionReview(fabricatedApproval, provenance.assets).violations).toEqual(
+      expect.arrayContaining(["reviewer", "reviewedAt"]),
+    );
+
+    const hashMismatch = structuredClone(review) as {
+      masters: Array<{ sha256: string }>;
+    };
+    hashMismatch.masters[0].sha256 = "0".repeat(64);
+    expect(inspectEveningCollectionReview(hashMismatch, provenance.assets).violations).toContain(
+      "masters.cloudlight-evening-loop.sha256",
+    );
+  });
+
   it("ships a dedicated QC contract for V2 app audio outside Hyperfocus", () => {
     expect(existsSync(scriptPath)).toBe(true);
   });

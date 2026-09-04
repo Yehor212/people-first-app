@@ -10,6 +10,12 @@ const platformMock = vi.hoisted(() => ({
   isAndroid: true,
 }));
 
+function fireOpacityTransitionEnd(target: HTMLElement): void {
+  const event = new Event("transitionend", { bubbles: true });
+  Object.defineProperty(event, "propertyName", { value: "opacity" });
+  target.dispatchEvent(event);
+}
+
 vi.mock("@/lib/platform", () => platformMock);
 vi.mock("@/lib/statusBarStyle", () => ({
   StatusBarStyle: statusBarMock,
@@ -38,6 +44,8 @@ describe("themeStore Variant A", () => {
     delete document.documentElement.dataset.themeAccent;
     delete document.documentElement.dataset.themeContrast;
     document.documentElement.classList.remove("dark", "oled");
+    document.documentElement.style.setProperty("--background", "165 22% 96%");
+    document.querySelectorAll("[data-theme-transition-veil]").forEach((node) => node.remove());
     statusBarMock.setStyle.mockClear();
     platformMock.isNative = true;
     platformMock.isAndroid = true;
@@ -48,6 +56,8 @@ describe("themeStore Variant A", () => {
     vi.restoreAllMocks();
     delete document.documentElement.dataset.theme;
     document.documentElement.classList.remove("dark", "oled");
+    document.documentElement.style.removeProperty("--background");
+    document.querySelectorAll("[data-theme-transition-veil]").forEach((node) => node.remove());
     localStorage.clear();
   });
 
@@ -154,16 +164,24 @@ describe("themeStore Variant A", () => {
     expect(document.documentElement.dataset.themeContrast).toBe("high");
   });
 
-  it("persists a mode before committing its DOM and store state", async () => {
+  it("persists the request immediately and commits the applied palette only at fade-through midpoint", async () => {
     const { mod } = await loadStore(false);
     const result = mod.useThemeStore.getState().setTheme("oled");
 
     expect(result).toEqual({ ok: true, changed: true });
+    expect(mod.useThemeStore.getState()).toMatchObject({ theme: "oled", appliedTheme: "paper" });
+    expect(document.documentElement.dataset.theme).toBe("paper");
+    expect(localStorage.getItem("zenflow-theme")).toBe("dark");
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}").state.theme).toBe("oled");
+
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    const veil = document.querySelector<HTMLElement>("[data-theme-transition-veil]");
+    expect(veil).toHaveAttribute("data-theme-transition-phase", "enter");
+    fireOpacityTransitionEnd(veil!);
+
     expect(mod.useThemeStore.getState()).toMatchObject({ theme: "oled", appliedTheme: "oled" });
     expect(document.documentElement.dataset.theme).toBe("oled");
     expect(document.documentElement).toHaveClass("dark", "oled");
-    expect(localStorage.getItem("zenflow-theme")).toBe("dark");
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}").state.theme).toBe("oled");
   });
 
   it("publishes fixed-contrast native status-bar style after the updated interface crosses two frames", async () => {
@@ -192,16 +210,29 @@ describe("themeStore Variant A", () => {
 
     mod.useThemeStore.getState().setTheme("ink");
 
+    expect(document.documentElement.dataset.theme).toBe("paper");
+    expect(statusBarMock.setStyle).not.toHaveBeenCalled();
+    flushFrame();
+    const firstVeil = document.querySelector<HTMLElement>("[data-theme-transition-veil]");
+    fireOpacityTransitionEnd(firstVeil!);
     expect(document.documentElement.dataset.theme).toBe("ink");
     expect(statusBarMock.setStyle).not.toHaveBeenCalled();
     flushFrame();
     expect(statusBarMock.setStyle).not.toHaveBeenCalled();
     flushFrame();
+    expect(statusBarMock.setStyle).not.toHaveBeenCalled();
+    flushFrame();
     expect(statusBarMock.setStyle).toHaveBeenLastCalledWith({ style: "LIGHT" });
+    fireOpacityTransitionEnd(firstVeil!);
 
     statusBarMock.setStyle.mockClear();
     mod.useThemeStore.getState().setTheme("paper");
     mod.useThemeStore.getState().setTheme("oled");
+    flushFrame();
+    flushFrame();
+    const latestVeil = document.querySelector<HTMLElement>("[data-theme-transition-veil]");
+    fireOpacityTransitionEnd(latestVeil!);
+    flushFrame();
     flushFrame();
     flushFrame();
     flushFrame();
@@ -316,15 +347,21 @@ describe("themeStore Variant A", () => {
 
     expect(mod.useThemeStore.getState()).toMatchObject({
       theme: "oled",
-      appliedTheme: "oled",
+      appliedTheme: "paper",
       themeCustomization: {
         schemaVersion: 1,
         accentFamily: "amber",
         highContrast: true,
       },
     });
-    expect(document.documentElement.dataset.theme).toBe("oled");
+    expect(document.documentElement.dataset.theme).toBe("paper");
     expect(setItemSpy).not.toHaveBeenCalled();
+
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    const veil = document.querySelector<HTMLElement>("[data-theme-transition-veil]");
+    fireOpacityTransitionEnd(veil!);
+    expect(mod.useThemeStore.getState().appliedTheme).toBe("oled");
+    expect(document.documentElement.dataset.theme).toBe("oled");
     off();
   });
 

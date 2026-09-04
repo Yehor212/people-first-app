@@ -1244,7 +1244,7 @@
 }
 
 :root[data-theme="paper"] .settings-day-cosmic-backdrop {
-  display: block;
+  display: none;
   background: hsl(var(--settings-v2-shell));
 }
 
@@ -1409,7 +1409,7 @@
 .settings-emerald-night-backdrop {
   position: fixed;
   z-index: 0;
-  display: none;
+  display: block;
   overflow: hidden;
   min-block-size: var(--app-viewport-height);
   block-size: var(--app-viewport-height);

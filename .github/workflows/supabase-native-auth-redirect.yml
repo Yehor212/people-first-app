@@ -1,0 +1,68 @@
+name: Supabase Native Auth Redirect
+
+on:
+  #checkov:skip=CKV_GHA_7:The exact input is the production Auth configuration authorization gate.
+  workflow_dispatch:
+    inputs:
+      confirm_native_auth_redirect_apply:
+        description: Type APPLY_NATIVE_AUTH_REDIRECT to patch and verify the Android OAuth callback allow-list.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-native-auth-redirect
+  cancel-in-progress: false
+
+jobs:
+  apply-native-auth-redirect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Validate production Auth configuration request
+        shell: bash
+        env:
+          CONFIRM_NATIVE_AUTH_REDIRECT_APPLY: ${{ inputs.confirm_native_auth_redirect_apply }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Supabase native Auth redirect apply must run from main."
+            exit 1
+          fi
+          if [ "$CONFIRM_NATIVE_AUTH_REDIRECT_APPLY" != "APPLY_NATIVE_AUTH_REDIRECT" ]; then
+            echo "Confirmation phrase did not match."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify redirect patch contracts
+        run: >-
+          npx vitest run
+          scripts/__tests__/supabase-auth-redirect-allow-list.test.ts
+          scripts/__tests__/supabase-native-auth-redirect-workflow.test.ts
+          scripts/__tests__/auth-providers-readiness.test.ts
+
+      - name: Apply and verify hosted native Auth redirect
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          ZENFLOW_AUTH_REDIRECT_ALLOW_LIST_CONFIRM_PRODUCTION: true
+        run: |
+          npm run check:supabase-auth-redirect-allow-list
+          npm run apply:supabase-auth-redirect-allow-list

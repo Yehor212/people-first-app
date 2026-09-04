@@ -14,6 +14,8 @@ const publicSoundsDir = path.join(rootDir, 'public', 'sounds');
 const docsSoundsDir = path.join(rootDir, 'docs', 'sounds');
 const publicFeedbackDir = path.join(publicSoundsDir, 'feedback');
 const docsFeedbackDir = path.join(docsSoundsDir, 'feedback');
+const publicMusicDir = path.join(publicSoundsDir, 'music');
+const docsMusicDir = path.join(docsSoundsDir, 'music');
 const androidFurinPath = path.join(
   rootDir,
   'android',
@@ -424,6 +426,226 @@ const CLOUDLIGHT_MELODY_PATTERNS = Object.freeze([
   [{ beat: 0.65, degree: 3, lengthBeats: 1.2 }, { beat: 2.35, degree: 0, lengthBeats: 1.4 }],
 ]);
 
+const EVENING_MUSIC_COMMON_EXCLUSIONS = Object.freeze([
+  'voice',
+  'human breathing',
+  'field recording',
+  'sampled instrument',
+  'sampled audio',
+  'stock loop',
+  'reference audio',
+  'reference score',
+  'copied melody',
+  'copied harmony',
+  'alarm',
+  'siren',
+  'static noise',
+]);
+
+function makeEveningMusicAsset({
+  id,
+  title,
+  seed,
+  formBars,
+  mode,
+  chords,
+  melodyScale,
+  patterns,
+  bellMidi,
+  bellBars,
+  mix,
+  sectionDensity = [0.82, 0.9, 1, 0.86],
+  loopCrossfadeSeconds,
+  renderer = 'sectional',
+}) {
+  return {
+    id,
+    title,
+    fileName: id + '.mp3',
+    relativePath: path.posix.join('music', id + '.mp3'),
+    role: 'Persistent opt-in ZenFlow evening collection music',
+    family: 'music',
+    renderer,
+    seed,
+    durationSeconds: 150,
+    formBars,
+    tempoBpm: (formBars * 4 * 60) / 150,
+    targetRms: 0.043,
+    targetPeak: 0.22,
+    runtimeGain: 0.18,
+    loopCrossfadeSeconds: loopCrossfadeSeconds ?? 150 / formBars,
+    deterministicSpec: 'original-evening-collection-' + mode + '-circular-loop',
+    generator: 'deterministic original soft-key, open-pad, and glass-partial circular composition',
+    exclusions: EVENING_MUSIC_COMMON_EXCLUSIONS,
+    composition: {
+      mode,
+      chords,
+      melodyScale,
+      patterns,
+      bellMidi,
+      bellBars,
+      sectionDensity,
+      sectionDegreeOffset: [0, 1, -1, 0],
+      mix,
+    },
+  };
+}
+
+const EVENING_MUSIC_ASSETS = Object.freeze([
+  makeEveningMusicAsset({
+    id: 'lantern-air', title: 'Lantern Air', seed: 0x1a47e2c1, formBars: 36,
+    mode: 'major-pentatonic',
+    chords: [[48, 55, 60, 64], [45, 52, 57, 60], [41, 48, 55, 60], [43, 50, 55, 62]],
+    melodyScale: [60, 62, 64, 67, 69, 72],
+    patterns: [
+      [{ beat: 0.7, degree: 0, lengthBeats: 1.6 }],
+      [{ beat: 1.8, degree: 3, lengthBeats: 1.2 }, { beat: 3.2, degree: 1, lengthBeats: 0.6 }],
+      [{ beat: 0.4, degree: 4, lengthBeats: 1.1 }],
+      [{ beat: 1.2, degree: 2, lengthBeats: 1.7 }],
+    ],
+    bellMidi: 79, bellBars: [7, 15, 23, 31],
+    mix: { pad: 0.068, bass: 0.068, key: 0.14, bell: 0.019, brightness: 0.95 },
+    sectionDensity: [0.94, 0.96, 1, 0.95],
+  }),
+  makeEveningMusicAsset({
+    id: 'rain-on-paper', title: 'Rain On Paper', seed: 0x2a91d44f, formBars: 40,
+    mode: 'suspended-pentatonic',
+    chords: [[50, 57, 62, 67], [47, 54, 59, 64], [43, 50, 57, 62], [45, 52, 57, 64]],
+    melodyScale: [62, 64, 67, 69, 71, 74],
+    patterns: [
+      [{ beat: 0.35, degree: 2, lengthBeats: 1.25 }, { beat: 2.7, degree: 0, lengthBeats: 0.8 }],
+      [{ beat: 1.3, degree: 4, lengthBeats: 1.45 }],
+      [{ beat: 0.9, degree: 1, lengthBeats: 1.7 }],
+      [{ beat: 2.05, degree: 3, lengthBeats: 1.15 }],
+    ],
+    bellMidi: 81, bellBars: [5, 13, 21, 29],
+    mix: { pad: 0.056, bass: 0.06, key: 0.175, bell: 0.02, brightness: 0.82 },
+  }),
+  makeEveningMusicAsset({
+    id: 'indigo-dusk', title: 'Indigo Dusk', seed: 0x3d17c8a5, formBars: 36,
+    mode: 'minor-pentatonic',
+    chords: [[45, 52, 57, 60], [41, 48, 53, 57], [38, 45, 50, 57], [43, 50, 55, 58]],
+    melodyScale: [57, 60, 62, 64, 67, 69],
+    patterns: [
+      [{ beat: 1.1, degree: 0, lengthBeats: 1.9 }],
+      [{ beat: 0.55, degree: 3, lengthBeats: 1.2 }],
+      [{ beat: 1.75, degree: 4, lengthBeats: 1.5 }, { beat: 3.35, degree: 2, lengthBeats: 0.5 }],
+      [{ beat: 0.8, degree: 1, lengthBeats: 1.35 }],
+    ],
+    bellMidi: 76, bellBars: [9, 17, 25],
+    mix: { pad: 0.062, bass: 0.071, key: 0.16, bell: 0.017, brightness: 0.7 },
+  }),
+  makeEveningMusicAsset({
+    id: 'quiet-courtyard', title: 'Quiet Courtyard', seed: 0x2a91d44f, formBars: 40,
+    mode: 'open-fifths',
+    chords: [[48, 55, 60, 65], [45, 52, 57, 62], [41, 48, 55, 60], [43, 50, 55, 62]],
+    melodyScale: [60, 62, 65, 67, 69, 72],
+    patterns: [
+      [{ beat: 0.35, degree: 2, lengthBeats: 1.25 }, { beat: 2.7, degree: 0, lengthBeats: 0.8 }],
+      [{ beat: 1.3, degree: 4, lengthBeats: 1.45 }],
+      [{ beat: 0.9, degree: 1, lengthBeats: 1.7 }],
+      [{ beat: 2.05, degree: 3, lengthBeats: 1.15 }],
+    ],
+    bellMidi: 79, bellBars: [5, 13, 21, 29],
+    mix: { pad: 0.056, bass: 0.06, key: 0.175, bell: 0.02, brightness: 0.82 },
+    renderer: 'periodic-pad',
+  }),
+  makeEveningMusicAsset({
+    id: 'moonlit-water', title: 'Moonlit Water', seed: 0x5e62f914, formBars: 36,
+    mode: 'major-pentatonic',
+    chords: [[46, 53, 58, 62], [43, 50, 55, 58], [39, 46, 51, 58], [41, 48, 53, 60]],
+    melodyScale: [58, 60, 62, 65, 67, 70],
+    patterns: [
+      [{ beat: 1.4, degree: 1, lengthBeats: 1.8 }],
+      [{ beat: 0.45, degree: 5, lengthBeats: 1.0 }],
+      [{ beat: 2.0, degree: 3, lengthBeats: 1.55 }],
+      [{ beat: 0.9, degree: 0, lengthBeats: 1.25 }, { beat: 3.25, degree: 2, lengthBeats: 0.55 }],
+    ],
+    bellMidi: 82, bellBars: [6, 14, 22, 30],
+    mix: { pad: 0.061, bass: 0.062, key: 0.165, bell: 0.021, brightness: 0.88 },
+  }),
+  makeEveningMusicAsset({
+    id: 'cedar-mist', title: 'Cedar Mist', seed: 0x6f28b3c0, formBars: 36,
+    mode: 'minor-pentatonic',
+    chords: [[47, 54, 59, 62], [43, 50, 55, 59], [40, 47, 52, 59], [45, 52, 57, 60]],
+    melodyScale: [59, 62, 64, 66, 69, 71],
+    patterns: [
+      [{ beat: 0.6, degree: 2, lengthBeats: 1.4 }],
+      [{ beat: 1.9, degree: 0, lengthBeats: 1.65 }],
+      [{ beat: 0.3, degree: 4, lengthBeats: 1.0 }, { beat: 2.5, degree: 1, lengthBeats: 0.9 }],
+      [{ beat: 1.25, degree: 3, lengthBeats: 1.25 }],
+    ],
+    bellMidi: 78, bellBars: [8, 16, 24],
+    mix: { pad: 0.058, bass: 0.069, key: 0.172, bell: 0.017, brightness: 0.74 },
+  }),
+  makeEveningMusicAsset({
+    id: 'glass-bell-dawn', title: 'Glass Bell Dawn', seed: 0x7b51e6d3, formBars: 40,
+    mode: 'suspended-pentatonic',
+    chords: [[52, 59, 64, 69], [48, 55, 60, 67], [45, 52, 57, 64], [50, 57, 62, 69]],
+    melodyScale: [64, 67, 69, 71, 74, 76],
+    patterns: [
+      [{ beat: 0.2, degree: 0, lengthBeats: 1.05 }, { beat: 2.35, degree: 4, lengthBeats: 0.8 }],
+      [{ beat: 1.0, degree: 2, lengthBeats: 1.25 }],
+      [{ beat: 1.7, degree: 5, lengthBeats: 1.0 }],
+      [{ beat: 0.65, degree: 3, lengthBeats: 1.45 }],
+    ],
+    bellMidi: 88, bellBars: [3, 7, 15, 23, 31],
+    mix: { pad: 0.047, bass: 0.054, key: 0.18, bell: 0.031, brightness: 1.18 },
+  }),
+  makeEveningMusicAsset({
+    id: 'moss-garden', title: 'Moss Garden', seed: 0x8c73a219, formBars: 36,
+    mode: 'open-fifths',
+    chords: [[43, 50, 55, 60], [46, 53, 58, 62], [41, 48, 53, 60], [38, 45, 50, 57]],
+    melodyScale: [55, 57, 60, 62, 65, 67],
+    patterns: [
+      [{ beat: 1.6, degree: 3, lengthBeats: 1.55 }],
+      [{ beat: 0.5, degree: 1, lengthBeats: 1.2 }],
+      [{ beat: 2.25, degree: 4, lengthBeats: 1.15 }],
+      [{ beat: 0.85, degree: 0, lengthBeats: 1.6 }, { beat: 3.15, degree: 2, lengthBeats: 0.55 }],
+    ],
+    bellMidi: 74, bellBars: [10, 18, 26],
+    mix: { pad: 0.062, bass: 0.072, key: 0.16, bell: 0.015, brightness: 0.66 },
+  }),
+  makeEveningMusicAsset({
+    id: 'after-rain', title: 'After Rain', seed: 0x9d42f680, formBars: 40,
+    mode: 'major-pentatonic',
+    chords: [[50, 57, 62, 66], [45, 52, 57, 62], [47, 54, 59, 64], [43, 50, 57, 62]],
+    melodyScale: [62, 64, 66, 69, 71, 74],
+    patterns: [
+      [{ beat: 0.45, degree: 1, lengthBeats: 1.3 }],
+      [{ beat: 1.45, degree: 4, lengthBeats: 1.4 }, { beat: 3.3, degree: 2, lengthBeats: 0.5 }],
+      [{ beat: 0.8, degree: 0, lengthBeats: 1.65 }],
+      [{ beat: 2.0, degree: 3, lengthBeats: 1.1 }],
+    ],
+    bellMidi: 83, bellBars: [4, 12, 20, 28],
+    mix: { pad: 0.062, bass: 0.064, key: 0.16, bell: 0.018, brightness: 0.92 },
+    sectionDensity: [0.92, 0.95, 1, 0.93],
+  }),
+]);
+
+function validateEveningMusicAssets() {
+  if (EVENING_MUSIC_ASSETS.length !== 9) throw new Error('Evening collection must add exactly nine masters');
+  const ids = new Set();
+  const paths = new Set();
+  const compositions = new Set();
+  for (const asset of EVENING_MUSIC_ASSETS) {
+    if (![36, 40].includes(asset.formBars) ||
+        asset.tempoBpm !== (asset.formBars * 4 * 60) / asset.durationSeconds) {
+      throw new Error('Evening collection form must close on an exact bar boundary');
+    }
+    if (ids.has(asset.id) || paths.has(asset.relativePath)) {
+      throw new Error('Evening collection contains duplicate identity');
+    }
+    const compositionFingerprint = JSON.stringify(asset.composition);
+    if (compositions.has(compositionFingerprint)) {
+      throw new Error('Evening collection masters must have distinct compositions');
+    }
+    ids.add(asset.id);
+    paths.add(asset.relativePath);
+    compositions.add(compositionFingerprint);
+  }
+}
+
 function midiToFrequency(midi) {
   return 440 * (2 ** ((midi - 69) / 12));
 }
@@ -648,6 +870,346 @@ function renderCloudlightEveningPcm(asset) {
   };
 }
 
+function renderEveningCollectionPcm(asset) {
+  const frameCount = Math.round(asset.durationSeconds * sampleRate);
+  const crossfadeFrames = Math.round(asset.loopCrossfadeSeconds * sampleRate);
+  const rawFrameCount = frameCount + crossfadeFrames;
+  const rawLeft = new Float32Array(rawFrameCount);
+  const rawRight = new Float32Array(rawFrameCount);
+  const beatSeconds = 60 / asset.tempoBpm;
+  const barSeconds = beatSeconds * 4;
+  const barCount = Math.ceil((rawFrameCount / sampleRate) / barSeconds) + 1;
+  const random = mulberry32(asset.seed);
+  const composition = asset.composition;
+  const pianoPartials = [
+    { ratio: 1, level: 1, decayScale: 1 },
+    { ratio: 2.001, level: 0.13 * composition.mix.brightness, decayScale: 0.56 },
+    { ratio: 3.008, level: 0.038 * composition.mix.brightness, decayScale: 0.36 },
+    { ratio: 4.014, level: 0.014 * composition.mix.brightness, decayScale: 0.25 },
+  ];
+  const padPartials = [
+    { ratio: 1, level: 1, decayScale: 1 },
+    { ratio: 2, level: 0.032 * composition.mix.brightness, decayScale: 0.72 },
+  ];
+  const bassPartials = [
+    { ratio: 1, level: 1, decayScale: 1 },
+    { ratio: 2, level: 0.052, decayScale: 0.48 },
+  ];
+  const glassPartials = [
+    { ratio: 1, level: 1, decayScale: 1 },
+    { ratio: 2.63, level: 0.09 * composition.mix.brightness, decayScale: 0.43 },
+    { ratio: 4.11, level: 0.027 * composition.mix.brightness, decayScale: 0.27 },
+  ];
+
+  for (let bar = 0; bar < barCount; bar += 1) {
+    const cycleBar = bar % asset.formBars;
+    const section = Math.min(
+      3,
+      Math.floor(cycleBar / (asset.formBars / 4)),
+    );
+    const chord = composition.chords[cycleBar % composition.chords.length];
+    const barStart = bar * barSeconds;
+    const cycleGain = bar >= asset.formBars ? 0.96 : 1;
+    const density = composition.sectionDensity[section];
+
+    chord.forEach((midi, voiceIndex) => {
+      addCloudlightVoice(rawLeft, rawRight, {
+        startSeconds: barStart - 0.035 + voiceIndex * 0.021,
+        durationSeconds: barSeconds + 1.25,
+        attackSeconds: 0.66 + voiceIndex * 0.055,
+        decaySeconds: 3.9 + voiceIndex * 0.16,
+        frequency: midiToFrequency(midi),
+        level: Math.max(0.015, composition.mix.pad - voiceIndex * 0.0055) * density * cycleGain,
+        pan: [-0.32, -0.08, 0.12, 0.3][voiceIndex],
+        partials: padPartials,
+      });
+    });
+
+    addCloudlightVoice(rawLeft, rawRight, {
+      startSeconds: barStart + 0.04,
+      durationSeconds: 3.2,
+      attackSeconds: 0.15,
+      decaySeconds: 2.45,
+      frequency: midiToFrequency(chord[0]),
+      level: composition.mix.bass * density * cycleGain,
+      pan: -0.03,
+      partials: bassPartials,
+    });
+
+    const pattern = composition.patterns[cycleBar % composition.patterns.length];
+    pattern.forEach((note, noteIndex) => {
+      if (section === 0 && noteIndex > 0 && cycleBar % 4 !== 0) return;
+      const degree = (
+        note.degree + composition.sectionDegreeOffset[section] + composition.melodyScale.length
+      ) % composition.melodyScale.length;
+      addCloudlightVoice(rawLeft, rawRight, {
+        startSeconds: barStart + note.beat * beatSeconds + (random() - 0.5) * 0.07,
+        durationSeconds: note.lengthBeats * beatSeconds + 1.8,
+        attackSeconds: 0.035 + random() * 0.02,
+        decaySeconds: 1.6 + note.lengthBeats * 0.38,
+        frequency: midiToFrequency(composition.melodyScale[degree]),
+        level: composition.mix.key * density * (0.9 + random() * 0.14) * cycleGain,
+        pan: Math.max(-0.34, Math.min(0.34, (degree - 2.5) * 0.1)),
+        partials: pianoPartials,
+      });
+    });
+
+    if (composition.bellBars.includes(cycleBar)) {
+      addCloudlightVoice(rawLeft, rawRight, {
+        startSeconds: barStart + 3.18 * beatSeconds,
+        durationSeconds: 3.1,
+        attackSeconds: 0.08,
+        decaySeconds: 1.8,
+        frequency: midiToFrequency(composition.bellMidi + (section % 2)),
+        level: composition.mix.bell * cycleGain,
+        pan: section % 2 === 0 ? 0.25 : -0.25,
+        partials: glassPartials,
+      });
+    }
+  }
+
+  const left = new Float32Array(frameCount);
+  const right = new Float32Array(frameCount);
+  const bodyFrames = frameCount - crossfadeFrames;
+  for (let frame = 0; frame < bodyFrames; frame += 1) {
+    left[frame] = rawLeft[frame + crossfadeFrames];
+    right[frame] = rawRight[frame + crossfadeFrames];
+  }
+  for (let frame = 0; frame < crossfadeFrames; frame += 1) {
+    const progress = (frame + 0.5) / crossfadeFrames;
+    const fadeOut = Math.cos(progress * Math.PI * 0.5);
+    const fadeIn = Math.sin(progress * Math.PI * 0.5);
+    const correlatedGain = 1 / Math.max(1, fadeOut + fadeIn);
+    const outputFrame = bodyFrames + frame;
+    left[outputFrame] = (
+      rawLeft[frameCount + frame] * fadeOut + rawLeft[frame] * fadeIn
+    ) * correlatedGain;
+    right[outputFrame] = (
+      rawRight[frameCount + frame] * fadeOut + rawRight[frame] * fadeIn
+    ) * correlatedGain;
+  }
+
+  let leftMean = 0;
+  let rightMean = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const slowGain = 0.955 + 0.045 * Math.sin((Math.PI * 2 * frame) / frameCount - 0.45);
+    left[frame] *= slowGain;
+    right[frame] *= slowGain;
+    leftMean += left[frame];
+    rightMean += right[frame];
+  }
+  leftMean /= frameCount;
+  rightMean /= frameCount;
+
+  let sumSquares = 0;
+  let peak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    left[frame] -= leftMean;
+    right[frame] -= rightMean;
+    sumSquares += left[frame] ** 2 + right[frame] ** 2;
+    peak = Math.max(peak, Math.abs(left[frame]), Math.abs(right[frame]));
+  }
+  const rms = Math.sqrt(sumSquares / (frameCount * channels));
+  const scale = Math.min(
+    asset.targetRms / Math.max(rms, 1e-9),
+    asset.targetPeak / Math.max(peak, 1e-9),
+  );
+  const left16 = new Int16Array(frameCount);
+  const right16 = new Int16Array(frameCount);
+  let scaledSquares = 0;
+  let scaledPeak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const l = Math.max(-0.98, Math.min(0.98, left[frame] * scale));
+    const r = Math.max(-0.98, Math.min(0.98, right[frame] * scale));
+    left16[frame] = Math.round(l * 32767);
+    right16[frame] = Math.round(r * 32767);
+    scaledSquares += l * l + r * r;
+    scaledPeak = Math.max(scaledPeak, Math.abs(l), Math.abs(r));
+  }
+
+  return {
+    left16,
+    right16,
+    metrics: {
+      sampleRate,
+      channels,
+      durationSeconds: asset.durationSeconds,
+      sourcePeak: Number(scaledPeak.toFixed(6)),
+      sourceRms: Number(Math.sqrt(scaledSquares / (frameCount * channels)).toFixed(6)),
+      targetRms: asset.targetRms,
+      targetPeak: asset.targetPeak,
+      tempoBpm: asset.tempoBpm,
+      bars: asset.formBars,
+      mode: composition.mode,
+      chordFields: composition.chords,
+      melodyScaleMidi: composition.melodyScale,
+      melodyPatterns: composition.patterns,
+      bellMidi: composition.bellMidi,
+      bellBars: composition.bellBars,
+      mix: composition.mix,
+      loopCrossfadeSeconds: asset.loopCrossfadeSeconds,
+      loopMethod: 'correlation-compensated-equal-power-circular-overlap',
+      sourceInputs: 'tracked numeric synthesis parameters only',
+    },
+  };
+}
+
+function renderPeriodicEveningPadPcm(asset) {
+  const frameCount = Math.round(asset.durationSeconds * sampleRate);
+  const left = new Float64Array(frameCount);
+  const right = new Float64Array(frameCount);
+  const composition = asset.composition;
+  const pitchSet = [
+    composition.chords[0][0],
+    composition.chords[0][1],
+    composition.chords[1][2],
+    composition.melodyScale[1],
+    composition.melodyScale[3],
+    composition.melodyScale[5],
+  ];
+  const duration = asset.durationSeconds;
+  const periodicFrequencies = pitchSet.map((midi) => {
+    const target = midiToFrequency(midi);
+    const phaseAligned = Math.round(target / 2) * 2;
+    return {
+      left: phaseAligned,
+      right: phaseAligned,
+    };
+  });
+  const bellEvents = composition.bellBars.map((bar, index) => ({
+    startSeconds: (bar / asset.formBars) * duration,
+    durationSeconds: 4.2,
+    frequency: Math.round(
+      midiToFrequency(composition.bellMidi + (index % 2)) * duration,
+    ) / duration,
+    pan: index % 2 === 0 ? -0.22 : 0.22,
+  }));
+
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const time = frame / sampleRate;
+    let leftSample = 0;
+    let rightSample = 0;
+    for (let voice = 0; voice < periodicFrequencies.length; voice += 1) {
+      const level = 0.026 - voice * 0.0026;
+      const motion = 1;
+      const pan = -0.34 + voice * 0.136;
+      const leftGain = Math.sqrt((1 - pan) * 0.5);
+      const rightGain = Math.sqrt((1 + pan) * 0.5);
+      const frequencies = periodicFrequencies[voice];
+      leftSample += (
+        Math.sin(Math.PI * 2 * frequencies.left * time + voice * 0.23) +
+        0.035 * Math.sin(Math.PI * 4 * frequencies.left * time + voice * 0.11)
+      ) * level * motion * leftGain;
+      rightSample += (
+        Math.sin(Math.PI * 2 * frequencies.right * time + voice * 0.23) +
+        0.035 * Math.sin(Math.PI * 4 * frequencies.right * time + voice * 0.11)
+      ) * level * motion * rightGain;
+    }
+
+    for (const event of bellEvents) {
+      const localTime = time - event.startSeconds;
+      if (localTime < 0 || localTime > event.durationSeconds) continue;
+      const attack = Math.sin(
+        Math.min(1, localTime / 0.08) * Math.PI * 0.5,
+      ) ** 2;
+      const envelope = attack * Math.exp(-localTime / 1.55);
+      const tone = (
+        Math.sin(Math.PI * 2 * event.frequency * localTime) +
+        0.07 * Math.sin(Math.PI * 2 * event.frequency * 2.67 * localTime)
+      ) * 0.012 * envelope;
+      leftSample += tone * Math.sqrt((1 - event.pan) * 0.5);
+      rightSample += tone * Math.sqrt((1 + event.pan) * 0.5);
+    }
+    left[frame] = leftSample;
+    right[frame] = rightSample;
+  }
+
+  const encoderDelayCompensationFrames = 2088;
+  const phaseBlendFrames = Math.round(sampleRate * 2);
+  const phaseAlignedTailFrames = Math.round(sampleRate * 0.5);
+  const phaseRepairStart = frameCount - phaseBlendFrames - phaseAlignedTailFrames;
+  const originalLeft = left.slice();
+  const originalRight = right.slice();
+  for (let frame = phaseRepairStart; frame < frameCount; frame += 1) {
+    const blendProgress = Math.min(
+      1,
+      (frame - phaseRepairStart + 0.5) / phaseBlendFrames,
+    );
+    const shiftedFrame = (
+      frame - encoderDelayCompensationFrames + frameCount
+    ) % frameCount;
+    const keepGain = Math.cos(blendProgress * Math.PI * 0.5);
+    const shiftedGain = Math.sin(blendProgress * Math.PI * 0.5);
+    const correlatedGain = 1 / Math.max(1, keepGain + shiftedGain);
+    left[frame] = (
+      originalLeft[frame] * keepGain + originalLeft[shiftedFrame] * shiftedGain
+    ) * correlatedGain;
+    right[frame] = (
+      originalRight[frame] * keepGain + originalRight[shiftedFrame] * shiftedGain
+    ) * correlatedGain;
+  }
+
+  let leftMean = 0;
+  let rightMean = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    leftMean += left[frame];
+    rightMean += right[frame];
+  }
+  leftMean /= frameCount;
+  rightMean /= frameCount;
+
+  let sumSquares = 0;
+  let peak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    left[frame] -= leftMean;
+    right[frame] -= rightMean;
+    sumSquares += left[frame] ** 2 + right[frame] ** 2;
+    peak = Math.max(peak, Math.abs(left[frame]), Math.abs(right[frame]));
+  }
+  const rms = Math.sqrt(sumSquares / (frameCount * channels));
+  const scale = Math.min(
+    asset.targetRms / Math.max(rms, 1e-9),
+    asset.targetPeak / Math.max(peak, 1e-9),
+  );
+  const left16 = new Int16Array(frameCount);
+  const right16 = new Int16Array(frameCount);
+  let scaledSquares = 0;
+  let scaledPeak = 0;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const l = Math.max(-0.98, Math.min(0.98, left[frame] * scale));
+    const r = Math.max(-0.98, Math.min(0.98, right[frame] * scale));
+    left16[frame] = Math.round(l * 32767);
+    right16[frame] = Math.round(r * 32767);
+    scaledSquares += l * l + r * r;
+    scaledPeak = Math.max(scaledPeak, Math.abs(l), Math.abs(r));
+  }
+
+  return {
+    left16,
+    right16,
+    metrics: {
+      sampleRate,
+      channels,
+      durationSeconds: asset.durationSeconds,
+      sourcePeak: Number(scaledPeak.toFixed(6)),
+      sourceRms: Number(Math.sqrt(scaledSquares / (frameCount * channels)).toFixed(6)),
+      targetRms: asset.targetRms,
+      targetPeak: asset.targetPeak,
+      tempoBpm: asset.tempoBpm,
+      bars: asset.formBars,
+      mode: composition.mode,
+      pitchSetMidi: pitchSet,
+      bellEvents,
+      renderMode: 'phase-coherent-periodic-pad',
+      loopMethod: 'integer-cycle-periodic-synthesis',
+      encoderDelayCompensationFrames,
+      encoderDelayCompensationSeconds:
+        encoderDelayCompensationFrames / sampleRate,
+      sourceInputs: 'tracked numeric synthesis parameters only',
+    },
+  };
+}
+
 function renderFeedbackPcm(asset) {
   if (asset.id === 'feedback-notification') return renderFurinNotificationPcm(asset);
   const frameCount = Math.round(asset.durationSeconds * sampleRate);
@@ -856,23 +1418,38 @@ function readPackageVersion(name) {
 }
 
 function main() {
+  validateEveningMusicAssets();
   ensureCleanRoot(publicSoundsDir);
   ensureCleanRoot(docsSoundsDir);
   fs.mkdirSync(publicFeedbackDir, { recursive: true });
   fs.mkdirSync(docsFeedbackDir, { recursive: true });
+  fs.mkdirSync(publicMusicDir, { recursive: true });
+  fs.mkdirSync(docsMusicDir, { recursive: true });
 
   const lameVersion = readPackageVersion('lamejs');
   const provenanceAssets = [];
-  for (const asset of [...assets, ...feedbackAssets]) {
+  for (const asset of [...assets, ...EVENING_MUSIC_ASSETS, ...feedbackAssets]) {
     const isFeedback = asset.id.startsWith('feedback-');
     const rendered = isFeedback
       ? renderFeedbackPcm(asset)
       : asset.id === 'cloudlight-evening-loop'
         ? renderCloudlightEveningPcm(asset)
+        : asset.family === 'music'
+          ? asset.renderer === 'periodic-pad'
+            ? renderPeriodicEveningPadPcm(asset)
+            : renderEveningCollectionPcm(asset)
         : renderPcm(asset);
     const mp3 = encodeMp3(rendered.left16, rendered.right16);
-    const publicPath = path.join(isFeedback ? publicFeedbackDir : publicSoundsDir, asset.fileName);
-    const docsPath = path.join(isFeedback ? docsFeedbackDir : docsSoundsDir, asset.fileName);
+    const publicPath = path.join(
+      isFeedback ? publicFeedbackDir : publicSoundsDir,
+      asset.relativePath || asset.fileName,
+    );
+    const docsPath = path.join(
+      isFeedback ? docsFeedbackDir : docsSoundsDir,
+      asset.relativePath || asset.fileName,
+    );
+    fs.mkdirSync(path.dirname(publicPath), { recursive: true });
+    fs.mkdirSync(path.dirname(docsPath), { recursive: true });
     fs.writeFileSync(publicPath, mp3);
     fs.writeFileSync(docsPath, mp3);
     const hash = sha256(mp3);
@@ -904,7 +1481,7 @@ function main() {
         : { deterministicSpec: asset.deterministicSpec || 'fixed-note-sequence-with-cosine-envelopes' }),
       generator: asset.generator,
       parameters: {
-        family: isFeedback ? 'feedback' : 'ambience',
+        family: isFeedback ? 'feedback' : asset.family || 'ambience',
         sampleRate,
         channels,
         durationSeconds: asset.durationSeconds,
@@ -945,8 +1522,8 @@ function main() {
         status: 'ASSET_SPECIFIC_PROPRIETARY_NOTICE',
         rootLicensePresent: false,
         copyrightNotice: 'Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.',
-        appliesTo: ['cloudlight-evening-loop composition', 'cloudlight-evening-loop sound recording', 'cloudlight-evening-loop generator specification'],
-        releaseRightsScope: 'The Cloudlight Evening asset is first-party clean-room work with no external sample or recording license dependency; no repository-wide license is declared.',
+        appliesTo: ['ZenFlow evening collection compositions', 'ZenFlow evening collection sound recordings', 'ZenFlow evening collection generator specifications'],
+        releaseRightsScope: 'The ZenFlow evening collection is first-party clean-room work with no external sample or recording license dependency; no repository-wide license is declared.',
         humanLegalReviewRequired: true,
       },
     },
@@ -965,4 +1542,10 @@ function main() {
   console.log('[non-hyperfocus-audio] wrote ' + path.relative(rootDir, provenancePath));
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = {
+  EVENING_MUSIC_ASSETS,
+  encodeMp3,
+  renderPeriodicEveningPadPcm,
+};

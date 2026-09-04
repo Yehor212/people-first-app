@@ -13,12 +13,19 @@ export function AppBackgroundMusicProvider({ children }: { children: ReactNode }
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioSettings = useAppAudioSettings();
   const comfort = useAudioComfortSettings();
+  const canPlayMasterRevision = [
+    comfort.settings.profile,
+    comfort.settings.ambientEnabled,
+    ...comfort.settings.avoidedTextures,
+  ].join("|");
   const control = useAppBackgroundMusic({
     audioRef,
     canPlay:
       !audioSettings.muted &&
       audioSettings.volume > 0 &&
-      comfort.canPlayAmbientAsset("cloudlight-evening-loop"),
+      comfort.settings.ambientEnabled,
+    canPlayMaster: comfort.canPlayAmbientAsset,
+    canPlayMasterRevision,
     volume: audioSettings.volume * 0.18,
   });
 
@@ -29,14 +36,15 @@ export function AppBackgroundMusicProvider({ children }: { children: ReactNode }
       <audio
         ref={audioRef}
         data-testid="app-background-music-audio"
-        src={getAppAudioAssetSrc("cloudlight-evening-loop")}
+        src={getAppAudioAssetSrc(control.activeMasterId)}
         preload="none"
-        loop
         playsInline
         hidden
         aria-hidden="true"
         crossOrigin="anonymous"
         onError={control.handleMediaError}
+        onEnded={control.handleMediaEnded}
+        onTimeUpdate={control.handleMediaTimeUpdate}
       />
     </AppBackgroundMusicContext.Provider>
   );

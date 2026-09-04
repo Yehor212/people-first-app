@@ -54,16 +54,42 @@ function createDeferred() {
   return { promise, resolve, reject };
 }
 
-function Harness({ canPlay = true, volume = 0.18 }: { canPlay?: boolean; volume?: number }) {
+function Harness({
+  canPlay = true,
+  blockedMaster,
+  volume = 0.18,
+}: {
+  canPlay?: boolean;
+  blockedMaster?: string;
+  volume?: number;
+}) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const music = useAppBackgroundMusic({ audioRef, canPlay, volume });
+  const music = useAppBackgroundMusic({
+    audioRef,
+    canPlay,
+    canPlayMaster: (id) => id !== blockedMaster,
+    canPlayMasterRevision: blockedMaster ?? "",
+    volume,
+  });
+  const collectionMusic = music as typeof music & {
+    activeMasterId?: string;
+    handleMediaEnded?: () => void;
+    handleMediaTimeUpdate?: () => void;
+  };
 
   return (
     <>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio ref={audioRef} data-testid="music-audio" onError={music.handleMediaError} />
+      <audio
+        ref={audioRef}
+        data-testid="music-audio"
+        onError={music.handleMediaError}
+        onEnded={collectionMusic.handleMediaEnded}
+        onTimeUpdate={collectionMusic.handleMediaTimeUpdate}
+      />
       <output data-testid="music-state">{music.state}</output>
       <output data-testid="music-enabled">{String(music.enabled)}</output>
+      <output data-testid="music-master">{collectionMusic.activeMasterId}</output>
       <button type="button" onClick={music.toggle}>
         toggle
       </button>
@@ -109,15 +135,57 @@ describe("useAppBackgroundMusic", () => {
     expect(intentCache.request).not.toHaveBeenCalled();
   });
 
-  it("requests a full runtime cache body only when the user explicitly enables Cloudlight", async () => {
+  it("requests only the current and next full bodies when the user explicitly enables music", async () => {
     render(<Harness />);
     expect(intentCache.request).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "toggle" }));
 
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
-    expect(intentCache.request).toHaveBeenCalledTimes(1);
+    expect(intentCache.request).toHaveBeenCalledTimes(2);
     expect(intentCache.request).toHaveBeenCalledWith("sounds/cloudlight-evening-loop.mp3");
+    expect(intentCache.request).toHaveBeenCalledWith("sounds/music/lantern-air.mp3");
+  });
+
+  it("advances from Cloudlight to Lantern Air with the same long-audio owner", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    expect(screen.getByTestId("music-master")).toHaveTextContent("cloudlight-evening-loop");
+    fireEvent.ended(screen.getByTestId("music-audio"));
+
+    await waitFor(() => expect(screen.getByTestId("music-master")).toHaveTextContent("lantern-air"));
+    expect(localStorage.getItem("zenflow-app-background-music-cursor")).toBe('"lantern-air"');
+    expect(getActiveLongAudioOwner()).toBe("global-cloudlight");
+  });
+
+  it("pauses instead of bypassing a per-master audio-comfort exclusion", async () => {
+    render(<Harness blockedMaster="rain-on-paper" />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    fireEvent.ended(screen.getByTestId("music-audio"));
+    await waitFor(() => expect(screen.getByTestId("music-master")).toHaveTextContent("lantern-air"));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    fireEvent.ended(screen.getByTestId("music-audio"));
+    await waitFor(() => expect(screen.getByTestId("music-master")).toHaveTextContent("rain-on-paper"));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("paused"));
+  });
+
+  it("softens the final 600 ms before advancing without adding a second player", async () => {
+    render(<Harness volume={0.2} />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    const audio = screen.getByTestId<HTMLAudioElement>("music-audio");
+    Object.defineProperty(audio, "duration", { configurable: true, value: 150 });
+    Object.defineProperty(audio, "currentTime", { configurable: true, value: 149.7 });
+    fireEvent.timeUpdate(audio);
+    expect(screen.getByTestId("music-state")).toHaveTextContent("fading");
+    expect(audio.volume).toBeCloseTo(0.1, 2);
+    expect(screen.getAllByTestId("music-audio")).toHaveLength(1);
   });
 
   it("starts a saved opt-in on entry when the platform permits playback", async () => {
@@ -188,6 +256,27 @@ describe("useAppBackgroundMusic", () => {
       await lifecycle.resume?.();
     });
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+  });
+
+  it("resumes when WebView visibility becomes visible after an earlier native resume race", async () => {
+    localStorage.setItem("zenflow-app-background-music-enabled", "true");
+    render(<Harness />);
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+
+    media.play.mockClear();
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    expect(media.play).toHaveBeenCalledTimes(1);
   });
 
   it("stays paused when another owner releases after the app enters the background", async () => {
@@ -275,17 +364,37 @@ describe("useAppBackgroundMusic", () => {
     releaseOrb();
   });
 
-  it("surfaces a media error and supports an explicit retry", async () => {
+  it("skips each failing master once, then surfaces a bounded collection error", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "toggle" }));
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
 
+    const expectedAfterEachFailure = [
+      "lantern-air",
+      "rain-on-paper",
+      "indigo-dusk",
+      "quiet-courtyard",
+      "moonlit-water",
+      "cedar-mist",
+      "glass-bell-dawn",
+      "moss-garden",
+      "after-rain",
+    ];
+    for (const expectedMaster of expectedAfterEachFailure) {
+      fireEvent.error(screen.getByTestId("music-audio"));
+      await waitFor(() =>
+        expect(screen.getByTestId("music-master")).toHaveTextContent(expectedMaster),
+      );
+      await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    }
+
     fireEvent.error(screen.getByTestId("music-audio"));
     expect(screen.getByTestId("music-state")).toHaveTextContent("error");
 
+    const loadCountBeforeRetry = media.load.mock.calls.length;
     media.play.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "retry" }));
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
-    expect(media.load).toHaveBeenCalledTimes(1);
+    expect(media.load).toHaveBeenCalledTimes(loadCountBeforeRetry + 1);
   });
 });

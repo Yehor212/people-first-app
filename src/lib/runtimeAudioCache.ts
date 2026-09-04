@@ -1,13 +1,61 @@
 import { APP_AUDIO_ASSETS, APP_AUDIO_FEEDBACK_EVENTS } from "@/lib/appAudioAssets";
 import { HYPERFOCUS_GENERATED_AUDIO_MANIFEST } from "@/lib/hyperfocusGeneratedAudioManifest";
 
-export const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v2";
-export const RETIRED_RUNTIME_AUDIO_CACHE_NAMES = ["zenflow-runtime-audio"] as const;
+export const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v3";
+export const RETIRED_RUNTIME_AUDIO_CACHE_NAMES = [
+  "zenflow-runtime-audio",
+  "zenflow-runtime-audio-v2",
+] as const;
 const APP_AUDIO_INTENT_CACHE_CONTRACTS = Object.freeze({
   "sounds/cloudlight-evening-loop.mp3": Object.freeze({
     byteLength: 2_400_757,
     contentType: "audio/mpeg",
     sha256: "d096c668ef6471f855b49c93bc5509ccbd63ac1fb93dc9af96ba3c7c9e65be40",
+  }),
+  "sounds/music/lantern-air.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "b72b8e7a47c8a2c56fadd03de6470aa7d8f567be0792ba7ccd39f29e53848168",
+  }),
+  "sounds/music/rain-on-paper.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "5b78c3674aa643bcc26c8c9ae2efba3fac7a2cb38907ac4e48e580df01680eba",
+  }),
+  "sounds/music/indigo-dusk.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "6335e90b6adec58946db66243ada162d40b632808f20871308d7a9ea2efea579",
+  }),
+  "sounds/music/quiet-courtyard.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "634f710879be32e3b0cf95d539762edb8842d5841f308eef9b9d0ec334f5242c",
+  }),
+  "sounds/music/moonlit-water.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "4a380298374bd3231da2b26c5fa75c0a6cbb1625d0f52f6c021973a0c6d67440",
+  }),
+  "sounds/music/cedar-mist.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "9175323a5b4df1e0d61f5043136cac65c58679546947d4bc9111756b74924577",
+  }),
+  "sounds/music/glass-bell-dawn.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "aac2561e87aca90bd29955300319d1ed3238d771d3a170b78bb1531e8ce5a286",
+  }),
+  "sounds/music/moss-garden.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "ab40608611ac63726424fcb343cd7f0fc5a77b69e779cd3f2baa1651877e8982",
+  }),
+  "sounds/music/after-rain.mp3": Object.freeze({
+    byteLength: 2_400_757,
+    contentType: "audio/mpeg",
+    sha256: "e63e2a8c274673eafae8b4d44061f6ae83a4a0d6374456d1230fac4f52e39a28",
   }),
 });
 

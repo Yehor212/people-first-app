@@ -26,6 +26,7 @@ Non-Hyperfocus sound is a quiet support layer, not a reward engine. It may confi
 
 - `soft-air-veil`: auth entry ambience, generated local MP3, no human breath/voice/body sound, starts from user intent, respects master volume.
 - `cloudlight-evening-loop`: 150-second original app-entry background music, generated local MP3, first-run off, persistent opt-in, foreground-only, and controlled from the V2 sidebar/drawer.
+- `zenflow-evening-collection-v1`: the Cloudlight master plus nine original 150-second first-party compositions under `sounds/music/`; one global foreground-only player spans account entry and navigation, while exact-hash human listening remains required before store promotion.
 - `orb-ambience`: Orb ambience using `gentle-water-bed.mp3`, generated local MP3, no rock clacks/birds/voices, starts from user intent, respects master volume.
 - `diary-reflection-loop`: diary/settings ambience using `soft-rain-veil.mp3`, generated local MP3, no fire crackle/thunder/hard impacts, starts from user intent, respects master volume.
 

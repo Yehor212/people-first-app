@@ -215,4 +215,5 @@ describe("SettingsEmeraldNightBackdrop", () => {
     expect(backdrop.querySelectorAll('[data-motion-compact="true"]')).toHaveLength(8);
     expect(backdrop.querySelectorAll('[data-motion-desktop="true"]')).toHaveLength(4);
   });
+
 });

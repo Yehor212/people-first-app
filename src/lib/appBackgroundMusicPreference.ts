@@ -1,11 +1,40 @@
 import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import {
+  normalizeBackgroundMusicAssetId,
+  type AppBackgroundMusicAssetId,
+} from "@/lib/appAudioAssets";
 
 export const APP_BACKGROUND_MUSIC_PREFERENCE_CHANGE_EVENT =
   "zenflow-app-background-music-preference-change";
+export const APP_BACKGROUND_MUSIC_CURSOR_CHANGE_EVENT =
+  "zenflow-app-background-music-cursor-change";
 
 export function getAppBackgroundMusicEnabled(): boolean {
   return safeLocalStorageGet<unknown>(SK.APP_BACKGROUND_MUSIC_ENABLED, false) === true;
+}
+
+export function getAppBackgroundMusicCursor(): AppBackgroundMusicAssetId {
+  return normalizeBackgroundMusicAssetId(
+    safeLocalStorageGet<unknown>(SK.APP_BACKGROUND_MUSIC_CURSOR, null),
+  );
+}
+
+export function trySetAppBackgroundMusicCursor(
+  id: string,
+): { ok: boolean; cursor: AppBackgroundMusicAssetId } {
+  const previous = getAppBackgroundMusicCursor();
+  const cursor = normalizeBackgroundMusicAssetId(id);
+  if (cursor === previous) return { ok: true, cursor };
+  if (!safeLocalStorageSet(SK.APP_BACKGROUND_MUSIC_CURSOR, cursor)) {
+    return { ok: false, cursor: previous };
+  }
+  window.dispatchEvent(
+    new CustomEvent<AppBackgroundMusicAssetId>(APP_BACKGROUND_MUSIC_CURSOR_CHANGE_EVENT, {
+      detail: cursor,
+    }),
+  );
+  return { ok: true, cursor };
 }
 
 export function trySetAppBackgroundMusicEnabled(

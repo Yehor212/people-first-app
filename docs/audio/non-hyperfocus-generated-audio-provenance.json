@@ -27,11 +27,11 @@
       "rootLicensePresent": false,
       "copyrightNotice": "Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.",
       "appliesTo": [
-        "cloudlight-evening-loop composition",
-        "cloudlight-evening-loop sound recording",
-        "cloudlight-evening-loop generator specification"
+        "ZenFlow evening collection compositions",
+        "ZenFlow evening collection sound recordings",
+        "ZenFlow evening collection generator specifications"
       ],
-      "releaseRightsScope": "The Cloudlight Evening asset is first-party clean-room work with no external sample or recording license dependency; no repository-wide license is declared.",
+      "releaseRightsScope": "The ZenFlow evening collection is first-party clean-room work with no external sample or recording license dependency; no repository-wide license is declared.",
       "humanLegalReviewRequired": true
     }
   },
@@ -429,6 +429,1190 @@
           "crossfadeSeconds": 2,
           "targetRms": 0.065,
           "targetPeak": 0.26
+        }
+      }
+    },
+    {
+      "id": "lantern-air",
+      "fileName": "lantern-air.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/lantern-air.mp3",
+      "deployDocsPath": "docs/sounds/music/lantern-air.mp3",
+      "sha256": "b72b8e7a47c8a2c56fadd03de6470aa7d8f567be0792ba7ccd39f29e53848168",
+      "bytes": 2400757,
+      "seed": "0x1a47e2c1",
+      "deterministicSpec": "original-evening-collection-major-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.037644,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 57.6,
+          "bars": 36,
+          "mode": "major-pentatonic",
+          "chordFields": [
+            [
+              48,
+              55,
+              60,
+              64
+            ],
+            [
+              45,
+              52,
+              57,
+              60
+            ],
+            [
+              41,
+              48,
+              55,
+              60
+            ],
+            [
+              43,
+              50,
+              55,
+              62
+            ]
+          ],
+          "melodyScaleMidi": [
+            60,
+            62,
+            64,
+            67,
+            69,
+            72
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 0.7,
+                "degree": 0,
+                "lengthBeats": 1.6
+              }
+            ],
+            [
+              {
+                "beat": 1.8,
+                "degree": 3,
+                "lengthBeats": 1.2
+              },
+              {
+                "beat": 3.2,
+                "degree": 1,
+                "lengthBeats": 0.6
+              }
+            ],
+            [
+              {
+                "beat": 0.4,
+                "degree": 4,
+                "lengthBeats": 1.1
+              }
+            ],
+            [
+              {
+                "beat": 1.2,
+                "degree": 2,
+                "lengthBeats": 1.7
+              }
+            ]
+          ],
+          "bellMidi": 79,
+          "bellBars": [
+            7,
+            15,
+            23,
+            31
+          ],
+          "mix": {
+            "pad": 0.068,
+            "bass": 0.068,
+            "key": 0.14,
+            "bell": 0.019,
+            "brightness": 0.95
+          },
+          "loopCrossfadeSeconds": 4.166666666666667,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "rain-on-paper",
+      "fileName": "rain-on-paper.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/rain-on-paper.mp3",
+      "deployDocsPath": "docs/sounds/music/rain-on-paper.mp3",
+      "sha256": "5b78c3674aa643bcc26c8c9ae2efba3fac7a2cb38907ac4e48e580df01680eba",
+      "bytes": 2400757,
+      "seed": "0x2a91d44f",
+      "deterministicSpec": "original-evening-collection-suspended-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.215153,
+          "sourceRms": 0.043,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 64,
+          "bars": 40,
+          "mode": "suspended-pentatonic",
+          "chordFields": [
+            [
+              50,
+              57,
+              62,
+              67
+            ],
+            [
+              47,
+              54,
+              59,
+              64
+            ],
+            [
+              43,
+              50,
+              57,
+              62
+            ],
+            [
+              45,
+              52,
+              57,
+              64
+            ]
+          ],
+          "melodyScaleMidi": [
+            62,
+            64,
+            67,
+            69,
+            71,
+            74
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 0.35,
+                "degree": 2,
+                "lengthBeats": 1.25
+              },
+              {
+                "beat": 2.7,
+                "degree": 0,
+                "lengthBeats": 0.8
+              }
+            ],
+            [
+              {
+                "beat": 1.3,
+                "degree": 4,
+                "lengthBeats": 1.45
+              }
+            ],
+            [
+              {
+                "beat": 0.9,
+                "degree": 1,
+                "lengthBeats": 1.7
+              }
+            ],
+            [
+              {
+                "beat": 2.05,
+                "degree": 3,
+                "lengthBeats": 1.15
+              }
+            ]
+          ],
+          "bellMidi": 81,
+          "bellBars": [
+            5,
+            13,
+            21,
+            29
+          ],
+          "mix": {
+            "pad": 0.056,
+            "bass": 0.06,
+            "key": 0.175,
+            "bell": 0.02,
+            "brightness": 0.82
+          },
+          "loopCrossfadeSeconds": 3.75,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "indigo-dusk",
+      "fileName": "indigo-dusk.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/indigo-dusk.mp3",
+      "deployDocsPath": "docs/sounds/music/indigo-dusk.mp3",
+      "sha256": "6335e90b6adec58946db66243ada162d40b632808f20871308d7a9ea2efea579",
+      "bytes": 2400757,
+      "seed": "0x3d17c8a5",
+      "deterministicSpec": "original-evening-collection-minor-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.037555,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 57.6,
+          "bars": 36,
+          "mode": "minor-pentatonic",
+          "chordFields": [
+            [
+              45,
+              52,
+              57,
+              60
+            ],
+            [
+              41,
+              48,
+              53,
+              57
+            ],
+            [
+              38,
+              45,
+              50,
+              57
+            ],
+            [
+              43,
+              50,
+              55,
+              58
+            ]
+          ],
+          "melodyScaleMidi": [
+            57,
+            60,
+            62,
+            64,
+            67,
+            69
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 1.1,
+                "degree": 0,
+                "lengthBeats": 1.9
+              }
+            ],
+            [
+              {
+                "beat": 0.55,
+                "degree": 3,
+                "lengthBeats": 1.2
+              }
+            ],
+            [
+              {
+                "beat": 1.75,
+                "degree": 4,
+                "lengthBeats": 1.5
+              },
+              {
+                "beat": 3.35,
+                "degree": 2,
+                "lengthBeats": 0.5
+              }
+            ],
+            [
+              {
+                "beat": 0.8,
+                "degree": 1,
+                "lengthBeats": 1.35
+              }
+            ]
+          ],
+          "bellMidi": 76,
+          "bellBars": [
+            9,
+            17,
+            25
+          ],
+          "mix": {
+            "pad": 0.062,
+            "bass": 0.071,
+            "key": 0.16,
+            "bell": 0.017,
+            "brightness": 0.7
+          },
+          "loopCrossfadeSeconds": 4.166666666666667,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "quiet-courtyard",
+      "fileName": "quiet-courtyard.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/quiet-courtyard.mp3",
+      "deployDocsPath": "docs/sounds/music/quiet-courtyard.mp3",
+      "sha256": "634f710879be32e3b0cf95d539762edb8842d5841f308eef9b9d0ec334f5242c",
+      "bytes": 2400757,
+      "seed": "0x2a91d44f",
+      "deterministicSpec": "original-evening-collection-open-fifths-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.14946,
+          "sourceRms": 0.043,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 64,
+          "bars": 40,
+          "mode": "open-fifths",
+          "pitchSetMidi": [
+            48,
+            55,
+            57,
+            62,
+            67,
+            72
+          ],
+          "bellEvents": [
+            {
+              "startSeconds": 18.75,
+              "durationSeconds": 4.2,
+              "frequency": 783.9933333333333,
+              "pan": -0.22
+            },
+            {
+              "startSeconds": 48.75,
+              "durationSeconds": 4.2,
+              "frequency": 830.6066666666667,
+              "pan": 0.22
+            },
+            {
+              "startSeconds": 78.75,
+              "durationSeconds": 4.2,
+              "frequency": 783.9933333333333,
+              "pan": -0.22
+            },
+            {
+              "startSeconds": 108.75,
+              "durationSeconds": 4.2,
+              "frequency": 830.6066666666667,
+              "pan": 0.22
+            }
+          ],
+          "renderMode": "phase-coherent-periodic-pad",
+          "loopMethod": "integer-cycle-periodic-synthesis",
+          "encoderDelayCompensationFrames": 2088,
+          "encoderDelayCompensationSeconds": 0.0473469387755102,
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "moonlit-water",
+      "fileName": "moonlit-water.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/moonlit-water.mp3",
+      "deployDocsPath": "docs/sounds/music/moonlit-water.mp3",
+      "sha256": "4a380298374bd3231da2b26c5fa75c0a6cbb1625d0f52f6c021973a0c6d67440",
+      "bytes": 2400757,
+      "seed": "0x5e62f914",
+      "deterministicSpec": "original-evening-collection-major-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.038964,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 57.6,
+          "bars": 36,
+          "mode": "major-pentatonic",
+          "chordFields": [
+            [
+              46,
+              53,
+              58,
+              62
+            ],
+            [
+              43,
+              50,
+              55,
+              58
+            ],
+            [
+              39,
+              46,
+              51,
+              58
+            ],
+            [
+              41,
+              48,
+              53,
+              60
+            ]
+          ],
+          "melodyScaleMidi": [
+            58,
+            60,
+            62,
+            65,
+            67,
+            70
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 1.4,
+                "degree": 1,
+                "lengthBeats": 1.8
+              }
+            ],
+            [
+              {
+                "beat": 0.45,
+                "degree": 5,
+                "lengthBeats": 1
+              }
+            ],
+            [
+              {
+                "beat": 2,
+                "degree": 3,
+                "lengthBeats": 1.55
+              }
+            ],
+            [
+              {
+                "beat": 0.9,
+                "degree": 0,
+                "lengthBeats": 1.25
+              },
+              {
+                "beat": 3.25,
+                "degree": 2,
+                "lengthBeats": 0.55
+              }
+            ]
+          ],
+          "bellMidi": 82,
+          "bellBars": [
+            6,
+            14,
+            22,
+            30
+          ],
+          "mix": {
+            "pad": 0.061,
+            "bass": 0.062,
+            "key": 0.165,
+            "bell": 0.021,
+            "brightness": 0.88
+          },
+          "loopCrossfadeSeconds": 4.166666666666667,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "cedar-mist",
+      "fileName": "cedar-mist.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/cedar-mist.mp3",
+      "deployDocsPath": "docs/sounds/music/cedar-mist.mp3",
+      "sha256": "9175323a5b4df1e0d61f5043136cac65c58679546947d4bc9111756b74924577",
+      "bytes": 2400757,
+      "seed": "0x6f28b3c0",
+      "deterministicSpec": "original-evening-collection-minor-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.041591,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 57.6,
+          "bars": 36,
+          "mode": "minor-pentatonic",
+          "chordFields": [
+            [
+              47,
+              54,
+              59,
+              62
+            ],
+            [
+              43,
+              50,
+              55,
+              59
+            ],
+            [
+              40,
+              47,
+              52,
+              59
+            ],
+            [
+              45,
+              52,
+              57,
+              60
+            ]
+          ],
+          "melodyScaleMidi": [
+            59,
+            62,
+            64,
+            66,
+            69,
+            71
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 0.6,
+                "degree": 2,
+                "lengthBeats": 1.4
+              }
+            ],
+            [
+              {
+                "beat": 1.9,
+                "degree": 0,
+                "lengthBeats": 1.65
+              }
+            ],
+            [
+              {
+                "beat": 0.3,
+                "degree": 4,
+                "lengthBeats": 1
+              },
+              {
+                "beat": 2.5,
+                "degree": 1,
+                "lengthBeats": 0.9
+              }
+            ],
+            [
+              {
+                "beat": 1.25,
+                "degree": 3,
+                "lengthBeats": 1.25
+              }
+            ]
+          ],
+          "bellMidi": 78,
+          "bellBars": [
+            8,
+            16,
+            24
+          ],
+          "mix": {
+            "pad": 0.058,
+            "bass": 0.069,
+            "key": 0.172,
+            "bell": 0.017,
+            "brightness": 0.74
+          },
+          "loopCrossfadeSeconds": 4.166666666666667,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "glass-bell-dawn",
+      "fileName": "glass-bell-dawn.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/glass-bell-dawn.mp3",
+      "deployDocsPath": "docs/sounds/music/glass-bell-dawn.mp3",
+      "sha256": "aac2561e87aca90bd29955300319d1ed3238d771d3a170b78bb1531e8ce5a286",
+      "bytes": 2400757,
+      "seed": "0x7b51e6d3",
+      "deterministicSpec": "original-evening-collection-suspended-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.207485,
+          "sourceRms": 0.043,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 64,
+          "bars": 40,
+          "mode": "suspended-pentatonic",
+          "chordFields": [
+            [
+              52,
+              59,
+              64,
+              69
+            ],
+            [
+              48,
+              55,
+              60,
+              67
+            ],
+            [
+              45,
+              52,
+              57,
+              64
+            ],
+            [
+              50,
+              57,
+              62,
+              69
+            ]
+          ],
+          "melodyScaleMidi": [
+            64,
+            67,
+            69,
+            71,
+            74,
+            76
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 0.2,
+                "degree": 0,
+                "lengthBeats": 1.05
+              },
+              {
+                "beat": 2.35,
+                "degree": 4,
+                "lengthBeats": 0.8
+              }
+            ],
+            [
+              {
+                "beat": 1,
+                "degree": 2,
+                "lengthBeats": 1.25
+              }
+            ],
+            [
+              {
+                "beat": 1.7,
+                "degree": 5,
+                "lengthBeats": 1
+              }
+            ],
+            [
+              {
+                "beat": 0.65,
+                "degree": 3,
+                "lengthBeats": 1.45
+              }
+            ]
+          ],
+          "bellMidi": 88,
+          "bellBars": [
+            3,
+            7,
+            15,
+            23,
+            31
+          ],
+          "mix": {
+            "pad": 0.047,
+            "bass": 0.054,
+            "key": 0.18,
+            "bell": 0.031,
+            "brightness": 1.18
+          },
+          "loopCrossfadeSeconds": 3.75,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "moss-garden",
+      "fileName": "moss-garden.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/moss-garden.mp3",
+      "deployDocsPath": "docs/sounds/music/moss-garden.mp3",
+      "sha256": "ab40608611ac63726424fcb343cd7f0fc5a77b69e779cd3f2baa1651877e8982",
+      "bytes": 2400757,
+      "seed": "0x8c73a219",
+      "deterministicSpec": "original-evening-collection-open-fifths-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.036172,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 57.6,
+          "bars": 36,
+          "mode": "open-fifths",
+          "chordFields": [
+            [
+              43,
+              50,
+              55,
+              60
+            ],
+            [
+              46,
+              53,
+              58,
+              62
+            ],
+            [
+              41,
+              48,
+              53,
+              60
+            ],
+            [
+              38,
+              45,
+              50,
+              57
+            ]
+          ],
+          "melodyScaleMidi": [
+            55,
+            57,
+            60,
+            62,
+            65,
+            67
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 1.6,
+                "degree": 3,
+                "lengthBeats": 1.55
+              }
+            ],
+            [
+              {
+                "beat": 0.5,
+                "degree": 1,
+                "lengthBeats": 1.2
+              }
+            ],
+            [
+              {
+                "beat": 2.25,
+                "degree": 4,
+                "lengthBeats": 1.15
+              }
+            ],
+            [
+              {
+                "beat": 0.85,
+                "degree": 0,
+                "lengthBeats": 1.6
+              },
+              {
+                "beat": 3.15,
+                "degree": 2,
+                "lengthBeats": 0.55
+              }
+            ]
+          ],
+          "bellMidi": 74,
+          "bellBars": [
+            10,
+            18,
+            26
+          ],
+          "mix": {
+            "pad": 0.062,
+            "bass": 0.072,
+            "key": 0.16,
+            "bell": 0.015,
+            "brightness": 0.66
+          },
+          "loopCrossfadeSeconds": 4.166666666666667,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
+        }
+      }
+    },
+    {
+      "id": "after-rain",
+      "fileName": "after-rain.mp3",
+      "role": "Persistent opt-in ZenFlow evening collection music",
+      "publicPath": "public/sounds/music/after-rain.mp3",
+      "deployDocsPath": "docs/sounds/music/after-rain.mp3",
+      "sha256": "e63e2a8c274673eafae8b4d44061f6ae83a4a0d6374456d1230fac4f52e39a28",
+      "bytes": 2400757,
+      "seed": "0x9d42f680",
+      "deterministicSpec": "original-evening-collection-major-pentatonic-circular-loop",
+      "generator": "deterministic original soft-key, open-pad, and glass-partial circular composition",
+      "parameters": {
+        "family": "music",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSeconds": 150,
+        "encoder": "lamejs",
+        "encoderVersion": "1.2.1",
+        "encoderKbps": 128,
+        "runtimeGain": 0.18,
+        "exclusions": [
+          "voice",
+          "human breathing",
+          "field recording",
+          "sampled instrument",
+          "sampled audio",
+          "stock loop",
+          "reference audio",
+          "reference score",
+          "copied melody",
+          "copied harmony",
+          "alarm",
+          "siren",
+          "static noise"
+        ],
+        "noThirdPartySamples": true,
+        "noModelOrAiGeneratedAudioInput": true,
+        "sourceSignalMetrics": {
+          "sampleRate": 44100,
+          "channels": 2,
+          "durationSeconds": 150,
+          "sourcePeak": 0.22,
+          "sourceRms": 0.04025,
+          "targetRms": 0.043,
+          "targetPeak": 0.22,
+          "tempoBpm": 64,
+          "bars": 40,
+          "mode": "major-pentatonic",
+          "chordFields": [
+            [
+              50,
+              57,
+              62,
+              66
+            ],
+            [
+              45,
+              52,
+              57,
+              62
+            ],
+            [
+              47,
+              54,
+              59,
+              64
+            ],
+            [
+              43,
+              50,
+              57,
+              62
+            ]
+          ],
+          "melodyScaleMidi": [
+            62,
+            64,
+            66,
+            69,
+            71,
+            74
+          ],
+          "melodyPatterns": [
+            [
+              {
+                "beat": 0.45,
+                "degree": 1,
+                "lengthBeats": 1.3
+              }
+            ],
+            [
+              {
+                "beat": 1.45,
+                "degree": 4,
+                "lengthBeats": 1.4
+              },
+              {
+                "beat": 3.3,
+                "degree": 2,
+                "lengthBeats": 0.5
+              }
+            ],
+            [
+              {
+                "beat": 0.8,
+                "degree": 0,
+                "lengthBeats": 1.65
+              }
+            ],
+            [
+              {
+                "beat": 2,
+                "degree": 3,
+                "lengthBeats": 1.1
+              }
+            ]
+          ],
+          "bellMidi": 83,
+          "bellBars": [
+            4,
+            12,
+            20,
+            28
+          ],
+          "mix": {
+            "pad": 0.062,
+            "bass": 0.064,
+            "key": 0.16,
+            "bell": 0.018,
+            "brightness": 0.92
+          },
+          "loopCrossfadeSeconds": 3.75,
+          "loopMethod": "correlation-compensated-equal-power-circular-overlap",
+          "sourceInputs": "tracked numeric synthesis parameters only"
         }
       }
     },

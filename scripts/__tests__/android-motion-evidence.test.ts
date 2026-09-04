@@ -748,6 +748,13 @@ describe("Android motion evidence tooling", () => {
     const queries = buildTraceSummaryQueries("com.zenflow.app");
     expect(queries.frameTimeline).toContain("actual_frame_timeline_slice");
     expect(queries.frameTimeline).toContain("App Deadline Missed");
+    expect(queries.frameTimeline).toContain(
+      "SUM(CASE WHEN dur>103000000 THEN 1 ELSE 0 END) AS framesOver103Ms"
+    );
+    expect(queries.frameTimeline).toContain(
+      "AS presentationTimestampGapsOver100Ms"
+    );
+    expect(queries.frameTimeline).not.toContain("AS presentationGapsOver100Ms");
     expect(queries.webViewDraw).toContain("WebViewFunctor::drawGl");
     expect(queries.webViewDraw).toContain("com.zenflow.app");
     expect(() => buildTraceSummaryQueries("com.zenflow.app' OR 1=1 --")).toThrow(/package/i);

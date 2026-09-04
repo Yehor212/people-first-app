@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import {
   getAppBackgroundMusicEnabled,
+  getAppBackgroundMusicCursor,
   subscribeAppBackgroundMusicPreference,
   trySetAppBackgroundMusicEnabled,
+  trySetAppBackgroundMusicCursor,
 } from "@/lib/appBackgroundMusicPreference";
+import {
+  APP_BACKGROUND_MUSIC_COLLECTION,
+  getAppAudioAsset,
+  getNextBackgroundMusicAsset,
+  type AppBackgroundMusicAssetId,
+} from "@/lib/appAudioAssets";
 import {
   registerAudioBackgroundPauseHandler,
   registerAudioForegroundResumeHandler,
@@ -22,21 +30,28 @@ export type AppBackgroundMusicState =
   | "blocked"
   | "loading"
   | "playing"
+  | "fading"
   | "paused"
+  | "recovering"
   | "error";
 
 interface UseAppBackgroundMusicOptions {
   audioRef: RefObject<HTMLAudioElement | null>;
   canPlay: boolean;
+  canPlayMaster?: (id: AppBackgroundMusicAssetId) => boolean;
+  canPlayMasterRevision?: string;
   volume: number;
 }
 
 export interface AppBackgroundMusicControl {
   enabled: boolean;
   state: AppBackgroundMusicState;
+  activeMasterId: AppBackgroundMusicAssetId;
   toggle: () => void;
   retry: () => void;
   handleMediaError: () => void;
+  handleMediaEnded: () => void;
+  handleMediaTimeUpdate: () => void;
 }
 
 const PLAYBACK_OWNER = "global-cloudlight" as const;
@@ -65,15 +80,22 @@ function isAutoplayRejection(error: unknown): boolean {
 export function useAppBackgroundMusic({
   audioRef,
   canPlay,
+  canPlayMaster,
+  canPlayMasterRevision,
   volume,
 }: UseAppBackgroundMusicOptions): AppBackgroundMusicControl {
   const [enabled, setEnabled] = useState(() => getAppBackgroundMusicEnabled());
+  const [activeMasterId, setActiveMasterId] = useState<AppBackgroundMusicAssetId>(
+    () => getAppBackgroundMusicCursor(),
+  );
   const [state, setState] = useState<AppBackgroundMusicState>(() =>
     getAppBackgroundMusicEnabled() && !canPlay ? "paused" : "off"
   );
   const mountedRef = useRef(true);
   const enabledRef = useRef(enabled);
+  const activeMasterIdRef = useRef(activeMasterId);
   const canPlayRef = useRef(canPlay);
+  const canPlayMasterRef = useRef(canPlayMaster);
   const stateRef = useRef(state);
   const requestIdRef = useRef(0);
   const activeAttemptRef = useRef<number | null>(null);
@@ -81,9 +103,30 @@ export function useAppBackgroundMusic({
   const gestureCleanupRef = useRef<(() => void) | null>(null);
   const allowOwnerReleaseResumeRef = useRef(true);
   const foregroundRef = useRef(!isDocumentHidden());
+  const pendingTrackStartRef = useRef(false);
+  const failedMasterIdsRef = useRef(new Set<AppBackgroundMusicAssetId>());
 
   enabledRef.current = enabled;
   canPlayRef.current = canPlay;
+  canPlayMasterRef.current = canPlayMaster;
+
+  const canPlayActiveMaster = useCallback(
+    () =>
+      canPlayRef.current &&
+      (canPlayMasterRef.current?.(activeMasterIdRef.current) ?? true),
+    [],
+  );
+
+  const cacheCurrentAndNext = useCallback(() => {
+    const current = getAppAudioAsset(activeMasterIdRef.current);
+    const next = getNextBackgroundMusicAsset(activeMasterIdRef.current);
+    for (const asset of [current, next]) {
+      if (!asset) continue;
+      void requestRuntimeAudioCacheOnIntent(asset.publicPath).catch((error) =>
+        logger.warn("[AppBackgroundMusic] Intent cache request failed:", error),
+      );
+    }
+  }, []);
 
   const transition = useCallback((nextState: AppBackgroundMusicState) => {
     stateRef.current = nextState;
@@ -132,15 +175,13 @@ export function useAppBackgroundMusic({
       return;
     }
     if (intent === "explicit") {
-      void requestRuntimeAudioCacheOnIntent("sounds/cloudlight-evening-loop.mp3").catch(
-        (error) => logger.warn("[AppBackgroundMusic] Intent cache request failed:", error),
-      );
+      cacheCurrentAndNext();
     }
     if (!foregroundRef.current || isDocumentHidden()) {
       pausePlayback("paused");
       return;
     }
-    if (!canPlayRef.current) {
+    if (!canPlayActiveMaster()) {
       pausePlayback("paused");
       return;
     }
@@ -176,7 +217,7 @@ export function useAppBackgroundMusic({
         requestIdRef.current !== requestId ||
         !enabledRef.current ||
         !foregroundRef.current ||
-        !canPlayRef.current ||
+        !canPlayActiveMaster() ||
         getActiveLongAudioOwner() !== PLAYBACK_OWNER
       ) {
         audio.pause();
@@ -186,7 +227,7 @@ export function useAppBackgroundMusic({
       activeAttemptRef.current = null;
       transition("playing");
       setAppAudioMediaSession({
-        title: "Cloudlight Evening",
+        title: getAppAudioAsset(activeMasterIdRef.current)?.fallbackLabel ?? "ZenFlow",
         artist: "ZenFlow",
         onPlay: () => {
           void startPlayback("explicit");
@@ -235,7 +276,7 @@ export function useAppBackgroundMusic({
       releaseOwnership();
       logger.warn("[AppBackgroundMusic] Playback failed:", error);
     }
-  }, [audioRef, clearGestureRetry, pausePlayback, releaseOwnership, transition, volume]);
+  }, [audioRef, cacheCurrentAndNext, canPlayActiveMaster, clearGestureRetry, pausePlayback, releaseOwnership, transition, volume]);
 
   const applyEnabled = useCallback(
     (nextEnabled: boolean, intent: PlaybackStartIntent = "automatic") => {
@@ -245,13 +286,13 @@ export function useAppBackgroundMusic({
         pausePlayback("off");
         return;
       }
-      if (!canPlayRef.current) {
+      if (!canPlayActiveMaster()) {
         pausePlayback("paused");
         return;
       }
       void startPlayback(intent);
     },
-    [pausePlayback, startPlayback]
+    [canPlayActiveMaster, pausePlayback, startPlayback]
   );
 
   const toggle = useCallback(() => {
@@ -265,6 +306,7 @@ export function useAppBackgroundMusic({
 
   const retry = useCallback(() => {
     if (!enabledRef.current) return;
+    failedMasterIdsRef.current.clear();
     if (stateRef.current === "error" && activeAttemptRef.current === null) {
       try {
         audioRef.current?.load();
@@ -275,10 +317,50 @@ export function useAppBackgroundMusic({
     void startPlayback("explicit");
   }, [audioRef, startPlayback]);
 
+  const advanceToNextMaster = useCallback((nextState: "loading" | "recovering") => {
+    if (!enabledRef.current || !canPlayActiveMaster() || !foregroundRef.current) {
+      pausePlayback(enabledRef.current ? "paused" : "off");
+      return;
+    }
+    const next = getNextBackgroundMusicAsset(activeMasterIdRef.current);
+    const persisted = trySetAppBackgroundMusicCursor(next.id);
+    if (!persisted.ok) {
+      pausePlayback("error");
+      logger.warn("[AppBackgroundMusic] Failed to persist the collection cursor");
+      return;
+    }
+    requestIdRef.current += 1;
+    activeAttemptRef.current = null;
+    activeMasterIdRef.current = persisted.cursor;
+    pendingTrackStartRef.current = true;
+    transition(nextState);
+    setActiveMasterId(persisted.cursor);
+  }, [canPlayActiveMaster, pausePlayback, transition]);
+
   const handleMediaError = useCallback(() => {
     if (!enabledRef.current) return;
-    pausePlayback("error");
-  }, [pausePlayback]);
+    failedMasterIdsRef.current.add(activeMasterIdRef.current);
+    if (failedMasterIdsRef.current.size >= APP_BACKGROUND_MUSIC_COLLECTION.length) {
+      pausePlayback("error");
+      return;
+    }
+    advanceToNextMaster("recovering");
+  }, [advanceToNextMaster, pausePlayback]);
+
+  const handleMediaEnded = useCallback(() => {
+    failedMasterIdsRef.current.clear();
+    advanceToNextMaster("loading");
+  }, [advanceToNextMaster]);
+
+  const handleMediaTimeUpdate = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || stateRef.current !== "playing") return;
+    if (!Number.isFinite(audio.duration) || !Number.isFinite(audio.currentTime)) return;
+    const remaining = audio.duration - audio.currentTime;
+    if (remaining <= 0 || remaining > 0.6) return;
+    transition("fading");
+    audio.volume = clampVolume(volume * (remaining / 0.6));
+  }, [audioRef, transition, volume]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -296,6 +378,24 @@ export function useAppBackgroundMusic({
     };
   }, [audioRef, clearGestureRetry, releaseOwnership]);
 
+  useEffect(() => {
+    if (!pendingTrackStartRef.current) return;
+    pendingTrackStartRef.current = false;
+    const audio = audioRef.current;
+    if (!audio) {
+      transition("error");
+      return;
+    }
+    audio.volume = clampVolume(volume);
+    try {
+      audio.load();
+    } catch (error) {
+      logger.warn("[AppBackgroundMusic] Next media load failed:", error);
+    }
+    cacheCurrentAndNext();
+    void startPlayback();
+  }, [activeMasterId, audioRef, cacheCurrentAndNext, startPlayback, transition, volume]);
+
   useEffect(
     () => subscribeAppBackgroundMusicPreference((nextEnabled) => applyEnabled(nextEnabled)),
     [applyEnabled]
@@ -306,23 +406,25 @@ export function useAppBackgroundMusic({
     if (audio) audio.volume = clampVolume(volume);
 
     if (!enabledRef.current) return;
-    if (!canPlay) {
+    if (!canPlayActiveMaster()) {
       pausePlayback("paused");
       return;
     }
     void startPlayback();
-  }, [audioRef, canPlay, pausePlayback, startPlayback, volume]);
+  }, [activeMasterId, audioRef, canPlay, canPlayMasterRevision, canPlayActiveMaster, pausePlayback, startPlayback, volume]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       foregroundRef.current = !isDocumentHidden();
       if (isDocumentHidden()) {
         pausePlayback(enabledRef.current ? "paused" : "off");
+        return;
       }
+      if (enabledRef.current && canPlayActiveMaster()) void startPlayback();
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [pausePlayback]);
+  }, [canPlayActiveMaster, pausePlayback, startPlayback]);
 
   useEffect(() => {
     const unregisterPause = registerAudioBackgroundPauseHandler(() => {
@@ -348,7 +450,7 @@ export function useAppBackgroundMusic({
           !enabledRef.current ||
           !foregroundRef.current ||
           isDocumentHidden() ||
-          !canPlayRef.current ||
+          !canPlayActiveMaster() ||
           stateRef.current !== "paused"
         ) {
           return;
@@ -366,8 +468,17 @@ export function useAppBackgroundMusic({
           }
         });
       }),
-    [startPlayback]
+    [canPlayActiveMaster, startPlayback]
   );
 
-  return { enabled, state, toggle, retry, handleMediaError };
+  return {
+    enabled,
+    state,
+    activeMasterId,
+    toggle,
+    retry,
+    handleMediaError,
+    handleMediaEnded,
+    handleMediaTimeUpdate,
+  };
 }

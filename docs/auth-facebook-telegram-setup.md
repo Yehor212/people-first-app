@@ -48,7 +48,13 @@ http://127.0.0.1:5173/**
 http://localhost:5175/**
 http://127.0.0.1:5175/**
 com.zenflow.app://login-callback
+com.zenflow.app://login-callback?zenflowAuthAttempt=*
 ```
+
+The query-bound native entry is required because Android OAuth initiation adds
+an opaque local attempt selector before calling Supabase. The selector must
+remain in the callback so the app can choose the matching PKCE verifier; the
+plain callback is not a wildcard match for that URL.
 
 Enable manual identity linking in Supabase Auth settings so
 `supabase.auth.linkIdentity()` can attach Facebook or Telegram to an existing
