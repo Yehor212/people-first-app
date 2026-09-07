@@ -137,7 +137,7 @@ jobs:
             fix: run npm run check:telegram-control locally, then fix Worker tests, workflow contract, smoke, or setup verifier output
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
         with:
           # Full history so `git log -1 --format=%ct` returns committer-time
           # for check-types-freshness.cjs (see comment in that script).
