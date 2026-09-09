@@ -295,16 +295,12 @@ test.describe("V2 Settings current information architecture", () => {
     await expectAccountFixtureAndOpenPrivacy(page);
 
     const backup = page.getByRole("region", {
-      name: EXPECT_AUTH_UNAVAILABLE ? "Save backup" : "Backup & restore",
+      name: "Backup & restore",
       exact: true,
     });
     const reports = page.getByRole("region", { name: "Reports", exact: true });
     await expect(backup.getByTestId("settings-v2-export-json")).toHaveAccessibleName("Save backup");
-    if (EXPECT_AUTH_UNAVAILABLE) {
-      await expect(backup.getByTestId("settings-v2-import")).toHaveCount(0);
-    } else {
-      await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName("Import backup");
-    }
+    await expect(backup.getByTestId("settings-v2-import")).toHaveAccessibleName("Import backup");
     await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
     await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
     await expect(reports).toContainText("Reports are not backups.");
@@ -335,16 +331,12 @@ test.describe("V2 Settings current information architecture", () => {
     });
     await expectAccountFixtureAndOpenPrivacy(page);
 
-    if (EXPECT_AUTH_UNAVAILABLE) {
-      const backup = page.getByRole("region", { name: "Save backup", exact: true });
-      const reports = page.getByRole("region", { name: "Reports", exact: true });
-      await expect(backup.getByTestId("settings-v2-import")).toHaveCount(0);
-      await expect(backup.getByTestId("settings-v2-export-json")).toBeVisible();
-      await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
-      await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      return;
-    }
+    const backup = page.getByRole("region", { name: "Backup & restore", exact: true });
+    const reports = page.getByRole("region", { name: "Reports", exact: true });
+    await expect(backup.getByTestId("settings-v2-export-json")).toBeVisible();
+    await expect(reports.getByTestId("settings-v2-export-csv")).toBeVisible();
+    await expect(reports.getByTestId("settings-v2-export-pdf")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
 
     const trigger = page.getByTestId("settings-v2-import");
     await trigger.scrollIntoViewIfNeeded();

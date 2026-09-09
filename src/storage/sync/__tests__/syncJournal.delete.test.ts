@@ -36,7 +36,7 @@ vi.mock("@/storage/deletionTracker", () => ({
   trackDeletedJournalEntryId: mocks.trackDeletedJournalEntryId,
 }));
 
-vi.mock("@/storage/eventSync", () => ({
+vi.mock("@/storage/eventSyncWriter", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));

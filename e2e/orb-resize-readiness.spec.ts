@@ -122,9 +122,9 @@ test("responsive resize waits for the replacement worker canvas", async ({ page 
   const replacementCanvas = hero.locator("canvas[data-orb-visual-ready='true']").first();
   await expect(replacementCanvas).toBeVisible();
   const replacementCanvasHandle = await replacementCanvas.elementHandle();
-  expect(await replacementCanvasHandle!.evaluate((node, previous) => node !== previous, initialCanvasHandle))
+  expect(await replacementCanvasHandle.evaluate((node, previous) => node !== previous, initialCanvasHandle))
     .toBe(true);
-  expect(await initialCanvasHandle!.evaluate((node) => node.isConnected)).toBe(false);
+  expect(await initialCanvasHandle.evaluate((node) => node.isConnected)).toBe(false);
   expect(consoleErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
 });

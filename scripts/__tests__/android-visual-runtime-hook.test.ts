@@ -359,3 +359,39 @@ describe("Android visual-runtime Codex hook", () => {
     expect(result.stderr).toContain("HOOK ERROR [android-visual-runtime-gate]");
   });
 });
+
+describe("Android Stop mixed-scope reporting regression", () => {
+  it.each([
+    "Android Orb QA. Technical: PASS. Visual Runtime: UNVERIFIED. Motion: FAIL.",
+    "Android visual remains UNVERIFIED. Typecheck completed. Motion: FAIL.",
+    "Android motion is not fixed. Technical: PASS. Visual Runtime: UNVERIFIED. Motion: FAIL.",
+    "Android QA tooling setup is complete. Visual Runtime: UNVERIFIED. Motion: UNVERIFIED.",
+    "Android measurements: Visual Runtime — UNVERIFIED; Motion — FAIL. PDI diff: PASS.",
+    "Android visual is UNVERIFIED. Plan: ready for review. Motion: FAIL.",
+    "Обнаружен дефект Android Stop-hook: технический PASS принимается за заявление о плавности рядом с Motion: FAIL. Регрессия: UNVERIFIED.",
+    "Зарезервированные файлы не менял. Android Stop-hook принимает технический PASS за заявление о плавности, даже рядом с Motion: FAIL.",
+  ])("allows a report without Android visual success: %s", (message) => {
+    const result = runHook({ hook_event_name: "Stop", last_assistant_message: message });
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each([
+    "Android Orb motion is fixed and smooth. Motion: FAIL.",
+    "Visual Runtime: PASS. Android Orb diagnostics are incomplete. Motion: UNVERIFIED.",
+    "Android Orb: готово.",
+    "Android visual motion: PASS.",
+    "Android Orb QA. Technical: PASS, Visual Runtime: PASS. Motion: UNVERIFIED.",
+    "Android Orb QA. Typecheck completed and motion is fixed.",
+    "Android Orb QA. Plan: ready for review; drawer is fixed.",
+    "Android Orb QA. Technical: PASS. PASS.",
+    "Android motion is not fixed yet, but now ready.",
+    "Android motion is not only fixed but complete.",
+    "Android-анимация исправлена, всё работает плавно.",
+    "Android Orb без лагов и глитчей.",
+    "Android WebView: отрисовка завершена.",
+  ])("still demands evidence for an actual or contradictory visual claim: %s", (message) => {
+    const result = runHook({ hook_event_name: "Stop", last_assistant_message: message });
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("ANDROID VISUAL RUNTIME GATE BLOCKED");
+  });
+});

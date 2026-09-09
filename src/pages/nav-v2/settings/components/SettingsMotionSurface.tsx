@@ -1,14 +1,8 @@
-import { forwardRef, type ComponentProps, type ComponentType, type ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { motion, useIsPresent } from "framer-motion";
 
 import { motionPresets, zenMotion } from "@/lib/animationUtils";
 import { cn } from "@/lib/utils";
-
-// React 18's DOM types predate the now-baseline `inert` attribute. Keep the
-// runtime attribute typed locally until the project moves to React 19 types.
-const InertMotionDiv = motion.div as ComponentType<
-  ComponentProps<typeof motion.div> & { inert?: "" }
->;
 
 interface SettingsMotionSurfaceProps {
   children: ReactNode;
@@ -21,9 +15,9 @@ export const SettingsMotionSurface = forwardRef<HTMLDivElement, SettingsMotionSu
     const isPresent = useIsPresent();
 
     return (
-      <InertMotionDiv
+      <motion.div
         ref={ref}
-        inert={!isPresent ? "" : undefined}
+        inert={!isPresent}
         aria-hidden={!isPresent ? true : undefined}
         initial={shouldAnimate ? { opacity: 0.92 } : false}
         animate={motionPresets.fadeIn.animate}
@@ -34,7 +28,7 @@ export const SettingsMotionSurface = forwardRef<HTMLDivElement, SettingsMotionSu
         data-settings-motion-surface={view}
       >
         {children}
-      </InertMotionDiv>
+      </motion.div>
     );
   }
 );

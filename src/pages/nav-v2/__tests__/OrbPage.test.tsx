@@ -594,6 +594,43 @@ describe("OrbPage progressive flow", () => {
     }
   });
 
+  it("requires fresh visual readiness after Android Back instead of reusing the previous select frame", async () => {
+    orbVisualControl.mode = "manual";
+    platformControl.isAndroid = true;
+    const raf = installManualRaf();
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const main = screen.getByTestId("orb-page");
+    const previousSelectReady = orbVisualControl.readyCallbacks[0];
+
+    act(() => previousSelectReady?.());
+    act(() => raf.flushNext());
+    await waitFor(() => expect(main).toHaveAttribute("data-orb-visual-status", "ready"));
+    fireEvent.click(screen.getByTestId("mood-orb-option-good"));
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+    expect(screen.getByTestId("orb-page-refine")).toBeInTheDocument();
+
+    act(() => { androidBackControl.callback?.(); });
+    expect(screen.getByTestId("orb-page-select")).toBeInTheDocument();
+    expect(main).toHaveAttribute("data-orb-visual-status", "pending");
+    expect(main).toHaveAttribute("inert");
+    expect(main).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("orb-page-loading")).toBeInTheDocument();
+
+    act(() => previousSelectReady?.());
+    expect(raf.pendingCount()).toBe(0);
+    expect(main).toHaveAttribute("data-orb-visual-status", "pending");
+
+    act(() => orbVisualControl.readyCallbacks.at(-1)?.());
+    expect(main).toHaveAttribute("data-orb-visual-status", "pending");
+    act(() => raf.flushNext());
+    await waitFor(() => expect(main).toHaveAttribute("data-orb-visual-status", "ready"));
+    expect(main).not.toHaveAttribute("inert");
+    expect(main).not.toHaveAttribute("aria-hidden");
+    expect(screen.queryByTestId("orb-page-loading")).toBeNull();
+    expect(onAddMoodMock).not.toHaveBeenCalled();
+    expect(moodPersistenceMocks.persistMoodEntry).not.toHaveBeenCalled();
+  });
+
   it("preserves the in-progress mood draft across terminal renderer retry", async () => {
     render(<OrbPage onAddMood={onAddMoodMock} />);
     fireEvent.click(screen.getByTestId("mood-orb-option-good"));
@@ -930,6 +967,22 @@ describe("OrbPage progressive flow", () => {
     );
     expect(source).toContain('className="absolute inset-0 flex min-h-0 flex-col"');
     expect(source).toContain('aria-hidden={!isPresent ? true : undefined}');
+  });
+
+  it("makes only the retained outgoing Orb scene inert during a step transition", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const outgoing = screen.getByTestId("orb-page-step-scene");
+    expect(outgoing).not.toHaveAttribute("inert");
+
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    expect(outgoing).toBeInTheDocument();
+    expect(outgoing).toHaveAttribute("aria-hidden", "true");
+    expect(outgoing).toHaveAttribute("inert");
+    const incoming = screen.getAllByTestId("orb-page-step-scene")
+      .find((scene) => scene !== outgoing);
+    expect(incoming).toBeInTheDocument();
+    expect(incoming).not.toHaveAttribute("inert");
   });
 
   it("keeps the V1 neutral orb baseline before the user moves the slider", () => {

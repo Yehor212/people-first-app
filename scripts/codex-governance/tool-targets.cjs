@@ -471,7 +471,13 @@ function analyzeToolEvent(event) {
       };
 
   return {
-    command,
+    // Normalize only targeted edit bodies; preserve secondary or unparsed command inputs.
+    command:
+      writeLikeTool &&
+      (directTargets.length > 0 || patchTargets.length > 0) &&
+      !isNonEmptyString(input.cmd)
+        ? ""
+        : command,
     mutationIntent: writeLikeTool || shell.mutationIntent,
     destructiveFilesystem: shell.destructiveFilesystem,
     dynamicTarget: shell.dynamicTarget || (writeLikeTool && structuredPaths.overflow),

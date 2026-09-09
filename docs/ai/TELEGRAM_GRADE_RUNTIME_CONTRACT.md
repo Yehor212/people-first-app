@@ -15,6 +15,8 @@ the Done Packet in `docs/ai/TASK_COMPLETION_PROTOCOL.md`.
 
 ## North Star
 
+For Android navigation, apply [ANDROID_INTERACTION_BUDGET.md](ANDROID_INTERACTION_BUDGET.md): 103 ms is the ordinary interaction target, while frame deadlines follow the device refresh rate. Measure both; preserve canonical visuals and distinguish loading from destination readiness.
+
 The app must feel immediate even when the network, storage, WebGL, or device is
 slow. The latest user action must converge everywhere after sync settles, and
 the user must not see visual regressions while performance is improved.

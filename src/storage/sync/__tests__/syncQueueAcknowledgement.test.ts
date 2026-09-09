@@ -37,7 +37,7 @@ vi.mock("@/storage/sync/serverTombstones", () => ({
   isEntityTombstonedOnServer: mocks.isEntityTombstonedOnServer,
 }));
 
-vi.mock("@/storage/eventSync", () => ({
+vi.mock("@/storage/eventSyncWriter", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));

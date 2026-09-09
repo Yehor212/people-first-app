@@ -102,10 +102,11 @@ export { PhotoGridLayout } from "./PhotoGridLayout";
 import { DiaryFormatHint } from "./DiaryFormatHint";
 import { DIARY_FONTS, DIARY_FONT_NAMES } from "./types";
 import { useJournalEditorState } from "./useJournalEditorState";
+import { useJournalKeyboardViewport } from "./useJournalKeyboardViewport";
 import { formatRecordingTime } from "./useJournalEditorHelpers";
 import type { TranslationStrings } from "@/i18n/types";
 import { isJournalPhotoPlaced } from "./photoLayout";
-import { isNative } from "@/lib/platform";
+import { isAndroid, isNative } from "@/lib/platform";
 import type { JournalSaveCompletion } from "./save-ceremony/journalSaveCeremonyContract";
 
 // Local aliases to avoid name collision with the hook's `theme` state
@@ -599,6 +600,14 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     handleTemplateClose,
   } = state;
   const saveInteractionLocked = saveState === "saving" || saveState === "saved";
+
+  // Fixed sub-dialogs retain the existing native resize path, including search.
+  useJournalKeyboardViewport(
+    !desktop && !showStickers && !showPhotos && !showTemplatePicker &&
+    !showVoicePrivacyConfirm && !showRecordingOverlay && !showDeleteConfirm &&
+    !showUnsavedDialog && !showSettingsConfirm && !audioRemovalPendingId && !panicLocked,
+    scrollAreaRef,
+  );
 
   const handleFloatPhotoWithFocus = useCallback(
     (photoId: string) => {
@@ -1120,6 +1129,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       aria-modal={desktop ? undefined : true}
       aria-label={ts.journalEntryTitle || "Diary Entry"}
       data-testid="journal-entry-editor"
+      data-tools-collapsed={desktop ? undefined : mobileToolsCollapsed}
       aria-busy={saveState === "saving"}
       className={cn(
         "journal-entry-editor-shell flex flex-col overflow-hidden text-foreground",
@@ -1153,7 +1163,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div
         className={cn(
-          "journal-editor-chrome relative z-50 flex-shrink-0 w-full flex flex-col border-b",
+          "journal-editor-header journal-editor-chrome relative z-50 flex-shrink-0 w-full flex flex-col border-b",
           desktop
             ? "gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] bg-background/95 backdrop-blur-sm shadow-sm border-border/15"
             : "gap-2 px-3 py-2 pt-[max(0.5rem,var(--safe-top))] bg-background/90 backdrop-blur-xl shadow-lg border-border/20"
@@ -1177,7 +1187,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
               <span className="text-sm max-[420px]:sr-only">{t.journalMapLabel}</span>
             </motion.button>
-            <div className="min-w-0 flex-1">
+            <div className="journal-editor-identity min-w-0 flex-1">
               <div
                 className={cn(
                   "font-bold tracking-tight whitespace-normal break-words [overflow-wrap:anywhere] font-display",
@@ -1820,7 +1830,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
 
       {/* ROW 3: Content area */}
       {/* ═══ CONTENT AREA ═══ */}
-      <div ref={contentAreaRef} className="flex-1 relative overflow-hidden">
+      <div ref={contentAreaRef} className="journal-editor-content flex-1 relative overflow-hidden">
         <div
           ref={scrollAreaRef}
           className={cn(
@@ -1937,11 +1947,13 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
               onFocus={(e) => {
                 const el = e.target;
                 setTimeout(
-                  () =>
+                  () => {
+                    if (isAndroid && document.documentElement.dataset.journalKeyboardViewport) return;
                     el.scrollIntoView({
                       behavior: shouldAnimate() ? "smooth" : "auto",
                       block: "center",
-                    }),
+                    });
+                  },
                   300
                 );
               }}
@@ -2238,6 +2250,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
                 const scrollArea = scrollAreaRef.current;
                 if (!scrollArea) return;
                 setTimeout(() => {
+                  if (isAndroid && document.documentElement.dataset.journalKeyboardViewport) return;
                   const targetTop = Math.max(
                     0,
                     el.offsetTop - (scrollArea.clientHeight - el.clientHeight) / 2

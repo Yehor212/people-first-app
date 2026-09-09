@@ -5,7 +5,7 @@
 
 import { logger } from "@/lib/logger";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
-import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSyncWriter";
 import { getDeletedMoodIds, trackDeletedMoodId } from "@/storage/deletionTracker";
 import type { SeverityLevel } from "@sentry/core";
 import type { ErrorCategory } from "@/lib/sentry";

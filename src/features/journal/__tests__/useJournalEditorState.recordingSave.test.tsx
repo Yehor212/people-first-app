@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MutableRefObject, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useJournalEditorState } from "../useJournalEditorState";
 import {
   JOURNAL_DRAFT_ENTRY_ID,
@@ -805,7 +805,7 @@ describe("useJournalEditorState recording save", () => {
     await finishDraftPreflight(result);
     const editor = document.createElement("div");
     editor.contentEditable = "true";
-    (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+    result.current.editorRef.current = editor;
 
     await act(async () => {
       await result.current.handleSave();
@@ -831,7 +831,7 @@ describe("useJournalEditorState recording save", () => {
     await finishDraftPreflight(result);
     const editor = document.createElement("div");
     editor.contentEditable = "true";
-    (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+    result.current.editorRef.current = editor;
 
     voiceMocks.isListening = false;
     rerender();
@@ -1190,7 +1190,7 @@ describe("useJournalEditorState recording save", () => {
     editor.innerHTML = "<p>Background private text</p>";
 
     act(() => {
-      (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+      result.current.editorRef.current = editor;
       result.current.handleEditorInput();
     });
 
@@ -1221,7 +1221,7 @@ describe("useJournalEditorState recording save", () => {
     editor.innerHTML = "<p>Private thought before a fast route change</p>";
 
     act(() => {
-      (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+      result.current.editorRef.current = editor;
       result.current.handleEditorInput();
     });
     expect(draftStorageMocks.saveJournalDraft).not.toHaveBeenCalled();
@@ -1250,7 +1250,7 @@ describe("useJournalEditorState recording save", () => {
     editor.innerHTML = "<p>Last keystrokes before update</p>";
 
     act(() => {
-      (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+      result.current.editorRef.current = editor;
       result.current.handleEditorInput();
     });
 
@@ -1275,7 +1275,7 @@ describe("useJournalEditorState recording save", () => {
     editor.innerHTML = "<p>Account A private draft</p>";
 
     act(() => {
-      (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+      result.current.editorRef.current = editor;
       result.current.handleEditorInput();
       window.dispatchEvent(new Event("zenflow:account-boundary-writers-suspended"));
     });
@@ -1347,7 +1347,7 @@ describe("useJournalEditorState recording save", () => {
     editor.contentEditable = "true";
 
     act(() => {
-      (result.current.editorRef as MutableRefObject<HTMLDivElement | null>).current = editor;
+      result.current.editorRef.current = editor;
     });
 
     await waitFor(() => expect(result.current.draftAvailable).not.toBeNull());

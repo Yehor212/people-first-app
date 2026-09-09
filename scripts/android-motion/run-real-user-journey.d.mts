@@ -84,6 +84,7 @@ export function centerOfBounds(bounds: UiAutomatorBounds): {
 };
 export function shouldCaptureJourneyScreenshots(argv: string[]): boolean;
 export function getRefineJourneyRequiredTexts(): string[];
+export function countLogcatWindowWarnings(before: string, after: string): number | null;
 export function assertJourneyScenario(
   value: string,
 ): "orb-slider-refine" | "drawer-theme" | "full-route-cycle";

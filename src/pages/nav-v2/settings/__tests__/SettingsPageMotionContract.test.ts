@@ -25,7 +25,7 @@ describe("Settings mobile transition contract", () => {
     expect(motionSource).toContain("useIsPresent");
     expect(motionSource).toContain("forwardRef");
     expect(motionSource).toContain("ref={ref}");
-    expect(motionSource).toContain('inert={!isPresent ? "" : undefined}');
+    expect(motionSource).toContain("inert={!isPresent}");
     expect(motionSource).toContain('!isPresent && "pointer-events-none"');
     expect(motionSource).not.toContain('!isPresent && "invisible');
     expect(motionSource).toContain("initial={shouldAnimate ? { opacity: 0.92 } : false}");

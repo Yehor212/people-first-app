@@ -74,6 +74,7 @@ export function useJournal() {
   const viewRef = useRef<JournalView>('list');
   const idleLoadRef = useRef<IdleHandle | null>(null);
   const loadGenerationRef = useRef(0);
+  const hasResolvedInitialLoadRef = useRef(false);
   const mutationGenerationRef = useRef(0);
   const requestedDateLoadsRef = useRef(new Set<string>());
   const loadedDateLoadsRef = useRef(new Set<string>());
@@ -109,6 +110,7 @@ export function useJournal() {
 
   const resetForAccountBoundary = useCallback(() => {
     invalidateInFlightLoads();
+    hasResolvedInitialLoadRef.current = false;
     softDeletedEntryIdsRef.current.clear();
     loadedDateLoadsRef.current.clear();
     dateUnavailableCountsRef.current.clear();
@@ -174,7 +176,7 @@ export function useJournal() {
   );
 
   // Load the first journal page quickly, then backfill older encrypted entries in idle slices.
-  const refresh = useCallback(async (signal?: AbortSignal) => {
+  const refreshFromStorage = useCallback(async (signal?: AbortSignal) => {
     if (signal?.aborted) return;
     cancelRemainingLoad();
     const generation = loadGenerationRef.current + 1;
@@ -190,6 +192,16 @@ export function useJournal() {
     setDateLoadError(false);
     const activeEntryIdAtStart = activeEntryIdRef.current;
     const activeViewAtStart = viewRef.current;
+    const publishLoadResult = (update: () => void) => {
+      if (hasResolvedInitialLoadRef.current) {
+        startTransition(update);
+        return;
+      }
+      // Initial readiness must not lag an ordinary-priority security update.
+      // Later refreshes still yield to interactions with the mounted diary.
+      hasResolvedInitialLoadRef.current = true;
+      update();
+    };
     const abortRefreshOwnership = () => {
       if (loadGenerationRef.current !== generation) return;
       loadGenerationRef.current += 1;
@@ -215,7 +227,7 @@ export function useJournal() {
         refreshedActiveEntry && !softDeletedEntryIdsRef.current.has(refreshedActiveEntry.id)
           ? refreshedActiveEntry
           : undefined;
-      startTransition(() => {
+      publishLoadResult(() => {
         const refreshedEntries = mergeJournalEntries([], page.entries, softDeletedEntryIdsRef.current);
         setEntries(
           activeEntryStillVisible
@@ -266,7 +278,7 @@ export function useJournal() {
       if (signal?.aborted) return;
       logger.warn('[Journal] Failed to load entries', error);
       if (loadGenerationRef.current !== generation) return;
-      startTransition(() => {
+      publishLoadResult(() => {
         setInitialLoadError(true);
         setLoading(false);
         setHistoryLoading(false);
@@ -276,9 +288,13 @@ export function useJournal() {
     }
   }, [cancelRemainingLoad, scheduleRemainingLoad]);
 
+  // UI callbacks receive DOM events, not refresh-ownership AbortSignals.
+  // Keep cancellation on the data-refresh subscription, not the public action.
+  const refresh = useCallback(() => refreshFromStorage(), [refreshFromStorage]);
+
   useEffect(() => { void refresh(); }, [refresh]);
 
-  useEffect(() => subscribeDataRefresh(refresh), [refresh]);
+  useEffect(() => subscribeDataRefresh(refreshFromStorage), [refreshFromStorage]);
 
   useEffect(() => {
     const unregisterRuntimeReset = registerAccountBoundaryRuntimeReset(resetForAccountBoundary);

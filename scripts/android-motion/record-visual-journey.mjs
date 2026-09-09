@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { execFile, spawn } from "node:child_process";
 import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
-  assertRunArtifactIdentity,
+  assertIndependentInstallationEvidence,
   parseWebViewDevtoolsSocket,
+  preserveDeviceRecording,
   waitForChildExit,
 } from "./evidence-lib.mjs";
 import { assertJourneyScenario } from "./run-real-user-journey.mjs";
@@ -68,6 +69,9 @@ async function installedIdentity(serial) {
   const versionCode = Number(packageState.match(/versionCode=(\d+)/)?.[1]);
   const lastUpdateTime = packageState.match(/lastUpdateTime=([^\r\n]+)/)?.[1]?.trim() ?? "";
   return {
+    observationId: randomUUID(),
+    collectedAt: new Date().toISOString(),
+    deviceKey: sha256(serial),
     installedPath,
     installedSha256,
     packageName: PACKAGE,
@@ -102,18 +106,16 @@ await mkdir(outputDirectory.absolute, { recursive: false, mode: 0o700 });
 const sourceApkBytes = await readFile(sourceApk.absolute);
 const sourceSha256 = sha256(sourceApkBytes);
 const before = await installedIdentity(serial);
-assertRunArtifactIdentity({
-  expectedSha256,
-  sourceSha256,
-  installedBeforeSha256: before.installedSha256,
-  installedAfterSha256: before.installedSha256,
-  packageName: before.packageName,
-  versionName: before.versionName,
-  versionCode: before.versionCode,
-});
+if (sourceSha256 !== expectedSha256 || before.installedSha256 !== expectedSha256) {
+  throw new Error("Built and independently read installed APK hashes must match the expected artifact");
+}
+const localBefore = path.join(outputDirectory.absolute, "installed-before.json");
+const localAfter = path.join(outputDirectory.absolute, "installed-after.json");
+await writeFile(localBefore, `${JSON.stringify(before, null, 2)}\n`, { mode: 0o600, flag: "wx" });
 
-const remoteVideo = `/sdcard/zenflow-${runId}.mp4`;
-const remoteLogcat = `/sdcard/zenflow-${runId}-logcat.txt`;
+// This invocation owns only this unpredictable recording path. Earlier device
+// recordings and the shared logcat ring buffers are preserved.
+const remoteVideo = `/sdcard/zenflow-${runId}-${randomUUID()}.mp4`;
 const localVideo = path.join(outputDirectory.absolute, "visual.mp4");
 const localLogcat = path.join(outputDirectory.absolute, "logcat.txt");
 const localJourney = path.join(outputDirectory.absolute, "journey.json");
@@ -124,6 +126,8 @@ let screenrecordExitPromise = null;
 let screenrecordExit = null;
 let runnerResult = null;
 let runFailure = null;
+let appPid = null;
+let logcatStartedAt = null;
 const showTouches = await adb(serial, "shell", "settings", "get", "system", "show_touches");
 const pointerLocation = await adb(
   serial,
@@ -138,28 +142,33 @@ let videoStartedAtMonotonicMs = null;
 let videoStartedAtWallClockMs = null;
 
 try {
-  await adb(serial, "shell", "rm", "-f", remoteVideo, remoteLogcat);
-  await adb(serial, "logcat", "-c");
   await adb(serial, "shell", "am", "start", "-W", "-n", ACTIVITY);
   await new Promise((resolve) => setTimeout(resolve, 5_000));
-  const appPid = Number(await adb(serial, "shell", "pidof", "-s", PACKAGE));
-  const devtoolsSocket = parseWebViewDevtoolsSocket(
-    await adb(serial, "shell", "cat", "/proc/net/unix"),
-    appPid,
-  );
-  await adb(serial, "forward", "tcp:9222", `localabstract:${devtoolsSocket}`);
-  try {
-    await execFileAsync(
-      process.execPath,
-      [
-        "scripts/android-motion/set-local-benchmark-route.mjs",
-        "--output",
-        localRouteSetup,
-      ],
-      { cwd: root, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
+  appPid = Number(await adb(serial, "shell", "pidof", "-s", PACKAGE));
+  if (!Number.isInteger(appPid) || appPid < 1) throw new Error("App PID is unavailable");
+  logcatStartedAt = await adb(serial, "shell", "date", "+%s.%N");
+  if (!/^\d+\.\d+$/.test(logcatStartedAt)) throw new Error("Device logcat start timestamp is unavailable");
+  // Default capture starts from the owner's current UI. Optional local route
+  // setup owns a forward only when --no-rebind successfully acquires it.
+  if (argv.includes("--prepare-route")) {
+    const devtoolsSocket = parseWebViewDevtoolsSocket(
+      await adb(serial, "shell", "cat", "/proc/net/unix"),
+      appPid,
     );
-  } finally {
-    await adb(serial, "forward", "--remove", "tcp:9222").catch(() => undefined);
+    await adb(serial, "forward", "--no-rebind", "tcp:9222", `localabstract:${devtoolsSocket}`);
+    try {
+      await execFileAsync(
+        process.execPath,
+        [
+          "scripts/android-motion/set-local-benchmark-route.mjs",
+          "--output",
+          localRouteSetup,
+        ],
+        { cwd: root, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
+      );
+    } finally {
+      await adb(serial, "forward", "--remove", "tcp:9222");
+    }
   }
   await new Promise((resolve) => setTimeout(resolve, 1_000));
   videoStartedAtMonotonicMs = globalThis.performance.now();
@@ -218,31 +227,33 @@ try {
 
 const videoEndedAtMonotonicMs = globalThis.performance.now();
 try {
-  await adb(serial, "shell", "logcat", "-d", "-f", remoteLogcat);
-  await adb(serial, "pull", remoteLogcat, localLogcat);
+  if (appPid && logcatStartedAt) {
+    const logcat = await adb(serial, "logcat", "-d", "-v", "threadtime", "--pid", String(appPid), "-T", logcatStartedAt);
+    await writeFile(localLogcat, logcat, { mode: 0o600, flag: "wx" });
+  }
 } catch (error) {
   runFailure ??= error;
 }
 if (screenrecord) {
   try {
-    await adb(serial, "pull", remoteVideo, localVideo);
+    await preserveDeviceRecording({
+      pull: () => adb(serial, "pull", remoteVideo, localVideo),
+      readDeviceSha256: async () => (await adb(serial, "shell", "sha256sum", remoteVideo)).split(/\s+/, 1)[0],
+      readLocalBytes: () => readFile(localVideo),
+      removeDeviceCopy: () => adb(serial, "shell", "rm", "-f", remoteVideo),
+    });
   } catch (error) {
     runFailure ??= error;
   }
 }
-await adb(serial, "shell", "rm", "-f", remoteVideo, remoteLogcat).catch(
-  () => undefined,
-);
+const endedAt = new Date().toISOString();
 const after = await installedIdentity(serial);
-assertRunArtifactIdentity({
-  expectedSha256,
-  sourceSha256,
-  installedBeforeSha256: before.installedSha256,
-  installedAfterSha256: after.installedSha256,
-  packageName: after.packageName,
-  versionName: after.versionName,
-  versionCode: after.versionCode,
-});
+await writeFile(localAfter, `${JSON.stringify(after, null, 2)}\n`, { mode: 0o600, flag: "wx" });
+try {
+  assertIndependentInstallationEvidence({ before, after, sourceSha256, startedAt, endedAt });
+} catch (error) {
+  runFailure ??= error;
+}
 
 const artifact = async (absolute) => {
   try {
@@ -263,7 +274,7 @@ const receipt = {
   scenario,
   status: runFailure ? "FAIL" : "UNVERIFIED",
   startedAt,
-  endedAt: new Date().toISOString(),
+  endedAt,
   sourceApk: {
     path: sourceApk.relative,
     bytes: sourceApkBytes.byteLength,
@@ -288,11 +299,14 @@ const receipt = {
     logcat: await artifact(localLogcat),
     journey: await artifact(localJourney),
     routeSetup: await artifact(localRouteSetup),
+    installedBefore: await artifact(localBefore),
+    installedAfter: await artifact(localAfter),
   },
 };
 await writeFile(localReceipt, `${JSON.stringify(receipt, null, 2)}\n`, {
   encoding: "utf8",
   mode: 0o600,
+  flag: "wx",
 });
 console.log(JSON.stringify({ outputDirectory: outputDirectory.relative, status: receipt.status }));
 if (runFailure) throw runFailure;

@@ -304,6 +304,69 @@ describe("Spec Kit safety hook lifecycle", () => {
     }
   });
 
+  describe.each(["sh", "bash", "zsh"])("configured wrappers through %s", (shell) => {
+    const probe = spawnSync(shell, ["-c", "exit 0"], { encoding: "utf8" });
+    const unavailable = (probe.error as NodeJS.ErrnoException | undefined)?.code === "ENOENT";
+
+    it.skipIf(unavailable).each(["UserPromptSubmit", "PreToolUse", "PostToolUse"])(
+      "preserves success and malformed-input rejection for %s",
+      (event) => {
+        expect(probe.status, probe.stderr).toBe(0);
+        const root = makeRepository();
+        write(root, ".codex/hooks/spec-kit-safety-gate.cjs", readFileSync(HOOK, "utf8"));
+        const [handler] = configuredSpecKitHandlers(readHooksConfig(), event);
+        const input = {
+          hook_event_name: event,
+          prompt: "inspect the current plan",
+          tool_name: "Bash",
+          tool_input: { command: "git status --short" },
+        };
+        const runConfigured = (payload: string) =>
+          spawnSync(shell, ["-c", handler.command], {
+            cwd: root,
+            encoding: "utf8",
+            input: payload,
+            timeout: 10_000,
+          });
+
+        expectAllowed(runConfigured(JSON.stringify(input)));
+        expectBlocked(runConfigured("NOT JSON"), /malformed JSON/i);
+      }
+    );
+
+    it.skipIf(unavailable)("preserves a protected-trust-state refusal", () => {
+      const root = makeRepository();
+      write(root, ".codex/hooks/spec-kit-safety-gate.cjs", readFileSync(HOOK, "utf8"));
+      const [handler] = configuredSpecKitHandlers(readHooksConfig(), "PreToolUse");
+      const result = spawnSync(shell, ["-c", handler.command], {
+        cwd: root,
+        encoding: "utf8",
+        input: JSON.stringify({
+          hook_event_name: "PreToolUse",
+          tool_name: "WriteFile",
+          tool_input: { path: ".specify/extensions.yml", content: "installed: []\n" },
+        }),
+        timeout: 10_000,
+      });
+
+      expectBlocked(result, /protected Spec Kit trust anchor/i);
+    });
+
+    it.skipIf(unavailable)("preserves failure when the wrapper starts outside Git", () => {
+      const root = mkdtempSync(join(tmpdir(), "zenflow-spec-kit-wrapper-no-git-"));
+      roots.push(root);
+      const [handler] = configuredSpecKitHandlers(readHooksConfig(), "UserPromptSubmit");
+      const result = spawnSync(shell, ["-c", handler.command], {
+        cwd: root,
+        encoding: "utf8",
+        input: JSON.stringify({ hook_event_name: "UserPromptSubmit", prompt: "hello" }),
+        timeout: 10_000,
+      });
+
+      expectBlocked(result, /unable to resolve repository root/i);
+    });
+  });
+
   it.each(["UserPromptSubmit", "PreToolUse", "PostToolUse"])(
     "returns neutral JSON for a valid %s event",
     (event) => {

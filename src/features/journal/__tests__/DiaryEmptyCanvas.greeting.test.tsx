@@ -46,7 +46,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
 }));
 
 vi.mock("framer-motion", () => {
-  const passthrough = (Tag: keyof JSX.IntrinsicElements) =>
+  const passthrough = (Tag: keyof React.JSX.IntrinsicElements) =>
     ({ children, initial, animate, transition, whileHover, whileTap, variants, ...rest }: React.PropsWithChildren<Record<string, unknown>>) => {
       void initial;
       void animate;

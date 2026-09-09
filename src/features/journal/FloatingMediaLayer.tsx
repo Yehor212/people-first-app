@@ -52,7 +52,7 @@ interface FloatingMediaLayerProps {
   onLayoutChange: Dispatch<SetStateAction<Record<string, PhotoLayout>>>;
   onLayoutCommit?: () => void;
   onReturnToGallery: (photoId: string) => void;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   focusPhotoId?: string | null;
   onPhotoFocusHandled?: (photoId: string) => void;
 }
@@ -190,7 +190,7 @@ const getDistance = (a: { x: number; y: number }, b: { x: number; y: number }) =
 const getFirstTwoPointers = (pointers: Map<number, { x: number; y: number }>) =>
   Array.from(pointers.values()).slice(0, 2);
 
-const useElementSize = (ref: React.RefObject<HTMLElement>, observeKey?: unknown) => {
+const useElementSize = (ref: React.RefObject<HTMLElement | null>, observeKey?: unknown) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useLayoutEffect(() => {
@@ -261,7 +261,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
   onBeginTapPlacement: () => void;
   onCancelTapPlacement: () => void;
   isTapPlacementActive: boolean;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   focusPhotoId?: string | null;
   onFocusHandled?: (photoId: string) => void;
   photoNumber: number;

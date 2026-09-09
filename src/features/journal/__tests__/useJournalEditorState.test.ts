@@ -580,7 +580,7 @@ function useDraftPersistence(opts: {
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(initialDraft);
 
   // === Auto-save debounce (3s) ===
-  const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [draftSavedAt, setDraftSavedAt] = useState(0);
 
   useEffect(() => {

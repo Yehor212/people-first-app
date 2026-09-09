@@ -51,7 +51,7 @@ function reportBlockedIdleSignOut(
 }
 
 export function useSessionTimeout(enabled: boolean = true) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pushNotificationsEnabled = useUserDataStore(
     (state) => state.privacy.pushNotifications === true,
   );

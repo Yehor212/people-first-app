@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import postcss, { type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(path, "utf8");
@@ -6,14 +7,21 @@ const read = (path: string) => readFileSync(path, "utf8");
 describe("journal Android touch targets", () => {
   it("raises every interactive control to 48px only in the Android runtime", () => {
     const css = read("src/index.css");
-    const androidRule = css.slice(
-      css.indexOf(':root[data-platform="android"]'),
-      css.indexOf('}', css.indexOf(':root[data-platform="android"]')) + 1,
-    );
+    const rules: Rule[] = [];
+    postcss.parse(css).walkRules(rule => {
+      if (rule.selector.replace(/\s+/g, " ").startsWith(':root[data-platform="android"] :where(')) {
+        rules.push(rule);
+      }
+    });
+    expect(rules).toHaveLength(1);
+    const androidRule = rules[0].toString();
 
     expect(androidRule).toContain("button");
     expect(androidRule).toContain('[role="button"]');
     expect(androidRule).toContain("a[href]");
+    expect(androidRule).toContain('input:not([type="hidden"])');
+    expect(androidRule).toContain("select");
+    expect(androidRule).toContain("textarea");
     expect(androidRule).toContain("min-width: 48px");
     expect(androidRule).toContain("min-height: 48px");
   });

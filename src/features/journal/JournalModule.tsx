@@ -9,7 +9,6 @@ import {
   Fragment,
   memo,
   type ChangeEvent,
-  type ComponentProps,
   type ComponentType,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -471,10 +470,6 @@ function JournalDeferredPanelFallback({
   );
 }
 
-const InertJournalMotionDiv = motion.div as ComponentType<
-  ComponentProps<typeof motion.div> & { inert?: "" }
->;
-
 function JournalMobileViewSurface({
   children,
   className,
@@ -489,8 +484,8 @@ function JournalMobileViewSurface({
   const isPresent = useIsPresent();
 
   return (
-    <InertJournalMotionDiv
-      inert={!isPresent ? "" : undefined}
+    <motion.div
+      inert={!isPresent}
       aria-hidden={!isPresent ? true : undefined}
       initial={shouldAnimate ? { opacity: 0 } : undefined}
       animate={{ opacity: 1 }}
@@ -500,7 +495,7 @@ function JournalMobileViewSurface({
       data-journal-mobile-view={view}
     >
       {children}
-    </InertJournalMotionDiv>
+    </motion.div>
   );
 }
 
@@ -796,6 +791,8 @@ interface JournalModuleProps {
   disableCardShell?: boolean;
   hideCloseButton?: boolean;
   presentation?: "dialog" | "page";
+  /** Optional presenter-owned decoration; undefined keeps the default wallpaper. */
+  pageBackground?: ReactNode;
   initialEntrySuggestion?: JournalEntrySuggestion | null;
   extraSuggestions?: JournalEntrySuggestion[];
   listHeaderContent?: ReactNode;
@@ -833,6 +830,7 @@ export const JournalModule = memo(function JournalModule({
   disableCardShell = false,
   hideCloseButton = false,
   presentation = "dialog",
+  pageBackground,
   initialEntrySuggestion = null,
   extraSuggestions = [],
   listHeaderContent,
@@ -1255,7 +1253,7 @@ type ResetStep =
     closeResetDialog,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const importFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const importFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const importRequestSeqRef = useRef(0);
 
   useEffect(() => {
@@ -1367,6 +1365,7 @@ type ResetStep =
     closeMobileDiarySidebar();
   }, [closeMobileDiarySidebar, security, showMobileDiarySidebar]);
   const refreshJournalRef = useRef(journal.refresh);
+  const hasResolvedJournalSecurityRef = useRef(false);
   useEffect(() => {
     refreshJournalRef.current = journal.refresh;
   }, [journal.refresh]);
@@ -1378,9 +1377,23 @@ type ResetStep =
   const screenSecurity = useScreenSecurity(moduleState === "open");
 
   useEffect(() => {
-    if (security.loading || security.isLocked) return;
+    if (security.loading) return;
+    const isInitialSecurityResolution = !hasResolvedJournalSecurityRef.current;
+    hasResolvedJournalSecurityRef.current = true;
+    if (security.isLocked) return;
+    // useJournal already owns the initial read without a vault key. Restarting
+    // it here flashes the full splash even when that read has already settled.
+    // A locked first resolution still counts, so unlocking or removing the lock
+    // must refresh, as must every later security reload or vault-key change.
+    if (
+      isInitialSecurityResolution &&
+      security.hasPassword === false &&
+      security.vaultKey === null
+    ) {
+      return;
+    }
     void refreshJournalRef.current();
-  }, [security.isLocked, security.loading, security.vaultKey]);
+  }, [security.hasPassword, security.isLocked, security.loading, security.vaultKey]);
 
   const releaseTraceDates = useMemo(() => {
     const dates = new Map<string, number>();
@@ -1452,8 +1465,8 @@ type ResetStep =
   const [pendingDeletes, setPendingDeletes] = useState<PendingDelete[]>([]);
   const pendingDelete = pendingDeletes[0] ?? null;
   const [deleteCommitMessage, setDeleteCommitMessage] = useState<string | null>(null);
-  const deleteTimerAbortRef = useRef<AbortController>();
-  const deleteFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const deleteTimerAbortRef = useRef<AbortController>(undefined);
+  const deleteFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isMountedRef = useRef(true);
   const pendingDeleteRef = useRef<PendingDelete[]>(pendingDeletes);
   const pendingDeleteHydratedRef = useRef(false);
@@ -2972,6 +2985,50 @@ type ResetStep =
         onChange={handleJournalImportFile}
         data-testid="journal-import-input"
       />
+      {security.loading && (
+        <>
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/30 px-4 pb-3 pt-[max(0.75rem,var(--safe-top))]">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              {showAppNavMenuButton && (
+                <button
+                  type="button"
+                  onClick={onOpenNavMenu}
+                  className={mobileHeaderMenuClass}
+                  aria-label={ts.navV2OpenMenu || "Open menu"}
+                  aria-expanded={navMenuOpen}
+                  aria-controls="nav-v2-drawer"
+                >
+                  <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
+              <h2 className="min-w-0 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]">
+                {ts.journalTitle || "Diary"}
+              </h2>
+            </div>
+            {!hideCloseButton && (
+              <button
+                type="button"
+                onClick={handleClose}
+                className={mobileHeaderActionClass}
+                aria-label={ts.close || "Close"}
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 pt-8 pb-[max(2rem,var(--safe-bottom))] text-center text-muted-foreground"
+          >
+            <Loader2
+              className={cn("h-6 w-6 shrink-0 text-primary", shouldAnimate() && "motion-safe:animate-spin")}
+              aria-hidden="true"
+            />
+            <p className="text-sm leading-relaxed">{t.loading || "Loading..."}</p>
+          </div>
+        </>
+      )}
       {security.loadError && (
         <div
           role="alert"
@@ -3632,7 +3689,7 @@ type ResetStep =
                       aria-busy={settingsDismissBlocked}
                       aria-describedby={settingsDismissBlocked ? desktopSettingsBusyStatusId : undefined}
                       aria-hidden={showRemovePasswordConfirm || undefined}
-                      {...(showRemovePasswordConfirm ? { inert: "" } : {})}
+                      {...(showRemovePasswordConfirm ? { inert: true } : {})}
                     >
                       <div className="flex items-center justify-between gap-3 border-b border-border/20 px-5 py-4">
                         <div className="min-w-0">
@@ -4470,7 +4527,7 @@ type ResetStep =
                             aria-busy={settingsDismissBlocked}
                             aria-describedby={settingsDismissBlocked ? mobileSettingsBusyStatusId : undefined}
                             aria-hidden={showRemovePasswordConfirm || undefined}
-                            {...(showRemovePasswordConfirm ? { inert: "" } : {})}
+                            {...(showRemovePasswordConfirm ? { inert: true } : {})}
                             ref={mobileSettingsPanelRef}
                             data-testid="journal-mobile-settings-panel"
                             className={cn(
@@ -4802,7 +4859,7 @@ type ResetStep =
         dir={isRTL ? "rtl" : "ltr"}
         data-testid="journal-page-shell"
       >
-        <DiaryWallpaper surface="page" />
+        {pageBackground === undefined ? <DiaryWallpaper surface="page" /> : pageBackground}
         {moduleContent}
       </section>
     );

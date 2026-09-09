@@ -193,6 +193,65 @@ describe("DrawerV2", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["system", "app"] as const)(
+    "releases a dismissed %s reduced-motion drawer without a transition event",
+    (source) => {
+      const previousOverflow = document.body.style.overflow;
+      const onExitComplete = vi.fn();
+      vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+        matches: source === "system" && query === "(prefers-reduced-motion: reduce)",
+        media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+        addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+      })));
+      if (source === "app") document.body.classList.add("reduce-motion");
+      document.body.style.overflow = "clip";
+      try {
+        const { rerender } = render(
+          <DrawerV2 {...baseProps} onExitComplete={onExitComplete} />,
+        );
+        expect(document.body.style.overflow).toBe("hidden");
+        rerender(<DrawerV2 {...baseProps} open={false} onExitComplete={onExitComplete} />);
+        expect(screen.queryByTestId("drawer-v2")).not.toBeInTheDocument();
+        expect(document.body.style.overflow).toBe("clip");
+        expect(onExitComplete).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.unstubAllGlobals();
+        document.body.classList.remove("reduce-motion");
+        document.body.style.overflow = previousOverflow;
+      }
+    },
+  );
+
+  it("releases a retained exit when in-app reduced motion is enabled during closing", async () => {
+    const onExitComplete = vi.fn();
+    const { rerender } = render(<DrawerV2 {...baseProps} onExitComplete={onExitComplete} />);
+    rerender(<DrawerV2 {...baseProps} open={false} onExitComplete={onExitComplete} />);
+    expect(screen.getByTestId("drawer-v2")).toBeInTheDocument();
+    try {
+      await act(async () => { document.body.classList.add("reduce-motion"); });
+      expect(screen.queryByTestId("drawer-v2")).not.toBeInTheDocument();
+      expect(onExitComplete).toHaveBeenCalledTimes(1);
+    } finally {
+      document.body.classList.remove("reduce-motion");
+    }
+  });
+
+  it("does not let a stale closing timer remove a reopened drawer", async () => {
+    vi.useFakeTimers();
+    const onExitComplete = vi.fn();
+    try {
+      const { rerender } = render(<DrawerV2 {...baseProps} onExitComplete={onExitComplete} />);
+      rerender(<DrawerV2 {...baseProps} open={false} onExitComplete={onExitComplete} />);
+      rerender(<DrawerV2 {...baseProps} open={true} onExitComplete={onExitComplete} />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(1100); });
+      expect(screen.getByRole("dialog", { name: "Menu" })).toBeInTheDocument();
+      expect(document.body.style.overflow).toBe("hidden");
+      expect(onExitComplete).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("makes the closing backdrop passive during the exit animation", () => {
     const { rerender } = render(<DrawerV2 {...baseProps} open={true} />);
 

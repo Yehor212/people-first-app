@@ -350,7 +350,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   // === Refs ===
   const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorOverlayRef = useRef<HTMLDivElement>(null);
@@ -358,7 +358,7 @@ export function useJournalEditorState(props: JournalEditorStateProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const scrollYRef = useRef(0);
   const contentRef = useRef(initialSnapshotRef.current.content);
-  const contentSyncRef = useRef<ReturnType<typeof setTimeout>>();
+  const contentSyncRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastScrollTopRef = useRef(0);
   const promptsDropdownRef = useRef<HTMLDivElement>(null);
   const audioIdsRef = useRef<string[]>(entry?.audioIds || []);

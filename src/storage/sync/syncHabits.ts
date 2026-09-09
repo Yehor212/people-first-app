@@ -4,7 +4,7 @@
  */
 
 import { logger } from "@/lib/logger";
-import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSyncWriter";
 import { getDeletedHabitIds, trackDeletedHabitId } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase } from "@/lib/supabaseClient";

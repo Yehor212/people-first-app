@@ -18,7 +18,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
   const { t } = useLanguage();
   const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(false);
-  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const showStreakFire = showAnimations;
 
@@ -119,7 +119,7 @@ interface HabitCompletionProps {
 export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
   const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(false);
-  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     setShow(true);
@@ -164,7 +164,7 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
   const { t } = useLanguage();
   const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(false);
-  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const showConfetti = showAnimations;
 
@@ -256,7 +256,7 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
   const { t } = useLanguage();
   const showAnimations = useShouldAnimate();
   const [show, setShow] = useState(true);
-  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const timer = setTimeout(() => {

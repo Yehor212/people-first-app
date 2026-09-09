@@ -75,7 +75,7 @@ interface OrbSelectStepProps {
   contentGapClass: string;
   shouldAnimate: boolean;
   auraHue: number;
-  auraRef: RefObject<HTMLDivElement>;
+  auraRef: RefObject<HTMLDivElement | null>;
   showOrbAura: boolean;
   handleOrbTap: () => void;
   orbValence: number;

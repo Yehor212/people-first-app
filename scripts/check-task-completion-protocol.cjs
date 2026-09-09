@@ -4,10 +4,9 @@
 /**
  * Guard for the ZenFlow completion protocol.
  *
- * This is intentionally a static invariant check. It makes sure future agents
- * cannot claim sync/runtime/Desktop/Public release completion while the durable
- * Done Packet, proof matrix, and release-gate wiring have drifted out of the
- * repo.
+ * This static check detects drift in Done Packet, proof-matrix and release-gate
+ * routing. It cannot inspect runtime artifacts, certify completion, or control
+ * every agent's claims.
  */
 
 const fs = require("node:fs");
@@ -60,6 +59,12 @@ function requireRegex(file, regex, label) {
 }
 
 function main() {
+  requireIncludes("docs/ai/ANDROID_INTERACTION_BUDGET.md", [
+    "103 ms", "independently read installed-before", "p50", "p95", "p99",
+    "maximum", "physical device", "UNVERIFIED", "summarizeInteractionSamples",
+    "assertIndependentInstallationEvidence", "structural parser success",
+  ]);
+  requireIncludes("docs/ai/TASK_COMPLETION_PROTOCOL.md", ["ANDROID_INTERACTION_BUDGET.md", "structural protocol check verifies routing only"]);
   requireIncludes("docs/ai/TASK_COMPLETION_PROTOCOL.md", [
     "DONE is an evidence state",
     "No evidence = FAIL",
@@ -237,7 +242,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`[task-completion-protocol] PASS - ${passCount} invariants verified.`);
+  console.log(`[task-completion-protocol] PASS - ${passCount} invariants verified (structural routing only; runtime evidence not evaluated).`);
 }
 
 main();

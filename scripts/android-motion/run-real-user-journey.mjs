@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, open } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -453,23 +453,42 @@ async function readWebViewState(port) {
   }
 }
 
-async function runJourney({ captureScreenshots, outputDirectory, port, scenario, serial }) {
-  const actions = [];
-  const checkpoints = [];
-  let clickableNodeInventories = [];
+export function countLogcatWindowWarnings(before, after) {
+  const entries = (text) => text.split(/\r?\n/).filter(
+    (line) => line && !line.startsWith("--------- beginning of"),
+  );
+  const baseline = entries(before);
+  const current = entries(after);
+  // Without a retained prefix, rotation or a missing watermark makes the
+  // window incomplete. Unknown must not be reported as zero warnings.
+  if (
+    baseline.length === 0 || current.length < baseline.length ||
+    baseline.some((line, index) => line !== current[index])
+  ) return null;
+  return current.slice(baseline.length).filter(
+    (line) => /Tile memory limits exceeded/i.test(line),
+  ).length;
+}
+
+async function runJourney({ captureScreenshots, outputDirectory, port, scenario, serial }, progress) {
+  const { actions, checkpoints, clickableNodeInventories } = progress;
+  const logcatBaseline = captureScreenshots
+    ? await runAdb(serial, "logcat", "-d")
+    : null;
 
   const recordAction = async (entry, execute) => {
+    progress.pendingAction = { ...entry, status: "UNVERIFIED" };
     const action = await runTimedJourneyStep({ entry, execute });
     actions.push(action);
+    progress.pendingAction = null;
     if (entry.bounds) {
-      clickableNodeInventories = clickableNodeInventories.map((inventory) => ({
-        ...inventory,
-        nodes: reconcileClickableNode(inventory.nodes, {
+      for (const inventory of clickableNodeInventories) {
+        inventory.nodes = reconcileClickableNode(inventory.nodes, {
           bounds: entry.bounds,
           label: entry.label,
           status: "PASS",
-        }),
-      }));
+        });
+      }
     }
     return action.result;
   };
@@ -528,22 +547,28 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
     await sleep(settleMs);
   };
 
-  const requireTexts = async (texts, label) => {
+  const requireTexts = async (texts, label, { drawerClosed = false } = {}) => {
     const startedAtMs = globalThis.performance.now();
     const deadline = Date.now() + 7000;
     let missing = texts;
+    let drawerOpen = false;
     do {
       try {
         const { nodes } = await dumpUi(serial);
         missing = texts.filter(
           (text) => !findVisibleUiNode(nodes, { text }),
         );
-        if (missing.length === 0) {
+        drawerOpen = drawerClosed && nodes.some(
+          (node) => node.visibleToUser &&
+            (node.text === "Close menu" || node.contentDescription === "Close menu"),
+        );
+        if (missing.length === 0 && !drawerOpen) {
           checkpoints.push({
             label,
             visibleTexts: texts,
             startedAtMs,
             endedAtMs: globalThis.performance.now(),
+            ...(drawerClosed ? { drawerClosed: true } : {}),
           });
           return;
         }
@@ -552,6 +577,7 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
       }
       await sleep(250);
     } while (Date.now() < deadline);
+    if (drawerOpen) throw new Error(`${label} is blocked by an open drawer`);
     throw new Error(`${label} is missing visible nodes: ${missing.join(", ")}`);
   };
 
@@ -572,8 +598,7 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
       name,
     );
     const logcat = await runAdb(serial, "logcat", "-d");
-    const tileWarningsSoFar =
-      logcat.match(/Tile memory limits exceeded/gi)?.length ?? 0;
+    const tileWarningsSoFar = countLogcatWindowWarnings(logcatBaseline, logcat);
     checkpoints.push({
       label: name,
       screenshot,
@@ -583,9 +608,6 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
     });
   };
 
-  if (captureScreenshots) {
-    await runAdb(serial, "logcat", "-c");
-  }
   await requireTexts(
     [
       "Log how you're feeling",
@@ -595,14 +617,16 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
       "Very Unpleasant",
       "Very Pleasant",
       "Next",
+      "Open menu",
     ],
-    "day Orb select",
+    "initial day Orb select",
+    { drawerClosed: true },
   );
-  await requireNode({ text: "Open menu" }, "Open menu");
   await captureClickableInventory("orb-day-select");
   const initialSurface = captureScreenshots
     ? await readWebViewState(port)
     : null;
+  progress.initialSurface = initialSurface;
   if (
     captureScreenshots &&
     !hasIsolatedAndroidDayCompositor(initialSurface)
@@ -753,6 +777,7 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
   await openDrawer();
   await tapNode({ text: "Dark" }, "Dark theme", 1200);
   const nightState = captureScreenshots ? await readWebViewState(port) : null;
+  progress.nightState = nightState;
   await capture("10-night-drawer-control");
   await tapNode({ text: "Mood" }, "Mood in night theme", 1200);
   await requireTexts(["Next", "For the whole day"], "night Orb control");
@@ -763,6 +788,7 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
   const restoredDayState = captureScreenshots
     ? await readWebViewState(port)
     : null;
+  progress.restoredDayState = restoredDayState;
   await capture("12-restored-day-drawer");
   await tapNode({ text: "Close menu" }, "Close menu", 900);
   await requireTexts(["Next", "For the whole day"], "restored day Orb");
@@ -773,12 +799,12 @@ async function runJourney({ captureScreenshots, outputDirectory, port, scenario,
   let tileWarnings = null;
   if (captureScreenshots) {
     const allLogcat = await runAdb(serial, "logcat", "-d");
-    tileWarnings = allLogcat.match(/Tile memory limits exceeded/gi)?.length ?? 0;
-    await runAdb(serial, "logcat", "-c");
+    tileWarnings = countLogcatWindowWarnings(logcatBaseline, allLogcat);
+    progress.tileWarnings = tileWarnings;
     await sleep(5000);
     const steadyLogcat = await runAdb(serial, "logcat", "-d");
-    steadyTileWarnings =
-      steadyLogcat.match(/Tile memory limits exceeded/gi)?.length ?? 0;
+    steadyTileWarnings = countLogcatWindowWarnings(allLogcat, steadyLogcat);
+    progress.steadyTileWarnings = steadyTileWarnings;
     finalSurface = await readWebViewState(port);
   }
 
@@ -821,55 +847,99 @@ async function main() {
     path.dirname(resolvedOutput),
     `${path.basename(resolvedOutput, path.extname(resolvedOutput))}-screens`,
   );
-  if (captureScreenshots) {
-    await mkdir(outputDirectory, { recursive: true });
+  const outputFile = await open(resolvedOutput, "wx", 0o600);
+  try {
+    const startedAt = new Date().toISOString();
+    const progress = {
+      actions: [],
+      pendingAction: null,
+      checkpoints: [],
+      clickableNodeInventories: [],
+      initialSurface: null,
+      finalSurface: null,
+      nightState: null,
+      restoredDayState: null,
+      tileWarnings: null,
+      steadyTileWarnings: null,
+    };
+    let clockSyncStarted = null;
+    let clockSyncEnded = null;
+    let result = null;
+    let failure = null;
+    let failed = false;
+    try {
+      if (captureScreenshots) {
+        await mkdir(outputDirectory);
+      }
+      clockSyncStarted = await sampleDeviceClockSync(serial);
+      result = await runJourney({
+        captureScreenshots,
+        outputDirectory,
+        port,
+        scenario,
+        serial,
+      }, progress);
+      clockSyncEnded = await sampleDeviceClockSync(serial);
+    } catch (error) {
+      failed = true;
+      failure = error;
+    }
+    const payload = {
+      schemaVersion: 2,
+      statusScope: "journey and clock collection; visual and motion acceptance are separate",
+      status: failed ? "FAIL" : "PASS",
+      failure: failed ? {
+        name: failure instanceof Error ? failure.name : "Error",
+        message: failure instanceof Error ? failure.message : String(failure),
+      } : null,
+      activity,
+      endedAt: new Date().toISOString(),
+      interactionSource: "uiautomator-adb",
+      monotonicClock: "host-performance-now",
+      clockSync: {
+        started: clockSyncStarted,
+        ended: clockSyncEnded,
+      },
+      packageName,
+      scenario,
+      serial,
+      startedAt,
+      visualCaptureMode: captureScreenshots
+        ? "screenshots-and-diagnostics"
+        : "continuous-video-only",
+      logcatObservation: captureScreenshots ? {
+        scope: "shared-buffer, not package-isolated",
+        windowMethod: "retained-prefix; missing or changed prefix yields null",
+        separatePackageDiagnosticsRequired: true,
+      } : null,
+      ...progress,
+      ...result,
+    };
+    try {
+      await outputFile.writeFile(`${JSON.stringify(payload, null, 2)}\n`, "utf8");
+    } catch (writeError) {
+      if (failed) {
+        throw new AggregateError([failure, writeError], "Journey failed and its evidence could not be written", { cause: failure });
+      }
+      throw writeError;
+    }
+    if (failed) throw failure;
+    console.log(
+      JSON.stringify({
+        actions: payload.actions.length,
+        checkpoints: payload.checkpoints.length,
+        clickableNodes: payload.clickableNodeInventories.reduce(
+          (total, inventory) => total + inventory.nodes.length,
+          0,
+        ),
+        output,
+        steadyTileWarnings: payload.steadyTileWarnings,
+        tileWarnings: payload.tileWarnings,
+      }),
+    );
+  } finally {
+    await outputFile.close();
   }
-  const startedAt = new Date().toISOString();
-  const clockSyncStarted = await sampleDeviceClockSync(serial);
-  const result = await runJourney({
-    captureScreenshots,
-    outputDirectory,
-    port,
-    scenario,
-    serial,
-  });
-  const clockSyncEnded = await sampleDeviceClockSync(serial);
-  const payload = {
-    schemaVersion: 2,
-    activity,
-    endedAt: new Date().toISOString(),
-    interactionSource: "uiautomator-adb",
-    monotonicClock: "host-performance-now",
-    clockSync: {
-      started: clockSyncStarted,
-      ended: clockSyncEnded,
-    },
-    packageName,
-    scenario,
-    serial,
-    startedAt,
-    visualCaptureMode: captureScreenshots
-      ? "screenshots-and-diagnostics"
-      : "continuous-video-only",
-    ...result,
-  };
-  await writeFile(resolvedOutput, `${JSON.stringify(payload, null, 2)}\n`, {
-    encoding: "utf8",
-    mode: 0o600,
-  });
-  console.log(
-    JSON.stringify({
-      actions: payload.actions.length,
-      checkpoints: payload.checkpoints.length,
-      clickableNodes: payload.clickableNodeInventories.reduce(
-        (total, inventory) => total + inventory.nodes.length,
-        0,
-      ),
-      output,
-      steadyTileWarnings: payload.steadyTileWarnings,
-      tileWarnings: payload.tileWarnings,
-    }),
-  );
 }
 
 const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";

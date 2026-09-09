@@ -48,7 +48,7 @@ interface UseSwipeNavigationReturn {
     onTouchEnd: (e: React.TouchEvent) => void;
   };
   /** Ref to attach to the container element */
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 /**

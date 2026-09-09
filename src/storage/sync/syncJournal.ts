@@ -4,7 +4,7 @@
  */
 
 import { logger } from "@/lib/logger";
-import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSyncWriter";
 import { isAbortError } from "@/lib/validation";
 import { supabase } from "@/lib/supabaseClient";
 import type { Database } from "@/types/supabase";

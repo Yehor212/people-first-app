@@ -14,7 +14,7 @@ vi.mock("@/storage/sync/syncOwner", () => ({
   validateSyncOwner: mocks.validateSyncOwner,
 }));
 
-vi.mock("@/storage/eventSync", () => ({
+vi.mock("@/storage/eventSyncWriter", () => ({
   broadcastCommittedSyncEvent: mocks.broadcastCommittedSyncEvent,
 }));
 

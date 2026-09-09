@@ -119,7 +119,7 @@ function getBaseLayoutFromChildren(children: ReactNode): Layout | null {
       return;
     }
 
-    if (typeof child.props.id !== "string") {
+    if (!("id" in child.props) || typeof child.props.id !== "string") {
       hasPanelWithoutId = true;
       return;
     }

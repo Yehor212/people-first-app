@@ -883,6 +883,13 @@ async function main() {
   assertLocalMcpBoundary();
   assertAgentChangeGovernance(agents);
   assertAgentWorkspaceProtocol();
+  const androidPolicy = "docs/ai/ANDROID_INTERACTION_BUDGET.md";
+  assertGovernanceFile(androidPolicy);
+  for (const file of ["AGENTS.md", "docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md", "docs/ai/TASK_COMPLETION_PROTOCOL.md", "docs/ai/SPEC_KIT_AGENT_POLICY.md"]) {
+    if (!read(file).includes("ANDROID_INTERACTION_BUDGET.md")) {
+      fail(`${file} must route Android interaction claims to ${androidPolicy}`);
+    }
+  }
 
   for (const example of ["tools/zenflow-context/mcp-server.example.json"]) {
     if (existsSync(path.join(repoRoot, example))) {

@@ -1,6 +1,6 @@
 import { ScheduleEvent } from '@/types';
-import { formatDate, parseLocalDate, getToday } from '@/lib/utils';
-import { formatScheduleDayNumber } from './scheduleFormatting';
+import { formatDate, getToday } from '@/lib/utils';
+import { formatScheduleDayNumber, formatScheduleWeekday } from './scheduleFormatting';
 
 export interface ScheduleTimelineProps {
   events: ScheduleEvent[];
@@ -23,13 +23,11 @@ export function getExtendedDates(): string[] {
 
 // Format date for display
 export function formatDayShort(dateStr: string, language: string): { day: string; weekday: string; isToday: boolean } {
-  const date = parseLocalDate(dateStr);
   const isToday = dateStr === getToday();
-  const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });
 
   return {
     day: formatScheduleDayNumber(dateStr, language),
-    weekday: formatter.format(date),
+    weekday: formatScheduleWeekday(dateStr, language),
     isToday,
   };
 }

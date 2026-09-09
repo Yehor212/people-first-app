@@ -15,9 +15,9 @@ npm run dev
 ```
 
 ## Git workflow
-- Single-branch workflow: work only on `main` unless a different branch is explicitly requested.
-- Before push: sync `main`, keep the worktree intentional, and run `npm run ci:preflight`.
-- Do not spread one task across multiple long-lived feature branches by default.
+- Codex edits use one locked `codex/` worktree; `main` stays clean and review-only. Follow [the workspace protocol](docs/ai/CODEX_WORKSPACE_PROTOCOL.md) and its edit doctor before changes.
+- Keep one task in its approved lane. Before an authorized push, run `npm run ci:preflight` and the task's runtime checks; fetching does not authorize a merge or reset.
+- Android navigation work follows [the interaction budget and evidence contract](docs/ai/ANDROID_INTERACTION_BUDGET.md). A short CSS duration or green build alone does not prove a 103 ms phone transition.
 
 ## Environment variables
 Copy `.env.example` into one of:

@@ -31,7 +31,7 @@ vi.mock("@/lib/offlineQueue", () => ({
   offlineQueue: { enqueue: mocks.enqueue },
 }));
 
-vi.mock("@/storage/eventSync", () => ({
+vi.mock("@/storage/eventSyncWriter", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));

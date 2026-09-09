@@ -47,7 +47,7 @@ function OrbStepScene({
   shouldAnimate: boolean;
 }) {
   const isPresent = useIsPresent();
-  const exitingInteractionProps = !isPresent ? ({ inert: "" } as const) : {};
+  const exitingInteractionProps = !isPresent ? ({ inert: true } as const) : {};
 
   return (
     <motion.div

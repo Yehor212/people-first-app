@@ -26,6 +26,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The existing SafeArea native owner leases a stable surface to this dialog.
+ * Reserve IME space inside its opaque background, without resizing WebView. */
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[role="dialog"] {
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-bottom: var(--zenflow-ime-overlap, 0px);
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[role="dialog"] .journal-editor-paper-surface {
+  min-height: calc((100dvh - var(--zenflow-ime-overlap, 0px)) * 0.6);
+}
+
+/* Only a live Android lease may request this short, keyboard-occupied layout.
+ * Existing labels, 48px actions and materials remain intact; portrait and
+ * floating/hidden keyboards keep the normal top/bottom toolbar arrangement. */
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] > .journal-editor-header {
+  grid-area: 1 / 1;
+  min-width: 0;
+  padding-block: 0;
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] .journal-editor-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] .journal-editor-identity > div {
+  min-width: 0;
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] .journal-editor-identity > div:first-child {
+  flex: 1 1 auto;
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] > .journal-editor-content {
+  grid-area: 2 / 1 / 3 / -1;
+  min-height: 0;
+}
+
+:root[data-platform="android"][data-journal-keyboard-viewport] .journal-entry-editor-shell[data-journal-keyboard-compact][data-tools-collapsed="true"] > [data-testid="journal-mobile-tools-panel"] {
+  grid-area: 1 / 2;
+  width: auto;
+  padding-block: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
 @layer base {
   :root {
     color-scheme: light dark; /* native form controls match theme, prevents dark mode flash */
@@ -7614,6 +7669,44 @@ button.press-stable:active:not(:disabled),
 }
 /* End Android drawer blur partition. */
 
+/* Android's 103 ms interaction target includes route handoff and presentation,
+ * not only CSS. Reserve headroom by finishing the retained panel in 48 ms;
+ * keep its geometry, easing and exact filter chain. Controls move together so
+ * the last destination never waits for a stagger. Continuous orb/music motion
+ * and the other platforms retain their own contracts. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-platform="android"] body:not(.reduce-motion) :is(
+    .drawer-v2-panel-partitioned,
+    .drawer-v2-backdrop-partitioned
+  ) {
+    transition-duration: 48ms;
+  }
+
+  :root[data-platform="android"] body:not(.reduce-motion)
+    .drawer-v2-panel-partitioned :is(button, [data-nav-button="drawer"] > span) {
+    transition-duration: 80ms;
+  }
+
+  :root[data-platform="android"] body:not(.reduce-motion)
+    .drawer-v2-panel-partitioned [data-nav-button="drawer"] {
+    animation-duration: 48ms;
+    /* Overrides only the drawer's existing inline entrance stagger. */
+    animation-delay: 0ms !important;
+  }
+
+  /* Keep both palette phases inside the same finite-control budget, with
+   * headroom for native input, the midpoint handoff and presentation. */
+  :root[data-platform="android"] body:not(.reduce-motion)
+    .theme-transition-veil--enter {
+    transition-duration: 16ms;
+  }
+
+  :root[data-platform="android"] body:not(.reduce-motion)
+    .theme-transition-veil--release {
+    transition-duration: 32ms;
+  }
+}
+
 /* Theme transition veil start */
 .theme-transition-veil {
   position: fixed;
@@ -7648,7 +7741,7 @@ button.press-stable:active:not(:disabled),
 
 /* Atomic theme palette start */
 html.theme-transition-palette-atomic body,
-html.theme-transition-palette-atomic body > div,
+html.theme-transition-palette-atomic body > div:not([data-theme-transition-veil]),
 html.theme-transition-palette-atomic .card,
 html.theme-transition-palette-atomic .bg-card,
 html.theme-transition-palette-atomic .bg-background,

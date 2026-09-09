@@ -9,7 +9,7 @@ import { detectNetworkError } from "./syncUtils";
 import { supabase } from "@/lib/supabaseClient";
 import { offlineQueue } from "@/lib/offlineQueue";
 import type { Json } from "@/types/supabase";
-import { getPersistentDeviceId, writeEventAndBroadcast } from "@/storage/eventSync";
+import { getPersistentDeviceId, writeEventAndBroadcast } from "@/storage/eventSyncWriter";
 import { storageRemove } from "@/lib/safeJson";
 import { isAccountSyncedSettingKey, shouldDeleteSettingFromCloud } from "./settingSyncPolicy";
 import { validateSyncOwner } from "./syncOwner";

@@ -512,7 +512,7 @@ export async function enableAutomationPreference(
         await callPreferenceRpc("set_automation_preference_with_planning", {
           ...rpcArgs,
           p_planning_blocks: validatedInput.planningBlocks,
-          p_device_id: await import("@/storage/eventSync").then(({ getPersistentDeviceId }) =>
+          p_device_id: await import("@/storage/eventSyncWriter").then(({ getPersistentDeviceId }) =>
             getPersistentDeviceId()
           ),
         }),

@@ -1,0 +1,21 @@
+diff --git a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java b/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java
+--- a/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java
++++ b/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/plugin/SystemBars.java
+@@ -147,5 +147,9 @@
+     @JavascriptInterface
+     public void onDOMReady() {
++        if (!insetHandlingEnabled) {
++            return;
++        }
++
+         getActivity().runOnUiThread(() -> {
+             this.bridge.getWebView().evaluateJavascript(viewportMetaJSFunction, (res) -> {
+                 hasViewportCover = res.equals("true");
+@@ -177,3 +181,7 @@
+     private void initWindowInsetsListener() {
++        if (!insetHandlingEnabled) {
++            return;
++        }
++
+         ViewCompat.setOnApplyWindowInsetsListener((View) getBridge().getWebView().getParent(), (v, insets) -> {
+             boolean shouldPassthroughInsets = getWebViewMajorVersion() >= WEBVIEW_VERSION_WITH_SAFE_AREA_FIX && hasViewportCover;

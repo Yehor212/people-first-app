@@ -115,6 +115,7 @@ function scheduleCanonicalOrbPrewarmAfterStartup(): void {
 
   scheduleIdle(
     () => {
+      if (!navigator.onLine) return;
       void import("./components/state-of-mind/canonicalOrbPrewarm")
         .then(({ prewarmCanonicalOrbWebGL }) => prewarmCanonicalOrbWebGL("post-startup-idle"))
         .catch((err) => logger.warn("[Main] Canonical orb prewarm failed:", err));

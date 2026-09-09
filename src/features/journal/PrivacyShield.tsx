@@ -17,7 +17,7 @@ const VISIBLE_CLASS = "privacy-visible";
 
 interface PrivacyShieldProps {
   isActive: boolean;
-  editorRef: React.RefObject<HTMLDivElement>;
+  editorRef: React.RefObject<HTMLDivElement | null>;
 }
 
 /**

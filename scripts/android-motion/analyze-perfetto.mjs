@@ -32,19 +32,27 @@ const args = parseArgs(process.argv.slice(2));
 const packageName = args.package || "com.zenflow.app";
 const queries = buildTraceSummaryQueries(packageName);
 const frameTimeline = convertRow(query(args["trace-processor"], args.trace, queries.frameTimeline)[0] || {});
+const displayTimeline = convertRow(query(args["trace-processor"], args.trace, queries.displayTimeline)[0] || {});
 const webViewDraw = convertRow(query(args["trace-processor"], args.trace, queries.webViewDraw)[0] || {});
 const threadCpu = query(args["trace-processor"], args.trace, queries.threadCpu).map(convertRow);
 const traceHash = await hashPath(args.trace);
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   analyzedAt: new Date().toISOString(),
   packageName,
   trace: { sha256: traceHash.sha256, bytes: traceHash.bytes },
   frameTimeline,
+  displayTimeline,
+  measurement: {
+    presentationTimestamp: "App-linked SurfaceFlinger actual slice ts + dur; Android display stack",
+    frameRate: "Distinct presentation intervals divided by first-to-last presentation span; null if links are missing or fewer than two updates exist",
+    displayIntervalPercentiles: "Nearest rank over distinct matched presentation timestamps",
+    scope: "Trace diagnostics; emulator results do not prove physical-phone performance or input-to-final-presentation latency",
+  },
   webViewDraw,
   threadCpu,
 };
 const output = path.resolve(args.output);
 await mkdir(path.dirname(output), { recursive: true });
 await writeFile(output, `${JSON.stringify(report, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
-console.log(JSON.stringify({ output: args.output, traceSha256: traceHash.sha256, frameTimeline, webViewDraw }));
+console.log(JSON.stringify({ output: args.output, traceSha256: traceHash.sha256, frameTimeline, displayTimeline, webViewDraw }));

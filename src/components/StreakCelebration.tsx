@@ -15,8 +15,8 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
   const { t, language } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const message = getStreakMessage(streak, language);
-  const showTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const showTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     // Animate in

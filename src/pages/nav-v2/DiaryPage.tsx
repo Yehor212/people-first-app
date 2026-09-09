@@ -2,6 +2,12 @@ import { lazy, memo, startTransition, Suspense, useEffect, useRef, useState } fr
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useThemeStore } from "@/stores/themeStore";
+import { useShouldAnimate } from "@/hooks/useShouldAnimate";
+import { isAndroid } from "@/lib/platform";
+import { CosmicBgAdapter } from "./CosmicBgAdapter";
+import { OrbDayFlourish } from "./OrbDayFlourish";
+import { ShootingStar } from "./ShootingStar";
+import { useCosmicParallax } from "./useCosmicParallax";
 import type { JournalEntryPrefill, JournalEntrySuggestion } from "@/features/journal";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { formatDate } from "@/lib/utils";
@@ -10,6 +16,30 @@ import type { GratitudeEntry, MoodType } from "@/types";
 const JournalModule = lazy(
   () => import("@/features/journal/JournalModule").then((m) => ({ default: m.JournalModule })),
 );
+
+// Keep the Orb scene's palette, layers, veil and flourishes together. Journal
+// only receives a presentation slot; it does not depend on V2 page components.
+const DiaryOrbBackground = memo(function DiaryOrbBackground() {
+  const appliedTheme = useThemeStore((s) => s.appliedTheme);
+  const shouldAnimate = useShouldAnimate({ respectRuntimePerformance: !isAndroid });
+  const parallaxRef = useCosmicParallax<HTMLDivElement>();
+  const isPaperTheme = appliedTheme === "paper";
+
+  return (
+    <div
+      aria-hidden="true"
+      data-testid="diary-orb-background"
+      className={`v2-readable-page v2-readable-page--ambient pointer-events-none absolute inset-0 z-0 overflow-hidden [@media(forced-colors:active)]:hidden ${isPaperTheme ? "orb-day-scope" : "dark orb-cosmic-scope journal-wallpaper--night"}`}
+    >
+      <CosmicBgAdapter />
+      <div ref={parallaxRef} className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        {shouldAnimate ? (isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />) : null}
+      </div>
+    </div>
+  );
+});
+
+const DIARY_PAGE_BACKGROUND = <DiaryOrbBackground />;
 
 function valenceToMood(v: number): MoodType {
   if (v < -0.75) return "terrible";
@@ -195,6 +225,7 @@ export const DiaryPage = memo(function DiaryPage({
             disableCardShell
             hideCloseButton
             presentation="page"
+            pageBackground={DIARY_PAGE_BACKGROUND}
             initialEntrySuggestion={initialEntrySuggestion}
             onInitialEntrySuggestionConsumed={consumePendingMoodContext}
             loadingTheme={appliedTheme}
