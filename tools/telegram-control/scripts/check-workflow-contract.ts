@@ -69,7 +69,7 @@ const deployRequiredSubstrings = [
   "github.event.inputs.telegram_approval == 'telegram-approved'",
   "TELEGRAM_AUTH_BOT_TOKEN",
   "uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5",
-  "uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0",
+  "uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1",
 ];
 
 const wranglerRequiredSubstrings = [
@@ -89,6 +89,7 @@ const forbiddenWorkflowSubstrings = [
   [workflowPath, workflow, "GH_TOKEN: ${{ github.token }}\njobs:"],
   [deployWorkflowPath, deployWorkflow, "uses: actions/upload-pages-artifact@v5"],
   [deployWorkflowPath, deployWorkflow, "uses: actions/deploy-pages@v5.0.0"],
+  [deployWorkflowPath, deployWorkflow, "uses: actions/deploy-pages@v5.0.1"],
 ] as const;
 
 const sourceRequiredSubstrings = [

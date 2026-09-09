@@ -36,3 +36,19 @@ T001–T003 precede code. T004 precedes T005–T007; T008 precedes T009–T011. 
 ## Execution Notes
 
 T005 preserved the original SlashCommandMenu non-null assertion: after its ref contract correctly became nullable, that assertion remained necessary. The recording-save and Playwright assertions identified as redundant were removed without changing behavior. See [verification.md](verification.md) for the observed RED/GREEN sequence and remaining publication gates.
+
+## Current-Head CI Compatibility Follow-up
+
+- [ ] T016 [US3] Restore the Telegram workflow contract's exact approved deploy-pages v5.0.1 SHA after local and remote RED; retain prior forbidden-tag checks, reject the new unpinned tag, rerun local Telegram checks and fresh exact-head CI before T014–T015 complete.
+- [ ] T017 [US3] Align offline Diary evidence with its previously approved Orb background without dropping cache/durability assertions; add explicit reduced-motion evidence, refresh only the two directly inspected stale desktop/mobile Diary-draft screenshots from current browser output, keep comparison thresholds unchanged and rerun exact-head CI.
+- [ ] T018 [US3] Fix the reproduced offline optional-prewarm import at its idle callback without altering the canonical renderer or global chunk-error dialog; require new fast RED/GREEN and the unchanged offline entry/save/reload journey before publication.
+- [x] T019 [US3] Record direct owner authorization at 15:23 UTC for the separately exposed PWA editor packaging/cache contract; update spec.md, plan.md, research.md and delivery contract without changing the prior compatibility history.
+- [x] T020 [US3] Add isolated emitted-graph, CSS/asset, cycle, missing dependency, revision, deduplication and size regressions in scripts/__tests__/diary-offline-precache.test.mjs and run RED before implementation.
+- [x] T021 [US3] Implement scripts/diary-offline-precache.mjs and wire its collector/manifest transform in vite.config.ts only under pwaEnabled; rerun the same focused tests, actual production build and e2e/diary-pwa-offline.spec.ts without online editor warming or dropped assertions.
+- [x] T022 [US3] Verify final injected entries/bytes, native-disabled build, source integrity/security, unchanged visual thresholds and broad preflight; update verification.md and the integration plan before normal commit/push and exact-head CI in T014–T015.
+
+T020 precedes T021; T022 blocks T014–T015. All work remains inline in the existing locked lane. No partial offline claim substitutes for the complete save/reload/reconnect journey.
+
+- [x] T023 [US3] Owner approved at 16:08 UTC on 2026-09-09: use 655360 bytes for the measured 566129-byte editor/list dependency payload, retaining the existing image and 3 MiB per-file guard. Boundary tests cover exact-limit acceptance and one-byte-over rejection; T021–T022 still require fresh build and runtime acceptance before publication.
+
+Local acceptance snapshot at 16:45 UTC: T021–T022 passed the final build, full preflight and repeated browser checks documented in verification.md. T014–T018 remain open only for their normal publication/exact-head CI clauses; they are not missing implementation. Record the eventual merge and ancestry in PR #112 and the ignored final receipt rather than marking future actions complete in this pre-publication commit.

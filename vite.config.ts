@@ -10,6 +10,7 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { changelogPlugin } from "./vite-plugin-changelog.ts";
 import { versionPlugin } from "./vite-plugin-version.ts";
 import { createCompactI18nBuildPlugin } from "./scripts/compact-i18n-build-plugin.mjs";
+import { createDiaryOfflinePrecache } from "./scripts/diary-offline-precache.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const T184_QA_OUT_DIR = "output/t184-android-qa";
@@ -120,6 +121,7 @@ export default defineConfig(({ mode }) => {
   const webBase = normalizeBasePath(process.env.VITE_APP_BASE || "/people-first-app/");
   const base = t184QaBuild ? "/" : isCapacitor ? "./" : webBase;
   const pwaEnabled = !isCapacitor && process.env.VITE_DISABLE_PWA !== "true";
+  const diaryOfflinePrecache = pwaEnabled ? createDiaryOfflinePrecache({ root: __dirname }) : null;
   const journalSaveCeremonyBuildEnabled =
     process.env.ZENFLOW_JOURNAL_SAVE_CEREMONY_BUILD_ENABLED === "true";
   const t173LifecycleProofEnabled =
@@ -185,6 +187,7 @@ export default defineConfig(({ mode }) => {
       react(),
       changelogPlugin(),
       versionPlugin({ buildTime: appBuildTime }),
+      diaryOfflinePrecache?.plugin,
       mode === "development" && componentTagger(),
       // Precompress JS/CSS/HTML/SVG with Brotli (default q=11) + gzip (default q=9).
       // PWA web build only — Capacitor's default WebViewAssetLoader does NOT
@@ -384,8 +387,10 @@ export default defineConfig(({ mode }) => {
 
             // P1 Fix: injectManifest configuration for custom SW
             injectManifest: {
-              // Keep install precache to the real app shell and canonical orb boot path.
-              // Large/lazy route chunks and social graphics are cached on demand by sw.ts.
+              // Keep the shell/orb boot path; the bounded transform adds the cold
+              // Diary editor's emitted static dependencies without executing them.
+              // Other lazy routes and social graphics stay on-demand in sw.ts.
+              manifestTransforms: diaryOfflinePrecache ? [diaryOfflinePrecache.manifestTransform] : [],
               globPatterns: [
                 "index.html",
                 "assets/index-*.js",

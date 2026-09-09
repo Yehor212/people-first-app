@@ -6,6 +6,19 @@ import {
 } from "../src/lib/connectivityProbe";
 import { primeZenflowV2, v2RoutePath } from "./helpers/zenflowV2State";
 
+async function expectDiaryOrbBackground(page: Page) {
+  const background = page.getByTestId("diary-orb-background");
+  await expect(background).toHaveCount(1);
+  await expect(background).toBeVisible();
+  await expect(background).toHaveAttribute("aria-hidden", "true");
+  await expect(background).toHaveCSS("pointer-events", "none");
+  await expect(background).toHaveClass(/orb-day-scope/);
+  const dayScene = background.getByTestId("day-cosmic-background");
+  await expect(dayScene).toBeVisible();
+  await expect(dayScene).toHaveAttribute("data-daymode", /dawn|morning|afternoon|golden|dusk/);
+  return dayScene;
+}
+
 async function openPrimedDiary(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
@@ -29,7 +42,7 @@ async function openPrimedDiary(page: Page) {
     waitUntil: "domcontentloaded",
   });
   await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId("journal-wallpaper")).toBeVisible();
+  await expectDiaryOrbBackground(page);
 }
 
 async function expectDiaryTabActions(page: Page) {
@@ -143,10 +156,7 @@ test.describe("PWA offline V2 Diary", () => {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId("journal-wallpaper")).toHaveAttribute(
-      "data-wallpaper-platform",
-      "universal",
-    );
+    await expectDiaryOrbBackground(page);
     await expectDiaryTabActions(page);
 
     const onlineFacts = await page.evaluate(async () => {
@@ -169,20 +179,29 @@ test.describe("PWA offline V2 Diary", () => {
       offlineEntryVisible: boolean;
       online: boolean;
       shellVisible: boolean;
-      wallpaperTone: string | null;
+      backgroundMode: string | null;
     };
     await installOfflineConnectivityProbeFailure(page);
+    // Playwright 1.62.1 loses navigator.onLine on reload while requests remain
+    // offline (microsoft/playwright#42174, also reproduced on a data URL).
+    // Keep that browser signal consistent with the still-blocked network.
+    const offlineSession = await context.newCDPSession(page);
+    await offlineSession.send("Page.enable");
+    const offlineStateScript = await offlineSession.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: 'Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false });',
+    });
     await context.setOffline(true);
     try {
+      expect(await page.evaluate(() => navigator.onLine), "offline emulation reaches the current page").toBe(false);
       await page.reload({
         waitUntil: "domcontentloaded",
       });
 
+      expect(await page.evaluate(() => navigator.onLine), "offline emulation survives navigation").toBe(false);
       await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByTestId("journal-wallpaper")).toHaveAttribute(
-        "data-wallpaper-motion",
-        "static",
-      );
+      const offlineBackground = await expectDiaryOrbBackground(page);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await expect(offlineBackground).toHaveAttribute("data-animated", "false");
       const offlineBanner = page.getByTestId("offline-banner");
       await expect(offlineBanner).toBeVisible();
       await offlineBanner.getByRole("button", { name: "Dismiss" }).click();
@@ -195,13 +214,18 @@ test.describe("PWA offline V2 Diary", () => {
       await expect(editor).toBeVisible({ timeout: 20_000 });
       await editor.fill(offlineEntryText);
       await page.getByRole("button", { name: /^Save$/i }).click();
+      // Saving switches contenteditable to false before the durable commit.
+      // Wait for the whole editor to close, not the editable selector to vanish.
+      await expect(page.getByTestId("journal-entry-editor")).toHaveCount(0, { timeout: 20_000 });
       await expect(page.getByText(offlineEntryText)).toBeVisible({ timeout: 20_000 });
       await page.reload({ waitUntil: "domcontentloaded" });
       await expect(page.getByText(offlineEntryText)).toBeVisible({ timeout: 30_000 });
 
       offlineFacts = await page.evaluate(() => {
         const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
-        const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
+        const background = document.querySelector<HTMLElement>(
+          "[data-testid='diary-orb-background'] [data-testid='day-cosmic-background']",
+        );
         return {
           controlled: Boolean(navigator.serviceWorker?.controller),
           diaryRoute: window.location.pathname.endsWith("/diary"),
@@ -210,11 +234,16 @@ test.describe("PWA offline V2 Diary", () => {
           ) ?? false,
           online: navigator.onLine,
           shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
-          wallpaperTone: wallpaper?.dataset.wallpaperTone ?? null,
+          backgroundMode: background?.dataset.daymode ?? null,
         };
       });
     } finally {
+      await offlineSession.send("Page.removeScriptToEvaluateOnNewDocument", {
+        identifier: offlineStateScript.identifier,
+      });
+      await page.evaluate(() => Reflect.deleteProperty(navigator, "onLine"));
       await context.setOffline(false);
+      await offlineSession.detach();
     }
 
     expect(offlineFacts).toMatchObject({
@@ -224,8 +253,9 @@ test.describe("PWA offline V2 Diary", () => {
       online: false,
       shellVisible: true,
     });
-    expect(offlineFacts.wallpaperTone).toMatch(/day|night/);
+    expect(offlineFacts.backgroundMode).toMatch(/dawn|morning|afternoon|golden|dusk/);
     await page.reload({ waitUntil: "domcontentloaded" });
+    expect(await page.evaluate(() => navigator.onLine), "real online signal is restored").toBe(true);
     await expect(page.getByText("A diary entry written while the PWA was offline.")).toBeVisible({
       timeout: 30_000,
     });
@@ -243,19 +273,19 @@ test.describe("PWA offline V2 Diary", () => {
 
     await openPrimedDiary(page);
     await expect(page.getByTestId("journal-page-shell")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId("journal-wallpaper")).toBeVisible();
+    await expectDiaryOrbBackground(page);
     await expectDiaryTabActions(page);
 
     const readinessFacts = await page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>("[data-testid='journal-page-shell']");
-      const wallpaper = document.querySelector<HTMLElement>("[data-testid='journal-wallpaper']");
+      const background = document.querySelector<HTMLElement>("[data-testid='diary-orb-background']");
       return {
         diaryRoute: window.location.pathname.endsWith("/diary"),
         manifestHref: document.querySelector<HTMLLinkElement>('link[rel="manifest"]')?.href ?? null,
         online: navigator.onLine,
         shellVisible: Boolean(shell && shell.getBoundingClientRect().height > 0),
         standalone: (navigator as Navigator & { standalone?: boolean }).standalone === true,
-        wallpaperVisible: Boolean(wallpaper && wallpaper.getBoundingClientRect().height > 0),
+        backgroundVisible: Boolean(background && background.getBoundingClientRect().height > 0),
       };
     });
 
@@ -264,7 +294,7 @@ test.describe("PWA offline V2 Diary", () => {
       online: true,
       shellVisible: true,
       standalone: true,
-      wallpaperVisible: true,
+      backgroundVisible: true,
     });
     expect(readinessFacts.manifestHref).toContain("/people-first-app/manifest.webmanifest");
     expect(errors).toEqual([]);

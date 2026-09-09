@@ -269,6 +269,14 @@ describe("canonical orb invariant", () => {
     expect(mainSource).toContain("orbPrewarm");
   });
 
+  it("checks connectivity when deferred optional prewarm actually runs", () => {
+    const mainSource = readSource("src/main.tsx");
+
+    expect(mainSource).toMatch(
+      /scheduleIdle\(\s*\(\) => \{\s*if \(!navigator\.onLine\) return;\s*void import\("\.\/components\/state-of-mind\/canonicalOrbPrewarm"\)/,
+    );
+  });
+
   it("keeps canonical WebGL contexts desynchronized to reduce Chrome compositor stalls", () => {
     const workerSource = readSource("src/components/state-of-mind/orbWorker.ts");
     const mainSource = readSource("src/components/state-of-mind/orbShader.ts");

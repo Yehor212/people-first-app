@@ -53,6 +53,8 @@ All fifteen heads are preserved under published integration head `d9a71d80`. [PR
 
 ## 3. Publish protected main
 
+Pre-publication follow-up snapshot, 16:45 UTC: the separately approved cold Diary delivery repair is complete locally. The final full preflight passed 10363 tests with zero failures; final-built PWA/WebKit and visual/Settings/resize checks passed. The original fifteen heads remain ancestors, all 90 non-package original paths match preservation commit 538ff957, the extra circular argument is retained and both source working copies are untouched. This snapshot does not pre-claim the next commit, current-head CI or merge; their receipts belong to PR #112 and the final local evidence.
+
 - [x] Inspect final diff/status, security, exact 80-path staged manifest and fresh receipts; staged integrity has zero errors/warnings.
 - [ ] Commit with installed hooks and push only the matching codex branch.
 - [ ] Obtain exact-tip workspace handoff; update existing PR #112 with truthful checks, change notice and platform matrix.

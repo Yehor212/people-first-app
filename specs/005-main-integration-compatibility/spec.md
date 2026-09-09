@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-09
 
-**Status**: Approved scope; implementation evidence pending
+**Status**: Local implementation and final-build acceptance verified; protected publication pending
 
 **Input**: The owner requested all pending work from all branches in main, including other authors, then approved the necessary React 19 adaptation and twelve import-cycle repairs with “да разрешаю” on 2026-09-09 at 13:08 UTC. PR #112 already preserves the original branch heads.
 
@@ -57,6 +57,9 @@ The owner receives one history-preserving integration of the already inventoried
 
 ### Edge Cases
 
+- After installation completes and Diary has been visited, its editor may still be unopened when connectivity disappears; opening it, saving and reloading must work without first opening it online.
+- An incomplete or evicted installation is not a guarantee of offline availability; no synthetic records or automatic private-data clearing may hide the condition.
+
 - Closing surfaces may remain mounted for animation but must lose interaction immediately, including reduced-motion and RTL states.
 - Absent refs and cleared timer handles retain their existing null/undefined states.
 - Event-write failures, duplicate operation keys and queue-persistence failures retain existing outcomes and rejection paths.
@@ -78,6 +81,9 @@ The owner receives one history-preserving integration of the already inventoried
 - **FR-006**: Every original inventoried branch head and preserved working-change commit MUST remain reachable from main after a normal merge, with original source working copies and refs retained.
 - **FR-007**: Publication MUST use current required checks without force, skipped hooks, relaxed assertions, scanner exclusions, invented evidence or agent-created waivers.
 - **FR-008**: Verification MUST state Web, installed PWA, Android, iOS and Desktop separately and distinguish code/build proof from public, device, live-account and artistic proof.
+- **FR-009**: Once the offline installation completes and Diary has been visited, its previously unopened editor MUST open without internet, save a local entry and retain that exact entry after an offline reload and subsequent reconnection.
+- **FR-010**: Offline editor delivery MUST preserve deferred editor execution, existing layout and data ownership. Its added installation payload MUST stay within the owner-approved 640 KiB; unrelated optional features and unused languages MUST remain outside the added payload. Incomplete delivery or exceeded limits MUST block the build, not weaken acceptance.
+- **FR-011**: Editor assets MUST update coherently with each build, avoid duplicate cached resources and remain independent of private journal data. Native builds with offline-worker support disabled MUST retain their existing delivery behavior.
 
 ### Key Entities
 
@@ -95,10 +101,11 @@ The owner receives one history-preserving integration of the already inventoried
 - **SC-002**: Compatibility checks report zero type errors and zero import cycles without removing dependency edges from analysis; existing behavioral coverage has no unexplained regressions.
 - **SC-003**: All fifteen original branch heads and the preserved local batch are reachable from the verified main head after merge.
 - **SC-004**: The final report contains five explicit platform rows and every unavailable proof remains named; the separate Android 103 ms goal is not relabeled as complete.
+- **SC-005**: The full cold-editor, offline save, offline reload and reconnect journey passes with real network disconnection and no preceding online editor visit; added installation bytes are at most 655360 and all existing error/persistence checks remain required.
 
 ## Assumptions
 
-- The two direct owner instructions authorize compatibility repairs and normal PR #112 publication, not new product behavior, production-data mutation, store submission, branch deletion or history rewriting.
+- The original owner instructions authorize compatibility repairs and normal PR #112 publication. The additional direct approval at 15:23 UTC on 2026-09-09 authorizes offline editor loading and dependency caching. None authorizes production-data mutation, store submission, branch deletion or history rewriting.
 - The existing locked editing lane remains the sole writer. Original working copies remain untouched.
 - The same existing services, persistence formats and visual system are retained; no new paid service or production dependency is introduced.
 - The previous Android performance work remains separately tracked in `specs/004-android-interaction-budget/`.
@@ -108,3 +115,7 @@ The owner receives one history-preserving integration of the already inventoried
 ### Session 2026-09-09
 
 No new questions: the direct approval resolves the material scope expansion. Functional scope, entities/lifecycle, UX, quality attributes, integrations, failure paths, constraints, terminology and completion signals are clear. Native/live-account/public proof is a verification boundary, not an unanswered product decision.
+
+At 15:23 UTC the owner answered “Да” to the explicit offline editor/dependency caching scope. Cold means no editor visit before disconnection. Scope is the current locally supported editor/save flow after completed installation, not every optional media feature or guaranteed recovery from browser cache eviction. These definitions resolve the new delivery boundary without another approval loop.
+
+At 16:08 UTC the owner approved 640 KiB (655360 bytes) after the measured editor/list/image closure exceeded the preliminary 512 KiB limit, and reiterated normal push and merge to main. Required images, per-file limit and runtime/persistence assertions remain unchanged.
