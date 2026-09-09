@@ -54,7 +54,9 @@ export function collectDiaryOfflineAssets(bundle, { root }) {
     }
     return {
       url: fileName,
-      revision: createHash("sha256").update(bytes).digest("hex"),
+      // Workbox cache identifier, not a security digest. Pages artifact trust
+      // remains SHA-256; its existing cache verifier requires Workbox's MD5.
+      revision: createHash("md5").update(bytes).digest("hex"),
       size,
     };
   });

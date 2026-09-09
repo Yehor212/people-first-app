@@ -1,6 +1,11 @@
-import { createHash } from "node:crypto";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  computeWorkboxRevision,
+  verifyServiceWorkerPrecacheReferences,
+} from "../check-release-artifact-integrity.cjs";
 import {
   collectDiaryOfflineAssets,
   createDiaryOfflinePrecache,
@@ -136,7 +141,7 @@ describe("Diary offline emitted dependency closure", () => {
     for (const entry of entries) {
       const output = bundle[entry.url];
       const bytes = output.type === "chunk" ? output.code : output.source;
-      expect(entry.revision).toBe(createHash("sha256").update(bytes).digest("hex"));
+      expect(entry.revision).toBe(computeWorkboxRevision(bytes));
       expect(entry.size).toBe(Buffer.byteLength(bytes));
     }
     bundle["assets/editor-build.js"].code += "\n";
@@ -166,6 +171,37 @@ describe("Diary offline Workbox manifest integration", () => {
     expect(result.manifest[0]).not.toBe(shell[0]);
     expect(result.warnings).toEqual([]);
     expect(shell).toHaveLength(2);
+  });
+
+  it("passes the actual release revision verifier and still rejects changed bytes", () => {
+    const artifactRoot = mkdtempSync(path.join(tmpdir(), "zenflow-diary-precache-release-"));
+    try {
+      const bundle = graph();
+      const indexHtml = "<!doctype html><title>Isolated artifact contract</title>";
+      const integration = collectedIntegration(bundle);
+      const result = integration.manifestTransform([
+        { url: "index.html", revision: computeWorkboxRevision(indexHtml) },
+      ]);
+      writeFileSync(path.join(artifactRoot, "index.html"), indexHtml);
+      for (const entry of collectDiaryOfflineAssets(bundle, { root })) {
+        const output = bundle[entry.url];
+        const destination = path.join(artifactRoot, entry.url);
+        mkdirSync(path.dirname(destination), { recursive: true });
+        writeFileSync(destination, output.type === "chunk" ? output.code : output.source);
+      }
+      writeFileSync(
+        path.join(artifactRoot, "sw.js"),
+        `precacheAndRoute(${JSON.stringify(result.manifest)},{});`,
+      );
+      expect(verifyServiceWorkerPrecacheReferences(artifactRoot)).toEqual({ checkedPrecacheUrls: 6 });
+
+      writeFileSync(path.join(artifactRoot, "assets/editor-build.js"), "changed emitted bytes");
+      expect(() => verifyServiceWorkerPrecacheReferences(artifactRoot)).toThrow(
+        /precache revision mismatch: assets\/editor-build\.js/,
+      );
+    } finally {
+      rmSync(artifactRoot, { recursive: true, force: true });
+    }
   });
 
   it("retains sizes and stable entries after Workbox removes size metadata", () => {
