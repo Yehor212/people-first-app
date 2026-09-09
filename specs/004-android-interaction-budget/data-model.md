@@ -1,0 +1,6 @@
+# State and evidence model
+No business-data schema changes.
+Native keyboard geometry: hidden/floating/docked overlap belongs to the current Activity and is never persisted. Native system-bar/cutout clearance and editor content reservation have one owner each. Page reload/re-entry receives current geometry; dismissal, rotation and teardown cannot retain stale overlap. The stable-root diagnostic replaces this boundary only inside its opt-in test Activity and restores/removes temporary state on exit.
+Drawer: unmounted → opening → open → closing → unmounted. Reduced motion bypasses animated closing. Reopen invalidates closing work; cancellation may release only a closed surface with no ongoing exit. Focus/body scroll remain owned until removal.
+Route: request intent → feedback/preload → drawer exit → destination render → actual readiness or loading/error. Request identity rejects stale callbacks, including Back/popstate and replacement.
+Run evidence: source commit/snapshot/build-input hashes, built APK hash, independent installed-before/after receipts, package/version, device/WebView/refresh/thermal identity, scenario/mode/iteration, timestamps and artifacts. Individual samples retain units/method; missing observations are UNVERIFIED, never zero.

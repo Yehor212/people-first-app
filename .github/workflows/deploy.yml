@@ -113,6 +113,15 @@ jobs:
       - name: Run release unit tests
         run: npm run test:release -- --maxWorkers=2
 
+      - name: Check Android interaction and evidence regressions
+        run: >-
+          npm test -- --maxWorkers=2
+          src/components/navigation-v2/__tests__/DrawerV2.test.tsx
+          src/hooks/__tests__/useNavigationV2.test.ts
+          src/components/navigation-v2/__tests__/NavV2Orchestrator.test.tsx
+          scripts/__tests__/android-motion-evidence.test.ts
+          scripts/__tests__/pre-commit-typecheck.test.ts
+
       - name: Run release workflow contract tests
         run: npm run test:release-contracts
 

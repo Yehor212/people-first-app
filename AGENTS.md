@@ -144,7 +144,7 @@ Supported platforms: Web/Vite, PWA, Android/Capacitor, iOS/WKWebView, Desktop/Ta
 
 ## Runtime And Visual Invariants
 
-- Read `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md` before startup, performance, sync, navigation, service worker, WebGL/canvas, IndexedDB/Dexie, Supabase, offline queue, app lifecycle, or cross-platform flow changes.
+- Read `docs/ai/TELEGRAM_GRADE_RUNTIME_CONTRACT.md` before startup, performance, sync, navigation, service worker, WebGL/canvas, IndexedDB/Dexie, Supabase, offline queue, app lifecycle, or cross-platform flow changes; Android interaction claims also follow `docs/ai/ANDROID_INTERACTION_BUDGET.md`.
 - Read `docs/ai/V2_FULLSCREEN_EDGE_TO_EDGE_CONTRACT.md` before V2 fullscreen, edge-to-edge, safe-area, SystemBars, WebView viewport, native shell, mobile nav, sheet, modal, or entry/auth layout changes.
 - The canonical state-of-mind orb family is frozen. Full surfaces use `ValenceOrb`; compact surfaces use `MiniValenceOrb`.
 - Run `npm run check:canonical-orbs` for orb or visual runtime changes.

@@ -254,11 +254,6 @@ function compileShader(gl: WebGL2RenderingContext, type: number, source: string)
   if (!shader) throw new Error("Android daylight shader allocation failed");
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const message = gl.getShaderInfoLog(shader) ?? "unknown shader error";
-    gl.deleteShader(shader);
-    throw new Error(`Android daylight shader compilation failed: ${message}`);
-  }
   return shader;
 }
 
@@ -268,24 +263,35 @@ function createProgram(
   fragmentSource: string
 ): ProgramResources {
   const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  const program = gl.createProgram();
-  if (!program) {
+  let fragmentShader: WebGLShader | null = null;
+  let program: WebGLProgram | null = null;
+  try {
+    fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+    program = gl.createProgram();
+    if (!program) throw new Error("Android daylight program allocation failed");
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    return { fragmentShader, program, vertexShader };
+  } catch (error) {
+    if (program) gl.deleteProgram(program);
+    if (fragmentShader) gl.deleteShader(fragmentShader);
     gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
-    throw new Error("Android daylight program allocation failed");
+    throw error;
   }
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const message = gl.getProgramInfoLog(program) ?? "unknown program error";
-    gl.deleteProgram(program);
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
-    throw new Error(`Android daylight program link failed: ${message}`);
-  }
-  return { fragmentShader, program, vertexShader };
+}
+
+function assertProgramLinked(gl: WebGL2RenderingContext, resources: ProgramResources): void {
+  if (gl.getProgramParameter(resources.program, gl.LINK_STATUS)) return;
+  const message =
+    [
+      gl.getProgramInfoLog(resources.program),
+      gl.getShaderInfoLog(resources.vertexShader),
+      gl.getShaderInfoLog(resources.fragmentShader),
+    ]
+      .filter(Boolean)
+      .join("; ") || "unknown program error";
+  throw new Error(`Android daylight program link failed: ${message}`);
 }
 
 function deleteProgram(gl: WebGL2RenderingContext, resources: ProgramResources | null): void {
@@ -410,7 +416,20 @@ function createRenderer(gl: WebGL2RenderingContext): RendererResources {
         THREAD_QUAD_CORNERS,
         threadInstanceData()
       );
-      return { ambience, particles, threads };
+      try {
+        // Submit the complete batch before a status query can wait on the GPU
+        // service. Successful links validate both shaders; per-shader checks
+        // serialize compilation and add six synchronous round trips on Android.
+        // Keep readiness and the first draw synchronous with validated programs
+        // so this scheduling change cannot expose a partially prepared scene.
+        assertProgramLinked(gl, ambience);
+        assertProgramLinked(gl, particles);
+        assertProgramLinked(gl, threads);
+        return { ambience, particles, threads };
+      } catch (error) {
+        deleteInstancedPass(gl, threads);
+        throw error;
+      }
     } catch (error) {
       deleteInstancedPass(gl, particles);
       throw error;
@@ -535,6 +554,8 @@ export function useAndroidDayLargeEffects(
     let probe: AndroidDayMotionProbe | null = null;
     let appliedDayMode: DayMode | null = null;
     let staticUniformsDirty = true;
+    let lastPresentedFrame: number | null = null;
+    let lastPresentedPhaseMs: number | null = null;
     let viewport = { cssHeight: 0, cssWidth: 0, dpr: 1 };
 
     const stopLoop = () => {
@@ -555,6 +576,14 @@ export function useAndroidDayLargeEffects(
       if (cssWidth <= 0 || cssHeight <= 0 || !Number.isFinite(dpr) || dpr <= 0) return false;
       const pixelWidth = Math.round(cssWidth * dpr);
       const pixelHeight = Math.round(cssHeight * dpr);
+      if (
+        viewport.cssWidth === cssWidth &&
+        viewport.cssHeight === cssHeight &&
+        viewport.dpr === dpr &&
+        canvas.width === pixelWidth &&
+        canvas.height === pixelHeight
+      )
+        return true;
       const maxRenderbufferSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) as number;
       if (pixelWidth > maxRenderbufferSize || pixelHeight > maxRenderbufferSize) {
         throw new Error(
@@ -630,6 +659,18 @@ export function useAndroidDayLargeEffects(
       lastFrameTime = frameTime;
       const timeSeconds = elapsedMs / 1000;
       const dayMode = resolveDayMode(root);
+      const timelineTime = root.ownerDocument.timeline?.currentTime;
+      const frameKey = typeof timelineTime === "number" ? timelineTime : null;
+      // Activation, rAF and ResizeObserver can all run before the same paint.
+      // Keep the motion clock current while avoiding duplicate frame submissions.
+      if (
+        frameKey !== null &&
+        lastPresentedFrame === frameKey &&
+        !staticUniformsDirty &&
+        appliedDayMode === dayMode &&
+        lastPresentedPhaseMs === fixedPhaseMs
+      )
+        return;
       if (staticUniformsDirty || appliedDayMode !== dayMode) {
         applyStaticUniforms(dayMode);
       }
@@ -649,6 +690,8 @@ export function useAndroidDayLargeEffects(
       drawPass(renderer.threads, timeSeconds);
       drawPass(renderer.particles, timeSeconds);
       gl.bindVertexArray(null);
+      lastPresentedFrame = frameKey;
+      lastPresentedPhaseMs = fixedPhaseMs;
     };
 
     const loop = (frameTime: number) => {
@@ -723,6 +766,8 @@ export function useAndroidDayLargeEffects(
       });
       if (!gl) throw new Error("Android daylight WebGL2 context is unavailable");
       renderer = createRenderer(gl);
+      viewport = { cssHeight: 0, cssWidth: 0, dpr: 1 };
+      lastPresentedFrame = null;
       appliedDayMode = null;
       staticUniformsDirty = true;
       gl.enable(gl.BLEND);
@@ -796,7 +841,6 @@ export function useAndroidDayLargeEffects(
       },
     };
     activityControllerRef.current = activityController;
-    activityController.setActive(activeRef.current);
 
     return () => {
       disposed = true;

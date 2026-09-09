@@ -47,12 +47,18 @@ public final class AndroidBackPlugin extends Plugin {
     public void setState(PluginCall call) {
         Boolean canConsume = call.getBoolean("canConsume");
         Boolean hasVisibleLayer = call.getBoolean("hasVisibleLayer");
-        if (canConsume == null || hasVisibleLayer == null || backCallback == null) {
+        if (canConsume == null || hasVisibleLayer == null) {
             call.reject("INVALID_BACK_STATE");
             return;
         }
 
         getBridge().executeOnMainThread(() -> {
+            // Destruction can run after this update was queued. Validate the
+            // main-thread owner before mutating its navigation state.
+            if (backCallback == null) {
+                call.reject("INVALID_BACK_STATE");
+                return;
+            }
             long revision = navigationState.update(canConsume, hasVisibleLayer);
             backCallback.setEnabled(canConsume);
             Logger.info(

@@ -16,7 +16,7 @@ This policy applies to every Spec Kit artifact and route. It does not claim that
 - Small local fixes use the compact test-first path from `AGENTS.md`; they do not create feature artifacts merely to satisfy process.
 - Protected or high-risk work uses the full route plus M2 governance, explicit rollback, the complete platform/domain matrix, and fresh evidence or `UNVERIFIED` rows.
 - `$speckit-constitution` is a separate governance action. `$speckit-taskstoissues` is a separate external write and requires explicit user instruction plus a verified repository/target.
-- Spec Kit chooses no specialist count. The persistent orchestra still uses the smallest evidence-backed set; all ten roles are not automatic.
+- Spec Kit chooses no specialist count. The persistent orchestra is retired; use the smallest explicitly authorized specialist set within the active workspace contract.
 
 ## Constitution Status Gate
 
@@ -52,6 +52,8 @@ Every nontrivial spec separates:
 6. Acceptance evidence and an `UNVERIFIED` ledger.
 
 ## UI And Motion Completion Contract
+
+Android navigation and finite control effects also follow [ANDROID_INTERACTION_BUDGET.md](ANDROID_INTERACTION_BUDGET.md); carry its source/APK, presentation and missing-observation requirements into spec, tasks and convergence evidence.
 
 For animation or visual-motion requests, the spec must reason from the actual trigger and user task instead of automatically placing an effect in the center of the screen.
 

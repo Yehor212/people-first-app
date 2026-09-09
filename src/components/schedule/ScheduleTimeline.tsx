@@ -16,7 +16,7 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Home, Calendar } from "lucide-react";
-import { getToday, parseLocalDate } from "@/lib/utils";
+import { getToday } from "@/lib/utils";
 import { ScheduleEvent } from "@/types";
 import { EmptyState } from "@/components/EmptyState";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -28,6 +28,7 @@ import {
   DAY_WIDTH_PX,
 } from "./constants";
 import { ScheduleClock, ScheduleDayButton } from "./ScheduleVisuals";
+import { formatScheduleDateLabel } from "./scheduleFormatting";
 import { TimelineDayColumn } from "./TimelineDayColumn";
 import { useScheduleData } from "./useScheduleData";
 import { AddEventModal } from "./AddEventModal";
@@ -369,9 +370,7 @@ export function ScheduleTimeline({
                 onKeyDown={(event) => handleDayKeyDown(event, date)}
                 tabIndex={date === selectedDate ? 0 : -1}
                 language={language}
-                accessibleDateLabel={new Intl.DateTimeFormat(language, {
-                  dateStyle: "full",
-                }).format(parseLocalDate(date))}
+                accessibleDateLabel={formatScheduleDateLabel(date, language)}
                 eventPresenceLabel={hasEvents ? t.scheduleDayHasEvents : undefined}
               />
             );

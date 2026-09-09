@@ -8,6 +8,7 @@ import {
 } from "@/lib/notificationLifecycle";
 import { storageGetRaw, storageSetRaw } from "@/lib/safeJson";
 import { SK } from "@/lib/storageKeys";
+import { isAndroid } from "@/lib/platform";
 
 /**
  * Navigation V2 — 5-page IA (Orb / Habits / Diary / Planning / Settings).
@@ -372,12 +373,19 @@ export function useNavigationV2(): UseNavigationV2Return {
         return;
       }
 
+      const commitDestination = () => {
+        setRenderedPage(page);
+        // Once Android hands rendering to the destination, its Suspense
+        // boundary owns loading. Clear the outgoing feedback in the same
+        // commit so it does not retain a blur surface for extra frames.
+        if (isAndroid) setRoutePendingPage(null);
+      };
       const run = () => {
         publishRoute();
-        setRenderedPage(page);
+        commitDestination();
       };
 
-      // Paint immediate feedback, finish and unmount the retained phone drawer,
+      // Publish immediate feedback, finish and unmount the retained phone drawer,
       // then publish the destination after another paint boundary. Route
       // preloading remains opportunistic: a cold or failed chunk request must
       // not trap navigation behind the closed drawer; Suspense owns that late
@@ -388,19 +396,24 @@ export function useNavigationV2(): UseNavigationV2Return {
         if (wasDrawerOpen) {
           const requestId = drawerRouteRequestIdRef.current;
           const pending = {
-            commit: () => setRenderedPage(page),
+            commit: commitDestination,
             commitScheduled: false,
             drawerExited: false,
             requestId,
           };
           pendingDrawerRouteRef.current = pending;
           void options.preload?.catch(() => undefined);
-          drawerRouteCloseAfterPaintRef.current = scheduleAfterNextPaint(() => {
+          const closePendingDrawer = () => {
             if (pendingDrawerRouteRef.current !== pending) return;
             if (pending.requestId !== drawerRouteRequestIdRef.current) return;
             drawerRouteCloseAfterPaintRef.current = null;
             setDrawerOpen(false);
-          });
+          };
+          // Android can paint the selected item while the retained panel exits.
+          // An extra pre-exit double rAF delays the same feedback without
+          // reducing surface overlap. Keep the post-unmount boundary above.
+          if (isAndroid) closePendingDrawer();
+          else drawerRouteCloseAfterPaintRef.current = scheduleAfterNextPaint(closePendingDrawer);
           tryCommitPendingDrawerRoute();
           return;
         }
@@ -446,7 +459,23 @@ export function useNavigationV2(): UseNavigationV2Return {
   }, [setActivePage]);
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed((s) => !s), []);
-  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const openDrawer = useCallback(() => {
+    drawerRouteCloseAfterPaintRef.current?.();
+    drawerRouteCloseAfterPaintRef.current = null;
+    drawerRouteCommitAfterPaintRef.current?.();
+    drawerRouteCommitAfterPaintRef.current = null;
+    const pending = pendingDrawerRouteRef.current;
+    if (pending) {
+      // A new retained surface needs its own exit. Replacing the request object
+      // also rejects already-queued callbacks from the previous drawer cycle.
+      pendingDrawerRouteRef.current = {
+        ...pending,
+        commitScheduled: false,
+        drawerExited: false,
+      };
+    }
+    setDrawerOpen(true);
+  }, []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   // Android hardware Back follows the visible stack, then destination history.

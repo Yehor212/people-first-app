@@ -483,6 +483,33 @@ describe("ValenceOrb motion profile", () => {
     ).toBe(false);
   });
 
+  it("does not hold the first Android mini-orb invisible for a fixed900ms before startup", () => {
+    platformControl.isAndroid = true;
+
+    expect(resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000)).toEqual({
+      delayMs: 0,
+      preferIdle: false,
+      nextMiniUpgradeStartAt: 7000,
+    });
+  });
+
+  it("preserves Android mini-orb GPU reservation spacing after removing the initial hold", () => {
+    platformControl.isAndroid = true;
+    const firstMini = resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000);
+    const queuedMini = resolveCanonicalWebGLUpgradeScheduling(
+      true,
+      120,
+      1100,
+      firstMini.nextMiniUpgradeStartAt,
+    );
+
+    expect(queuedMini).toEqual({
+      delayMs: 5900,
+      preferIdle: false,
+      nextMiniUpgradeStartAt: 13000,
+    });
+  });
+
   it("starts full canonical WebGL immediately while staggering mini upgrades", () => {
     const fullOrb = resolveCanonicalWebGLUpgradeScheduling(true, 240, 1000, 1000);
     const firstMini = resolveCanonicalWebGLUpgradeScheduling(true, 120, 1000, 1000);
@@ -571,6 +598,161 @@ describe("ValenceOrb motion profile", () => {
     });
 
     expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
+  });
+
+  describe("Android mini startup cancellation", () => {
+    beforeEach(() => {
+      platformControl.isAndroid = true;
+      vi.useFakeTimers();
+      const epoch = Date.now();
+      vi.spyOn(performance, "now").mockImplementation(() => Date.now() - epoch);
+      stubVisibleOrbRect();
+      vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) =>
+        window.setTimeout(() => callback(performance.now()), 16),
+      );
+      vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) =>
+        window.clearTimeout(id),
+      );
+      vi.mocked(createOrbGLAsync).mockImplementation(async () => ({
+        renderer: createMockGLRenderer(),
+        durationMs: 1,
+        tier: "webgl",
+      }));
+    });
+
+    const mountMini = () => render(createElement(ValenceOrb, {
+      valence: 0,
+      renderer: "webgl",
+      size: 120,
+    }));
+    const advance = async (ms: number) => {
+      await act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+    };
+    const firstPaint = (view: ReturnType<typeof render>) =>
+      view.container.querySelector('[data-orb-first-paint-ready="true"]');
+
+    it("does not charge an unmounted pre-frame mini against the next visible first paint", async () => {
+      const abandoned = mountMini();
+      abandoned.unmount();
+      const visible = mountMini();
+
+      await advance(100);
+
+      expect(firstPaint(visible)).not.toBeNull();
+      expect(createOrbGLAsync).toHaveBeenCalledTimes(1);
+      visible.unmount();
+    });
+
+    it("keeps real GPU startup spacing without charging a cancelled queued mini", async () => {
+      const starts: number[] = [];
+      vi.mocked(createOrbGLAsync).mockImplementation(async () => {
+        starts.push(performance.now());
+        return { renderer: createMockGLRenderer(), durationMs: 1, tier: "webgl" };
+      });
+      const first = mountMini();
+      await advance(100);
+      expect(firstPaint(first)).not.toBeNull();
+      first.unmount();
+      const abandoned = mountMini();
+      await advance(100);
+      abandoned.unmount();
+      const visible = mountMini();
+
+      await advance(5_799);
+      expect(firstPaint(visible)).toBeNull();
+      expect(starts).toHaveLength(1);
+      await advance(101);
+
+      expect(firstPaint(visible)).not.toBeNull();
+      expect(starts).toHaveLength(2);
+      expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(6_000);
+      expect(starts[1] - starts[0]).toBeLessThan(6_100);
+      visible.unmount();
+    });
+
+    it("moves a waiting visible mini forward when an earlier queued owner unmounts", async () => {
+      const first = mountMini();
+      await advance(100);
+      expect(firstPaint(first)).not.toBeNull();
+      first.unmount();
+      const abandoned = mountMini();
+      await advance(100);
+      const visible = mountMini();
+      await advance(100);
+      abandoned.unmount();
+
+      await advance(5_799);
+
+      expect(firstPaint(visible)).not.toBeNull();
+      expect(createOrbGLAsync).toHaveBeenCalledTimes(2);
+      visible.unmount();
+    });
+
+    it("leaves no startup task after every queued mini unmounts", async () => {
+      const first = mountMini();
+      const second = mountMini();
+      first.unmount();
+      second.unmount();
+
+      await advance(12_100);
+
+      expect(createOrbGLAsync).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("does not spend a GPU slot while hidden and requeues visibility without bypassing spacing", async () => {
+      const observed: Array<{ callback: IntersectionObserverCallback; target: Element }> = [];
+      vi.stubGlobal("IntersectionObserver", class {
+        constructor(private callback: IntersectionObserverCallback) {}
+        observe = (target: Element) => { observed.push({ callback: this.callback, target }); };
+        disconnect = vi.fn();
+        unobserve = vi.fn();
+        takeRecords = () => [];
+      });
+      const starts: number[] = [];
+      vi.mocked(createOrbGLAsync).mockImplementation(async () => {
+        starts.push(performance.now());
+        return { renderer: createMockGLRenderer(), durationMs: 1, tier: "webgl" };
+      });
+      const hidden = mountMini();
+      const wrapper = hidden.container.querySelector('[data-orb-renderer-policy="webgl"]');
+      if (!wrapper) throw new Error("Missing canonical mini wrapper");
+      const setVisible = (visible: boolean) => {
+        const rect = wrapper.getBoundingClientRect();
+        const entry: IntersectionObserverEntry = {
+          target: wrapper,
+          isIntersecting: visible,
+          intersectionRatio: visible ? 1 : 0,
+          boundingClientRect: rect,
+          intersectionRect: rect,
+          rootBounds: null,
+          time: performance.now(),
+        };
+        act(() => {
+          for (const item of observed.filter(item => item.target === wrapper)) {
+            item.callback([entry], {} as IntersectionObserver);
+          }
+        });
+      };
+      setVisible(false);
+      await advance(100);
+      expect(createOrbGLAsync).not.toHaveBeenCalled();
+      const visible = mountMini();
+      await advance(100);
+      expect(firstPaint(visible)).not.toBeNull();
+
+      setVisible(true);
+      await advance(5_800);
+      expect(firstPaint(hidden)).toBeNull();
+      await advance(200);
+
+      expect(firstPaint(hidden)).not.toBeNull();
+      expect(starts).toHaveLength(2);
+      expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(6_000);
+      expect(starts[1] - starts[0]).toBeLessThan(6_100);
+      hidden.unmount();
+      visible.unmount();
+    });
   });
 
   it("keeps canonical WebGL smooth even when runtime performance mode is active", () => {

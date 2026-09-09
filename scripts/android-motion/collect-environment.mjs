@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -123,7 +124,8 @@ if (args["schema-version"] === "2") {
   });
   const output = path.resolve(args.output);
   await mkdir(path.dirname(output), { recursive: true });
-  await writeFile(output, `${JSON.stringify({ schemaVersion: 2, environment }, null, 2)}\n`, {
+  const deviceKey = createHash("sha256").update(serial).digest("hex");
+  await writeFile(output, `${JSON.stringify({ schemaVersion: 2, deviceKey, environment }, null, 2)}\n`, {
     encoding: "utf8",
     mode: 0o600,
   });

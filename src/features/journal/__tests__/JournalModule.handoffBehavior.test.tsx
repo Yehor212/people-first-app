@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { forwardRef } from "react";
+import { forwardRef, useSyncExternalStore } from "react";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -48,6 +48,8 @@ const gamificationMocks = vi.hoisted(() => ({
 }));
 
 const securityMocks = vi.hoisted(() => ({
+  listeners: new Set<() => void>(),
+  revision: 0,
   state: {
     biometricAvailable: false,
     biometricEnabled: false,
@@ -56,16 +58,27 @@ const securityMocks = vi.hoisted(() => ({
     hasPassword: false,
     isLocked: false,
     loading: false,
+    loadError: false,
+    vaultKey: null as string | null,
     cloudProtectionPending: false,
     cloudProtectionPendingKind: null as null | "removal" | "vault-sync",
   },
   lock: vi.fn(),
+  retryLoad: vi.fn(),
   removePassword: vi.fn(),
   setPassword: vi.fn(),
   touch: vi.fn(),
   unlock: vi.fn(),
   unlockWithBiometric: vi.fn(),
 }));
+
+function updateSecurityState(changes: Partial<typeof securityMocks.state>) {
+  act(() => {
+    Object.assign(securityMocks.state, changes);
+    securityMocks.revision += 1;
+    for (const listener of securityMocks.listeners) listener();
+  });
+}
 
 const mediaQueryMocks = vi.hoisted(() => ({
   matches: false,
@@ -453,15 +466,25 @@ vi.mock("../useJournalSecurity", () => ({
     { label: "30 minutes", ms: 1_800_000 },
   ],
   setAutoLockMs: vi.fn(() => true),
-  useJournalSecurity: () => ({
-    ...securityMocks.state,
-    lock: securityMocks.lock,
-    removePassword: securityMocks.removePassword,
-    setPassword: securityMocks.setPassword,
-    touch: securityMocks.touch,
-    unlock: securityMocks.unlock,
-    unlockWithBiometric: securityMocks.unlockWithBiometric,
-  }),
+  useJournalSecurity: () => {
+    useSyncExternalStore(
+      (listener) => {
+        securityMocks.listeners.add(listener);
+        return () => securityMocks.listeners.delete(listener);
+      },
+      () => securityMocks.revision,
+    );
+    return {
+      ...securityMocks.state,
+      lock: securityMocks.lock,
+      retryLoad: securityMocks.retryLoad,
+      removePassword: securityMocks.removePassword,
+      setPassword: securityMocks.setPassword,
+      touch: securityMocks.touch,
+      unlock: securityMocks.unlock,
+      unlockWithBiometric: securityMocks.unlockWithBiometric,
+    };
+  },
 }));
 
 vi.mock("../useScreenSecurity", () => ({
@@ -585,6 +608,8 @@ describe("JournalModule orb handoff behavior", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    securityMocks.listeners.clear();
+    securityMocks.revision = 0;
     Object.values(storageMocks).forEach((mock) => mock.mockReset());
     Object.values(journalHubMocks).forEach((mock) => mock.mockReset());
     gamificationMocks.rewardUser.mockReset();
@@ -616,6 +641,8 @@ describe("JournalModule orb handoff behavior", () => {
       hasPassword: false,
       isLocked: false,
       loading: false,
+      loadError: false,
+      vaultKey: null,
       cloudProtectionPending: false,
       cloudProtectionPendingKind: null,
     });
@@ -679,6 +706,281 @@ describe("JournalModule orb handoff behavior", () => {
       createdAt: 1,
       updatedAt: 1,
     });
+  });
+
+  it("renders a supplied page background once instead of the legacy wallpaper", async () => {
+    const pageBackground = <div data-testid="supplied-page-background" aria-hidden="true" />;
+    const result = render(
+      <JournalModule startOpen disableCardShell presentation="page" pageBackground={pageBackground} />,
+    );
+    await act(flushJournalModuleEffects);
+    const background = screen.getByTestId("supplied-page-background");
+    expect(screen.getAllByTestId("supplied-page-background")).toHaveLength(1);
+    expect(screen.queryByTestId("journal-wallpaper")).not.toBeInTheDocument();
+
+    result.rerender(
+      <JournalModule startOpen disableCardShell presentation="page" pageBackground={pageBackground} navMenuOpen />,
+    );
+    await act(flushJournalModuleEffects);
+    expect(screen.getByTestId("supplied-page-background")).toBe(background);
+    result.unmount();
+    expect(screen.queryByTestId("supplied-page-background")).not.toBeInTheDocument();
+  });
+
+  it("retains the default page wallpaper when no presenter supplies a background", async () => {
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+    expect(screen.getAllByTestId("journal-wallpaper")).toHaveLength(1);
+  });
+
+  it("does not render a page background in the legacy dialog presentation", async () => {
+    render(
+      <JournalModule startOpen disableCardShell pageBackground={<div data-testid="supplied-page-background" />} />,
+    );
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByTestId("supplied-page-background")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { layout: "phone", wide: false, locked: false },
+    { layout: "wide", wide: true, locked: false },
+    { layout: "phone", wide: false, locked: true },
+    { layout: "wide", wide: true, locked: true },
+  ])("keeps loading feedback and app navigation visible on $layout while security is pending (locked=$locked)", async ({ wide, locked }) => {
+    mediaQueryMocks.matches = wide;
+    Object.assign(securityMocks.state, { loading: true, hasPassword: locked, isLocked: locked });
+    const openMenu = vi.fn();
+    const { rerender } = render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        showAppNavMenu
+        onOpenNavMenu={openMenu}
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+    await act(flushJournalModuleEffects);
+
+    const status = screen.getByRole("status");
+    expect(status).toBeVisible();
+    expect(status).toHaveTextContent("Loading...");
+    expect(status.querySelector("svg")?.getAttribute("class")).not.toContain("animate-spin");
+    expect(screen.getByRole("heading", { name: "Diary" })).toBeVisible();
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Unlock" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
+    const menu = screen.getByRole("button", { name: "Open menu" });
+    expect(menu).toBeEnabled();
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(menu);
+    expect(openMenu).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        showAppNavMenu
+        onOpenNavMenu={openMenu}
+        navMenuOpen
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Open menu" })).toHaveAttribute("aria-expanded", "true");
+    expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+  });
+
+  it("removes loading feedback only when security settles and hides private suggestions during a later check", async () => {
+    mediaQueryMocks.matches = true;
+    securityMocks.state.loading = true;
+    render(
+      <JournalModule startOpen disableCardShell presentation="page" initialEntrySuggestion={initialSuggestion} />,
+    );
+    await act(flushJournalModuleEffects);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading...");
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByText(initialSuggestion.note!)).toBeVisible();
+
+    updateSecurityState({ loading: true });
+    await act(flushJournalModuleEffects);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading...");
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+
+    updateSecurityState({ loading: false, hasPassword: true, isLocked: true });
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unlock" })).toBeVisible();
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+    expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+  });
+
+  it("allows closing the legacy diary dialog while security is still loading", async () => {
+    securityMocks.state.loading = true;
+    render(<JournalModule startOpen />);
+    await act(flushJournalModuleEffects);
+
+    const dialog = screen.getByRole("dialog", { name: "Diary" });
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Loading...");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "Diary" })).not.toBeInTheDocument();
+    expect(securityMocks.lock).toHaveBeenCalledTimes(1);
+  });
+
+  it("replaces pending security feedback with the existing retry error without exposing diary content", async () => {
+    securityMocks.state.loading = true;
+    render(
+      <JournalModule startOpen disableCardShell presentation="page" initialEntrySuggestion={initialSuggestion} />,
+    );
+    await act(flushJournalModuleEffects);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading...");
+
+    updateSecurityState({ loading: false, loadError: true, isLocked: true });
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Diary needs another moment to load");
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry loading" }));
+    expect(securityMocks.retryLoad).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Unlock" })).not.toBeInTheDocument();
+  });
+
+  it("does not restart the initial diary read when unprotected security becomes ready", async () => {
+    securityMocks.state.loading = true;
+    const page = {
+      entries: [],
+      totalCount: 0,
+      requestedCount: 0,
+      unavailableCount: 0,
+      state: "empty",
+      hasMore: false,
+      nextCursor: null,
+    };
+    storageMocks.getEntriesPage
+      .mockResolvedValueOnce(page)
+      .mockReturnValue(new Promise(() => undefined));
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+
+    expect(screen.queryByTestId("splash-theme-shell")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("journal-load-error")).not.toBeInTheDocument();
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the initial diary loading splash until an outstanding first read settles", async () => {
+    securityMocks.state.loading = true;
+    let finishRead!: (page: unknown) => void;
+    storageMocks.getEntriesPage.mockReturnValue(
+      new Promise((resolve) => {
+        finishRead = resolve;
+      }),
+    );
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    expect(screen.getByTestId("splash-theme-shell")).toBeInTheDocument();
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishRead({
+        entries: [],
+        totalCount: 0,
+        requestedCount: 0,
+        unavailableCount: 0,
+        state: "empty",
+        hasMore: false,
+        nextCursor: null,
+      });
+      await flushJournalModuleEffects();
+    });
+    expect(screen.queryByTestId("splash-theme-shell")).not.toBeInTheDocument();
+  });
+
+  it("refreshes the diary after the first locked state is unlocked and after the vault key changes", async () => {
+    Object.assign(securityMocks.state, { loading: true, hasPassword: true, isLocked: true });
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    updateSecurityState({ isLocked: false, vaultKey: "isolated-test-vault-key-a" });
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("splash-theme-shell")).not.toBeInTheDocument();
+
+    updateSecurityState({ vaultKey: "isolated-test-vault-key-b" });
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(3);
+  });
+
+  it("refreshes the diary when a later security check resolves without protection", async () => {
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    updateSecurityState({ loading: true });
+    await act(flushJournalModuleEffects);
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("splash-theme-shell")).not.toBeInTheDocument();
+  });
+
+  it("refreshes the diary when an initially locked journal has its protection removed", async () => {
+    Object.assign(securityMocks.state, { hasPassword: true, isLocked: true });
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    updateSecurityState({ hasPassword: false, isLocked: false });
+    await act(flushJournalModuleEffects);
+
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("splash-theme-shell")).not.toBeInTheDocument();
+  });
+
+  it("preserves an initial diary read error until the user retries", async () => {
+    securityMocks.state.loading = true;
+    storageMocks.getEntriesPage.mockRejectedValueOnce(new Error("Isolated test read failure"));
+    render(<JournalModule startOpen disableCardShell presentation="page" />);
+    await act(flushJournalModuleEffects);
+
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    const errorPanel = screen.getByTestId("journal-load-error");
+    expect(screen.queryByTestId("splash-theme-shell")).not.toBeInTheDocument();
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(1);
+
+    storageMocks.getEntriesPage.mockResolvedValue({
+      entries: [],
+      totalCount: 0,
+      requestedCount: 0,
+      unavailableCount: 0,
+      state: "empty",
+      hasMore: false,
+      nextCursor: null,
+    });
+    fireEvent.click(within(errorPanel).getByRole("button"));
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByTestId("journal-load-error")).not.toBeInTheDocument();
+    expect(storageMocks.getEntriesPage).toHaveBeenCalledTimes(2);
   });
 
   it("renders diary load failure as a calm recoverable state with retry", () => {
@@ -1596,6 +1898,7 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
+    await act(() => vi.dynamicImportSettled());
     await waitFor(() => {
       expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
     });
@@ -1714,6 +2017,7 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
+    await act(() => vi.dynamicImportSettled());
     await waitFor(() => {
       expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
     });
@@ -1966,6 +2270,7 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
+    await act(() => vi.dynamicImportSettled());
     await waitFor(() => {
       expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
     });
@@ -1994,6 +2299,7 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
+    await act(() => vi.dynamicImportSettled());
     await waitFor(() => {
       expect(supabaseMocks.authStateCallback).toEqual(expect.any(Function));
     });

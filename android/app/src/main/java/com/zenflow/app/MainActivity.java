@@ -66,15 +66,24 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     }
 
     private void applyNativeEdgeBackdrop() {
+        View decor = getWindow().getDecorView();
+        int left = decor.getPaddingLeft();
+        int top = decor.getPaddingTop();
+        int right = decor.getPaddingRight();
+        int bottom = decor.getPaddingBottom();
+
         // Launches always start dark to match the splash; the web theme
         // (StatusBarStyle.setStyle) may switch gutters during the session.
         if (edgeBackdropDark) {
             getWindow().setBackgroundDrawableResource(R.drawable.zenflow_edge_bleed_backdrop_night);
-            getWindow().getDecorView().setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop_night);
+            decor.setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop_night);
         } else {
             getWindow().setBackgroundDrawableResource(R.drawable.zenflow_edge_bleed_backdrop);
-            getWindow().getDecorView().setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop);
+            decor.setBackgroundResource(R.drawable.zenflow_edge_bleed_backdrop);
         }
+        // DecorView replaces padding when its background changes. Preserve the
+        // current SafeArea/IME insets before the next layout can resize WebView.
+        decor.setPadding(left, top, right, bottom);
     }
 
     /** Called by StatusBarStylePlugin so gutters track the web theme within a session. */

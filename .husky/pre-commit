@@ -1,13 +1,13 @@
 #!/usr/bin/env sh
 # Multi-gate pre-commit (ordered fastest-fail):
-#   1. tsc         — 0 TS errors invariant
+#   1. typecheck   — application and tooling projects, not the empty root config
 #   2. lint-staged — ESLint + oxlint on changed files only (fast)
 #   3. doc-counts  — ARCHITECTURE.md auto-generated block must match filesystem
 #                    (prevents Law 6 Reality Anchor regression — tech-debt audit 2026-04-18)
 #
 # Human emergency bypass exists in Git, but agents must never use --no-verify.
 node scripts/agent-workspace-git-hook.cjs pre-commit &&
-  npx tsc --noEmit &&
+  npm run typecheck &&
   npx lint-staged &&
   node scripts/check-canonical-orbs.mjs &&
   node scripts/doc-counts.cjs --check

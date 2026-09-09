@@ -18,8 +18,20 @@ function isAndroidVisualScope(value) {
 }
 
 function hasAndroidVisualSuccessClaim(value) {
-  const text = String(value || "");
-  return /(?:^|\W)(?:PASS|fixed|complete|completed|done|ready|исправлен|исправил|исправлено|готово|завершено|плавно|не\s+лагает|без\s+(?:лаг|глитч|дефект|регресс))(?:\W|$)/i.test(
+  // Strip only a specifically scoped technical result, never its surrounding
+  // clause: "Technical: PASS, Motion: PASS" still contains the visual claim.
+  const text = String(value || "")
+    .replace(
+      /(?:\b(?:technical|typecheck|pdi(?:\s+diff)?|plan|tooling\s+setup)\b|техническ[а-яё]*)\s*(?:[:—–-]\s*)?(?:(?:is|are|was)\s+)?(?:PASS|completed|complete|ready)(?=\W|$)/gi,
+      ""
+    )
+    .replace(
+      /\b(?:not|isn't|aren't)\s+(?:yet\s+)?(?:PASS|fixed|completed|complete|done|ready|smooth)\b|(?:^|\s)не\s+(?:исправлен[а-яё]*|исправил|готово|завершено)/gi,
+      ""
+    );
+  // JavaScript's ASCII \W treats Cyrillic letters as separators; that made
+  // "плавности" match "плавно". Require whole words in both languages.
+  return /(?:^|[^\p{L}\p{N}_])(?:PASS|fixed|complete|completed|done|ready|исправлен(?:а|о|ы)?|исправил(?:а|и)?|готов(?:о|а|ы)?|завершен(?:а|о|ы)?|плавно|не\s+лагает|без\s+(?:лаг(?:а|ов)?|глитч(?:а|ей)?|дефект(?:а|ов)?|регресс(?:а|ии|ий)?))(?=$|[^\p{L}\p{N}_])/iu.test(
     text
   );
 }

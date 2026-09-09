@@ -93,6 +93,129 @@ afterEach(async () => {
 });
 
 describe("Codex workspace command guard", () => {
+  const functionPatch = (target: string) =>
+    [
+      "*** Begin Patch",
+      `*** Add File: ${target}`,
+      "+export const value = () => 1;",
+      "*** End Patch",
+    ].join("\n");
+
+  it.each(["apply_patch", "WriteFile"])(
+    "rejects targetless command-shaped %s input",
+    async (toolName) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/patch-data"]);
+      const result = runHook(root, {
+        cwd: root,
+        tool_name: toolName,
+        tool_input: { command: "git reset --hard" },
+      });
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("destructive Git");
+    },
+  );
+
+  it("preserves secondary cmd on structured edits", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/patch-data"]);
+    const result = runHook(root, {
+      cwd: root,
+      tool_name: "apply_patch",
+      tool_input: {
+        command: functionPatch("src/patch-data.ts"),
+        cmd: "git reset --hard",
+      },
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toContain("destructive Git");
+  });
+
+  it("accepts command data with an explicit structured target", async () => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/patch-data"]);
+    const result = runHook(root, {
+      cwd: root,
+      tool_name: "WriteFile",
+      tool_input: {
+        file_path: "src/patch-data.ts",
+        command: "export const value = () => 1;",
+      },
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each([
+    ["apply_patch", "input"],
+    ["apply_patch", "command"],
+    ["functions.apply_patch", "input"],
+    ["functions.apply_patch", "command"],
+  ])("accepts same-lane function data from %s/%s", async (toolName, field) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/patch-data"]);
+    const result = runHook(root, {
+      cwd: root,
+      tool_name: toolName,
+      tool_input: { [field]: functionPatch("src/patch-data.ts") },
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+  });
+
+  it.each(["input", "command"])(
+    "keeps cross-lane targets blocked in %s patch data",
+    async (field) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      const otherRoot = await gitWorkspace(CANONICAL_REMOTE);
+      git(root, ["switch", "-c", "codex/patch-data"]);
+      const result = runHook(root, {
+        cwd: root,
+        tool_name: "apply_patch",
+        tool_input: { [field]: functionPatch(path.join(otherRoot, "src/patch-data.ts")) },
+      });
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain("cross-worktree mutation is forbidden");
+    },
+  );
+
+  it.each(["main", "qwen/patch-data"])(
+    "keeps %s read-only for command-field patch data",
+    async (branch) => {
+      const root = await gitWorkspace(CANONICAL_REMOTE);
+      if (branch !== "main") git(root, ["switch", "-c", branch]);
+      const result = runHook(root, {
+        cwd: root,
+        tool_name: "apply_patch",
+        tool_input: { command: functionPatch("src/patch-data.ts") },
+      });
+
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toMatch(/main is integration-only|client actor codex/);
+    },
+  );
+
+  it.each([
+    ["echo $(pwd)", /executable shell expansion/],
+    ["git reset --hard", /destructive Git/],
+    ["node scripts/unreviewed-command.mjs", /opaque child-process execution/],
+    ["adb -s emulator-5560 shell pidof com.zenflow.app", /unknown shell execution/],
+  ])("keeps a real shell event restricted: %s", async (command, reason) => {
+    const root = await gitWorkspace(CANONICAL_REMOTE);
+    git(root, ["switch", "-c", "codex/patch-data"]);
+    const result = runHook(root, {
+      cwd: root,
+      tool_name: "exec_command",
+      tool_input: { command },
+    });
+
+    expect(result.status, result.stderr).toBe(2);
+    expect(result.stderr).toMatch(reason);
+  });
+
   it.each([
     ["generic write tool", { tool_name: "WriteFile", tool_input: { path: "src/new.ts" } }],
     ["Codex patch tool", { tool_name: "apply_patch", tool_input: { path: "src/new.ts" } }],

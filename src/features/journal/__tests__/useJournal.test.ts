@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { useLayoutEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const scheduleIdleMock = vi.hoisted(() => ({
@@ -178,6 +179,132 @@ describe("useJournal", () => {
 
     expect(result.current.allEntries).toEqual([]);
     expect(result.current.totalCount).toBe(0);
+  });
+
+  it("does not insert a loading commit when the first page and security become ready together", async () => {
+    const page = datePage([makeEntry()]);
+    let resolvePage!: (value: typeof page) => void;
+    vi.mocked(storage.getEntriesPage).mockReturnValueOnce(new Promise((resolve) => {
+      resolvePage = resolve;
+    }));
+    const commits: Array<{ securityReady: boolean; loading: boolean; entries: number }> = [];
+    const { result } = renderHook(() => {
+      const journal = useJournal();
+      const [securityReady, setSecurityReady] = useState(false);
+      useLayoutEffect(() => {
+        commits.push({ securityReady, loading: journal.loading, entries: journal.allEntries.length });
+      }, [securityReady, journal.loading, journal.allEntries]);
+      return { journal, setSecurityReady };
+    });
+
+    await act(async () => {
+      resolvePage(page);
+      await Promise.resolve();
+      await Promise.resolve();
+      result.current.setSecurityReady(true);
+    });
+
+    expect(result.current.journal.allEntries).toEqual(page.entries);
+    expect(commits.filter((commit) => commit.securityReady)).toEqual([
+      { securityReady: true, loading: false, entries: 1 },
+    ]);
+  });
+
+  it("publishes an initial read failure with a simultaneous security-ready commit", async () => {
+    let rejectPage!: (error: Error) => void;
+    vi.mocked(storage.getEntriesPage).mockReturnValueOnce(new Promise((_, reject) => {
+      rejectPage = reject;
+    }));
+    const commits: Array<{ securityReady: boolean; loading: boolean; loadError: boolean }> = [];
+    const { result } = renderHook(() => {
+      const journal = useJournal();
+      const [securityReady, setSecurityReady] = useState(false);
+      useLayoutEffect(() => {
+        commits.push({ securityReady, loading: journal.loading, loadError: journal.loadError });
+      }, [securityReady, journal.loading, journal.loadError]);
+      return { journal, setSecurityReady };
+    });
+
+    await act(async () => {
+      rejectPage(new Error("Initial read unavailable"));
+      await Promise.resolve();
+      await Promise.resolve();
+      result.current.setSecurityReady(true);
+    });
+
+    expect(result.current.journal.loadError).toBe(true);
+    expect(commits.filter((commit) => commit.securityReady)).toEqual([
+      { securityReady: true, loading: false, loadError: true },
+    ]);
+  });
+
+  it("keeps later refresh results interruptible by a simultaneous control update", async () => {
+    const commits: Array<{ controlReady: boolean; loading: boolean; entries: number }> = [];
+    const { result } = renderHook(() => {
+      const journal = useJournal();
+      const [controlReady, setControlReady] = useState(false);
+      useLayoutEffect(() => {
+        commits.push({ controlReady, loading: journal.loading, entries: journal.allEntries.length });
+      }, [controlReady, journal.loading, journal.allEntries]);
+      return { journal, setControlReady };
+    });
+    await waitFor(() => expect(result.current.journal.loading).toBe(false));
+    const page = datePage([makeEntry()]);
+    let resolvePage!: (value: typeof page) => void;
+    vi.mocked(storage.getEntriesPage).mockReturnValueOnce(new Promise((resolve) => {
+      resolvePage = resolve;
+    }));
+    let refreshed!: Promise<void>;
+    act(() => { refreshed = result.current.journal.refresh(); });
+
+    await act(async () => {
+      resolvePage(page);
+      await refreshed;
+      result.current.setControlReady(true);
+    });
+
+    expect(result.current.journal.allEntries).toEqual(page.entries);
+    expect(commits.filter((commit) => commit.controlReady)).toEqual([
+      { controlReady: true, loading: true, entries: 0 },
+      { controlReady: true, loading: false, entries: 1 },
+    ]);
+  });
+
+  it("publishes the new account's first result without a stale security-ready loading commit", async () => {
+    const commits: Array<{ securityReady: boolean; loading: boolean; entries: number }> = [];
+    const { result } = renderHook(() => {
+      const journal = useJournal();
+      const [securityReady, setSecurityReady] = useState(false);
+      useLayoutEffect(() => {
+        commits.push({ securityReady, loading: journal.loading, entries: journal.allEntries.length });
+      }, [securityReady, journal.loading, journal.allEntries]);
+      return { journal, setSecurityReady };
+    });
+    await waitFor(() => expect(result.current.journal.loading).toBe(false));
+    const page = datePage([makeEntry({ id: "new-account-entry" })]);
+    let resolvePage!: (value: typeof page) => void;
+    vi.mocked(storage.getEntriesPage).mockReturnValueOnce(new Promise((resolve) => {
+      resolvePage = resolve;
+    }));
+    act(() => {
+      for (const listener of accountBoundaryRuntimeMock.generationListeners) {
+        listener("new-account-generation");
+      }
+    });
+    expect(result.current.journal.allEntries).toEqual([]);
+    await waitFor(() => expect(storage.getEntriesPage).toHaveBeenCalledTimes(2));
+
+    await act(async () => {
+      resolvePage(page);
+      await Promise.resolve();
+      await Promise.resolve();
+      result.current.setSecurityReady(true);
+    });
+
+    expect(result.current.journal.allEntries).toEqual(page.entries);
+    expect(commits.filter((commit) => commit.securityReady)).toEqual([
+      { securityReady: true, loading: false, entries: 1 },
+    ]);
   });
 
   it("refreshes the expected version after a concurrent edit before an explicit retry", async () => {

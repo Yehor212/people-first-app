@@ -142,6 +142,8 @@ A task can be closed only after these steps are true:
 
 ## Stop Conditions
 
+Android interaction claims follow [ANDROID_INTERACTION_BUDGET.md](ANDROID_INTERACTION_BUDGET.md). Bind measurements to the source snapshot, built APK and independent installed-before/after observations. Report Technical, Visual Runtime, Artistic/Craft, Motion, Model, Plan and Release separately. A structural protocol check verifies routing only; it does not inspect the phone or certify completion. Missing evidence makes the completion claim ineligible; the unperformed check itself remains `UNVERIFIED`.
+
 Stop and report instead of claiming completion when any of these are true:
 
 - No current evidence exists for a required claim.

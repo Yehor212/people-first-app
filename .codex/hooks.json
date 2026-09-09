@@ -33,7 +33,7 @@
           },
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { printf '%s\\n' 'HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse' >&2; exit 2; }; node \"$root/.codex/hooks/spec-kit-safety-gate.cjs\"; status=$?; exit \"$status\"",
+            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { printf '%s\\n' 'HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse' >&2; exit 2; }; node \"$root/.codex/hooks/spec-kit-safety-gate.cjs\"; zenflow_hook_exit_code=$?; exit \"$zenflow_hook_exit_code\"",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel 2>$null; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($root)) { [Console]::Error.WriteLine('HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse'); exit 2 }; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs'); exit $LASTEXITCODE\"",
             "timeout": 10,
             "statusMessage": "Checking Spec Kit trust state"
@@ -75,7 +75,7 @@
           },
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { printf '%s\\n' 'HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse' >&2; exit 2; }; node \"$root/.codex/hooks/spec-kit-safety-gate.cjs\"; status=$?; exit \"$status\"",
+            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { printf '%s\\n' 'HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse' >&2; exit 2; }; node \"$root/.codex/hooks/spec-kit-safety-gate.cjs\"; zenflow_hook_exit_code=$?; exit \"$zenflow_hook_exit_code\"",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel 2>$null; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($root)) { [Console]::Error.WriteLine('HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse'); exit 2 }; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs'); exit $LASTEXITCODE\"",
             "timeout": 10,
             "statusMessage": "Guarding Spec Kit trust state"
@@ -101,7 +101,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { printf '%s\\n' 'HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse' >&2; exit 2; }; node \"$root/.codex/hooks/spec-kit-safety-gate.cjs\"; status=$?; exit \"$status\"",
+            "command": "root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || { printf '%s\\n' 'HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse' >&2; exit 2; }; node \"$root/.codex/hooks/spec-kit-safety-gate.cjs\"; zenflow_hook_exit_code=$?; exit \"$zenflow_hook_exit_code\"",
             "commandWindows": "powershell -NoProfile -NonInteractive -Command \"$root = git rev-parse --show-toplevel 2>$null; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($root)) { [Console]::Error.WriteLine('HOOK ERROR [spec-kit-safety-gate]: unable to resolve repository root with git rev-parse'); exit 2 }; & node (Join-Path $root '.codex/hooks/spec-kit-safety-gate.cjs'); exit $LASTEXITCODE\"",
             "timeout": 10,
             "statusMessage": "Reporting Spec Kit trust drift"

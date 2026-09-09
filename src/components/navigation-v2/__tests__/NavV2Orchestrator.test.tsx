@@ -481,18 +481,16 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Habits" }));
 
-    const pending = screen.getByTestId("nav-v2-route-pending");
-    expect(pending).toHaveTextContent("Habits");
-    expect(pending).not.toHaveAttribute("aria-label");
+    expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nav-v2-route-fallback")).toHaveTextContent("Loading...");
     await waitFor(() =>
       expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
         "data-active-page",
         "habits"
       )
     );
-    await waitFor(() =>
-      expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument()
-    );
+    expect(await screen.findByTestId("habits-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
     expect(morph).not.toHaveBeenCalled();
   });
 
@@ -503,7 +501,8 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Planning" }));
 
-    expect(screen.getByTestId("nav-v2-route-pending")).toHaveTextContent("Planning");
+    expect(screen.queryByTestId("nav-v2-route-pending")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nav-v2-route-fallback")).toHaveTextContent("Loading...");
     await waitFor(() =>
       expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute(
         "data-active-page",
@@ -511,6 +510,7 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
       )
     );
     expect(await screen.findByTestId("planning-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
   });
 
   it("resets the Android document scroll before a newly selected primary route is shown", async () => {

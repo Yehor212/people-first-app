@@ -1,0 +1,208 @@
+diff --git a/node_modules/@capacitor-community/safe-area/android/src/main/java/com/getcapacitor/community/safearea/SafeAreaPlugin.java b/node_modules/@capacitor-community/safe-area/android/src/main/java/com/getcapacitor/community/safearea/SafeAreaPlugin.java
+index 7e5d064..b5760eb 100644
+--- a/node_modules/@capacitor-community/safe-area/android/src/main/java/com/getcapacitor/community/safearea/SafeAreaPlugin.java
++++ b/node_modules/@capacitor-community/safe-area/android/src/main/java/com/getcapacitor/community/safearea/SafeAreaPlugin.java
+@@ -4,9 +4,13 @@ import android.app.Activity;
+ import android.content.pm.PackageInfo;
+ import android.content.res.Configuration;
+ import android.graphics.Color;
++import android.net.Uri;
+ import android.util.Log;
+ import android.view.View;
+ import android.view.Window;
++import android.view.WindowManager;
++import android.webkit.RenderProcessGoneDetail;
++import android.webkit.WebView;
+ 
+ import androidx.annotation.NonNull;
+ import androidx.annotation.Nullable;
+@@ -18,8 +22,10 @@ import androidx.core.view.WindowInsetsControllerCompat;
+ import androidx.webkit.WebViewCompat;
+ 
+ import com.getcapacitor.Plugin;
++import com.getcapacitor.JSObject;
+ import com.getcapacitor.PluginCall;
+ import com.getcapacitor.PluginMethod;
++import com.getcapacitor.WebViewListener;
+ import com.getcapacitor.annotation.CapacitorPlugin;
+ 
+ import java.util.Locale;
+@@ -47,6 +53,15 @@ public class SafeAreaPlugin extends Plugin {
+     // Declare variable at this scope to help prevent adding multiple listeners.
+     private SafeAreaWebViewListener webViewListener;
+ 
++    // One opt-in editor lease; all mutations run on Android's main queue.
++    private long keyboardViewportSequence;
++    private long keyboardViewportOwner;
++    private int keyboardViewportPreviousMode;
++    private int keyboardViewportOverlap = -1;
++    private volatile long keyboardViewportPage;
++    private volatile boolean keyboardViewportDestroyed;
++    private WebViewListener keyboardViewportListener;
++
+     @Override
+     public void load() {
+         super.load();
+@@ -76,6 +91,24 @@ public class SafeAreaPlugin extends Plugin {
+     public void handleOnStart() {
+         super.handleOnStart();
+ 
++        // Bridge.Builder replaces its listener list after plugin.load(). Attach
++        // after construction, once per Activity, independently of meta detection.
++        if (keyboardViewportListener == null) {
++            keyboardViewportListener = new WebViewListener() {
++                @Override public void onPageStarted(WebView webView) {
++                    keyboardViewportPage++;
++                    resetKeyboardViewport(true);
++                }
++
++                @Override public boolean onRenderProcessGone(WebView webView, RenderProcessGoneDetail detail) {
++                    keyboardViewportPage++;
++                    resetKeyboardViewport(false);
++                    return false;
++                }
++            };
++            getBridge().addWebViewListener(keyboardViewportListener);
++        }
++
+         boolean detectViewportFitCoverChanges = getConfig().getConfigJSON().optBoolean("detectViewportFitCoverChanges", true);
+ 
+         if (detectViewportFitCoverChanges) {
+@@ -122,6 +155,18 @@ public class SafeAreaPlugin extends Plugin {
+             Insets systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+             Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+             boolean keyboardVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime());
++            // A floating IME can be visible without covering the bottom system bar.
++            boolean keyboardOverlapsBottom = keyboardVisible && imeInsets.bottom > 0;
++
++            if (keyboardViewportOwner != 0) {
++                // Keep the native surface stable. CSS reserves the measured IME
++                // overlap inside the opaque editor; native bars remain separate.
++                v.setPadding(systemBarsInsets.left, systemBarsInsets.top, systemBarsInsets.right, systemBarsInsets.bottom);
++                updateKeyboardViewportCss(keyboardVisible ? Math.max(0, imeInsets.bottom - systemBarsInsets.bottom) : 0);
++                return new WindowInsetsCompat.Builder(windowInsets)
++                    .setInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime(), Insets.NONE)
++                    .build();
++            }
+ 
+             if (shouldPassthroughInsets) {
+                 // We need to correct for a possible shown IME
+@@ -133,13 +178,13 @@ public class SafeAreaPlugin extends Plugin {
+                                 systemBarsInsets.left,
+                                 systemBarsInsets.top,
+                                 systemBarsInsets.right,
+-                                getBottomInset(systemBarsInsets, keyboardVisible)
++                                getBottomInset(systemBarsInsets, keyboardOverlapsBottom)
+                         )
+                 ).build();
+             }
+ 
+-            // We need to correct for a possible shown IME
+-            v.setPadding(systemBarsInsets.left, systemBarsInsets.top, systemBarsInsets.right, keyboardVisible ? imeInsets.bottom : systemBarsInsets.bottom);
++            // Keep system-bar clearance when a floating IME has no bottom overlap.
++            v.setPadding(systemBarsInsets.left, systemBarsInsets.top, systemBarsInsets.right, Math.max(systemBarsInsets.bottom, keyboardVisible ? imeInsets.bottom : 0));
+ 
+             // Returning `WindowInsetsCompat.CONSUMED` breaks recalculation of safe area insets
+             // So we have to explicitly set insets to `0`
+@@ -151,13 +196,13 @@ public class SafeAreaPlugin extends Plugin {
+         });
+     }
+ 
+-    private int getBottomInset(Insets systemBarsInsets, boolean keyboardVisible) {
++    private int getBottomInset(Insets systemBarsInsets, boolean keyboardOverlapsBottom) {
+         if (webViewMajorVersion < WEBVIEW_VERSION_WITH_SAFE_AREA_KEYBOARD_FIX) {
+             // This is a workaround for webview versions that have a bug
+             // that causes the bottom inset to be incorrect if the IME is visible
+             // See: https://issues.chromium.org/issues/457682720
+ 
+-            if (keyboardVisible) {
++            if (keyboardOverlapsBottom) {
+                 return 0;
+             }
+         }
+@@ -165,6 +210,85 @@ public class SafeAreaPlugin extends Plugin {
+         return systemBarsInsets.bottom;
+     }
+ 
++    @PluginMethod
++    public void acquireKeyboardViewport(final PluginCall call) {
++        final long requestedPage = keyboardViewportPage;
++        getBridge().executeOnMainThread(() -> {
++            if (keyboardViewportDestroyed || requestedPage != keyboardViewportPage || !isLocalKeyboardViewport()) {
++                call.reject("KEYBOARD_VIEWPORT_UNAVAILABLE");
++                return;
++            }
++            Window window = getActivity().getWindow();
++            if (keyboardViewportOwner == 0) keyboardViewportPreviousMode = window.getAttributes().softInputMode;
++            keyboardViewportOwner = ++keyboardViewportSequence;
++            keyboardViewportOverlap = -1;
++            window.setSoftInputMode((keyboardViewportPreviousMode & ~WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST)
++                | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
++            View decor = window.getDecorView();
++            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(decor);
++            if (insets != null) ViewCompat.dispatchApplyWindowInsets(decor, insets);
++            else updateKeyboardViewportCss(0);
++            ViewCompat.requestApplyInsets(decor);
++            JSObject result = new JSObject();
++            result.put("owner", Long.toString(keyboardViewportOwner));
++            call.resolve(result);
++        });
++    }
++
++    @PluginMethod
++    public void releaseKeyboardViewport(final PluginCall call) {
++        final String owner = call.getString("owner");
++        getBridge().executeOnMainThread(() -> {
++            boolean released = keyboardViewportOwner != 0 && Long.toString(keyboardViewportOwner).equals(owner);
++            if (released) resetKeyboardViewport(true);
++            JSObject result = new JSObject();
++            result.put("released", released);
++            call.resolve(result);
++        });
++    }
++
++    private boolean isLocalKeyboardViewport() {
++        String url = getBridge().getWebView().getUrl();
++        if (url == null) return false;
++        Uri actual = Uri.parse(url);
++        Uri local = Uri.parse(getBridge().getLocalUrl());
++        return local.getScheme().equals(actual.getScheme()) && local.getEncodedAuthority().equals(actual.getEncodedAuthority());
++    }
++
++    private void updateKeyboardViewportCss(int overlap) {
++        if (overlap == keyboardViewportOverlap || !isLocalKeyboardViewport()) return;
++        keyboardViewportOverlap = overlap;
++        // Only native numbers enter this constant local-document program. No
++        // text, selectors or JavaScript are supplied by the caller.
++        getBridge().getWebView().evaluateJavascript("(() => {const root=document.documentElement;"
++            + "root.dataset.journalKeyboardViewport='" + keyboardViewportOwner + "';"
++            + "root.style.setProperty('--zenflow-ime-overlap',(" + overlap + "/devicePixelRatio)+'px');})()", null);
++    }
++
++    private void resetKeyboardViewport(boolean updateDocument) {
++        if (keyboardViewportOwner == 0) return;
++        keyboardViewportOwner = 0;
++        keyboardViewportOverlap = -1;
++        Window window = getActivity().getWindow();
++        window.setSoftInputMode(keyboardViewportPreviousMode);
++        if (updateDocument && isLocalKeyboardViewport()) {
++            getBridge().getWebView().evaluateJavascript("delete document.documentElement.dataset.journalKeyboardViewport;"
++                + "document.documentElement.style.removeProperty('--zenflow-ime-overlap');", null);
++        }
++        ViewCompat.requestApplyInsets(window.getDecorView());
++    }
++
++    @Override
++    protected void handleOnDestroy() {
++        keyboardViewportDestroyed = true;
++        keyboardViewportPage++;
++        resetKeyboardViewport(false);
++        if (keyboardViewportListener != null) getBridge().removeWebViewListener(keyboardViewportListener);
++        if (webViewListener != null) getBridge().removeWebViewListener(webViewListener);
++        ViewCompat.setOnApplyWindowInsetsListener(getActivity().getWindow().getDecorView(), null);
++        super.handleOnDestroy();
++    }
++
+     public enum SystemBarsStyle {
+         DARK("DARK"),
+         LIGHT("LIGHT"),

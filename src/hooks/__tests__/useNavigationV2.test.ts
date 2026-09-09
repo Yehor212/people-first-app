@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 
+const platformMock = vi.hoisted(() => ({ isAndroid: false }));
+vi.mock("@/lib/platform", () => platformMock);
+
 // Stub morph() to run its callback synchronously — tests page state, not VT API.
 vi.mock("@/lib/motion/morph", () => ({
   morph: vi.fn(async (_name: string, fn: () => void | Promise<void>) => {
@@ -20,6 +23,7 @@ function setPath(path: string): void {
 
 describe("useNavigationV2", () => {
   beforeEach(() => {
+    platformMock.isAndroid = false;
     window.localStorage.clear();
     setPath("/");
     vi.mocked(morph).mockClear();
@@ -110,6 +114,127 @@ describe("useNavigationV2", () => {
   });
 
   describe("setActivePage", () => {
+    it.each(NAV_V2_PAGES)("hands prepared Android %s loading to the destination in the same commit", (destination) => {
+      platformMock.isAndroid = true;
+      setPath(destination === "orb" ? "/settings" : "/orb");
+      vi.useFakeTimers();
+      const { result, unmount } = renderHook(() => useNavigationV2());
+      try {
+        act(() => result.current.setActivePage(destination, { skipTransition: true }));
+        expect(result.current.renderedPage).toBe(destination);
+        expect(result.current.routePendingPage).toBeNull();
+      } finally {
+        unmount();
+        vi.useRealTimers();
+      }
+    });
+
+    it("preserves the non-Android pending feedback hold", () => {
+      vi.useFakeTimers();
+      const { result, unmount } = renderHook(() => useNavigationV2());
+      try {
+        act(() => result.current.setActivePage("habits", { skipTransition: true }));
+        act(() => { vi.advanceTimersByTime(64); });
+        expect(result.current.renderedPage).toBe("habits");
+        expect(result.current.routePendingPage).toBe("habits");
+        act(() => { vi.advanceTimersByTime(320); });
+        expect(result.current.routePendingPage).toBeNull();
+      } finally {
+        unmount();
+        vi.useRealTimers();
+      }
+    });
+
+    it.each([false, true])("keeps a reopened menu above pending navigation (Android: %s)", android => {
+      platformMock.isAndroid = android;
+      const frames: FrameRequestCallback[] = [];
+      const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
+        frames.push(callback);
+        return frames.length;
+      });
+      const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+      try {
+        const { result } = renderHook(() => useNavigationV2());
+        act(() => result.current.openDrawer());
+        act(() => result.current.setActivePage("habits", { skipTransition: true }));
+        if (android) act(() => result.current.completeDrawerExit());
+        act(() => result.current.openDrawer());
+        act(() => { while (frames.length) frames.shift()?.(performance.now()); });
+        expect(result.current.drawerOpen).toBe(true);
+        expect(result.current.renderedPage).toBe("orb");
+        act(() => result.current.closeDrawer());
+        act(() => result.current.completeDrawerExit());
+        act(() => { while (frames.length) frames.shift()?.(performance.now()); });
+        expect(result.current.drawerOpen).toBe(false);
+        expect(result.current.renderedPage).toBe("habits");
+      } finally {
+        requestFrame.mockRestore();
+        cancelFrame.mockRestore();
+      }
+    });
+
+    it.each(["habits", "diary", "planning", "settings", "orb"] as const)(
+      "starts Android drawer exit immediately for %s and retains the compositor boundary",
+      (destination) => {
+        platformMock.isAndroid = true;
+        setPath(destination === "orb" ? "/settings" : "/orb");
+        const source = destination === "orb" ? "settings" : "orb";
+        const frames: FrameRequestCallback[] = [];
+        const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
+          frames.push(callback);
+          return frames.length;
+        });
+        try {
+          const { result } = renderHook(() => useNavigationV2());
+          act(() => result.current.openDrawer());
+          act(() => result.current.setActivePage(destination, { skipTransition: true }));
+          expect(result.current.activePage).toBe(destination);
+          expect(result.current.routePendingPage).toBe(destination);
+          expect(result.current.drawerOpen).toBe(false);
+          expect(result.current.renderedPage).toBe(source);
+          expect(frames).toHaveLength(0);
+          act(() => result.current.completeDrawerExit());
+          act(() => frames.shift()?.(performance.now()));
+          expect(result.current.renderedPage).toBe(source);
+          act(() => frames.shift()?.(performance.now()));
+          expect(result.current.renderedPage).toBe(destination);
+          expect(result.current.routePendingPage).toBeNull();
+          expect(morph).not.toHaveBeenCalled();
+        } finally {
+          requestFrame.mockRestore();
+        }
+      },
+    );
+
+    it("does not commit an obsolete drawer destination after browser Back", () => {
+      platformMock.isAndroid = true;
+      const frames: FrameRequestCallback[] = [];
+      const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
+        frames.push(callback);
+        return frames.length;
+      });
+      const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+      try {
+        const { result } = renderHook(() => useNavigationV2());
+        act(() => result.current.openDrawer());
+        act(() => result.current.setActivePage("habits", { skipTransition: true }));
+        act(() => result.current.completeDrawerExit());
+        act(() => {
+          setPath("/settings");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        });
+        // Deliberately deliver cancelled callbacks: request identity must still
+        // protect the user's latest route even if an event was already queued.
+        act(() => { while (frames.length) frames.shift()?.(performance.now()); });
+        expect(result.current.renderedPage).toBe("settings");
+        expect(result.current.activePage).toBe("settings");
+        expect(result.current.routePendingPage).toBeNull();
+      } finally {
+        requestFrame.mockRestore();
+        cancelFrame.mockRestore();
+      }
+    });
+
     it("unmounts the phone drawer before mounting a preloaded destination", async () => {
       let resolvePreload!: () => void;
       const preload = new Promise<void>((resolve) => {

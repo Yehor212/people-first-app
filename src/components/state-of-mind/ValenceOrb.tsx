@@ -336,6 +336,9 @@ const ORB_RUNTIME_SNAPSHOT_VALENCE_EPSILON = 0.001;
 const ORB_FIRST_VISIBLE_PRESENTATION_BUDGET_MS = 3000;
 
 let nextMiniWebGLUpgradeStartAt = 0;
+const pendingAndroidMiniUpgrades: Array<{ start: () => boolean }> = [];
+let lastAndroidMiniUpgradeStartedAt = Number.NEGATIVE_INFINITY;
+let cancelAndroidMiniUpgradeTick: (() => void) | null = null;
 
 export function resolveOrbWorkerAckTimeoutMs(
   lastAckLatencyMs?: number | null,
@@ -451,6 +454,10 @@ function rememberOrbRuntimeSnapshot(
 export function resetOrbRuntimeSnapshotsForTests(): void {
   orbRuntimeSnapshots.clear();
   nextMiniWebGLUpgradeStartAt = 0;
+  cancelAndroidMiniUpgradeTick?.();
+  cancelAndroidMiniUpgradeTick = null;
+  pendingAndroidMiniUpgrades.length = 0;
+  lastAndroidMiniUpgradeStartedAt = Number.NEGATIVE_INFINITY;
 }
 
 export type OrbTransitionProfile = "standard" | "v1-soft" | "input-soft";
@@ -867,11 +874,16 @@ export function resolveCanonicalWebGLUpgradeScheduling(
     };
   }
 
-  const earliestStartAt = Math.max(now + MINI_WEBGL_UPGRADE_DELAY_MS, nextMiniUpgradeStartAt);
+  // A forced mini has no substitute first frame. On Android the fixed hold
+  // leaves drawer/refine icons invisible after the surrounding controls settle.
+  // Keep GPU reservation spacing, visibility gating and asynchronous creation;
+  // only the first unqueued Android startup skips the fixed initial delay.
+  const initialDelayMs = isAndroid ? 0 : MINI_WEBGL_UPGRADE_DELAY_MS;
+  const earliestStartAt = Math.max(now + initialDelayMs, nextMiniUpgradeStartAt);
 
   return {
     delayMs: Math.max(0, Math.round(earliestStartAt - now)),
-    preferIdle: true,
+    preferIdle: !isAndroid,
     nextMiniUpgradeStartAt: earliestStartAt + MINI_WEBGL_UPGRADE_QUEUE_GAP_MS,
   };
 }
@@ -981,6 +993,47 @@ function scheduleAfterFirstPaint(
     cancelled = true;
     cancelAnimationFrame(rafId);
     window.clearTimeout(timeoutId);
+  };
+}
+
+function scheduleNextAndroidMiniUpgrade(): void {
+  if (cancelAndroidMiniUpgradeTick || pendingAndroidMiniUpgrades.length === 0) return;
+
+  cancelAndroidMiniUpgradeTick = scheduleAfterFirstPaint(() => {
+    cancelAndroidMiniUpgradeTick = null;
+    const request = pendingAndroidMiniUpgrades.shift();
+    try {
+      if (request?.start()) {
+        // Only actual initialization spends the GPU cooldown. Closing a queued
+        // drawer must not leave an invisible six-second reservation behind.
+        lastAndroidMiniUpgradeStartedAt = performance.now();
+      }
+    } finally {
+      scheduleNextAndroidMiniUpgrade();
+    }
+  }, {
+    delayMs: Math.max(
+      0,
+      lastAndroidMiniUpgradeStartedAt + MINI_WEBGL_UPGRADE_QUEUE_GAP_MS - performance.now(),
+    ),
+    preferIdle: false,
+  });
+}
+
+function scheduleAndroidMiniUpgrade(start: () => boolean): () => void {
+  const request = { start };
+  pendingAndroidMiniUpgrades.push(request);
+  scheduleNextAndroidMiniUpgrade();
+
+  return () => {
+    const index = pendingAndroidMiniUpgrades.indexOf(request);
+    if (index < 0) return;
+    pendingAndroidMiniUpgrades.splice(index, 1);
+    if (index === 0) {
+      cancelAndroidMiniUpgradeTick?.();
+      cancelAndroidMiniUpgradeTick = null;
+      scheduleNextAndroidMiniUpgrade();
+    }
   };
 }
 
@@ -1266,6 +1319,8 @@ export const ValenceOrb = memo(function ValenceOrb({
     const forceCanonicalWebGL =
       !debugCanvasFallbackAllowed &&
       (renderer === 'webgl' || renderer === 'webgpu' || rendererOverride === 'webgl' || rendererOverride === 'webgpu');
+    const usesAndroidMiniUpgradeQueue =
+      isAndroid && forceCanonicalWebGL && initialGeometry.size <= MINI_ORB_CANONICAL_SIZE;
     const canUseCanonicalCanvasRecovery = !forceCanonicalWebGL || debugCanvasFallbackAllowed;
     let activeCanvas = createCanvas(initialGeometry.size, canvasDpr);
     let glRenderer: OrbGLRenderer | null = null;
@@ -3428,18 +3483,19 @@ export const ValenceOrb = memo(function ValenceOrb({
         markVisualErrorRef.current();
       }
     };
-    const startWebGLUpgradeWhenVisible = () => {
-      if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return;
+    const startWebGLUpgradeWhenVisible = (): boolean => {
+      if (webglUpgradeAbort.signal.aborted || webglUpgradeStarted) return false;
 
       if (!isVisibleRef.current) {
         webglUpgradePendingUntilVisible = true;
-        return;
+        return false;
       }
 
       webglUpgradePendingUntilVisible = false;
       webglUpgradeStarted = true;
       armForcedWebGLFirstFrameTimeout();
       void upgradeToWebGL(webglUpgradeAbort.signal);
+      return true;
     };
 
     let upgradeVisibilityObserver: IntersectionObserver | null = null;
@@ -3455,7 +3511,12 @@ export const ValenceOrb = memo(function ValenceOrb({
             resumeRendererWatchdogs();
           }
           if (entry.isIntersecting && webglUpgradePendingUntilVisible) {
-            startWebGLUpgradeWhenVisible();
+            if (usesAndroidMiniUpgradeQueue) {
+              webglUpgradePendingUntilVisible = false;
+              cancelWebGLUpgrade = scheduleAndroidMiniUpgrade(startWebGLUpgradeWhenVisible);
+            } else {
+              startWebGLUpgradeWhenVisible();
+            }
           }
         },
         { threshold: 0 },
@@ -3548,16 +3609,20 @@ export const ValenceOrb = memo(function ValenceOrb({
     }
 
     if (!glRenderer) {
-      const webglUpgradeScheduling = reserveCanonicalWebGLUpgradeScheduling(
-        forceCanonicalWebGL,
-        geometryRef.current.size,
-      );
-      cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
-        startWebGLUpgradeWhenVisible();
-      }, {
-        delayMs: webglUpgradeScheduling.delayMs,
-        preferIdle: webglUpgradeScheduling.preferIdle,
-      });
+      if (usesAndroidMiniUpgradeQueue) {
+        cancelWebGLUpgrade = scheduleAndroidMiniUpgrade(startWebGLUpgradeWhenVisible);
+      } else {
+        const webglUpgradeScheduling = reserveCanonicalWebGLUpgradeScheduling(
+          forceCanonicalWebGL,
+          geometryRef.current.size,
+        );
+        cancelWebGLUpgrade = scheduleAfterFirstPaint(() => {
+          startWebGLUpgradeWhenVisible();
+        }, {
+          delayMs: webglUpgradeScheduling.delayMs,
+          preferIdle: webglUpgradeScheduling.preferIdle,
+        });
+      }
     }
 
     if (shouldAnimateOrb) {

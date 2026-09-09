@@ -12,11 +12,15 @@ import {
   ANDROID_DAY_THREAD_FRAGMENT_SHADER,
 } from "../androidDayAmbienceShaders";
 
+const originalTimeline = Object.getOwnPropertyDescriptor(document, "timeline");
+
 describe("Android DayCosmicBackground compositor isolation", () => {
   afterEach(() => {
     cleanup();
     document.documentElement.style.removeProperty("--background");
     document.documentElement.style.removeProperty("--card");
+    if (originalTimeline) Object.defineProperty(document, "timeline", originalTimeline);
+    else Reflect.deleteProperty(document, "timeline");
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -73,193 +77,295 @@ describe("Android DayCosmicBackground compositor isolation", () => {
     expect(source).toContain("draw(ownerWindow.performance.now());\n      showReady();");
   });
 
-  it("starts the Android renderer only after the parent background ref is attached", () => {
-    document.documentElement.style.setProperty("--background", "174 41% 86%");
-    document.documentElement.style.setProperty("--card", "158 42% 90%");
-    const animationFrames: FrameRequestCallback[] = [];
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-      animationFrames.push(callback);
-      return animationFrames.length;
-    });
-    const cancelAnimationFrame = vi
-      .spyOn(window, "cancelAnimationFrame")
-      .mockImplementation(() => undefined);
-    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(360);
-    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(800);
-    const loseContext = vi.fn();
-    const gl = {
-      ARRAY_BUFFER: 0x8892,
-      BLEND: 0x0be2,
-      CLAMP_TO_EDGE: 0x812f,
-      COLOR_ATTACHMENT0: 0x8ce0,
-      COLOR_BUFFER_BIT: 0x4000,
-      COMPILE_STATUS: 0x8b81,
-      FLOAT: 0x1406,
-      FRAMEBUFFER: 0x8d40,
-      FRAMEBUFFER_COMPLETE: 0x8cd5,
-      FRAGMENT_SHADER: 0x8b30,
-      LINEAR: 0x2601,
-      LINK_STATUS: 0x8b82,
-      MAX_RENDERBUFFER_SIZE: 0x84e8,
-      ONE: 1,
-      ONE_MINUS_SRC_ALPHA: 0x0303,
-      RGBA: 0x1908,
-      STATIC_DRAW: 0x88e4,
-      TEXTURE0: 0x84c0,
-      TEXTURE_2D: 0x0de1,
-      TEXTURE_MAG_FILTER: 0x2800,
-      TEXTURE_MIN_FILTER: 0x2801,
-      TEXTURE_WRAP_S: 0x2802,
-      TEXTURE_WRAP_T: 0x2803,
-      TRIANGLES: 0x0004,
-      UNSIGNED_BYTE: 0x1401,
-      VERTEX_SHADER: 0x8b31,
-      activeTexture: vi.fn(),
-      attachShader: vi.fn(),
-      bindBuffer: vi.fn(),
-      bindFramebuffer: vi.fn(),
-      bindTexture: vi.fn(),
-      bindVertexArray: vi.fn(),
-      blendFunc: vi.fn(),
-      bufferData: vi.fn(),
-      checkFramebufferStatus: vi.fn(() => 0x8cd5),
-      clear: vi.fn(),
-      clearColor: vi.fn(),
-      compileShader: vi.fn(),
-      createBuffer: vi.fn(() => ({})),
-      createFramebuffer: vi.fn(() => ({})),
-      createProgram: vi.fn(() => ({})),
-      createShader: vi.fn(() => ({})),
-      createTexture: vi.fn(() => ({})),
-      createVertexArray: vi.fn(() => ({})),
-      deleteBuffer: vi.fn(),
-      deleteFramebuffer: vi.fn(),
-      deleteProgram: vi.fn(),
-      deleteShader: vi.fn(),
-      deleteTexture: vi.fn(),
-      deleteVertexArray: vi.fn(),
-      disable: vi.fn(),
-      drawArrays: vi.fn(),
-      drawArraysInstanced: vi.fn(),
-      enable: vi.fn(),
-      enableVertexAttribArray: vi.fn(),
-      framebufferTexture2D: vi.fn(),
-      getProgramInfoLog: vi.fn(() => ""),
-      getProgramParameter: vi.fn(() => true),
-      getParameter: vi.fn(() => 16384),
-      getExtension: vi.fn((name: string) =>
-        name === "WEBGL_lose_context" ? { loseContext } : null
-      ),
-      getShaderInfoLog: vi.fn(() => ""),
-      getShaderParameter: vi.fn(() => true),
-      getUniformLocation: vi.fn(() => ({})),
-      linkProgram: vi.fn(),
-      shaderSource: vi.fn(),
-      texImage2D: vi.fn(),
-      texParameteri: vi.fn(),
-      uniform1i: vi.fn(),
-      uniform1f: vi.fn(),
-      uniform2f: vi.fn(),
-      uniform3f: vi.fn(),
-      uniform4f: vi.fn(),
-      useProgram: vi.fn(),
-      vertexAttribDivisor: vi.fn(),
-      vertexAttribPointer: vi.fn(),
-      viewport: vi.fn(),
-    };
-    vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
-    const getContext = vi
-      .spyOn(HTMLCanvasElement.prototype, "getContext")
-      .mockReturnValue(gl as never);
+  it.each([null, 0, 1, 2, "fragment-allocation"] as const)(
+    "initializes the Android daylight batch with complete resource ownership (failure: %s)",
+    (failure) => {
+      document.documentElement.style.setProperty("--background", "174 41% 86%");
+      document.documentElement.style.setProperty("--card", "158 42% 90%");
+      const frameTimeline = { currentTime: 0 };
+      Object.defineProperty(document, "timeline", { configurable: true, value: frameTimeline });
+      const resizeCallbacks: ResizeObserverCallback[] = [];
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            resizeCallbacks.push(callback);
+          }
+          observe() {}
+          disconnect() {}
+        }
+      );
+      const notifyResize = () =>
+        act(() => resizeCallbacks.forEach((callback) => callback([], {} as ResizeObserver)));
+      const animationFrames = new Map<number, FrameRequestCallback>();
+      let nextFrameId = 0;
+      const runNextFrame = (time: number) => {
+        frameTimeline.currentTime = time;
+        const queued = animationFrames.entries().next().value;
+        expect(queued).toBeDefined();
+        if (!queued) throw new Error("No queued animation frame");
+        animationFrames.delete(queued[0]);
+        act(() => queued[1](time));
+      };
+      vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+        const id = ++nextFrameId;
+        animationFrames.set(id, callback);
+        return id;
+      });
+      const cancelAnimationFrame = vi
+        .spyOn(window, "cancelAnimationFrame")
+        .mockImplementation((id) => {
+          animationFrames.delete(id);
+        });
+      let cssWidth = 360;
+      let cssHeight = 800;
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => cssWidth);
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(() => cssHeight);
+      const loseContext = vi.fn();
+      const gl = {
+        ARRAY_BUFFER: 0x8892,
+        BLEND: 0x0be2,
+        CLAMP_TO_EDGE: 0x812f,
+        COLOR_ATTACHMENT0: 0x8ce0,
+        COLOR_BUFFER_BIT: 0x4000,
+        COMPILE_STATUS: 0x8b81,
+        FLOAT: 0x1406,
+        FRAMEBUFFER: 0x8d40,
+        FRAMEBUFFER_COMPLETE: 0x8cd5,
+        FRAGMENT_SHADER: 0x8b30,
+        LINEAR: 0x2601,
+        LINK_STATUS: 0x8b82,
+        MAX_RENDERBUFFER_SIZE: 0x84e8,
+        ONE: 1,
+        ONE_MINUS_SRC_ALPHA: 0x0303,
+        RGBA: 0x1908,
+        STATIC_DRAW: 0x88e4,
+        TEXTURE0: 0x84c0,
+        TEXTURE_2D: 0x0de1,
+        TEXTURE_MAG_FILTER: 0x2800,
+        TEXTURE_MIN_FILTER: 0x2801,
+        TEXTURE_WRAP_S: 0x2802,
+        TEXTURE_WRAP_T: 0x2803,
+        TRIANGLES: 0x0004,
+        UNSIGNED_BYTE: 0x1401,
+        VERTEX_SHADER: 0x8b31,
+        activeTexture: vi.fn(),
+        attachShader: vi.fn(),
+        bindBuffer: vi.fn(),
+        bindFramebuffer: vi.fn(),
+        bindTexture: vi.fn(),
+        bindVertexArray: vi.fn(),
+        blendFunc: vi.fn(),
+        bufferData: vi.fn(),
+        checkFramebufferStatus: vi.fn(() => 0x8cd5),
+        clear: vi.fn(),
+        clearColor: vi.fn(),
+        compileShader: vi.fn(),
+        createBuffer: vi.fn(() => ({})),
+        createFramebuffer: vi.fn(() => ({})),
+        createProgram: vi.fn(() => ({})),
+        createShader: vi.fn(() => ({})),
+        createTexture: vi.fn(() => ({})),
+        createVertexArray: vi.fn(() => ({})),
+        deleteBuffer: vi.fn(),
+        deleteFramebuffer: vi.fn(),
+        deleteProgram: vi.fn(),
+        deleteShader: vi.fn(),
+        deleteTexture: vi.fn(),
+        deleteVertexArray: vi.fn(),
+        disable: vi.fn(),
+        drawArrays: vi.fn(),
+        drawArraysInstanced: vi.fn(),
+        enable: vi.fn(),
+        enableVertexAttribArray: vi.fn(),
+        framebufferTexture2D: vi.fn(),
+        getProgramInfoLog: vi.fn(() => ""),
+        getProgramParameter: vi.fn(() => true),
+        getParameter: vi.fn(() => 16384),
+        getExtension: vi.fn((name: string) =>
+          name === "WEBGL_lose_context" ? { loseContext } : null
+        ),
+        getShaderInfoLog: vi.fn(() => ""),
+        getShaderParameter: vi.fn(() => true),
+        getUniformLocation: vi.fn(() => ({})),
+        linkProgram: vi.fn(),
+        shaderSource: vi.fn(),
+        texImage2D: vi.fn(),
+        texParameteri: vi.fn(),
+        uniform1i: vi.fn(),
+        uniform1f: vi.fn(),
+        uniform2f: vi.fn(),
+        uniform3f: vi.fn(),
+        uniform4f: vi.fn(),
+        useProgram: vi.fn(),
+        vertexAttribDivisor: vi.fn(),
+        vertexAttribPointer: vi.fn(),
+        viewport: vi.fn(),
+      };
+      vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
+      const getContext = vi
+        .spyOn(HTMLCanvasElement.prototype, "getContext")
+        .mockReturnValue(gl as never);
 
-    const { container, rerender, unmount } = render(<DayCosmicBackground active motionEnabled />);
+      if (typeof failure === "number") {
+        gl.getProgramParameter.mockImplementation(
+          (program?: unknown) => program !== gl.createProgram.mock.results[failure]?.value
+        );
+      } else if (failure === "fragment-allocation") {
+        gl.createShader.mockReturnValueOnce({}).mockReturnValueOnce(null as never);
+      }
+      const { container, rerender, unmount } = render(<DayCosmicBackground active motionEnabled />);
 
-    expect(getContext).toHaveBeenCalledWith(
-      "webgl2",
-      expect.objectContaining({
-        failIfMajorPerformanceCaveat: true,
-        preserveDrawingBuffer: false,
-      })
-    );
-    expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
-      "data-android-day-ambience",
-      "ready"
-    );
-    expect(screen.getByTestId("android-day-webgl-large-effects")).toHaveAttribute(
-      "data-android-day-pixels",
-      "360x800"
-    );
-    expect(screen.queryByTestId("day-cosmic-light-curtain")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("day-cosmic-sun-shower")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("day-cosmic-prism-ribbon")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("day-cosmic-caustics")).not.toBeInTheDocument();
-    expect(container.querySelectorAll(".day-cosmic__photon")).toHaveLength(0);
-    expect(container.querySelectorAll(".day-cosmic__mote")).toHaveLength(0);
-    expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(0);
-    expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLES, 0, 3);
-    expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLES, 0, 6, 18);
-    expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLES, 0, 6, 113);
-    expect(gl.createFramebuffer).not.toHaveBeenCalled();
-    expect(loseContext).not.toHaveBeenCalled();
+      if (failure !== null) {
+        expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+          "data-android-day-ambience",
+          "fallback"
+        );
+        expect(gl.drawArrays).not.toHaveBeenCalled();
+        expect(gl.drawArraysInstanced).not.toHaveBeenCalled();
+        expect(animationFrames.size).toBe(0);
+        expect(gl.deleteShader).toHaveBeenCalledTimes(failure === "fragment-allocation" ? 1 : 6);
+        expect(gl.deleteProgram).toHaveBeenCalledTimes(failure === "fragment-allocation" ? 0 : 3);
+        expect(gl.deleteBuffer).toHaveBeenCalledTimes(failure === "fragment-allocation" ? 0 : 4);
+        expect(gl.deleteVertexArray).toHaveBeenCalledTimes(
+          failure === "fragment-allocation" ? 0 : 2
+        );
+        unmount();
+        return;
+      }
+      // Successful links already validate their attached shaders. Waiting on
+      // individual compilation results serializes Android's GPU service.
+      expect(gl.getShaderParameter).not.toHaveBeenCalled();
+      expect(gl.linkProgram).toHaveBeenCalledTimes(3);
+      expect(gl.getProgramParameter).toHaveBeenCalledTimes(3);
+      expect(Math.max(...gl.linkProgram.mock.invocationCallOrder)).toBeLessThan(
+        Math.min(...gl.getProgramParameter.mock.invocationCallOrder)
+      );
+      expect(gl.drawArrays).toHaveBeenCalledTimes(1);
+      expect(gl.viewport).toHaveBeenCalledTimes(1);
+      notifyResize();
+      expect(gl.drawArrays).toHaveBeenCalledTimes(1);
+      expect(gl.viewport).toHaveBeenCalledTimes(1);
 
-    const uniformLookupCountAfterSetup = gl.getUniformLocation.mock.calls.length;
-    const uniformWriteCountAfterSetup =
-      gl.uniform1f.mock.calls.length +
-      gl.uniform2f.mock.calls.length +
-      gl.uniform3f.mock.calls.length +
-      gl.uniform4f.mock.calls.length;
-    expect(uniformLookupCountAfterSetup).toBeGreaterThan(0);
-    act(() => animationFrames.shift()?.(16.67));
-    expect(gl.getUniformLocation).toHaveBeenCalledTimes(uniformLookupCountAfterSetup);
-    expect(
-      gl.uniform1f.mock.calls.length +
+      expect(getContext).toHaveBeenCalledWith(
+        "webgl2",
+        expect.objectContaining({
+          failIfMajorPerformanceCaveat: true,
+          preserveDrawingBuffer: false,
+        })
+      );
+      expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+        "data-android-day-ambience",
+        "ready"
+      );
+      expect(screen.getByTestId("android-day-webgl-large-effects")).toHaveAttribute(
+        "data-android-day-pixels",
+        "360x800"
+      );
+      expect(screen.queryByTestId("day-cosmic-light-curtain")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("day-cosmic-sun-shower")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("day-cosmic-prism-ribbon")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("day-cosmic-caustics")).not.toBeInTheDocument();
+      expect(container.querySelectorAll(".day-cosmic__photon")).toHaveLength(0);
+      expect(container.querySelectorAll(".day-cosmic__mote")).toHaveLength(0);
+      expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(0);
+      expect(gl.drawArrays).toHaveBeenCalledWith(gl.TRIANGLES, 0, 3);
+      expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLES, 0, 6, 18);
+      expect(gl.drawArraysInstanced).toHaveBeenCalledWith(gl.TRIANGLES, 0, 6, 113);
+      expect(gl.createFramebuffer).not.toHaveBeenCalled();
+      expect(loseContext).not.toHaveBeenCalled();
+
+      const uniformLookupCountAfterSetup = gl.getUniformLocation.mock.calls.length;
+      const uniformWriteCountAfterSetup =
+        gl.uniform1f.mock.calls.length +
         gl.uniform2f.mock.calls.length +
         gl.uniform3f.mock.calls.length +
-        gl.uniform4f.mock.calls.length
-    ).toBe(uniformWriteCountAfterSetup + 3);
+        gl.uniform4f.mock.calls.length;
+      expect(uniformLookupCountAfterSetup).toBeGreaterThan(0);
+      runNextFrame(16.67);
+      expect(gl.getUniformLocation).toHaveBeenCalledTimes(uniformLookupCountAfterSetup);
+      expect(
+        gl.uniform1f.mock.calls.length +
+          gl.uniform2f.mock.calls.length +
+          gl.uniform3f.mock.calls.length +
+          gl.uniform4f.mock.calls.length
+      ).toBe(uniformWriteCountAfterSetup + 3);
 
-    const canvas = screen.getByTestId("android-day-webgl-large-effects");
-    const programCountAfterSetup = gl.createProgram.mock.calls.length;
-    rerender(<DayCosmicBackground active={false} motionEnabled />);
-    expect(screen.getByTestId("android-day-webgl-large-effects")).toBe(canvas);
-    expect(canvas).toHaveAttribute("data-android-day-active", "false");
-    expect(cancelAnimationFrame).toHaveBeenCalled();
-    expect(gl.deleteProgram).not.toHaveBeenCalled();
+      const canvas = screen.getByTestId("android-day-webgl-large-effects");
+      const programCountAfterSetup = gl.createProgram.mock.calls.length;
+      cssWidth = 0;
+      cssHeight = 0;
+      rerender(<DayCosmicBackground active={false} motionEnabled />);
+      const drawsBeforeHiddenResize = gl.drawArrays.mock.calls.length;
+      notifyResize();
+      expect(gl.drawArrays).toHaveBeenCalledTimes(drawsBeforeHiddenResize);
+      expect(canvas).toHaveAttribute("width", "360");
+      expect(canvas).toHaveAttribute("height", "800");
+      expect(screen.getByTestId("android-day-webgl-large-effects")).toBe(canvas);
+      expect(canvas).toHaveAttribute("data-android-day-active", "false");
+      expect(cancelAnimationFrame).toHaveBeenCalled();
+      expect(gl.deleteProgram).not.toHaveBeenCalled();
 
-    rerender(<DayCosmicBackground active motionEnabled />);
-    expect(screen.getByTestId("android-day-webgl-large-effects")).toBe(canvas);
-    expect(canvas).toHaveAttribute("data-android-day-active", "true");
-    expect(gl.createProgram).toHaveBeenCalledTimes(programCountAfterSetup);
+      cssWidth = 360;
+      cssHeight = 800;
+      frameTimeline.currentTime = 33.34;
+      rerender(<DayCosmicBackground active motionEnabled />);
+      const activationDrawCount = gl.drawArrays.mock.calls.length;
+      expect(activationDrawCount).toBe(drawsBeforeHiddenResize + 1);
+      runNextFrame(33.34);
+      notifyResize();
+      act(() => {
+        window.dispatchEvent(new Event("resize"));
+      });
+      expect(gl.drawArrays).toHaveBeenCalledTimes(activationDrawCount);
 
-    act(() => {
-      canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
-    });
-    expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
-      "data-android-day-ambience",
-      "fallback"
-    );
-    expect(container.querySelectorAll(".day-cosmic__photon")).toHaveLength(78);
-    expect(container.querySelectorAll(".day-cosmic__mote")).toHaveLength(35);
-    expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(18);
+      cssWidth = 720;
+      cssHeight = 400;
+      notifyResize();
+      expect(gl.drawArrays).toHaveBeenCalledTimes(activationDrawCount + 1);
+      expect(canvas).toHaveAttribute("width", "720");
+      expect(canvas).toHaveAttribute("height", "400");
+      vi.stubGlobal("devicePixelRatio", 2);
+      notifyResize();
+      expect(gl.drawArrays).toHaveBeenCalledTimes(activationDrawCount + 2);
+      expect(canvas).toHaveAttribute("width", "1440");
+      expect(canvas).toHaveAttribute("height", "800");
+      notifyResize();
+      expect(gl.drawArrays).toHaveBeenCalledTimes(activationDrawCount + 2);
+      expect(screen.getByTestId("android-day-webgl-large-effects")).toBe(canvas);
+      expect(canvas).toHaveAttribute("data-android-day-active", "true");
+      expect(gl.createProgram).toHaveBeenCalledTimes(programCountAfterSetup);
 
-    act(() => {
-      canvas.dispatchEvent(new Event("webglcontextrestored"));
-    });
-    expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
-      "data-android-day-ambience",
-      "ready"
-    );
-    expect(container.querySelectorAll(".day-cosmic__photon")).toHaveLength(0);
-    expect(container.querySelectorAll(".day-cosmic__mote")).toHaveLength(0);
-    expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(0);
+      act(() => {
+        canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+      });
+      expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+        "data-android-day-ambience",
+        "fallback"
+      );
+      expect(container.querySelectorAll(".day-cosmic__photon")).toHaveLength(78);
+      expect(container.querySelectorAll(".day-cosmic__mote")).toHaveLength(35);
+      expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(18);
 
-    unmount();
-    expect(loseContext).toHaveBeenCalledTimes(1);
-    expect(gl.deleteBuffer).toHaveBeenCalledTimes(4);
-    expect(gl.deleteProgram).toHaveBeenCalledTimes(3);
-    expect(gl.deleteShader).toHaveBeenCalledTimes(6);
-    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
-  });
+      act(() => {
+        canvas.dispatchEvent(new Event("webglcontextrestored"));
+      });
+      expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+        "data-android-day-ambience",
+        "ready"
+      );
+      expect(container.querySelectorAll(".day-cosmic__photon")).toHaveLength(0);
+      expect(container.querySelectorAll(".day-cosmic__mote")).toHaveLength(0);
+      expect(container.querySelectorAll(".day-cosmic__sun-thread")).toHaveLength(0);
+
+      unmount();
+      expect(loseContext).toHaveBeenCalledTimes(1);
+      expect(gl.deleteBuffer).toHaveBeenCalledTimes(4);
+      expect(gl.deleteProgram).toHaveBeenCalledTimes(3);
+      expect(gl.deleteShader).toHaveBeenCalledTimes(6);
+      expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
+    }
+  );
 
   it("keeps the canonical DOM fallback while one Android renderer owns every dynamic ambience layer", () => {
     const { container } = render(<DayCosmicBackground motionEnabled />);

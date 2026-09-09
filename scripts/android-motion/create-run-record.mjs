@@ -2,7 +2,8 @@
 
 import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { hashPath } from "./evidence-lib.mjs";
+import { createHash } from "node:crypto";
+import { assertIndependentInstallationEvidence, hashPath, validateRunEnvironmentEvidence } from "./evidence-lib.mjs";
 
 function valueFor(argv, name) {
   const index = argv.indexOf(name);
@@ -48,7 +49,8 @@ const environmentPath = resolveInsideRoot(
   valueFor(argv, "--environment"),
   "environment",
 );
-const environmentEnvelope = JSON.parse(await readFile(environmentPath.absolute, "utf8"));
+const environmentBytes = await readFile(environmentPath.absolute);
+const environmentEnvelope = JSON.parse(environmentBytes.toString("utf8"));
 if (environmentEnvelope.schemaVersion !== 2 || !environmentEnvelope.environment) {
   throw new Error("environment file must contain schemaVersion 2 and environment");
 }
@@ -69,20 +71,40 @@ if (actionsValue) {
   if (hashed.kind !== "file") throw new Error("actions must be a file");
   actions = { path: actionPath.relative, bytes: hashed.bytes, sha256: hashed.sha256 };
 }
-const installedSha256 = valueFor(argv, "--installed-sha256");
-if (!/^[0-9a-f]{64}$/.test(installedSha256 ?? "")) {
-  throw new Error("installed SHA-256 is invalid");
+const installationReceipts = [];
+const readInstallation = async (flag) => {
+  const receiptPath = resolveInsideRoot(root, valueFor(argv, flag), `${flag} independent observation`);
+  const hashed = await hashPath(receiptPath.absolute);
+  if (hashed.kind !== "file") throw new Error(`${flag} must be a file`);
+  installationReceipts.push({ path: receiptPath.relative, bytes: hashed.bytes, sha256: hashed.sha256 });
+  return JSON.parse(await readFile(receiptPath.absolute, "utf8"));
+};
+const before = await readInstallation("--installed-before");
+const after = await readInstallation("--installed-after");
+if (installationReceipts[0].path === installationReceipts[1].path || installationReceipts[0].sha256 === installationReceipts[1].sha256) {
+  throw new Error("Independent installation receipts must be distinct files and observations");
 }
+const sourceApk = resolveInsideRoot(root, valueFor(argv, "--source-apk"), "source APK");
+const source = await hashPath(sourceApk.absolute);
+if (source.kind !== "file") throw new Error("source APK must be a file");
+const startedAt = valueFor(argv, "--started-at");
+const endedAt = valueFor(argv, "--ended-at");
+const identity = assertIndependentInstallationEvidence({ before, after, sourceSha256: source.sha256, startedAt, endedAt });
+validateRunEnvironmentEvidence(environmentEnvelope.environment);
+if (environmentEnvelope.deviceKey !== before.deviceKey) {
+  throw new Error("Environment device key must match both independent installation observations");
+}
+artifacts.push({ path: environmentPath.relative, bytes: environmentBytes.byteLength, sha256: createHash("sha256").update(environmentBytes).digest("hex") });
+artifacts.push(...installationReceipts, { path: sourceApk.relative, bytes: source.bytes, sha256: source.sha256 });
 const record = {
   runId: valueFor(argv, "--run-id"),
   scenario: valueFor(argv, "--scenario"),
   pass: valueFor(argv, "--pass"),
   status: valueFor(argv, "--status"),
-  startedAt: valueFor(argv, "--started-at"),
-  endedAt: valueFor(argv, "--ended-at"),
+  startedAt,
+  endedAt,
   environment: environmentEnvelope.environment,
-  installedBeforeSha256: installedSha256,
-  installedAfterSha256: installedSha256,
+  ...identity,
   ...(actions ? { actions } : {}),
   symptom: valueFor(argv, "--symptom") ?? null,
   attribution: valueFor(argv, "--attribution") ?? null,
@@ -95,6 +117,7 @@ await mkdir(path.dirname(output.absolute), { recursive: true });
 await writeFile(output.absolute, `${JSON.stringify(record, null, 2)}\n`, {
   encoding: "utf8",
   mode: 0o600,
+  flag: "wx",
 });
 console.log(
   JSON.stringify({

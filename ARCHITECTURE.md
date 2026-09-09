@@ -19,7 +19,7 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 | Index.tsx LOC | **300** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **38** | `ls src/components/ -d` |
 | Features modules | 2 | `ls src/features/ -d` |
-| V2 coexistence files | 56 | `find src -name '*V2*' -o -name '*-v2*'` |
+| V2 coexistence files | 57 | `find src -name '*V2*' -o -name '*-v2*'` |
 | `it.todo(` occurrences | 7 | regex walk |
 | `as any` total | 170 (170 in tests, ~0 prod) | regex walk |
 | Console.\* in prod (excl. logger/crashReporting) | **4** | regex walk |
@@ -41,12 +41,12 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
 | Source files                 | **1,037** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **712** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Test files                   |   **715** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
-| React.memo                   |   **124** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
-| index.css LOC                | **7,717** | `readFileSync(...).split("\\n").length` (constitution guard) |
-| Inline style={{}}            |   **312** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
-| exhaustive-deps suppressions |    **17** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
+| React.memo                   |   **123** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
+| index.css LOC                | **7,859** | `readFileSync(...).split("\\n").length` (constitution guard) |
+| Inline style={{}}            |   **311** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
+| exhaustive-deps suppressions |    **16** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
 | Hook coverage                |   **72%** | `56/78 hook tests`                                           |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
@@ -1003,9 +1003,9 @@ On PR to main:
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-09-02 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-09-09 via `npm run constitution:check`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **20 current violations** remain.
+> **TD-20 PARTIALLY RESOLVED**: 37 tracked component violations resolved; the three July Settings regressions were removed. **19 current violations** remain.
 
 #### Resolved (37 components)
 
@@ -1069,11 +1069,11 @@ On PR to main:
 | ---------------- | ----- | -------- | --------- | ------------------------------------------------------------------- |
 | Celebrations.tsx | 311   | 4        | 4         | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### New Violations (20 files >400L — verified 2026-09-02)
+#### New Violations (19 files >400L — verified 2026-09-09)
 
 | File                                                   | Lines     | Severity | Notes                                      |
 | ------------------------------------------------------ | --------- | -------- | ------------------------------------------ |
-| components/state-of-mind/ValenceOrb.tsx                | **3,708** | P2       | Shader/orb shell remains over 400L         |
+| components/state-of-mind/ValenceOrb.tsx                | **3,773** | P2       | Shader/orb shell remains over 400L         |
 | components/habit-creation-form/HabitCreationForm.tsx   | **1,153** | P2       | Regressed above 400L after feature growth  |
 | components/habit-hub/HabitDetailSheet.tsx              | **786**   | P2       | Detail sheet remains over 400L             |
 | main.tsx                                               | **725**   | P2       | Bootstrap/root wiring remains over 400L    |
@@ -1084,14 +1084,13 @@ On PR to main:
 | components/SplashScreen.tsx                            | **573**   | P2       | Startup shell remains over 400L            |
 | components/habit-creation-form/FormSelectors.tsx       | **558**   | P2       | Form selector shell remains over 400L      |
 | components/habit-tracker/HabitTracker.tsx              | **526**   | P2       | Habit tracker shell remains over 400L      |
-| components/navigation-v2/DrawerV2.tsx                  | **482**   | P3       | V2 navigation drawer remains over 400L     |
 | components/reflection/DailyRitualCard.tsx              | **483**   | P3       | Reflection ritual card remains over 400L   |
 | components/navigation-v2/NavV2Orchestrator.tsx         | **456**   | P3       | Navigation orchestration remains over 400L |
 | pages/nav-v2/OrbPageSteps.tsx                          | **440**   | P3       | Orb step presentation remains over 400L    |
 | components/stats/ring-detail-sheet/RingDetailSheet.tsx | **445**   | P3       | Stats sheet shell remains over 400L        |
 | components/StorageErrorBanner.tsx                      | **434**   | P3       | Storage incident surface remains over 400L |
 | components/challenges-panel/ChallengesPanel.tsx        | **418**   | P3       | Challenges panel shell remains over 400L   |
-| components/schedule/ScheduleTimeline.tsx               | **479**   | P3       | Schedule timeline shell remains over 400L  |
+| components/schedule/ScheduleTimeline.tsx               | **478**   | P3       | Schedule timeline shell remains over 400L  |
 | components/hyperfocus/HyperfocusMode.tsx               | **410**   | P3       | Hyperfocus shell remains over 400L          |
 
 #### Remaining — SKIP (1 file >400L)
@@ -1116,19 +1115,20 @@ On PR to main:
 
 ---
 
-### CI/CD: Actual vs Required
+### CI/CD: Declared gates and proof boundaries
 
-> `deploy.yml` exists but is incomplete vs ARCHITECTURE.md §15 requirements.
+The current `.github/workflows/deploy.yml` declares the gates below. Presence in YAML is configuration evidence, not a successful run; bind CI claims to the exact source/artifact.
 
-| Step                          | Required (§15) | Actual (deploy.yml)                             | Status  |
-| ----------------------------- | -------------- | ----------------------------------------------- | ------- |
-| npm ci                        | Yes            | Yes                                             | PASS    |
-| npx eslint . --max-warnings=0 | Yes            | Yes (strict mode added 2026-02-18 by Codex 5.3) | PASS    |
-| npx tsc --noEmit              | Yes            | Yes (added 2026-02-16)                          | PASS    |
-| npm test                      | Yes            | Yes                                             | PASS    |
-| npm run build                 | Yes            | Yes                                             | PASS    |
-| npm audit                     | Recommended    | **No**                                          | MISSING |
-| Playwright E2E                | Recommended    | **No**                                          | MISSING |
+| Area | Declared command or flow |
+| --- | --- |
+| Dependencies/security | `npm ci`; `npm audit --audit-level=high` |
+| Lint/types | `npx eslint . --max-warnings=0`; `npm run typecheck` |
+| Unit/contracts | `npm run test:release -- --maxWorkers=2`; `npm run test:release-contracts` |
+| Production bundle | `npm run build` |
+| Browser/PWA | Deploy smoke, staged diary offline and audio range tests |
+| Performance | Staged V2 Orb performance test; Android phone proof remains separate |
+
+The pre-commit hook uses `npm run typecheck` so application and tooling projects are checked. Standalone `npx tsc --noEmit` against the root references-only configuration does not check those projects. Android interactions follow [ANDROID_INTERACTION_BUDGET.md](docs/ai/ANDROID_INTERACTION_BUDGET.md).
 
 ---
 
@@ -1136,18 +1136,13 @@ On PR to main:
 
 > Run this checklist monthly (or after each major refactor). Compare metrics against [Codebase Metrics](#codebase-metrics-as-of-2026-03-11) table.
 
-1. `npx tsc --noEmit` — must be 0 errors
-2. `npx eslint src/ --quiet` — track error count
-3. `npx vitest --run` — all tests pass
-4. `npm run build` — succeeds
-5. `grep -rn 'localStorage\.' src/ | wc -l` — **0** (enforced by ESLint, was 199)
-6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track silent catches (target: 0, current: 0)
-7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
-8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption (current: 120)
-9. `wc -l src/index.css` — CSS monolith tracking (current: 7,602 — TD-25)
-10. `grep -rn 'style={{' src/ --include="*.tsx" | wc -l` — inline style objects (current: 358 — TD-27)
-11. Hook test coverage: `ls src/hooks/__tests__/ | wc -l` vs `ls src/hooks/*.ts | wc -l` — target ≥ 70%
-12. `grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l` — track suppressions (current: 17)
+1. Follow `docs/ai/TEST_FIRST_AGENT_POLICY.md`: choose the expected behavior and RED or characterization evidence before production changes.
+2. Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build`; retain actual exit codes and distinguish inherited failures.
+3. Run `npm run doc-counts` and `npm run check:canonical-orbs`; refresh generated blocks with `npm run doc-counts:update` when needed.
+4. Inspect runtime, frame timing, console and comparable screenshots for affected flows. Native, PWA and desktop proof each need an explicit row.
+5. Run the domain checks routed by AGENTS.md and `npm run ci:preflight` before an authorized release handoff.
+
+Historical addenda below record earlier snapshots. Their test counts and root `tsc` receipts are not current application-typecheck, runtime or release evidence.
 
 ---
 

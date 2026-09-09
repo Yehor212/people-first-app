@@ -320,6 +320,36 @@ function nearestRankPercentile(values, percentile) {
   return sorted[rank - 1];
 }
 
+// This evaluates reported timings only. A budget PASS is not physical-phone,
+// presentation, craft, artifact-identity, or release proof.
+export function summarizeInteractionSamples(samples, expectedCount) {
+  if (!Array.isArray(samples)) fail("interaction timing samples must be an array");
+  if (!Number.isInteger(expectedCount) || expectedCount < 1 || expectedCount < samples.length) {
+    fail("interaction timing expected count is invalid");
+  }
+  const keys = ["firstResponseMs", "readyMs", "completedMs"];
+  const values = Object.fromEntries(keys.map(key => [key, []]));
+  samples.forEach((sample, index) => {
+    assertExactKeys(sample, new Set(keys), keys, `interaction timing ${index}`);
+    for (const key of keys) {
+      if (sample[key] === null) continue;
+      assertFiniteNumber(sample[key], `interaction timing ${index}.${key}`, { min: 0 });
+      values[key].push(sample[key]);
+    }
+  });
+  const metrics = Object.fromEntries(keys.map(key => [key, {
+    count: values[key].length,
+    missing: expectedCount - values[key].length,
+    p50: nearestRankPercentile(values[key], 50),
+    p95: nearestRankPercentile(values[key], 95),
+    p99: nearestRankPercentile(values[key], 99),
+    max: values[key].length ? Math.max(...values[key]) : null,
+  }]));
+  const status = keys.some(key => metrics[key].max > 103) ? "FAIL"
+    : keys.some(key => metrics[key].missing > 0) ? "UNVERIFIED" : "PASS";
+  return { status, scope: "reported interaction timings only", limitMs: 103, expectedCount, sampleCount: samples.length, ...metrics };
+}
+
 export function summarizeOrbProbeSamples(samples) {
   if (!Array.isArray(samples)) fail("orb probe samples must be an array");
   const normalized = samples.map((sample, index) => {
@@ -742,6 +772,55 @@ export function validateRunEnvironmentEvidence(environment) {
   return environment;
 }
 
+export async function preserveDeviceRecording({ pull, readDeviceSha256, readLocalBytes, removeDeviceCopy }) {
+  const before = await readDeviceSha256();
+  assertSha256(before, "device recording SHA-256");
+  await pull();
+  const bytes = await readLocalBytes();
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  const after = await readDeviceSha256();
+  if (bytes.byteLength === 0 || digest !== before || after !== before) {
+    fail("recording transfer is incomplete or its original changed; device copy retained");
+  }
+  await removeDeviceCopy();
+  return { bytes: bytes.byteLength, sha256: digest };
+}
+
+export function assertIndependentInstallationEvidence(evidence) {
+  assertExactKeys(evidence, new Set(["before", "after", "sourceSha256", "startedAt", "endedAt"]),
+    ["before", "after", "sourceSha256", "startedAt", "endedAt"], "installation evidence");
+  assertPrivacySafe(evidence);
+  assertSha256(evidence.sourceSha256, "installation source SHA-256");
+  assertDateTime(evidence.startedAt, "installation run startedAt");
+  assertDateTime(evidence.endedAt, "installation run endedAt");
+  const keys = ["observationId", "collectedAt", "deviceKey", "installedPath", "installedSha256", "packageName", "versionName", "versionCode", "lastUpdateTime"];
+  for (const phase of ["before", "after"]) {
+    const observation = evidence[phase];
+    assertExactKeys(observation, new Set(keys), keys, `installation ${phase} observation`);
+    if (!SAFE_EXPERIMENT_ID.test(observation.observationId ?? "")) fail("installation observation id is invalid");
+    assertDateTime(observation.collectedAt, `installation ${phase} collectedAt`);
+    assertSha256(observation.deviceKey, `installation ${phase} device key`);
+    assertSha256(observation.installedSha256, `installation ${phase} APK hash`);
+    if (observation.installedSha256 !== evidence.sourceSha256) fail(`installed ${phase} APK does not match the built artifact`);
+    if (observation.packageName !== "com.zenflow.app") fail("installation package must be com.zenflow.app");
+    if (typeof observation.installedPath !== "string" || !observation.installedPath.startsWith("/data/app/")) fail("installation APK path is invalid");
+    if (typeof observation.versionName !== "string" || !observation.versionName.trim()) fail("installation version name is required");
+    if (!Number.isInteger(observation.versionCode) || observation.versionCode < 1) fail("installation version code is invalid");
+    if (typeof observation.lastUpdateTime !== "string" || !observation.lastUpdateTime.trim()) fail("installation last update time is required");
+  }
+  const { before, after } = evidence;
+  if (before.observationId === after.observationId) fail("installation requires distinct before and after observations");
+  for (const key of ["deviceKey", "installedPath", "packageName", "versionName", "versionCode", "lastUpdateTime"]) {
+    if (before[key] !== after[key]) fail(`installation ${key} changed during the run`);
+  }
+  const started = Date.parse(evidence.startedAt);
+  const ended = Date.parse(evidence.endedAt);
+  if (ended < started || Date.parse(before.collectedAt) > started || Date.parse(after.collectedAt) < ended || Date.parse(after.collectedAt) <= Date.parse(before.collectedAt)) {
+    fail("installation observations must independently bracket the run");
+  }
+  return { installedBeforeSha256: before.installedSha256, installedAfterSha256: after.installedSha256 };
+}
+
 export function assertRunArtifactIdentity(identity) {
   assertExactKeys(
     identity,
@@ -993,7 +1072,50 @@ export function buildTraceSummaryQueries(packageName) {
   if (typeof packageName !== "string" || !SAFE_PACKAGE.test(packageName)) fail("package name is invalid");
   const processFilter = `p.name='${packageName}'`;
   return {
-    frameTimeline: `WITH app AS (SELECT upid FROM process p WHERE ${processFilter} LIMIT 1), frames AS (SELECT ts,dur,jank_type,LAG(ts) OVER (ORDER BY ts) AS previous_ts FROM actual_frame_timeline_slice WHERE upid=(SELECT upid FROM app)) SELECT COUNT(*) AS appFrames,ROUND((MAX(ts)-MIN(ts))/1e9,6) AS spanSeconds,ROUND(COUNT(*)/((MAX(ts)-MIN(ts))/1e9),6) AS presentedFps,SUM(CASE WHEN INSTR(jank_type,'App Deadline Missed')>0 THEN 1 ELSE 0 END) AS appDeadlineMissed,ROUND(100.0*SUM(CASE WHEN INSTR(jank_type,'App Deadline Missed')>0 THEN 1 ELSE 0 END)/COUNT(*),6) AS appDeadlineMissedPct,SUM(CASE WHEN dur>103000000 THEN 1 ELSE 0 END) AS framesOver103Ms,ROUND(AVG(dur)/1e6,6) AS averageFrameTimelineDurationMs,ROUND(PERCENTILE(dur/1e6,95),6) AS p95FrameTimelineDurationMs,ROUND(PERCENTILE(dur/1e6,99),6) AS p99FrameTimelineDurationMs,ROUND(MAX(dur)/1e6,6) AS maxFrameTimelineDurationMs,SUM(CASE WHEN previous_ts IS NOT NULL AND ts-previous_ts>100000000 THEN 1 ELSE 0 END) AS presentationTimestampGapsOver100Ms FROM frames;`,
+    frameTimeline: `WITH app_frames AS (SELECT a.* FROM actual_frame_timeline_slice a JOIN process p USING(upid) WHERE ${processFilter}), frames AS (SELECT * FROM app_frames WHERE dur>=0) SELECT COUNT(*) AS appFrames,(SELECT COUNT(*) FROM app_frames WHERE dur<0) AS incompleteAppFrames,ROUND((MAX(ts)-MIN(ts))/1e9,6) AS appFrameStartSpanSeconds,SUM(CASE WHEN present_type='Dropped Frame' THEN 1 ELSE 0 END) AS droppedAppFrames,SUM(CASE WHEN INSTR(jank_type,'App Deadline Missed')>0 THEN 1 ELSE 0 END) AS appDeadlineMissed,ROUND(100.0*SUM(CASE WHEN INSTR(jank_type,'App Deadline Missed')>0 THEN 1 ELSE 0 END)/COUNT(*),6) AS appDeadlineMissedPct,SUM(CASE WHEN dur>103000000 THEN 1 ELSE 0 END) AS framesOver103Ms,ROUND(AVG(dur)/1e6,6) AS averageFrameTimelineDurationMs,ROUND(PERCENTILE(dur/1e6,95),6) AS p95FrameTimelineDurationMs,ROUND(PERCENTILE(dur/1e6,99),6) AS p99FrameTimelineDurationMs,ROUND(MAX(dur)/1e6,6) AS maxFrameTimelineDurationMs FROM frames;`,
+    // App slice completion is max(GPU done, buffer posted), not presentation.
+    // Several app layers can share one display frame. Join tokens first, then
+    // deduplicate SurfaceFlinger completion timestamps before deriving cadence.
+    // https://perfetto.dev/docs/data-sources/frametimeline
+    displayTimeline: `WITH app_tokens AS (
+      SELECT DISTINCT a.display_frame_token
+      FROM actual_frame_timeline_slice a JOIN process p USING(upid)
+      WHERE ${processFilter} AND a.dur>=0 AND a.display_frame_token>0
+        AND a.present_type!='Dropped Frame'
+    ), display_frames AS (
+      SELECT DISTINCT a.id,a.display_frame_token,a.ts+a.dur AS present_ts
+      FROM actual_frame_timeline_slice a JOIN process p USING(upid)
+      JOIN app_tokens USING(display_frame_token)
+      WHERE p.name='/system/bin/surfaceflinger' AND a.dur>=0
+        AND a.present_type!='Dropped Frame'
+    ), presentation_times AS (
+      SELECT DISTINCT present_ts FROM display_frames
+    ), intervals AS (
+      SELECT present_ts-LAG(present_ts) OVER (ORDER BY present_ts) AS gap_ns
+      FROM presentation_times
+    ), ranked_intervals AS (
+      SELECT gap_ns,ROW_NUMBER() OVER (ORDER BY gap_ns) AS rank,
+        COUNT(*) OVER () AS interval_count
+      FROM intervals WHERE gap_ns IS NOT NULL
+    ), coverage AS (
+      SELECT (SELECT COUNT(*) FROM app_tokens) AS appDisplayTokens,
+        COUNT(DISTINCT display_frame_token) AS matchedAppDisplayTokens,
+        COUNT(*) AS matchedDisplayFrames FROM display_frames
+    ) SELECT appDisplayTokens,matchedAppDisplayTokens,
+      appDisplayTokens-matchedAppDisplayTokens AS unmatchedAppDisplayTokens,
+      matchedDisplayFrames,
+      (SELECT COUNT(*) FROM presentation_times) AS uniqueDisplayUpdates,
+      (SELECT ROUND((MAX(present_ts)-MIN(present_ts))/1e9,6) FROM presentation_times) AS spanSeconds,
+      CASE WHEN appDisplayTokens=matchedAppDisplayTokens THEN
+        (SELECT ROUND((COUNT(*)-1)*1e9/NULLIF(MAX(present_ts)-MIN(present_ts),0),6)
+         FROM presentation_times) END AS presentedFps,
+      (SELECT ROUND(MIN(CASE WHEN rank*100>=interval_count*50 THEN gap_ns END)/1e6,6) FROM ranked_intervals) AS p50PresentationIntervalMs,
+      (SELECT ROUND(MIN(CASE WHEN rank*100>=interval_count*95 THEN gap_ns END)/1e6,6) FROM ranked_intervals) AS p95PresentationIntervalMs,
+      (SELECT ROUND(MIN(CASE WHEN rank*100>=interval_count*99 THEN gap_ns END)/1e6,6) FROM ranked_intervals) AS p99PresentationIntervalMs,
+      (SELECT ROUND(MAX(gap_ns)/1e6,6) FROM ranked_intervals) AS maxPresentationIntervalMs,
+      (SELECT SUM(CASE WHEN gap_ns>100000000 THEN 1 ELSE 0 END) FROM ranked_intervals) AS presentationTimestampGapsOver100Ms,
+      (SELECT SUM(CASE WHEN gap_ns>103000000 THEN 1 ELSE 0 END) FROM ranked_intervals) AS presentationTimestampGapsOver103Ms
+      FROM coverage;`,
     webViewDraw: `SELECT COUNT(*) AS drawCount,ROUND(AVG(s.dur)/1e6,6) AS averageWebViewDrawMs,ROUND(PERCENTILE(s.dur/1e6,95),6) AS p95WebViewDrawMs,ROUND(PERCENTILE(s.dur/1e6,99),6) AS p99WebViewDrawMs,ROUND(MAX(s.dur)/1e6,6) AS maxWebViewDrawMs FROM slice s JOIN thread_track tt ON s.track_id=tt.id JOIN thread t USING(utid) JOIN process p USING(upid) WHERE ${processFilter} AND t.name='RenderThread' AND s.name='WebViewFunctor::drawGl';`,
     threadCpu: `SELECT t.name AS thread,ROUND(SUM(s.dur)/1e9,6) AS cpuSeconds FROM sched_slice s JOIN thread t USING(utid) JOIN process p USING(upid) WHERE ${processFilter} AND t.name IN ('RenderThread','${packageName}','VizWebView','Chrome_InProcGp') GROUP BY t.name ORDER BY cpuSeconds DESC;`,
   };

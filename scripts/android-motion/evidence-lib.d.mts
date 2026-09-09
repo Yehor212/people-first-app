@@ -171,6 +171,34 @@ export function summarizeLayerAttribution(input: {
 }): LayerAttributionSummary;
 export function validateEvidenceLedger<T>(ledger: T): T;
 export function validateRunEnvironmentEvidence<T>(environment: T): T;
+export interface InteractionTimingSummary {
+  count: number;
+  missing: number;
+  p50: number | null;
+  p95: number | null;
+  p99: number | null;
+  max: number | null;
+}
+export function summarizeInteractionSamples(samples: unknown, expectedCount: number): {
+  status: "PASS" | "FAIL" | "UNVERIFIED";
+  scope: "reported interaction timings only";
+  limitMs: 103;
+  expectedCount: number;
+  sampleCount: number;
+  firstResponseMs: InteractionTimingSummary;
+  readyMs: InteractionTimingSummary;
+  completedMs: InteractionTimingSummary;
+};
+export function assertIndependentInstallationEvidence(evidence: unknown): {
+  installedBeforeSha256: string;
+  installedAfterSha256: string;
+};
+export function preserveDeviceRecording(operations: {
+  pull: () => Promise<unknown>;
+  readDeviceSha256: () => Promise<string>;
+  readLocalBytes: () => Promise<Uint8Array>;
+  removeDeviceCopy: () => Promise<unknown>;
+}): Promise<{ bytes: number; sha256: string }>;
 export function assertRunArtifactIdentity<T extends {
   expectedSha256: string;
   sourceSha256: string;
@@ -183,6 +211,7 @@ export function assertRunArtifactIdentity<T extends {
 export function parseTraceProcessorCsv(csv: string): Array<Record<string, string>>;
 export function buildTraceSummaryQueries(packageName: string): {
   frameTimeline: string;
+  displayTimeline: string;
   webViewDraw: string;
   threadCpu: string;
 };
