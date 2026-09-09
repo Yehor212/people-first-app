@@ -12,7 +12,7 @@ export {
 interface AndroidDayLargeEffectsProps {
   active: boolean;
   enabled: boolean;
-  canvasRef: RefObject<HTMLCanvasElement>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
 export const AndroidDayLargeEffects = memo(function AndroidDayLargeEffects({

@@ -5,7 +5,7 @@
 
 import { logger } from "@/lib/logger";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
-import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSync";
+import { writeEventAndBroadcast, getPersistentDeviceId } from "@/storage/eventSyncWriter";
 import { getDeletedFocusSessionIds } from "@/storage/deletionTracker";
 import { isAbortError, isValidUUID } from "@/lib/validation";
 import { supabase, getCurrentUserId } from "@/lib/supabaseClient";

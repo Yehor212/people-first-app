@@ -83,6 +83,10 @@ function updateSecurityState(changes: Partial<typeof securityMocks.state>) {
 const mediaQueryMocks = vi.hoisted(() => ({
   matches: false,
 }));
+const motionPresence = vi.hoisted(() => ({
+  isPresent: true,
+  listeners: new Set<() => void>(),
+}));
 
 const hapticsMocks = vi.hoisted(() => ({
   hapticSuccess: vi.fn(),
@@ -531,7 +535,13 @@ function omitMotionProps<T extends HTMLElement>({
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   LayoutGroup: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useIsPresent: () => true,
+  useIsPresent: () => useSyncExternalStore(
+    (listener) => {
+      motionPresence.listeners.add(listener);
+      return () => motionPresence.listeners.delete(listener);
+    },
+    () => motionPresence.isPresent,
+  ),
   motion: {
     article: (props: MotionMockProps<HTMLElement>) => {
       const { children, ...rest } = omitMotionProps(props);
@@ -608,6 +618,8 @@ describe("JournalModule orb handoff behavior", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    motionPresence.isPresent = true;
+    motionPresence.listeners.clear();
     securityMocks.listeners.clear();
     securityMocks.revision = 0;
     Object.values(storageMocks).forEach((mock) => mock.mockReset());
@@ -731,6 +743,30 @@ describe("JournalModule orb handoff behavior", () => {
     render(<JournalModule startOpen disableCardShell presentation="page" />);
     await act(flushJournalModuleEffects);
     expect(screen.getAllByTestId("journal-wallpaper")).toHaveLength(1);
+  });
+
+  it("makes the retained mobile diary view inert only while it exits", async () => {
+    const { container } = render(
+      <JournalModule startOpen disableCardShell presentation="page" />,
+    );
+    await act(flushJournalModuleEffects);
+    const view = container.querySelector('[data-journal-mobile-view="list"]');
+    expect(view).toBeInTheDocument();
+    expect(view).not.toHaveAttribute("inert");
+
+    act(() => {
+      motionPresence.isPresent = false;
+      for (const listener of motionPresence.listeners) listener();
+    });
+    expect(view).toHaveAttribute("aria-hidden", "true");
+    expect(view).toHaveAttribute("inert");
+
+    act(() => {
+      motionPresence.isPresent = true;
+      for (const listener of motionPresence.listeners) listener();
+    });
+    expect(view).not.toHaveAttribute("aria-hidden");
+    expect(view).not.toHaveAttribute("inert");
   });
 
   it("does not render a page background in the legacy dialog presentation", async () => {
@@ -1792,7 +1828,11 @@ describe("JournalModule orb handoff behavior", () => {
     expect(dialog).toHaveTextContent(/keep this window open/i);
   });
 
-  it("opens the remove-password confirmation from settings and confirms once", async () => {
+  it.each([
+    { layout: "phone", wide: false, trigger: "journal-mobile-settings", panel: "journal-mobile-settings-panel" },
+    { layout: "desktop", wide: true, trigger: "journal-sidebar-nav-settings", panel: "journal-settings-panel" },
+  ])("opens the remove-password confirmation from $layout settings and confirms once", async ({ wide, trigger, panel }) => {
+    mediaQueryMocks.matches = wide;
     Object.assign(securityMocks.state, {
       hasPassword: true,
       isLocked: false,
@@ -1807,10 +1847,11 @@ describe("JournalModule orb handoff behavior", () => {
       />,
     );
 
-    fireEvent.click(await screen.findByTestId("journal-mobile-settings"));
+    fireEvent.click(await screen.findByTestId(trigger));
     fireEvent.click(await screen.findByRole("button", { name: /remove password lock/i }));
 
     const dialog = await screen.findByRole("dialog", { name: /remove password lock/i });
+    expect(screen.getByTestId(panel)).toHaveAttribute("inert");
     fireEvent.click(within(dialog).getByRole("button", { name: /remove password lock/i }));
 
     await waitFor(() => {

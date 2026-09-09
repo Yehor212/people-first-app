@@ -110,6 +110,16 @@ function main() {
     "await saveLastSeq(serverMax, {",
     "expectedOwnerUserId: ownerUserId",
     "getDeletionTrackerKeyForSyncEntity",
+    'from "@/storage/eventSyncWriter"',
+    "getPersistentDeviceId",
+    "clearDeviceIdCache",
+    "isSyncEvent",
+    "writeEventAndBroadcast",
+    "writeQueuedEventAndBroadcast",
+    "broadcastCommittedSyncEvent",
+  ]);
+  requireIncludes("src/storage/eventSyncWriter.ts", [
+    "sync_events",
     "WRITE_SYNC_EVENT",
     "writeQueuedEventAndBroadcast",
     "queueOnFailure",
@@ -118,7 +128,7 @@ function main() {
     "normalizeSyncEventWriteIntent",
     "sync_events_idempotency_idx",
   ]);
-  requireNotIncludes("src/storage/eventSync.ts", [
+  requireNotIncludes("src/storage/eventSyncWriter.ts", [
     "${intent.deviceId}:${intent.entityType}:${intent.entityId}:${intent.op}",
   ]);
 

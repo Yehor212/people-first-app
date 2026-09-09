@@ -19,7 +19,7 @@ import { useEffect, useRef, useCallback } from "react";
 
 interface ZenFocusModeProps {
   isActive: boolean;
-  editorRef: React.RefObject<HTMLDivElement>;
+  editorRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const ZEN_DIMMED_CLASS = "zen-dimmed";
@@ -46,7 +46,7 @@ function findParentParagraph(node: Node | null, editor: HTMLElement | null): HTM
 
 export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
   const isScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastParagraphRef = useRef<HTMLElement | null>(null);
   const prevActiveRef = useRef(false);
 

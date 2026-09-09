@@ -129,6 +129,7 @@ vi.mock("@/storage/db", () => ({
 }));
 
 import { ENTRY } from "@/types";
+import * as eventSyncFacade from "@/storage/eventSync";
 import {
   applyDelta,
   fetchDelta,
@@ -163,6 +164,42 @@ function createCountersQuery() {
 }
 
 describe("eventSync auth guards", () => {
+  it("keeps legacy producer exports identical to the cycle-free writer", async () => {
+    const writer = await import("@/storage/eventSyncWriter");
+    const producerExports = [
+      "writeEvent",
+      "writeEventAndBroadcast",
+      "writeQueuedEventAndBroadcast",
+      "broadcastCommittedSyncEvent",
+      "getPersistentDeviceId",
+      "clearDeviceIdCache",
+      "isSyncEvent",
+      "isSyncEventWriteIntent",
+      "normalizeSyncEventWriteIntent",
+    ] as const;
+
+    for (const name of producerExports) {
+      expect(eventSyncFacade[name]).toBe(writer[name]);
+    }
+  });
+
+  it("shares device identity caching and logout invalidation across both entry points", async () => {
+    const writer = await import("@/storage/eventSyncWriter");
+    eventSyncFacade.clearDeviceIdCache();
+    mocks.settingsGet.mockResolvedValueOnce({ key: "zenflow-device-id", value: "first-device" });
+
+    expect(await writer.getPersistentDeviceId()).toBe("first-device");
+    expect(await eventSyncFacade.getPersistentDeviceId()).toBe("first-device");
+    expect(mocks.settingsGet).toHaveBeenCalledTimes(1);
+
+    writer.clearDeviceIdCache();
+    mocks.settingsGet.mockResolvedValueOnce({ key: "zenflow-device-id", value: "next-device" });
+    expect(await eventSyncFacade.getPersistentDeviceId()).toBe("next-device");
+    expect(await writer.getPersistentDeviceId()).toBe("next-device");
+    expect(mocks.settingsGet).toHaveBeenCalledTimes(2);
+    eventSyncFacade.clearDeviceIdCache();
+  });
+
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();

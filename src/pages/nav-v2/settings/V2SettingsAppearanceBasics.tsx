@@ -37,8 +37,8 @@ type AppearanceBasicsProps = {
   scale: FontScaleLevel;
   appearanceMenuOpen: boolean;
   canResetAppearance: boolean;
-  appearanceMoreButtonRef: RefObject<HTMLButtonElement>;
-  appearanceResetButtonRef: RefObject<HTMLButtonElement>;
+  appearanceMoreButtonRef: RefObject<HTMLButtonElement | null>;
+  appearanceResetButtonRef: RefObject<HTMLButtonElement | null>;
   onToggleAppearanceMenu: () => void;
   onReset: () => void;
   onThemeChange: (theme: ThemePreference) => void;

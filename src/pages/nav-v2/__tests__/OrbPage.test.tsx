@@ -969,6 +969,22 @@ describe("OrbPage progressive flow", () => {
     expect(source).toContain('aria-hidden={!isPresent ? true : undefined}');
   });
 
+  it("makes only the retained outgoing Orb scene inert during a step transition", () => {
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const outgoing = screen.getByTestId("orb-page-step-scene");
+    expect(outgoing).not.toHaveAttribute("inert");
+
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    expect(outgoing).toBeInTheDocument();
+    expect(outgoing).toHaveAttribute("aria-hidden", "true");
+    expect(outgoing).toHaveAttribute("inert");
+    const incoming = screen.getAllByTestId("orb-page-step-scene")
+      .find((scene) => scene !== outgoing);
+    expect(incoming).toBeInTheDocument();
+    expect(incoming).not.toHaveAttribute("inert");
+  });
+
   it("keeps the V1 neutral orb baseline before the user moves the slider", () => {
     setViewport(399, 869);
     mockMoods = [{ id: "previous", date: "2026-04-30", valence: -1 }];

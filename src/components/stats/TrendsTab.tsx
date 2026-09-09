@@ -9,7 +9,9 @@ import { Card } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
 import { AnimatedEmotionDistribution } from '@/components/AnimatedStatsComponents';
-import { MoodWeather, WeekCrystal, TrophyHall } from '@/components/stats';
+import { MoodWeather } from './MoodWeather';
+import { WeekCrystal } from './WeekCrystal';
+import { TrophyHall } from './TrophyHall';
 import type { StatsRange } from '@/hooks/useStatsCalculations';
 import type { UseStatsPageDataReturn } from './useStatsPageData';
 

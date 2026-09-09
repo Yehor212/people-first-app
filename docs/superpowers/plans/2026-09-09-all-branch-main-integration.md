@@ -14,11 +14,13 @@ Preserve all 91 inventoried working paths and the old main copy's `check:circula
 - [x] Fresh full baseline: 867 files, 10,334 passing cases, zero failures, 23 skipped and seven unfinished cases.
 - [x] Separate typecheck passes. Source-diff integrity has zero errors/warnings. All 91 safe scan-copy hashes match; Gitleaks and TruffleHog have zero findings.
 - [x] Reproduce the additional circular-check argument: twelve dependency cycles, versus the original command missing alias edges.
-- [ ] Carry that argument and resolve only the demonstrated import cycles with characterization evidence; keep the checker strict.
-- [ ] Finish source/index review, fresh gates and Snyk triage; write truthful commit receipts.
-- [ ] Commit the exact reviewed local batch with normal hooks and preserve both original working copies.
+- [x] Carry that argument and resolve only the demonstrated import cycles with characterization evidence; keep the checker strict.
+- [x] Finish the preservation batch source/index review, fresh gates and Snyk triage; write truthful commit receipts.
+- [x] Commit the exact reviewed local batch and preserve both original working copies. Commit `538ff957` contains the 91 original paths plus this plan.
 
 Snyk CLI reported a medium traversal at the journey runner's `FileHandle.writeFile` data argument and a final 403 metadata failure. Focused real-filesystem journey tests pass 15/15. Check the actual sink semantics; do not suppress or claim complete scanner PASS.
+
+The sink was verified as serialized data written through an already-open exclusive file handle, not a pathname. No suppression was added. The original clone had no configured Husky driver; the actual pre-commit checks were exercised manually. The subsequent normal npm install configured Husky, so the compatibility commit uses the installed hook path.
 
 ## 2. Integrate current remote branches
 
@@ -40,17 +42,20 @@ Snyk CLI reported a medium traversal at the journey runner's `FileHandle.writeFi
 | #110 | `f6020d5a1a7ce4bf7291b861bf347d85318433db` | chore(deps): bump @capacitor/app from 8.1.0 to 8.1.1 |
 | #111 | `ee9de7ba1c27184c8e53ed540a34b018909b6aca` | chore(deps-dev): bump @size-limit/file from 12.1.0 to 13.0.3 |
 
-- [ ] Inspect original diffs and normally merge each head; preserve every original head as an ancestor.
-- [ ] Reconcile dependency peers/lockfile without force or legacy-peer bypass.
-- [ ] Reproduce and minimally fix React-family, size-limit-family and Playwright assertion incompatibilities.
-- [ ] Reinstall, audit, test, typecheck, lint and build the combined graph; check source/bundle integrity and native package compatibility.
+- [x] Inspect original diffs and normally merge each head; preserve every original head as an ancestor.
+- [x] Reconcile dependency peers/lockfile without force or legacy-peer bypass.
+- [x] Reproduce and minimally fix React-family, size-limit-family and Playwright assertion incompatibilities.
+- [x] Reinstall, audit, test, typecheck, lint and build the combined graph; check source/bundle integrity and native package compatibility. Full preflight: 10,339 passing cases, zero failures; five native patch applications; actual native CI remains a separate gate below.
 
 The existing Japanese-audio branch and malformed legacy recovery-ref target are already ancestors of main. Preserve the original ref metadata and quarantined historical audio; they are not new publication inputs.
 
+All fifteen heads are preserved under published integration head `d9a71d80`. [PR #112](https://github.com/Yehor212/people-first-app/pull/112) was deliberately opened as a draft when React 19 and the newly effective import check reproduced failures. The owner approved the required repair at 13:08 UTC on 2026-09-09; [feature 005](../../../specs/005-main-integration-compatibility/verification.md) records that separate test-first implementation and current evidence. The original Android performance feature remains open.
+
 ## 3. Publish protected main
 
-- [ ] Inspect final diff/status, security and receipts; push only the matching codex branch with hooks.
-- [ ] Obtain exact-tip workspace handoff; open a PR with truthful checks, change notice and platform matrix.
+- [x] Inspect final diff/status, security, exact 80-path staged manifest and fresh receipts; staged integrity has zero errors/warnings.
+- [ ] Commit with installed hooks and push only the matching codex branch.
+- [ ] Obtain exact-tip workspace handoff; update existing PR #112 with truthful checks, change notice and platform matrix.
 - [ ] Pass fresh strict required checks: build, android-gate, ios-gate and production-data-integrity.
 - [ ] Normal merge, no squash replacement and no branch deletion.
 - [ ] Fetch and prove all input heads and the local batch are ancestors of main; prove both additional working-copy deltas are represented.

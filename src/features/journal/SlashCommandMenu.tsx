@@ -9,7 +9,7 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 import { Mic } from "lucide-react";
 
 interface SlashCommandMenuProps {
-  editorRef: React.RefObject<HTMLDivElement>;
+  editorRef: React.RefObject<HTMLDivElement | null>;
   onCommand: (cmd: string) => void;
   onClose: () => void;
   disabledCommandIds?: ReadonlySet<CommandId>;

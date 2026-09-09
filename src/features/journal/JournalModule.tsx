@@ -9,7 +9,6 @@ import {
   Fragment,
   memo,
   type ChangeEvent,
-  type ComponentProps,
   type ComponentType,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -471,10 +470,6 @@ function JournalDeferredPanelFallback({
   );
 }
 
-const InertJournalMotionDiv = motion.div as ComponentType<
-  ComponentProps<typeof motion.div> & { inert?: "" }
->;
-
 function JournalMobileViewSurface({
   children,
   className,
@@ -489,8 +484,8 @@ function JournalMobileViewSurface({
   const isPresent = useIsPresent();
 
   return (
-    <InertJournalMotionDiv
-      inert={!isPresent ? "" : undefined}
+    <motion.div
+      inert={!isPresent}
       aria-hidden={!isPresent ? true : undefined}
       initial={shouldAnimate ? { opacity: 0 } : undefined}
       animate={{ opacity: 1 }}
@@ -500,7 +495,7 @@ function JournalMobileViewSurface({
       data-journal-mobile-view={view}
     >
       {children}
-    </InertJournalMotionDiv>
+    </motion.div>
   );
 }
 
@@ -1258,7 +1253,7 @@ type ResetStep =
     closeResetDialog,
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const importFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const importFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const importRequestSeqRef = useRef(0);
 
   useEffect(() => {
@@ -1470,8 +1465,8 @@ type ResetStep =
   const [pendingDeletes, setPendingDeletes] = useState<PendingDelete[]>([]);
   const pendingDelete = pendingDeletes[0] ?? null;
   const [deleteCommitMessage, setDeleteCommitMessage] = useState<string | null>(null);
-  const deleteTimerAbortRef = useRef<AbortController>();
-  const deleteFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const deleteTimerAbortRef = useRef<AbortController>(undefined);
+  const deleteFeedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isMountedRef = useRef(true);
   const pendingDeleteRef = useRef<PendingDelete[]>(pendingDeletes);
   const pendingDeleteHydratedRef = useRef(false);
@@ -3694,7 +3689,7 @@ type ResetStep =
                       aria-busy={settingsDismissBlocked}
                       aria-describedby={settingsDismissBlocked ? desktopSettingsBusyStatusId : undefined}
                       aria-hidden={showRemovePasswordConfirm || undefined}
-                      {...(showRemovePasswordConfirm ? { inert: "" } : {})}
+                      {...(showRemovePasswordConfirm ? { inert: true } : {})}
                     >
                       <div className="flex items-center justify-between gap-3 border-b border-border/20 px-5 py-4">
                         <div className="min-w-0">
@@ -4532,7 +4527,7 @@ type ResetStep =
                             aria-busy={settingsDismissBlocked}
                             aria-describedby={settingsDismissBlocked ? mobileSettingsBusyStatusId : undefined}
                             aria-hidden={showRemovePasswordConfirm || undefined}
-                            {...(showRemovePasswordConfirm ? { inert: "" } : {})}
+                            {...(showRemovePasswordConfirm ? { inert: true } : {})}
                             ref={mobileSettingsPanelRef}
                             data-testid="journal-mobile-settings-panel"
                             className={cn(

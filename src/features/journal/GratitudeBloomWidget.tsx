@@ -91,10 +91,10 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
   const [growing, setGrowing] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
 
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const hapticTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const hapticTimer2Ref = useRef<ReturnType<typeof setTimeout>>();
-  const validationTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hapticTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hapticTimer2Ref = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const validationTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // ── Plant action ──
   const handlePlant = useCallback(() => {

@@ -269,7 +269,7 @@ export function ProgressStoriesViewer({
       aria-label={t.weeklyStory || "Weekly Story"}
       aria-modal={showShareModal ? undefined : true}
       aria-hidden={showShareModal || undefined}
-      {...(showShareModal ? { inert: "" } : {})}
+      {...(showShareModal ? { inert: true } : {})}
       className="fixed inset-0 z-[100] bg-black dark:bg-black"
     >
       {/* Story container */}

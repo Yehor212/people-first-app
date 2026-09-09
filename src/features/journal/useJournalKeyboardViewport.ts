@@ -14,7 +14,7 @@ const safeArea = registerPlugin<KeyboardViewportPlugin>("SafeArea");
 /** Keep full-height native painting only while this Android editor owns the screen. */
 export function useJournalKeyboardViewport(
   enabled: boolean,
-  scrollAreaRef?: RefObject<HTMLDivElement>,
+  scrollAreaRef?: RefObject<HTMLDivElement | null>,
 ): void {
   useLayoutEffect(() => {
     if (!isAndroid || !enabled) return;

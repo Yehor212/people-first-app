@@ -27,8 +27,8 @@ import { hapticTap } from "@/lib/haptics";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
 interface DiaryFormatToolbarProps {
-  editorRef: React.RefObject<HTMLDivElement>;
-  scrollContainerRef?: React.RefObject<HTMLDivElement>;
+  editorRef: React.RefObject<HTMLDivElement | null>;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   onContentChange?: () => void;
 }
 

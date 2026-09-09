@@ -157,7 +157,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
     [ts.skipped, ts.auto],
   );
 
-  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(
     () => () => {
       clearTimeout(tooltipTimeoutRef.current);

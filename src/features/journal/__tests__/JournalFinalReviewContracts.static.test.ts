@@ -93,7 +93,7 @@ describe("journal final review contracts", () => {
       /className="[^"]*min-h-\[48px\][^"]*min-w-\[48px\][^"]*"\s+aria-label=\{ts\.close \|\| "Close"\}\s+data-testid="journal-desktop-settings-close"/,
     );
     expect(
-      moduleSource.match(/\.\.\.\(showRemovePasswordConfirm \? \{ inert: "" \} : \{\}\)/g),
+      moduleSource.match(/\.\.\.\(showRemovePasswordConfirm \? \{ inert: true \} : \{\}\)/g),
     ).toHaveLength(2);
     expect(
       moduleSource.match(/aria-hidden=\{showRemovePasswordConfirm \|\| undefined\}/g),

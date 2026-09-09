@@ -87,8 +87,8 @@ export function FeatureUnlock({
   const [particles, setParticles] = useState<
     Array<{ id: number; x: number; y: number; delay: number }>
   >([]);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const tryNowTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const tryNowTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const meta = FEATURE_META[feature];
   const Icon = meta.icon;

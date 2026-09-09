@@ -374,7 +374,7 @@ export function useDiaryCanvas(
   const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef(0);
   const typingPausedRef = useRef(false);
-  const typingTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const scrollDeltaRef = useRef(0);
   const touchPosRef = useRef<{ x: number; y: number } | null>(null);
 

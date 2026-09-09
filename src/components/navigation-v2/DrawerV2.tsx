@@ -216,10 +216,8 @@ export const DrawerV2 = memo(function DrawerV2({
   const isSettingsSelected = isSettingsActive || isSettingsNavigating;
   const SettingsIcon = V2_NAV_ICONS.settings;
   const isEntered = open;
-  // React 18's HTML attribute types predate the now-baseline inert attribute.
-  // Spreading the native attribute preserves the real browser behavior without
-  // teaching every JSX element a project-wide type extension.
-  const closedInteractionProps = !open ? ({ inert: "" } as const) : {};
+  // The retained closing drawer must stop accepting focus and input immediately.
+  const closedInteractionProps = !open ? ({ inert: true } as const) : {};
 
   const content = (
     <>

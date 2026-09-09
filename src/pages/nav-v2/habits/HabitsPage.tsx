@@ -544,7 +544,7 @@ export const HabitsPage = memo(function HabitsPage() {
   // expose background buttons through UIAutomator unless the owned page
   // content is also inert. Keep the portal-rendered sheets outside this node.
   const backgroundInteractionProps = hasOpenInteractionOwner
-    ? ({ inert: "", "aria-hidden": true } as const)
+    ? ({ inert: true, "aria-hidden": true } as const)
     : {};
 
   useEffect(() => {

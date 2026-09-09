@@ -34,7 +34,7 @@ vi.mock("../StickerRenderer", () => ({
   StickerRenderer: ({ emoji }: { emoji: string }) => <span aria-hidden="true">{emoji}</span>,
 }));
 vi.mock("framer-motion", () => {
-  const passthrough = (Tag: keyof JSX.IntrinsicElements) =>
+  const passthrough = (Tag: keyof React.JSX.IntrinsicElements) =>
     ({ children, layout, whileTap, transition, animate, initial, ...rest }: React.PropsWithChildren<Record<string, unknown>>) => {
       void layout;
       void whileTap;

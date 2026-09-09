@@ -4,7 +4,7 @@ import {
   type ClientWritableSyncEntityType,
   type SyncEvent,
   type SyncOp,
-} from "@/storage/eventSync";
+} from "@/storage/eventSyncWriter";
 import { validateSyncOwner } from "@/storage/sync/syncOwner";
 import type { Json } from "@/types/supabase";
 import { z } from "zod";

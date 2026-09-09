@@ -38,7 +38,7 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-vi.mock("@/storage/eventSync", () => ({
+vi.mock("@/storage/eventSyncWriter", () => ({
   getPersistentDeviceId: mocks.getPersistentDeviceId,
   writeEventAndBroadcast: mocks.writeEventAndBroadcast,
 }));

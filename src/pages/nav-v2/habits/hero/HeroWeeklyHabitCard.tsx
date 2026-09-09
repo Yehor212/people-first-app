@@ -140,7 +140,7 @@ interface HeroWeeklyHabitCardProps {
   onOpenDetail?: (habit: Habit) => void;
   onOpenActions?: () => void;
   actionsLabel?: string;
-  actionsTriggerRef?: RefObject<HTMLButtonElement>;
+  actionsTriggerRef?: RefObject<HTMLButtonElement | null>;
   initiallyCollapsed?: boolean;
 }
 

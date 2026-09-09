@@ -3,14 +3,14 @@ import { memo, type RefObject } from "react";
 interface AndroidDayLargeEffectsProps {
   active: boolean;
   enabled: boolean;
-  canvasRef: RefObject<HTMLCanvasElement>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
 export function useAndroidDayLargeEffects(
   _enabled: boolean,
   _active: boolean,
-  _rootRef: RefObject<HTMLDivElement>,
-  _canvasRef: RefObject<HTMLCanvasElement>,
+  _rootRef: RefObject<HTMLDivElement | null>,
+  _canvasRef: RefObject<HTMLCanvasElement | null>,
   _onFallbackRequired: (required: boolean) => void
 ): void {}
 

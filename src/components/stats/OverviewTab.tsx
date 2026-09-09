@@ -12,13 +12,14 @@ import { formatDecimal } from "@/lib/timeUtils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { MoodInsights } from "@/types/statsTypes";
 import { motionPresets } from "@/lib/animationUtils";
-import { ZenScoreHub, EmotionGalaxy } from "@/components/stats";
+import { ZenScoreHub } from "./ZenScoreHub";
+import { EmotionGalaxy } from "./EmotionGalaxy";
 import { WeeklyInsightsCard } from "@/components/WeeklyInsightsCard";
 import { InsightsPanel } from "@/components/InsightsPanel";
 import { hapticTap } from "@/lib/haptics";
 import { computeIdentityClusters } from "@/lib/identityClusters";
 import { IdentityVisual } from "@/components/IdentityIconPicker";
-import type { RingType } from "@/components/stats";
+import type { RingType } from "./RingDetailSheet";
 import type { UseStatsPageDataReturn } from "./useStatsPageData";
 
 interface OverviewTabProps {

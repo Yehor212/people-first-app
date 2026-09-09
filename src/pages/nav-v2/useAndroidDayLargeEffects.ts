@@ -510,8 +510,8 @@ function motionProbeAllowed(ownerWindow: Window): boolean {
 export function useAndroidDayLargeEffects(
   enabled: boolean,
   active: boolean,
-  rootRef: RefObject<HTMLDivElement>,
-  canvasRef: RefObject<HTMLCanvasElement>,
+  rootRef: RefObject<HTMLDivElement | null>,
+  canvasRef: RefObject<HTMLCanvasElement | null>,
   onFallbackRequired: (required: boolean) => void
 ): void {
   const activeRef = useRef(active);

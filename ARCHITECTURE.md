@@ -80,7 +80,7 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Layer            | Technology                                           |
 | ---------------- | ---------------------------------------------------- |
-| Framework        | React 18 + TypeScript                                |
+| Framework        | React 19 + TypeScript                                |
 | Build            | Vite (SWC plugin)                                    |
 | Styling          | Tailwind CSS + shadcn/ui                             |
 | State (client)   | Zustand                                              |
