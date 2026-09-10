@@ -46,6 +46,9 @@ function requireRegex(issues, files, key, regex, code, message) {
 
 function evaluateAdMobUmpReadiness(files) {
   const issues = [];
+  const androidOnly = /ADS_RUNTIME_MODE\s*=\s*["']ANDROID_BANNER["']/.test(
+    files.adRuntimePolicy || ""
+  );
 
   if (/ADS_RUNTIME_MODE\s*=\s*["']OFF["']/.test(files.adRuntimePolicy || "")) {
     return {
@@ -65,15 +68,22 @@ function evaluateAdMobUmpReadiness(files) {
   try {
     packageJson = JSON.parse(files.packageJson || "{}");
   } catch (_error) {
-    issues.push(issue("invalid_package_json", "package.json must be valid JSON", DEFAULT_FILES.packageJson));
+    issues.push(
+      issue("invalid_package_json", "package.json must be valid JSON", DEFAULT_FILES.packageJson)
+    );
   }
 
-  if (!packageJson.dependencies?.["@capacitor-community/admob"] && !packageJson.devDependencies?.["@capacitor-community/admob"]) {
-    issues.push(issue(
-      "missing_capacitor_admob_dependency",
-      "@capacitor-community/admob must be installed for native AdMob/UMP integration",
-      DEFAULT_FILES.packageJson,
-    ));
+  if (
+    !packageJson.dependencies?.["@capacitor-community/admob"] &&
+    !packageJson.devDependencies?.["@capacitor-community/admob"]
+  ) {
+    issues.push(
+      issue(
+        "missing_capacitor_admob_dependency",
+        "@capacitor-community/admob must be installed for native AdMob/UMP integration",
+        DEFAULT_FILES.packageJson
+      )
+    );
   }
 
   requireContains(
@@ -82,7 +92,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     "export function disableAds",
     "missing_ad_disable_api",
-    "Ad controller must expose a fail-closed API for local ad consent revocation",
+    "Ad controller must expose a fail-closed API for local ad consent revocation"
   );
   requireContains(
     issues,
@@ -90,7 +100,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     "adLifecycleEpoch",
     "missing_ad_init_epoch_guard",
-    "Ad controller must invalidate in-flight native ad initialization when local ad consent is revoked",
+    "Ad controller must invalidate in-flight native ad initialization when local ad consent is revoked"
   );
   requireContains(
     issues,
@@ -98,7 +108,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     "requestConsentInfo",
     "missing_consent_info_refresh",
-    "Ad controller must request fresh UMP consent information before enabling ad requests",
+    "Ad controller must request fresh UMP consent information before enabling ad requests"
   );
   requireContains(
     issues,
@@ -106,7 +116,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     "showConsentForm",
     "missing_consent_form",
-    "Ad controller must show the UMP consent form when required",
+    "Ad controller must show the UMP consent form when required"
   );
   requireContains(
     issues,
@@ -114,7 +124,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     "showPrivacyOptionsForm",
     "missing_privacy_options_form",
-    "Ad controller must expose the UMP privacy options form when required",
+    "Ad controller must expose the UMP privacy options form when required"
   );
   requireContains(
     issues,
@@ -122,7 +132,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     "state.canRequestAds",
     "missing_can_request_ads_gate",
-    "Ad controller must gate SDK availability on canRequestAds",
+    "Ad controller must gate SDK availability on canRequestAds"
   );
   requireRegex(
     issues,
@@ -130,7 +140,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adController",
     /showBanner\([\s\S]*npa:\s*true/,
     "missing_non_personalized_default",
-    "Habits banner requests must default to non-personalized ads",
+    "Habits banner requests must default to non-personalized ads"
   );
 
   requireContains(
@@ -139,7 +149,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adContext",
     "disableAds({ clearPrivacyOptions })",
     "missing_context_ad_disable_call",
-    "Ad context must call the controller fail-closed disable API when local ad consent or premium state disables ads",
+    "Ad context must call the controller fail-closed disable API when local ad consent or premium state disables ads"
   );
   requireContains(
     issues,
@@ -147,7 +157,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adContext",
     "refreshAdPrivacyOptionsStatus",
     "missing_privacy_options_status_refresh",
-    "Ad context must refresh UMP privacy-options status even when local ad consent is off",
+    "Ad context must refresh UMP privacy-options status even when local ad consent is off"
   );
   requireContains(
     issues,
@@ -155,7 +165,7 @@ function evaluateAdMobUmpReadiness(files) {
     "adContext",
     "privacyOptionsRequired",
     "missing_privacy_options_state",
-    "Ad context must surface whether UMP requires a visible privacy-options entry point",
+    "Ad context must surface whether UMP requires a visible privacy-options entry point"
   );
   requireContains(
     issues,
@@ -163,7 +173,7 @@ function evaluateAdMobUmpReadiness(files) {
     "v2SettingsPrivacyPanel",
     "openAdPrivacyOptions",
     "missing_v2_settings_privacy_options_entry",
-    "V2 settings must expose the Google ad privacy options entry point when required",
+    "V2 settings must expose the Google ad privacy options entry point when required"
   );
 
   requireContains(
@@ -172,7 +182,7 @@ function evaluateAdMobUmpReadiness(files) {
     "androidManifest",
     "com.google.android.gms.ads.APPLICATION_ID",
     "missing_android_admob_app_id_metadata",
-    "Android manifest must declare the AdMob application id metadata",
+    "Android manifest must declare the AdMob application id metadata"
   );
   requireContains(
     issues,
@@ -180,7 +190,7 @@ function evaluateAdMobUmpReadiness(files) {
     "androidManifest",
     "${adMobApplicationId}",
     "missing_android_admob_placeholder",
-    "Android manifest must use a release-injected AdMob app id placeholder",
+    "Android manifest must use a release-injected AdMob app id placeholder"
   );
   requireContains(
     issues,
@@ -188,7 +198,7 @@ function evaluateAdMobUmpReadiness(files) {
     "androidManifest",
     "com.google.android.gms.permission.AD_ID",
     "missing_android_ad_id_permission",
-    "Android manifest must declare AD_ID for the AdMob release path",
+    "Android manifest must declare AD_ID for the AdMob release path"
   );
   requireContains(
     issues,
@@ -196,7 +206,7 @@ function evaluateAdMobUmpReadiness(files) {
     "androidBuildGradle",
     "manifestPlaceholders",
     "missing_android_manifest_placeholder_wiring",
-    "Android Gradle config must wire the AdMob app id manifest placeholder",
+    "Android Gradle config must wire the AdMob app id manifest placeholder"
   );
   requireContains(
     issues,
@@ -204,7 +214,7 @@ function evaluateAdMobUmpReadiness(files) {
     "androidBuildGradle",
     "zenflowExpectedAdMobPublisher",
     "missing_android_publisher_release_guard",
-    "Android release builds must bind the AdMob application id to public/app-ads.txt",
+    "Android release builds must bind the AdMob application id to public/app-ads.txt"
   );
   requireContains(
     issues,
@@ -212,80 +222,100 @@ function evaluateAdMobUmpReadiness(files) {
     "androidBuildGradle",
     "zenflowConfiguredAdMobPublisher != zenflowExpectedAdMobPublisher",
     "missing_android_publisher_match_guard",
-    "Android release builds must reject missing, sample, or mismatched AdMob application ids",
+    "Android release builds must reject missing, sample, or mismatched AdMob application ids"
   );
 
-  requireContains(
-    issues,
-    files,
-    "iosInfoPlist",
-    "GADApplicationIdentifier",
-    "missing_ios_admob_app_id_key",
-    "iOS Info.plist must declare GADApplicationIdentifier",
-  );
-  requireContains(
-    issues,
-    files,
-    "iosInfoPlist",
-    "$(ZENFLOW_ADMOB_IOS_APP_ID)",
-    "missing_ios_release_placeholder",
-    "iOS Info.plist must use a release-injected AdMob app id placeholder",
-  );
-  requireContains(
-    issues,
-    files,
-    "iosProject",
-    "ZENFLOW_ADMOB_IOS_APP_ID must be injected for Release builds",
-    "missing_ios_release_sample_id_guard",
-    "iOS release builds must reject missing or Google sample AdMob app ids",
-  );
+  if (!androidOnly) {
+    requireContains(
+      issues,
+      files,
+      "iosInfoPlist",
+      "GADApplicationIdentifier",
+      "missing_ios_admob_app_id_key",
+      "iOS Info.plist must declare GADApplicationIdentifier"
+    );
+    requireContains(
+      issues,
+      files,
+      "iosInfoPlist",
+      "$(ZENFLOW_ADMOB_IOS_APP_ID)",
+      "missing_ios_release_placeholder",
+      "iOS Info.plist must use a release-injected AdMob app id placeholder"
+    );
+    requireContains(
+      issues,
+      files,
+      "iosProject",
+      "ZENFLOW_ADMOB_IOS_APP_ID must be injected for Release builds",
+      "missing_ios_release_sample_id_guard",
+      "iOS release builds must reject missing or Google sample AdMob app ids"
+    );
 
-  requireContains(
-    issues,
-    files,
-    "iosInfoPlist",
-    "SKAdNetworkItems",
-    "missing_ios_skadnetwork_items",
-    "iOS Info.plist must declare SKAdNetworkItems for Google Mobile Ads attribution",
-  );
-  requireContains(
-    issues,
-    files,
-    "iosInfoPlist",
-    "cstr6suwn9.skadnetwork",
-    "missing_ios_google_skadnetwork_identifier",
-    "iOS Info.plist SKAdNetworkItems must include Google's SKAdNetworkIdentifier cstr6suwn9.skadnetwork",
-  );
-  requireContains(
-    issues,
-    files,
-    "iosSpmResolved",
-    "swift-package-manager-google-user-messaging-platform",
-    "missing_ios_ump_package",
-    "iOS project must resolve the Google User Messaging Platform package",
-  );
+    requireContains(
+      issues,
+      files,
+      "iosInfoPlist",
+      "SKAdNetworkItems",
+      "missing_ios_skadnetwork_items",
+      "iOS Info.plist must declare SKAdNetworkItems for Google Mobile Ads attribution"
+    );
+    requireContains(
+      issues,
+      files,
+      "iosInfoPlist",
+      "cstr6suwn9.skadnetwork",
+      "missing_ios_google_skadnetwork_identifier",
+      "iOS Info.plist SKAdNetworkItems must include Google's SKAdNetworkIdentifier cstr6suwn9.skadnetwork"
+    );
+    requireContains(
+      issues,
+      files,
+      "iosSpmResolved",
+      "swift-package-manager-google-user-messaging-platform",
+      "missing_ios_ump_package",
+      "iOS project must resolve the Google User Messaging Platform package"
+    );
+  }
 
   return {
     ok: issues.length === 0,
     issues,
     summary: {
-      adRuntimeMode: "ON_OR_UNVERIFIED",
-      nativeUmpConsentGate: issues.some((item) => item.code.startsWith("missing_consent") || item.code.includes("can_request")) ? "UNVERIFIED" : "PASS",
-      settingsPrivacyOptionsEntry: issues.some((item) => item.code.includes("settings_privacy_options")) ? "UNVERIFIED" : "PASS",
-      androidNativeConfig: issues.some((item) => item.code.startsWith("missing_android")) ? "UNVERIFIED" : "PASS",
-      iosNativeConfig: issues.some((item) => item.code.startsWith("missing_ios")) ? "UNVERIFIED" : "PASS",
+      adRuntimeMode: androidOnly ? "ANDROID_BANNER" : "ON_OR_UNVERIFIED",
+      nativeUmpConsentGate: issues.some(
+        (item) => item.code.startsWith("missing_consent") || item.code.includes("can_request")
+      )
+        ? "UNVERIFIED"
+        : "PASS",
+      settingsPrivacyOptionsEntry: issues.some((item) =>
+        item.code.includes("settings_privacy_options")
+      )
+        ? "UNVERIFIED"
+        : "PASS",
+      androidNativeConfig: issues.some((item) => item.code.startsWith("missing_android"))
+        ? "UNVERIFIED"
+        : "PASS",
+      iosNativeConfig: androidOnly
+        ? "N/A_ANDROID_ONLY"
+        : issues.some((item) => item.code.startsWith("missing_ios"))
+          ? "UNVERIFIED"
+          : "PASS",
     },
   };
 }
 
 function main() {
   const report = evaluateAdMobUmpReadiness(readFileMap());
-  console.log(`[admob-ump-readiness] ${report.ok ? "PASS" : "UNVERIFIED"} - native UMP/privacy-options integration ${report.ok ? "is wired" : "needs release-owner action"}`);
+  console.log(
+    `[admob-ump-readiness] ${report.ok ? "PASS" : "UNVERIFIED"} - native UMP/privacy-options integration ${report.ok ? "is wired" : "needs release-owner action"}`
+  );
   for (const [key, value] of Object.entries(report.summary)) {
     console.log(`[admob-ump-readiness] ${key}=${value}`);
   }
   for (const item of report.issues) {
-    console.log(`[admob-ump-readiness] issue=${item.code}${item.file ? ` file=${item.file}` : ""} - ${item.message}`);
+    console.log(
+      `[admob-ump-readiness] issue=${item.code}${item.file ? ` file=${item.file}` : ""} - ${item.message}`
+    );
   }
   process.exit(report.ok ? 0 : 2);
 }

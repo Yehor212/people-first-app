@@ -147,5 +147,36 @@ suite passed 97 tests, and the regenerated inventory passed all ten unchanged
 checks. Snyk Code, Gitleaks, TruffleHog and Trivy passed on all ten changed
 production/test TypeScript files. Scanner notes on hardcoded isolated test
 credentials were resolved with ephemeral test-only values; assertions and
-test isolation were not weakened. Full preflight and a replacement exact-artifact
-native run remain required before release.
+test isolation were not weakened. The complete fresh preflight on `538fd055`
+exited zero: 10,515 tests passed in 876 files, with 23 skipped and seven declared
+todos. The production build and all preflight tail checks also completed.
+
+## Native packaging correction
+
+The `538fd055` candidate reached verified `free` entitlement on the installed
+Android app, with adult consent, completed grace and a real today-Habits entry.
+However, `Capacitor.isPluginAvailable('AdMob')` returned false, and the native
+consent request returned `UNIMPLEMENTED`. Independent AAB inspection confirmed
+that its plugin registry and generated Gradle project omitted AdMob. The old
+`OFF` packaging policy had remained in `capacitor.config.ts` even though the
+JavaScript controller and entitlement path were ready.
+
+The source-owned packaging mode now explicitly selects `ANDROID_BANNER`.
+Android sync includes the already-installed, pinned and patched AdMob plugin;
+other platform runtime eligibility remains false. No dependency version or
+consent/placement condition changes. The UMP checker now evaluates every
+Android consent gate and reports iOS as intentionally outside this Android-only
+activation. Its historical all-platform checks remain covered using explicit
+isolated `ON` inputs, and the `OFF` test remains intact with an explicit input.
+
+The artifact checker additionally requires exactly one correctly classed native
+AdMob registration and the native implementation in the AAB DEX payload. Valid
+ad-unit identifiers alone are no longer sufficient. The new regression run had
+12 passing tests and 11 expected failures before production edits; all 23
+identical cases now pass. The broader packaging/identity/controller/inventory
+suite passed 105 tests. The generated Gradle diff adds only the AdMob project
+and dependency. `npm audit --audit-level=high` found zero vulnerabilities.
+
+The replacement native artifact, its presented banner and protected-surface
+lifecycle, final remote checks, main integration and Play submission remain
+required. Previous source-only green results are not proof of ad serving.

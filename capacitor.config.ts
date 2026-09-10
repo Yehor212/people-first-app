@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 import { areAdsRuntimeEnabled } from "./src/lib/adRuntimePolicy";
 
-const androidOffIncludePlugins = [
+const androidIncludePlugins = [
   "@capacitor-community/safe-area",
   "@capacitor/app",
   "@capacitor/browser",
@@ -14,10 +14,8 @@ const androidOffIncludePlugins = [
   "@capgo/capacitor-social-login",
 ];
 
-if (areAdsRuntimeEnabled()) {
-  throw new Error(
-    "Native ad packaging is unavailable until a separately authorized ADR-MON-001 activation restores its native contract."
-  );
+if (areAdsRuntimeEnabled("android")) {
+  androidIncludePlugins.push("@capacitor-community/admob");
 }
 
 const config: CapacitorConfig = {
@@ -27,7 +25,7 @@ const config: CapacitorConfig = {
   android: {
     webContentsDebuggingEnabled: false,
     allowMixedContent: false,
-    includePlugins: androidOffIncludePlugins,
+    includePlugins: androidIncludePlugins,
   },
   ios: {
     scheme: "zenflow",

@@ -31,16 +31,18 @@ describe("AdMob UMP/native privacy readiness guard", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 
     expect(packageJson.scripts["google-play:admob:ump-check"]).toBe(
-      "node scripts/check-admob-ump-readiness.cjs",
+      "node scripts/check-admob-ump-readiness.cjs"
     );
     expect(packageJson.scripts["test:release-contracts"]).toContain(
-      "scripts/__tests__/admob-ump-readiness.test.ts",
+      "scripts/__tests__/admob-ump-readiness.test.ts"
     );
   });
 
   it("reports native UMP surfaces as unavailable while ADR-MON-001 keeps ads OFF", () => {
     const checker = loadChecker();
-    const report = checker.evaluateAdMobUmpReadiness(checker.readFileMap());
+    const files = checker.readFileMap();
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "OFF";';
+    const report = checker.evaluateAdMobUmpReadiness(files);
 
     expect(report.ok).toBe(true);
     expect(report.issues).toEqual([]);
@@ -51,6 +53,36 @@ describe("AdMob UMP/native privacy readiness guard", () => {
       androidNativeConfig: "N/A_ADR_MON_001_UNDECIDED_OFF",
       iosNativeConfig: "N/A_ADR_MON_001_UNDECIDED_OFF",
     });
+  });
+
+  it("checks all Android consent gates for the authorized Android-only banner", () => {
+    const checker = loadChecker();
+    const report = checker.evaluateAdMobUmpReadiness(checker.readFileMap());
+    expect(report.issues).toEqual([]);
+    expect(report.ok).toBe(true);
+    expect(report.summary).toMatchObject({
+      adRuntimeMode: "ANDROID_BANNER",
+      nativeUmpConsentGate: "PASS",
+      settingsPrivacyOptionsEntry: "PASS",
+      androidNativeConfig: "PASS",
+      iosNativeConfig: "N/A_ANDROID_ONLY",
+    });
+  });
+
+  it("does not waive a missing Android consent gate in Android-only mode", () => {
+    const checker = loadChecker();
+    const files = checker.readFileMap();
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "ANDROID_BANNER";';
+    files.adController = files.adController.replaceAll(
+      "requestConsentInfo",
+      "removedConsentInfoCall"
+    );
+    const report = checker.evaluateAdMobUmpReadiness(files);
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_consent_info_refresh" })
+    );
+    expect(report.summary.iosNativeConfig).toBe("N/A_ANDROID_ONLY");
   });
 
   it("validates the banner non-personalized default without relying on rewarded code", () => {
@@ -67,94 +99,105 @@ describe("AdMob UMP/native privacy readiness guard", () => {
   it("fails if UMP consent refresh is removed from the ad controller", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
-    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
-    files.adController = files.adController.replaceAll("requestConsentInfo", "removedConsentInfoCall");
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "ON";';
+    files.adController = files.adController.replaceAll(
+      "requestConsentInfo",
+      "removedConsentInfoCall"
+    );
 
     const report = checker.evaluateAdMobUmpReadiness(files);
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_consent_info_refresh" }),
+      expect.objectContaining({ code: "missing_consent_info_refresh" })
     );
   });
 
   it("fails if local ad-consent revocation no longer disables in-flight native ads", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
-    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "ON";';
     files.adController = files.adController
       .replace("export function disableAds", "function removedDisableAds")
       .replaceAll("adLifecycleEpoch", "removedLifecycleEpoch");
-    files.adContext = files.adContext.replace("disableAds({ clearPrivacyOptions })", "void clearPrivacyOptions");
+    files.adContext = files.adContext.replace(
+      "disableAds({ clearPrivacyOptions })",
+      "void clearPrivacyOptions"
+    );
 
     const report = checker.evaluateAdMobUmpReadiness(files);
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_ad_disable_api" }),
+      expect.objectContaining({ code: "missing_ad_disable_api" })
     );
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_ad_init_epoch_guard" }),
+      expect.objectContaining({ code: "missing_ad_init_epoch_guard" })
     );
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_context_ad_disable_call" }),
+      expect.objectContaining({ code: "missing_context_ad_disable_call" })
     );
   });
 
   it("fails if Android release app-id placeholder wiring is missing", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
-    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "ON";';
     files.androidManifest = files.androidManifest.replace("${adMobApplicationId}", "");
-    files.androidBuildGradle = files.androidBuildGradle.replaceAll("zenflowExpectedAdMobPublisher", "");
+    files.androidBuildGradle = files.androidBuildGradle.replaceAll(
+      "zenflowExpectedAdMobPublisher",
+      ""
+    );
 
     const report = checker.evaluateAdMobUmpReadiness(files);
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_android_admob_placeholder" }),
+      expect.objectContaining({ code: "missing_android_admob_placeholder" })
     );
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_android_publisher_release_guard" }),
+      expect.objectContaining({ code: "missing_android_publisher_release_guard" })
     );
   });
 
   it("fails if iOS UMP package or release placeholder is missing", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
-    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "ON";';
     files.iosInfoPlist = files.iosInfoPlist.replace("$(ZENFLOW_ADMOB_IOS_APP_ID)", "");
     files.iosSpmResolved = files.iosSpmResolved.replaceAll(
       "swift-package-manager-google-user-messaging-platform",
-      "removed-ump-package",
+      "removed-ump-package"
     );
 
     const report = checker.evaluateAdMobUmpReadiness(files);
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_ios_release_placeholder" }),
+      expect.objectContaining({ code: "missing_ios_release_placeholder" })
     );
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_ios_ump_package" }),
+      expect.objectContaining({ code: "missing_ios_ump_package" })
     );
   });
-
 
   it("fails if iOS SKAdNetworkItems are missing", () => {
     const checker = loadChecker();
     const files = checker.readFileMap();
-    files.adRuntimePolicy = files.adRuntimePolicy.replace(/(["'])OFF\1/, '"ON"');
-    files.iosInfoPlist = files.iosInfoPlist.replace(/<key>SKAdNetworkItems<\/key>[\s\S]*?<\/array>\s*/, "");
+    files.adRuntimePolicy = 'export const ADS_RUNTIME_MODE = "ON";';
+    files.iosInfoPlist = files.iosInfoPlist.replace(
+      /<key>SKAdNetworkItems<\/key>[\s\S]*?<\/array>\s*/,
+      ""
+    );
 
     const report = checker.evaluateAdMobUmpReadiness(files);
 
     expect(report.ok).toBe(false);
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_ios_skadnetwork_items" }),
+      expect.objectContaining({ code: "missing_ios_skadnetwork_items" })
     );
     expect(report.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_ios_google_skadnetwork_identifier" }),
+      expect.objectContaining({ code: "missing_ios_google_skadnetwork_identifier" })
     );
   });
 
@@ -166,7 +209,7 @@ describe("AdMob UMP/native privacy readiness guard", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[admob-ump-readiness] PASS");
-    expect(result.stdout).toContain("[admob-ump-readiness] adRuntimeMode=OFF");
+    expect(result.stdout).toContain("[admob-ump-readiness] adRuntimeMode=ANDROID_BANNER");
     expect(result.stdout).not.toMatch(/ca-app-pub-\d{16}[~/]\d+/);
     expect(result.stdout).not.toMatch(/\bpub-\d{16}\b/);
   });
