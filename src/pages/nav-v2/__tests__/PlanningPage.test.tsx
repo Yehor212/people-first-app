@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { PlanningPage } from "../planning/PlanningPage";
+import { PlanningWorkspace as PlanningPage } from "../planning/PlanningWorkspace";
 import { buildPlanningBridgeHref } from "../planning/PlanningBridgeActions";
 import { ENTRY, type FocusSession, type Habit, type MoodEntry, type ScheduleEvent } from "@/types";
 import { useUserDataStore } from "@/stores/userDataStore";
@@ -223,9 +223,25 @@ function getTomorrow(): string {
   return formatDate(date);
 }
 
-describe("PlanningPage", () => {
+describe("retained Planning workspace (not mounted by the live route)", () => {
+  it("reuses the existing schedule helpers without growing an oversized workspace shell", () => {
+    const source = readFileSync("src/pages/nav-v2/planning/PlanningWorkspace.tsx", "utf8");
+
+    expect(source).toContain('from "./planningScheduleUtils"');
+    for (const name of [
+      "createScheduleEventId",
+      "sortScheduleEventsByTime",
+      "isManualScheduleEvent",
+      "getLatestCompletedFocusSession",
+    ]) {
+      expect(source).toContain(name);
+      expect(source).not.toContain(`function ${name}(`);
+    }
+    expect(source.split("\n").length).toBeLessThanOrEqual(400);
+  });
+
   it("finds the latest completed focus session without sorting the full session history", () => {
-    const source = readFileSync("src/pages/nav-v2/planning/PlanningPage.tsx", "utf8");
+    const source = readFileSync("src/pages/nav-v2/planning/PlanningWorkspace.tsx", "utf8");
 
     expect(source).toContain("getLatestCompletedFocusSession");
     expect(source).not.toContain(".sort((a, b) => b.completedAt - a.completedAt)");
@@ -304,7 +320,7 @@ describe("PlanningPage", () => {
     render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
 
     expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
-      "Prepare for what is next.",
+      "Prepare for what is next."
     );
     expect(setIntervalSpy).toHaveBeenCalledTimes(1);
     expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
@@ -315,7 +331,7 @@ describe("PlanningPage", () => {
     });
 
     expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
-      "Stay with the current event.",
+      "Stay with the current event."
     );
   });
 
@@ -351,7 +367,7 @@ describe("PlanningPage", () => {
     });
 
     expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
-      "Stay with the current event.",
+      "Stay with the current event."
     );
   });
 
@@ -391,7 +407,7 @@ describe("PlanningPage", () => {
       window.dispatchEvent(new Event("focus"));
     });
     expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
-      "Stay with the current event.",
+      "Stay with the current event."
     );
 
     vi.setSystemTime(new Date("2026-07-29T10:31:00"));
@@ -399,7 +415,7 @@ describe("PlanningPage", () => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
     expect(screen.getByTestId("planning-action-panel")).toHaveTextContent(
-      "Use this open space for focus.",
+      "Use this open space for focus."
     );
 
     unmount();
@@ -408,7 +424,7 @@ describe("PlanningPage", () => {
     expect(removeWindowListenerSpy).toHaveBeenCalledWith("focus", expect.any(Function));
     expect(removeDocumentListenerSpy).toHaveBeenCalledWith(
       "visibilitychange",
-      expect.any(Function),
+      expect.any(Function)
     );
     visibilityStateSpy.mockRestore();
   });
@@ -444,7 +460,7 @@ describe("PlanningPage", () => {
 
     expect(screen.getByTestId("planning-page")).toHaveAttribute(
       "data-v2-readable-page",
-      "planning",
+      "planning"
     );
     expect(screen.getByTestId("planning-page").className).toContain("v2-fullscreen-page");
     expect(screen.getByTestId("planning-now-next-strip")).toHaveTextContent("now-next:1");
@@ -465,13 +481,11 @@ describe("PlanningPage", () => {
 
     expect(
       (await screen.findByTestId("planning-schedule-timeline")).closest(
-        '[data-planning-v1-theme="dark"]',
-      ),
+        '[data-planning-v1-theme="dark"]'
+      )
     ).toBe(darkScope);
     expect(
-      (await screen.findByTestId("planning-focus-timer")).closest(
-        '[data-planning-v1-theme="dark"]',
-      ),
+      (await screen.findByTestId("planning-focus-timer")).closest('[data-planning-v1-theme="dark"]')
     ).toBe(darkScope);
   });
 
@@ -498,7 +512,7 @@ describe("PlanningPage", () => {
 
   it("preserves whole words across controlled Planning copy", () => {
     for (const file of [
-      "src/pages/nav-v2/planning/PlanningPage.tsx",
+      "src/pages/nav-v2/planning/PlanningWorkspace.tsx",
       "src/pages/nav-v2/planning/PlanningDayPulse.tsx",
       "src/pages/nav-v2/planning/PlanningModeRail.tsx",
       "src/pages/nav-v2/planning/PlanningBridgeActions.tsx",
@@ -516,7 +530,7 @@ describe("PlanningPage", () => {
     expect(modeRail.className).toContain("grid-cols-1");
     expect(modeRail.className).toContain("min-[520px]:grid-cols-2");
     const modeButtons = ["today", "schedule", "focus", "review"].map((mode) =>
-      screen.getByTestId(`planning-mode-${mode}`),
+      screen.getByTestId(`planning-mode-${mode}`)
     );
     expect(modeButtons[0]).toHaveAttribute("aria-pressed", "true");
     for (const button of modeButtons) {
@@ -535,13 +549,10 @@ describe("PlanningPage", () => {
   });
 
   it("keeps the schedule heading clear of the fixed phone drawer trigger", () => {
-    const source = readFileSync(
-      "src/pages/nav-v2/planning/PlanningPage.tsx",
-      "utf8",
-    );
+    const source = readFileSync("src/pages/nav-v2/planning/PlanningWorkspace.tsx", "utf8");
 
     expect(source).toContain(
-      "ps-[calc(var(--v2-phone-drawer-size)+var(--v2-phone-drawer-inset)+0.75rem)]",
+      "ps-[calc(var(--v2-phone-drawer-size)+var(--v2-phone-drawer-inset)+0.75rem)]"
     );
     expect(source).toContain("md:px-1");
   });
@@ -551,31 +562,31 @@ describe("PlanningPage", () => {
 
     expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
       "data-active-planning-mode",
-      "false",
+      "false"
     );
 
     fireEvent.click(screen.getByTestId("planning-mode-focus"));
     await waitFor(() =>
       expect(screen.getByTestId("planning-focus-section")).toHaveAttribute(
         "data-active-planning-mode",
-        "true",
-      ),
+        "true"
+      )
     );
     expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
       "data-active-planning-mode",
-      "false",
+      "false"
     );
 
     fireEvent.click(screen.getByTestId("planning-mode-schedule"));
     await waitFor(() =>
       expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
         "data-active-planning-mode",
-        "true",
-      ),
+        "true"
+      )
     );
     expect(screen.getByTestId("planning-focus-section")).toHaveAttribute(
       "data-active-planning-mode",
-      "false",
+      "false"
     );
   });
 
@@ -602,7 +613,7 @@ describe("PlanningPage", () => {
     expect(screen.getByTestId("planning-mode-schedule")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("planning-schedule-section")).toHaveAttribute(
       "data-active-planning-mode",
-      "true",
+      "true"
     );
   });
 
@@ -621,8 +632,8 @@ describe("PlanningPage", () => {
     await waitFor(() =>
       expect(screen.getByTestId("planning-focus-section")).toHaveAttribute(
         "data-active-planning-mode",
-        "true",
-      ),
+        "true"
+      )
     );
   });
 
@@ -660,9 +671,18 @@ describe("PlanningPage", () => {
     expect(pulseValue?.className).toContain("[overflow-wrap:normal]");
 
     expect(screen.getByTestId("planning-bridge-actions")).toHaveTextContent("Helpful next moves");
-    expect(screen.getByTestId("planning-bridge-action-log_mood")).toHaveAttribute("href", expect.stringContaining("/orb"));
-    expect(screen.getByTestId("planning-bridge-action-complete_habits")).toHaveAttribute("href", expect.stringContaining("/habits"));
-    expect(screen.getByTestId("planning-bridge-action-reflect_in_diary")).toHaveAttribute("href", expect.stringContaining("/diary"));
+    expect(screen.getByTestId("planning-bridge-action-log_mood")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/orb")
+    );
+    expect(screen.getByTestId("planning-bridge-action-complete_habits")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/habits")
+    );
+    expect(screen.getByTestId("planning-bridge-action-reflect_in_diary")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/diary")
+    );
 
     const bridgeLabel = screen.getByText("Log mood");
     expect(bridgeLabel).not.toHaveClass("truncate");
@@ -707,7 +727,7 @@ describe("PlanningPage", () => {
     render(<PlanningPage onCompleteFocusSession={vi.fn()} />);
 
     expect(await screen.findByTestId("planning-schedule-initial-date")).toHaveTextContent(
-      getTomorrow(),
+      getTomorrow()
     );
   });
 
@@ -761,7 +781,7 @@ describe("PlanningPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "complete focus" }));
     expect(onCompleteFocusSession).toHaveBeenCalledWith(
       expect.objectContaining({ id: "focus-1", duration: 25, status: "completed" }),
-      undefined,
+      undefined
     );
   });
 

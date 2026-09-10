@@ -49,7 +49,7 @@ describe("app background music preference", () => {
 
     unsubscribe();
     window.dispatchEvent(
-      new CustomEvent(APP_BACKGROUND_MUSIC_PREFERENCE_CHANGE_EVENT, { detail: false }),
+      new CustomEvent(APP_BACKGROUND_MUSIC_PREFERENCE_CHANGE_EVENT, { detail: false })
     );
     expect(listener).toHaveBeenCalledTimes(1);
   });
@@ -62,17 +62,21 @@ describe("app background music preference", () => {
 
     expect(cursorPreference.getAppBackgroundMusicCursor).toEqual(expect.any(Function));
     expect(cursorPreference.trySetAppBackgroundMusicCursor).toEqual(expect.any(Function));
-    if (!cursorPreference.getAppBackgroundMusicCursor || !cursorPreference.trySetAppBackgroundMusicCursor) return;
+    if (
+      !cursorPreference.getAppBackgroundMusicCursor ||
+      !cursorPreference.trySetAppBackgroundMusicCursor
+    )
+      return;
 
-    expect(cursorPreference.getAppBackgroundMusicCursor()).toBe("cloudlight-evening-loop");
-    expect(cursorPreference.trySetAppBackgroundMusicCursor("moonlit-water")).toEqual({
+    expect(cursorPreference.getAppBackgroundMusicCursor()).toBe("r7-shoji-rain");
+    expect(cursorPreference.trySetAppBackgroundMusicCursor("r7-tea-room-dawn")).toEqual({
       ok: true,
-      cursor: "moonlit-water",
+      cursor: "r7-tea-room-dawn",
     });
-    expect(cursorPreference.getAppBackgroundMusicCursor()).toBe("moonlit-water");
+    expect(cursorPreference.getAppBackgroundMusicCursor()).toBe("r7-tea-room-dawn");
     expect(cursorPreference.trySetAppBackgroundMusicCursor("unknown")).toEqual({
       ok: true,
-      cursor: "cloudlight-evening-loop",
+      cursor: "r7-shoji-rain",
     });
   });
 });

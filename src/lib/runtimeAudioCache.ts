@@ -1,66 +1,68 @@
 import { APP_AUDIO_ASSETS, APP_AUDIO_FEEDBACK_EVENTS } from "@/lib/appAudioAssets";
 import { HYPERFOCUS_GENERATED_AUDIO_MANIFEST } from "@/lib/hyperfocusGeneratedAudioManifest";
 
-export const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v3";
+export const RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v5";
 export const RETIRED_RUNTIME_AUDIO_CACHE_NAMES = [
   "zenflow-runtime-audio",
   "zenflow-runtime-audio-v2",
+  "zenflow-runtime-audio-v3",
+  "zenflow-runtime-audio-v4",
 ] as const;
 const APP_AUDIO_INTENT_CACHE_CONTRACTS = Object.freeze({
-  "sounds/cloudlight-evening-loop.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-shoji-rain.mp3": Object.freeze({
+    byteLength: 6721964,
     contentType: "audio/mpeg",
-    sha256: "d096c668ef6471f855b49c93bc5509ccbd63ac1fb93dc9af96ba3c7c9e65be40",
+    sha256: "f49b48fcdff7dada76be14de52a1213f03ce8e277a74a10e55136031a36af71a",
   }),
-  "sounds/music/lantern-air.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-moss-garden.mp3": Object.freeze({
+    byteLength: 6642284,
     contentType: "audio/mpeg",
-    sha256: "b72b8e7a47c8a2c56fadd03de6470aa7d8f567be0792ba7ccd39f29e53848168",
+    sha256: "ea4578bef4a22af13afbe2f0c7d44f715cf7b37e3df675c35375fee5adf3029a",
   }),
-  "sounds/music/rain-on-paper.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-lantern-reflection.mp3": Object.freeze({
+    byteLength: 6802604,
     contentType: "audio/mpeg",
-    sha256: "5b78c3674aa643bcc26c8c9ae2efba3fac7a2cb38907ac4e48e580df01680eba",
+    sha256: "9cdbd5cc947cd87a580a82a5cccf951b4a59e4fe359f9981073f6fba303bb55d",
   }),
-  "sounds/music/indigo-dusk.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-snow-over-cedar.mp3": Object.freeze({
+    byteLength: 6562604,
     contentType: "audio/mpeg",
-    sha256: "6335e90b6adec58946db66243ada162d40b632808f20871308d7a9ea2efea579",
+    sha256: "91b2b1254e4a2e95176a1b54bd99e722ee2a1ccff5384ed23e9c8ecf1cb7a5fd",
   }),
-  "sounds/music/quiet-courtyard.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-paper-cranes.mp3": Object.freeze({
+    byteLength: 6721964,
     contentType: "audio/mpeg",
-    sha256: "634f710879be32e3b0cf95d539762edb8842d5841f308eef9b9d0ec334f5242c",
+    sha256: "7602f5ff552b83f118be3c2d34c452dddc679472f415bfca0486c6b2fe949d36",
   }),
-  "sounds/music/moonlit-water.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-tea-room-dawn.mp3": Object.freeze({
+    byteLength: 6642284,
     contentType: "audio/mpeg",
-    sha256: "4a380298374bd3231da2b26c5fa75c0a6cbb1625d0f52f6c021973a0c6d67440",
+    sha256: "f94cde5ef5a319678f63c49723dbf8505e7122a88d3fd6756ae5679c7dd7a044",
   }),
-  "sounds/music/cedar-mist.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-river-stones.mp3": Object.freeze({
+    byteLength: 6802604,
     contentType: "audio/mpeg",
-    sha256: "9175323a5b4df1e0d61f5043136cac65c58679546947d4bc9111756b74924577",
+    sha256: "7ca1c3d4a232b483caeb456e1fe5a552e571ce4916b935df3060c68805900e0e",
   }),
-  "sounds/music/glass-bell-dawn.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-camellia-evening.mp3": Object.freeze({
+    byteLength: 6601964,
     contentType: "audio/mpeg",
-    sha256: "aac2561e87aca90bd29955300319d1ed3238d771d3a170b78bb1531e8ce5a286",
+    sha256: "b0badde8553553e50e67b8b65e359c67d3a6424a67c0346052bf1f1c4f9fb35f",
   }),
-  "sounds/music/moss-garden.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-temple-path.mp3": Object.freeze({
+    byteLength: 6721964,
     contentType: "audio/mpeg",
-    sha256: "ab40608611ac63726424fcb343cd7f0fc5a77b69e779cd3f2baa1651877e8982",
+    sha256: "51298b29ceaece2e2f96e8a0c5bbe7706e6c1e1d642d754afa270d76e95f7acf",
   }),
-  "sounds/music/after-rain.mp3": Object.freeze({
-    byteLength: 2_400_757,
+  "sounds/music/r7-home-beneath-clouds.mp3": Object.freeze({
+    byteLength: 6802604,
     contentType: "audio/mpeg",
-    sha256: "e63e2a8c274673eafae8b4d44061f6ae83a4a0d6374456d1230fac4f52e39a28",
+    sha256: "f47aeab0fff78f27003ed3f1b91b0477d88dd28b4039aaf495f4b357c5bd81cb",
   }),
 });
 
 export const APP_AUDIO_INTENT_CACHE_PATHS = Object.freeze(
-  Object.keys(APP_AUDIO_INTENT_CACHE_CONTRACTS),
+  Object.keys(APP_AUDIO_INTENT_CACHE_CONTRACTS)
 );
 
 interface RuntimeAudioCacheLike {
@@ -106,7 +108,7 @@ async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
 
 async function responseMatchesIntentCacheContract(
   publicPath: string,
-  response: Response,
+  response: Response
 ): Promise<boolean> {
   const contract = getIntentCacheContract(publicPath);
   if (!contract || response.status !== 200) return false;
@@ -120,7 +122,7 @@ async function responseMatchesIntentCacheContract(
   try {
     const bytes = await response.clone().arrayBuffer();
     if (bytes.byteLength !== contract.byteLength) return false;
-    return await sha256Hex(bytes) === contract.sha256;
+    return (await sha256Hex(bytes)) === contract.sha256;
   } catch {
     return false;
   }
@@ -132,15 +134,15 @@ export function isIntentRuntimeAudioPath(publicPath: string): boolean {
 
 export async function requestRuntimeAudioCacheOnIntent(
   publicPath: string,
-  serviceWorkerContainer?: ServiceWorkerContainerLike,
+  serviceWorkerContainer?: ServiceWorkerContainerLike
 ): Promise<boolean> {
   if (!isIntentRuntimeAudioPath(publicPath)) return false;
 
-  const serviceWorker = serviceWorkerContainer ?? (
-    typeof navigator !== "undefined" && "serviceWorker" in navigator
+  const serviceWorker =
+    serviceWorkerContainer ??
+    (typeof navigator !== "undefined" && "serviceWorker" in navigator
       ? navigator.serviceWorker
-      : null
-  );
+      : null);
   if (!serviceWorker) return false;
 
   const message = { type: "CACHE_RUNTIME_AUDIO", publicPath } as const;
@@ -157,7 +159,7 @@ export async function requestRuntimeAudioCacheOnIntent(
 
 export async function cacheRuntimeAudioOnIntent(
   publicPath: string,
-  { cacheStorage, fetcher, scope }: RuntimeAudioIntentCacheEnvironment,
+  { cacheStorage, fetcher, scope }: RuntimeAudioIntentCacheEnvironment
 ): Promise<boolean> {
   if (!isIntentRuntimeAudioPath(publicPath)) {
     throw new Error("Runtime audio path is not allowed for intent caching: " + publicPath);
@@ -191,15 +193,13 @@ export function isRuntimeAudioPath(pathname: string, destination = ""): boolean 
 }
 
 const shippedAudioPaths = [
-  ...APP_AUDIO_ASSETS.filter((asset) => asset.warmCacheOnStartup).map(
-    (asset) => asset.publicPath,
-  ),
+  ...APP_AUDIO_ASSETS.filter((asset) => asset.warmCacheOnStartup).map((asset) => asset.publicPath),
   ...APP_AUDIO_FEEDBACK_EVENTS.map((event) => event.publicPath),
   ...Object.values(HYPERFOCUS_GENERATED_AUDIO_MANIFEST).map((entry) => entry.publicPath),
 ];
 
 export const APP_AUDIO_SW_CACHE_PATHS: readonly string[] = Object.freeze(
-  [...new Set(shippedAudioPaths)].sort(),
+  [...new Set(shippedAudioPaths)].sort()
 );
 
 const retiredRuntimeAudioCacheNames = new Set<string>(RETIRED_RUNTIME_AUDIO_CACHE_NAMES);
@@ -207,6 +207,6 @@ const retiredRuntimeAudioCacheNames = new Set<string>(RETIRED_RUNTIME_AUDIO_CACH
 export function selectRetiredRuntimeAudioCaches(cacheNames: readonly string[]): string[] {
   return cacheNames.filter(
     (cacheName) =>
-      cacheName !== RUNTIME_AUDIO_CACHE_NAME && retiredRuntimeAudioCacheNames.has(cacheName),
+      cacheName !== RUNTIME_AUDIO_CACHE_NAME && retiredRuntimeAudioCacheNames.has(cacheName)
   );
 }

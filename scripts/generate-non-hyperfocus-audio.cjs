@@ -1417,8 +1417,12 @@ function readPackageVersion(name) {
   return JSON.parse(fs.readFileSync(packagePath, 'utf8')).version;
 }
 
+function getGeneratedRuntimeAssets() {
+  // R7 music is a retained original recording set, never a synthesis output.
+  return [...assets.filter((asset) => asset.id !== 'cloudlight-evening-loop'), ...feedbackAssets];
+}
+
 function main() {
-  validateEveningMusicAssets();
   ensureCleanRoot(publicSoundsDir);
   ensureCleanRoot(docsSoundsDir);
   fs.mkdirSync(publicFeedbackDir, { recursive: true });
@@ -1428,7 +1432,7 @@ function main() {
 
   const lameVersion = readPackageVersion('lamejs');
   const provenanceAssets = [];
-  for (const asset of [...assets, ...EVENING_MUSIC_ASSETS, ...feedbackAssets]) {
+  for (const asset of getGeneratedRuntimeAssets()) {
     const isFeedback = asset.id.startsWith('feedback-');
     const rendered = isFeedback
       ? renderFeedbackPcm(asset)
@@ -1500,7 +1504,7 @@ function main() {
 
   const provenance = {
     schemaVersion: 2,
-    purpose: 'ZenFlow non-Hyperfocus local ambience, persistent opt-in app-entry music, and feedback cues for entry/auth, orb, diary/settings, completed activities, milestones, and reminder previews.',
+    purpose: 'ZenFlow non-Hyperfocus local entry/orb/diary ambience and five feedback cues. R7 music has separate original-generation provenance and is not produced by this generator.',
     generationPolicy: 'First-party deterministic procedural synthesis. No third-party samples, recordings, stock loops, voices, or AI-generated audio inputs are used.',
     rights: {
       referenceResearch: {
@@ -1545,6 +1549,7 @@ function main() {
 if (require.main === module) main();
 
 module.exports = {
+  getGeneratedRuntimeAssets,
   EVENING_MUSIC_ASSETS,
   encodeMp3,
   renderPeriodicEveningPadPcm,

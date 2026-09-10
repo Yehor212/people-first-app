@@ -3,71 +3,83 @@
     "fireplace:deep": {
       "audibleReview": {
         "humanLoopReview": "UNVERIFIED",
-        "status": "OWNER_ACCEPTED_SOURCE_SET_FINAL_LOOP_REVIEW_PENDING"
+        "status": "OWNER_SELECTED_EXACT_FILES_FORMAL_LISTENING_CONTEXT_UNVERIFIED",
+        "ownerDecisionAt": "2026-09-10T01:50:52Z",
+        "receipt": "docs/audio/fireplace-pagdev-provenance.json"
       },
-      "bytes": 480768,
+      "bytes": 721196,
       "fileName": "hyperfocus-fireplace-deep.mp3",
-      "generatedAt": "2026-08-26T01:52:12.713723Z",
-      "generationId": "bigsoundbank-fireplace-c3-runtime-v2",
-      "model": "real-source-cc0-runtime-v2",
+      "generatedAt": "2026-09-10T01:36:10Z",
+      "generationId": "pagdev-fireplace-deep-20260910",
+      "model": "source-loop-cc0-fireplace-20260910",
       "postProcessing": {
-        "aiStatus": "TRIAL_ONLY_NOT_ADMITTED",
-        "externalEncoderSourceSecurityStatus": "FAIL_SCOPED_EXTERNAL_SOURCE",
         "objectiveResult": "PASS",
-        "policy": "cc0-reviewed-20s-to-periodic-30s-runtime-v2",
+        "policy": "pagdev-source-overlap-and-30s-loop-20260910",
         "runtimeManifest": "docs/audio/hyperfocus-runtime-v2-manifest.json",
-        "tool": "ZenFlow deterministic loop mastering plus private LAME 4.0 CBR 128 kbps"
+        "tool": "FFmpeg 9.0.1, libmp3lame CBR 192 kbps",
+        "evidence": "docs/audio/fireplace-pagdev-provenance.json",
+        "verifiedAt": "2026-09-10T01:44:41.026Z",
+        "boundary": "Decoded signal verification only; not formal human, independent legal or store approval."
       },
-      "provider": "BigSoundBank / LaSonotheque",
-      "publicSha256": "c6319db252889365ac595c4b6c8246006166f290195a2d3fa482713dfb4a04d7",
-      "source": "Fireplace #5 by Joseph SARDIN (https://bigsoundbank.com/fireplace-5-s2857.html)",
-      "sourceLicense": "https://bigsoundbank.com/licenses.html"
+      "provider": "OpenGameArt / PagDev",
+      "publicSha256": "ea59625628045952a2ccd8fac21278662c735e34e0e1cc01d97e3cccb5f234f1",
+      "source": "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)",
+      "sourceLicense": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceSha256": "85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330"
     },
     "fireplace:intense": {
       "audibleReview": {
         "humanLoopReview": "UNVERIFIED",
-        "status": "OWNER_ACCEPTED_SOURCE_SET_FINAL_LOOP_REVIEW_PENDING"
+        "status": "OWNER_SELECTED_EXACT_FILES_FORMAL_LISTENING_CONTEXT_UNVERIFIED",
+        "ownerDecisionAt": "2026-09-10T01:50:52Z",
+        "receipt": "docs/audio/fireplace-pagdev-provenance.json"
       },
-      "bytes": 480768,
+      "bytes": 721196,
       "fileName": "hyperfocus-fireplace-intense.mp3",
-      "generatedAt": "2026-08-26T01:52:12.713723Z",
-      "generationId": "bigsoundbank-fireplace-c1-runtime-v2",
-      "model": "real-source-cc0-runtime-v2",
+      "generatedAt": "2026-09-10T01:36:10Z",
+      "generationId": "pagdev-fireplace-intense-20260910",
+      "model": "source-loop-cc0-fireplace-20260910",
       "postProcessing": {
-        "aiStatus": "TRIAL_ONLY_NOT_ADMITTED",
-        "externalEncoderSourceSecurityStatus": "FAIL_SCOPED_EXTERNAL_SOURCE",
         "objectiveResult": "PASS",
-        "policy": "cc0-reviewed-20s-to-periodic-30s-runtime-v2",
+        "policy": "pagdev-source-overlap-and-30s-loop-20260910",
         "runtimeManifest": "docs/audio/hyperfocus-runtime-v2-manifest.json",
-        "tool": "ZenFlow deterministic loop mastering plus private LAME 4.0 CBR 128 kbps"
+        "tool": "FFmpeg 9.0.1, libmp3lame CBR 192 kbps",
+        "evidence": "docs/audio/fireplace-pagdev-provenance.json",
+        "verifiedAt": "2026-09-10T01:44:41.026Z",
+        "boundary": "Decoded signal verification only; not formal human, independent legal or store approval."
       },
-      "provider": "BigSoundBank / LaSonotheque",
-      "publicSha256": "e3719a34e4a5603aadb3142531b0ff2483b3d7688abed724d0f88798e0ed6154",
-      "source": "Fireplace #3 by Joseph SARDIN (https://bigsoundbank.com/fireplace-3-s2855.html)",
-      "sourceLicense": "https://bigsoundbank.com/licenses.html"
+      "provider": "OpenGameArt / PagDev",
+      "publicSha256": "bc7816cc301b44e70090583fe4236e7cdd1ca18e657d6f7447b2c98d0892fabd",
+      "source": "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)",
+      "sourceLicense": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceSha256": "85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330"
     },
     "fireplace:soft": {
       "audibleReview": {
         "humanLoopReview": "UNVERIFIED",
-        "status": "OWNER_ACCEPTED_SOURCE_SET_FINAL_LOOP_REVIEW_PENDING"
+        "status": "OWNER_SELECTED_EXACT_FILES_FORMAL_LISTENING_CONTEXT_UNVERIFIED",
+        "ownerDecisionAt": "2026-09-10T01:50:52Z",
+        "receipt": "docs/audio/fireplace-pagdev-provenance.json"
       },
-      "bytes": 480768,
+      "bytes": 721196,
       "fileName": "hyperfocus-fireplace-soft.mp3",
-      "generatedAt": "2026-08-26T01:52:12.713723Z",
-      "generationId": "bigsoundbank-fireplace-c2-runtime-v2",
-      "model": "real-source-cc0-runtime-v2",
+      "generatedAt": "2026-09-10T01:36:10Z",
+      "generationId": "pagdev-fireplace-soft-20260910",
+      "model": "source-loop-cc0-fireplace-20260910",
       "postProcessing": {
-        "aiStatus": "TRIAL_ONLY_NOT_ADMITTED",
-        "externalEncoderSourceSecurityStatus": "FAIL_SCOPED_EXTERNAL_SOURCE",
         "objectiveResult": "PASS",
-        "policy": "cc0-reviewed-20s-to-periodic-30s-runtime-v2",
+        "policy": "pagdev-source-overlap-and-30s-loop-20260910",
         "runtimeManifest": "docs/audio/hyperfocus-runtime-v2-manifest.json",
-        "tool": "ZenFlow deterministic loop mastering plus private LAME 4.0 CBR 128 kbps"
+        "tool": "FFmpeg 9.0.1, libmp3lame CBR 192 kbps",
+        "evidence": "docs/audio/fireplace-pagdev-provenance.json",
+        "verifiedAt": "2026-09-10T01:44:41.026Z",
+        "boundary": "Decoded signal verification only; not formal human, independent legal or store approval."
       },
-      "provider": "BigSoundBank / LaSonotheque",
-      "publicSha256": "d0370173891d4f6e4a073cf4b3f96741166f98d424ccf2024b7e2cd3465b460a",
-      "source": "Fireplace #4 by Joseph SARDIN (https://bigsoundbank.com/fireplace-4-s2856.html)",
-      "sourceLicense": "https://bigsoundbank.com/licenses.html"
+      "provider": "OpenGameArt / PagDev",
+      "publicSha256": "af3033bf4e49c4623dfea15124d2fcab8d8213de35591785cdaef7985791032e",
+      "source": "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)",
+      "sourceLicense": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceSha256": "85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330"
     },
     "forest:deep": {
       "audibleReview": {
@@ -415,7 +427,7 @@
       "sourceLicense": "https://bigsoundbank.com/licenses.html"
     }
   },
-  "decision": "All 18 Hyperfocus runtime variants use source-specific BigSoundBank CC0 recordings, deterministic signal-intensity assignment, periodic loop mastering, and hash-bound technical evidence. Human long-loop, legal, store, and release decisions remain separate.",
+  "decision": "Fifteen accepted BigSoundBank CC0 runtime variants remain unchanged. Three exact owner-selected PagDev / OpenGameArt CC0 fireplace loops replace only fireplace Soft/Deep/Intense; source and processing evidence are in fireplace-pagdev-provenance.json. Formal listening context, independent legal clearance and store publication remain separate unverified gates.",
   "runtimeV2Manifest": "docs/audio/hyperfocus-runtime-v2-manifest.json",
-  "version": "2026-08-25-cc0-runtime-v2"
+  "version": "2026-09-10-pagdev-fireplace-amendment"
 }

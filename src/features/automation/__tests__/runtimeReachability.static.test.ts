@@ -25,7 +25,8 @@ describe("T170 production runtime reachability", () => {
     const sourcePersistence = read("src/features/automation/automationSourcePersistence.ts");
     const targetPersistence = read("src/features/automation/automationTargetPersistence.ts");
     const journalStorage = read("src/features/journal/journalStorage.ts");
-    const planning = read("src/pages/nav-v2/planning/PlanningPage.tsx");
+    const planningWorkspace = read("src/pages/nav-v2/planning/PlanningWorkspace.tsx");
+    const planningFocus = read("src/pages/nav-v2/planning/PlanningPage.tsx");
 
     expect(sourcePersistence).toContain("persistManualMoodOutboxInCurrentTransaction");
     expect(sourcePersistence).toContain("persistManualHabitCompletionOutboxInCurrentTransaction");
@@ -37,8 +38,12 @@ describe("T170 production runtime reachability", () => {
       'detachAutomationRecordRevisionInCurrentTransaction("journal"'
     );
     expect(journalStorage).toContain('"SYNC_JOURNAL_ENTRY"');
-    expect(planning).toContain("commitManualScheduleEvents");
-    expect(planning).not.toContain("syncSetting(");
+    expect(planningWorkspace).toContain("commitManualScheduleEvents");
+    expect(planningWorkspace).not.toContain("syncSetting(");
+    expect(planningFocus).not.toContain("commitManualScheduleEvents");
+    expect(planningFocus).not.toContain("PlanningWorkspace");
+    expect(planningFocus).not.toContain("syncSetting(");
+    expect(planningFocus).toContain("onCompleteSession={handleCompleteFocusSession}");
   });
 
   it("binds journal save and update transactions to source-intent persistence", () => {

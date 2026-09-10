@@ -6,6 +6,10 @@
 
 **Status**: Approved for implementation
 
+**Production amendment, 2026-09-10**: The owner approved the three exact PagDev fireplace pilots, the separately proposed 128 MiB PDI work budget, and Android release to all users at `2026-09-10T01:50:52Z`. The current release target is Google Play Production at 100%; this supersedes US3's historical Internal testing-only audience, without waiving its technical, CI, identity, signing, provenance or honest-review conditions. Existing Focus/transport and R7 scope is retained. `plan.md` and `contracts/android-internal-release.md` define execution and release boundaries; `docs/audio/fireplace-pagdev-provenance.json` binds the selected files. No undocumented listening context is asserted.
+
+**Restoration amendment, 2026-09-09**: The owner identified the original R7 ten-track review set and explicitly requested that all ten replace the current substitute collection, plus recovery of the Hyperfocus nature sounds. This amendment changes audio selection and audibility only; previous theme, authentication, and release work is not reopened. Implementation continues in the existing locked `codex/android-103ms-20260904` lane.
+
 **Input**: User description: "Create roughly ten calm Japanese-vibe music pieces, play them from the account-entry and navigation-menu surfaces through an icon-only sound control, make light/dark changes soft instead of jumpy, verify sound and music in the Android emulator, commit and merge to main, and prepare a Google Play pre-release without mock data."
 
 ## User Scenarios & Testing
@@ -60,6 +64,44 @@ The owner receives an Android App Bundle built from the exact merged main commit
 2. **Given** the exact bundle is ready, **When** it is uploaded, **Then** it is assigned only to Internal testing and remains absent from Production.
 3. **Given** signing credentials, Play access, owner audio approval, or a required check is unavailable, **When** release preparation reaches that gate, **Then** the upload stops with an explicit UNVERIFIED or FAIL status rather than substituting a debug key or unreviewed asset.
 
+### User Story 4 - Hear The Selected Originals And Nature Sounds (Priority: P1)
+
+The listener hears the ten R7 compositions previously selected, not a newly generated approximation. Hyperfocus offers forest, rain, ocean, fireplace, river, and wind, each at Soft, Deep, and Intense levels.
+
+**Independent Test**: Activate music and traverse all ten original recordings; select each of the eighteen nature variants in the existing Hyperfocus flow. Compare the played files to the retained originals and keep personal focus history untouched during verification.
+
+**Acceptance Scenarios**:
+
+1. **Given** an upgrade from the former collection, **When** music is enabled, **Then** only Shoji Rain, Moss Garden, Lantern Reflection, Snow Over Cedar, Paper Cranes, Tea Room Dawn, River Stones, Camellia Evening, Temple Path, and Home Beneath Clouds play in that order.
+2. **Given** the selected master volume, **When** a mastered R7 recording plays, **Then** no additional fixed music attenuation is applied; mute, zero volume, comfort restrictions, and foreground-only playback remain effective.
+3. **Given** any nature family and level, **When** the listener deliberately starts that sound, **Then** the corresponding original recording plays with a truthful loading/playing/error state and no overlapping music.
+4. **Given** a retained original already present in the app, **When** restoration is performed, **Then** it is verified and kept byte-identical rather than regenerated or duplicated.
+
+### User Story 5 - Focus-Only Planning (Priority: P1)
+
+Approved by the owner at 2026-09-09T23:45:01Z: Planning exposes only the existing Focus timer and its Hyperfocus entry. Hide non-focus UI without deleting schedule, habit, mood or focus data. An optional small noninteractive future-feature hint must not promise a date.
+
+**Independent Test**: Render with existing test records, verify absent overview/modes/schedule/review/bridges and zero render-triggered writes; preserve Focus completion/minute callbacks, loading, Hyperfocus entry and RTL/safe-area behavior.
+
+**Acceptance Scenarios**:
+
+1. Hidden workspace sections are absent from visual/accessibility trees and do not run their periodic/model computation.
+2. Existing Focus/Hyperfocus single-timer, reflection and completion flows remain functional; obsolete planning-date URLs do not alter stored records.
+3. Mobile safe areas, ar/he and desktop width keep the focused layout usable without an empty schedule column.
+
+### User Story 6 - Manual Music Transport And A Convincing Hearth (Priority: P1)
+
+The same owner approval requests previous/next music controls in navigation and a new fireplace. ACE-Step is authorized only as a feasibility trial; actual environmental suitability is not assumed. All ten R7 originals, other fifteen nature files and current system volumes remain unchanged.
+
+**Independent Test**: Traverse all ten R7 IDs both ways while playing/off/muted/paused and with another owner; race rapid requests and errors. Separately audition an exact-hash fireplace pilot before runtime integration.
+
+**Acceptance Scenarios**:
+
+1. Previous/next wrap, persist the chosen cursor and leave the drawer open; auth retains its single sound-state button.
+2. Off/paused/blocked/muted/Hyperfocus selection stays silent. Explicit play can resume; stale play results and rapid selection cannot revive an old track, steal ownership or pause a newer successful one.
+3. One decoder, cancellable short fades, bounded errors, eight-locale accessible labels and owner-bound system transport work without new permissions/dependencies.
+4. Fireplace sounds like an indoor wood hearth at three distinct activity levels, not gain-only copies. Exact provenance, unclipped decode, loop/transient checks and direct hash-bound human audition are required; metrics or generation success alone do not prove realism.
+
 ### Edge Cases
 
 - One or more music files are missing, truncated, corrupt, silent, clipped, incorrectly encoded, or fail their declared hash.
@@ -79,8 +121,8 @@ The owner receives an Android App Bundle built from the exact merged main commit
 ### Functional Requirements
 
 - **FR-001**: The product MUST ship exactly ten distinct long-form ZenFlow music masters in the approved collection.
-- **FR-002**: The collection MUST contain the already tracked original Cloudlight master plus nine new original first-party compositions.
-- **FR-003**: Every new composition MUST be created without imported third-party audio, stock loops, voices, copied melody, copied harmony, recovered quarantined audio, or generative-audio input.
+- **FR-002**: The collection MUST contain exactly the ten owner-selected R7 originals named in US4, replacing all ten former procedural music pieces.
+- **FR-003**: Restoration MUST reuse the retained R7 recordings unchanged, with their actual local ACE-Step generation provenance. No new generation, third-party sample, reference recording, quarantined recording, or unverified substitute is admitted. This owner-selected R7 set replaces the former procedural-only music requirement; the existing non-music synthesis boundary remains unchanged.
 - **FR-004**: Every music master MUST have a file-bound provenance record, exact byte size, duration, encoding properties, and SHA-256 digest.
 - **FR-005**: The disputed `Zenflow.m4a` and every recording derived from the unlicensed Cloudbound reference MUST remain excluded from runtime, bundles, review packets, and store artifacts.
 - **FR-006**: The owner MUST review and approve every exact music-master hash before a store upload containing that collection.
@@ -125,6 +167,20 @@ The owner receives an Android App Bundle built from the exact merged main commit
 - **FR-045**: A signing key MUST be added to Android developer verification only when that exact key signs an Android artifact actually distributed outside Google Play; local debug keys and upload-only keys MUST NOT be registered as distribution keys without evidence of such distribution.
 - **FR-046**: If Play Console requires manual ownership proof, the exact account-bound `adi-registration.properties` snippet MUST be handled as temporary private evidence, embedded only in a dedicated verification APK signed by the matching existing private key, uploaded to the verification flow, and excluded from source control and release bundles afterward.
 
+- **FR-047**: Every R7 runtime and deployment copy MUST match its original review-file size and SHA-256 without trimming, looping, normalization, or lossy re-encoding.
+- **FR-048**: The former collection MUST be absent from shipped music inventories and intent-cache admission; a retired cursor MUST safely select the first original while preserving the listener's opt-in and volume settings.
+- **FR-049**: Music MUST use the selected master volume directly for these already-mastered recordings, while preserving mute, zero-volume, comfort, boundary fade, and lifecycle controls.
+- **FR-050**: Hyperfocus MUST retain eighteen nature variants, six families by three levels. The approved US6 amendment permits replacing only three owner-rejected fireplace recordings after FR-057 admission; other fifteen remain byte-identical. No music or procedural fallback is admitted.
+- **FR-051**: Existing generation tooling MUST NOT overwrite the R7 collection or reintroduce its retired procedural substitute when regenerating non-music ambience and feedback cues.
+- **FR-052**: Restoration acceptance MUST distinguish file identity, decoded signal quality, runtime playback, owner selection, formal listening context, and store/legal clearance. A local implementation request does not invent listening duration, headphone/device-speaker approval, legal clearance, or store upload authorization.
+
+- **FR-053**: Planning MUST mount only the existing Focus/Hyperfocus flow, preserving stored records and completion/minute callbacks; hidden workspace calculations MUST not mount.
+- **FR-054**: Navigation MUST expose previous/current-state/next icon targets, stacked in collapsed sidebar, at least 44px desktop and 48px drawer. Auth stays one button. All eight locales, keyboard/focus, RTL icons and safe areas remain usable without visible track titles/tooltips.
+- **FR-055**: Selection MUST wrap cyclically, persist before changing source, preserve off/paused/playing intent and respect mute/comfort/foreground/ownership. Latest rapid selection wins, even after a full cycle to the same ID, with one element and no stale fade/play effects.
+- **FR-056**: Supported Media Session previous/next actions MUST be music-owner-bound and cleared for non-music; unsupported actions degrade without crashing. Decode/error recovery stays bounded to the collection.
+- **FR-057**: New fireplace assets MUST pass provenance/hash, signal/loop/transient checks and direct owner audition before runtime admission. ACE-Step remains a private experiment unless it meets the indoor-fire brief. Soft/Deep/Intense differ in activity, not merely gain.
+- **FR-058**: Release audibility MUST distinguish app gain from device volume, preserve mute/zero/saved preferences, and assess fresh/existing settings. Current system volumes and R7 bytes remain unchanged; unavailable real-device listening stays UNVERIFIED.
+
 ### Key Entities
 
 - **Music Master**: One approved long-form composition with a stable identifier, file path, sequence position, encoding metadata, comfort metadata, byte size, and SHA-256 digest.
@@ -153,7 +209,7 @@ The owner receives an Android App Bundle built from the exact merged main commit
 
 ## Assumptions
 
-- "About ten" is resolved as exactly ten tracks: the existing first-party Cloudlight master plus nine new original masters.
+- The 2026-09-09 request resolves the collection as exactly the retained R7 ten tracks. The separately identified R6 Rainlit Chamber is not an eleventh track.
 - The desired Japanese character means sparse space, restrained glass-like accents, soft felt-piano colour, and calm pacing; it does not authorize copying a Japanese work or presenting cultural authenticity claims.
 - Music remains an optional comfort layer rather than a therapeutic claim, reward mechanism, or required part of account access.
 - The visible control is icon-only, while non-visible accessibility names and state descriptions remain required.

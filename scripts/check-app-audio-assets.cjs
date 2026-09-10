@@ -10,6 +10,7 @@ const publicSoundsDir = path.join(rootDir, 'public', 'sounds');
 const appAudioAssetsPath = path.join(rootDir, 'src', 'lib', 'appAudioAssets.ts');
 const appAudioPolicyPath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-sound-effects-policy.md');
 const generatedProvenancePath = path.join(rootDir, 'docs', 'audio', 'non-hyperfocus-generated-audio-provenance.json');
+const r7ProvenancePath = path.join(rootDir, 'docs', 'audio', 'r7-original-music-provenance.json');
 const eveningCollectionReviewPath = path.join(rootDir, 'docs', 'audio', 'zenflow-evening-collection-review.json');
 const cloudlightLicensePath = path.join(rootDir, 'docs', 'audio', 'cloudlight-evening-license.md');
 const thirdPartyNoticesPath = path.join(rootDir, 'THIRD_PARTY_NOTICES.md');
@@ -21,25 +22,24 @@ const appAudioAssetsReportPath = path.join(outputAudioQcDir, 'app-audio-assets-r
 
 const APPROVED_ROOT_MP3S = new Map([
   ['soft-air-veil.mp3', { gain: 0.18, peakMin: 0.12, peakMax: 0.32, rmsMin: 0.055, rmsMax: 0.11, audibleRmsMin: 0.05, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.02, effectivePeakMax: 0.08, effectiveRmsMin: 0.009, effectiveRmsMax: 0.022, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.012, decoderThresholds: { ffmpeg: { boundaryDeltaMax: 0.016, boundarySlopeDeltaMax: 0.012 } }, transientDeltaMax: 0.16, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
-  ['cloudlight-evening-loop.mp3', { gain: 0.18, peakMin: 0.08, peakMax: 0.28, rmsMin: 0.032, rmsMax: 0.065, audibleRmsMin: 0.03, audibleBandEnergyRatioMin: 0.9, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.012, effectivePeakMax: 0.06, effectiveRmsMin: 0.005, effectiveRmsMax: 0.014, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.015, transientDeltaMax: 0.12, durationMin: 149.8, durationMax: 150.3, sampleRates: [44100], channels: [2] }],
   ['gentle-water-bed.mp3', { gain: 0.36, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.05, rmsMax: 0.095, audibleRmsMin: 0.045, audibleBandEnergyRatioMin: 0.7, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.04, effectivePeakMax: 0.22, effectiveRmsMin: 0.017, effectiveRmsMax: 0.04, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { startEndRmsDeltaMax: 0.0175 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
   ['soft-rain-veil.mp3', { gain: 0.32, peakMin: 0.12, peakMax: 0.34, rmsMin: 0.045, rmsMax: 0.09, audibleRmsMin: 0.04, audibleBandEnergyRatioMin: 0.75, dcOffsetAbsMax: 0.001, effectivePeakMin: 0.035, effectivePeakMax: 0.2, effectiveRmsMin: 0.014, effectiveRmsMax: 0.035, boundaryDeltaMax: 0.01, boundarySlopeDeltaMax: 0.01, startEndRmsDeltaMax: 0.014, decoderThresholds: { ffmpeg: { boundaryDeltaMax: 0.013, boundarySlopeDeltaMax: 0.019 } }, transientDeltaMax: 0.2, durationMin: 60, durationMax: 150, sampleRates: [44100], channels: [2] }],
 ]);
 
 const EVENING_MUSIC_MASTERS = new Map([
-  ['lantern-air.mp3', { id: 'lantern-air', title: 'Lantern Air' }],
-  ['rain-on-paper.mp3', { id: 'rain-on-paper', title: 'Rain On Paper' }],
-  ['indigo-dusk.mp3', { id: 'indigo-dusk', title: 'Indigo Dusk' }],
-  ['quiet-courtyard.mp3', { id: 'quiet-courtyard', title: 'Quiet Courtyard' }],
-  ['moonlit-water.mp3', { id: 'moonlit-water', title: 'Moonlit Water' }],
-  ['cedar-mist.mp3', { id: 'cedar-mist', title: 'Cedar Mist' }],
-  ['glass-bell-dawn.mp3', { id: 'glass-bell-dawn', title: 'Glass Bell Dawn' }],
-  ['moss-garden.mp3', { id: 'moss-garden', title: 'Moss Garden' }],
-  ['after-rain.mp3', { id: 'after-rain', title: 'After Rain' }],
+  ['r7-shoji-rain.mp3', {"id":"r7-shoji-rain","title":"Shoji Rain","bytes":6721964,"sha256":"f49b48fcdff7dada76be14de52a1213f03ce8e277a74a10e55136031a36af71a","durationSeconds":168,"sourceCandidateId":"01_shoji_rain","sourceMp3Path":"review/01_Shoji_Rain_REVIEW.mp3","sourceWavSha256":"ce110fe5b34a7141cba3ba2732480144726ee3b3c5a1b7a3b7c8d05dac018c5c","sourceFlacSha256":"288967d904828849ed46c8415cc19dc8a8668902bd6d0fc7570dbc40ac567f1e"}],
+  ['r7-moss-garden.mp3', {"id":"r7-moss-garden","title":"Moss Garden","bytes":6642284,"sha256":"ea4578bef4a22af13afbe2f0c7d44f715cf7b37e3df675c35375fee5adf3029a","durationSeconds":166,"sourceCandidateId":"02_moss_garden","sourceMp3Path":"review/02_Moss_Garden_REVIEW.mp3","sourceWavSha256":"29921b9ab176d08f766aa6dade8a7a5eba7b5404fcc004089490850aacc7135a","sourceFlacSha256":"2fa15a1b49d35b9295c629467574fa576c869427d60eddd646936762026ba09c"}],
+  ['r7-lantern-reflection.mp3', {"id":"r7-lantern-reflection","title":"Lantern Reflection","bytes":6802604,"sha256":"9cdbd5cc947cd87a580a82a5cccf951b4a59e4fe359f9981073f6fba303bb55d","durationSeconds":170,"sourceCandidateId":"03_lantern_reflection","sourceMp3Path":"review/03_Lantern_Reflection_REVIEW.mp3","sourceWavSha256":"9d40921723b080c64f0a8e7eb67b6fe4c10a84bc5a5e5747778815fbe789d386","sourceFlacSha256":"92aa20f167a9c9b9dd9fa57b55e2144be12716c4304a3ffd2523f73e338799a7"}],
+  ['r7-snow-over-cedar.mp3', {"id":"r7-snow-over-cedar","title":"Snow Over Cedar","bytes":6562604,"sha256":"91b2b1254e4a2e95176a1b54bd99e722ee2a1ccff5384ed23e9c8ecf1cb7a5fd","durationSeconds":164,"sourceCandidateId":"04_snow_over_cedar","sourceMp3Path":"review/04_Snow_Over_Cedar_REVIEW.mp3","sourceWavSha256":"87c45f7cd64fc7b051746ff78386157dbd3df7cfd40ca6752ae190f8eb20149c","sourceFlacSha256":"acaa89b958281f6b2f23adb11d1e8f21b45407f63c038c468f1374d558326c62"}],
+  ['r7-paper-cranes.mp3', {"id":"r7-paper-cranes","title":"Paper Cranes","bytes":6721964,"sha256":"7602f5ff552b83f118be3c2d34c452dddc679472f415bfca0486c6b2fe949d36","durationSeconds":168,"sourceCandidateId":"05_paper_cranes","sourceMp3Path":"review/05_Paper_Cranes_REVIEW.mp3","sourceWavSha256":"146baedeb7a1532ccd37f645ca32debb18defcca5e51d2892ace751ec346048f","sourceFlacSha256":"6867305795532a6db3a64d916013ae33f15c0a2d27991d848f556ba9ac6680aa"}],
+  ['r7-tea-room-dawn.mp3', {"id":"r7-tea-room-dawn","title":"Tea Room Dawn","bytes":6642284,"sha256":"f94cde5ef5a319678f63c49723dbf8505e7122a88d3fd6756ae5679c7dd7a044","durationSeconds":166,"sourceCandidateId":"06_tea_room_dawn","sourceMp3Path":"review/06_Tea_Room_Dawn_REVIEW.mp3","sourceWavSha256":"0e613cd5c36e23afbbbd58396b770faeacf7c27b336d0b07836538cccf656459","sourceFlacSha256":"599a57b27d1481e0bffc9a0b8a78e28c1b8f13f87f20739675ca3c603f7a3696"}],
+  ['r7-river-stones.mp3', {"id":"r7-river-stones","title":"River Stones","bytes":6802604,"sha256":"7ca1c3d4a232b483caeb456e1fe5a552e571ce4916b935df3060c68805900e0e","durationSeconds":170,"sourceCandidateId":"07_river_stones","sourceMp3Path":"review/07_River_Stones_REVIEW.mp3","sourceWavSha256":"117120d9a9d6f8b11403def6adfdd6b073296d8dd93664190155c20f65a70ac7","sourceFlacSha256":"f2d9aaddbf5ee9a4cb455020e3439a8674b6eac643676136a5d544bfde123c72"}],
+  ['r7-camellia-evening.mp3', {"id":"r7-camellia-evening","title":"Camellia Evening","bytes":6601964,"sha256":"b0badde8553553e50e67b8b65e359c67d3a6424a67c0346052bf1f1c4f9fb35f","durationSeconds":165,"sourceCandidateId":"08_camellia_evening","sourceMp3Path":"review/08_Camellia_Evening_REVIEW.mp3","sourceWavSha256":"8ba960e910bfd279521966677f6a39dcbfc12d76862e5b5d31e5aacd50a65c91","sourceFlacSha256":"bfb59e6d74fe0966bd8a8838eddf19a0cf09e55a58dcaec0fc4bc78c1f94972a"}],
+  ['r7-temple-path.mp3', {"id":"r7-temple-path","title":"Temple Path","bytes":6721964,"sha256":"51298b29ceaece2e2f96e8a0c5bbe7706e6c1e1d642d754afa270d76e95f7acf","durationSeconds":168,"sourceCandidateId":"09_temple_path","sourceMp3Path":"review/09_Temple_Path_REVIEW.mp3","sourceWavSha256":"28e41c4c5dd313b638235094514264de512ecfd4da21aafd75396eb24481ae82","sourceFlacSha256":"c57263092cb1ded86daa61861d9a92dfdd03fa240842595de69496140a663d92"}],
+  ['r7-home-beneath-clouds.mp3', {"id":"r7-home-beneath-clouds","title":"Home Beneath Clouds","bytes":6802604,"sha256":"f47aeab0fff78f27003ed3f1b91b0477d88dd28b4039aaf495f4b357c5bd81cb","durationSeconds":170,"sourceCandidateId":"10_home_beneath_clouds","sourceMp3Path":"review/10_Home_Beneath_Clouds_REVIEW.mp3","sourceWavSha256":"5b725690f731c918d83f9c94523131c44886b5770414dc24d4d40c2558597b1d","sourceFlacSha256":"fba4fe53cdc3496236534da6c3406b5a0338e635180f6164f81987a2448eaed4"}],
 ]);
 const EXPECTED_EVENING_MUSIC_FILES = [...EVENING_MUSIC_MASTERS.keys()].sort();
 const EXPECTED_EVENING_COLLECTION_MASTER_IDS = [
-  'cloudlight-evening-loop',
   ...[...EVENING_MUSIC_MASTERS.values()].map((master) => master.id),
 ];
 
@@ -104,14 +104,6 @@ const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
     deployDocsPath: 'docs/sounds/soft-air-veil.mp3',
     runtimeGain: 0.18,
   }],
-  ['cloudlight-evening-loop.mp3', {
-    id: 'cloudlight-evening-loop',
-    family: 'ambience',
-    publicPath: 'public/sounds/cloudlight-evening-loop.mp3',
-    deployDocsPath: 'docs/sounds/cloudlight-evening-loop.mp3',
-    runtimeGain: 0.18,
-    deterministicSpec: 'original-four-section-felt-piano-air-pad-circular-loop',
-  }],
   ['gentle-water-bed.mp3', {
     id: 'gentle-water-bed',
     family: 'ambience',
@@ -126,17 +118,6 @@ const EXPECTED_GENERATED_AUDIO_PROVENANCE = new Map([
     deployDocsPath: 'docs/sounds/soft-rain-veil.mp3',
     runtimeGain: 0.32,
   }],
-  ...[...EVENING_MUSIC_MASTERS].map(([fileName, master]) => [
-    fileName,
-    {
-      id: master.id,
-      family: 'music',
-      publicPath: 'public/sounds/music/' + fileName,
-      deployDocsPath: 'docs/sounds/music/' + fileName,
-      runtimeGain: 0.18,
-      deterministicSpecPrefix: 'original-evening-collection-',
-    },
-  ]),
   ...[...APPROVED_FEEDBACK_MP3S].map(([fileName, thresholds]) => [
     fileName,
     {
@@ -168,7 +149,6 @@ const FORBIDDEN_ROOT_MP3S = [
 
 const EXPECTED_ASSETS = new Map([
   ['soft-air-veil', { family: 'entry', publicPath: 'sounds/soft-air-veil.mp3' }],
-  ['cloudlight-evening-loop', { family: 'entry', publicPath: 'sounds/cloudlight-evening-loop.mp3' }],
   ...[...EVENING_MUSIC_MASTERS].map(([fileName, master]) => [
     master.id,
     { family: 'entry', publicPath: 'sounds/music/' + fileName },
@@ -185,7 +165,6 @@ const EXPECTED_ASSETS = new Map([
 
 const EXPECTED_NON_HYPERFOCUS_ASSET_IDS = [
   'soft-air-veil',
-  'cloudlight-evening-loop',
   ...[...EVENING_MUSIC_MASTERS.values()].map((master) => master.id),
   'orb-ambience',
   'diary-reflection-loop',
@@ -501,8 +480,10 @@ function inspectEveningCollectionReview(review, provenanceAssets) {
   const status = String((releaseBoundary && releaseBoundary.status) || '');
 
   if (!review || review.schemaVersion !== 1) addViolation('schemaVersion');
-  if (!review || review.collectionId !== 'zenflow-evening-collection-v1') addViolation('collectionId');
-  if (!review || !review.technicalQc || review.technicalQc.status !== 'PASS') {
+  if (!review || review.collectionId !== 'zenflow-r7-soft-japanese-10') addViolation('collectionId');
+  if (!review || !review.technicalQc ||
+      !['PASS', 'UNVERIFIED'].includes(review.technicalQc.status) ||
+      (promotionAllowed && review.technicalQc.status !== 'PASS')) {
     addViolation('technicalQc.status');
   }
   if (!review || !review.technicalQc ||
@@ -576,6 +557,106 @@ function inspectEveningCollectionReview(review, provenanceAssets) {
   return { violations, promotionAllowed, status };
 }
 
+
+function inspectR7MusicProvenance(provenance) {
+  const violations = [];
+  const expectedGeneration = {
+    method: 'local-text-to-music', tool: 'ACE-Step 1.5',
+    sourceRevision: 'dce621408bee8c31b4fcf4811682eb9359e1bc94',
+    modelRepo: 'ACE-Step/Ace-Step1.5',
+    modelRevision: '19671f406d603126926c1b7e2adc169acbcade22',
+    checkpoint: 'acestep-v15-turbo',
+    sourceAudio: false, referenceConditioning: false,
+    coverOrRepaint: false, languageModel: false, lora: false,
+  };
+  if (!provenance || provenance.schemaVersion !== 1) return ['schemaVersion'];
+  if (provenance.collectionId !== 'zenflow-r7-soft-japanese-10') violations.push('collectionId');
+  if (provenance.restoration !== 'bit-exact-copy') violations.push('restoration');
+  if (provenance.originalMasterReceiptSha256 !== 'ac386b0a2cc35252fca96fdfefc87503082acbb13198986c1e4173f78118f8c6') {
+    violations.push('originalMasterReceiptSha256');
+  }
+  if (provenance.originalGenerationReceiptSha256 !== '7922b08620eb99b8a774246a391067720d137844f14ee5e549edcc9064c4b22d') {
+    violations.push('originalGenerationReceiptSha256');
+  }
+  for (const [field, value] of Object.entries(expectedGeneration)) {
+    if (!provenance.generation || provenance.generation[field] !== value) violations.push('generation.' + field);
+  }
+  const assets = Array.isArray(provenance.assets) ? provenance.assets : [];
+  if (JSON.stringify(assets.map((asset) => asset && asset.id)) !== JSON.stringify(EXPECTED_EVENING_COLLECTION_MASTER_IDS)) {
+    violations.push('assets.ids');
+  }
+  for (const [fileName, master] of EVENING_MUSIC_MASTERS) {
+    const asset = assets.find((item) => item && item.id === master.id);
+    if (!asset) { violations.push('assets.' + master.id); continue; }
+    const expected = {
+      id: master.id, title: master.title, fileName,
+      bytes: master.bytes, sha256: master.sha256,
+      publicPath: 'public/sounds/music/' + fileName,
+      deployDocsPath: 'docs/sounds/music/' + fileName,
+      sourceCandidateId: master.sourceCandidateId, sourceMp3Path: master.sourceMp3Path,
+      sourceWavSha256: master.sourceWavSha256, sourceFlacSha256: master.sourceFlacSha256,
+    };
+    for (const [field, value] of Object.entries(expected)) {
+      if (asset[field] !== value) violations.push(master.id + '.' + field);
+    }
+    for (const [field, value] of Object.entries({
+      family: 'music', durationSeconds: master.durationSeconds,
+      sampleRate: 48000, channels: 2, encoderKbps: 320, runtimeGain: 1,
+      playback: 'natural-end-sequential', reencoded: false,
+    })) {
+      if (!asset.parameters || asset.parameters[field] !== value) violations.push(master.id + '.parameters.' + field);
+    }
+  }
+  return violations;
+}
+
+function checkR7OriginalMusicProvenance() {
+  const provenance = JSON.parse(fs.readFileSync(r7ProvenancePath, 'utf8'));
+  const violations = inspectR7MusicProvenance(provenance);
+  assert(violations.length === 0, 'R7 originals do not match the selected source receipt', { violations });
+  for (const asset of provenance.assets) {
+    for (const relativePath of [asset.publicPath, asset.deployDocsPath]) {
+      const fullPath = path.join(rootDir, relativePath);
+      assert(fs.existsSync(fullPath) && fs.statSync(fullPath).size === asset.bytes &&
+        sha256File(fullPath) === asset.sha256, 'R7 original bytes differ from the selected master', { relativePath });
+    }
+  }
+  return provenance;
+}
+
+function inspectR7MusicMetrics(fileName, measured) {
+  const master = EVENING_MUSIC_MASTERS.get(fileName);
+  if (!master) return ['fileName'];
+  const limits = {
+    sampleRate: [48000, 48000], channels: [2, 2],
+    durationSeconds: [master.durationSeconds - 0.1, master.durationSeconds + 0.1],
+    peak: [0.08, 0.9], rms: [0.02, 0.3], audibleRms: [0.02, 0.3],
+    audibleBandEnergyRatio: [0.7, 1], dcOffsetAbs: [0, 0.005],
+    clippedSampleCount: [0, 0], pinnedFullScaleSampleCount: [0, 0],
+    integratedLufs: [-18.5, -17.5], truePeakDbtp: [-6, -2.5], loudnessRangeLu: [0, 12],
+  };
+  return Object.entries(limits).filter(([field, [minimum, maximum]]) =>
+    !Number.isFinite(measured[field]) || measured[field] < minimum || measured[field] > maximum,
+  ).map(([field]) => field);
+}
+
+function measureR7MusicLoudness(fileName) {
+  assert(commandExists('ffmpeg'), 'ffmpeg is required for R7 decoded loudness and true-peak QC');
+  const result = spawnSync('ffmpeg', [
+    '-hide_banner', '-nostats', '-i', path.join(publicSoundsDir, 'music', fileName),
+    '-af', 'loudnorm=I=-18:TP=-3:LRA=11:print_format=json', '-f', 'null', '-',
+  ], { encoding: 'utf8', timeout: 120000, maxBuffer: 1024 * 1024 });
+  assert(result.status === 0, 'ffmpeg failed to measure R7 master', { fileName, status: result.status });
+  const match = result.stderr.match(/\{\s*"input_i"[\s\S]*?\}/);
+  assert(Boolean(match), 'ffmpeg did not return R7 input loudness measurements', { fileName });
+  const input = JSON.parse(match[0]);
+  return {
+    integratedLufs: Number(input.input_i), truePeakDbtp: Number(input.input_tp),
+    loudnessRangeLu: Number(input.input_lra),
+    loudnessMethod: 'ffmpeg-loudnorm-input-measurement; null output, original bytes unchanged',
+  };
+}
+
 function checkGeneratedProvenance() {
   assert(fs.existsSync(generatedProvenancePath), 'generated non-Hyperfocus audio provenance is missing', {
     path: path.relative(rootDir, generatedProvenancePath),
@@ -604,7 +685,7 @@ function checkGeneratedProvenance() {
 
   const provenanceInspection = inspectGeneratedAudioProvenance(provenance.assets || []);
   assert(provenanceInspection.exact,
-    'generated provenance asset list must contain four root ambience, nine collection masters, and five feedback assets', {
+    'generated provenance asset list must contain exactly three root ambience and five feedback assets', {
       expectedFiles: [...EXPECTED_GENERATED_AUDIO_PROVENANCE.keys()].sort(),
       ...provenanceInspection,
   });
@@ -650,13 +731,15 @@ function checkGeneratedProvenance() {
     path: path.relative(rootDir, eveningCollectionReviewPath),
   });
   const eveningCollectionReview = JSON.parse(fs.readFileSync(eveningCollectionReviewPath, 'utf8'));
-  const reviewInspection = inspectEveningCollectionReview(eveningCollectionReview, provenance.assets || []);
+  const r7Provenance = checkR7OriginalMusicProvenance();
+  const reviewInspection = inspectEveningCollectionReview(eveningCollectionReview, r7Provenance.assets);
   assert(reviewInspection.violations.length === 0,
     'evening collection review gate is inconsistent with generated master provenance', reviewInspection);
   return {
     rootLicensePresent,
     projectLicenseStatus: provenance.rights.projectLicense.status,
     referenceTitle: provenance.rights.referenceResearch.title,
+    r7Music: { collectionId: r7Provenance.collectionId, legalClearance: r7Provenance.rights.legalClearance },
     eveningCollectionReview: {
       status: reviewInspection.status,
       promotionAllowed: reviewInspection.promotionAllowed,
@@ -1631,14 +1714,17 @@ function checkFeedbackMetrics(feedbackMp3s) {
 function checkMusicMetrics(musicMp3s) {
   const metrics = [];
   for (const fileName of musicMp3s) {
-    const measured = convertAndMeasure(path.join('music', fileName), fileName);
-    const violations = inspectCloudlightLoopMetrics(measured);
-    metrics.push({ fileName, gain: 0.18, ...measured });
+    const measured = {
+      ...convertAndMeasure(path.join('music', fileName), fileName),
+      ...measureR7MusicLoudness(fileName),
+    };
+    const violations = inspectR7MusicMetrics(fileName, measured);
+    metrics.push({ fileName, gain: 1, ...measured });
     assert(violations.length === 0,
-      'evening music format or decoded metrics are outside the calm loop contract', {
+      'R7 original format or decoded signal is outside its mastered-song contract', {
         fileName,
         measured,
-        thresholds: CLOUDLIGHT_LOOP_METRIC_LIMITS,
+        contract: 'bit-exact R7; 48kHz stereo, original duration, -18 LUFS target and no clipping',
         violations,
       });
   }
@@ -1722,6 +1808,8 @@ if (require.main === module) {
 module.exports = {
   EXPECTED_FEEDBACK_MP3_FILES,
   inspectAmbienceMetrics,
+  inspectR7MusicMetrics,
+  inspectR7MusicProvenance,
   inspectCloudlightLoopMetrics,
   inspectFeedbackMetrics,
   inspectGeneratedAudioProvenance,

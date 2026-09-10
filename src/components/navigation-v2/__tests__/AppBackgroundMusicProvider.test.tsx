@@ -111,7 +111,7 @@ describe("AppBackgroundMusicProvider", () => {
     const audio = screen.getByTestId("app-background-music-audio");
     expect(audio).toHaveAttribute(
       "src",
-      expect.stringContaining("/sounds/cloudlight-evening-loop.mp3")
+      expect.stringContaining("/sounds/music/r7-shoji-rain.mp3")
     );
     expect(audio).toHaveAttribute("preload", "none");
     expect(audio).not.toHaveAttribute("loop");
@@ -120,14 +120,32 @@ describe("AppBackgroundMusicProvider", () => {
 
     fireEvent.click(screen.getByRole("button"));
     await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("playing"));
-    expect((audio as HTMLAudioElement).volume).toBeCloseTo(0.09, 5);
+    expect((audio as HTMLAudioElement).volume).toBeCloseTo(0.5, 5);
   });
+
+  it.each([0.3, 1])(
+    "uses the selected master volume %s without hidden music attenuation",
+    async (volume) => {
+      settings.volume = volume;
+      render(
+        <AppBackgroundMusicProvider>
+          <Consumer />
+        </AppBackgroundMusicProvider>
+      );
+      fireEvent.click(screen.getByRole("button"));
+      await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("playing"));
+      expect(screen.getByTestId<HTMLAudioElement>("app-background-music-audio").volume).toBeCloseTo(
+        volume,
+        5
+      );
+    }
+  );
 
   it("advances one shared media element to the next collection master", async () => {
     render(
       <AppBackgroundMusicProvider>
         <Consumer />
-      </AppBackgroundMusicProvider>,
+      </AppBackgroundMusicProvider>
     );
     fireEvent.click(screen.getByRole("button"));
     await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("playing"));
@@ -136,7 +154,10 @@ describe("AppBackgroundMusicProvider", () => {
     fireEvent.ended(audio);
 
     await waitFor(() =>
-      expect(audio).toHaveAttribute("src", expect.stringContaining("/sounds/music/lantern-air.mp3")),
+      expect(audio).toHaveAttribute(
+        "src",
+        expect.stringContaining("/sounds/music/r7-moss-garden.mp3")
+      )
     );
     expect(screen.getAllByTestId("app-background-music-audio")).toHaveLength(1);
   });
@@ -145,14 +166,14 @@ describe("AppBackgroundMusicProvider", () => {
     expect(() => renderToString(<Consumer />)).toThrow(/AppBackgroundMusicProvider/);
   });
 
-  it("lets one blocked-state icon disable the saved preference without reloading", async () => {
+  it("uses the blocked-state icon to resume and then pause without reloading", async () => {
     localStorage.setItem("zenflow-app-background-music-enabled", "true");
     play.mockRejectedValueOnce(new DOMException("gesture required", "NotAllowedError"));
 
     render(
       <AppBackgroundMusicProvider>
         <BackgroundMusicToggle presentation="sidebar-expanded" />
-      </AppBackgroundMusicProvider>,
+      </AppBackgroundMusicProvider>
     );
 
     const button = await screen.findByRole("button", { name: "Pause evening music" });
@@ -160,19 +181,23 @@ describe("AppBackgroundMusicProvider", () => {
 
     fireEvent.click(button);
     expect(load).not.toHaveBeenCalled();
+    await waitFor(() => expect(button).toHaveAttribute("data-playback-state", "playing"));
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(button).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(button);
     await waitFor(() => expect(button).toHaveAttribute("aria-pressed", "false"));
-    expect(play).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledTimes(2);
     expect(localStorage.getItem("zenflow-app-background-music-enabled")).toBe("false");
   });
 
-  it("keeps focus on the same icon when blocked playback is turned off", async () => {
+  it("keeps focus on the same icon through blocked resume and subsequent pause", async () => {
     localStorage.setItem("zenflow-app-background-music-enabled", "true");
     play.mockRejectedValueOnce(new DOMException("gesture required", "NotAllowedError"));
 
     render(
       <AppBackgroundMusicProvider>
         <BackgroundMusicToggle presentation="sidebar-expanded" />
-      </AppBackgroundMusicProvider>,
+      </AppBackgroundMusicProvider>
     );
 
     const primary = await screen.findByRole("button", { name: "Pause evening music" });
@@ -181,7 +206,9 @@ describe("AppBackgroundMusicProvider", () => {
     expect(document.activeElement).toBe(primary);
 
     fireEvent.click(primary);
-
+    await waitFor(() => expect(primary).toHaveAttribute("data-playback-state", "playing"));
+    expect(document.activeElement).toBe(primary);
+    fireEvent.click(primary);
     await waitFor(() => expect(primary).toHaveAttribute("aria-pressed", "false"));
     expect(screen.queryByTestId("background-music-disable")).not.toBeInTheDocument();
     expect(document.activeElement).toBe(primary);

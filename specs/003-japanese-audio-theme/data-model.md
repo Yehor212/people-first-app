@@ -10,24 +10,24 @@ Represents one immutable, locally packaged long-form music asset.
 | `fileName` | string | Relative MP3 filename under the music directory |
 | `title` | string | Private/runtime media-session title; never rendered by the icon control |
 | `sequence` | integer | Unique value 0-9 |
-| `durationSeconds` | number | 150 seconds for this collection |
-| `sampleRate` | integer | 44,100 Hz |
+| `durationSeconds` | number | Original R7 duration, 164–170 seconds |
+| `sampleRate` | integer | 48,000 Hz |
 | `channels` | integer | Exactly 2 |
-| `encoderKbps` | integer | 128 kbps |
+| `encoderKbps` | integer | Original 320 kbps MP3, no re-encoding |
 | `runtimeGain` | number | Bounded collection gain matching the existing app master volume |
 | `byteLength` | integer | Exact generated MP3 size |
 | `sha256` | lowercase hex | Exact 64-character digest |
-| `seed` | hexadecimal string | Fixed first-party synthesis seed |
-| `compositionSpec` | object | Chords, scale, sparse events, voice mix, tempo, and loop parameters |
+| `sourceCandidateId` | string | Exact retained R7 source candidate |
+| `sourceReceipt` | object | Original MP3/WAV/FLAC hashes and local generation provenance |
 | `provenance` | object | Generator, exclusions, rights boundary, and review status |
 
-Validation rejects duplicate IDs, filenames, sequence values, hashes, seeds, empty event sets, unsupported encoding, non-finite values, paths outside the music directory, or reference-derived inputs.
+Validation rejects duplicate IDs, filenames, sequence values or hashes, source-receipt mismatches, unsupported encoding, non-finite values, paths outside the music directory, and unverified substitutes or reference-derived inputs.
 
 ## MusicCollection
 
 | Field | Type | Rules |
 | --- | --- | --- |
-| `id` | literal | `zenflow-evening-collection-v1` |
+| `id` | literal | `zenflow-r7-soft-japanese-10` |
 | `schemaVersion` | integer | Starts at 1 |
 | `masters` | `MusicMaster[10]` | Exactly ten unique ordered entries |
 | `firstRunEnabled` | boolean | Always false |
@@ -45,6 +45,8 @@ Validation rejects duplicate IDs, filenames, sequence values, hashes, seeds, emp
 The preference contains no user identifier, account data, journal content, listening history, or remote sync field.
 
 ## PlaybackSession
+
+The approved transport amendment adds ephemeral selection revision, cancellable fade state and explicit-pause intent, not persisted history. The existing device-local cursor is unchanged. Manual selection preserves off/paused/playing intent; a source change must not restart an explicitly paused player. Planning hides rendering without changing any stored entity.
 
 State machine:
 

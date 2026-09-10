@@ -6,6 +6,8 @@ interface AudioMediaSessionOptions {
   onPlay?: () => void;
   onPause?: () => void;
   onStop?: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }
 
 function setActionHandler(action: MediaSessionAction, handler: (() => void) | null): void {
@@ -30,6 +32,8 @@ export function setAppAudioMediaSession(options: AudioMediaSessionOptions): void
     setActionHandler("play", options.onPlay ?? null);
     setActionHandler("pause", options.onPause ?? null);
     setActionHandler("stop", options.onStop ?? options.onPause ?? null);
+    setActionHandler("previoustrack", options.onPrevious ?? null);
+    setActionHandler("nexttrack", options.onNext ?? null);
   } catch (error) {
     logger.warn("[AudioMediaSession] Failed to update media session:", error);
   }
@@ -44,6 +48,8 @@ export function clearAppAudioMediaSession(): void {
     setActionHandler("play", null);
     setActionHandler("pause", null);
     setActionHandler("stop", null);
+    setActionHandler("previoustrack", null);
+    setActionHandler("nexttrack", null);
   } catch (error) {
     logger.warn("[AudioMediaSession] Failed to clear media session:", error);
   }

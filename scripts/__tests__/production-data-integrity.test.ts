@@ -175,6 +175,21 @@ function expectRule(result: ReturnType<typeof run>, ruleId: string): CheckerFind
   return finding!;
 }
 
+function bundleWithAggregateBytes(byteCount: number): { root: string; lastArtifact: string } {
+  const app = "export {};";
+  const root = fixture({ "src/main.ts": app, "dist/app.js": app });
+  let remaining = byteCount - Buffer.byteLength(app);
+  let lastArtifact = "dist/app.js";
+  for (let index = 0; remaining > 0; index += 1) {
+    const size = Math.min(remaining, 8 * 1024 * 1024);
+    lastArtifact = `dist/part-${String.fromCharCode(97 + index)}.mp3`;
+    write(root, lastArtifact, "");
+    truncateSync(join(root, lastArtifact), size);
+    remaining -= size;
+  }
+  return { root, lastArtifact };
+}
+
 describe("production data integrity checker", () => {
   it("allows isolated test doubles, product content, honest fallbacks, and visual randomness", () => {
     const root = fixture({
@@ -1227,7 +1242,7 @@ describe("production data integrity checker", () => {
     }
   });
 
-  it("bounds explicit bundle roots, directory fan-out, and aggregate bytes", () => {
+  it("bounds explicit bundle roots and directory fan-out", () => {
     const tooManyRoots = fixture({ "src/main.ts": "export {};" });
     const rootNames = Array.from({ length: 5 }, (_, index) => `bundle-${index + 1}`);
     for (const name of rootNames) write(tooManyRoots, `${name}/app.js`, "export {};");
@@ -1248,20 +1263,77 @@ describe("production data integrity checker", () => {
     const fanoutResult = run(directoryFanout, ["--all", "--bundle", "dist"]);
     expect(fanoutResult.status).toBe(2);
     expect(fanoutResult.report.error).toMatch(/bundle directory count/i);
-
-    const aggregateBytes = fixture({
-      "src/main.ts": "export {};",
-      "dist/app.js": "export {};",
-    });
-    for (let index = 0; index < 9; index += 1) {
-      const filePath = join(aggregateBytes, "dist", `large-${index}.bin`);
-      write(aggregateBytes, `dist/large-${index}.bin`, "");
-      truncateSync(filePath, 8 * 1024 * 1024);
-    }
-    const bytesResult = run(aggregateBytes, ["--all", "--bundle", "dist"]);
-    expect(bytesResult.status).toBe(2);
-    expect(bytesResult.report.error).toMatch(/aggregate byte limit/i);
   }, 20_000);
+
+  it.each([80, 128])(
+    "fully scans a clean %i MiB bundle within the approved work budget",
+    (mib) => {
+      const { root } = bundleWithAggregateBytes(mib * 1024 * 1024);
+      try {
+        const result = run(root, ["--all", "--bundle", "dist"]);
+        expect(result.status, JSON.stringify(result.report, null, 2)).toBe(0);
+        expect(result.report.status).toBe("PASS");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+    20_000
+  );
+
+  it("rejects a bundle one byte beyond the approved 128 MiB aggregate budget", () => {
+    const { root } = bundleWithAggregateBytes(128 * 1024 * 1024 + 1);
+    try {
+      const result = run(root, ["--all", "--bundle", "dist"]);
+      expect(result.status).toBe(2);
+      expect(result.report.status).toBe("ERROR");
+      expect(result.report.error).toMatch(/aggregate byte limit/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("detects a fixture canary in the final bytes of a 128 MiB binary-media bundle", () => {
+    const { root, lastArtifact } = bundleWithAggregateBytes(128 * 1024 * 1024);
+    try {
+      const lastBytes = readFileSync(join(root, lastArtifact));
+      Buffer.from(SENTINEL).copy(lastBytes, lastBytes.length - Buffer.byteLength(SENTINEL));
+      write(root, lastArtifact, lastBytes);
+      expectRule(run(root, ["--all", "--bundle", "dist"]), "PDI009");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 20_000);
+
+  it("detects mutation of the last artifact in a 128 MiB bundle after inventory capture", () => {
+    const { root, lastArtifact } = bundleWithAggregateBytes(128 * 1024 * 1024);
+    try {
+      expect(() =>
+        runCoreWithHooks(root, {
+          afterBundleInventoryCaptured: () => {
+            const lastBytes = readFileSync(join(root, lastArtifact));
+            lastBytes[lastBytes.length - 1] = 1;
+            write(root, lastArtifact, lastBytes);
+          },
+        })
+      ).toThrow(/bundle artifact (?:inventory|content) changed/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 20_000);
+
+  it("retains the 8 MiB per-artifact limit with the larger aggregate budget", () => {
+    const root = fixture({ "src/main.ts": "export {};", "dist/app.js": "export {};" });
+    try {
+      write(root, "dist/oversized.mp3", "");
+      truncateSync(join(root, "dist/oversized.mp3"), 8 * 1024 * 1024 + 1);
+      const result = run(root, ["--all", "--bundle", "dist"]);
+      expect(result.status).toBe(2);
+      expect(result.report.status).toBe("ERROR");
+      expect(result.report.error).toMatch(/bundle artifact exceeds byte limit/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 
   it("rejects non-NFC bundle names instead of normalizing two dirents onto one path", () => {
     const root = fixture({
