@@ -123,4 +123,19 @@ describe("Google Play public privacy policy guard", () => {
     expect(releaseContracts).toContain("scripts/__tests__/google-play-public-privacy-policy.test.ts");
     expect(checker.DEFAULT_PRIVACY_POLICY_URL).toBe("https://yehor212.github.io/people-first-app/privacy.html");
   });
+
+  it("keeps both public policies explicit about optional journal photos and account deletion retention", () => {
+    for (const file of ["public/privacy.html", "public/privacy-policy.html"]) {
+      const html = readFileSync(file, "utf8");
+
+      expect(html, file).toContain("photos you attach to journal entries");
+      expect(html, file).toContain("If you sign in and enable sync");
+      expect(html, file).toContain("7.1 Account Deletion and Retention");
+      expect(html, file).toContain('href="https://yehor212.github.io/people-first-app/delete-account.html"');
+      expect(html, file).toContain("Feedback is stored separately");
+      expect(html, file).toContain("content-free deletion safety record");
+      expect(html, file).toContain("provider-managed recovery schedule");
+      expect(checker.evaluatePublicPrivacyPolicyHtml({ html }), file).toMatchObject({ ok: true });
+    }
+  });
 });
