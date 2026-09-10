@@ -11,7 +11,7 @@ const mood = (
   id: string,
   date: string,
   value: MoodEntry["mood"],
-  timestamp: number,
+  timestamp: number
 ): MoodEntry => ({ id, date, mood: value, timestamp });
 
 describe("Android banner eligibility", () => {
@@ -36,9 +36,15 @@ describe("Android banner eligibility", () => {
   });
 
   it("requires at least one habit row that is actually visible today", () => {
-    expect(isHabitsBannerSurfaceEligible({ visibleHabitCount: 0, protectedSurfaceOpen: false })).toBe(false);
-    expect(isHabitsBannerSurfaceEligible({ visibleHabitCount: 1, protectedSurfaceOpen: false })).toBe(true);
-    expect(isHabitsBannerSurfaceEligible({ visibleHabitCount: 1, protectedSurfaceOpen: true })).toBe(false);
+    expect(
+      isHabitsBannerSurfaceEligible({ visibleHabitCount: 0, protectedSurfaceOpen: false })
+    ).toBe(false);
+    expect(
+      isHabitsBannerSurfaceEligible({ visibleHabitCount: 1, protectedSurfaceOpen: false })
+    ).toBe(true);
+    expect(
+      isHabitsBannerSurfaceEligible({ visibleHabitCount: 1, protectedSurfaceOpen: true })
+    ).toBe(false);
   });
 
   it("fails closed without an authoritative entitlement and limits free to isolated QA", () => {
@@ -47,13 +53,33 @@ describe("Android banner eligibility", () => {
       deriveCurrentProductAdEntitlement({
         accountBoundaryInProgress: false,
         qaTestEligibility: true,
-      }),
+      })
     ).toBe("free");
     expect(
       deriveCurrentProductAdEntitlement({
         accountBoundaryInProgress: true,
         qaTestEligibility: true,
-      }),
+      })
     ).toBe("unknown");
+  });
+
+  it("allows the current verified free account without a QA build", () => {
+    const input = {
+      accountBoundaryInProgress: false,
+      qaTestEligibility: false,
+      serverEntitlement: "free" as const,
+    };
+    expect(deriveCurrentProductAdEntitlement(input)).toBe("free");
+  });
+
+  it("preserves an authoritative ad-free account and denies it during transition", () => {
+    const input = {
+      accountBoundaryInProgress: false,
+      serverEntitlement: "premium" as const,
+    };
+    expect(deriveCurrentProductAdEntitlement(input)).toBe("premium");
+    expect(deriveCurrentProductAdEntitlement({ ...input, accountBoundaryInProgress: true })).toBe(
+      "unknown"
+    );
   });
 });

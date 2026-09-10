@@ -6,7 +6,16 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const ROOT = path.join(__dirname, "..");
-const DEFAULT_AAB = path.join(ROOT, "android", "app", "build", "outputs", "bundle", "release", "app-release.aab");
+const DEFAULT_AAB = path.join(
+  ROOT,
+  "android",
+  "app",
+  "build",
+  "outputs",
+  "bundle",
+  "release",
+  "app-release.aab"
+);
 const APP_ADS_FILE = path.join(ROOT, "public", "app-ads.txt");
 const SAMPLE_PUBLISHER = "pub-3940256099942544";
 
@@ -14,13 +23,42 @@ function publisherFrom(value) {
   return String(value || "").match(/pub-\d{16}/)?.[0] || "";
 }
 
-function evaluateArtifactBuffer({ bytes, appId, bannerId, appAdsText }) {
+function evaluateArtifactBuffer({
+  bytes,
+  appId,
+  bannerId,
+  appAdsText,
+  nativePluginsJson,
+  dexBytes,
+}) {
   const issues = [];
+  let nativePlugins;
+  try {
+    nativePlugins = JSON.parse(nativePluginsJson || "null");
+  } catch {
+    nativePlugins = null;
+  }
+  const adMobRegistrations = Array.isArray(nativePlugins)
+    ? nativePlugins.filter((plugin) => plugin?.pkg === "@capacitor-community/admob")
+    : [];
+  if (
+    adMobRegistrations.length !== 1 ||
+    adMobRegistrations[0].classpath !== "com.getcapacitor.community.admob.AdMob"
+  ) {
+    issues.push("invalid_or_missing_native_admob_registration");
+  }
+  if (
+    !Buffer.isBuffer(dexBytes) ||
+    !dexBytes.includes(Buffer.from("Lcom/getcapacitor/community/admob/AdMob;"))
+  ) {
+    issues.push("native_admob_implementation_missing");
+  }
   const appPublisher = publisherFrom(appId);
   const bannerPublisher = publisherFrom(bannerId);
-  const appAdsPublisher = String(appAdsText || "").match(
-    /^google\.com, (pub-\d{16}), DIRECT, f08c47fec0942fa0\s*$/,
-  )?.[1] || "";
+  const appAdsPublisher =
+    String(appAdsText || "").match(
+      /^google\.com, (pub-\d{16}), DIRECT, f08c47fec0942fa0\s*$/
+    )?.[1] || "";
 
   if (!/^ca-app-pub-\d{16}~\d+$/.test(String(appId || ""))) {
     issues.push("invalid_android_app_id");
@@ -93,6 +131,8 @@ function main() {
     appId: process.env.VITE_ADMOB_APP_ID_ANDROID || process.env.ZENFLOW_ADMOB_ANDROID_APP_ID || "",
     bannerId: process.env.VITE_ADMOB_BANNER_ID_ANDROID || "",
     appAdsText: fs.existsSync(APP_ADS_FILE) ? fs.readFileSync(APP_ADS_FILE, "utf8") : "",
+    nativePluginsJson: readAabEntry(aabPath, "base/assets/capacitor.plugins.json").toString("utf8"),
+    dexBytes: readAabEntry(aabPath, "base/dex/classes*.dex"),
   });
 
   if (!report.ok) {
@@ -100,8 +140,16 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `[android-admob-artifact] PASS - release AAB contains one configured production banner unit and no sample or extra ad-unit ids`,
+    `[android-admob-artifact] PASS - release AAB contains the registered native AdMob implementation, one configured production banner unit and no sample or extra ad-unit ids`
   );
+}
+
+function readAabEntry(aabPath, entry) {
+  const result = spawnSync("unzip", ["-p", aabPath, entry], {
+    encoding: null,
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  return result.status === 0 && Buffer.isBuffer(result.stdout) ? result.stdout : Buffer.alloc(0);
 }
 
 if (require.main === module) main();

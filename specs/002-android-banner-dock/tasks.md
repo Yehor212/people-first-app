@@ -42,3 +42,15 @@ technical contract is green.
 ## Dependencies
 
 T001–T006 precede production edits. T007–T011 may proceed only after the matching RED evidence and fresh preflight token. T015 depends on all local gates; T016 depends on exact installed-artifact identity. No commit, merge, push, PR, deploy, or publication is part of these tasks.
+
+## Owner-requested activation continuation — 2026-09-10
+
+Scope and authority are recorded in `activation-20260910.md`. Earlier
+implementation receipts are not production serving evidence.
+
+- [x] T018 Reproduce the production `unknown` blocker: existing 38/38 baseline, then 4 passed / 2 expected eligibility failures before the fix.
+- [x] T019 Implement and verify the account-bound server policy source without user-metadata authority, fabricated user records or schema/RLS changes.
+- [x] T020 Wire the production hook, deadline, lease, auth/lifecycle invalidation and non-Android no-op; verify stale replies cannot resurrect ads.
+- [x] T021 Run source/bundle/security and banner blast-radius checks, then activate and reread only the reviewed server configuration key.
+- [ ] T022 Verify a production-configured exact Android artifact with safe test inventory and retained protected-surface/geometry/RTL gates.
+- [ ] T023 Complete the authorized main/release handoff with a higher version code, unchanged key and exact Play status; keep live impressions and unavailable device evidence separate.

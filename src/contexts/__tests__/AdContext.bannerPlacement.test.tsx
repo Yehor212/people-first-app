@@ -124,6 +124,29 @@ describe("AdContext Android banner placement", () => {
     });
   });
 
+  it("waits for the new entitlement revision to initialize before restoring a banner", async () => {
+    const provider = (revision: number) => (
+      <AdProvider adConsent adAgeEligibility="adult" adEntitlement="free" adEntitlementRevision={revision} emotionProtectedToday={false}>
+        <BannerProbe />
+      </AdProvider>
+    );
+    const { rerender } = render(provider(1));
+    fireEvent.click(screen.getByRole("button", { name: "enter habits" }));
+    await waitFor(() => expect(screen.getByTestId("banner-height")).toHaveTextContent("50"));
+
+    let completeInitialization: ((available: boolean) => void) | undefined;
+    bannerController.initializeAds.mockImplementationOnce(() => new Promise<boolean>((resolve) => {
+      completeInitialization = resolve;
+    }));
+    bannerController.showHabitsBanner.mockClear();
+    rerender(provider(2));
+    expect(screen.getByTestId("banner-height")).toHaveTextContent("0");
+    expect(bannerController.showHabitsBanner).not.toHaveBeenCalled();
+    await act(async () => { completeInitialization?.(true); });
+    await waitFor(() => expect(screen.getByTestId("banner-height")).toHaveTextContent("50"));
+    expect(bannerController.showHabitsBanner).toHaveBeenCalledOnce();
+  });
+
   it("does not expose protected UI until native banner suppression resolves", async () => {
     let acknowledgeSuppression: (() => void) | undefined;
     bannerController.hideHabitsBanner.mockImplementationOnce(

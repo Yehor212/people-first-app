@@ -25,6 +25,7 @@ import { useDeepLinkHandler } from "@/hooks/useDeepLinkHandler";
 import { useTelegramGradeSyncRuntime } from "@/hooks/useTelegramGradeSyncRuntime";
 import { useV2FullscreenSurface } from "@/hooks/useV2FullscreenSurface";
 import { useAdGracePeriod } from "@/hooks/useAdGracePeriod";
+import { useAdEntitlement } from "@/hooks/useAdEntitlement";
 import { useNotificationSetup } from "@/hooks/useNotificationSetup";
 import { useChallengeHandlers } from "@/hooks/useChallengeHandlers";
 import { useFocusHandlers } from "@/hooks/useFocusHandlers";
@@ -42,11 +43,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAutomation } from "@/features/automation";
 import { getChallenges, getBadges } from "@/lib/challengeStorage";
-import {
-  deriveCurrentProductAdEntitlement,
-  isEmotionallyProtectedOnLocalDate,
-} from "@/lib/adEligibility";
-import { IS_ADMOB_QA_TEST_MODE } from "@/lib/env";
+import { isEmotionallyProtectedOnLocalDate } from "@/lib/adEligibility";
 import { getToday } from "@/lib/utils";
 const DesktopDownloadPage = lazy(() =>
   import("./DesktopDownloadPage").then((m) => ({ default: m.DesktopDownloadPage }))
@@ -177,9 +174,9 @@ function IndexV2Impl() {
     () => isEmotionallyProtectedOnLocalDate(moods, currentDate),
     [currentDate, moods]
   );
-  const adEntitlement = deriveCurrentProductAdEntitlement({
+  const { entitlement: adEntitlement, revision: adEntitlementRevision } = useAdEntitlement({
     accountBoundaryInProgress,
-    qaTestEligibility: IS_ADMOB_QA_TEST_MODE,
+    enabled: privacy.adConsent === true && privacy.adAgeEligibility === "adult",
   });
   const emptyScheduleEvents = useMemo(() => [], []);
   const { handleNameChange, handlePrivacyChange, handleRemindersChange, handleResetData } =
@@ -280,6 +277,7 @@ function IndexV2Impl() {
           adConsent={privacy.adConsent === true}
           adAgeEligibility={privacy.adAgeEligibility ?? "unknown"}
           adEntitlement={adEntitlement}
+          adEntitlementRevision={adEntitlementRevision}
           emotionProtectedToday={emotionProtectedToday}
           adGraceComplete={adGraceComplete}
         >

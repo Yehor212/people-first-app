@@ -1,10 +1,10 @@
 /**
- * The product owner has not selected an ADR-MON-001 monetization model.
- * Keep every AdMob/UMP runtime path unavailable until a separately authorized
- * decision changes this source-owned policy and proves its selected branch.
+ * Owner-authorized Android Habits banner packaging.
+ * Native availability is not ad eligibility: the controller still requires
+ * current server entitlement, adult consent, UMP and all placement gates.
  */
-export const ADS_RUNTIME_MODE = 'OFF' as const;
+export const ADS_RUNTIME_MODE = "ANDROID_BANNER" as const;
 
-export function areAdsRuntimeEnabled(): boolean {
-  return false;
+export function areAdsRuntimeEnabled(targetPlatform: string): boolean {
+  return targetPlatform === "android";
 }
