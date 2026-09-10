@@ -1,5 +1,23 @@
 # Research Decisions
 
+## 2026-09-09: Focus, Transport And Fireplace Approval
+
+The owner approved US5/US6 at 23:45:01Z, following direct rejection of the fire at 23:30. Current `PlanningPage.tsx` mounts the overview, modes, bridges, schedule, review and Focus together and calculates a minute-based model; only the Focus host should remain reachable from navigation. Preserve the inactive workspace module and its existing behavior tests, not stored-data deletion or a runtime feature flag. `BackgroundMusicToggle.tsx` is currently one icon and the hook has only natural-end advancement; manual next/previous needs distinct paused-intent and race handling rather than calling the end handler.
+
+ACE-Step's official musicians guide describes music generation, not verified environmental SFX support: https://ace-step.github.io/ACE-Step-1.5/en/ace_step_musicians_guide . The installed source revision is `dce621408bee8c31b4fcf4811682eb9359e1bc94`; the retained model revision is `19671f406d603126926c1b7e2adc169acbcade22`. One local 30-second trial is permitted with offline flags, no imported audio, no LoRA and no language model. Suitability and human approval remain UNVERIFIED until actual assessment. Existing fire assets are source-licensed recordings, but the owner's audible rejection invalidates perceived-quality acceptance; their successful decode is not a realism score.
+
+Alternatives rejected: auto-enabling from skip controls; two-decoder crossfade; overwriting saved volume; using noise synthesis as a fireplace fallback; applying signal gain to R7; substituting AI output without listening. A small future-feature hint is optional and can be omitted if it adds clutter or an unsupported promise.
+
+## 2026-09-09: Recover The Actual Selected Originals
+
+**Decision**: Replace the substitute collection with the exact ten R7 review MP3s retained in `cloudbound-original-r7-soft-japanese-10`; no generation or audio transformation. This supersedes Decisions 1 and 2 for music only.
+
+**Evidence**: The retained master receipt contains ten unique MP3 hashes, ten WAV hashes and ten source FLAC hashes; all thirty files independently matched on 2026-09-09. Current runtime contained none of the ten MP3 hashes. The source run receipt records local ACE-Step text-to-music with no imported reference audio. The Hyperfocus `runtime-masters-v2` pack contains eighteen MP3s already byte-identical to the current runtime files.
+
+**Alternatives rejected**: Regeneration or re-encoding changes the selected recordings; renaming substitutes does not restore them; adding R6 Rainlit Chamber would make eleven tracks. Recopying identical nature files does not diagnose a playback-access problem. Owner selection is recorded separately from formal device/headphone listening and legal clearance.
+
+Decisions 1–2 below describe the superseded September 2 investigation, not the current availability of originals.
+
 ## Decision 1: Reconstruct The Remembered Set As Ten First-Party Masters
 
 **Decision**: Keep the current approved Cloudlight master and generate nine new original pieces from deterministic numerical composition specifications.

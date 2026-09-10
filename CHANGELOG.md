@@ -2,6 +2,25 @@
 
 All notable changes to ZenFlow will be documented in this file.
 
+## [2.1.2] - 2026-09-10
+
+Release candidate; not yet submitted to Google Play.
+
+### Focus And Audio
+
+- Show the existing Focus timer on Planning while retaining the inactive planning workspace and its saved data.
+- Add previous/play-pause/next music controls, including eight-language accessible labels and system media actions.
+- Restore the ten original R7 music tracks without re-encoding them or shortening their playback.
+- Replace only the three fireplace loops with distinct Soft, Deep and Intense variants derived from the documented PagDev source; retain the other fifteen nature loops.
+- Preserve saved mute/zero volume, deliberate playback, competing audio ownership and lifecycle recovery when changing tracks.
+
+### Build Verification
+
+- Increase the owner-approved aggregate integrity-scan budget to 128 MiB while retaining complete content/hash checks and other resource limits.
+- Update the existing dev-only TOML parser to the version fixing its malformed-comment infinite loop.
+
+Release availability is not implied by this candidate entry; the current evidence and platform limits are tracked in `specs/003-japanese-audio-theme/quickstart.md`.
+
 ## [2.0.0] - 2026-06-01
 
 ### Changed - V2 Release

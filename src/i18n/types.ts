@@ -3804,6 +3804,9 @@ export interface Translations {
   backgroundMusicStateUnavailable: string;
   backgroundMusicPlayAction: string;
   backgroundMusicPauseAction: string;
+  backgroundMusicPreviousAction: string;
+  backgroundMusicNextAction: string;
+  backgroundMusicStatePaused: string;
   backgroundMusicPausedMaster: string;
   backgroundMusicPausedComfort: string;
   backgroundMusicPausedOtherSound: string;

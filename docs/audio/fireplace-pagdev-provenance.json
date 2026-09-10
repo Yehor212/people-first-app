@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "author": "PagDev",
+    "pageUrl": "https://opengameart.org/content/fireplace-sound-loop",
+    "originalUrl": "https://opengameart.org/sites/default/files/fire.wav",
+    "licenseClaim": "CC0-1.0",
+    "licenseClaimScope": "Published uploader declaration; independent ownership and capture-method verification unavailable",
+    "originalSha256": "85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330",
+    "sourcePageSha256": "8968b97a01b8b598e78b2bc1de9ff4595877c8e0c2d83db46cb0e2521c32b750"
+  },
+  "ownerDecision": {
+    "authorizedAt": "2026-09-10T01:50:52Z",
+    "statement": "Разрешаю ! приступай к выпуску обновления ! для всех пользователей !",
+    "scope": "The exact three linked fireplace pilots, separately proposed 128 MiB PDI work budget and Android Production release to all users after release gates.",
+    "ownerSelection": "AUTHORIZED",
+    "formalListeningContext": "UNVERIFIED",
+    "boundary": "Selection and release authority are not proof of listening hardware, duration, acoustic observations, independent rights clearance or Play publication."
+  },
+  "processing": {
+    "tool": "FFmpeg 9.0.1",
+    "originalOverwritten": false,
+    "syntheticCrackles": false,
+    "pitchOrSpeedChanges": false,
+    "compressionOrLimiter": false,
+    "continuousSourceFilter": "[0:a]aresample=48000,asplit=2[a][b];[a][b]acrossfade=d=2:c1=qsin:c2=qsin[out]",
+    "continuousOutput": "continuous-source.wav",
+    "intermediateEncoding": "pcm_f32le",
+    "variants": [
+      {
+        "name": "soft",
+        "input": "fireplace-soft-unmastered.wav",
+        "gain": "8.7616431350096",
+        "filter": "[0:a]atrim=start=0.8:duration=32,asetpts=PTS-STARTPTS[mix];[mix]asplit=3[head][body][tail];[body]atrim=start=2:end=30,asetpts=PTS-STARTPTS[b];[tail]atrim=start=30:end=32,asetpts=PTS-STARTPTS,afade=t=out:d=2:curve=qsin[t];[head]atrim=start=0:end=2,asetpts=PTS-STARTPTS,afade=t=in:d=2:curve=qsin[h];[t][h]amix=inputs=2:normalize=0:duration=shortest[seam];[b][seam]concat=n=2:v=0:a=1[out]",
+        "output": "fireplace-soft.mp3",
+        "encodeOptions": [
+          "-af",
+          "volume=8.7616431350096dB",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-codec:a",
+          "libmp3lame",
+          "-b:a",
+          "192k",
+          "-map_metadata",
+          "-1"
+        ],
+        "overwritePolicy": "-n"
+      },
+      {
+        "name": "deep",
+        "input": "fireplace-deep-unmastered.wav",
+        "gain": "8.895150137273056",
+        "filter": "[0:a]asplit=2[a0][a1];[a0]atrim=start=7.4:duration=32,asetpts=PTS-STARTPTS[s0];[a1]atrim=start=19.6:duration=32,asetpts=PTS-STARTPTS[s1];[s0][s1]amix=inputs=2:weights='1 0.75':normalize=0:duration=shortest[mix];[mix]asplit=3[head][body][tail];[body]atrim=start=2:end=30,asetpts=PTS-STARTPTS[b];[tail]atrim=start=30:end=32,asetpts=PTS-STARTPTS,afade=t=out:d=2:curve=qsin[t];[head]atrim=start=0:end=2,asetpts=PTS-STARTPTS,afade=t=in:d=2:curve=qsin[h];[t][h]amix=inputs=2:normalize=0:duration=shortest[seam];[b][seam]concat=n=2:v=0:a=1[out]",
+        "output": "fireplace-deep.mp3",
+        "encodeOptions": [
+          "-af",
+          "volume=8.895150137273056dB",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-codec:a",
+          "libmp3lame",
+          "-b:a",
+          "192k",
+          "-map_metadata",
+          "-1"
+        ],
+        "overwritePolicy": "-n"
+      },
+      {
+        "name": "intense",
+        "input": "fireplace-intense-denser-unmastered.wav",
+        "gain": "8.405149515575365",
+        "filter": "[0:a]asplit=4[a0][a1][a2][a3];[a0]atrim=start=2.1:duration=32,asetpts=PTS-STARTPTS[s0];[a1]atrim=start=9.3:duration=32,asetpts=PTS-STARTPTS[s1];[a2]atrim=start=15.7:duration=32,asetpts=PTS-STARTPTS[s2];[a3]atrim=start=23.3:duration=32,asetpts=PTS-STARTPTS[s3];[s0][s1][s2][s3]amix=inputs=4:weights='1 0.9 0.8 0.7':normalize=0:duration=shortest[mix];[mix]asplit=3[head][body][tail];[body]atrim=start=2:end=30,asetpts=PTS-STARTPTS[b];[tail]atrim=start=30:end=32,asetpts=PTS-STARTPTS,afade=t=out:d=2:curve=qsin[t];[head]atrim=start=0:end=2,asetpts=PTS-STARTPTS,afade=t=in:d=2:curve=qsin[h];[t][h]amix=inputs=2:normalize=0:duration=shortest[seam];[b][seam]concat=n=2:v=0:a=1[out]",
+        "output": "fireplace-intense.mp3",
+        "encodeOptions": [
+          "-af",
+          "volume=8.405149515575365dB",
+          "-ar",
+          "48000",
+          "-ac",
+          "2",
+          "-codec:a",
+          "libmp3lame",
+          "-b:a",
+          "192k",
+          "-map_metadata",
+          "-1"
+        ],
+        "overwritePolicy": "-n"
+      }
+    ],
+    "rejectedAttempt": {
+      "file": "fireplace-intense-unmastered.wav",
+      "reason": "First three-layer Intense failed the unchanged minimum progression-gap check; replaced with four offset real-recording layers, not a threshold change. Retained privately; not a final MP3."
+    }
+  },
+  "assets": [
+    {
+      "variantId": "fireplace:soft",
+      "publicPath": "sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
+      "sha256": "af3033bf4e49c4623dfea15124d2fcab8d8213de35591785cdaef7985791032e",
+      "bytes": 721196,
+      "metrics": {
+        "durationSeconds": 30.024,
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "mp3",
+        "audioBytes": 720576,
+        "bitrate": 192000,
+        "rmsDbfs": -33.170533348975056,
+        "peakDbfs": -7.182862709312899,
+        "clippedSamples": 0,
+        "startRmsDbfs": -33.14624366410627,
+        "endRmsDbfs": -32.625763297866506,
+        "seamMeanAbsDiff": 0.020974928538004558,
+        "boundaryJump": 0.005401611328125,
+        "fileBytes": 721196
+      }
+    },
+    {
+      "variantId": "fireplace:deep",
+      "publicPath": "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
+      "sha256": "ea59625628045952a2ccd8fac21278662c735e34e0e1cc01d97e3cccb5f234f1",
+      "bytes": 721196,
+      "metrics": {
+        "durationSeconds": 30.024,
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "mp3",
+        "audioBytes": 720576,
+        "bitrate": 192000,
+        "rmsDbfs": -31.113606856613465,
+        "peakDbfs": -7.426235945922599,
+        "clippedSamples": 0,
+        "startRmsDbfs": -31.25332718383516,
+        "endRmsDbfs": -32.10420575220105,
+        "seamMeanAbsDiff": 0.0247215461730957,
+        "boundaryJump": 0.001220703125,
+        "fileBytes": 721196
+      }
+    },
+    {
+      "variantId": "fireplace:intense",
+      "publicPath": "sounds/hyperfocus/hyperfocus-fireplace-intense.mp3",
+      "sha256": "bc7816cc301b44e70090583fe4236e7cdd1ca18e657d6f7447b2c98d0892fabd",
+      "bytes": 721196,
+      "metrics": {
+        "durationSeconds": 30.024,
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "mp3",
+        "audioBytes": 720576,
+        "bitrate": 192000,
+        "rmsDbfs": -28.89218350951451,
+        "peakDbfs": -7.161072312729776,
+        "clippedSamples": 0,
+        "startRmsDbfs": -30.049285926384435,
+        "endRmsDbfs": -28.676295993181192,
+        "seamMeanAbsDiff": 0.03398518880208334,
+        "boundaryJump": 0.005706787109375,
+        "fileBytes": 721196
+      }
+    }
+  ],
+  "signalVerification": {
+    "verifiedAt": "2026-09-10T01:44:41.026Z",
+    "command": "probeAudioFile + evaluateHyperfocusAudioMetrics with additional 30-second tolerance assertion",
+    "implementation": "scripts/check-hyperfocus-audio-assets.cjs; probeAudioFile and evaluateHyperfocusAudioMetrics",
+    "exitCode": 0,
+    "boundary": "Offline decoded signal checks only; not device or perceptual listening"
+  },
+  "diagnostics": {
+    "loopDecode": {
+      "commandPattern": "ffmpeg -nostdin -hide_banner -loglevel info -stream_loop 2 -i fireplace-<level>.mp3 -af ebur128=peak=true:framelog=verbose -f null -",
+      "exitCodes": {
+        "soft": 0,
+        "deep": 0,
+        "intense": 0
+      },
+      "repeats": 3,
+      "decodedSeconds": 90,
+      "metrics": [
+        {
+          "level": "soft",
+          "integratedLufs": -32.1,
+          "lraLu": 1.9,
+          "truePeakDbtp": -6.7
+        },
+        {
+          "level": "deep",
+          "integratedLufs": -30,
+          "lraLu": 1.6,
+          "truePeakDbtp": -6.9
+        },
+        {
+          "level": "intense",
+          "integratedLufs": -27.8,
+          "lraLu": 0.7,
+          "truePeakDbtp": -6.9
+        }
+      ],
+      "boundary": "FFmpeg decoder loop, not Android media-element looping"
+    },
+    "progression": {
+      "method": "Apple LEF32 stereo decode; inline diagnostic reproduces the mean-mono score formula in src/lib/__tests__/hyperfocusAudioProgression.test.ts. This is not a run of that Vitest suite against production assets.",
+      "exitCode": 0,
+      "scores": {
+        "soft": 44.361132327034156,
+        "deep": 47.991630123973074,
+        "intense": 51.91468538289417
+      },
+      "minimumGap": 3,
+      "measuredGaps": [
+        3.6304977969389185,
+        3.923055258921096
+      ],
+      "silent20msWindowsBelowMinus55Dbfs": {
+        "soft": 0,
+        "deep": 0,
+        "intense": 0
+      },
+      "windowsPerLevel": 1500,
+      "decodedSecondsPerLevel": 30,
+      "maximumAbsoluteNormalizedCircularCorrelation": {
+        "soft-deep": 0.6582504840525681,
+        "deep-intense": 0.41510669406743406,
+        "soft-intense": 0.5395948986066227
+      },
+      "boundary": "Waveform/score differences are not proof of convincing realism or human preference"
+    }
+  },
+  "replacedAssets": [
+    {
+      "variantId": "fireplace:soft",
+      "sha256": "d0370173891d4f6e4a073cf4b3f96741166f98d424ccf2024b7e2cd3465b460a",
+      "bytes": 480768,
+      "sourcePageUrl": "https://bigsoundbank.com/fireplace-4-s2856.html"
+    },
+    {
+      "variantId": "fireplace:deep",
+      "sha256": "c6319db252889365ac595c4b6c8246006166f290195a2d3fa482713dfb4a04d7",
+      "bytes": 480768,
+      "sourcePageUrl": "https://bigsoundbank.com/fireplace-5-s2857.html"
+    },
+    {
+      "variantId": "fireplace:intense",
+      "sha256": "e3719a34e4a5603aadb3142531b0ff2483b3d7688abed724d0f88798e0ed6154",
+      "bytes": 480768,
+      "sourcePageUrl": "https://bigsoundbank.com/fireplace-3-s2855.html"
+    }
+  ],
+  "preservation": {
+    "music": "Ten exact R7 files are outside this replacement.",
+    "nature": "Fifteen non-fireplace files and variant identifiers are unchanged.",
+    "rollback": "Previous fireplace originals and all source/intermediate files remain in the private evidence archive.",
+    "userSettings": "No system volume, account, mute, saved level or user records are changed."
+  },
+  "release": {
+    "status": "PENDING_RELEASE_GATES",
+    "androidProductionAuthority": "AUTHORIZED",
+    "published": false,
+    "formalHumanReview": "UNVERIFIED",
+    "independentRightsClearance": "UNVERIFIED"
+  }
+}

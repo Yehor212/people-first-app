@@ -144,11 +144,13 @@ describe("Planning V2 focus transfer contract", () => {
     expect(eventDetailsModal).not.toContain("z-[60]");
   });
 
-  it("keeps Planning review lane local to V2 Planning without V1 stats navigation", () => {
+  it("retains the inactive review lane without exposing it in focus-only Planning", () => {
     const planning = read("src/pages/nav-v2/planning/PlanningPage.tsx");
     const reviewLane = read("src/pages/nav-v2/planning/PlanningReviewLane.tsx");
 
-    expect(planning).toContain("<PlanningReviewLane");
+    expect(planning).not.toContain("<PlanningReviewLane");
+    expect(planning).not.toContain("PlanningWorkspace");
+    expect(read("src/pages/nav-v2/planning/PlanningWorkspace.tsx")).toContain("<PlanningReviewLane");
     expect(reviewLane).not.toContain("setActiveTab");
     expect(reviewLane).not.toContain("onViewProgress");
     expect(reviewLane).not.toContain("stats");

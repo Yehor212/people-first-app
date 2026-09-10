@@ -5,9 +5,11 @@ import { BackgroundMusicToggle } from "../BackgroundMusicToggle";
 const music = vi.hoisted(() => ({
   enabled: false,
   state: "off",
-  activeMasterId: "cloudlight-evening-loop",
+  activeMasterId: "r7-shoji-rain",
   toggle: vi.fn(),
   retry: vi.fn(),
+  previous: vi.fn(),
+  next: vi.fn(),
   handleMediaError: vi.fn(),
   handleMediaEnded: vi.fn(),
   handleMediaTimeUpdate: vi.fn(),
@@ -52,6 +54,8 @@ describe("BackgroundMusicToggle", () => {
     music.state = "off";
     music.toggle.mockReset();
     music.retry.mockReset();
+    music.previous.mockReset();
+    music.next.mockReset();
     audioSettings.muted = false;
     audioSettings.volume = 0.5;
     comfort.ambientEnabled = true;
@@ -62,18 +66,21 @@ describe("BackgroundMusicToggle", () => {
     ["sidebar-collapsed", "min-h-[44px]"],
     ["drawer", "min-h-[48px]"],
     ["auth", "min-h-[48px]"],
-  ] as const)("renders one icon-only %s control with an accessible name", (presentation, targetClass) => {
-    render(<BackgroundMusicToggle presentation={presentation} />);
+  ] as const)(
+    "renders one icon-only %s control with an accessible name",
+    (presentation, targetClass) => {
+      render(<BackgroundMusicToggle presentation={presentation} />);
 
-    const button = screen.getByRole("button", { name: "Play evening music" });
-    expect(button).toHaveAttribute("aria-pressed", "false");
-    expect(button).not.toHaveAttribute("title");
-    expect(button.className).toContain(targetClass);
-    expect(button.querySelectorAll("svg")).toHaveLength(1);
-    expect(button.querySelector(".sr-only")).toHaveTextContent("Evening music: Off");
-    expect(button.querySelectorAll('[data-visible-music-copy="true"]')).toHaveLength(0);
-    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
-  });
+      const button = screen.getByRole("button", { name: "Play evening music" });
+      expect(button).toHaveAttribute("aria-pressed", "false");
+      expect(button).not.toHaveAttribute("title");
+      expect(button.className).toContain(targetClass);
+      expect(button.querySelectorAll("svg")).toHaveLength(1);
+      expect(button.querySelector(".sr-only")).toHaveTextContent("Evening music: Off");
+      expect(button.querySelectorAll('[data-visible-music-copy="true"]')).toHaveLength(0);
+      expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    }
+  );
 
   it("uses one button to enable and disable the shared preference", () => {
     const { rerender } = render(<BackgroundMusicToggle presentation="sidebar-expanded" />);
@@ -90,6 +97,49 @@ describe("BackgroundMusicToggle", () => {
     expect(music.toggle).toHaveBeenCalledTimes(2);
   });
 
+  it.each(["sidebar-expanded", "sidebar-collapsed", "drawer"] as const)(
+    "offers three icon-only transport targets in %s without enabling playback",
+    (presentation) => {
+      render(<BackgroundMusicToggle presentation={presentation} />);
+      expect(screen.getAllByRole("button")).toHaveLength(3);
+      const previous = screen.getByRole("button", { name: "Previous melody" });
+      const next = screen.getByRole("button", { name: "Next melody" });
+      fireEvent.click(previous);
+      fireEvent.click(next);
+      expect(music.previous).toHaveBeenCalledTimes(1);
+      expect(music.next).toHaveBeenCalledTimes(1);
+      expect(music.toggle).not.toHaveBeenCalled();
+      expect(music.retry).not.toHaveBeenCalled();
+      for (const button of [previous, next]) {
+        expect(button).toHaveAttribute("data-app-background-music-control", "true");
+        expect(button).not.toHaveAttribute("title");
+        expect(button.querySelectorAll("svg")).toHaveLength(1);
+        expect(button.querySelector("svg")?.classList.contains("rtl:rotate-180")).toBe(true);
+        expect(button.className).toContain(
+          presentation === "drawer" ? "min-h-[48px]" : "min-h-[44px]"
+        );
+      }
+      expect(screen.getByRole("group", { name: "Evening music" }).className).toContain(
+        presentation === "sidebar-collapsed" ? "flex-col" : "flex-row"
+      );
+    }
+  );
+
+  it("keeps auth limited to its one existing sound control", () => {
+    render(<BackgroundMusicToggle presentation="auth" />);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Next melody" })).not.toBeInTheDocument();
+  });
+
+  it.each(["paused", "blocked", "error"])("offers deliberate resume from %s", (state) => {
+    music.enabled = true;
+    music.state = state;
+    render(<BackgroundMusicToggle presentation="drawer" />);
+    fireEvent.click(screen.getByRole("button", { name: "Play evening music" }));
+    expect(music.retry).toHaveBeenCalledTimes(1);
+    expect(music.toggle).not.toHaveBeenCalled();
+  });
+
   it.each(["loading", "fading", "recovering", "blocked", "error"])(
     "keeps %s state controllable through the same single icon",
     (state) => {
@@ -97,7 +147,10 @@ describe("BackgroundMusicToggle", () => {
       music.state = state;
       render(<BackgroundMusicToggle presentation="drawer" />);
 
-      const button = screen.getByRole("button", { name: "Pause evening music" });
+      const resumes = state === "blocked" || state === "error";
+      const button = screen.getByRole("button", {
+        name: resumes ? "Play evening music" : "Pause evening music",
+      });
       if (["loading", "recovering"].includes(state)) {
         expect(button).toHaveAttribute("aria-busy", "true");
       } else {
@@ -105,9 +158,9 @@ describe("BackgroundMusicToggle", () => {
       }
       expect(screen.queryByTestId("background-music-disable")).not.toBeInTheDocument();
       fireEvent.click(button);
-      expect(music.toggle).toHaveBeenCalledTimes(1);
-      expect(music.retry).not.toHaveBeenCalled();
-    },
+      expect(resumes ? music.retry : music.toggle).toHaveBeenCalledTimes(1);
+      expect(resumes ? music.toggle : music.retry).not.toHaveBeenCalled();
+    }
   );
 
   it("keeps the paused reason available to assistive technology without visible copy", () => {
@@ -116,9 +169,9 @@ describe("BackgroundMusicToggle", () => {
     audioSettings.muted = true;
     render(<BackgroundMusicToggle presentation="auth" />);
 
-    const button = screen.getByRole("button", { name: "Pause evening music" });
+    const button = screen.getByRole("button", { name: "Play evening music" });
     expect(button.querySelector(".sr-only")).toHaveTextContent(
-      "Evening music: Paused while app sound is off",
+      "Evening music: Paused while app sound is off"
     );
     expect(button.querySelectorAll('[data-visible-music-copy="true"]')).toHaveLength(0);
   });

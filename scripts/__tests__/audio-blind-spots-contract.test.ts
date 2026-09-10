@@ -1,5 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { APP_BACKGROUND_MUSIC_COLLECTION } from "../../src/lib/appAudioAssets";
+import {
+  APP_AUDIO_INTENT_CACHE_PATHS,
+  APP_AUDIO_SW_CACHE_PATHS,
+  RETIRED_RUNTIME_AUDIO_CACHE_NAMES,
+  selectRetiredRuntimeAudioCaches,
+} from "../../src/lib/runtimeAudioCache";
 
 function read(path: string): string {
   return readFileSync(path, "utf8");
@@ -38,13 +45,23 @@ describe("audio blind-spot release contracts", () => {
     expect(serviceWorker).toContain("purgeOnQuotaError: true");
   });
 
-  it("retires only the stale pre-v3 audio caches during service-worker activation", () => {
+  it("retires only the stale pre-v5 audio caches during service-worker activation", () => {
     const serviceWorker = read("src/sw.ts");
     const cacheContract = read("src/lib/runtimeAudioCache.ts");
 
-    expect(cacheContract).toContain('RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v3"');
-    expect(cacheContract).toContain('"zenflow-runtime-audio"');
-    expect(cacheContract).toContain('"zenflow-runtime-audio-v2"');
+    expect(cacheContract).toContain('RUNTIME_AUDIO_CACHE_NAME = "zenflow-runtime-audio-v5"');
+    expect(RETIRED_RUNTIME_AUDIO_CACHE_NAMES).toEqual([
+      "zenflow-runtime-audio",
+      "zenflow-runtime-audio-v2",
+      "zenflow-runtime-audio-v3",
+      "zenflow-runtime-audio-v4",
+    ]);
+    expect(selectRetiredRuntimeAudioCaches([
+      ...RETIRED_RUNTIME_AUDIO_CACHE_NAMES,
+      "zenflow-runtime-audio-v5",
+      "zenflow-runtime-assets",
+      "workbox-precache-v2",
+    ])).toEqual(RETIRED_RUNTIME_AUDIO_CACHE_NAMES);
     expect(serviceWorker).toContain("selectRetiredRuntimeAudioCaches");
     expect(serviceWorker).toContain("caches.delete(cacheName)");
     expect(serviceWorker).not.toContain('caches.delete("zenflow-runtime-assets")');
@@ -56,11 +73,6 @@ describe("audio blind-spot release contracts", () => {
     const cacheContract = read("src/lib/runtimeAudioCache.ts");
     const appAudioAssets = read("src/lib/appAudioAssets.ts");
     const hyperfocusManifest = read("src/lib/hyperfocusGeneratedAudioManifest.ts");
-    const cloudlightStart = appAudioAssets.indexOf('"cloudlight-evening-loop"');
-    const cloudlightEntry = appAudioAssets.slice(
-      cloudlightStart,
-      appAudioAssets.indexOf("),", cloudlightStart) + 2,
-    );
 
     expect(serviceWorker).toContain('workbox-range-requests');
     expect(serviceWorker).toContain('new RangeRequestsPlugin()');
@@ -76,8 +88,17 @@ describe("audio blind-spot release contracts", () => {
     expect(cacheContract).toContain('APP_AUDIO_FEEDBACK_EVENTS.map');
     expect(cacheContract).toContain('HYPERFOCUS_GENERATED_AUDIO_MANIFEST');
     expect(appAudioAssets).toContain('sounds/soft-air-veil.mp3');
-    expect(cloudlightStart).toBeGreaterThanOrEqual(0);
-    expect(cloudlightEntry).toContain("false");
+    expect(APP_BACKGROUND_MUSIC_COLLECTION).toHaveLength(10);
+    for (const asset of APP_BACKGROUND_MUSIC_COLLECTION) {
+      expect(asset.publicPath).toMatch(/^sounds\/music\/r7-[a-z-]+\.mp3$/);
+      expect(asset.warmCacheOnStartup).toBe(false);
+      expect(asset.startsOnUserGesture).toBe(true);
+      expect(asset.respectsMasterVolume).toBe(true);
+      expect(APP_AUDIO_SW_CACHE_PATHS).not.toContain(asset.publicPath);
+      expect(APP_AUDIO_INTENT_CACHE_PATHS).toContain(asset.publicPath);
+    }
+    expect(APP_AUDIO_SW_CACHE_PATHS).not.toContain("sounds/cloudlight-evening-loop.mp3");
+    expect(APP_AUDIO_INTENT_CACHE_PATHS).not.toContain("sounds/cloudlight-evening-loop.mp3");
     expect(appAudioAssets).toContain('sounds/gentle-water-bed.mp3');
     expect(appAudioAssets).toContain('sounds/soft-rain-veil.mp3');
     expect(appAudioAssets).toContain('makeFeedbackEvent("success"');
@@ -89,7 +110,7 @@ describe("audio blind-spot release contracts", () => {
     expect(hyperfocusManifest).toContain('sounds/hyperfocus/hyperfocus-wind-intense.mp3');
   });
 
-  it("routes explicit Cloudlight intent through a validated full-200 service-worker fill", () => {
+  it("routes explicit original-music intent through a validated full-200 service-worker fill", () => {
     const serviceWorker = read("src/sw.ts");
     const cacheContract = read("src/lib/runtimeAudioCache.ts");
     const backgroundMusic = read("src/hooks/useAppBackgroundMusic.ts");
@@ -174,7 +195,7 @@ describe("audio blind-spot release contracts", () => {
     expect(driftWorkflow).toContain("cmd: npm run check:app-audio");
   });
 
-  it("keeps third-party notices aligned with the current BigSoundBank CC0 Hyperfocus runtime", () => {
+  it("keeps third-party notices aligned with the retained nature and replacement fireplace sources", () => {
     const notices = read("THIRD_PARTY_NOTICES.md");
 
     expect(notices).toContain("First-party generated audio");
@@ -186,6 +207,9 @@ describe("audio blind-spot release contracts", () => {
     expect(notices).toContain("docs/audio/hyperfocus-generated-audio-provenance.json");
     expect(notices).toContain("docs/audio/hyperfocus-runtime-v2-manifest.json");
     expect(notices).toContain("https://bigsoundbank.com/licenses.html");
+    expect(notices).toContain("PagDev / OpenGameArt — Fireplace Sound Loop");
+    expect(notices).toContain("https://opengameart.org/content/fireplace-sound-loop");
+    expect(notices).toContain("docs/audio/fireplace-pagdev-provenance.json");
     expect(notices).not.toContain("mixkit-small-waves-harbor-rocks-1208.wav");
   });
 

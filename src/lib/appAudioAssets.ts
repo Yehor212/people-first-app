@@ -4,10 +4,28 @@ export const APP_AUDIO_PLATFORMS = ["web", "pwa", "android", "ios", "desktop"] a
 
 export type AppAudioPlatform = (typeof APP_AUDIO_PLATFORMS)[number];
 export type AppAudioFamily = "entry" | "orb" | "diary" | "focus";
-export type AppAudioComfortTexture = "air" | "water" | "rain" | "forest" | "fire" | "river" | "wind";
+export type AppAudioComfortTexture =
+  | "air"
+  | "water"
+  | "rain"
+  | "forest"
+  | "fire"
+  | "river"
+  | "wind";
 export type AppAudioOfflineStrategy = "runtime-cache";
-export type AppAudioFeedbackSoundType = "success" | "complete" | "streak" | "milestone" | "notification";
-export type AppAudioRewardActivity = "mood" | "habit" | "focus" | "gratitude" | "journal" | "breathing";
+export type AppAudioFeedbackSoundType =
+  | "success"
+  | "complete"
+  | "streak"
+  | "milestone"
+  | "notification";
+export type AppAudioRewardActivity =
+  | "mood"
+  | "habit"
+  | "focus"
+  | "gratitude"
+  | "journal"
+  | "breathing";
 export type AppAudioActionTrigger = "completion" | "milestone" | "preview";
 export type AppAudioNonAudioFeedback = "visual+haptic" | "visual" | "visual+haptic-disabled";
 
@@ -83,7 +101,7 @@ function makeAsset(
   fallbackLabel: string,
   comfortTexture: AppAudioComfortTexture,
   labelKey?: string,
-  warmCacheOnStartup = true,
+  warmCacheOnStartup = true
 ): AppAudioAsset {
   return {
     id,
@@ -107,7 +125,7 @@ function makeActionEvent(
   soundType: AppAudioFeedbackSoundType,
   rationale: string,
   allowedTrigger: AppAudioActionTrigger = "completion",
-  nonAudioFeedback: AppAudioNonAudioFeedback = "visual+haptic",
+  nonAudioFeedback: AppAudioNonAudioFeedback = "visual+haptic"
 ): AppAudioActionEvent {
   return {
     id,
@@ -124,7 +142,7 @@ function makeActionEvent(
 
 function makeFeedbackEvent(
   id: AppAudioFeedbackSoundType,
-  fallbackLabel: string,
+  fallbackLabel: string
 ): AppAudioFeedbackEvent {
   const publicPath = `sounds/feedback/feedback-${id}.mp3`;
   return {
@@ -140,48 +158,177 @@ function makeFeedbackEvent(
 }
 
 export const APP_AUDIO_ASSETS = [
-  makeAsset("soft-air-veil", "entry", "sounds/soft-air-veil.mp3", "Soft air", "air", "authMeasuredBreathLabel"),
   makeAsset(
-    "cloudlight-evening-loop",
+    "soft-air-veil",
     "entry",
-    "sounds/cloudlight-evening-loop.mp3",
-    "Cloudlight Evening",
+    "sounds/soft-air-veil.mp3",
+    "Soft air",
+    "air",
+    "authMeasuredBreathLabel"
+  ),
+  makeAsset(
+    "r7-shoji-rain",
+    "entry",
+    "sounds/music/r7-shoji-rain.mp3",
+    "Shoji Rain",
     "air",
     undefined,
-    false,
+    false
   ),
-  makeAsset("lantern-air", "entry", "sounds/music/lantern-air.mp3", "Lantern Air", "air", undefined, false),
-  makeAsset("rain-on-paper", "entry", "sounds/music/rain-on-paper.mp3", "Rain On Paper", "rain", undefined, false),
-  makeAsset("indigo-dusk", "entry", "sounds/music/indigo-dusk.mp3", "Indigo Dusk", "air", undefined, false),
-  makeAsset("quiet-courtyard", "entry", "sounds/music/quiet-courtyard.mp3", "Quiet Courtyard", "air", undefined, false),
-  makeAsset("moonlit-water", "entry", "sounds/music/moonlit-water.mp3", "Moonlit Water", "water", undefined, false),
-  makeAsset("cedar-mist", "entry", "sounds/music/cedar-mist.mp3", "Cedar Mist", "forest", undefined, false),
-  makeAsset("glass-bell-dawn", "entry", "sounds/music/glass-bell-dawn.mp3", "Glass Bell Dawn", "air", undefined, false),
-  makeAsset("moss-garden", "entry", "sounds/music/moss-garden.mp3", "Moss Garden", "forest", undefined, false),
-  makeAsset("after-rain", "entry", "sounds/music/after-rain.mp3", "After Rain", "rain", undefined, false),
-  makeAsset("orb-ambience", "orb", "sounds/gentle-water-bed.mp3", "Gentle water", "water", "orbAmbienceLabel"),
-  makeAsset("diary-reflection-loop", "diary", "sounds/soft-rain-veil.mp3", "Soft rain", "rain", "diaryAmbienceLabel"),
-  makeAsset("focus-forest", "focus", "sounds/hyperfocus/hyperfocus-forest-deep.mp3", "Forest birds ambience", "forest"),
-  makeAsset("focus-rain", "focus", "sounds/hyperfocus/hyperfocus-rain-deep.mp3", "Rain ambience", "rain"),
-  makeAsset("focus-ocean", "focus", "sounds/hyperfocus/hyperfocus-ocean-deep.mp3", "Ocean ambience", "water"),
-  makeAsset("focus-fireplace", "focus", "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3", "Fireplace ambience", "fire"),
-  makeAsset("focus-river", "focus", "sounds/hyperfocus/hyperfocus-river-deep.mp3", "River ambience", "river"),
-  makeAsset("focus-wind", "focus", "sounds/hyperfocus/hyperfocus-wind-deep.mp3", "Wind ambience", "wind"),
+  makeAsset(
+    "r7-moss-garden",
+    "entry",
+    "sounds/music/r7-moss-garden.mp3",
+    "Moss Garden",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-lantern-reflection",
+    "entry",
+    "sounds/music/r7-lantern-reflection.mp3",
+    "Lantern Reflection",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-snow-over-cedar",
+    "entry",
+    "sounds/music/r7-snow-over-cedar.mp3",
+    "Snow Over Cedar",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-paper-cranes",
+    "entry",
+    "sounds/music/r7-paper-cranes.mp3",
+    "Paper Cranes",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-tea-room-dawn",
+    "entry",
+    "sounds/music/r7-tea-room-dawn.mp3",
+    "Tea Room Dawn",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-river-stones",
+    "entry",
+    "sounds/music/r7-river-stones.mp3",
+    "River Stones",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-camellia-evening",
+    "entry",
+    "sounds/music/r7-camellia-evening.mp3",
+    "Camellia Evening",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-temple-path",
+    "entry",
+    "sounds/music/r7-temple-path.mp3",
+    "Temple Path",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "r7-home-beneath-clouds",
+    "entry",
+    "sounds/music/r7-home-beneath-clouds.mp3",
+    "Home Beneath Clouds",
+    "air",
+    undefined,
+    false
+  ),
+  makeAsset(
+    "orb-ambience",
+    "orb",
+    "sounds/gentle-water-bed.mp3",
+    "Gentle water",
+    "water",
+    "orbAmbienceLabel"
+  ),
+  makeAsset(
+    "diary-reflection-loop",
+    "diary",
+    "sounds/soft-rain-veil.mp3",
+    "Soft rain",
+    "rain",
+    "diaryAmbienceLabel"
+  ),
+  makeAsset(
+    "focus-forest",
+    "focus",
+    "sounds/hyperfocus/hyperfocus-forest-deep.mp3",
+    "Forest birds ambience",
+    "forest"
+  ),
+  makeAsset(
+    "focus-rain",
+    "focus",
+    "sounds/hyperfocus/hyperfocus-rain-deep.mp3",
+    "Rain ambience",
+    "rain"
+  ),
+  makeAsset(
+    "focus-ocean",
+    "focus",
+    "sounds/hyperfocus/hyperfocus-ocean-deep.mp3",
+    "Ocean ambience",
+    "water"
+  ),
+  makeAsset(
+    "focus-fireplace",
+    "focus",
+    "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
+    "Fireplace ambience",
+    "fire"
+  ),
+  makeAsset(
+    "focus-river",
+    "focus",
+    "sounds/hyperfocus/hyperfocus-river-deep.mp3",
+    "River ambience",
+    "river"
+  ),
+  makeAsset(
+    "focus-wind",
+    "focus",
+    "sounds/hyperfocus/hyperfocus-wind-deep.mp3",
+    "Wind ambience",
+    "wind"
+  ),
 ] as const satisfies readonly AppAudioAsset[];
 
 export type AppAudioAssetId = (typeof APP_AUDIO_ASSETS)[number]["id"];
 
 export const APP_BACKGROUND_MUSIC_ASSET_IDS = [
-  "cloudlight-evening-loop",
-  "lantern-air",
-  "rain-on-paper",
-  "indigo-dusk",
-  "quiet-courtyard",
-  "moonlit-water",
-  "cedar-mist",
-  "glass-bell-dawn",
-  "moss-garden",
-  "after-rain",
+  "r7-shoji-rain",
+  "r7-moss-garden",
+  "r7-lantern-reflection",
+  "r7-snow-over-cedar",
+  "r7-paper-cranes",
+  "r7-tea-room-dawn",
+  "r7-river-stones",
+  "r7-camellia-evening",
+  "r7-temple-path",
+  "r7-home-beneath-clouds",
 ] as const satisfies readonly AppAudioAssetId[];
 
 export type AppBackgroundMusicAssetId = (typeof APP_BACKGROUND_MUSIC_ASSET_IDS)[number];
@@ -193,7 +340,7 @@ export const APP_BACKGROUND_MUSIC_COLLECTION: readonly AppAudioAsset[] = Object.
     const asset = APP_AUDIO_ASSETS.find((candidate) => candidate.id === id);
     if (!asset) throw new Error("Missing background music asset: " + id);
     return asset;
-  }),
+  })
 );
 
 export function normalizeBackgroundMusicAssetId(value: unknown): AppBackgroundMusicAssetId {
@@ -208,18 +355,26 @@ export function getNextBackgroundMusicAsset(id: unknown): AppAudioAsset {
   return APP_BACKGROUND_MUSIC_COLLECTION[(index + 1) % APP_BACKGROUND_MUSIC_COLLECTION.length];
 }
 
+export function getPreviousBackgroundMusicAsset(id: unknown): AppAudioAsset {
+  const normalized = normalizeBackgroundMusicAssetId(id);
+  const index = APP_BACKGROUND_MUSIC_ASSET_IDS.indexOf(normalized);
+  return APP_BACKGROUND_MUSIC_COLLECTION[
+    (index + APP_BACKGROUND_MUSIC_COLLECTION.length - 1) % APP_BACKGROUND_MUSIC_COLLECTION.length
+  ];
+}
+
 export const APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS = [
   "soft-air-veil",
-  "cloudlight-evening-loop",
-  "lantern-air",
-  "rain-on-paper",
-  "indigo-dusk",
-  "quiet-courtyard",
-  "moonlit-water",
-  "cedar-mist",
-  "glass-bell-dawn",
-  "moss-garden",
-  "after-rain",
+  "r7-shoji-rain",
+  "r7-moss-garden",
+  "r7-lantern-reflection",
+  "r7-snow-over-cedar",
+  "r7-paper-cranes",
+  "r7-tea-room-dawn",
+  "r7-river-stones",
+  "r7-camellia-evening",
+  "r7-temple-path",
+  "r7-home-beneath-clouds",
   "orb-ambience",
   "diary-reflection-loop",
 ] as const satisfies readonly AppAudioAssetId[];
@@ -233,29 +388,79 @@ export const APP_AUDIO_FEEDBACK_EVENTS: readonly AppAudioFeedbackEvent[] = [
 ];
 
 export const APP_AUDIO_ACTION_EVENTS: readonly AppAudioActionEvent[] = [
-  makeActionEvent("moodSaved", "Mood saved", "success", "A quiet completion confirmation after emotional check-in."),
-  makeActionEvent("habitCompleted", "Habit completed", "complete", "Primary completion cue for a finished habit."),
-  makeActionEvent("journalSaved", "Journal saved", "success", "Completion confirmation that a private entry was saved."),
-  makeActionEvent("focusCompleted", "Focus completed", "complete", "Completion cue for an intentional focus session."),
-  makeActionEvent("gratitudeSaved", "Gratitude saved", "success", "Completion cue for a gratitude entry without celebration overload."),
-  makeActionEvent("breathingCompleted", "Breathing completed", "success", "Soft completion cue for breathing practice."),
-  makeActionEvent("achievementUnlocked", "Achievement unlocked", "milestone", "Reserved for rare achievement milestones.", "milestone"),
-  makeActionEvent("streakMilestone", "Streak milestone", "streak", "Reserved for meaningful streak thresholds.", "milestone"),
+  makeActionEvent(
+    "moodSaved",
+    "Mood saved",
+    "success",
+    "A quiet completion confirmation after emotional check-in."
+  ),
+  makeActionEvent(
+    "habitCompleted",
+    "Habit completed",
+    "complete",
+    "Primary completion cue for a finished habit."
+  ),
+  makeActionEvent(
+    "journalSaved",
+    "Journal saved",
+    "success",
+    "Completion confirmation that a private entry was saved."
+  ),
+  makeActionEvent(
+    "focusCompleted",
+    "Focus completed",
+    "complete",
+    "Completion cue for an intentional focus session."
+  ),
+  makeActionEvent(
+    "gratitudeSaved",
+    "Gratitude saved",
+    "success",
+    "Completion cue for a gratitude entry without celebration overload."
+  ),
+  makeActionEvent(
+    "breathingCompleted",
+    "Breathing completed",
+    "success",
+    "Soft completion cue for breathing practice."
+  ),
+  makeActionEvent(
+    "achievementUnlocked",
+    "Achievement unlocked",
+    "milestone",
+    "Reserved for rare achievement milestones.",
+    "milestone"
+  ),
+  makeActionEvent(
+    "streakMilestone",
+    "Streak milestone",
+    "streak",
+    "Reserved for meaningful streak thresholds.",
+    "milestone"
+  ),
   makeActionEvent(
     "majorProgressMilestone",
     "Major progress milestone",
     "milestone",
     "Reserved for rare progress milestones and does not introduce current V2 XP behavior.",
-    "milestone",
+    "milestone"
   ),
-  makeActionEvent("notification", "Soft reminder cue", "notification", "A short opt-in reminder preview.", "preview", "visual"),
+  makeActionEvent(
+    "notification",
+    "Soft reminder cue",
+    "notification",
+    "A short opt-in reminder preview.",
+    "preview",
+    "visual"
+  ),
 ];
 
 export const APP_AUDIO_FORBIDDEN_ACTIONS: readonly AppAudioForbiddenAction[] = [
   {
     id: "routineTap",
     soundType: null,
-    reason: "Routine presses should rely on visual and haptic response so the app stays calm during repeated use.",
+    reason:
+      "Routine presses should rely on visual and haptic response so the app stays calm during repeated use.",
     fallbackFeedback: "visual+haptic",
     platforms: allPlatforms,
   },
@@ -276,7 +481,8 @@ export const APP_AUDIO_FORBIDDEN_ACTIONS: readonly AppAudioForbiddenAction[] = [
   {
     id: "drawerOpen",
     soundType: null,
-    reason: "Opening panels and drawers should be readable through motion, state, and focus management.",
+    reason:
+      "Opening panels and drawers should be readable through motion, state, and focus management.",
     fallbackFeedback: "visual",
     platforms: allPlatforms,
   },
@@ -289,7 +495,10 @@ export const APP_AUDIO_FORBIDDEN_ACTIONS: readonly AppAudioForbiddenAction[] = [
   },
 ];
 
-export const APP_AUDIO_REWARD_SOUND_BY_ACTIVITY: Record<AppAudioRewardActivity, AppAudioFeedbackSoundType> = {
+export const APP_AUDIO_REWARD_SOUND_BY_ACTIVITY: Record<
+  AppAudioRewardActivity,
+  AppAudioFeedbackSoundType
+> = {
   mood: "success",
   habit: "complete",
   focus: "complete",
@@ -309,14 +518,14 @@ export function getAppAudioAssetSrc(id: AppAudioAssetId): string {
 }
 
 export function getAppAudioFeedbackEvent(
-  id: AppAudioFeedbackSoundType,
+  id: AppAudioFeedbackSoundType
 ): AppAudioFeedbackEvent | undefined {
   return APP_AUDIO_FEEDBACK_EVENTS.find((event) => event.id === id);
 }
 
 export function getAppAudioFeedbackEventSrc(
   id: AppAudioFeedbackSoundType,
-  baseUrl = BASE_URL,
+  baseUrl = BASE_URL
 ): string {
   const event = getAppAudioFeedbackEvent(id);
   if (!event) throw new Error("Unknown app audio feedback event: " + id);
@@ -327,6 +536,8 @@ export function getAppAudioAssetsByFamily(family: AppAudioFamily): AppAudioAsset
   return APP_AUDIO_ASSETS.filter((asset) => asset.family === family);
 }
 
-export function getAppAudioRewardSoundType(activity: AppAudioRewardActivity): AppAudioFeedbackSoundType {
+export function getAppAudioRewardSoundType(
+  activity: AppAudioRewardActivity
+): AppAudioFeedbackSoundType {
   return APP_AUDIO_REWARD_SOUND_BY_ACTIVITY[activity];
 }

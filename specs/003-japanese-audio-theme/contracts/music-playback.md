@@ -3,8 +3,11 @@
 ## Collection
 
 - Exactly ten immutable master descriptors are exported in sequence order.
-- The first descriptor maps to the existing Cloudlight master; the remaining nine map to new `sounds/music/*.mp3` files.
-- The runtime catalog and integrity-cache catalog are derived from the same descriptors so path, size, and hash cannot drift independently.
+- All ten descriptors map to the retained R7 originals under `sounds/music/r7-*.mp3` in original review order, starting with Shoji Rain.
+- An independent receipt-bound regression checks the runtime catalog and integrity-cache catalog against all ten original sizes and hashes.
+- Retired collection cursors normalize to Shoji Rain without changing the existing enabled preference or master volume.
+- The original recordings retain their duration and encoded bytes. Playback uses the existing natural-end/next-track fade, not a synthesized circular loop.
+- Selected master volume is used directly; no second fixed `0.18` attenuation is applied. Existing mute, zero, comfort, ownership, and lifecycle gates remain authoritative.
 
 ## Controller
 
@@ -14,8 +17,11 @@ The shared control exposes:
 enabled: boolean
 state: off | blocked | loading | playing | fading | paused | recovering | error
 activeMasterId: string
+sourceMasterId: string
 toggle(): void
 retry(): void
+previous(): void
+next(): void
 handleMediaError(): void
 handleMediaEnded(): void
 ```
@@ -33,7 +39,16 @@ Behavioral guarantees:
 
 ## Icon Control
 
-- Render one button and one sound-state icon.
+- Auth renders one sound-state button. Navigation renders previous, sound-state and next buttons; collapsed navigation stacks them inside its existing width.
 - No visible text node, badge sentence, track title, or `title` tooltip.
 - Preserve localized accessible action/state naming, `aria-pressed`, `aria-busy`, focus ring, keyboard activation, and 44/48-pixel bounds.
 - Loading and error states remain distinguishable without colour alone.
+
+## Manual Transport Amendment
+
+- Previous/next wrap between exact R7 IDs. Cursor persistence succeeds before source changes.
+- `activeMasterId` is the latest selected cursor; `sourceMasterId` is the single media element's committed source. A playing transition fades out for 80 ms before committing the source, then fades in for 120 ms. Both elapsed-time endpoints use the animation-frame clock. Revisions preserve full-cycle rapid input even when the final ID equals the starting ID.
+- Off/paused/blocked selection changes the cursor silently; it cannot enable, unblock, override mute/comfort or claim another owner's audio. Explicit play remains deliberate.
+- Playing selection cancels old fades/requests, switches one element and resumes only if intent and gates still permit. Rapid input accumulates from the latest cursor, including a full cycle to the same ID.
+- Stale play completion cannot pause a newer successful play on the same element; off/background/unmount cancel pending work.
+- Optional system previous/next callbacks are cleared for non-music ownership and degrade safely if unsupported.

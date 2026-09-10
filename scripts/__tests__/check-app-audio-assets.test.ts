@@ -1,11 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
@@ -45,7 +38,7 @@ const {
       startEndRmsDelta: number;
       transientDelta: number;
       decoder: "afconvert" | "ffmpeg";
-    },
+    }
   ) => string[];
   inspectCloudlightLoopMetrics?: (measured: {
     channels: number;
@@ -62,16 +55,16 @@ const {
     monoFoldDownEnergyRatio: number;
     boundaryDelta: number;
     boundarySlopeDelta: number;
-      startEndRmsDelta: number;
-      maxSilentWindowSeconds: number;
-      clippedSampleCount: number;
-      pinnedFullScaleSampleCount: number;
-      approximateTruePeak4x: number;
-      longWindowRmsDbSpread: number;
-      loopDelta: number;
-      equalPowerSeamRmsRatio: number;
-      equalPowerSeamTransientDelta: number;
-      decoder: "afconvert" | "ffmpeg";
+    startEndRmsDelta: number;
+    maxSilentWindowSeconds: number;
+    clippedSampleCount: number;
+    pinnedFullScaleSampleCount: number;
+    approximateTruePeak4x: number;
+    longWindowRmsDbSpread: number;
+    loopDelta: number;
+    equalPowerSeamRmsRatio: number;
+    equalPowerSeamTransientDelta: number;
+    decoder: "afconvert" | "ffmpeg";
   }) => string[];
   inspectFeedbackMetrics: (
     fileName: string,
@@ -87,30 +80,32 @@ const {
       boundaryDelta: number;
       boundarySlopeDelta: number;
       transientDelta: number;
-    },
+    }
   ) => string[];
-  inspectGeneratedAudioProvenance: (assets: Array<{
-    id: string;
-    fileName: string;
-    publicPath: string;
-    deployDocsPath: string;
-    sha256: string;
-    bytes: number;
-    deterministicSpec?: string;
-    nativeAndroidPath?: string;
-    nativeAndroidSha256?: string;
-    nativeAndroidBytes?: number;
-    parameters: {
-      family: string;
-      sampleRate: number;
-      channels: number;
-      durationSeconds: number;
-      runtimeGain: number;
-      noThirdPartySamples: boolean;
-      noModelOrAiGeneratedAudioInput: boolean;
-      exclusions: string[];
-    };
-  }>) => {
+  inspectGeneratedAudioProvenance: (
+    assets: Array<{
+      id: string;
+      fileName: string;
+      publicPath: string;
+      deployDocsPath: string;
+      sha256: string;
+      bytes: number;
+      deterministicSpec?: string;
+      nativeAndroidPath?: string;
+      nativeAndroidSha256?: string;
+      nativeAndroidBytes?: number;
+      parameters: {
+        family: string;
+        sampleRate: number;
+        channels: number;
+        durationSeconds: number;
+        runtimeGain: number;
+        noThirdPartySamples: boolean;
+        noModelOrAiGeneratedAudioInput: boolean;
+        exclusions: string[];
+      };
+    }>
+  ) => {
     exact: boolean;
     missing: string[];
     unexpected: string[];
@@ -136,7 +131,7 @@ const {
         };
       };
     },
-    environment: { rootLicensePresent: boolean },
+    environment: { rootLicensePresent: boolean }
   ) => string[];
   inspectEveningCollectionReview?: (
     review: Record<string, unknown>,
@@ -146,15 +141,22 @@ const {
       sha256: string;
       bytes: number;
       parameters: { durationSeconds: number };
-    }>,
+    }>
   ) => { violations: string[]; promotionAllowed: boolean; status: string };
   inspectOutputArtifacts: (options: {
     outputDir: string;
     reportPath: string;
     forbiddenRootMp3s?: string[];
     staleRuntimeStrings?: string[];
-  }) => { matches: Array<{ file: string; stale: string }>; scannedFiles: string[]; textFiles: string[] };
-  parseWavMetrics?: (wavPath: string, options?: { measureStrictLoopMetrics?: boolean }) => {
+  }) => {
+    matches: Array<{ file: string; stale: string }>;
+    scannedFiles: string[];
+    textFiles: string[];
+  };
+  parseWavMetrics?: (
+    wavPath: string,
+    options?: { measureStrictLoopMetrics?: boolean }
+  ) => {
     peak: number;
     boundaryDelta: number;
     boundaryDeltaByChannel: number[];
@@ -176,7 +178,7 @@ const {
   validateExactDirectoryInventory: (
     directory: string,
     expectedFiles: string[],
-    label: string,
+    label: string
   ) => {
     actualFiles: string[];
     missing: string[];
@@ -186,7 +188,7 @@ const {
   writeReportIfRequested: (
     report: Record<string, unknown>,
     options: { writeReport: boolean },
-    reportPath: string,
+    reportPath: string
   ) => void;
 };
 
@@ -220,7 +222,7 @@ function writeStereoPcm16Wav(filePath: string, frames: Array<[number, number]>):
 describe("non-Hyperfocus app audio guard", () => {
   it("binds provenance to exactly ten long-form music masters", () => {
     const provenance = JSON.parse(
-      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
+      readFileSync("docs/audio/r7-original-music-provenance.json", "utf8")
     ) as {
       assets: Array<{
         id: string;
@@ -232,16 +234,16 @@ describe("non-Hyperfocus app audio guard", () => {
       }>;
     };
     const expectedIds = [
-      "cloudlight-evening-loop",
-      "lantern-air",
-      "rain-on-paper",
-      "indigo-dusk",
-      "quiet-courtyard",
-      "moonlit-water",
-      "cedar-mist",
-      "glass-bell-dawn",
-      "moss-garden",
-      "after-rain",
+      "r7-shoji-rain",
+      "r7-moss-garden",
+      "r7-lantern-reflection",
+      "r7-snow-over-cedar",
+      "r7-paper-cranes",
+      "r7-tea-room-dawn",
+      "r7-river-stones",
+      "r7-camellia-evening",
+      "r7-temple-path",
+      "r7-home-beneath-clouds",
     ];
     const expectedIdSet = new Set(expectedIds);
     const musicAssets = provenance.assets.filter((asset) => expectedIdSet.has(asset.id));
@@ -250,8 +252,15 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(musicAssets).toHaveLength(10);
     expect(new Set(musicAssets.map((asset) => asset.sha256)).size).toBe(10);
     expect(musicAssets.every((asset) => asset.bytes > 0)).toBe(true);
-    expect(musicAssets.every((asset) => asset.parameters.durationSeconds === 150)).toBe(true);
-    expect(musicAssets.slice(1).every((asset) => asset.publicPath.startsWith("public/sounds/music/"))).toBe(true);
+    expect(
+      musicAssets.every(
+        (asset) =>
+          asset.parameters.durationSeconds >= 164 && asset.parameters.durationSeconds <= 170
+      )
+    ).toBe(true);
+    expect(musicAssets.every((asset) => asset.publicPath.startsWith("public/sounds/music/"))).toBe(
+      true
+    );
   });
 
   it("binds the human review gate to the exact ten master hashes without fabricating approval", () => {
@@ -259,12 +268,12 @@ describe("non-Hyperfocus app audio guard", () => {
     if (!inspectEveningCollectionReview) return;
 
     const provenance = JSON.parse(
-      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
+      readFileSync("docs/audio/r7-original-music-provenance.json", "utf8")
     ) as {
       assets: Parameters<NonNullable<typeof inspectEveningCollectionReview>>[1];
     };
     const review = JSON.parse(
-      readFileSync("docs/audio/zenflow-evening-collection-review.json", "utf8"),
+      readFileSync("docs/audio/zenflow-evening-collection-review.json", "utf8")
     ) as Record<string, unknown>;
 
     expect(inspectEveningCollectionReview(review, provenance.assets)).toEqual({
@@ -274,27 +283,29 @@ describe("non-Hyperfocus app audio guard", () => {
     });
 
     const fabricatedApproval = structuredClone(review) as {
+      technicalQc: { status: string };
       releaseBoundary: { status: string; promotionAllowed: boolean };
       masters: Array<{ decision: string; listenedMinutes: number; contexts: string[] }>;
     };
     fabricatedApproval.releaseBoundary.status = "HUMAN_AUDIO_REVIEW_COMPLETE";
     fabricatedApproval.releaseBoundary.promotionAllowed = true;
+    fabricatedApproval.technicalQc.status = "UNVERIFIED";
     for (const master of fabricatedApproval.masters) {
       master.decision = "APPROVED";
       master.listenedMinutes = 10;
       master.contexts = ["headphones", "device-speaker"];
     }
 
-    expect(inspectEveningCollectionReview(fabricatedApproval, provenance.assets).violations).toEqual(
-      expect.arrayContaining(["reviewer", "reviewedAt"]),
-    );
+    expect(
+      inspectEveningCollectionReview(fabricatedApproval, provenance.assets).violations
+    ).toEqual(expect.arrayContaining(["reviewer", "reviewedAt", "technicalQc.status"]));
 
     const hashMismatch = structuredClone(review) as {
       masters: Array<{ sha256: string }>;
     };
     hashMismatch.masters[0].sha256 = "0".repeat(64);
     expect(inspectEveningCollectionReview(hashMismatch, provenance.assets).violations).toContain(
-      "masters.cloudlight-evening-loop.sha256",
+      "masters.r7-shoji-rain.sha256"
     );
   });
 
@@ -306,7 +317,7 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(parseCliOptions([])).toEqual({ writeReport: false });
     expect(parseCliOptions(["--write-report"])).toEqual({ writeReport: true });
     expect(() => parseCliOptions(["--write-report", "../report.json"])).toThrow(
-      /does not accept a path/i,
+      /does not accept a path/i
     );
     expect(() => parseCliOptions(["--unknown"])).toThrow(/unknown app audio QC option/i);
   });
@@ -315,7 +326,9 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(existsSync("docs/audio/non-hyperfocus-sound-effects-policy.md")).toBe(true);
     const policy = readFileSync("docs/audio/non-hyperfocus-sound-effects-policy.md", "utf8");
     const script = readFileSync(scriptPath, "utf8");
-    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> };
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
 
     for (const marker of [
       "WCAG 2.2 Audio Control",
@@ -354,7 +367,7 @@ describe("non-Hyperfocus app audio guard", () => {
     expect(script).toContain("isTextOutputArtifact(file)");
     expect(script).toContain("validateCommandLine");
     expect(script.indexOf("validateCommandLine();")).toBeLessThan(
-      script.indexOf("checkSourceBackedPolicy();"),
+      script.indexOf("checkSourceBackedPolicy();")
     );
     expect(script).toContain("THIRD_PARTY_NOTICES.md");
     expect(script).toContain("hyperfocusGeneratedAudioManifest.ts");
@@ -386,8 +399,8 @@ describe("non-Hyperfocus app audio guard", () => {
         validateExactDirectoryInventory(
           fixtureRoot,
           EXPECTED_FEEDBACK_MP3_FILES,
-          "fixture feedback",
-        ),
+          "fixture feedback"
+        )
       ).toEqual({
         actualFiles: EXPECTED_FEEDBACK_MP3_FILES,
         missing: [],
@@ -400,8 +413,8 @@ describe("non-Hyperfocus app audio guard", () => {
         validateExactDirectoryInventory(
           fixtureRoot,
           EXPECTED_FEEDBACK_MP3_FILES,
-          "fixture feedback",
-        ),
+          "fixture feedback"
+        )
       ).toThrow(/unexpected feedback inventory/i);
       expect(existsSync(unexpectedPath)).toBe(true);
 
@@ -411,17 +424,17 @@ describe("non-Hyperfocus app audio guard", () => {
         validateExactDirectoryInventory(
           fixtureRoot,
           EXPECTED_FEEDBACK_MP3_FILES,
-          "fixture feedback",
-        ),
+          "fixture feedback"
+        )
       ).toThrow(/unexpected feedback inventory/i);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
   });
 
-  it("requires provenance for exactly four root ambience and five feedback assets", () => {
+  it("requires provenance for exactly three root ambience and five feedback assets", () => {
     const provenance = JSON.parse(
-      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8"),
+      readFileSync("docs/audio/non-hyperfocus-generated-audio-provenance.json", "utf8")
     ) as { assets: Parameters<typeof inspectGeneratedAudioProvenance>[0] };
 
     expect(inspectGeneratedAudioProvenance(provenance.assets)).toEqual({
@@ -430,18 +443,16 @@ describe("non-Hyperfocus app audio guard", () => {
       unexpected: [],
       mismatched: [],
     });
-    expect(provenance.assets.map((asset) => asset.fileName)).toContain(
-      "cloudlight-evening-loop.mp3",
-    );
+    expect(provenance.assets.map((asset) => asset.fileName)).toContain("soft-air-veil.mp3");
 
     const missingFeedback = provenance.assets.filter(
-      (asset) => asset.fileName !== "feedback-notification.mp3",
+      (asset) => asset.fileName !== "feedback-notification.mp3"
     );
     expect(inspectGeneratedAudioProvenance(missingFeedback)).toEqual(
       expect.objectContaining({
         exact: false,
         missing: ["feedback-notification.mp3"],
-      }),
+      })
     );
 
     const unexpectedFeedback = [
@@ -458,13 +469,13 @@ describe("non-Hyperfocus app audio guard", () => {
       expect.objectContaining({
         exact: false,
         unexpected: ["feedback-extra.mp3"],
-      }),
+      })
     );
 
     const mismatchedFeedback = provenance.assets.map((asset) =>
       asset.fileName === "feedback-success.mp3"
         ? { ...asset, deterministicSpec: "different-generator-contract" }
-        : asset,
+        : asset
     );
     expect(inspectGeneratedAudioProvenance(mismatchedFeedback)).toEqual(
       expect.objectContaining({
@@ -475,7 +486,7 @@ describe("non-Hyperfocus app audio guard", () => {
             fields: ["deterministicSpec"],
           },
         ],
-      }),
+      })
     );
 
     const withNativeFurin = provenance.assets.map((asset) =>
@@ -486,7 +497,7 @@ describe("non-Hyperfocus app audio guard", () => {
             nativeAndroidSha256: "a".repeat(64),
             nativeAndroidBytes: 96_044,
           }
-        : asset,
+        : asset
     );
     const missingNativeFurin = withNativeFurin.map((asset) => {
       if (asset.fileName !== "feedback-notification.mp3") return asset;
@@ -504,14 +515,10 @@ describe("non-Hyperfocus app audio guard", () => {
         mismatched: [
           {
             fileName: "feedback-notification.mp3",
-            fields: [
-              "nativeAndroidPath",
-              "nativeAndroidSha256",
-              "nativeAndroidBytes",
-            ],
+            fields: ["nativeAndroidPath", "nativeAndroidSha256", "nativeAndroidBytes"],
           },
         ],
-      }),
+      })
     );
   });
 
@@ -540,9 +547,7 @@ describe("non-Hyperfocus app audio guard", () => {
       },
     };
 
-    expect(
-      inspectGeneratedAudioRights(cleanRoomRights, { rootLicensePresent: false }),
-    ).toEqual([]);
+    expect(inspectGeneratedAudioRights(cleanRoomRights, { rootLicensePresent: false })).toEqual([]);
     expect(
       inspectGeneratedAudioRights(
         {
@@ -561,8 +566,8 @@ describe("non-Hyperfocus app audio guard", () => {
             },
           },
         },
-        { rootLicensePresent: false },
-      ),
+        { rootLicensePresent: false }
+      )
     ).toEqual([
       "referenceResearch.sourceAudioImported",
       "referenceResearch.melodyOrHarmonyTranscribed",
@@ -586,7 +591,7 @@ describe("non-Hyperfocus app audio guard", () => {
         boundaryDelta: 0.0005,
         boundarySlopeDelta: 0.001,
         transientDelta: 0.02,
-      }),
+      })
     ).toEqual([]);
 
     const violations = inspectFeedbackMetrics("feedback-success.mp3", {
@@ -629,7 +634,7 @@ describe("non-Hyperfocus app audio guard", () => {
         boundaryDelta: 0.0005,
         boundarySlopeDelta: 0.001,
         transientDelta: 0.05,
-      }),
+      })
     ).toEqual([]);
   });
 
@@ -664,12 +669,12 @@ describe("non-Hyperfocus app audio guard", () => {
       decoder: "afconvert" as const,
     };
     expect(inspectCloudlightLoopMetrics(accepted)).toEqual([]);
-    expect(
-      inspectCloudlightLoopMetrics({ ...accepted, approximateTruePeak4x: 0.351 }),
-    ).toEqual(["approximateTruePeak4x"]);
-    expect(
-      inspectCloudlightLoopMetrics({ ...accepted, longWindowRmsDbSpread: 9.01 }),
-    ).toEqual(["longWindowRmsDbSpread"]);
+    expect(inspectCloudlightLoopMetrics({ ...accepted, approximateTruePeak4x: 0.351 })).toEqual([
+      "approximateTruePeak4x",
+    ]);
+    expect(inspectCloudlightLoopMetrics({ ...accepted, longWindowRmsDbSpread: 9.01 })).toEqual([
+      "longWindowRmsDbSpread",
+    ]);
     expect(
       inspectCloudlightLoopMetrics({
         ...accepted,
@@ -696,7 +701,7 @@ describe("non-Hyperfocus app audio guard", () => {
         loopDelta: 0.2,
         equalPowerSeamRmsRatio: 0.3,
         equalPowerSeamTransientDelta: 0.4,
-      }),
+      })
     ).toEqual([
       "channels",
       "sampleRate",
@@ -744,7 +749,7 @@ describe("non-Hyperfocus app audio guard", () => {
         startEndRmsDelta: 0.005,
         transientDelta: 0.08,
         decoder: "afconvert",
-      }),
+      })
     ).toEqual([]);
 
     const violations = inspectAmbienceMetrics("soft-air-veil.mp3", {
@@ -765,11 +770,7 @@ describe("non-Hyperfocus app audio guard", () => {
     });
 
     expect(violations).toEqual(
-      expect.arrayContaining([
-        "audibleRms",
-        "audibleBandEnergyRatio",
-        "dcOffsetAbs",
-      ]),
+      expect.arrayContaining(["audibleRms", "audibleBandEnergyRatio", "dcOffsetAbs"])
     );
   });
 
@@ -833,9 +834,9 @@ describe("non-Hyperfocus app audio guard", () => {
     ] as const;
 
     for (const [patch, expectedViolations] of cases) {
-      expect(
-        inspectAmbienceMetrics("soft-air-veil.mp3", { ...softAir, ...patch }),
-      ).toEqual(expectedViolations);
+      expect(inspectAmbienceMetrics("soft-air-veil.mp3", { ...softAir, ...patch })).toEqual(
+        expectedViolations
+      );
     }
 
     expect(
@@ -843,27 +844,27 @@ describe("non-Hyperfocus app audio guard", () => {
         ...gentleWater,
         startEndRmsDelta: 0.016,
         decoder: "afconvert",
-      }),
+      })
     ).toEqual(["startEndRmsDelta"]);
     expect(
       inspectAmbienceMetrics("gentle-water-bed.mp3", {
         ...gentleWater,
         startEndRmsDelta: 0.016,
         decoder: "ffmpeg",
-      }),
+      })
     ).toEqual([]);
     expect(
       inspectAmbienceMetrics("gentle-water-bed.mp3", {
         ...gentleWater,
         startEndRmsDelta: 0.018,
         decoder: "ffmpeg",
-      }),
+      })
     ).toEqual(["startEndRmsDelta"]);
     expect(
       inspectAmbienceMetrics("soft-rain-veil.mp3", {
         ...softRain,
         transientDelta: 0.21,
-      }),
+      })
     ).toEqual(["transientDelta"]);
   });
 
@@ -887,7 +888,7 @@ describe("non-Hyperfocus app audio guard", () => {
         startEndRmsDelta: 0.005,
         transientDelta: 0.08,
         decoder: "afconvert",
-      }),
+      })
     ).toEqual([]);
   });
 
@@ -913,7 +914,9 @@ describe("non-Hyperfocus app audio guard", () => {
       expect(seamMetrics.boundaryDeltaByChannel[1]).toBeGreaterThan(0.017);
       expect(seamMetrics.boundaryDelta).toBe(seamMetrics.boundaryDeltaByChannel[1]);
       expect(seamMetrics.boundarySlopeDeltaByChannel[1]).toBeGreaterThan(0.017);
-      expect(seamMetrics.boundarySlopeDelta).toBe(Math.max(...seamMetrics.boundarySlopeDeltaByChannel));
+      expect(seamMetrics.boundarySlopeDelta).toBe(
+        Math.max(...seamMetrics.boundarySlopeDeltaByChannel)
+      );
 
       writeStereoPcm16Wav(wavPath, [
         [0.02, 0],
@@ -929,7 +932,9 @@ describe("non-Hyperfocus app audio guard", () => {
       const windowMetrics = parseWavMetrics(wavPath);
       expect(windowMetrics.startEndRmsDeltaByChannel[0]).toBeGreaterThan(0.019);
       expect(windowMetrics.startEndRmsDeltaByChannel[1]).toBeGreaterThan(0.017);
-      expect(windowMetrics.startEndRmsDelta).toBe(Math.max(...windowMetrics.startEndRmsDeltaByChannel));
+      expect(windowMetrics.startEndRmsDelta).toBe(
+        Math.max(...windowMetrics.startEndRmsDeltaByChannel)
+      );
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }
@@ -994,7 +999,10 @@ describe("non-Hyperfocus app audio guard", () => {
     const reportPath = join(fixtureRoot, "audio-qc", "app-audio-assets-report.json");
     try {
       mkdirSync(join(fixtureRoot, "nested"), { recursive: true });
-      writeFileSync(join(fixtureRoot, "nested", "bundle.js"), "const asset = 'sounds/current.mp3';\n");
+      writeFileSync(
+        join(fixtureRoot, "nested", "bundle.js"),
+        "const asset = 'sounds/current.mp3';\n"
+      );
       writeFileSync(join(fixtureRoot, "screenshot.png"), "sounds/measured-breath.mp3");
       mkdirSync(join(fixtureRoot, "audio-qc"), { recursive: true });
       writeFileSync(reportPath, "sounds/measured-breath.mp3\n");
@@ -1024,7 +1032,7 @@ describe("non-Hyperfocus app audio guard", () => {
         expect.arrayContaining([
           expect.objectContaining({ stale: "sounds/measured-breath.mp3" }),
           expect.objectContaining({ stale: "measured-breath.mp3" }),
-        ]),
+        ])
       );
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });

@@ -18,16 +18,16 @@ import * as appAudioAssetsModule from "../appAudioAssets";
 
 const expectedAssetIds = [
   "soft-air-veil",
-  "cloudlight-evening-loop",
-  "lantern-air",
-  "rain-on-paper",
-  "indigo-dusk",
-  "quiet-courtyard",
-  "moonlit-water",
-  "cedar-mist",
-  "glass-bell-dawn",
-  "moss-garden",
-  "after-rain",
+  "r7-shoji-rain",
+  "r7-moss-garden",
+  "r7-lantern-reflection",
+  "r7-snow-over-cedar",
+  "r7-paper-cranes",
+  "r7-tea-room-dawn",
+  "r7-river-stones",
+  "r7-camellia-evening",
+  "r7-temple-path",
+  "r7-home-beneath-clouds",
   "orb-ambience",
   "diary-reflection-loop",
   "focus-forest",
@@ -39,16 +39,16 @@ const expectedAssetIds = [
 ];
 
 const expectedBackgroundMusicIds = [
-  "cloudlight-evening-loop",
-  "lantern-air",
-  "rain-on-paper",
-  "indigo-dusk",
-  "quiet-courtyard",
-  "moonlit-water",
-  "cedar-mist",
-  "glass-bell-dawn",
-  "moss-garden",
-  "after-rain",
+  "r7-shoji-rain",
+  "r7-moss-garden",
+  "r7-lantern-reflection",
+  "r7-snow-over-cedar",
+  "r7-paper-cranes",
+  "r7-tea-room-dawn",
+  "r7-river-stones",
+  "r7-camellia-evening",
+  "r7-temple-path",
+  "r7-home-beneath-clouds",
 ] as const;
 
 describe("app audio asset manifest", () => {
@@ -75,9 +75,22 @@ describe("app audio asset manifest", () => {
     expect(catalog.normalizeBackgroundMusicAssetId).toEqual(expect.any(Function));
     if (!catalog.getNextBackgroundMusicAsset || !catalog.normalizeBackgroundMusicAssetId) return;
 
-    expect(catalog.getNextBackgroundMusicAsset("cloudlight-evening-loop").id).toBe("lantern-air");
-    expect(catalog.getNextBackgroundMusicAsset("after-rain").id).toBe("cloudlight-evening-loop");
-    expect(catalog.normalizeBackgroundMusicAssetId("missing")).toBe("cloudlight-evening-loop");
+    expect(catalog.getNextBackgroundMusicAsset("r7-shoji-rain").id).toBe("r7-moss-garden");
+    expect(catalog.getNextBackgroundMusicAsset("r7-home-beneath-clouds").id).toBe("r7-shoji-rain");
+    expect(catalog.normalizeBackgroundMusicAssetId("missing")).toBe("r7-shoji-rain");
+  });
+
+  it("walks every exact R7 recording backwards with first-to-last wrap", () => {
+    const catalog = appAudioAssetsModule as typeof appAudioAssetsModule & {
+      getPreviousBackgroundMusicAsset?: (id: unknown) => { id: string };
+    };
+    expect(catalog.getPreviousBackgroundMusicAsset).toEqual(expect.any(Function));
+    for (const [index, id] of expectedBackgroundMusicIds.entries()) {
+      expect(catalog.getPreviousBackgroundMusicAsset?.(id).id).toBe(
+        expectedBackgroundMusicIds[(index + 9) % 10]
+      );
+    }
+    expect(catalog.getPreviousBackgroundMusicAsset?.("retired").id).toBe("r7-home-beneath-clouds");
   });
 
   it("registers every shipped app-owned audio file once", () => {
@@ -95,44 +108,57 @@ describe("app audio asset manifest", () => {
       expect(asset.startsOnUserGesture, asset.id).toBe(true);
       expect(asset.respectsMasterVolume, asset.id).toBe(true);
       expect((asset as { comfortTexture?: string }).comfortTexture, asset.id).toMatch(
-        /air|water|rain|forest|fire|river|wind/,
+        /air|water|rain|forest|fire|river|wind/
       );
-      expect((asset as { offlineStrategy?: string }).offlineStrategy, asset.id).toBe("runtime-cache");
+      expect((asset as { offlineStrategy?: string }).offlineStrategy, asset.id).toBe(
+        "runtime-cache"
+      );
       expect(typeof (asset as { warmCacheOnStartup?: unknown }).warmCacheOnStartup, asset.id).toBe(
-        "boolean",
+        "boolean"
       );
     }
   });
 
   it("exposes base-url-safe source URLs for routed web, PWA, native, and desktop shells", () => {
-    expect(resolveAppAudioAssetSrc("sounds/soft-rain-veil.mp3", "./")).toBe("/sounds/soft-rain-veil.mp3");
-    expect(resolveAppAudioAssetSrc("/sounds/soft-rain-veil.mp3", "./")).toBe("/sounds/soft-rain-veil.mp3");
+    expect(resolveAppAudioAssetSrc("sounds/soft-rain-veil.mp3", "./")).toBe(
+      "/sounds/soft-rain-veil.mp3"
+    );
+    expect(resolveAppAudioAssetSrc("/sounds/soft-rain-veil.mp3", "./")).toBe(
+      "/sounds/soft-rain-veil.mp3"
+    );
     expect(resolveAppAudioAssetSrc("sounds/soft-rain-veil.mp3", "/people-first-app/")).toBe(
-      "/people-first-app/sounds/soft-rain-veil.mp3",
+      "/people-first-app/sounds/soft-rain-veil.mp3"
     );
     expect(getAppAudioAssetSrc("soft-air-veil")).toContain("/sounds/soft-air-veil.mp3");
-    expect(getAppAudioAssetSrc("cloudlight-evening-loop")).toContain(
-      "/sounds/cloudlight-evening-loop.mp3",
-    );
+    expect(getAppAudioAssetSrc("r7-shoji-rain")).toContain("/sounds/music/r7-shoji-rain.mp3");
     expect(getAppAudioAssetSrc("orb-ambience")).toContain("/sounds/gentle-water-bed.mp3");
     expect(getAppAudioAssetSrc("diary-reflection-loop")).toContain("/sounds/soft-rain-veil.mp3");
-    expect(getAppAudioAsset("focus-forest")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-forest-deep.mp3");
-    expect(getAppAudioAsset("focus-rain")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-rain-deep.mp3");
-    expect(getAppAudioAsset("focus-ocean")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-ocean-deep.mp3");
-    expect(getAppAudioAsset("focus-fireplace")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-fireplace-deep.mp3");
-    expect(getAppAudioAsset("focus-river")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-river-deep.mp3");
-    expect(getAppAudioAsset("focus-wind")?.publicPath).toBe("sounds/hyperfocus/hyperfocus-wind-deep.mp3");
+    expect(getAppAudioAsset("focus-forest")?.publicPath).toBe(
+      "sounds/hyperfocus/hyperfocus-forest-deep.mp3"
+    );
+    expect(getAppAudioAsset("focus-rain")?.publicPath).toBe(
+      "sounds/hyperfocus/hyperfocus-rain-deep.mp3"
+    );
+    expect(getAppAudioAsset("focus-ocean")?.publicPath).toBe(
+      "sounds/hyperfocus/hyperfocus-ocean-deep.mp3"
+    );
+    expect(getAppAudioAsset("focus-fireplace")?.publicPath).toBe(
+      "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3"
+    );
+    expect(getAppAudioAsset("focus-river")?.publicPath).toBe(
+      "sounds/hyperfocus/hyperfocus-river-deep.mp3"
+    );
+    expect(getAppAudioAsset("focus-wind")?.publicPath).toBe(
+      "sounds/hyperfocus/hyperfocus-wind-deep.mp3"
+    );
     expect(APP_AUDIO_ASSETS.map((asset) => asset.id)).not.toContain("focus-cafe");
   });
 
   it("keeps routed ambience consumers wired to the shared manifest helper", () => {
-    const orbSource = readFileSync(
-      join(process.cwd(), "src/pages/nav-v2/OrbPage.tsx"),
-      "utf8",
-    );
+    const orbSource = readFileSync(join(process.cwd(), "src/pages/nav-v2/OrbPage.tsx"), "utf8");
     const diarySource = readFileSync(
       join(process.cwd(), "src/features/journal/JournalAmbienceSetting.tsx"),
-      "utf8",
+      "utf8"
     );
 
     expect(orbSource).toContain('getAppAudioAssetSrc("orb-ambience")');
@@ -152,7 +178,9 @@ describe("app audio asset manifest", () => {
       "focus-river",
       "focus-wind",
     ]);
-    expect(focusAssets.every((asset) => asset.publicPath.startsWith("sounds/hyperfocus/"))).toBe(true);
+    expect(focusAssets.every((asset) => asset.publicPath.startsWith("sounds/hyperfocus/"))).toBe(
+      true
+    );
     expect(focusAssets.some((asset) => asset.publicPath.includes("cafe"))).toBe(false);
   });
 
@@ -176,13 +204,13 @@ describe("app audio asset manifest", () => {
     }
 
     expect(getAppAudioFeedbackEvent("success")?.publicPath).toBe(
-      "sounds/feedback/feedback-success.mp3",
+      "sounds/feedback/feedback-success.mp3"
     );
     expect(getAppAudioFeedbackEventSrc("milestone", "./")).toBe(
-      "/sounds/feedback/feedback-milestone.mp3",
+      "/sounds/feedback/feedback-milestone.mp3"
     );
     expect(getAppAudioFeedbackEventSrc("notification", "/people-first-app/")).toBe(
-      "/people-first-app/sounds/feedback/feedback-notification.mp3",
+      "/people-first-app/sounds/feedback/feedback-notification.mp3"
     );
   });
 
@@ -204,30 +232,36 @@ describe("app audio asset manifest", () => {
       expect(event.platforms, event.id).toEqual(APP_AUDIO_PLATFORMS);
       expect(event.respectsMasterVolume, event.id).toBe(true);
       expect(event.startsOnUserGesture, event.id).toBe(true);
-      expect(["success", "complete", "streak", "milestone", "notification"]).toContain(event.soundType);
+      expect(["success", "complete", "streak", "milestone", "notification"]).toContain(
+        event.soundType
+      );
     }
 
-    expect(APP_AUDIO_ACTION_EVENTS.some((event) => event.id.toLowerCase().includes("tap"))).toBe(false);
+    expect(APP_AUDIO_ACTION_EVENTS.some((event) => event.id.toLowerCase().includes("tap"))).toBe(
+      false
+    );
     expect(APP_AUDIO_ACTION_EVENTS.map((event) => event.id)).not.toContain("levelUp");
-    expect(APP_AUDIO_ACTION_EVENTS.some((event) => String(event.soundType) === "levelUp")).toBe(false);
+    expect(APP_AUDIO_ACTION_EVENTS.some((event) => String(event.soundType) === "levelUp")).toBe(
+      false
+    );
     expect(
-      APP_AUDIO_ACTION_EVENTS.find((event) => event.id === "majorProgressMilestone")?.rationale,
+      APP_AUDIO_ACTION_EVENTS.find((event) => event.id === "majorProgressMilestone")?.rationale
     ).toContain("does not introduce current V2 XP behavior");
   });
 
   it("separates non-Hyperfocus ambience from the Hyperfocus focus library", () => {
     expect(APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS).toEqual([
       "soft-air-veil",
-      "cloudlight-evening-loop",
-      "lantern-air",
-      "rain-on-paper",
-      "indigo-dusk",
-      "quiet-courtyard",
-      "moonlit-water",
-      "cedar-mist",
-      "glass-bell-dawn",
-      "moss-garden",
-      "after-rain",
+      "r7-shoji-rain",
+      "r7-moss-garden",
+      "r7-lantern-reflection",
+      "r7-snow-over-cedar",
+      "r7-paper-cranes",
+      "r7-tea-room-dawn",
+      "r7-river-stones",
+      "r7-camellia-evening",
+      "r7-temple-path",
+      "r7-home-beneath-clouds",
       "orb-ambience",
       "diary-reflection-loop",
     ]);
@@ -240,10 +274,10 @@ describe("app audio asset manifest", () => {
     }
   });
 
-  it("keeps the long Cloudlight loop local and out of startup cache warming", () => {
-    expect(getAppAudioAsset("cloudlight-evening-loop")).toMatchObject({
+  it("keeps the long Shoji Rain loop local and out of startup cache warming", () => {
+    expect(getAppAudioAsset("r7-shoji-rain")).toMatchObject({
       family: "entry",
-      publicPath: "sounds/cloudlight-evening-loop.mp3",
+      publicPath: "sounds/music/r7-shoji-rain.mp3",
       startsOnUserGesture: true,
       respectsMasterVolume: true,
       warmCacheOnStartup: false,

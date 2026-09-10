@@ -26,17 +26,24 @@ Current generated non-Hyperfocus files:
 | `feedback-milestone.mp3` | First-party deterministic synthesis | Rare milestone |
 | `feedback-notification.mp3` | First-party deterministic synthesis | In-app reminder preview |
 
+### R7 original background music — ACE-Step generation provenance
+
+Location: `public/sounds/music/r7-*.mp3`, `docs/sounds/music/r7-*.mp3`, and generated platform bundles.
+
+These are the ten retained R7 review recordings selected by the owner for restoration on 2026-09-09, not the retired procedural evening collection. `docs/audio/r7-original-music-provenance.json` binds every shipped MP3 to the original mastering receipt and source WAV/FLAC hashes, and identifies the retained ACE-Step 1.5 source and model revisions. No model, encoder, inference service, or generation dependency is added to the app. The restoration copies original MP3 bytes without re-encoding.
+
+The retained generation receipt records text-to-music generation without source-audio, reference-conditioning, cover, LoRA, or language-model input. This statement describes that receipt, not an independent audit of model training or a warranty of output rights. The separate human-listening ledger and formal legal/copyrightability review remain release gates; the procedural assets' no-AI-input and Cloudlight copyright statements do not apply to R7.
+
 ### BigSoundBank / LaSonotheque — Hyperfocus CC0 Nature Sound Effects
 Location: `public/sounds/hyperfocus/` and generated native/desktop asset bundles.
 
-All current Hyperfocus families use source-specific BigSoundBank / LaSonotheque recordings released as CC0/public-domain-equivalent sound effects. The reviewed source windows were converted into deterministic 30-second, 48 kHz stereo, 128 kbps MP3 loops; no second source, synthetic layer, generative repair, pitch shift, or time stretch is present.
+The fifteen current Forest, Rain, Ocean, River and Wind variants use source-specific BigSoundBank / LaSonotheque recordings released as CC0/public-domain-equivalent sound effects. The reviewed source windows were converted into deterministic 30-second, 48 kHz stereo, 128 kbps MP3 loops; no second source, synthetic layer, generative repair, pitch shift, or time stretch is present in those retained files.
 
 Current source items:
 
 - Forest: `3085`, `2749`, `905`.
 - Rain: `1019`, `2679`, `740`.
 - Ocean: `698`, `2567`, `1446`.
-- Fireplace: `2855`, `2856`, `2857`.
 - River: `1354`, `3222`, `2754`.
 - Wind: `904`, `907`, `1450`.
 
@@ -44,9 +51,15 @@ Per-file item page, title, author, source hash, reviewed-window hash, runtime ha
 
 License reference: `https://bigsoundbank.com/licenses.html`. The captured source pages and license evidence allow copying, adaptation, redistribution, and commercial use under CC0. Source-specific technical evidence is not a warranty against every possible third-party claim; formal legal review remains a release gate.
 
+### PagDev / OpenGameArt — Fireplace Sound Loop
+
+The three current fireplace variants derive from PagDev's [Fireplace Sound Loop](https://opengameart.org/content/fireplace-sound-loop), whose item page declares CC0. The original downloadable `fire.wav` has SHA-256 `85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330`; the page snapshot, exact Soft/Deep/Intense hashes, offset-layer processing, gain and decoded-loop evidence are bound in `docs/audio/fireplace-pagdev-provenance.json`.
+
+Delivery files are 30-second, 48 kHz stereo, 192 kbps MP3s processed offline with FFmpeg 9.0.1 / libmp3lame. No pitch/speed change, generated crackles, compressor or limiter was applied. The owner selected the exact files on 2026-09-10. The source licence is the uploader's declaration, not an independent ownership/capture-method warranty; formal listening context and legal review remain explicitly unverified. Previous BigSoundBank fireplace originals remain privately retained for rollback and are no longer the runtime fireplace assets.
+
 ### Dev-time audio encoder
 
-`lamejs@1.2.1` remains a development dependency for first-party non-Hyperfocus procedural audio. Hyperfocus runtime v2 masters were encoded offline with a private source-built LAME 4.0 executable from SourceForge archive SHA-256 `3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb`. Neither encoder is shipped in the application runtime. LAME 4.0 source scanning retained scoped external-source findings, so its security status is not represented as `PASS`; encoder containment and LGPL obligations remain release-review items.
+`lamejs@1.2.1` remains a development dependency for first-party non-Hyperfocus procedural audio. The fifteen retained Hyperfocus runtime v2 nature masters were encoded offline with a private source-built LAME 4.0 executable from SourceForge archive SHA-256 `3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb`; the replacement fireplace encoder is described above. No encoder is shipped in the application runtime. LAME 4.0 source scanning retained scoped external-source findings, so its security status is not represented as `PASS`; encoder containment and LGPL obligations remain release-review items.
 
 ---
 
@@ -145,4 +158,4 @@ When adding a new runtime dependency:
 
 When removing: sweep this file and delete the stale attribution.
 
-*Last updated: 2026-08-25 (all-family BigSoundBank CC0 Hyperfocus runtime v2 loops and provenance)*
+*Last updated: 2026-09-10 (three exact PagDev fireplace replacements; R7 music and fifteen other nature files retained)*

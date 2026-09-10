@@ -25,8 +25,7 @@ Non-Hyperfocus sound is a quiet support layer, not a reward engine. It may confi
 ## Approved Non-Hyperfocus Inventory
 
 - `soft-air-veil`: auth entry ambience, generated local MP3, no human breath/voice/body sound, starts from user intent, respects master volume.
-- `cloudlight-evening-loop`: 150-second original app-entry background music, generated local MP3, first-run off, persistent opt-in, foreground-only, and controlled from the V2 sidebar/drawer.
-- `zenflow-evening-collection-v1`: the Cloudlight master plus nine original 150-second first-party compositions under `sounds/music/`; one global foreground-only player spans account entry and navigation, while exact-hash human listening remains required before store promotion.
+- `zenflow-r7-soft-japanese-10`: exactly ten owner-selected original R7 MP3s under `sounds/music/r7-*.mp3`, restored byte for byte on 2026-09-09. One foreground-only player spans account entry and navigation; first-run off, persistent opt-in, and the V2 sidebar/drawer control remain unchanged. These replace the earlier procedural Cloudlight/evening collection.
 - `orb-ambience`: Orb ambience using `gentle-water-bed.mp3`, generated local MP3, no rock clacks/birds/voices, starts from user intent, respects master volume.
 - `diary-reflection-loop`: diary/settings ambience using `soft-rain-veil.mp3`, generated local MP3, no fire crackle/thunder/hard impacts, starts from user intent, respects master volume.
 
@@ -34,9 +33,11 @@ These are tracked in `APP_AUDIO_NON_HYPERFOCUS_ASSET_IDS`. Hyperfocus files rema
 
 ## Generated Non-Hyperfocus Asset Provenance
 
-The four ambience/music assets and five short feedback cues are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. The provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records seeds, fixed note sequences, the original Cloudlight numeric composition, synthesis parameters, encoder version, SHA-256 hashes, public/docs/native paths, audible exclusions, rollback path, and the statement that no third-party samples, stock recordings, voices, or AI-generated audio inputs were used.
+The three ambience assets and five short feedback cues are first-party deterministic procedural synthesis from `scripts/generate-non-hyperfocus-audio.cjs`. Their provenance packet at `docs/audio/non-hyperfocus-generated-audio-provenance.json` records seeds, fixed note sequences, synthesis parameters, encoder version, SHA-256 hashes, paths, audible exclusions, and rollback. Its no-AI-input statement applies only to these eight procedural assets, not to R7 music. The default generator cannot write any music asset.
 
-`Cloudbound Evening` was used only as a high-level mood and app-entry background-music research reference. No source waveform was imported or retained, and no melody, harmony, score, stem, or recording was transcribed. Cloudlight Evening uses its own 40-bar structure, suspended/open harmony, sparse numeric melody, felt-piano partial model, timing, four-section form, stereo field, name, and 150-second duration. The asset-specific notice is `Copyright © 2026 Yehor212 / ZenFlow. All rights reserved.` and is stored in `docs/audio/cloudlight-evening-license.md`. The repository still has no root `LICENSE`; the notice does not invent project-wide source-code terms. Formal human-authorship and jurisdiction-specific legal review remain `UNVERIFIED`.
+R7 has separate, explicit AI-generation provenance at `docs/audio/r7-original-music-provenance.json`: retained ACE-Step 1.5 source/model revisions, original generation and mastering receipt hashes, source FLAC/WAV hashes, and the exact restored MP3 hashes. The restoration uses the retained 48 kHz stereo 320 kbps review files without generation, re-encoding, trimming, or additional mastering. The owner's selection authorizes this app restoration; it does not fabricate a ten-minute headphones/device-speaker review, copyright ownership, or store clearance.
+
+Historical Cloudlight research and its asset-specific notice remain in `docs/audio/cloudlight-evening-license.md`; they do not describe or license the current R7 recordings. Retained R7 receipts record no reference-conditioning, source-audio, cover, or LoRA input. Formal human-authorship and jurisdiction-specific legal review remain `UNVERIFIED`.
 
 The generator uses `lamejs@1.2.1` as a dev-time MP3 encoder. Encoder code is not shipped in the runtime bundle. Formal legal review of dev-time LGPL encoder use remains `UNVERIFIED` until reviewed by project/legal ownership.
 
@@ -60,11 +61,13 @@ The release-candidate mastered cue inventory is exactly `feedback-success.mp3`, 
 
 ## Persistent Background Music Contract
 
-Cloudlight Evening is not a notification or completion cue. Its first-ever state is off. After the user enables it from the V2 navigation control, the device-local preference may request playback on later app entries. Browser or WebView autoplay rejection becomes a visible `Tap to resume` state and playback waits for the first eligible user gesture; it is never reported as successful while blocked.
+R7 background music is not a notification or completion cue. Its first-ever state is off. After the user enables it from the V2 navigation control, the device-local preference may request playback on later app entries. Browser or WebView autoplay rejection becomes a visible `Tap to resume` state and playback waits for the first eligible user gesture; it is never reported as successful while blocked. Music follows the master volume directly, without the previous additional 0.18 multiplier; master mute and zero volume still stop playback.
 
-Only one long ZenFlow ambience owner may play at once. Cloudlight, auth ambience, Orb ambience, Diary ambience, and Hyperfocus claim the shared long-audio coordinator; the most recent explicit playback intent pauses the prior owner. Short feedback and notification sounds remain outside this exclusivity rule. Cloudlight also stops for master mute, zero volume, disabled ambient comfort, hidden/background app state, or stale playback ownership.
+Only one long ZenFlow ambience owner may play at once. R7, auth ambience, Orb ambience, Diary ambience, and Hyperfocus claim the shared long-audio coordinator; the most recent explicit playback intent pauses the prior owner. Short feedback and notification sounds remain outside this exclusivity rule. Music also stops for master mute, zero volume, disabled ambient comfort, hidden/background app state, or stale playback ownership. The internal `global-cloudlight` owner identifier is retained for compatibility and does not select a retired file.
 
-The 150-second MP3 is not startup-preloaded or PWA-precached. Explicit playback intent sends an allowlisted service-worker request for one full same-origin `200` body. Existing and fetched entries must match `audio/mpeg`, 2,400,757 bytes, and the tracked Cloudlight SHA-256; an invalid cache entry is removed and replaced before admission. Later media `Range` requests may be served from that complete runtime-cache entry. Initial offline availability remains `UNVERIFIED` until the exact installed-PWA cache flow is exercised from an empty cache.
+The ten original MP3s retain their natural 164–170-second durations and advance on `ended` with the existing fade; they are not forced into seamless 150-second loops. They are not startup-preloaded or PWA-precached. Explicit playback intent sends an allowlisted service-worker request for one full same-origin `200` body. Existing and fetched entries must match `audio/mpeg` and that R7 file's exact byte length and SHA-256; an invalid cache entry is removed and replaced before admission. Cache namespace v4 retires the earlier audio namespaces without changing unrelated caches or user data. Later media `Range` requests may be served from the complete cached body. Initial offline availability remains `UNVERIFIED` until the exact installed-PWA cache flow is exercised from an empty cache.
+
+The R7-specific decoded gate checks exact source hashes, original duration/format, audible energy, DC, clipping, and pinned samples. Installed FFmpeg measures integrated loudness, true peak, and loudness range from each unchanged MP3 using its `loudnorm` input analysis; these are separate from the older non-conformant interpolation diagnostics above. No mastering filter output is written. These checks do not substitute for human listening.
 
 ## Forbidden Routine Sounds
 
@@ -80,8 +83,8 @@ Use visual state, haptics where appropriate, focus management, and accessible te
 
 ## Cross-Platform Rules
 
-- Web/PWA: no first-ever audible autoplay and no startup prefetch for Cloudlight. A saved opt-in may attempt later playback; blocked playback waits for an eligible gesture. Short feedback and existing bounded ambience may remain in the startup audio-warm inventory, while Cloudlight is request-cached only after intent.
-- Android: custom notification sounds require a new immutable channel ID, a stable packaged raw resource, native push allowlisting, active-reminder rescheduling, and installed-notification proof. The optional fūrin profile uses `zenflow_furin_v5`; Cloudlight remains a separate in-app media asset.
+- Web/PWA: no first-ever audible autoplay and no startup prefetch for R7. A saved opt-in may attempt later playback; blocked playback waits for an eligible gesture. Short feedback and existing bounded ambience may remain in the startup audio-warm inventory, while music is request-cached only after intent.
+- Android: custom notification sounds require a new immutable channel ID, a stable packaged raw resource, native push allowlisting, active-reminder rescheduling, and installed-notification proof. The optional fūrin profile uses `zenflow_furin_v5`; R7 remains separate in-app media.
 - iOS/WKWebView: resume events must re-arm audio unlock listeners only; playback waits for the next user gesture.
 - Desktop/Tauri: use the same `dist` assets and keep generated bundles free of stale root sound files before claiming desktop readiness.
 - Accessibility: sound never carries the only feedback. Pair it with visible state and haptic fallback where supported.
@@ -92,9 +95,8 @@ Use visual state, haptics where appropriate, focus management, and accessible te
 Run the focused guard before approval:
 
 ```bash
-npm run audio:generate-non-hyperfocus
 npm run check:app-audio -- --write-report
-npm run test -- src/lib/__tests__/appAudioAssets.test.ts scripts/__tests__/check-app-audio-assets.test.ts src/lib/__tests__/audioManager.test.ts
+npm run test -- src/lib/__tests__/r7BackgroundMusicRestoration.test.ts scripts/__tests__/r7-audio-contract.test.ts src/lib/__tests__/appAudioAssets.test.ts scripts/__tests__/check-app-audio-assets.test.ts src/lib/__tests__/audioManager.test.ts
 ```
 
 Native APK, iOS `.app`, Tauri package, deployed public URL, and real-device playback remain `UNVERIFIED` until freshly rebuilt and checked for the exact target artifact.

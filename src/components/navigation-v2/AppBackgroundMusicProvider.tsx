@@ -20,13 +20,11 @@ export function AppBackgroundMusicProvider({ children }: { children: ReactNode }
   ].join("|");
   const control = useAppBackgroundMusic({
     audioRef,
-    canPlay:
-      !audioSettings.muted &&
-      audioSettings.volume > 0 &&
-      comfort.settings.ambientEnabled,
+    canPlay: !audioSettings.muted && audioSettings.volume > 0 && comfort.settings.ambientEnabled,
     canPlayMaster: comfort.canPlayAmbientAsset,
     canPlayMasterRevision,
-    volume: audioSettings.volume * 0.18,
+    // R7 originals are already mastered; the listener's volume is authoritative.
+    volume: audioSettings.volume,
   });
 
   return (
@@ -36,7 +34,7 @@ export function AppBackgroundMusicProvider({ children }: { children: ReactNode }
       <audio
         ref={audioRef}
         data-testid="app-background-music-audio"
-        src={getAppAudioAssetSrc(control.activeMasterId)}
+        src={getAppAudioAssetSrc(control.sourceMasterId)}
         preload="none"
         playsInline
         hidden

@@ -9,36 +9,38 @@ export interface HyperfocusGeneratedAudioManifestEntry {
   source?: string;
 }
 
-export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, HyperfocusGeneratedAudioManifestEntry>> = {
+export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<
+  Record<string, HyperfocusGeneratedAudioManifestEntry>
+> = {
   "fireplace:deep": {
     publicPath: "sounds/hyperfocus/hyperfocus-fireplace-deep.mp3",
-    sha256: "c6319db252889365ac595c4b6c8246006166f290195a2d3fa482713dfb4a04d7",
-    bytes: 480768,
-    generatedAt: "2026-08-26T01:52:12.713723Z",
-    provider: "BigSoundBank / LaSonotheque",
-    model: "real-source-cc0-runtime-v2",
-    generationId: "bigsoundbank-fireplace-c3-runtime-v2",
-    source: "Fireplace #5 by Joseph SARDIN (https://bigsoundbank.com/fireplace-5-s2857.html)",
+    sha256: "ea59625628045952a2ccd8fac21278662c735e34e0e1cc01d97e3cccb5f234f1",
+    bytes: 721196,
+    generatedAt: "2026-09-10T01:36:10Z",
+    provider: "OpenGameArt / PagDev",
+    model: "source-loop-cc0-fireplace-20260910",
+    generationId: "pagdev-fireplace-deep-20260910",
+    source: "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)",
   },
   "fireplace:intense": {
     publicPath: "sounds/hyperfocus/hyperfocus-fireplace-intense.mp3",
-    sha256: "e3719a34e4a5603aadb3142531b0ff2483b3d7688abed724d0f88798e0ed6154",
-    bytes: 480768,
-    generatedAt: "2026-08-26T01:52:12.713723Z",
-    provider: "BigSoundBank / LaSonotheque",
-    model: "real-source-cc0-runtime-v2",
-    generationId: "bigsoundbank-fireplace-c1-runtime-v2",
-    source: "Fireplace #3 by Joseph SARDIN (https://bigsoundbank.com/fireplace-3-s2855.html)",
+    sha256: "bc7816cc301b44e70090583fe4236e7cdd1ca18e657d6f7447b2c98d0892fabd",
+    bytes: 721196,
+    generatedAt: "2026-09-10T01:36:10Z",
+    provider: "OpenGameArt / PagDev",
+    model: "source-loop-cc0-fireplace-20260910",
+    generationId: "pagdev-fireplace-intense-20260910",
+    source: "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)",
   },
   "fireplace:soft": {
     publicPath: "sounds/hyperfocus/hyperfocus-fireplace-soft.mp3",
-    sha256: "d0370173891d4f6e4a073cf4b3f96741166f98d424ccf2024b7e2cd3465b460a",
-    bytes: 480768,
-    generatedAt: "2026-08-26T01:52:12.713723Z",
-    provider: "BigSoundBank / LaSonotheque",
-    model: "real-source-cc0-runtime-v2",
-    generationId: "bigsoundbank-fireplace-c2-runtime-v2",
-    source: "Fireplace #4 by Joseph SARDIN (https://bigsoundbank.com/fireplace-4-s2856.html)",
+    sha256: "af3033bf4e49c4623dfea15124d2fcab8d8213de35591785cdaef7985791032e",
+    bytes: 721196,
+    generatedAt: "2026-09-10T01:36:10Z",
+    provider: "OpenGameArt / PagDev",
+    model: "source-loop-cc0-fireplace-20260910",
+    generationId: "pagdev-fireplace-soft-20260910",
+    source: "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)",
   },
   "forest:deep": {
     publicPath: "sounds/hyperfocus/hyperfocus-forest-deep.mp3",
@@ -68,7 +70,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-forest-c3-runtime-v2",
-    source: "Forest: On the Edge by Joseph SARDIN (https://bigsoundbank.com/forest-on-the-edge-s0905.html)",
+    source:
+      "Forest: On the Edge by Joseph SARDIN (https://bigsoundbank.com/forest-on-the-edge-s0905.html)",
   },
   "ocean:deep": {
     publicPath: "sounds/hyperfocus/hyperfocus-ocean-deep.mp3",
@@ -88,7 +91,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-ocean-c3-runtime-v2",
-    source: "Small waves and beach #1 by Joseph SARDIN (https://bigsoundbank.com/small-waves-and-beach-1-s1446.html)",
+    source:
+      "Small waves and beach #1 by Joseph SARDIN (https://bigsoundbank.com/small-waves-and-beach-1-s1446.html)",
   },
   "ocean:soft": {
     publicPath: "sounds/hyperfocus/hyperfocus-ocean-soft.mp3",
@@ -98,7 +102,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-ocean-c2-runtime-v2",
-    source: "Sea of the beach of Dellec #4 by Joseph SARDIN (https://bigsoundbank.com/sea-of-the-beach-of-dellec-4-s2567.html)",
+    source:
+      "Sea of the beach of Dellec #4 by Joseph SARDIN (https://bigsoundbank.com/sea-of-the-beach-of-dellec-4-s2567.html)",
   },
   "rain:deep": {
     publicPath: "sounds/hyperfocus/hyperfocus-rain-deep.mp3",
@@ -108,7 +113,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-rain-c2-runtime-v2",
-    source: "Rain Under an Umbrella by Pierre SIBANARCO (https://bigsoundbank.com/rain-under-an-umbrella-s2679.html)",
+    source:
+      "Rain Under an Umbrella by Pierre SIBANARCO (https://bigsoundbank.com/rain-under-an-umbrella-s2679.html)",
   },
   "rain:intense": {
     publicPath: "sounds/hyperfocus/hyperfocus-rain-intense.mp3",
@@ -118,7 +124,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-rain-c1-runtime-v2",
-    source: "Summer Rain on Terrace by Joseph SARDIN (https://bigsoundbank.com/summer-rain-on-terrace-s1019.html)",
+    source:
+      "Summer Rain on Terrace by Joseph SARDIN (https://bigsoundbank.com/summer-rain-on-terrace-s1019.html)",
   },
   "rain:soft": {
     publicPath: "sounds/hyperfocus/hyperfocus-rain-soft.mp3",
@@ -128,7 +135,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-rain-c3-runtime-v2",
-    source: "Rain and Thunder #2 by Joseph SARDIN (https://bigsoundbank.com/rain-and-storm-2-s0740.html)",
+    source:
+      "Rain and Thunder #2 by Joseph SARDIN (https://bigsoundbank.com/rain-and-storm-2-s0740.html)",
   },
   "river:deep": {
     publicPath: "sounds/hyperfocus/hyperfocus-river-deep.mp3",
@@ -138,7 +146,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-river-c2-runtime-v2",
-    source: "Mountain Stream #7 by Joseph SARDIN & Axeline T. (https://bigsoundbank.com/mountain-stream-7-s3222.html)",
+    source:
+      "Mountain Stream #7 by Joseph SARDIN & Axeline T. (https://bigsoundbank.com/mountain-stream-7-s3222.html)",
   },
   "river:intense": {
     publicPath: "sounds/hyperfocus/hyperfocus-river-intense.mp3",
@@ -148,7 +157,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-river-c3-runtime-v2",
-    source: "Mountain stream #1 by Pierre SIBANARCO (https://bigsoundbank.com/mountain-stream-1-s2754.html)",
+    source:
+      "Mountain stream #1 by Pierre SIBANARCO (https://bigsoundbank.com/mountain-stream-1-s2754.html)",
   },
   "river:soft": {
     publicPath: "sounds/hyperfocus/hyperfocus-river-soft.mp3",
@@ -168,7 +178,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-wind-c1-runtime-v2",
-    source: "Wind in the Trees by Joseph SARDIN (https://bigsoundbank.com/forest-wind-in-the-trees-s0904.html)",
+    source:
+      "Wind in the Trees by Joseph SARDIN (https://bigsoundbank.com/forest-wind-in-the-trees-s0904.html)",
   },
   "wind:intense": {
     publicPath: "sounds/hyperfocus/hyperfocus-wind-intense.mp3",
@@ -178,7 +189,8 @@ export const HYPERFOCUS_GENERATED_AUDIO_MANIFEST: Readonly<Record<string, Hyperf
     provider: "BigSoundBank / LaSonotheque",
     model: "real-source-cc0-runtime-v2",
     generationId: "bigsoundbank-wind-c3-runtime-v2",
-    source: "Strong wind and trees #1 by Joseph SARDIN (https://bigsoundbank.com/strong-wind-and-trees-1-s1450.html)",
+    source:
+      "Strong wind and trees #1 by Joseph SARDIN (https://bigsoundbank.com/strong-wind-and-trees-1-s1450.html)",
   },
   "wind:soft": {
     publicPath: "sounds/hyperfocus/hyperfocus-wind-soft.mp3",

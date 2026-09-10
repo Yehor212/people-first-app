@@ -15,6 +15,11 @@ const PUBLIC_ASSET_DIR = "public/sounds/hyperfocus";
 const PILOT_VARIANT_ID = "fireplace:soft";
 const PROVENANCE_PATH = "docs/audio/hyperfocus-generated-audio-provenance.json";
 const RUNTIME_V2_MANIFEST_PATH = "docs/audio/hyperfocus-runtime-v2-manifest.json";
+const SELECTED_PAGDEV_FIREPLACE_HASHES = Object.freeze({
+  soft: "af3033bf4e49c4623dfea15124d2fcab8d8213de35591785cdaef7985791032e",
+  deep: "ea59625628045952a2ccd8fac21278662c735e34e0e1cc01d97e3cccb5f234f1",
+  intense: "bc7816cc301b44e70090583fe4236e7cdd1ca18e657d6f7447b2c98d0892fabd",
+});
 const GENERATION_CREDITS_PATH = "output/audio-qc/hyperfocus-generation-credits-current.json";
 const GENERATION_AUTHORIZATION_PATH = "output/audio-qc/hyperfocus-generation-authorization-current.json";
 const GENERATION_DECISION_PATH = "output/audio-qc/hyperfocus-generation-decision-current.json";
@@ -269,7 +274,7 @@ function getOriginalFocusAudioAssets({ rootDir = DEFAULT_ROOT } = {}) {
 
   const source = fs.readFileSync(manifestFile, "utf8");
   const assets = [];
-  const pattern = new RegExp('makeAsset\\("focus-([^\\"]+)",\\s*"focus",\\s*"([^\\"]+)",\\s*"([^\\"]+)"', "g");
+  const pattern = new RegExp('makeAsset\\(\\s*"focus-([^\\"]+)",\\s*"focus",\\s*"([^\\"]+)",\\s*"([^\\"]+)"', "g");
   let match;
   while ((match = pattern.exec(source)) !== null) {
     const familyId = match[1];
@@ -1309,7 +1314,16 @@ function validateGeminiProvenancePayload({ rootDir = DEFAULT_ROOT, asset, proven
   const source = provenance?.source ? String(provenance.source) : undefined;
   const sourceLicense = provenance?.sourceLicense ? String(provenance.sourceLicense) : undefined;
   const postProcessing = provenance?.postProcessing && typeof provenance.postProcessing === "object" ? provenance.postProcessing : null;
+  const isSelectedPagdevSource =
+    model === "source-loop-cc0-fireplace-20260910" &&
+    provider === "OpenGameArt / PagDev" &&
+    asset?.familyId === "fireplace" &&
+    source === "Fireplace Sound Loop by PagDev (https://opengameart.org/content/fireplace-sound-loop)" &&
+    sourceLicense === "https://creativecommons.org/publicdomain/zero/1.0/" &&
+    provenance?.sourceSha256 === "85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330" &&
+    provenance?.publicSha256 === SELECTED_PAGDEV_FIREPLACE_HASHES[asset.levelId];
   const isRealSource =
+    isSelectedPagdevSource ||
     model.startsWith("real-source-") ||
     ["mixkit", "bundled-source"].includes(provider.toLowerCase());
 
@@ -1818,21 +1832,29 @@ function validateRuntimeV2Manifest({ rootDir = DEFAULT_ROOT } = {}) {
     const variantId = expectedAsset.familyId + ":" + expectedAsset.levelId;
     const asset = byVariant.get(variantId);
     const publicFile = path.join(rootDir, expectedAsset.relativePath);
+    const isSelectedFireplace = expectedAsset.familyId === "fireplace";
+    const expectedOperations = isSelectedFireplace ? [
+      "decode-pcm", "resample-48000", "equal-power-source-bridge", "offset-source-layers",
+      "equal-power-loop-crossfade", "linked-gain", "encode-mp3",
+    ] : [
+      "decode-pcm", "equal-power-loop-crossfade", "quiet-boundary-rotate",
+      "repeat-exactly-twice", "linked-gain", "safety-peak-limit", "encode-mp3",
+    ];
+    const selectedSourceMatches = !isSelectedFireplace || (
+      asset?.sourceSha256 === "85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330" &&
+      asset?.sourcePageUrl === "https://opengameart.org/content/fireplace-sound-loop" &&
+      asset?.author === "PagDev" &&
+      asset?.bytes === 721196 &&
+      asset?.sha256 === SELECTED_PAGDEV_FIREPLACE_HASHES[expectedAsset.levelId]
+    );
     if (
       !asset ||
       asset.publicPath !== expectedAsset.publicPath ||
-      asset.provider !== "BigSoundBank / LaSonotheque" ||
+      asset.provider !== (isSelectedFireplace ? "OpenGameArt / PagDev" : "BigSoundBank / LaSonotheque") ||
       asset.licenseId !== "CC0-1.0" ||
+      !selectedSourceMatches ||
       !Array.isArray(asset.operations) ||
-      asset.operations.join("|") !== [
-        "decode-pcm",
-        "equal-power-loop-crossfade",
-        "quiet-boundary-rotate",
-        "repeat-exactly-twice",
-        "linked-gain",
-        "safety-peak-limit",
-        "encode-mp3",
-      ].join("|") ||
+      asset.operations.join("|") !== expectedOperations.join("|") ||
       !fs.existsSync(publicFile) ||
       asset.sha256 !== sha256File(publicFile)
     ) {

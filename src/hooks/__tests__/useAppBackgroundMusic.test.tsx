@@ -72,6 +72,8 @@ function Harness({
     volume,
   });
   const collectionMusic = music as typeof music & {
+    previous?: () => void;
+    next?: () => void;
     activeMasterId?: string;
     handleMediaEnded?: () => void;
     handleMediaTimeUpdate?: () => void;
@@ -96,11 +98,43 @@ function Harness({
       <button type="button" onClick={music.retry}>
         retry
       </button>
+      <button
+        type="button"
+        data-app-background-music-control="true"
+        onClick={collectionMusic.previous}
+      >
+        previous
+      </button>
+      <button type="button" data-app-background-music-control="true" onClick={collectionMusic.next}>
+        next
+      </button>
     </>
   );
 }
 
 describe("useAppBackgroundMusic", () => {
+  it("uses one animation-frame clock even when its origin differs from performance.now", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    const callbacks: FrameRequestCallback[] = [];
+    const frames = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "next" }));
+      expect(callbacks).toHaveLength(1);
+      await act(async () => {
+        callbacks[0](0);
+        callbacks[1](80);
+      });
+      expect(screen.getByTestId("music-state")).toHaveTextContent("playing");
+      expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    } finally {
+      frames.mockRestore();
+    }
+  });
   beforeEach(() => {
     localStorage.clear();
     Object.defineProperty(document, "hidden", { configurable: true, value: false });
@@ -135,6 +169,153 @@ describe("useAppBackgroundMusic", () => {
     expect(intentCache.request).not.toHaveBeenCalled();
   });
 
+  it("selects next and previous cyclically while off without enabling or prefetching music", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "previous" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-home-beneath-clouds");
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-shoji-rain");
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    expect(screen.getByTestId("music-enabled")).toHaveTextContent("false");
+    expect(screen.getByTestId("music-state")).toHaveTextContent("off");
+    expect(localStorage.getItem("zenflow-app-background-music-cursor")).toBe('"r7-moss-garden"');
+    expect(media.play).not.toHaveBeenCalled();
+    expect(intentCache.request).not.toHaveBeenCalled();
+  });
+
+  it("changes a muted selection silently and respects the saved opt-in", async () => {
+    localStorage.setItem("zenflow-app-background-music-enabled", "true");
+    render(<Harness canPlay={false} volume={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    expect(media.play).not.toHaveBeenCalled();
+    expect(screen.getByTestId("music-enabled")).toHaveTextContent("true");
+  });
+
+  it("releases music ownership when a manually selected master is comfort-blocked", async () => {
+    render(<Harness blockedMaster="r7-moss-garden" />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+    expect(getActiveLongAudioOwner()).toBeNull();
+    expect(clearAppAudioMediaSession).toHaveBeenCalled();
+  });
+
+  it("keeps a failed cursor write from changing the selected track or playing on", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    const original = Storage.prototype.setItem;
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+      this: Storage,
+      key,
+      value
+    ) {
+      if (key === "zenflow-app-background-music-cursor")
+        throw new DOMException("Fixture quota", "QuotaExceededError");
+      original.call(this, key, value);
+    });
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "next" }));
+      expect(screen.getByTestId("music-master")).toHaveTextContent("r7-shoji-rain");
+      expect(screen.getByTestId("music-state")).toHaveTextContent("error");
+      expect(getActiveLongAudioOwner()).toBeNull();
+    } finally {
+      write.mockRestore();
+    }
+  });
+
+  it("cancels transport and fade work on unmount", async () => {
+    const { unmount } = render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    unmount();
+    const count = media.play.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(media.play).toHaveBeenCalledTimes(count);
+    expect(getActiveLongAudioOwner()).toBeNull();
+  });
+
+  it("never steals Hyperfocus ownership when selecting a different track", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    let release!: () => void;
+    const stopNature = vi.fn();
+    act(() => {
+      release = claimLongAudio("hyperfocus", stopNature);
+    });
+    media.play.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    expect(getActiveLongAudioOwner()).toBe("hyperfocus");
+    expect(stopNature).not.toHaveBeenCalled();
+    expect(media.play).not.toHaveBeenCalled();
+    act(() => release());
+  });
+
+  it("retains an explicit Media Session pause during selection and resumes deliberately", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    act(() => vi.mocked(setAppAudioMediaSession).mock.calls.at(-1)?.[0].onPause?.());
+    media.play.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    expect(screen.getByTestId("music-state")).toHaveTextContent("paused");
+    expect(media.play).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+  });
+
+  it("accumulates rapid requests from the latest cursor including a full-cycle return", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    media.play.mockClear();
+    act(() => {
+      for (let i = 0; i < 10; i += 1) screen.getByRole("button", { name: "next" }).click();
+    });
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-shoji-rain");
+    await waitFor(() => expect(media.play).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("music-state")).toHaveTextContent("playing");
+    expect(document.querySelectorAll("audio")).toHaveLength(1);
+  });
+
+  it("does not let an older play result pause the newly selected playing track", async () => {
+    const old = createDeferred();
+    media.play.mockImplementationOnce(() => old.promise).mockResolvedValue(undefined);
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    expect(screen.getByTestId("music-state")).toHaveTextContent("loading");
+    fireEvent.click(screen.getByRole("button", { name: "next" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    const pauses = media.pause.mock.calls.length;
+    await act(async () => old.resolve());
+    expect(media.pause).toHaveBeenCalledTimes(pauses);
+    expect(screen.getByTestId("music-state")).toHaveTextContent("playing");
+  });
+
+  it("cancels a pending transport boundary when music is disabled", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "toggle" }));
+    await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
+    act(() => {
+      screen.getByRole("button", { name: "next" }).click();
+      screen.getByRole("button", { name: "toggle" }).click();
+    });
+    const starts = media.play.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden");
+    expect(screen.getByTestId("music-state")).toHaveTextContent("off");
+    expect(media.play).toHaveBeenCalledTimes(starts);
+  });
+
   it("requests only the current and next full bodies when the user explicitly enables music", async () => {
     render(<Harness />);
     expect(intentCache.request).not.toHaveBeenCalled();
@@ -143,34 +324,40 @@ describe("useAppBackgroundMusic", () => {
 
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
     expect(intentCache.request).toHaveBeenCalledTimes(2);
-    expect(intentCache.request).toHaveBeenCalledWith("sounds/cloudlight-evening-loop.mp3");
-    expect(intentCache.request).toHaveBeenCalledWith("sounds/music/lantern-air.mp3");
+    expect(intentCache.request).toHaveBeenCalledWith("sounds/music/r7-shoji-rain.mp3");
+    expect(intentCache.request).toHaveBeenCalledWith("sounds/music/r7-moss-garden.mp3");
   });
 
-  it("advances from Cloudlight to Lantern Air with the same long-audio owner", async () => {
+  it("advances from Shoji Rain to Moss Garden with the same long-audio owner", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "toggle" }));
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
 
-    expect(screen.getByTestId("music-master")).toHaveTextContent("cloudlight-evening-loop");
+    expect(screen.getByTestId("music-master")).toHaveTextContent("r7-shoji-rain");
     fireEvent.ended(screen.getByTestId("music-audio"));
 
-    await waitFor(() => expect(screen.getByTestId("music-master")).toHaveTextContent("lantern-air"));
-    expect(localStorage.getItem("zenflow-app-background-music-cursor")).toBe('"lantern-air"');
+    await waitFor(() =>
+      expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden")
+    );
+    expect(localStorage.getItem("zenflow-app-background-music-cursor")).toBe('"r7-moss-garden"');
     expect(getActiveLongAudioOwner()).toBe("global-cloudlight");
   });
 
   it("pauses instead of bypassing a per-master audio-comfort exclusion", async () => {
-    render(<Harness blockedMaster="rain-on-paper" />);
+    render(<Harness blockedMaster="r7-lantern-reflection" />);
     fireEvent.click(screen.getByRole("button", { name: "toggle" }));
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
 
     fireEvent.ended(screen.getByTestId("music-audio"));
-    await waitFor(() => expect(screen.getByTestId("music-master")).toHaveTextContent("lantern-air"));
+    await waitFor(() =>
+      expect(screen.getByTestId("music-master")).toHaveTextContent("r7-moss-garden")
+    );
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
 
     fireEvent.ended(screen.getByTestId("music-audio"));
-    await waitFor(() => expect(screen.getByTestId("music-master")).toHaveTextContent("rain-on-paper"));
+    await waitFor(() =>
+      expect(screen.getByTestId("music-master")).toHaveTextContent("r7-lantern-reflection")
+    );
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("paused"));
   });
 
@@ -195,7 +382,7 @@ describe("useAppBackgroundMusic", () => {
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
     expect(media.play).toHaveBeenCalledTimes(1);
     expect(setAppAudioMediaSession).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Cloudlight Evening", artist: "ZenFlow" })
+      expect.objectContaining({ title: "Shoji Rain", artist: "ZenFlow" })
     );
   });
 
@@ -350,7 +537,7 @@ describe("useAppBackgroundMusic", () => {
     expect(media.play).toHaveBeenCalledTimes(1);
   });
 
-  it("lets an explicit Cloudlight toggle replace the current ambience owner", async () => {
+  it("lets an explicit Shoji Rain toggle replace the current ambience owner", async () => {
     const pauseOrb = vi.fn();
     const releaseOrb = claimLongAudio("orb-water", pauseOrb);
     render(<Harness />);
@@ -370,20 +557,20 @@ describe("useAppBackgroundMusic", () => {
     await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
 
     const expectedAfterEachFailure = [
-      "lantern-air",
-      "rain-on-paper",
-      "indigo-dusk",
-      "quiet-courtyard",
-      "moonlit-water",
-      "cedar-mist",
-      "glass-bell-dawn",
-      "moss-garden",
-      "after-rain",
+      "r7-moss-garden",
+      "r7-lantern-reflection",
+      "r7-snow-over-cedar",
+      "r7-paper-cranes",
+      "r7-tea-room-dawn",
+      "r7-river-stones",
+      "r7-camellia-evening",
+      "r7-temple-path",
+      "r7-home-beneath-clouds",
     ];
     for (const expectedMaster of expectedAfterEachFailure) {
       fireEvent.error(screen.getByTestId("music-audio"));
       await waitFor(() =>
-        expect(screen.getByTestId("music-master")).toHaveTextContent(expectedMaster),
+        expect(screen.getByTestId("music-master")).toHaveTextContent(expectedMaster)
       );
       await waitFor(() => expect(screen.getByTestId("music-state")).toHaveTextContent("playing"));
     }

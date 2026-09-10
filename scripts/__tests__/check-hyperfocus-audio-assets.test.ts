@@ -215,7 +215,7 @@ function writeAcceptedPilotGateEvidence(rootDir: string) {
 }
 
 describe("check-hyperfocus-audio-assets", () => {
-  it("binds the canonical runtime v2 manifest to all 18 BigSoundBank CC0 public bytes", () => {
+  it("binds all 18 runtime variants to fifteen retained sources and three selected PagDev files", () => {
     const manifest = JSON.parse(
       readFileSync("docs/audio/hyperfocus-runtime-v2-manifest.json", "utf8"),
     ) as {
@@ -255,10 +255,19 @@ describe("check-hyperfocus-audio-assets", () => {
     expect(JSON.stringify(manifest)).not.toContain("Mixkit");
     for (const row of manifest.assets) {
       const publicBytes = readFileSync(join("public", row.publicPath));
-      expect(row.provider).toBe("BigSoundBank / LaSonotheque");
+      const isFireplace = row.variantId.startsWith("fireplace:");
+      expect(row.provider).toBe(isFireplace ? "OpenGameArt / PagDev" : "BigSoundBank / LaSonotheque");
       expect(row.licenseId).toBe("CC0-1.0");
       expect(row.sha256).toBe(sha256Buffer(publicBytes));
-      expect(row.operations).toEqual([
+      expect(row.operations).toEqual(isFireplace ? [
+        "decode-pcm",
+        "resample-48000",
+        "equal-power-source-bridge",
+        "offset-source-layers",
+        "equal-power-loop-crossfade",
+        "linked-gain",
+        "encode-mp3",
+      ] : [
         "decode-pcm",
         "equal-power-loop-crossfade",
         "quiet-boundary-rotate",
@@ -268,6 +277,41 @@ describe("check-hyperfocus-audio-assets", () => {
         "encode-mp3",
       ]);
     }
+  });
+
+  it.each(["sourceSha256", "sha256", "provider", "operations"])(
+    "rejects selected-fireplace provenance drift in %s",
+    (field) => {
+      const rootDir = mkdtempSync(join(tmpdir(), "hyperfocus-fireplace-provenance-"));
+      const manifest = JSON.parse(readFileSync("docs/audio/hyperfocus-runtime-v2-manifest.json", "utf8"));
+      mkdirSync(join(rootDir, "docs/audio"), { recursive: true });
+      mkdirSync(join(rootDir, "public/sounds/hyperfocus"), { recursive: true });
+      copyFileSync("docs/audio/hyperfocus-three-level-generation-spec.json", join(rootDir, "docs/audio/hyperfocus-three-level-generation-spec.json"));
+      for (const asset of manifest.assets) {
+        copyFileSync(join("public", asset.publicPath), join(rootDir, "public", asset.publicPath));
+      }
+      const fire = manifest.assets.find((asset: { variantId: string }) => asset.variantId === "fireplace:soft");
+      fire[field] = field === "operations" ? ["encode-mp3"] : "altered-unapproved-value";
+      writeFileSync(join(rootDir, "docs/audio/hyperfocus-runtime-v2-manifest.json"), JSON.stringify(manifest));
+      const result = qc.validateRuntimeV2Manifest({ rootDir });
+      expect(result.ok).toBe(false);
+      expect(result.issues.some((issue) => issue.code === "runtime-v2-asset-mismatch")).toBe(true);
+    },
+  );
+
+  it("rebuilds all manifest entries from matching current source provenance", () => {
+    const result = qc.collectGeneratedAudioManifestEntries({
+      rootDir: process.cwd(),
+      probeAudioFile: () => passingAudioMetrics(),
+    });
+    expect(result.issues).toEqual([]);
+    expect(result.ok).toBe(true);
+    expect(result.entries).toHaveLength(18);
+    expect(result.entries.find((entry) => entry.variantId === "fireplace:soft")).toMatchObject({
+      provider: "OpenGameArt / PagDev",
+      model: "source-loop-cc0-fireplace-20260910",
+      sha256: "af3033bf4e49c4623dfea15124d2fcab8d8213de35591785cdaef7985791032e",
+    });
   });
 
   it("builds original V1 focus source coverage report", () => {
