@@ -1,5 +1,10 @@
 # Implementation Plan: Android Habits Banner Dock
 
+The owner-requested production activation continuation is defined in
+[activation-20260910.md](activation-20260910.md). It completes the live source
+for step 3 using the existing server-controlled configuration table, without
+changing the other eligibility or native-placement requirements.
+
 ## Technical context
 
 React owns eligibility and page reservation. `@capacitor-community/admob` owns the Android native banner view. `AdContext` coordinates lifecycle and placement; `adController` serializes native commands. `HabitsPage` owns the approved surface. IndexedDB remains local truth; this feature must not introduce business data, migrations, analytics, or direct localStorage.

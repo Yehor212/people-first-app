@@ -8,27 +8,27 @@ interface HabitsBannerSurfaceInput {
 }
 
 /**
- * Production stays ad-free until an authoritative account-scoped entitlement
- * source exists. The explicit admob-qa build may exercise the banner with
- * Google's test inventory, but an account transition still denies it.
+ * Only a current, server-verified result may enable production ads. The
+ * isolated admob-qa build can exercise test inventory without a real account;
+ * account transitions deny both paths.
  */
 export function deriveCurrentProductAdEntitlement(input: {
   accountBoundaryInProgress: boolean;
   qaTestEligibility?: boolean;
+  serverEntitlement?: AdEntitlement;
 }): AdEntitlement {
   if (input.accountBoundaryInProgress) return "unknown";
-  return input.qaTestEligibility === true ? "free" : "unknown";
+  if (input.qaTestEligibility === true) return "free";
+  return input.serverEntitlement ?? "unknown";
 }
 
 export function isEmotionallyProtectedOnLocalDate(
   moods: readonly MoodEntry[],
-  localDate: string,
+  localDate: string
 ): boolean {
   if (!localDate) return true;
   return moods.some(
-    (entry) =>
-      entry.date === localDate &&
-      (entry.mood === "bad" || entry.mood === "terrible"),
+    (entry) => entry.date === localDate && (entry.mood === "bad" || entry.mood === "terrible")
   );
 }
 

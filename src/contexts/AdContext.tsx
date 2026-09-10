@@ -88,6 +88,8 @@ interface AdProviderProps {
   adAgeEligibility?: AdAgeEligibility;
   /** Account-scoped product entitlement; unknown always denies ads. */
   adEntitlement?: AdEntitlement;
+  /** Invalidates SDK/placement handshakes even when consecutive accounts are both free. */
+  adEntitlementRevision?: number;
   /** True when any bad/terrible entry exists on the current local date. */
   emotionProtectedToday?: boolean;
   /** Three distinct new-user active days have elapsed, or this is an existing-user cohort. */
@@ -99,10 +101,12 @@ export function AdProvider({
   adConsent = false,
   adAgeEligibility = 'unknown',
   adEntitlement = 'unknown',
+  adEntitlementRevision = 0,
   emotionProtectedToday = true,
   adGraceComplete = false,
 }: AdProviderProps) {
   const [adsAvailable, setAdsAvailable] = useState(false);
+  const [initializedEntitlementRevision, setInitializedEntitlementRevision] = useState<number | null>(null);
   const [bannerHeight, setBannerHeight] = useState(0);
   const [habitsBannerActive, setHabitsBannerActiveState] = useState(false);
   const [globalAdOverlayOpen, setGlobalAdOverlayOpenState] = useState(false);
@@ -138,6 +142,7 @@ export function AdProvider({
       if (cancelled) return;
       disableAds({ clearPrivacyOptions });
       setAdsAvailable(false);
+      setInitializedEntitlementRevision(null);
       setBannerHeight(0);
       setGoogleConsentReady(false);
       if (clearPrivacyOptions) setPrivacyOptionsRequired(false);
@@ -161,6 +166,7 @@ export function AdProvider({
       };
     }
 
+    setInitializedEntitlementRevision(null);
     void initializeAds({
       adConsent,
       ageEligibility: adAgeEligibility,
@@ -168,6 +174,7 @@ export function AdProvider({
     }).then((available) => {
       if (cancelled) return;
       syncControllerState();
+      setInitializedEntitlementRevision(available ? adEntitlementRevision : null);
       if (!available) setBannerHeight(0);
     }).catch(err => {
       if (!cancelled) logger.warn('[Ads]', 'Ad init failed:', err);
@@ -176,7 +183,7 @@ export function AdProvider({
     return () => {
       cancelled = true;
     };
-  }, [adAgeEligibility, adConsent, adEntitlement, adGraceComplete, syncControllerState]);
+  }, [adAgeEligibility, adConsent, adEntitlement, adEntitlementRevision, adGraceComplete, syncControllerState]);
 
   useEffect(() => {
     if (!isBannerAdsSupported()) return;
@@ -331,6 +338,7 @@ export function AdProvider({
     const reservationTimers = new Set<ReturnType<typeof setTimeout>>();
     const shouldShow =
       adsAvailable &&
+      initializedEntitlementRevision === adEntitlementRevision &&
       habitsBannerActive &&
       adEntitlement === 'free' &&
       appActive &&
@@ -423,6 +431,8 @@ export function AdProvider({
   }, [
     adsAvailable,
     adEntitlement,
+    adEntitlementRevision,
+    initializedEntitlementRevision,
     appActive,
     documentVisible,
     emotionProtectedToday,

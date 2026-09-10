@@ -13,10 +13,10 @@ The table below is **auto-generated** by `scripts/doc-counts.cjs`. CI (`npm run 
 <!-- BEGIN:counts -->
 | Metric | Value | Source |
 | --- | ---: | --- |
-| Hooks (src/hooks, non-test) | **78** | `ls src/hooks/*.ts` |
+| Hooks (src/hooks, non-test) | **79** | `ls src/hooks/*.ts` |
 | Zustand stores (runtime) | **9** | `ls src/stores/*.ts` excl. hydrate + index |
 | Hydrate bridges | 2 | `useHydrate*.ts` |
-| Index.tsx LOC | **300** | `wc -l src/pages/Index.tsx` |
+| Index.tsx LOC | **298** | `wc -l src/pages/Index.tsx` |
 | Components top-level dirs | **38** | `ls src/components/ -d` |
 | Features modules | 2 | `ls src/features/ -d` |
 | V2 coexistence files | 57 | `find src -name '*V2*' -o -name '*-v2*'` |
@@ -40,14 +40,14 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
-| Source files                 | **1,037** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **715** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Source files                 | **1,042** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
+| Test files                   |   **721** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
-| React.memo                   |   **123** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
+| React.memo                   |   **124** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
 | index.css LOC                | **7,859** | `readFileSync(...).split("\\n").length` (constitution guard) |
 | Inline style={{}}            |   **311** | `grep -rn 'style={{' src/ --include='*.tsx'`                 |
 | exhaustive-deps suppressions |    **16** | `grep -rn 'eslint-disable.*exhaustive-deps' src/`            |
-| Hook coverage                |   **72%** | `56/78 hook tests`                                           |
+| Hook coverage                |   **72%** | `57/79 hook tests`                                           |
 
 > Historical snapshot (2026-04-04): 687 source files, 147 test files, 3202 tests, 0 lint/TS errors, React.memo 56/80+, lazyWithRetry 31, exhaustive-deps suppressions 21, index.css 4,480 LOC, inline style 304 in 136 files, i18n 2,429 keys × 8 langs, ratchet 9.9/10. Held here for delta comparisons — do not edit in place.
 
