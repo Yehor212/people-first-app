@@ -138,4 +138,13 @@ describe("Google Play public privacy policy guard", () => {
       expect(checker.evaluatePublicPrivacyPolicyHtml({ html }), file).toMatchObject({ ok: true });
     }
   });
+
+  it("describes the transport protection used for account sync and Google Mobile Ads", () => {
+    for (const file of ["public/privacy.html", "public/privacy-policy.html"]) {
+      const html = readFileSync(file, "utf8");
+
+      expect(html, file).toContain("Account sync and journal-media transfers to Supabase use HTTPS");
+      expect(html, file).toContain("Google Mobile Ads SDK encrypts the data it transmits using Transport Layer Security (TLS)");
+    }
+  });
 });
