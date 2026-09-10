@@ -5,8 +5,8 @@ const ACCOUNT_A = "11111111-1111-4111-8111-111111111111";
 const ACCOUNT_B = "22222222-2222-4222-8222-222222222222";
 const backend = vi.hoisted(() => ({
   configured: true,
-  getCurrentUser: vi.fn(),
-  getVerifiedCurrentSessionUserId: vi.fn(),
+  readUser: vi.fn(),
+  readSessionOwner: vi.fn(),
   from: vi.fn(),
   select: vi.fn(),
   eq: vi.fn(),
@@ -17,10 +17,19 @@ const backend = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabaseClient", () => ({
   get supabase() {
-    return backend.configured ? { from: backend.from } : null;
+    return backend.configured
+      ? {
+          from: backend.from,
+          auth: {
+            getUser: async () => ({ data: { user: await backend.readUser() }, error: null }),
+            getSession: async () => {
+              const id = await backend.readSessionOwner();
+              return { data: { session: id ? { user: { id } } : null }, error: null };
+            },
+          },
+        }
+      : null;
   },
-  getCurrentUser: backend.getCurrentUser,
-  getVerifiedCurrentSessionUserId: backend.getVerifiedCurrentSessionUserId,
 }));
 vi.mock("@/lib/logger", () => ({ logger: { warn: backend.warn } }));
 
@@ -38,8 +47,8 @@ describe("current-product Android ad entitlement source", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     backend.configured = true;
-    backend.getVerifiedCurrentSessionUserId.mockResolvedValue(ACCOUNT_A);
-    backend.getCurrentUser.mockResolvedValue(verifiedUser());
+    backend.readSessionOwner.mockResolvedValue(ACCOUNT_A);
+    backend.readUser.mockResolvedValue(verifiedUser());
     backend.from.mockReturnValue(backend);
     backend.select.mockReturnValue(backend);
     backend.eq.mockReturnValue(backend);
@@ -60,7 +69,7 @@ describe("current-product Android ad entitlement source", () => {
   });
 
   it("retains a server-owned premium override instead of assigning ads to that account", async () => {
-    backend.getCurrentUser.mockResolvedValue(verifiedUser({ ad_entitlement: "premium" }));
+    backend.readUser.mockResolvedValue(verifiedUser({ ad_entitlement: "premium" }));
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toEqual({
       accountId: ACCOUNT_A,
       entitlement: "premium",
@@ -68,7 +77,7 @@ describe("current-product Android ad entitlement source", () => {
   });
 
   it("does not let user-editable metadata impersonate an entitlement source", async () => {
-    backend.getCurrentUser.mockResolvedValue(verifiedUser({}, { ad_entitlement: "premium" }));
+    backend.readUser.mockResolvedValue(verifiedUser({}, { ad_entitlement: "premium" }));
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toEqual({
       accountId: ACCOUNT_A,
       entitlement: "free",
@@ -78,7 +87,7 @@ describe("current-product Android ad entitlement source", () => {
   it.each(["unknown", "paid", true, null, 1])(
     "denies an unrecognized server override: %s",
     async (override) => {
-      backend.getCurrentUser.mockResolvedValue(verifiedUser({ ad_entitlement: override }));
+      backend.readUser.mockResolvedValue(verifiedUser({ ad_entitlement: override }));
       expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
     }
   );
@@ -102,33 +111,31 @@ describe("current-product Android ad entitlement source", () => {
   });
 
   it("does not request policy for a signed-out account", async () => {
-    backend.getVerifiedCurrentSessionUserId.mockResolvedValue(null);
+    backend.readSessionOwner.mockResolvedValue(null);
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
-    expect(backend.getCurrentUser).not.toHaveBeenCalled();
+    expect(backend.readUser).not.toHaveBeenCalled();
     expect(backend.from).not.toHaveBeenCalled();
   });
 
   it("requires server verification to match the session owner", async () => {
-    backend.getCurrentUser.mockResolvedValue({ ...verifiedUser(), id: ACCOUNT_B });
+    backend.readUser.mockResolvedValue({ ...verifiedUser(), id: ACCOUNT_B });
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
     expect(backend.from).not.toHaveBeenCalled();
   });
 
   it("rejects a policy result after the active account changes", async () => {
-    backend.getVerifiedCurrentSessionUserId
-      .mockResolvedValueOnce(ACCOUNT_A)
-      .mockResolvedValue(ACCOUNT_B);
+    backend.readSessionOwner.mockResolvedValueOnce(ACCOUNT_A).mockResolvedValue(ACCOUNT_B);
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
   });
 
   it("keeps a missing or rejected server user unknown", async () => {
-    backend.getCurrentUser.mockResolvedValue(null);
+    backend.readUser.mockResolvedValue(null);
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
     expect(backend.from).not.toHaveBeenCalled();
   });
 
   it("handles rejected auth reads without logging account or error payloads", async () => {
-    backend.getVerifiedCurrentSessionUserId.mockRejectedValue(new Error("private upstream detail"));
+    backend.readSessionOwner.mockRejectedValue(new Error("private upstream detail"));
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
     expect(JSON.stringify(backend.warn.mock.calls)).not.toContain("private upstream detail");
   });
@@ -137,7 +144,7 @@ describe("current-product Android ad entitlement source", () => {
     const controller = new AbortController();
     controller.abort();
     expect(await loadCurrentProductAdEntitlement(controller.signal)).toBeNull();
-    expect(backend.getVerifiedCurrentSessionUserId).not.toHaveBeenCalled();
+    expect(backend.readSessionOwner).not.toHaveBeenCalled();
   });
 
   it("ignores a response that arrives after cancellation", async () => {
@@ -152,6 +159,6 @@ describe("current-product Android ad entitlement source", () => {
   it("stays unknown without a configured backend", async () => {
     backend.configured = false;
     expect(await loadCurrentProductAdEntitlement(new AbortController().signal)).toBeNull();
-    expect(backend.getCurrentUser).not.toHaveBeenCalled();
+    expect(backend.readUser).not.toHaveBeenCalled();
   });
 });

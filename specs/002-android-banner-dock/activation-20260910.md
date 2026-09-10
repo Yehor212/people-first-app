@@ -121,3 +121,31 @@ Play/live-serving proof remain open. Google Play now reports 39
 as available in a full production rollout; this correction uses code 40.
 Historical T016/T017 failures and missing physical-device evidence remain open
 until directly superseded by new scoped proof.
+
+## Exact-artifact identity correction
+
+The first production-configured code-40 candidate was installed with all 239
+assets matching its AAB. The actual new entry script loaded without a service
+worker. Native props confirmed adult consent and completed grace, and Auth
+requests returned HTTP 200, but no policy request occurred. A redacted diagnostic
+isolated the failure to the shared session/user validator: it requires a
+non-empty email even when Auth has verified a non-anonymous identity.
+
+The ad source now validates the current session UUID and a fresh `auth.getUser`
+response directly, without reading or requiring an email. It accepts only the
+same server-verified UUID, validates server metadata, rejects anonymous users,
+and rechecks the active owner after the policy read. Shared auth, sync and
+session-validation helpers remain unchanged. This follows the documented
+[server verification contract](https://supabase.com/docs/reference/javascript/auth-getuser);
+the local session alone never authorizes advertising.
+
+The real-helper regression with only the external SDK transport replaced had
+four passing cases and three expected failures before this correction:
+email-less free/premium identities and anonymous denial. The identical cases
+now pass. The final source/hook/provider/controller/identity/shared-session
+suite passed 97 tests, and the regenerated inventory passed all ten unchanged
+checks. Snyk Code, Gitleaks, TruffleHog and Trivy passed on all ten changed
+production/test TypeScript files. Scanner notes on hardcoded isolated test
+credentials were resolved with ephemeral test-only values; assertions and
+test isolation were not weakened. Full preflight and a replacement exact-artifact
+native run remain required before release.

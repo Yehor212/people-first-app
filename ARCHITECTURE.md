@@ -41,7 +41,7 @@ Checked by `npm run constitution:check`. Update these values from fresh command 
 | Metric                       |     Value | Source                                                       |
 | ---------------------------- | --------: | ------------------------------------------------------------ |
 | Source files                 | **1,042** | `find src -name '*.ts' -o -name '*.tsx' ...`                 |
-| Test files                   |   **721** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
+| Test files                   |   **722** | `find src test -name '*.test.*' -o -name '*.spec.*'`         |
 | Silent `.catch(() => {})`    |     **0** | `grep -rn '.catch.*=> {}' src/`                              |
 | React.memo                   |   **124** | `grep -rl 'memo(' src/ --include='*.tsx'`                    |
 | index.css LOC                | **7,859** | `readFileSync(...).split("\\n").length` (constitution guard) |

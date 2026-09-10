@@ -1,4 +1,5 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
+import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAdEntitlement as useAdEntitlementState } from "@/hooks/useAdEntitlement";
 import {
@@ -71,8 +72,8 @@ const input = { enabled: true, accountBoundaryInProgress: false };
 const useAdEntitlement = (value: Parameters<typeof useAdEntitlementState>[0]) =>
   useAdEntitlementState(value).entitlement;
 const session = (id: string): Session => ({
-  access_token: "isolated-test-access",
-  refresh_token: "isolated-test-refresh",
+  access_token: randomUUID(),
+  refresh_token: randomUUID(),
   token_type: "bearer",
   expires_in: 3600,
   user: {

@@ -1,6 +1,6 @@
 import type { AdEntitlement } from "@/lib/adEligibility";
 import { z } from "zod";
-import { getCurrentUser, getVerifiedCurrentSessionUserId, supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { logger } from "@/lib/logger";
 
 const AndroidBannerPolicySchema = z
@@ -11,6 +11,13 @@ const AndroidBannerPolicySchema = z
   })
   .strict();
 
+const AccountIdSchema = z.string().uuid();
+const VerifiedAdAccountSchema = z.object({
+  id: AccountIdSchema,
+  app_metadata: z.record(z.unknown()).optional(),
+  is_anonymous: z.boolean().optional(),
+});
+
 export interface CurrentProductAdEntitlement {
   accountId: string;
   entitlement: AdEntitlement;
@@ -19,17 +26,36 @@ export interface CurrentProductAdEntitlement {
 export async function loadCurrentProductAdEntitlement(
   signal: AbortSignal
 ): Promise<CurrentProductAdEntitlement | null> {
-  if (!supabase || signal.aborted) return null;
+  const client = supabase;
+  if (!client || signal.aborted) return null;
+
+  // A session supplies only the owner to compare. Authorization still needs
+  // the fresh Auth server response below; an email address is not required.
+  const readSessionAccountId = async (): Promise<string | null> => {
+    const { data, error } = await client.auth.getSession();
+    if (error) return null;
+    const parsed = AccountIdSchema.safeParse(data?.session?.user?.id);
+    return parsed.success ? parsed.data : null;
+  };
 
   try {
-    const accountId = await getVerifiedCurrentSessionUserId();
+    const accountId = await readSessionAccountId();
     if (!accountId || signal.aborted) return null;
-    const user = await getCurrentUser();
-    if (!user || user.id !== accountId || signal.aborted) return null;
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError || signal.aborted) return null;
+    const verified = VerifiedAdAccountSchema.safeParse(authData?.user);
+    if (
+      !verified.success ||
+      verified.data.id !== accountId ||
+      verified.data.is_anonymous === true
+    ) {
+      return null;
+    }
+    const user = verified.data;
 
     // app_config writes are service-role-only. This declares the current
     // product model; it does not invent a subscription or purchase record.
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("app_config")
       .select("value")
       .eq("key", "android_banner_policy")
@@ -47,7 +73,7 @@ export async function loadCurrentProductAdEntitlement(
     // Never consult user_metadata for account entitlement.
     const override: unknown = user.app_metadata?.ad_entitlement;
     if (override !== undefined && override !== "free" && override !== "premium") return null;
-    const currentAccountId = await getVerifiedCurrentSessionUserId();
+    const currentAccountId = await readSessionAccountId();
     if (signal.aborted || currentAccountId !== accountId) return null;
 
     return { accountId, entitlement: override === "premium" ? "premium" : "free" };
