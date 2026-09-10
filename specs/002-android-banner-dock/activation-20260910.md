@@ -180,3 +180,41 @@ and dependency. `npm audit --audit-level=high` found zero vulnerabilities.
 The replacement native artifact, its presented banner and protected-surface
 lifecycle, final remote checks, main integration and Play submission remain
 required. Previous source-only green results are not proof of ad serving.
+
+## Native visual verification and sidebar dock correction
+
+The production-configured `1552c0a8` candidate displayed a labelled Google Test
+Ad on the existing API-36 emulator. All 239 AAB assets matched the derived APK;
+the installed base APK SHA-256 was
+`4d00b18aab4829afcd9ad41fdf2796315199e1d84076a792c3657da46cb5db81`.
+Real server free entitlement and UMP `NOT_REQUIRED` / `canRequestAds=true` were
+observed. Menu, Diary, Focus, create-habit/IME, consent OFF and background hid
+the banner; consent ON and foreground resume restored it. Arabic and Hebrew
+portrait RTL retained the banner and readable Habits content; English was
+restored. No advertisement was clicked or completed history created.
+
+The normalized `2a7f5481` full `ci:preflight` exited zero: 10,525 tests passed,
+23 skipped and seven existing todos across 876 passing files. All required
+GitHub checks also passed. The preceding inventory-only failure is preserved:
+the existing Android configuration normalizer ran after the first raw sync,
+so the generator refreshed only `task.sourceBase`, with no changed validator,
+exclusion, inventory row or relaxed origin restriction.
+
+The final short-landscape audit nevertheless found a native overlap: the
+62-dp banner occupied physical y=855..1018 while the fixed sidebar collapse
+button occupied y=861..990. Habits reserved its own dock, but the sidebar did
+not consume that height. Source and native bounds establish the cause, so this
+candidate was not released. The existing sidebar now consumes the same exact
+Android banner height. While that dock is reserved, its full navigation and
+footer share a scrollable flow, retaining access even with the existing Huge
+text setting. No-dock and non-Android behavior remain unchanged; landscape
+advertising is not disabled to conceal the overlap.
+
+Before the sidebar edit, its 18-test run had 16 passing cases and two expected
+LTR/RTL missing-inset failures. The identical cases and navigation/banner/
+fullscreen blast radius now pass 79 tests in seven files; the unchanged
+inventory suite passes ten tests. Standalone app/tooling typechecks and PDI
+diff also passed. Exact corrected native scroll/collapse geometry, fresh broad
+checks, security, main integration and Play submission still require new
+evidence. Live impressions and historical broad T016/T017 physical/performance
+gates are not established by labelled emulator test inventory.

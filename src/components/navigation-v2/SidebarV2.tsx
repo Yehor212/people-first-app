@@ -5,6 +5,8 @@ import { haptics } from "@/lib/haptics";
 import { getNavVisualRole, getRoleTone } from "@/lib/nonOrbVisualRoles";
 import { V2_NAV_ICONS } from "@/lib/v2IconSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAds } from "@/contexts/AdContext";
+import { isAndroid } from "@/lib/platform";
 import { MiniValenceOrb } from "@/components/state-of-mind/MiniValenceOrb";
 import type { NavV2Page } from "@/hooks/useNavigationV2";
 import { ThemeToggleV2 } from "./ThemeToggleV2";
@@ -38,6 +40,9 @@ export const SidebarV2 = memo(function SidebarV2({
   collapseLocked = false,
 }: SidebarV2Props) {
   const { t, isRTL } = useLanguage();
+  const { bannerHeight } = useAds();
+  const nativeBannerInset =
+    isAndroid && Number.isFinite(bannerHeight) ? Math.max(0, bannerHeight) : 0;
   const tx = t as unknown as Record<string, string>;
   const [optimisticPage, setOptimisticPage] = useState<NavV2Page | null>(null);
   const selectedPage = optimisticPage ?? activePage;
@@ -126,7 +131,8 @@ export const SidebarV2 = memo(function SidebarV2({
       role="navigation"
       className={cn(
         forceVisible ? "flex" : "hidden md:flex",
-        "zf-sidebar-adaptive-surface fixed inset-y-0 start-0 z-40 flex-col overflow-y-hidden overflow-x-hidden overscroll-y-contain",
+        "zf-sidebar-adaptive-surface fixed inset-y-0 start-0 z-40 flex-col overflow-x-hidden overscroll-y-contain",
+        nativeBannerInset > 0 ? "overflow-y-auto" : "overflow-y-hidden",
         "border-e border-border/60 bg-card/80 backdrop-blur-lg",
         "[-webkit-backdrop-filter:blur(12px)]",
         "motion-safe:transition-[width] motion-safe:duration-300 ease-out",
@@ -134,6 +140,7 @@ export const SidebarV2 = memo(function SidebarV2({
       )}
       aria-label={tx.navV2PrimaryNav || tx.mainNavigation || "Primary navigation"}
       data-testid="sidebar-v2"
+      style={nativeBannerInset > 0 ? { bottom: `${nativeBannerInset}px` } : undefined}
     >
       {/* Skip link (sighted keyboard users) */}
       <a
@@ -169,9 +176,13 @@ export const SidebarV2 = memo(function SidebarV2({
         )}
       </div>
 
-      {/* Main items */}
+      {/* A native dock can leave too little height for a fixed footer. In that
+          state, keep every destination and action in the sidebar's scroll flow. */}
       <div
-        className="min-h-0 flex flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain p-3"
+        className={cn(
+          "flex flex-col gap-1 overflow-y-auto overscroll-y-contain p-3",
+          nativeBannerInset > 0 ? "flex-none" : "min-h-0 flex-1"
+        )}
         data-testid="sidebar-v2-destinations"
       >
         {items.map((it) => renderItem(it))}

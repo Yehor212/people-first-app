@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { SidebarV2 } from "../SidebarV2";
 
 const languageMock = vi.hoisted(() => ({ isRTL: false }));
+const nativeDockMock = vi.hoisted(() => ({ bannerHeight: 0, isAndroid: true }));
 const backgroundMusicMock = vi.hoisted(() => ({
   enabled: false,
   state: "off",
@@ -38,6 +39,20 @@ vi.mock("../AppBackgroundMusicProvider", () => ({
   useAppBackgroundMusicControl: () => backgroundMusicMock,
 }));
 
+vi.mock("@/contexts/AdContext", () => ({
+  useAds: () => ({ bannerHeight: nativeDockMock.bannerHeight }),
+}));
+
+vi.mock("@/lib/platform", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/platform")>();
+  return {
+    ...actual,
+    get isAndroid() {
+      return nativeDockMock.isAndroid;
+    },
+  };
+});
+
 vi.mock("@/lib/haptics", () => ({
   haptics: { tabChanged: vi.fn(), selection: vi.fn() },
 }));
@@ -51,6 +66,12 @@ vi.mock("@/components/state-of-mind/MiniValenceOrb", () => ({
 }));
 
 describe("SidebarV2", () => {
+  beforeEach(() => {
+    nativeDockMock.bannerHeight = 0;
+    nativeDockMock.isAndroid = true;
+    languageMock.isRTL = false;
+  });
+
   const defaultProps = {
     activePage: "orb" as const,
     onPageChange: vi.fn(),
@@ -190,5 +211,58 @@ describe("SidebarV2", () => {
     expect(footer.className).toContain("shrink-0");
     expect(footer).toContainElement(screen.getByRole("button", { name: "Settings" }));
     expect(footer).toContainElement(screen.getByTestId("sidebar-v2-collapse-toggle"));
+  });
+
+  it.each([false, true])(
+    "reserves the native dock without trapping navigation when RTL=%s",
+    (isRTL) => {
+      languageMock.isRTL = isRTL;
+      nativeDockMock.bannerHeight = 64;
+      const onToggleCollapsed = vi.fn();
+      const { rerender } = render(
+        <SidebarV2 {...defaultProps} onToggleCollapsed={onToggleCollapsed} />
+      );
+      const sidebar = screen.getByRole("navigation", { name: "Primary navigation" });
+      const destinations = screen.getByTestId("sidebar-v2-destinations");
+
+      expect(sidebar).toHaveStyle({ bottom: "64px" });
+      expect(sidebar).toHaveClass("overflow-y-auto");
+      expect(sidebar).not.toHaveClass("overflow-y-hidden");
+      expect(destinations).toHaveClass("flex-none");
+      expect(destinations).not.toHaveClass("flex-1");
+      fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+      expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
+
+      nativeDockMock.bannerHeight = 62;
+      rerender(<SidebarV2 {...defaultProps} collapsed onToggleCollapsed={onToggleCollapsed} />);
+      expect(sidebar).toHaveStyle({ bottom: "62px" });
+      expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
+
+      nativeDockMock.bannerHeight = 0;
+      rerender(<SidebarV2 {...defaultProps} onToggleCollapsed={onToggleCollapsed} />);
+      expect(sidebar.style.bottom).toBe("");
+      expect(sidebar).toHaveClass("overflow-y-hidden");
+      expect(destinations).toHaveClass("min-h-0", "flex-1");
+    }
+  );
+
+  it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])(
+    "ignores an invalid native dock height %s",
+    (height) => {
+      nativeDockMock.bannerHeight = height;
+      render(<SidebarV2 {...defaultProps} />);
+      const sidebar = screen.getByRole("navigation", { name: "Primary navigation" });
+      expect(sidebar.style.bottom).toBe("");
+      expect(sidebar).toHaveClass("overflow-y-hidden");
+    }
+  );
+
+  it("does not reserve an Android dock on other platforms", () => {
+    nativeDockMock.isAndroid = false;
+    nativeDockMock.bannerHeight = 64;
+    render(<SidebarV2 {...defaultProps} />);
+    const sidebar = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(sidebar.style.bottom).toBe("");
+    expect(sidebar).toHaveClass("overflow-y-hidden");
   });
 });
