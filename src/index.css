@@ -981,11 +981,13 @@
     background: var(--v2-edge-bleed-background);
   }
 
-  /* The V2 shell covers the document ancestors. Settings alone uses a
-   * translucent shell, so retain its original opaque #root backdrop. That
-   * backdrop also covers the html/body copies. Boot/recovery keep all fallbacks. */
+  /* The V2 shell covers the document ancestors and the Paper grain below it.
+   * Settings has a translucent shell: retain its root backdrop and the faint
+   * grain contribution there. The visible body vignette stays unchanged.
+   * Boot/recovery keep all fallbacks. */
   html[data-platform="android"].zenflow-v2-edge-to-edge:has(.v2-edge-to-edge-surface),
   html[data-platform="android"] body.zenflow-v2-edge-to-edge:has(.v2-edge-to-edge-surface),
+  html[data-platform="android"][data-theme="paper"] body.zenflow-v2-edge-to-edge:has(.v2-edge-to-edge-surface:not([data-active-page="settings"]))::before,
   html[data-platform="android"] body.zenflow-v2-edge-to-edge #root:has(.v2-edge-to-edge-surface:not([data-active-page="settings"])) {
     background-image: none;
   }

@@ -69,3 +69,11 @@ Candidate O source-input digest: `48103213532d00a8ed44b564ab01dfe26879affad4246e
 O global trace SHA-256: `ac9713d980c000e8e5c1027ab85b31d0485d0f4f8449325e2907e7ea57ecaeae`.
 
 Compact receipts, the immutable control, selected comparison traces/images and the final candidate are retained for the pending integration and Redmi follow-up. Superseded diagnostic captures and verified copied device traces are cleaned separately; pre-existing evidence is preserved.
+
+## Release-variant follow-up — 2026-09-11
+
+PR 116 merged as `1fc0f73d9884b30f8c65750cde01c42479277956` after all four required GitHub checks passed. A release AAB and APK were built and signed with the registered upload certificate. They were held before upload when final release-variant measurements exposed additional tails: 6 of 3,020 frames above 103 ms (maximum 375.35 ms, including a late Mood burst), then 15 of 3,080 (maximum 142.26 ms). The late burst did not repeat in the second capture; its precise cause is not established. Earlier benchmark results are not substituted for these release observations.
+
+A focused native probe found the global Paper grain fully covered on Habits and Planning: disabling its image changed zero pixels in the compared visible app region. Settings differs because its shell is translucent: removal changed some pixels by one channel level. The production follow-up therefore omits the grain only below opaque V2 shells and explicitly retains it for Settings, boot/recovery, other platforms and themes. The visible vignette is unchanged.
+
+A broader temporary grain-removal diagnostic recorded 0 of 3,045 frames over 103 ms (maximum 87.38 ms). That diagnostic also removed Settings grain and is not the shipping implementation or final acceptance. The narrower source rule has a reproduced failing Paper browser assertion followed by four passing stylesheet cases, including preservation of Settings grain and shell-removal fallback. Final native validation must bind this narrower rule to its own APK.
