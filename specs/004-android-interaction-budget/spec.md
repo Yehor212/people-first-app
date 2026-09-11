@@ -5,6 +5,12 @@
 **Input**: Android phones first; ordinary transitions and animations no longer than 103 ms, without glitches, lag or visual degradation.
 
 ## User Scenarios & Testing
+### Owner-authorized continuation — 2026-09-10
+
+The owner approved implementing the diagnosed scene-lifetime optimization using best practices and publishing the qualifying update to Google Play. The earlier phase-specific exclusion of a shared renderer owner is extended only for one Android phone decorative background, never private pages, journal records or lock state. Active-page geometry and complete current appearance/motion remain binding. New visits preserve original palette sampling and initial phase; inactive leases draw no frames. Emulator verification does not imply physical-phone proof. Version/track/signing and release status require fresh evidence.
+
+At21:12UTC the owner approved a separate permanent-placement experiment after candidate-c still failed the native103ms gate. Keep one navigation-owned decorative parent, bind its bounds to the actual active page, retain the existing path on unsupported engines, and compare against immutable candidate-c. Do not combine static-texture caching or accept visual changes. Private-page lifetime and all existing admission requirements remain binding.
+
 ### User Story 1 - Leave the menu without waiting (Priority: P1)
 A person selects Diary, Habits, Planning, Mood or Settings from the phone menu and immediately receives feedback. With reduced motion, closing the menu must never wait for an animation that does not exist.
 **Why this priority**: The audited flow retained the old screen for over one second under reduced motion.

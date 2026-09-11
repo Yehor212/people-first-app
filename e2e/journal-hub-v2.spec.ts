@@ -194,6 +194,70 @@ test.describe("Journal V2 memory portal", () => {
     await waitForStyledDiaryShell(page);
   });
 
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    test(`mobile editor animates its portal and preserves the inert page underneath (${reducedMotion})`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion });
+      await page.evaluate(() => {
+        const underlay = document.querySelector('[data-journal-mobile-view="list"]')!;
+        const shell = document.querySelector('[data-testid="journal-page-shell"]')!;
+        const samples: Array<{ phase: string; opacity: number; height: number }> = [];
+        let frame = 0;
+        const probe = {
+          underlay,
+          height: shell.getBoundingClientRect().height,
+          phase: "enter",
+          samples,
+          stop: () => cancelAnimationFrame(frame),
+        };
+        const sample = () => {
+          const editor = document.querySelector('[data-testid="journal-entry-editor"]');
+          if (editor) samples.push({
+            phase: probe.phase,
+            opacity: Number(getComputedStyle(editor).opacity),
+            height: shell.getBoundingClientRect().height,
+          });
+          frame = requestAnimationFrame(sample);
+        };
+        (window as typeof window & { editorMotionProbe?: typeof probe }).editorMotionProbe = probe;
+        frame = requestAnimationFrame(sample);
+      });
+
+      await openNewJournalEntry(page);
+      const editor = page.getByTestId("journal-entry-editor");
+      await expect(editor).toBeVisible({ timeout: 20_000 });
+      await expect(editor).toHaveCSS("opacity", "1");
+      const underlay = page.locator('[data-journal-mobile-view="list"]');
+      await expect(underlay).toHaveAttribute("inert", "");
+      await expect(underlay).toHaveAttribute("aria-hidden", "true");
+      await page.evaluate(() => {
+        const probe = (window as typeof window & { editorMotionProbe: { phase: string } }).editorMotionProbe;
+        probe.phase = "exit";
+      });
+      await editor.getByRole("button", { name: "Back", exact: true }).click();
+      await expect(editor).toHaveCount(0);
+      await expect(underlay).not.toHaveAttribute("inert");
+      const result = await page.evaluate(() => {
+        const probe = (window as typeof window & { editorMotionProbe: {
+          underlay: Element; height: number; stop: () => void;
+          samples: Array<{ phase: string; opacity: number; height: number }>;
+        } }).editorMotionProbe;
+        probe.stop();
+        return {
+          sameUnderlay: probe.underlay === document.querySelector('[data-journal-mobile-view="list"]'),
+          height: probe.height,
+          samples: probe.samples,
+        };
+      });
+      expect(result.sameUnderlay).toBe(true);
+      expect(result.samples.length).toBeGreaterThan(0);
+      expect(result.samples.some((s) => s.phase === "enter" && s.opacity > 0 && s.opacity < 1))
+        .toBe(reducedMotion === "no-preference");
+      expect(result.samples.some((s) => s.phase === "exit" && s.opacity > 0 && s.opacity < 1))
+        .toBe(reducedMotion === "no-preference");
+      expect(result.samples.every((s) => Math.abs(s.height - result.height) < 1)).toBe(true);
+    });
+  }
+
   test("keeps the diary first screen clean and moves the portal behind the stats button", async ({
     page,
   }) => {

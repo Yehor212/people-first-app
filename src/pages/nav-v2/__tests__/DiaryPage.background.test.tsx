@@ -1,9 +1,10 @@
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useThemeStore } from "@/stores/themeStore";
 import { cosmicStars } from "@/components/cosmic/CosmicStarField";
 import { DiaryPage } from "../DiaryPage";
+import { RetainedCosmicSceneProvider } from "../CosmicBgAdapter";
 import {
   DAY_COSMIC_MOTES,
   DAY_COSMIC_PHOTONS,
@@ -50,10 +51,12 @@ vi.mock("@/features/journal/JournalModule", () => ({
   ),
 }));
 
-async function renderDiary() {
+async function renderDiary(retained = false) {
   let result!: ReturnType<typeof render>;
   await act(async () => {
-    result = render(<DiaryPage />);
+    result = render(retained ? (
+      <RetainedCosmicSceneProvider enabled={runtime.android}><DiaryPage /></RetainedCosmicSceneProvider>
+    ) : <DiaryPage />);
   });
   expect(screen.getByTestId("journal-page-boundary")).toBeInTheDocument();
   return result;
@@ -71,6 +74,66 @@ describe("DiaryPage canonical Orb background", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps page-owned flourishes in the stationary scene's paint context and disposes them on exit", async () => {
+    runtime.android = true;
+    vi.stubGlobal("CSS", { supports: () => true });
+    const pendingFrames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      pendingFrames.set(++frameId, callback);
+      return frameId;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => pendingFrames.delete(id));
+    const { rerender } = await renderDiary(true);
+    const day = screen.getByTestId("day-cosmic-background");
+    const host = day.parentElement;
+    const flourish = screen.getByTestId("orb-day-flourish").parentElement as HTMLElement;
+    expect(host).toContainElement(flourish);
+    expect(flourish).toHaveClass("cosmic-scene-flourish");
+    expect(screen.getByTestId("diary-orb-background")).not.toContainElement(flourish);
+
+    fireEvent(window, Object.assign(new Event("pointermove"), {
+      pointerType: "mouse", clientX: window.innerWidth * 0.75, clientY: window.innerHeight * 0.25,
+    }));
+    act(() => {
+      const callbacks = [...pendingFrames.values()];
+      pendingFrames.clear();
+      for (const callback of callbacks) callback(20);
+    });
+    expect(flourish.style.getPropertyValue("--parallax-x")).toBe("0.500");
+    expect(flourish.style.getPropertyValue("--parallax-y")).toBe("-0.500");
+
+    act(() => useThemeStore.setState({ appliedTheme: "ink" }));
+    expect(screen.getByTestId("cosmic-orb-background").parentElement).toBe(host);
+    expect(host).toContainElement(flourish);
+    act(() => { vi.advanceTimersByTime(1_200); });
+    expect(flourish).toContainElement(screen.getByTestId("shooting-star"));
+    act(() => useThemeStore.setState({ appliedTheme: "paper" }));
+    expect(screen.getByTestId("day-cosmic-background")).toBe(day);
+    expect(flourish).toContainElement(screen.getByTestId("orb-day-flourish"));
+
+    rerender(<RetainedCosmicSceneProvider enabled>{null}</RetainedCosmicSceneProvider>);
+    expect(day.isConnected).toBe(true);
+    expect(day).toHaveAttribute("data-android-day-active", "false");
+    expect(flourish.isConnected).toBe(false);
+    expect(screen.queryByTestId("journal-page-boundary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("shooting-star")).not.toBeInTheDocument();
+    expect(pendingFrames.size).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("keeps the original flourish location when stationary placement is unsupported", async () => {
+    runtime.android = true;
+    vi.stubGlobal("CSS", { supports: () => false });
+    await renderDiary(true);
+    const background = screen.getByTestId("diary-orb-background");
+    const flourish = screen.getByTestId("orb-day-flourish").parentElement;
+    expect(flourish?.parentElement).toBe(background);
+    expect(flourish).toHaveClass("z-0");
+    expect(document.querySelector("[data-cosmic-scene-frame]")).toBeNull();
   });
 
   it("supplies one complete daylight scene instead of the mountain wallpaper", async () => {

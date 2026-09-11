@@ -7,7 +7,7 @@ import { isAndroid } from "@/lib/platform";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
 import { OrbDayFlourish } from "./OrbDayFlourish";
 import { ShootingStar } from "./ShootingStar";
-import { useCosmicParallax } from "./useCosmicParallax";
+import { CosmicSceneFlourish } from "./CosmicSceneFlourish";
 import type { JournalEntryPrefill, JournalEntrySuggestion } from "@/features/journal";
 import { useDiaryDraftStore } from "@/stores/diaryDraftStore";
 import { formatDate } from "@/lib/utils";
@@ -22,7 +22,6 @@ const JournalModule = lazy(
 const DiaryOrbBackground = memo(function DiaryOrbBackground() {
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const shouldAnimate = useShouldAnimate({ respectRuntimePerformance: !isAndroid });
-  const parallaxRef = useCosmicParallax<HTMLDivElement>();
   const isPaperTheme = appliedTheme === "paper";
 
   return (
@@ -32,9 +31,9 @@ const DiaryOrbBackground = memo(function DiaryOrbBackground() {
       className={`v2-readable-page v2-readable-page--ambient pointer-events-none absolute inset-0 z-0 overflow-hidden [@media(forced-colors:active)]:hidden ${isPaperTheme ? "orb-day-scope" : "dark orb-cosmic-scope journal-wallpaper--night"}`}
     >
       <CosmicBgAdapter />
-      <div ref={parallaxRef} className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <CosmicSceneFlourish>
         {shouldAnimate ? (isPaperTheme ? <OrbDayFlourish /> : <ShootingStar />) : null}
-      </div>
+      </CosmicSceneFlourish>
     </div>
   );
 });

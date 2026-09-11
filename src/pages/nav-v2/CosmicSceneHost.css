@@ -1,0 +1,75 @@
+/* The slot preserves the page's actual containing block without contributing
+ * layout. Only the current lease is an anchor, including during Suspense. */
+.cosmic-scene-slot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cosmic-scene-slot[data-cosmic-scene-anchor="true"] {
+  anchor-name: --zenflow-cosmic-scene-slot;
+}
+
+/* Paint behind the current page inside the existing isolated navigation root.
+ * CSS tracks content growth, scroll, safe areas and RTL/rail offsets directly;
+ * no guessed viewport height, second renderer or per-frame measurement loop. */
+.cosmic-scene-frame {
+  position: absolute;
+  position-anchor: --zenflow-cosmic-scene-slot;
+  top: anchor(--zenflow-cosmic-scene-slot top, 0px);
+  left: anchor(--zenflow-cosmic-scene-slot left, 0px);
+  /* Slot cleanup can force layout before React commits data-active=false.
+   * Keep the last size throughout that gap so gradients keep their raster. */
+  width: anchor-size(--zenflow-cosmic-scene-slot width, var(--cosmic-scene-retained-width, 0px));
+  height: anchor-size(--zenflow-cosmic-scene-slot height, var(--cosmic-scene-retained-height, 0px));
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+  will-change: opacity;
+}
+
+.cosmic-scene-frame[data-active="false"] {
+  visibility: hidden;
+}
+
+/* Retain only decoration at its last measured size. Fixed positioning keeps
+ * the invisible cache from extending the current page's scroll range. */
+.cosmic-scene-frame[data-active="false"][data-retained-paint="true"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--cosmic-scene-retained-width);
+  height: var(--cosmic-scene-retained-height);
+  visibility: visible;
+  opacity: 0;
+}
+
+.cosmic-scene-frame .day-cosmic {
+  will-change: transform;
+}
+
+:root[data-theme="paper"] .cosmic-scene-frame .day-cosmic {
+  --day-body-vignette-layer: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    hsl(var(--zf-trace) / 0.1) 100%
+  );
+}
+
+:root[data-theme="paper"]
+  .cosmic-scene-frame[data-active="false"][data-retained-paint="true"] .day-cosmic {
+  display: block;
+}
+
+/* Explicit stacking preserves the original Day/static < flourish < ready
+ * canvas order even when independent React portals append in another order. */
+.cosmic-scene-frame .cosmic-scene-flourish {
+  z-index: 1;
+}
+
+/* The page still owns its veil, flourish lifetime, content, lock and editor. Release
+ * only the opaque backing that would otherwise cover its relocated scenery. */
+.v2-edge-to-edge-surface:has(> .cosmic-scene-frame[data-active="true"])
+  [data-testid="journal-page-shell"] {
+  background-color: transparent;
+}

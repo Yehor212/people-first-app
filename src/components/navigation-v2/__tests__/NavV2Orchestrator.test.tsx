@@ -1,8 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NavV2Orchestrator } from "../NavV2Orchestrator";
 import { readFileSync } from "node:fs";
 import { useUIStore, useUserDataStore } from "@/stores";
+import { useThemeStore } from "@/stores/themeStore";
+
+const sceneHarness = vi.hoisted(() => ({ enabled: false, tier: "phone" }));
+
+vi.mock("@/hooks/useShouldAnimate", () => ({ useShouldAnimate: () => true }));
 
 const { mockIsFeatureVisible } = vi.hoisted(() => ({
   mockIsFeatureVisible: vi.fn<(feature: string) => boolean>(),
@@ -133,7 +138,7 @@ vi.mock("@/lib/platform", async (importOriginal) => {
 });
 
 vi.mock("@/hooks/useDeviceTier", () => ({
-  useDeviceTier: () => ({ tier: "phone" }),
+  useDeviceTier: () => ({ tier: sceneHarness.tier }),
 }));
 
 vi.mock("@/hooks/useKeyboardShortcuts", () => ({
@@ -161,15 +166,31 @@ vi.mock("../V2MindfulMomentLayer", () => ({
 }));
 
 // Mock page shells as lightweight markers
-vi.mock("@/pages/nav-v2/OrbPage", () => ({
-  OrbPage: () => <div data-testid="orb-page">orb</div>,
-}));
+vi.mock("@/pages/nav-v2/OrbPage", async () => {
+  const { CosmicBgAdapter } = await import("@/pages/nav-v2/CosmicBgAdapter");
+  return {
+    OrbPage: () => (
+      <div data-testid="orb-page">
+        {sceneHarness.enabled && <CosmicBgAdapter />}
+        orb
+      </div>
+    ),
+  };
+});
 vi.mock("@/pages/nav-v2/HabitsPage", () => ({
   HabitsPage: () => <div data-testid="habits-page">habits</div>,
 }));
-vi.mock("@/pages/nav-v2/DiaryPage", () => ({
-  DiaryPage: () => <div data-testid="diary-page">diary</div>,
-}));
+vi.mock("@/pages/nav-v2/DiaryPage", async () => {
+  const { CosmicBgAdapter } = await import("@/pages/nav-v2/CosmicBgAdapter");
+  return {
+    DiaryPage: () => (
+      <div data-testid="diary-page">
+        {sceneHarness.enabled && <CosmicBgAdapter />}
+        diary
+      </div>
+    ),
+  };
+});
 vi.mock("@/pages/nav-v2/planning/PlanningPage", () => ({
   PlanningPage: () => <div data-testid="planning-page">planning</div>,
 }));
@@ -253,6 +274,9 @@ vi.mock("../MobileNavV2", () => ({
 
 describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
   beforeEach(() => {
+    sceneHarness.enabled = false;
+    sceneHarness.tier = "phone";
+    useThemeStore.setState({ appliedTheme: "paper" });
     // Reset URL between tests so useNavigationV2 starts on /orb
     window.localStorage.clear();
     window.history.replaceState({}, "", "/");
@@ -511,6 +535,68 @@ describe("NavV2Orchestrator (desktop sidebar, phone drawer)", () => {
     );
     expect(await screen.findByTestId("planning-page")).toBeInTheDocument();
     expect(screen.queryByTestId("nav-v2-route-fallback")).not.toBeInTheDocument();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([false, true])("reuses only Android decoration and unmounts private pages (anchors: %s)", async (anchored) => {
+    vi.stubGlobal("CSS", { supports: () => anchored });
+    sceneHarness.enabled = true;
+    const { unmount } = render(<NavV2Orchestrator />);
+    const initialDay = await screen.findByTestId("day-cosmic-background");
+    const initialCanvas = screen.getByTestId("android-day-webgl-large-effects");
+    const initialFrame = initialCanvas.closest("[data-cosmic-scene-frame]");
+    if (anchored) expect(initialFrame).not.toBeNull();
+
+    const navigate = async (page: "Diary" | "Planning") => {
+      fireEvent.click(screen.getByTestId("nav-v2-open-drawer"));
+      fireEvent.click(await screen.findByRole("button", { name: page }));
+      act(() => drawerLifecycle.onExitComplete?.());
+      await screen.findByTestId(`${page.toLowerCase()}-page`);
+    };
+
+    await navigate("Diary");
+    expect(screen.queryByTestId("orb-page")).not.toBeInTheDocument();
+    expect(screen.getByTestId("day-cosmic-background") === initialDay).toBe(true);
+    expect(screen.getByTestId("android-day-webgl-large-effects") === initialCanvas).toBe(true);
+    expect(screen.getAllByTestId("day-cosmic-background")).toHaveLength(1);
+    expect(initialCanvas.closest("[data-cosmic-scene-frame]")).toBe(initialFrame);
+
+    await navigate("Planning");
+    expect(screen.queryByTestId("diary-page")).not.toBeInTheDocument();
+    expect(initialCanvas.isConnected).toBe(anchored);
+    expect(initialCanvas).toHaveAttribute("data-android-day-active", "false");
+    expect(document.body).not.toHaveClass("android-day-orb-opaque-surface");
+
+    await navigate("Diary");
+    expect(screen.getByTestId("day-cosmic-background") === initialDay).toBe(true);
+    expect(screen.getByTestId("android-day-webgl-large-effects") === initialCanvas).toBe(true);
+    expect(screen.getAllByTestId("android-day-webgl-large-effects")).toHaveLength(1);
+    expect(initialCanvas.closest("[data-cosmic-scene-frame]")).toBe(initialFrame);
+
+    unmount();
+    expect(initialCanvas.isConnected).toBe(false);
+    expect(document.body).not.toHaveClass("android-day-orb-opaque-surface");
+  });
+
+  it.each([false, true])("preserves the current Android page and scene during rotation (anchors: %s)", async (anchored) => {
+    vi.stubGlobal("CSS", { supports: () => anchored });
+    sceneHarness.enabled = true;
+    const { rerender } = render(<NavV2Orchestrator />);
+    const page = await screen.findByTestId("orb-page");
+    const day = screen.getByTestId("day-cosmic-background");
+    const canvas = screen.getByTestId("android-day-webgl-large-effects");
+    sceneHarness.tier = "tablet";
+    rerender(<NavV2Orchestrator onMindfulMomentComplete={vi.fn()} />);
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-nav-layout", "web");
+    expect(screen.getByTestId("orb-page") === page).toBe(true);
+    expect(screen.getByTestId("day-cosmic-background") === day).toBe(true);
+    expect(screen.getByTestId("android-day-webgl-large-effects") === canvas).toBe(true);
+    sceneHarness.tier = "phone";
+    rerender(<NavV2Orchestrator onMindfulMomentComplete={vi.fn()} />);
+    expect(screen.getByTestId("nav-v2-orchestrator")).toHaveAttribute("data-nav-layout", "phone");
+    expect(screen.getByTestId("orb-page") === page).toBe(true);
+    expect(screen.getByTestId("android-day-webgl-large-effects") === canvas).toBe(true);
   });
 
   it("resets the Android document scroll before a newly selected primary route is shown", async () => {

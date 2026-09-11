@@ -16,6 +16,7 @@ import {
 import { subscribeToDeepLinks } from "@/lib/deepLinks";
 import { requestDiaryEditorOpen } from "@/lib/diaryDeepLinkIntent";
 import { isAndroid } from "@/lib/platform";
+import { RetainedCosmicSceneProvider } from "@/pages/nav-v2/CosmicBgAdapter";
 import { V2_SHELL_ICONS } from "@/lib/v2IconSystem";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { SidebarV2 } from "./SidebarV2";
@@ -434,9 +435,11 @@ export const NavV2Orchestrator = memo(function NavV2Orchestrator({
         </Suspense>
       )}
 
-      <Suspense fallback={<NavV2RouteFallback label={tx.loading || "Loading..."} />}>
-        {pageNode}
-      </Suspense>
+      <RetainedCosmicSceneProvider enabled={isAndroid}>
+        <Suspense fallback={<NavV2RouteFallback label={tx.loading || "Loading..."} />}>
+          {pageNode}
+        </Suspense>
+      </RetainedCosmicSceneProvider>
 
       {(!focusIsRunning && focusEndTime === null || globalAdOverlayReady) && (
         <V2FocusMiniPlayer

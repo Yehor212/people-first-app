@@ -1,6 +1,7 @@
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useId,
   useRef,
@@ -135,7 +136,7 @@ import {
   mayPresentJournalSaveCeremony,
   type JournalSaveCeremonyLifecycleToken,
 } from "./save-ceremony/journalSaveCeremonyLifecycle";
-import { isNative, platform } from "@/lib/platform";
+import { isAndroid, isNative, platform } from "@/lib/platform";
 import { DiaryMiniOrb } from "./DiaryMiniOrb";
 import { DiaryWallpaper } from "./DiaryWallpaper";
 import { getJournalPreviewText } from "./journalDisplay";
@@ -473,28 +474,53 @@ function JournalDeferredPanelFallback({
 function JournalMobileViewSurface({
   children,
   className,
+  entranceHeader,
+  firstEntry,
+  interactive = true,
   shouldAnimate,
   view,
 }: {
   children: ReactNode;
   className: string;
+  entranceHeader?: ReactNode;
+  firstEntry?: { current: boolean };
+  interactive?: boolean;
   shouldAnimate: boolean;
   view: "stats" | "viewing" | "list";
 }) {
   const isPresent = useIsPresent();
+  const concealed = !isPresent || !interactive;
+  const [keepEntryHeaderVisible] = useState(
+    () => entranceHeader !== undefined && firstEntry?.current === true,
+  );
+  useEffect(() => {
+    if (firstEntry) firstEntry.current = false;
+  }, [firstEntry]);
 
   return (
     <motion.div
-      inert={!isPresent}
-      aria-hidden={!isPresent ? true : undefined}
-      initial={shouldAnimate ? { opacity: 0 } : undefined}
+      inert={concealed}
+      aria-hidden={concealed ? true : undefined}
+      initial={shouldAnimate && !keepEntryHeaderVisible ? { opacity: 0 } : undefined}
       animate={{ opacity: 1 }}
       exit={shouldAnimate ? { opacity: 0 } : undefined}
       transition={{ duration: 0.2 }}
-      className={cn(className, !isPresent && "pointer-events-none")}
+      className={cn(className, concealed && "pointer-events-none")}
       data-journal-mobile-view={view}
     >
-      {children}
+      {entranceHeader === undefined ? children : (
+        <>
+          {entranceHeader}
+          <motion.div
+            initial={shouldAnimate && keepEntryHeaderVisible ? { opacity: 0 } : undefined}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            {children}
+          </motion.div>
+        </>
+      )}
     </motion.div>
   );
 }
@@ -862,6 +888,7 @@ export const JournalModule = memo(function JournalModule({
     startOpen || disableCardShell || isPagePresentation ? "open" : "card"
   );
   const [entryCount, setEntryCount] = useState(0);
+  const firstMobileListEntryRef = useRef(true);
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
   const [showMobileDiarySidebar, setShowMobileDiarySidebar] = useState(false);
   const [diaryTabSection, setDiaryTabSection] = useState<DiarySidebarSection>("entry");
@@ -1339,6 +1366,14 @@ type ResetStep =
   }, [isDiaryDesktopLayout, showPasswordSettings, showRemovePasswordConfirm]);
 
   const journal = useJournal();
+  const [pageDecorationReady, setPageDecorationReady] = useState(false);
+  useLayoutEffect(() => {
+    // Both initial loads can replace the loading layout. Acquire decoration
+    // once that layout is resolved, then keep it through later refreshes.
+    if (!security.loading && (security.isLocked || security.loadError || !journal.loading)) {
+      setPageDecorationReady(true);
+    }
+  }, [security.loading, security.isLocked, security.loadError, journal.loading]);
   const [mobileEditorSurfacePresent, setMobileEditorSurfacePresent] =
     useState(false);
   useEffect(() => {
@@ -2964,6 +2999,122 @@ type ResetStep =
   }
 
   // ── Full-screen overlay (portal to escape PullToRefresh transform ancestor) ──
+  const preserveMobileHeaderEntry = isAndroid && isPagePresentation;
+  const mobileListHeader = (
+    <div className="border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {showAppNavMenuButton ? (
+            <button
+              type="button"
+              onClick={onOpenNavMenu}
+              className={mobileHeaderMenuClass}
+              title={ts.navV2OpenMenu || "Open menu"}
+              aria-label={ts.navV2OpenMenu || "Open menu"}
+              aria-expanded={navMenuOpen}
+              aria-controls="nav-v2-drawer"
+              data-testid="journal-mobile-app-nav-menu"
+            >
+              <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
+            </button>
+          ) : null}
+          <div className="flex min-w-0 items-center gap-2">
+            <h2
+              className="min-w-0 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]"
+              data-testid="journal-mobile-title"
+            >
+              {ts.journalTitle || "Diary"}
+            </h2>
+            {rewardsEnabled && streak > 0 && (
+              <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-xs font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
+                <Flame className="h-3 w-3" aria-hidden="true" />
+                {streak}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            ref={mobileDiarySidebarTriggerRef}
+            onClick={handleOpenMobileDiarySidebar}
+            className={mobileHeaderMenuClass}
+            title={ts.diarySidebarShow || "Open diary panel"}
+            aria-label={ts.diarySidebarShow || "Open diary panel"}
+            aria-expanded={showMobileDiarySidebar}
+            aria-controls="journal-mobile-diary-sidebar"
+            data-testid="journal-mobile-diary-sidebar-trigger"
+          >
+            <PanelLeftOpen className="pointer-events-none h-5 w-5 rtl:scale-x-[-1]" aria-hidden="true" />
+          </button>
+          {!hideCloseButton && (
+            <button
+              onClick={handleClose}
+              className={mobileHeaderActionClass}
+              aria-label={ts.close || "Close"}
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
+      <div
+        className="grid grid-cols-4 gap-1 px-4 pb-3"
+        role="toolbar"
+        aria-label={ts.journalTitle || "Diary"}
+        data-testid="journal-mobile-section-toolbar"
+      >
+        <button
+          type="button"
+          onClick={handleShowDiaryPanel}
+          className={mobileHeaderTabClass}
+          title={ts.journalEntry || ts.journalTitle || "Entry"}
+          aria-label={ts.journalEntry || ts.journalTitle || "Entry"}
+          aria-pressed={diaryTabSection === "entry"}
+          aria-current={diaryTabSection === "entry" ? "page" : undefined}
+          data-testid="journal-mobile-entry"
+        >
+          <PenLine className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={handleOpenStats}
+          className={mobileHeaderTabClass}
+          title={ts.statistics || "Statistics"}
+          aria-label={ts.statistics || "Statistics"}
+          aria-pressed={diaryTabSection === "stats"}
+          data-testid="journal-mobile-stats"
+        >
+          <BarChart3 className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={handleOpenFavorites}
+          className={mobileHeaderTabClass}
+          title={ts.journalFavorites || "Favorites"}
+          aria-label={ts.journalFavorites || "Favorites"}
+          aria-pressed={diaryTabSection === "favorites"}
+          aria-current={diaryTabSection === "favorites" ? "page" : undefined}
+          data-testid="journal-mobile-favorites"
+        >
+          <Star className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => openSettings()}
+          className={mobileHeaderTabClass}
+          title={ts.journalSettings || "Diary settings"}
+          aria-label={ts.settings || "Settings"}
+          aria-pressed={diaryTabSection === "settings"}
+          aria-current={diaryTabSection === "settings" ? "page" : undefined}
+          data-testid="journal-mobile-settings"
+        >
+          <Settings className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+
   const moduleContent = (
     <div
       onKeyDown={handleModuleKeyDown}
@@ -3897,57 +4048,44 @@ type ResetStep =
                   onExitComplete={handleMobileEditorExitComplete}
                 >
                   {!privateMode && journal.view === "editing" && (
-                    <motion.div
+                    <Suspense
                       key="editor-transition"
-                      {...(shouldAnimate()
-                        ? entryModeRef.current === "fab"
-                          ? {
-                              initial: { scale: 0, opacity: 0, transformOrigin: "bottom right" },
-                              animate: { scale: 1, opacity: 1 },
-                              exit: { scale: 0, opacity: 0, transformOrigin: "bottom right" },
-                              transition: { type: "spring" as const, stiffness: 300, damping: 25 },
-                            }
-                          : {
-                              layoutId: journal.activeEntryId
-                                ? `entry-${journal.activeEntryId}`
-                                : undefined,
-                              initial: { opacity: 0 },
-                              animate: { opacity: 1 },
-                              exit: { opacity: 0 },
-                              transition: { type: "spring" as const, stiffness: 300, damping: 25 },
-                            }
-                        : {})}
-                      className="contents"
+                      fallback={createPortal(
+                        <div className="fixed inset-0 z-[60] flex bg-background">
+                          <JournalDeferredPanelFallback label={t.loading || "Loading..."} />
+                        </div>,
+                        document.body,
+                      )}
                     >
-                      <Suspense fallback={<JournalDeferredPanelFallback label={t.loading || "Loading..."} />}>
-                        <LazyJournalEntryEditor
-                          key={`mobile-editor-${journal.activeEntryId ?? "new"}`}
-                          entry={journal.activeEntry}
-                          entryPrefill={activeEntryPrefill}
-                          milestonesEnabled={rewardsEnabled}
-                          onSave={handleSaveEntry}
-                          onAddPhoto={journal.addPhoto}
-                          onRemovePhoto={journal.removePhoto}
-                          onAddAudio={journal.addAudio}
-                          onRemoveAudio={journal.removeAudio}
-                          onDelete={
-                            journal.activeEntryId
-                              ? () => handleDeleteEntry(journal.activeEntryId!)
-                              : undefined
-                          }
-                          onBack={handleEditorBack}
-                          onPanicExit={handlePanicExitFromEditor}
-                          onBindExitRequestHandler={(handler) => {
-                            editorExitRequestRef.current = handler;
-                          }}
-                          onExitRequestCancelled={handleEditorExitRequestCancelled}
-                          onDirtyStateChange={handleEditorDirtyStateChange}
-                          onToggleHabit={onToggleHabit}
-                          onAddGratitude={handleAddGratitudeWithSpace}
-                          onReleaseThought={handleReleaseThought}
-                        />
-                      </Suspense>
-                    </motion.div>
+                      <LazyJournalEntryEditor
+                        key={`mobile-editor-${journal.activeEntryId ?? "new"}`}
+                        entry={journal.activeEntry}
+                        entryPrefill={activeEntryPrefill}
+                        milestonesEnabled={rewardsEnabled}
+                        onSave={handleSaveEntry}
+                        onAddPhoto={journal.addPhoto}
+                        onRemovePhoto={journal.removePhoto}
+                        onAddAudio={journal.addAudio}
+                        onRemoveAudio={journal.removeAudio}
+                        onDelete={
+                          journal.activeEntryId
+                            ? () => handleDeleteEntry(journal.activeEntryId!)
+                            : undefined
+                        }
+                        onBack={handleEditorBack}
+                        onPanicExit={handlePanicExitFromEditor}
+                        entryTransition={entryModeRef.current === "fab" ? "fab" : "fade"}
+                        transitionLayoutId={journal.activeEntryId ? `entry-${journal.activeEntryId}` : undefined}
+                        onBindExitRequestHandler={(handler) => {
+                          editorExitRequestRef.current = handler;
+                        }}
+                        onExitRequestCancelled={handleEditorExitRequestCancelled}
+                        onDirtyStateChange={handleEditorDirtyStateChange}
+                        onToggleHabit={onToggleHabit}
+                        onAddGratitude={handleAddGratitudeWithSpace}
+                        onReleaseThought={handleReleaseThought}
+                      />
+                    </Suspense>
                   )}
                 </AnimatePresence>
 
@@ -4033,126 +4171,17 @@ type ResetStep =
                     </JournalMobileViewSurface>
                   )}
 
-                  {journal.view === "list" && (
+                  {(journal.view === "list" || journal.view === "editing") && (
                     <JournalMobileViewSurface
                       key="list"
                       view="list"
+                      interactive={journal.view !== "editing" && !mobileEditorSurfacePresent}
+                      entranceHeader={preserveMobileHeaderEntry ? mobileListHeader : undefined}
+                      firstEntry={preserveMobileHeaderEntry ? firstMobileListEntryRef : undefined}
                       shouldAnimate={shouldAnimate()}
                       className="flex flex-col flex-1 min-h-0"
                     >
-                      {/* Header */}
-                      <div className="border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl [-webkit-backdrop-filter:blur(16px)]">
-                        <div className="flex items-center justify-between gap-3 px-4 py-3">
-                          <div className="flex min-w-0 flex-1 items-center gap-3">
-                            {showAppNavMenuButton ? (
-                              <button
-                                type="button"
-                                onClick={onOpenNavMenu}
-                                className={mobileHeaderMenuClass}
-                                title={ts.navV2OpenMenu || "Open menu"}
-                                aria-label={ts.navV2OpenMenu || "Open menu"}
-                                aria-expanded={navMenuOpen}
-                                aria-controls="nav-v2-drawer"
-                                data-testid="journal-mobile-app-nav-menu"
-                              >
-                                <JournalMenuIcon className="pointer-events-none h-5 w-5" aria-hidden="true" />
-                              </button>
-                            ) : null}
-                            <div className="flex min-w-0 items-center gap-2">
-                              <h2
-                                className="min-w-0 break-words whitespace-normal text-base font-bold leading-tight text-foreground [hyphens:manual] [overflow-wrap:normal]"
-                                data-testid="journal-mobile-title"
-                              >
-                                {ts.journalTitle || "Diary"}
-                              </h2>
-                              {rewardsEnabled && streak > 0 && (
-                                <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-orange-500/10 bg-gradient-to-r from-orange-500/15 to-amber-500/10 px-1.5 py-0.5 text-xs font-bold text-orange-500 motion-safe:animate-streak-fire-glow">
-                                  <Flame className="h-3 w-3" aria-hidden="true" />
-                                  {streak}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1">
-                            <button
-                              type="button"
-                              ref={mobileDiarySidebarTriggerRef}
-                              onClick={handleOpenMobileDiarySidebar}
-                              className={mobileHeaderMenuClass}
-                              title={ts.diarySidebarShow || "Open diary panel"}
-                              aria-label={ts.diarySidebarShow || "Open diary panel"}
-                              aria-expanded={showMobileDiarySidebar}
-                              aria-controls="journal-mobile-diary-sidebar"
-                              data-testid="journal-mobile-diary-sidebar-trigger"
-                            >
-                              <PanelLeftOpen className="pointer-events-none h-5 w-5 rtl:scale-x-[-1]" aria-hidden="true" />
-                            </button>
-                            {!hideCloseButton && (
-                              <button
-                                onClick={handleClose}
-                                className={mobileHeaderActionClass}
-                                aria-label={ts.close || "Close"}
-                              >
-                                <X className="h-5 w-5" aria-hidden="true" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          className="grid grid-cols-4 gap-1 px-4 pb-3"
-                          role="toolbar"
-                          aria-label={ts.journalTitle || "Diary"}
-                          data-testid="journal-mobile-section-toolbar"
-                        >
-                          <button
-                            type="button"
-                            onClick={handleShowDiaryPanel}
-                            className={mobileHeaderTabClass}
-                            title={ts.journalEntry || ts.journalTitle || "Entry"}
-                            aria-label={ts.journalEntry || ts.journalTitle || "Entry"}
-                            aria-pressed={diaryTabSection === "entry"}
-                            aria-current={diaryTabSection === "entry" ? "page" : undefined}
-                            data-testid="journal-mobile-entry"
-                          >
-                            <PenLine className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleOpenStats}
-                            className={mobileHeaderTabClass}
-                            title={ts.statistics || "Statistics"}
-                            aria-label={ts.statistics || "Statistics"}
-                            aria-pressed={diaryTabSection === "stats"}
-                            data-testid="journal-mobile-stats"
-                          >
-                            <BarChart3 className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleOpenFavorites}
-                            className={mobileHeaderTabClass}
-                            title={ts.journalFavorites || "Favorites"}
-                            aria-label={ts.journalFavorites || "Favorites"}
-                            aria-pressed={diaryTabSection === "favorites"}
-                            aria-current={diaryTabSection === "favorites" ? "page" : undefined}
-                            data-testid="journal-mobile-favorites"
-                          >
-                            <Star className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openSettings()}
-                            className={mobileHeaderTabClass}
-                            title={ts.journalSettings || "Diary settings"}
-                            aria-label={ts.settings || "Settings"}
-                            aria-pressed={diaryTabSection === "settings"}
-                            aria-current={diaryTabSection === "settings" ? "page" : undefined}
-                            data-testid="journal-mobile-settings"
-                          >
-                            <Settings className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </div>
+                      {preserveMobileHeaderEntry ? null : mobileListHeader}
 
                       {diaryTabSection === "favorites" ? (
                         <div className="relative flex-1 min-h-0">
@@ -4859,7 +4888,9 @@ type ResetStep =
         dir={isRTL ? "rtl" : "ltr"}
         data-testid="journal-page-shell"
       >
-        {pageBackground === undefined ? <DiaryWallpaper surface="page" /> : pageBackground}
+        {pageBackground === undefined ? <DiaryWallpaper surface="page" /> : (
+          isAndroid && !pageDecorationReady ? null : pageBackground
+        )}
         {moduleContent}
       </section>
     );

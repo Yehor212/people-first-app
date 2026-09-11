@@ -981,6 +981,15 @@
     background: var(--v2-edge-bleed-background);
   }
 
+  /* The V2 shell covers the document ancestors. Settings alone uses a
+   * translucent shell, so retain its original opaque #root backdrop. That
+   * backdrop also covers the html/body copies. Boot/recovery keep all fallbacks. */
+  html[data-platform="android"].zenflow-v2-edge-to-edge:has(.v2-edge-to-edge-surface),
+  html[data-platform="android"] body.zenflow-v2-edge-to-edge:has(.v2-edge-to-edge-surface),
+  html[data-platform="android"] body.zenflow-v2-edge-to-edge #root:has(.v2-edge-to-edge-surface:not([data-active-page="settings"])) {
+    background-image: none;
+  }
+
   @media (min-width: 768px) {
     html {
       scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears/disappears on desktop */

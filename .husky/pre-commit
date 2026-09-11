@@ -8,6 +8,6 @@
 # Human emergency bypass exists in Git, but agents must never use --no-verify.
 node scripts/agent-workspace-git-hook.cjs pre-commit &&
   npm run typecheck &&
-  npx lint-staged &&
+  npx lint-staged --no-stash &&
   node scripts/check-canonical-orbs.mjs &&
   node scripts/doc-counts.cjs --check

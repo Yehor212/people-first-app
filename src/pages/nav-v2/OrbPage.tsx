@@ -25,7 +25,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { registerModalCloseCallback } from "@/lib/androidBackHandler";
 import { OrbAmbienceControl } from "./OrbAmbienceControl";
 import { CosmicBgAdapter } from "./CosmicBgAdapter";
-import { useCosmicParallax } from "./useCosmicParallax";
+import { CosmicSceneFlourish } from "./CosmicSceneFlourish";
 import { ShootingStar } from "./ShootingStar";
 import { OrbDayFlourish } from "./OrbDayFlourish";
 import { OrbRefineStep, OrbSelectStep } from "./OrbPageSteps";
@@ -55,6 +55,8 @@ function OrbStepScene({
       aria-hidden={!isPresent ? true : undefined}
       className="absolute inset-0 flex min-h-0 flex-col"
       data-testid="orb-page-step-scene"
+      initial={shouldAnimate ? bloom.initial : bloomStatic.initial}
+      animate={shouldAnimate ? bloom.animate : bloomStatic.animate}
       exit={shouldAnimate ? bloom.exit : bloomStatic.exit}
       transition={shouldAnimate ? bloom.transition : bloomStatic.transition}
     >
@@ -114,7 +116,6 @@ export const OrbPage = memo(function OrbPage({
   const [visualAttempt, setVisualAttempt] = useState(0);
   const [visualStatus, setVisualStatus] = useState<OrbVisualStatus>("pending");
   const [coldLoading, setColdLoading] = useState(isColdOrbNavigation);
-  const parallaxRef = useCosmicParallax<HTMLDivElement>();
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const [viewport, setViewport] = useState(() => ({
     width: typeof window === "undefined" ? 1280 : window.innerWidth,
@@ -445,12 +446,7 @@ export const OrbPage = memo(function OrbPage({
 
           <CosmicBgAdapter />
 
-          <div
-            ref={parallaxRef}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-            data-testid="cosmic-orb-flourish-layer"
-          >
+          <CosmicSceneFlourish testId="cosmic-orb-flourish-layer">
             {visualReady && shouldRunDecorativeMotion ? (
               isPaperTheme ? (
                 <OrbDayFlourish />
@@ -458,7 +454,7 @@ export const OrbPage = memo(function OrbPage({
                 <ShootingStar />
               )
             ) : null}
-          </div>
+          </CosmicSceneFlourish>
 
           <div
             data-testid="orb-page-runtime-content"
