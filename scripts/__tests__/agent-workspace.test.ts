@@ -1459,21 +1459,22 @@ async function humanReviewFixture(label: string): Promise<HumanReviewFixture> {
 }
 
 async function makeTreeWritable(candidate: string): Promise<void> {
-  let info;
   try {
-    info = await lstat(candidate);
+    const info = await lstat(candidate);
+    if (info.isSymbolicLink()) return;
+    if (!info.isDirectory()) {
+      await chmod(candidate, 0o600);
+      return;
+    }
+    await chmod(candidate, 0o700);
+    const entries = await readdir(candidate);
+    await Promise.all(entries.map((entry) => makeTreeWritable(path.join(candidate, entry))));
   } catch (error) {
+    // Temporary Git entries can disappear after lstat but before chmod/readdir.
+    // Missing entries need no cleanup; other filesystem errors must still fail.
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
     throw error;
   }
-  if (info.isSymbolicLink()) return;
-  if (!info.isDirectory()) {
-    await chmod(candidate, 0o600);
-    return;
-  }
-  await chmod(candidate, 0o700);
-  const entries = await readdir(candidate);
-  await Promise.all(entries.map((entry) => makeTreeWritable(path.join(candidate, entry))));
 }
 
 function inspectHumanFixture(fixture: HumanReviewFixture) {

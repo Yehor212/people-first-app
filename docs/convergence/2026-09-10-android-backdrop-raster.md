@@ -60,7 +60,7 @@ No journal content, habit completion, mood record, account credentials or permis
 
 WebView tile-memory warnings remain: nine during N theme changes and four during O global navigation. The bounded runs showed no matching native crash/ANR; these warnings are not claimed fixed. The recurring notification-setup warning also occurred on the original build and remains unexplained. The complete physical-phone, all-language, all-platform and semantic input-latency gates are not closed by this patch.
 
-The task permits local validation only. GitHub's active `ZenFlow main delivery baseline` ruleset requires a pull request plus Actions checks `build`, `android-gate`, `ios-gate`, and `production-data-integrity`. Main integration and store release require resolution of that explicit task/ruleset conflict. No remote protection is weakened and no local status is presented as a hosted check.
+The owner explicitly authorized the four GitHub-required checks for PR 116 on 2026-09-11, as an exception to the active local-only task rule. The existing workflows run in build-only mode; site deployment is not activated. Main integration and store release still require successful checks. The first build job exposed an ENOENT race in temporary Git-fixture cleanup after lstat; cleanup now tolerates a disappeared entry through chmod/readdir while preserving every functional assertion and propagating other filesystem errors. No remote protection is weakened and no local status is presented as a hosted check.
 
 Version 41 build/signing helpers are prepared separately. Benchmark APKs are not upload artifacts. Signed release identity, merged source, uploaded version and Play review/availability each require their own receipt.
 
