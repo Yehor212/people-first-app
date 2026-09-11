@@ -60,6 +60,7 @@ for (const theme of ["paper", "ink", "oled"] as const) {
       const read = () => ({
         documentImages: [html, document.body, root].map((e) => getComputedStyle(e).backgroundImage),
         shellImage: getComputedStyle(shell).backgroundImage,
+        paperGrainImage: getComputedStyle(document.body, "::before").backgroundImage,
       });
       const originalPlatform = html.dataset.platform;
       html.dataset.platform = "web";
@@ -81,10 +82,13 @@ for (const theme of ["paper", "ink", "oled"] as const) {
 
     expect(result.web.shellImage).toContain("gradient(");
     expect(result.android.documentImages).toEqual(["none", "none", "none"]);
+    expect(result.android.paperGrainImage).toBe("none");
+    if (theme === "paper") expect(result.web.paperGrainImage).toContain("url(");
     expect(result.android.shellImage).toBe(result.web.shellImage);
     expect(result.translucentSettings.documentImages).toEqual([
       "none", "none", result.web.documentImages[2],
     ]);
+    expect(result.translucentSettings.paperGrainImage).toBe(result.web.paperGrainImage);
     expect(result.uncovered.documentImages).toEqual(result.web.documentImages);
     expect(result.uncovered.documentImages[0]).toContain("gradient(");
     expect(result.remounted).toEqual(result.android);
