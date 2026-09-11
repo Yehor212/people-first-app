@@ -1,5 +1,25 @@
 # Tasks: Android interaction budget
 
+## Released-app correction follow-up — 2026-09-10/11
+
+The owner requested whole-app Android lag/glitch corrections with no visual degradation, followed by main integration and a signed Google Play update. Candidate O is `2.1.3 (41)`: exact anchor-release paint dimensions, initial Diary readiness, covered-gradient ownership including the translucent Settings exception, visible portal motion with an inert Diary underlay, and a complete incoming Mood-step Bloom are implemented. Reproduced regressions have local tests; native O global navigation has 0 frames over 103 ms out of 3,062, maximum 88.94 ms. The earlier strict all-scenario/physical-phone admission is not closed: N editor/theme tails and WebView tile warnings remain documented. See `docs/convergence/2026-09-10-android-backdrop-raster.md` for source, native, visual and local-test evidence.
+
+T033 remains partially verified and T034 remains open. The owner explicitly authorized the four required GitHub checks for PR 116 on 2026-09-11, resolving the local-only task/ruleset conflict for this integration. The existing workflows run in build-only mode. A first build-job failure in temporary Git-fixture cleanup is corrected without changing functional assertions; successful exact-head checks, merged-source signing and Play upload are still required. Do not bypass branch protection or substitute local results for GitHub Actions statuses.
+
+## Permanent-placement continuation — 2026-09-10, 21:12 UTC
+
+Owner-approved Task4 in the shared-scene implementation plan is in progress. Candidate-c and its2378 build inputs are preserved as the immediate control; the fresh existing source baseline passes60/60. T033/T034 remain open. Permanent DOM placement, exact active-page geometry, original capability fallback and private-page unmounting require new RED/GREEN and native comparison before any performance or visual claim. No release has begun.
+
+## Decorative-scene candidate admission — 2026-09-10
+
+T032 implementation is verified; T033 and T034 remain open. Candidate-c retains decoration without retaining private Diary pages and preserves12 matched afternoon WebGL buffers exactly. The final APK `74344ec36bd57805137623308a7a33d9b7a8304b0f12fe314d15a000626cb99b` and all2378 build inputs match actual native observations. Seven focused source suites pass91/91, journal suites98/98, and full current CI exits0 with10568 passed,23 skipped and7 pre-existing unfinished cases. No acceptance budget or scanner policy was weakened.
+
+Fresh CDP-off native measurement still FAILS103ms:7 of1629 observed app frames exceed the budget; all three Diary visits contain an over-budget frame, maximum161.001792ms. All observed frames link to display tokens, but this is not a semantic input-to-final-presentation or physical-phone acceptance measurement. Existing/advisory large-text RTL layout findings and the recurrent notification warning remain explicit; source equality does not create missing candidate-c/platform visual proof.
+
+Release is STOP, not completed. No new signed AAB, version increment, commit/push or Play Console write occurred in this implementation step. Current scope, evidence and remaining checks: `docs/superpowers/plans/2026-09-10-android-shared-decorative-scene.md` and `output/android-103ms/diary-scene-lifetime-20260910/CANDIDATE-REVIEW.md`. Earlier dated results below retain their original artifact/acceptance scope.
+
+Current local browser follow-up passes14 Chrome route/profile cases and8 Diary i18n scenarios with no console/request/HTTP errors in the strict smoke. Settled phone/desktop Ink/Paper images are inspected; this is not installed-PWA, WKWebView/Tauri, full native/human or public-release parity. T033 and T034 remain unchecked.
+
 ## Exact-final RTL follow-up — 2026-09-09, 07:55 UTC
 
 Fresh actual `bed4cf97` runs now cover Arabic/Paper/Huge/reduced and Hebrew/Ink/Huge/normal docked portrait/landscape, nested sticker-search lease handoff, Hebrew Home/resume, observed zero-overlap floating handwriting and settled/scrolled Tools. Both compact probes pass all three geometry checks. Eighteen observation/image-hash receipts are validated; transitional/setup exclusions remain explicit rather than counted as passing cases. The app/test APKs, restored public/OS state and all non-documentary build inputs match. No production source changed. Detailed proof: `output/android-103ms/keyboard-viewport-lease-20260909/FINAL_RTL_RUNTIME.md`.
@@ -179,3 +199,13 @@ T028 update21:07UTC: animated-padding candidate is rejected despite4+12 native G
 - [ ] T031 [US2] Repeat exact-build real editor controls, three warmed recordings/ten cycles, day/night, English/ar/he, Huge text, normal/reduced motion, floating/docked/Back/rotation/resume and separate CDP-off presentation evidence; scan scoped sources, run full applicable CI and restore original settings in output/android-103ms/stable-root-app-20260909 (FR-003/FR-004/FR-006/FR-007/FR-020). Keep existing broader acceptance and integration tasks open until their own evidence exists.
 
 Execution is SOLO: T029 → T030 → T031, then remaining T009/T015/T018/T019/T023 and the authorized integration goal. Baseline and candidate recordings cannot run concurrently with builds, scanners or traces. No completed historical item is reopened merely to restage the plan. T028's rejected callback assertions remain archived; new regression evidence must test FR-019's boundary, not reinstate the failed implementation.
+
+## US2 Decorative-scene lifetime continuation — 2026-09-10
+
+- [x] T032 [US2] Implement one native Android decorative scene owner with leases, inactive-frame suppression and per-visit palette/phase semantics. Preserve private-page unmounting and original non-Android ownership; rerun three reproduced failures and lifecycle/blast-radius checks. Six source suites pass67/67, with separate typecheck/lint and native resource/identity proof. Responsive ownership is platform-stable. This closes implementation, not the full visual/performance/release gate. Detail: `docs/superpowers/plans/2026-09-10-android-shared-decorative-scene.md`.
+- [ ] T033 [US2] Bind candidate to installed APK and verify native geometry, complete visual/motion parity, failure/lifecycle/RTL/Huge/IME paths and repeated CDP-off presentation evidence; reject appearance regression or worse repeated tails. Physical-phone proof stays separate.
+- [ ] T034 [US3] After candidate admission, execute the authorized update/release using verified Play app/track/highest code and original signing path. Run release/security/CI checks and reread Console status; upload is not availability and does not close unrelated performance gates.
+
+Execution remains SOLO T032 → T033 → T034. Owner authorized implementation and qualifying publication on2026-09-10; full quality and no-private-page-retention remain binding.
+
+T033 continuation18:38UTC: candidate-a daylight PNGs are byte-identical to baseline at all12 matched phases; three native visits reuse the same canvas and three GL programs, inactive Planning submits zero draws. The first navigation trace still exceeds103ms. The next bounded source patch separates the Android page's first header appearance from the unchanged200ms content entrance; its two selected tests reproduce the bug, and all98 journal tests subsequently pass. Native combined-candidate geometry, transitions and repeated traces are still open; neither source GREEN nor buffer equality authorizes release by itself.

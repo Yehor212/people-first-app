@@ -369,6 +369,9 @@ interface JournalEntryEditorProps {
   onBindExitRequestHandler?: (handler: (() => void) | null) => void;
   onExitRequestCancelled?: () => void;
   onDirtyStateChange?: (dirty: boolean) => void;
+  /** Navigation intent; animation belongs to the visible, portaled editor shell. */
+  entryTransition?: "fade" | "fab";
+  transitionLayoutId?: string;
 }
 
 export const JournalEntryEditor = memo(function JournalEntryEditor({
@@ -393,6 +396,8 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   onBindExitRequestHandler,
   onExitRequestCancelled,
   onDirtyStateChange,
+  entryTransition,
+  transitionLayoutId,
 }: JournalEntryEditorProps) {
   const themeTransition = useThemeTransition();
   const journalTitleInputId = useId();
@@ -400,6 +405,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
   const [floatingFocusPhotoId, setFloatingFocusPhotoId] = useState<string | null>(null);
   const desktopPhotoInputRef = useRef<HTMLInputElement>(null);
   const [desktopInitialPhotoFile, setDesktopInitialPhotoFile] = useState<File | null>(null);
+  const animateEntry = !desktop && entryTransition !== undefined && shouldAnimate();
   const state = useJournalEditorState({
     entry,
     entryPrefill,
@@ -1123,7 +1129,23 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
     : null;
 
   const editorShell = (
-    <div
+    <motion.div
+      {...(animateEntry
+        ? entryTransition === "fab"
+          ? {
+              initial: { scale: 0, opacity: 0, transformOrigin: "bottom right" },
+              animate: { scale: 1, opacity: 1 },
+              exit: { scale: 0, opacity: 0, transformOrigin: "bottom right" },
+              transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+            }
+          : {
+              layoutId: transitionLayoutId,
+              initial: { opacity: 0 },
+              animate: { opacity: 1 },
+              exit: { opacity: 0 },
+              transition: { type: "spring" as const, stiffness: 300, damping: 25 },
+            }
+        : {})}
       ref={editorOverlayRef}
       role={desktop ? undefined : "dialog"}
       aria-modal={desktop ? undefined : true}
@@ -3728,7 +3750,7 @@ export const JournalEntryEditor = memo(function JournalEntryEditor({
           /* handled internally */
         }}
       />
-    </div>
+    </motion.div>
   );
 
   return desktop || typeof document === "undefined"

@@ -85,7 +85,14 @@ const mediaQueryMocks = vi.hoisted(() => ({
 }));
 const motionPresence = vi.hoisted(() => ({
   isPresent: true,
+  animate: false,
+  android: false,
   listeners: new Set<() => void>(),
+}));
+
+vi.mock("@/lib/platform", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/platform")>(),
+  get isAndroid() { return motionPresence.android; },
 }));
 
 const hapticsMocks = vi.hoisted(() => ({
@@ -223,7 +230,7 @@ vi.mock("@/lib/a11y", () => ({
 }));
 
 vi.mock("@/lib/animationUtils", () => ({
-  shouldAnimate: () => false,
+  shouldAnimate: () => motionPresence.animate,
   zenMotion: {
     gentle: { duration: 0 },
     snappy: { duration: 0 },
@@ -557,7 +564,11 @@ vi.mock("framer-motion", () => ({
     },
     div: forwardRef<HTMLDivElement, MotionMockProps<HTMLDivElement>>((props, ref) => {
       const { children, ...rest } = omitMotionProps(props);
-      return <div ref={ref} {...rest}>{children}</div>;
+      const initial = props.initial;
+      const initialOpacity = initial && typeof initial === "object" && "opacity" in initial
+        ? String(initial.opacity)
+        : undefined;
+      return <div ref={ref} {...rest} data-mock-entry-opacity={initialOpacity}>{children}</div>;
     }),
     figure: (props: MotionMockProps<HTMLElement>) => {
       const { children, ...rest } = omitMotionProps(props);
@@ -619,6 +630,8 @@ describe("JournalModule orb handoff behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     motionPresence.isPresent = true;
+    motionPresence.animate = false;
+    motionPresence.android = false;
     motionPresence.listeners.clear();
     securityMocks.listeners.clear();
     securityMocks.revision = 0;
@@ -720,6 +733,41 @@ describe("JournalModule orb handoff behavior", () => {
     });
   });
 
+  it("acquires Android decoration after both initial loads and retains it during refresh", async () => {
+    motionPresence.android = true;
+    securityMocks.state.loading = true;
+    let resolveEntries!: () => void;
+    storageMocks.getEntriesPage.mockReturnValue(new Promise((resolve) => {
+      resolveEntries = () => resolve({ entries: [], totalCount: 0, hasMore: false, nextCursor: null });
+    }));
+    render(
+      <JournalModule startOpen disableCardShell presentation="page"
+        pageBackground={<div data-testid="supplied-page-background" aria-hidden="true" />} />,
+    );
+    expect(screen.queryByTestId("supplied-page-background")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeVisible();
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByTestId("supplied-page-background")).not.toBeInTheDocument();
+    await act(async () => { resolveEntries(); await flushJournalModuleEffects(); });
+    await waitFor(() => expect(screen.getByTestId("supplied-page-background")).toBeInTheDocument());
+    const background = screen.getByTestId("supplied-page-background");
+    updateSecurityState({ loading: true });
+    expect(screen.getByTestId("supplied-page-background")).toBe(background);
+    expect(screen.getByRole("status")).toBeVisible();
+  });
+
+  it.each(["locked", "error"])("shows Android decoration for the %s shell without waiting for entries", async (state) => {
+    motionPresence.android = true;
+    securityMocks.state.isLocked = true;
+    securityMocks.state.loadError = state === "error";
+    storageMocks.getEntriesPage.mockReturnValue(new Promise(() => {}));
+    render(<JournalModule startOpen disableCardShell presentation="page"
+      pageBackground={<div data-testid="supplied-page-background" aria-hidden="true" />} />);
+    await waitFor(() => expect(screen.getByTestId("supplied-page-background")).toBeInTheDocument());
+    expect(screen.queryByTestId("journal-mobile-section-toolbar")).not.toBeInTheDocument();
+  });
+
   it("renders a supplied page background once instead of the legacy wallpaper", async () => {
     const pageBackground = <div data-testid="supplied-page-background" aria-hidden="true" />;
     const result = render(
@@ -739,10 +787,47 @@ describe("JournalModule orb handoff behavior", () => {
     expect(screen.queryByTestId("supplied-page-background")).not.toBeInTheDocument();
   });
 
+  it.each([
+    { android: true, wide: false },
+    { android: true, wide: true },
+    { android: false, wide: false },
+  ])("keeps the page scenery mounted through an editor overlay ($android, $wide)", async ({ android, wide }) => {
+    motionPresence.android = android;
+    mediaQueryMocks.matches = wide;
+    render(
+      <JournalModule startOpen disableCardShell presentation="page"
+        initialEntrySuggestion={initialSuggestion}
+        pageBackground={<div data-testid="supplied-page-background" aria-hidden="true" />} />,
+    );
+    const background = await screen.findByTestId("supplied-page-background");
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    await screen.findByRole("button", { name: /confirm editor exit/i });
+    expect(screen.getByTestId("supplied-page-background")).toBe(background);
+    fireEvent.click(screen.getByRole("button", { name: /confirm editor exit/i }));
+    expect(await screen.findByTestId("supplied-page-background")).toBe(background);
+  });
+
   it("retains the default page wallpaper when no presenter supplies a background", async () => {
     render(<JournalModule startOpen disableCardShell presentation="page" />);
     await act(flushJournalModuleEffects);
     expect(screen.getAllByTestId("journal-wallpaper")).toHaveLength(1);
+  });
+
+  it("conceals the retained mobile list under its editor and removes both on lock", async () => {
+    const { container } = render(
+      <JournalModule startOpen disableCardShell presentation="page"
+        initialEntrySuggestion={initialSuggestion} />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /continue writing/i }));
+    await screen.findByTestId("journal-entry-editor");
+    const list = container.querySelector('[data-journal-mobile-view="list"]');
+    expect(list).toBeInTheDocument();
+    expect(list).toHaveAttribute("inert");
+    expect(list).toHaveAttribute("aria-hidden", "true");
+
+    updateSecurityState({ isLocked: true, hasPassword: true });
+    expect(container.querySelector('[data-journal-mobile-view="list"]')).toBeNull();
+    expect(screen.queryByTestId("journal-entry-editor")).not.toBeInTheDocument();
   });
 
   it("makes the retained mobile diary view inert only while it exits", async () => {
@@ -827,6 +912,58 @@ describe("JournalModule orb handoff behavior", () => {
     );
     expect(screen.getByRole("button", { name: "Open menu" })).toHaveAttribute("aria-expanded", "true");
     expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])("keeps the first Android header visible while preserving the content entrance (android=%s)", async (android) => {
+    motionPresence.android = android;
+    motionPresence.animate = true;
+    securityMocks.state.loading = true;
+    render(
+      <JournalModule
+        startOpen
+        disableCardShell
+        hideCloseButton
+        presentation="page"
+        showAppNavMenu
+        onOpenNavMenu={vi.fn()}
+        initialEntrySuggestion={initialSuggestion}
+      />,
+    );
+    await act(flushJournalModuleEffects);
+    expect(screen.getByRole("heading", { name: "Diary" })).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("Loading...");
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    const title = screen.getByTestId("journal-mobile-title");
+    const titleEntrance = title.closest('[data-mock-entry-opacity="0"]');
+    if (android) expect(titleEntrance).toBeNull();
+    else expect(titleEntrance).not.toBeNull();
+    const content = screen.getByText(initialSuggestion.note!);
+    expect(content.closest('[data-mock-entry-opacity="0"]')).not.toBeNull();
+    const view = title.closest('[data-journal-mobile-view="list"]');
+    act(() => {
+      motionPresence.isPresent = false;
+      for (const listener of motionPresence.listeners) listener();
+    });
+    expect(view).toHaveAttribute("inert");
+    expect(view).toHaveAttribute("aria-hidden", "true");
+    act(() => {
+      motionPresence.isPresent = true;
+      for (const listener of motionPresence.listeners) listener();
+    });
+
+    updateSecurityState({ loading: true });
+    await act(flushJournalModuleEffects);
+    expect(screen.queryByText(initialSuggestion.note!)).not.toBeInTheDocument();
+    updateSecurityState({ loading: false });
+    await act(flushJournalModuleEffects);
+    // Only the first list entrance gets this treatment; later mounts retain
+    // the original whole-view fade and the same private-content gate.
+    expect(screen.getByTestId("journal-mobile-title").closest('[data-mock-entry-opacity="0"]')).not.toBeNull();
+    expect(storageMocks.saveEntry).not.toHaveBeenCalled();
+    expect(securityMocks.unlock).not.toHaveBeenCalled();
   });
 
   it("removes loading feedback only when security settles and hides private suggestions during a later check", async () => {

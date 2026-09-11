@@ -46,7 +46,7 @@ interface DayAmbiencePalette {
 }
 
 interface AndroidDayLargeEffectsActivityController {
-  setActive: (active: boolean) => void;
+  setActive: (active: boolean, resetClock: boolean) => void;
 }
 
 interface ProgramResources {
@@ -512,15 +512,19 @@ export function useAndroidDayLargeEffects(
   active: boolean,
   rootRef: RefObject<HTMLDivElement | null>,
   canvasRef: RefObject<HTMLCanvasElement | null>,
-  onFallbackRequired: (required: boolean) => void
+  onFallbackRequired: (required: boolean) => void,
+  activationKey = 0
 ): void {
   const activeRef = useRef(active);
+  const activationKeyRef = useRef(activationKey);
   const activityControllerRef = useRef<AndroidDayLargeEffectsActivityController | null>(null);
 
   useLayoutEffect(() => {
+    const resetClock = activationKeyRef.current !== activationKey;
+    activationKeyRef.current = activationKey;
     activeRef.current = active;
-    activityControllerRef.current?.setActive(active);
-  }, [active]);
+    activityControllerRef.current?.setActive(active, resetClock);
+  }, [active, activationKey]);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -653,7 +657,7 @@ export function useAndroidDayLargeEffects(
     };
 
     const draw = (frameTime: number) => {
-      if (disposed || !gl || !renderer) return;
+      if (disposed || !activeRef.current || !gl || !renderer) return;
       if (fixedPhaseMs !== null) elapsedMs = fixedPhaseMs;
       else if (lastFrameTime !== null) elapsedMs += Math.max(0, frameTime - lastFrameTime);
       lastFrameTime = frameTime;
@@ -744,6 +748,7 @@ export function useAndroidDayLargeEffects(
     };
 
     const presentRenderer = () => {
+      if (disposed || !activeRef.current) return;
       if (!resize()) {
         showPending();
         return;
@@ -787,7 +792,7 @@ export function useAndroidDayLargeEffects(
       gl = null;
     };
     const handleContextRestored = () => {
-      if (disposed) return;
+      if (disposed || !activeRef.current) return;
       try {
         configureRenderer();
       } catch (error) {
@@ -816,23 +821,28 @@ export function useAndroidDayLargeEffects(
     ownerWindow.addEventListener("resize", handleResize);
 
     try {
-      configureRenderer();
+      if (activeRef.current) configureRenderer();
     } catch (error) {
       clearReadyState();
       logger.warn("[android-day-effects] CSS fallback kept because WebGL setup failed", error);
     }
 
     const activityController: AndroidDayLargeEffectsActivityController = {
-      setActive: (nextActive) => {
+      setActive: (nextActive, resetClock) => {
         activeRef.current = nextActive;
+        if (resetClock) {
+          elapsedMs = 0;
+          lastFrameTime = null;
+          lastPresentedFrame = null;
+        }
         if (!nextActive) {
           stopLoop();
           return;
         }
-        if (!gl || !renderer) return;
         staticUniformsDirty = true;
         try {
-          presentRenderer();
+          if (!gl || !renderer) configureRenderer();
+          else presentRenderer();
         } catch (error) {
           stopLoop();
           clearReadyState();

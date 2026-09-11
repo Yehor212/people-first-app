@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useRef, useState, type CSSProperties } from "react";
 import { isAndroid } from "@/lib/platform";
 import {
   SETTINGS_MOTE_MOTION,
@@ -15,9 +15,8 @@ import {
   DAY_COSMIC_SUN_THREADS,
 } from "./dayCosmicMotionModel";
 import { useAndroidDayOrbOpaqueSurface } from "./useAndroidDayOrbOpaqueSurface";
+import { sampleDayPalette, type DayMode } from "./dayCosmicMode";
 import "./DayCosmicBackground.css";
-
-type DayMode = "dawn" | "morning" | "afternoon" | "golden" | "dusk";
 
 type DayPaletteStyle = CSSProperties & {
   [key: `--day-${string}`]: string;
@@ -25,6 +24,7 @@ type DayPaletteStyle = CSSProperties & {
 
 interface DayCosmicBackgroundProps {
   active?: boolean;
+  activationKey?: number;
   presentation?: "orb" | "settings";
   motionEnabled: boolean;
 }
@@ -134,12 +134,13 @@ const DAY_PALETTES: Record<DayMode, DayPaletteStyle> = {
 
 /**
  * Canonical seven-layer daylight scene used by the day orb and Settings Paper.
- * Its five palettes are sampled once per mount; the parent owns the effective
+ * Its five palettes are sampled once per visit; the parent owns the effective
  * motion gate. Decoration stays aria-hidden, non-interactive, deterministic,
  * and limited to transform/opacity animation with a static paper-grain layer.
  */
 export const DayCosmicBackground = memo(function DayCosmicBackground({
   active = true,
+  activationKey = 0,
   presentation = "orb",
   motionEnabled,
 }: DayCosmicBackgroundProps) {
@@ -155,20 +156,20 @@ export const DayCosmicBackground = memo(function DayCosmicBackground({
     active,
     rootRef,
     androidLargeEffectsCanvasRef,
-    setAndroidDynamicFallbackRequired
+    setAndroidDynamicFallbackRequired,
+    activationKey
   );
 
-  // Sample local time once per mount so Mood and Settings keep one stable
-  // atmosphere during the current visit. A route remount samples the new time;
+  // Sample local time once per visit so Mood and Settings keep one stable
+  // atmosphere. A new lease samples time without rebuilding the retained scene;
   // palette variables stay local instead of invalidating the whole document.
-  const daymode = useMemo<DayMode>(() => {
-    const hour = new Date().getHours();
-    if (hour < 9) return "dawn";
-    if (hour < 12) return "morning";
-    if (hour < 17) return "afternoon";
-    if (hour < 19) return "golden";
-    return "dusk";
-  }, []);
+  const [palette, setPalette] = useState(() => sampleDayPalette(activationKey));
+  // A night-only visit must not sample daylight before its first appearance.
+  // Adjust before commit so the renderer never presents an old visit's palette.
+  if (active && palette.activationKey !== activationKey) {
+    setPalette(sampleDayPalette(activationKey));
+  }
+  const daymode = palette.mode;
 
   // Settings keeps the canonical palette/layers but uses a quieter deterministic
   // field. Selecting every third point preserves the established distribution

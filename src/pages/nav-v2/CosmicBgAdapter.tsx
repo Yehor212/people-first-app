@@ -1,9 +1,15 @@
-import { memo, useLayoutEffect, useState, type CSSProperties } from "react";
+import { memo, useLayoutEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { CosmicStar, cosmicStars } from "@/components/cosmic/CosmicStarField";
 import { useShouldAnimate } from "@/hooks/useShouldAnimate";
 import { isAndroid } from "@/lib/platform";
 import { useThemeStore } from "@/stores/themeStore";
 import { DayCosmicBackground } from "./DayCosmicBackground";
+import {
+  CosmicSceneHostProvider,
+  CosmicSceneSlot,
+  useCosmicSceneHost,
+  type CosmicSceneActivity,
+} from "./CosmicSceneHost";
 import "./CosmicBgAdapter.css";
 
 type CosmicBgVariant = "auto" | "day" | "night" | "starry";
@@ -117,14 +123,16 @@ const NightCosmicBackground = memo(function NightCosmicBackground({
  *
  * a11y: aria-hidden on root, pointer-events: none on every layer.
  */
-export const CosmicBgAdapter = memo(function CosmicBgAdapter({
+const CosmicBgScene = memo(function CosmicBgScene({
   variant = "auto",
-}: CosmicBgAdapterProps) {
+  active = true,
+  activationKey = 0,
+}: CosmicBgAdapterProps & Partial<CosmicSceneActivity>) {
   const shouldAnimate = useShouldAnimate({ respectRuntimePerformance: !isAndroid });
   const appliedTheme = useThemeStore((s) => s.appliedTheme);
   const resolvedVariant =
     variant === "auto" ? (appliedTheme === "paper" ? "day" : "night") : variant;
-  const dayActive = resolvedVariant === "day";
+  const dayActive = active && resolvedVariant === "day";
   const persistAndroidDaySurface = isAndroid && variant === "auto";
   const [hasMountedDaySurface, setHasMountedDaySurface] = useState(dayActive);
 
@@ -174,15 +182,60 @@ export const CosmicBgAdapter = memo(function CosmicBgAdapter({
   if (persistAndroidDaySurface && (dayActive || hasMountedDaySurface)) {
     return (
       <>
-        <DayCosmicBackground active={dayActive} motionEnabled={shouldAnimate} />
-        {dayActive ? null : <NightCosmicBackground shouldAnimate={shouldAnimate} />}
+        <DayCosmicBackground
+          active={dayActive}
+          activationKey={activationKey}
+          motionEnabled={shouldAnimate}
+        />
+        {active && !dayActive && (
+          <NightCosmicBackground key={activationKey} shouldAnimate={shouldAnimate} />
+        )}
       </>
     );
   }
 
-  return dayActive ? (
-    <DayCosmicBackground motionEnabled={shouldAnimate} />
+  return !active ? null : dayActive ? (
+    <DayCosmicBackground activationKey={activationKey} motionEnabled={shouldAnimate} />
   ) : (
-    <NightCosmicBackground shouldAnimate={shouldAnimate} />
+    <NightCosmicBackground key={activationKey} shouldAnimate={shouldAnimate} />
+  );
+});
+
+const renderRetainedScene = (activity: CosmicSceneActivity) => <CosmicBgScene {...activity} />;
+
+export function RetainedCosmicSceneProvider({
+  enabled,
+  children,
+}: {
+  enabled: boolean;
+  children: ReactNode;
+}) {
+  const appliedTheme = useThemeStore((state) => state.appliedTheme);
+  const anchored = enabled && typeof CSS !== "undefined"
+    && typeof CSS.supports === "function"
+    && CSS.supports("anchor-name", "--zenflow-cosmic-scene-slot")
+    && CSS.supports("position-anchor", "--zenflow-cosmic-scene-slot")
+    && CSS.supports("top", "anchor(--zenflow-cosmic-scene-slot top, 0px)")
+    && CSS.supports("width", "anchor-size(--zenflow-cosmic-scene-slot width, 0px)");
+  return (
+    <CosmicSceneHostProvider
+      enabled={enabled}
+      placement={anchored ? "anchored" : "page"}
+      sceneClassName={appliedTheme === "paper" ? "orb-day-scope" : "dark orb-cosmic-scope"}
+      renderScene={renderRetainedScene}
+    >
+      {children}
+    </CosmicSceneHostProvider>
+  );
+}
+
+export const CosmicBgAdapter = memo(function CosmicBgAdapter({
+  variant,
+}: CosmicBgAdapterProps) {
+  const acquireScene = useCosmicSceneHost();
+  return acquireScene && (variant === undefined || variant === "auto") ? (
+    <CosmicSceneSlot acquireScene={acquireScene} />
+  ) : (
+    <CosmicBgScene variant={variant} />
   );
 });

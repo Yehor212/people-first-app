@@ -341,10 +341,14 @@ vi.mock("@/lib/motion", () => ({
     </div>
   ),
   bloom: {
+    initial: { scale: 0.92, opacity: 0, y: 8 },
+    animate: { scale: 1, opacity: 1, y: 0 },
     exit: { scale: 0.96, opacity: 0, y: 8 },
     transition: { duration: 0.32, ease: [0.2, 0.9, 0.2, 1] },
   },
   bloomStatic: {
+    initial: { scale: 1, opacity: 1, y: 0 },
+    animate: { scale: 1, opacity: 1, y: 0 },
     exit: { scale: 1, opacity: 0, y: 0 },
     transition: { duration: 0 },
   },
@@ -983,6 +987,20 @@ describe("OrbPage progressive flow", () => {
       .find((scene) => scene !== outgoing);
     expect(incoming).toBeInTheDocument();
     expect(incoming).not.toHaveAttribute("inert");
+  });
+
+  it.each([true, false])("owns the complete incoming step appearance when motion is %s", (motionEnabled) => {
+    mockUseShouldAnimate.mockReturnValue(motionEnabled);
+    render(<OrbPage onAddMood={onAddMoodMock} />);
+    const outgoing = screen.getByTestId("orb-page-step-scene");
+
+    fireEvent.click(screen.getByTestId("orb-page-next"));
+
+    const incoming = screen.getAllByTestId("orb-page-step-scene")
+      .find((scene) => scene !== outgoing)!;
+    expect(incoming).toHaveStyle({ opacity: motionEnabled ? "0" : "1" });
+    expect(incoming).not.toHaveAttribute("inert");
+    expect(screen.getByTestId("orb-page-note-input")).toBeInTheDocument();
   });
 
   it("keeps the V1 neutral orb baseline before the user moves the slider", () => {

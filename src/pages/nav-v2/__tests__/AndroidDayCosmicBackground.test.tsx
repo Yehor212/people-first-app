@@ -187,13 +187,13 @@ describe("Android DayCosmicBackground compositor isolation", () => {
         ),
         getShaderInfoLog: vi.fn(() => ""),
         getShaderParameter: vi.fn(() => true),
-        getUniformLocation: vi.fn(() => ({})),
+        getUniformLocation: vi.fn((_program: unknown, name: string) => ({ name })),
         linkProgram: vi.fn(),
         shaderSource: vi.fn(),
         texImage2D: vi.fn(),
         texParameteri: vi.fn(),
         uniform1i: vi.fn(),
-        uniform1f: vi.fn(),
+        uniform1f: vi.fn<(location: { name: string }, value: number) => void>(),
         uniform2f: vi.fn(),
         uniform3f: vi.fn(),
         uniform4f: vi.fn(),
@@ -293,6 +293,15 @@ describe("Android DayCosmicBackground compositor isolation", () => {
 
       const canvas = screen.getByTestId("android-day-webgl-large-effects");
       const programCountAfterSetup = gl.createProgram.mock.calls.length;
+      rerender(<DayCosmicBackground active={false} motionEnabled />);
+      const drawsBeforeInactiveResize = gl.drawArrays.mock.calls.length;
+      frameTimeline.currentTime = 20;
+      notifyResize();
+      act(() => {
+        window.dispatchEvent(new Event("resize"));
+      });
+      expect(gl.drawArrays).toHaveBeenCalledTimes(drawsBeforeInactiveResize);
+      expect(animationFrames.size).toBe(0);
       cssWidth = 0;
       cssHeight = 0;
       rerender(<DayCosmicBackground active={false} motionEnabled />);
@@ -336,6 +345,42 @@ describe("Android DayCosmicBackground compositor isolation", () => {
       expect(canvas).toHaveAttribute("data-android-day-active", "true");
       expect(gl.createProgram).toHaveBeenCalledTimes(programCountAfterSetup);
 
+      const sceneTime = () =>
+        gl.uniform1f.mock.calls.filter(([location]) => location.name === "uTime").at(-1)?.[1];
+      runNextFrame(50);
+      runNextFrame(80);
+      expect(sceneTime()).toBeGreaterThan(0);
+      rerender(<DayCosmicBackground active motionEnabled activationKey={1} />);
+      expect(sceneTime()).toBe(0);
+      expect(gl.createProgram).toHaveBeenCalledTimes(programCountAfterSetup);
+      expect(screen.getByTestId("android-day-webgl-large-effects") === canvas).toBe(true);
+      runNextFrame(100);
+      runNextFrame(130);
+      const phaseBeforePause = sceneTime();
+      expect(phaseBeforePause).toBeGreaterThan(0);
+      rerender(<DayCosmicBackground active={false} motionEnabled activationKey={1} />);
+      rerender(<DayCosmicBackground active motionEnabled activationKey={1} />);
+      expect(sceneTime()).toBe(phaseBeforePause);
+
+      rerender(<DayCosmicBackground active={false} motionEnabled activationKey={1} />);
+      const programsBeforeInactiveLoss = gl.createProgram.mock.calls.length;
+      const drawsBeforeInactiveLoss = gl.drawArrays.mock.calls.length;
+      act(() => {
+        canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+        canvas.dispatchEvent(new Event("webglcontextrestored"));
+        window.dispatchEvent(new Event("resize"));
+      });
+      expect(gl.createProgram).toHaveBeenCalledTimes(programsBeforeInactiveLoss);
+      expect(gl.drawArrays).toHaveBeenCalledTimes(drawsBeforeInactiveLoss);
+      expect(animationFrames.size).toBe(0);
+      rerender(<DayCosmicBackground active motionEnabled activationKey={2} />);
+      expect(gl.createProgram).toHaveBeenCalledTimes(programsBeforeInactiveLoss + 3);
+      expect(sceneTime()).toBe(0);
+      expect(screen.getByTestId("day-cosmic-background")).toHaveAttribute(
+        "data-android-day-ambience",
+        "ready"
+      );
+
       act(() => {
         canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
       });
@@ -366,6 +411,27 @@ describe("Android DayCosmicBackground compositor isolation", () => {
       expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
     }
   );
+
+  it("resamples the route-visit palette without replacing retained daylight nodes", () => {
+    const hour = vi.spyOn(Date.prototype, "getHours").mockReturnValue(10);
+    const { rerender } = render(<DayCosmicBackground motionEnabled={false} activationKey={1} />);
+    const background = screen.getByTestId("day-cosmic-background");
+    expect(background).toHaveAttribute("data-daymode", "morning");
+
+    hour.mockReturnValue(14);
+    rerender(<DayCosmicBackground motionEnabled={false} activationKey={1} />);
+    expect(background).toHaveAttribute("data-daymode", "morning");
+    rerender(<DayCosmicBackground motionEnabled={false} activationKey={2} />);
+    expect(screen.getByTestId("day-cosmic-background") === background).toBe(true);
+    expect(background).toHaveAttribute("data-daymode", "afternoon");
+
+    hour.mockReturnValue(18);
+    rerender(<DayCosmicBackground active={false} motionEnabled={false} activationKey={3} />);
+    expect(background).toHaveAttribute("data-daymode", "afternoon");
+    hour.mockReturnValue(20);
+    rerender(<DayCosmicBackground active motionEnabled={false} activationKey={3} />);
+    expect(background).toHaveAttribute("data-daymode", "dusk");
+  });
 
   it("keeps the canonical DOM fallback while one Android renderer owns every dynamic ambience layer", () => {
     const { container } = render(<DayCosmicBackground motionEnabled />);
