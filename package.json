@@ -261,7 +261,7 @@
     "fflate": "0.8.3",
     "framer-motion": "^12.26.2",
     "lottie-web": "5.13.0",
-    "lucide-react": "^0.462.0",
+    "lucide-react": "^1.44.0",
     "nanoid": "^5.1.16",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
