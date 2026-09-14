@@ -257,7 +257,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "dexie": "^4.4.2",
-    "dompurify": "^3.4.14",
+    "dompurify": "^3.4.15",
     "fflate": "0.8.3",
     "framer-motion": "^12.26.2",
     "lottie-web": "5.13.0",
