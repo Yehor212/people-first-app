@@ -134,7 +134,7 @@ jobs:
           test -s output/first-party-audio-review.zip.sha256
 
       - name: Upload hash-bound review artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
         with:
           name: first-party-audio-review-${{ github.sha }}
           path: |

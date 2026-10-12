@@ -294,7 +294,7 @@ jobs:
 
       - name: Upload V2 preview artifact for review
         if: github.event.inputs.publish_target == 'artifact-only'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: v2-preview-pages-artifact
           path: v2-src/output/pages-artifact.nosync
