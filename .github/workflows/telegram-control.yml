@@ -334,7 +334,7 @@ jobs:
       - name: Run Codex
         id: run_codex
         if: ${{ (inputs.mode == 'plan' || inputs.mode == 'fix' || inputs.mode == 'review' || inputs.mode == 'security') && env.HAS_OPENAI_API_KEY == 'true' }}
-        uses: openai/codex-action@23cb67af8fc4ecba6f6dd5cdc61e1800176aca61 # v1
+        uses: openai/codex-action@13e9c17417b29e9a276f73ec6ed7fb574137d3c3 # v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write
